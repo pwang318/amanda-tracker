@@ -123,6 +123,8 @@ tr:hover td{background:#fafbfc}
 
 <!-- MY WEEK TAB -->
 <div id="view-week" class="view active">
+  <div id="never-logged-alert" style="display:none;background:#FFEBEE;border:1px solid #EF9A9A;border-radius:8px;padding:9px 12px;font-size:12px;color:#C62828;margin-bottom:.75rem;font-weight:500">&#9888; You have not logged any activity in 3+ days. Daniel can see this. Time to log!</div>
+  <div id="quarterly-alert" style="display:none;background:#F3E5F5;border:1px solid #CE93D8;border-radius:8px;padding:9px 12px;font-size:12px;color:#6A1B9A;margin-bottom:.75rem;font-weight:500"></div>
   <div class="gbar" id="goals-bar"></div>
   <div class="rot-grid">
     <div class="rot-card">
@@ -548,7 +550,25 @@ function renderDanielTable(){
   }).join("")||'<tr><td colspan="6" style="text-align:center;color:#aaa;padding:1.5rem">No activity logged this week yet.</td></tr>';
 }
 
+function renderAlerts(){
+  var neverAlert=document.getElementById("never-logged-alert");
+  if(!activities.length){neverAlert.style.display="flex";}
+  else{
+    var last=activities[0];
+    var lastDate=new Date(last.act_date+"T12:00:00");lastDate.setHours(0,0,0,0);
+    var days=Math.floor((TODAY-lastDate)/86400000);
+    neverAlert.style.display=days>=3?"flex":"none";
+  }
+  var qAlert=document.getElementById("quarterly-alert");
+  var month=TODAY.getMonth();
+  var msgs=[];
+  if(month===2||month===5||month===8||month===11)msgs.push("Quarter end: Time to schedule Agent Appreciation for your top agents!");
+  if(month%2===0)msgs.push("Bimonthly check: Time to schedule Business Planning Sessions with key agents!");
+  if(msgs.length){qAlert.style.display="flex";qAlert.innerHTML="&#128203; "+msgs.join("  |  ");}
+  else qAlert.style.display="none";
+}
 function renderAll(){
+  renderAlerts();
   renderGoals();
   if(currentTab==="week")renderWeek();
   else if(currentTab==="feed")renderFeed();
