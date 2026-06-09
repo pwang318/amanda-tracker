@@ -126,23 +126,13 @@ tr:hover td{background:#fafbfc}
   <div id="never-logged-alert" style="display:none;background:#FFEBEE;border:1px solid #EF9A9A;border-radius:8px;padding:9px 12px;font-size:12px;color:#C62828;margin-bottom:.75rem;font-weight:500">&#9888; You have not logged any activity in 3+ days. Daniel can see this. Time to log!</div>
   <div id="quarterly-alert" style="display:none;background:#F3E5F5;border:1px solid #CE93D8;border-radius:8px;padding:9px 12px;font-size:12px;color:#6A1B9A;margin-bottom:.75rem;font-weight:500"></div>
   <div class="gbar" id="goals-bar"></div>
-  <div class="rot-grid">
-    <div class="rot-card">
-      <div class="rot-head">
-        <span>New agents to meet</span>
-        <span style="font-size:11px;color:#888" id="new-prog-txt">0/5</span>
-      </div>
-      <div class="prog-wrap"><div class="prog-track"><div class="prog-fill" id="new-prog" style="width:0%"></div></div></div>
-      <div id="new-agents-list"><div class="no-data" style="padding:1rem">Loading...</div></div>
+  <div class="rot-card" style="margin-bottom:.85rem">
+    <div class="rot-head">
+      <span>&#128222; LP handoffs to follow up this week</span>
+      <span style="font-size:11px;color:#888" id="handoff-prog-txt">0/0</span>
     </div>
-    <div class="rot-card">
-      <div class="rot-head">
-        <span>LP handoffs to follow up</span>
-        <span style="font-size:11px;color:#888" id="handoff-prog-txt">0/0</span>
-      </div>
-      <div class="prog-wrap"><div class="prog-track"><div class="prog-fill" id="handoff-prog" style="width:0%"></div></div></div>
-      <div id="handoff-list"><div class="no-data" style="padding:1rem">Loading...</div></div>
-    </div>
+    <div class="prog-wrap"><div class="prog-track"><div class="prog-fill" id="handoff-prog" style="width:0%"></div></div></div>
+    <div id="handoff-list"><div class="no-data" style="padding:1rem">Loading...</div></div>
   </div>
 </div>
 
@@ -344,26 +334,6 @@ function getHandoffList(){
 
 function renderWeek(){
   var checked=getCheckedThisWeek();
-  var newAgents=getNewAgentRotation();
-  var newDone=newAgents.filter(function(n){return checked[n];}).length;
-  var newPct=newAgents.length?Math.round(newDone/newAgents.length*100):0;
-  var bar=document.getElementById("new-prog");
-  bar.style.width=newPct+"%";bar.style.background=newPct===100?"#43A047":newPct>50?"#FB8C00":"#E53935";
-  document.getElementById("new-prog-txt").textContent=newDone+"/"+newAgents.length;
-
-  document.getElementById("new-agents-list").innerHTML=newAgents.length?newAgents.map(function(name){
-    var done=!!checked[name];
-    var lp=LP_MAP[name]||"Unassigned";
-    return '<div class="rot-row">'+
-      '<button class="chk-btn'+(done?" checked":"")+'" data-name="'+name+'" data-list="new" onclick="toggleCheck(this)">'+
-        (done?'<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#3B6D11" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>':"")+
-      '</button>'+
-      '<div class="rot-info">'+
-        '<div class="rot-name'+(done?'" style="text-decoration:line-through;color:#aaa"':'"')+'>'+name+'</div>'+
-        '<div class="rot-meta"><span class="lp-tag lp-tag-'+lp+'">'+lp+'</span><span class="new-badge">Never met</span></div>'+
-      '</div>'+
-    '</div>';
-  }).join(""):"<div class='no-data' style='padding:.75rem'>All new agents have been contacted!</div>";
 
   var handoffs=getHandoffList();
   var handoffDone=handoffs.filter(function(h){return checked[h.name];}).length;
