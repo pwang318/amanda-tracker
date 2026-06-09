@@ -1,0 +1,586 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Amanda - Relationship Manager Tracker</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif;color:#1a1a1a;font-size:14px;background:#f0f2f5;min-height:100vh}
+.app{max-width:920px;margin:0 auto;padding:1rem 1rem 3rem}
+.header{padding:.9rem 0 .6rem;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;border-bottom:1px solid #dde1e7;margin-bottom:.75rem}
+.brand{display:flex;align-items:center;gap:10px}
+.brand-logo{background:#7B1FA2;color:#fff;font-weight:700;font-size:13px;padding:6px 13px;border-radius:8px;letter-spacing:.05em}
+.brand-sub{font-size:12px;color:#666}
+.week-pill{font-size:11px;background:#e8eaf0;padding:4px 11px;border-radius:20px;color:#555}
+.sync{display:flex;align-items:center;gap:4px;font-size:11px;color:#888}
+.sync-dot{width:7px;height:7px;border-radius:50%;background:#ccc}
+.sync-dot.live{background:#43A047}.sync-dot.saving{background:#FB8C00}.sync-dot.error{background:#E53935}
+.tabs{display:flex;gap:0;border-bottom:1px solid #dde1e7;margin-bottom:.85rem;flex-wrap:wrap}
+.tab{padding:8px 15px;cursor:pointer;font-size:13px;font-weight:500;color:#888;border-bottom:2px solid transparent;margin-bottom:-1px}
+.tab.active{color:#7B1FA2;border-bottom-color:#7B1FA2}
+.tab:hover:not(.active){color:#555}
+.view{display:none}.view.active{display:block}
+.gbar{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:7px;margin-bottom:.85rem}
+.gc{background:#fff;border:1px solid #dde1e7;border-radius:10px;padding:.65rem .8rem}
+.glbl{font-size:10px;color:#888;font-weight:500;text-transform:uppercase;letter-spacing:.03em;margin-bottom:3px}
+.gnum{display:flex;align-items:baseline;gap:3px}
+.gval{font-size:19px;font-weight:700}
+.ggoal{font-size:11px;color:#888}
+.gtrack{background:#eee;border-radius:20px;height:3px;margin-top:5px;overflow:hidden}
+.gfill{height:3px;border-radius:20px}
+.gpct{font-size:10px;color:#888;margin-top:2px}
+.rot-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:.85rem}
+.rot-card{background:#fff;border:1px solid #dde1e7;border-radius:12px;padding:.85rem 1rem}
+.rot-head{font-size:12px;font-weight:600;margin-bottom:.5rem;display:flex;justify-content:space-between;align-items:center}
+.prog-wrap{display:flex;align-items:center;gap:8px;margin-bottom:.6rem}
+.prog-track{flex:1;background:#eee;border-radius:20px;height:6px;overflow:hidden}
+.prog-fill{height:6px;border-radius:20px}
+.prog-txt{font-size:11px;color:#888;white-space:nowrap}
+.rot-row{display:flex;align-items:center;gap:9px;padding:6px 0;border-bottom:1px solid #f0f2f5}
+.rot-row:last-child{border-bottom:none}
+.chk-btn{width:30px;height:30px;border-radius:50%;border:1.5px solid #ccc;background:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:13px;color:#999}
+.chk-btn.checked{background:#EAF3DE;border-color:#4CAF50;color:#3B6D11}
+.rot-info{flex:1;min-width:0}
+.rot-name{font-weight:600;font-size:13px}
+.rot-meta{font-size:11px;color:#888;display:flex;gap:5px;flex-wrap:wrap;margin-top:1px;align-items:center}
+.new-badge{background:#E3F2FD;color:#1565C0;font-size:10px;padding:1px 6px;border-radius:20px;font-weight:600}
+.warm-badge{background:#FFF8E1;color:#E65100;font-size:10px;padding:1px 6px;border-radius:20px;font-weight:600}
+.overdue-badge{background:#FFEBEE;color:#C62828;font-size:10px;padding:1px 6px;border-radius:20px;font-weight:600}
+.lp-tag{display:inline-block;padding:1px 6px;border-radius:20px;font-size:10px;font-weight:600}
+.lp-tag-Gavin{background:#E8F5E9;color:#2E7D32}.lp-tag-Karen{background:#E3F2FD;color:#1565C0}
+.lp-tag-Osgood{background:#FFF8E1;color:#E65100}.lp-tag-Jordan{background:#FCE4EC;color:#880E4F}
+.lp-tag-Said{background:#EDE7F6;color:#4527A0}.lp-tag-Unassigned{background:#EEE;color:#555}
+.log-form{background:#fff;border:1px solid #dde1e7;border-radius:12px;padding:1rem 1.25rem;margin-bottom:.85rem}
+.log-form h3{font-size:14px;font-weight:700;margin-bottom:.75rem}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:9px}
+.form-grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:9px}
+.field{display:flex;flex-direction:column;gap:3px}
+.field label{font-size:11px;color:#888;font-weight:500}
+input[type=text],input[type=date],select,textarea{padding:7px 10px;border:1px solid #dde1e7;border-radius:8px;font-size:13px;color:#1a1a1a;background:#fff;font-family:inherit;width:100%}
+textarea{resize:none;height:60px}
+.btn{border:1.5px solid #dde1e7;background:#fff;border-radius:8px;padding:7px 16px;cursor:pointer;font-size:13px;color:#333;font-weight:500;font-family:inherit}
+.btn:hover{background:#f5f6fa}
+.btn-primary{background:#7B1FA2;color:#fff;border-color:#7B1FA2}
+.btn-primary:hover{background:#6A1B9A}
+.btn-danger{background:#FFEBEE;color:#C62828;border-color:#EF9A9A}
+.btn-sm{padding:3px 9px;font-size:12px}
+.act-item{background:#fff;border:1px solid #dde1e7;border-radius:12px;padding:.85rem 1rem;margin-bottom:7px;display:flex;gap:10px}
+.act-icon{width:36px;height:36px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
+.act-body{flex:1;min-width:0}
+.act-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:3px;flex-wrap:wrap;gap:4px}
+.act-agent{font-weight:700;font-size:13px}
+.act-type{font-size:10px;font-weight:700;padding:2px 7px;border-radius:20px}
+.act-meta{font-size:11px;color:#888;display:flex;gap:6px;flex-wrap:wrap;margin-bottom:3px;align-items:center}
+.act-note{font-size:12px;color:#555;font-style:italic}
+.opill{font-size:10px;padding:1px 6px;border-radius:20px;font-weight:600}
+.op-positive{background:#EAF3DE;color:#3B6D11}
+.op-neutral{background:#F5F5F5;color:#555}
+.op-followup{background:#FFF8E1;color:#E65100}
+.futag{background:#EDE7F6;color:#4527A0;font-size:10px;padding:1px 6px;border-radius:20px;font-weight:600}
+.special-tag{background:#F3E5F5;color:#6A1B9A;font-size:10px;padding:1px 6px;border-radius:20px;font-weight:600}
+.no-data{text-align:center;padding:2.5rem;color:#aaa;font-size:13px}
+.tbl-wrap{max-height:380px;overflow-y:auto;border:1px solid #dde1e7;border-radius:12px}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{text-align:left;padding:8px 10px;font-weight:700;font-size:11px;color:#888;border-bottom:1px solid #e8eaf0;background:#f8f9fc;position:sticky;top:0;z-index:2;text-transform:uppercase;letter-spacing:.04em}
+td{padding:8px 10px;border-bottom:1px solid #f0f2f5;vertical-align:middle}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:#fafbfc}
+.section-head{font-size:11px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.06em;margin:1rem 0 .5rem;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px}
+.filter-bar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:.75rem;align-items:center}
+.filter-bar input,.filter-bar select{font-size:12px;padding:5px 9px;border:1px solid #dde1e7;border-radius:8px;background:#fff;color:#1a1a1a}
+.daniel-card{background:#fff;border:1px solid #dde1e7;border-radius:12px;padding:1rem 1.25rem;margin-bottom:.85rem}
+.daniel-card h3{font-size:14px;font-weight:700;margin-bottom:.75rem}
+.drow{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #f0f2f5;font-size:13px}
+.drow:last-child{border-bottom:none}
+.autocomplete-wrap{position:relative}
+.autocomplete-list{position:absolute;top:100%;left:0;right:0;background:#fff;border:1px solid #dde1e7;border-radius:8px;max-height:180px;overflow-y:auto;z-index:50;box-shadow:0 4px 12px rgba(0,0,0,.08)}
+.autocomplete-item{padding:8px 10px;cursor:pointer;font-size:13px}
+.autocomplete-item:hover{background:#f5f6fa}
+.fu-row{background:#fff;border:1px solid #dde1e7;border-radius:10px;padding:.75rem 1rem;margin-bottom:7px;display:flex;align-items:center;gap:10px}
+.badge-a{background:#C6EFCE;color:#1B5E20;font-size:10px;font-weight:700;padding:1px 6px;border-radius:20px;display:inline-block}
+.badge-b{background:#BBDEFB;color:#0D47A1;font-size:10px;font-weight:700;padding:1px 6px;border-radius:20px;display:inline-block}
+.badge-c{background:#EEE;color:#424242;font-size:10px;font-weight:700;padding:1px 6px;border-radius:20px;display:inline-block}
+</style>
+</head>
+<body>
+<div class="app">
+<div class="header">
+  <div class="brand"><div class="brand-logo">AMANDA</div><div class="brand-sub">Relationship Manager Tracker</div></div>
+  <div style="display:flex;gap:8px;align-items:center">
+    <span class="week-pill" id="weekPill"></span>
+    <div class="sync"><span class="sync-dot" id="syncDot"></span><span id="syncTxt">Connecting...</span></div>
+  </div>
+</div>
+
+<div class="tabs">
+  <div class="tab active" onclick="switchTab('week')">My Week</div>
+  <div class="tab" onclick="switchTab('log')">Log Activity</div>
+  <div class="tab" onclick="switchTab('followups')">Follow-ups</div>
+  <div class="tab" onclick="switchTab('feed')">Activity Feed</div>
+  <div class="tab" onclick="switchTab('daniel')">Daniel's View</div>
+</div>
+
+<!-- MY WEEK TAB -->
+<div id="view-week" class="view active">
+  <div class="gbar" id="goals-bar"></div>
+  <div class="rot-grid">
+    <div class="rot-card">
+      <div class="rot-head">
+        <span>New agents to meet</span>
+        <span style="font-size:11px;color:#888" id="new-prog-txt">0/5</span>
+      </div>
+      <div class="prog-wrap"><div class="prog-track"><div class="prog-fill" id="new-prog" style="width:0%"></div></div></div>
+      <div id="new-agents-list"><div class="no-data" style="padding:1rem">Loading...</div></div>
+    </div>
+    <div class="rot-card">
+      <div class="rot-head">
+        <span>LP handoffs to follow up</span>
+        <span style="font-size:11px;color:#888" id="handoff-prog-txt">0/0</span>
+      </div>
+      <div class="prog-wrap"><div class="prog-track"><div class="prog-fill" id="handoff-prog" style="width:0%"></div></div></div>
+      <div id="handoff-list"><div class="no-data" style="padding:1rem">Loading...</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- LOG ACTIVITY TAB -->
+<div id="view-log" class="view">
+  <div class="log-form">
+    <h3>Log an activity</h3>
+    <div class="form-grid">
+      <div class="field">
+        <label>Agent name</label>
+        <div class="autocomplete-wrap">
+          <input type="text" id="agent-input" placeholder="Start typing agent name..." oninput="showSuggestions()" onblur="hideSuggestions()" autocomplete="off">
+          <div class="autocomplete-list" id="autocomplete-list" style="display:none"></div>
+        </div>
+      </div>
+      <div class="field">
+        <label>Activity type</label>
+        <select id="act-type">
+          <optgroup label="New Relationships">
+            <option>Cold Call</option>
+            <option>Cold Outreach</option>
+            <option>First Meeting</option>
+            <option>Office Visit</option>
+          </optgroup>
+          <optgroup label="Relationship Deepening">
+            <option>Break Bread</option>
+            <option>Lunch &amp; Learn</option>
+            <option>Event / Networking</option>
+            <option>Value-Add Touch</option>
+            <option>Marketing Support</option>
+          </optgroup>
+          <optgroup label="Retention &amp; Referrals">
+            <option>Active Check-in</option>
+            <option>Pipeline Update</option>
+            <option>Thank You</option>
+            <option>Birthday / Milestone</option>
+            <option>Realtor Buddy Referral Ask</option>
+            <option>Text / Email Touch</option>
+            <option>Re-engagement</option>
+          </optgroup>
+          <optgroup label="Special Programs">
+            <option>Agent Appreciation</option>
+            <option>Business Planning Session</option>
+            <option>Co-Marketing Setup</option>
+          </optgroup>
+        </select>
+      </div>
+    </div>
+    <div class="form-grid-3">
+      <div class="field"><label>Date</label><input type="date" id="act-date"></div>
+      <div class="field"><label>Outcome</label>
+        <select id="act-outcome">
+          <option value="positive">Positive</option>
+          <option value="neutral" selected>Neutral</option>
+          <option value="followup">Needs follow-up</option>
+        </select>
+      </div>
+      <div class="field"><label>Follow-up date</label><input type="date" id="act-followup"></div>
+    </div>
+    <div class="field" style="margin-bottom:10px">
+      <label>Notes</label>
+      <textarea id="act-notes" placeholder="What was discussed? Anything promising?"></textarea>
+    </div>
+    <button class="btn btn-primary" onclick="logActivity()">Log activity</button>
+    <span id="log-confirm" style="font-size:12px;color:#43A047;margin-left:10px;display:none">Saved!</span>
+  </div>
+</div>
+
+<!-- FOLLOW-UPS TAB -->
+<div id="view-followups" class="view">
+  <div class="section-head">Pending follow-ups <span style="font-size:11px;font-weight:400;text-transform:none;color:#aaa">sorted by due date</span></div>
+  <div id="followup-list"></div>
+</div>
+
+<!-- FEED TAB -->
+<div id="view-feed" class="view">
+  <div class="filter-bar">
+    <input type="text" id="feed-q" placeholder="Search agent..." oninput="renderFeed()">
+    <select id="feed-type" onchange="renderFeed()"><option value="">All types</option>
+      <option>Cold Call</option><option>Cold Outreach</option><option>First Meeting</option><option>Office Visit</option>
+      <option>Break Bread</option><option>Lunch &amp; Learn</option><option>Event / Networking</option>
+      <option>Value-Add Touch</option><option>Marketing Support</option><option>Active Check-in</option>
+      <option>Pipeline Update</option><option>Thank You</option><option>Birthday / Milestone</option>
+      <option>Realtor Buddy Referral Ask</option><option>Text / Email Touch</option><option>Re-engagement</option>
+      <option>Agent Appreciation</option><option>Business Planning Session</option><option>Co-Marketing Setup</option>
+    </select>
+    <select id="feed-range" onchange="renderFeed()"><option value="week">This week</option><option value="month">This month</option><option value="all">All time</option></select>
+  </div>
+  <div id="feed-list"></div>
+</div>
+
+<!-- DANIEL TAB -->
+<div id="view-daniel" class="view">
+  <div class="daniel-card">
+    <h3>Weekly summary <span style="font-size:11px;font-weight:400;color:#888" id="daniel-week-lbl"></span></h3>
+    <div id="daniel-summary"></div>
+  </div>
+  <div class="daniel-card">
+    <h3>Rotation progress</h3>
+    <div id="daniel-rotation"></div>
+  </div>
+  <div class="section-head">All activity this week
+    <div style="display:flex;gap:6px">
+      <input type="text" id="daniel-q" placeholder="Search..." oninput="renderDanielTable()" style="font-size:12px;width:130px">
+      <select id="daniel-type" onchange="renderDanielTable()" style="font-size:12px"><option value="">All types</option>
+        <option>Cold Call</option><option>First Meeting</option><option>Break Bread</option><option>Active Check-in</option><option>Realtor Buddy Referral Ask</option>
+      </select>
+    </div>
+  </div>
+  <div class="tbl-wrap"><table><thead><tr><th>Agent</th><th>LP</th><th>Type</th><th>Date</th><th>Outcome</th><th>Notes</th></tr></thead><tbody id="daniel-tbody"></tbody></table></div>
+</div>
+</div>
+
+<script>
+var SUPABASE_URL = "https://uclucbdkjqyqdvifyptx.supabase.co";
+var SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVjbHVjYmRranF5cWR2aWZ5cHR4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA0OTUyMTMsImV4cCI6MjA5NjA3MTIxM30.VnqWcFT1WLQwCJxSdEIzIgOvETaOQly2IQxht-9uI7E";
+var AGENTS = ["TIARA VILLATORO", "BRANDON THOMPSON", "MEGAN LYNCH", "TODD STONE", "DUSTIN GOLDMAN", "KEVIN SPEERT", "TINA HOFFMAN", "OSCAR MARTINEZ", "RACQUEL LUDAWAY", "CHRIS REED", "MICHELLE ERICKSON", "SAHAR SHALASH", "CINDA ERICKSON", "CONNER KOCHANSKY", "DEANNE RHYNEHARDT", "DERON BENDER", "INGRID CORREIA", "JOHN BRUNNER", "KANDIS HALL", "KRISTINA MURPHY", "MARK BOYD", "MATTHEW MONTALVO", "SETH COLBURN", "ANNIE MORENO", "DAN MANLEY", "ELIZABETH ELLINGER", "ERIKA WEHNER", "HEATHER HENRY-MINOR", "KATIE SUMMERS", "KHADIJA FARAH", "KISHMA JAMES", "MARIA COMAS", "MARTIN HOPKINS", "MARY MCMICHAEL", "MATT PIPER", "NATALIE ESTRELLA", "RAMI TAMIMI", "STACEY LAMBRIGHT", "TRACY BERARD", "AIMEE WHITLOCK", "ALEXIS REED", "AMY AGRESTA", "ANGELA PEREZ", "BRIAN NANTHAVONGDOUANGSY", "BRITNEY DODDS", "CAROLE MCMAHON", "CESIA ESPINOZA YOUNG", "CHELSEA ANDERSON", "COURTNEY HAMILTON", "DEVIN JOHNSON", "DIANNA JENKINS", "HAIFA BRUNNEY", "JASMINE MCKENZIE", "JESSE MCCRERRY", "JOHN LUBINSKY", "JORDAN HOLLIBAUGH", "KATHERINE DE LA ROSA", "KELSY YODER", "KINSIE HUSKINS", "KRISTEN VALENTY", "LETIKA WHITE", "LISA SIMMONS", "LUIS GIL", "LYNDSEY LANE", "MARK VENNITTI", "MIKE WHITEMAN", "NANCY PRICE", "PAIGE LUDWIG", "PATRICK ARQUETTE", "PAULA PALLESCHI", "PILAR BENNETT", "RACHELLE PARSLEY", "ROBERT HAYNER", "ROBIN BLAKE", "ROSS DIGIORGIO", "RUTH ESPINOZA", "SAM BAMRICK", "SARA BUSH", "SLAVI JORDANOV", "STAN GORKSI", "THAER AHMED", "TRACI WILLIAMS-JONES", "TROY BORDEN", "YASMIN DE JESUS", "ALI SWEAZY", "ALINA ILKAEVA", "ANA SORIA", "ANGELA POTTS", "ANGELIQUE SOTONDJI", "ASHLEY HENRY", "AVA LAIRD", "BAILEY STRATHIE", "BENJAMIN GAYTAN", "BRAD GILLIAM", "BRANDON KIDD", "BRANDON MCCLENDON", "BRIAN ZINN", "CELINE WILLIAMS", "CHERYL KINSEY", "CHRISTIAN CHALKIAS", "CHRISTINA COUGHLIN", "CHUCK KINSEY", "CODA GAHRIS", "CRAIG MAURER", "DAIRDRE SCRIVEN", "DARREN HOGG", "DONALD PAYNE JR", "ELIAS PAPPAN", "ELIZABETH BONAUDI", "ELIZABETH HOWARD", "ERIKA BRUNNER", "GLADIS CHAVEZ", "HYPATIA ESPINAL", "IZXEL MARTINEZ", "JACOB ENGLISH", "JAIDEN BALLAH", "JASMIN ARCOS", "JASMIN MONTOYA", "JEFF MESSMER", "JENNIFER BLACKMORE", "JENNIFER HOWISON", "JESSICA TOWER", "JONNATHAN AGUDELO", "JUSTIN BIERY", "KATHY HAYES", "KATIE MANSOR", "KERWIN HEATH", "KYLA AHO", "LAUREN MCCLINTON", "LESLIE HERNANDEZ", "LILIAN FUENTES", "LIZBEL CONTRERAS", "MANDY WILSON", "MARLA SEWELL", "MATHEA ARUDDA", "MICHELE FREDERICK", "NANCY BAKER", "NIA HARRINGTON", "NICK ZATEZALO", "NIKEHA HAYES", "NINA AVERY", "NORA KERELIUK", "PIERINA MANTILLA", "ROSALIA PABLO", "RUTH GONZALEZ", "SAHEL ALAM", "SAM COOPER", "SARAH HERNANDEZ", "SASHA ANTONOVA", "SHANE STINER", "SHARON PANTELIS", "SHAYNE D. BOYD", "SHIRRELL BURNSIDE", "STEVEN OSBORN", "SUMMER DURHAM", "SUNI RIVAS", "TAMARA CHARLTON", "TATIANA GRIGORITA", "THOMAS NEWMAN", "TINA-DUTT-HIREN", "TONY AMOS", "WENDY RAMIREZ", "WHITNEY SCHMIDT", "YVETTA HARRISON"];
+var LP_MAP = {"TIARA VILLATORO": "Karen", "BRANDON THOMPSON": "Osgood", "MEGAN LYNCH": "Gavin", "TODD STONE": "Said", "DUSTIN GOLDMAN": "Osgood", "KEVIN SPEERT": "Gavin", "TINA HOFFMAN": "Gavin", "OSCAR MARTINEZ": "Karen", "RACQUEL LUDAWAY": "Gavin", "CHRIS REED": "Said", "MICHELLE ERICKSON": "Gavin", "SAHAR SHALASH": "Said", "CINDA ERICKSON": "Gavin", "CONNER KOCHANSKY": "Gavin", "DEANNE RHYNEHARDT": "Osgood", "DERON BENDER": "Gavin", "INGRID CORREIA": "Gavin", "JOHN BRUNNER": "Osgood", "KANDIS HALL": "Osgood", "KRISTINA MURPHY": "Osgood", "MARK BOYD": "Gavin", "MATTHEW MONTALVO": "Karen", "SETH COLBURN": "Said", "ANNIE MORENO": "Karen", "DAN MANLEY": "Gavin", "ELIZABETH ELLINGER": "Jordan", "ERIKA WEHNER": "Gavin", "HEATHER HENRY-MINOR": "Jordan", "KATIE SUMMERS": "Gavin", "KHADIJA FARAH": "Jordan", "KISHMA JAMES": "Said", "MARIA COMAS": "Karen", "MARTIN HOPKINS": "Karen", "MARY MCMICHAEL": "Said", "MATT PIPER": "Osgood", "NATALIE ESTRELLA": "Karen", "RAMI TAMIMI": "Jordan", "STACEY LAMBRIGHT": "Jordan", "TRACY BERARD": "Jordan", "AIMEE WHITLOCK": "Gavin", "ALEXIS REED": "Said", "AMY AGRESTA": "Gavin", "ANGELA PEREZ": "Gavin", "BRIAN NANTHAVONGDOUANGSY": "Osgood", "BRITNEY DODDS": "Gavin", "CAROLE MCMAHON": "Osgood", "CESIA ESPINOZA YOUNG": "Karen", "CHELSEA ANDERSON": "Osgood", "COURTNEY HAMILTON": "Osgood", "DEVIN JOHNSON": "Said", "DIANNA JENKINS": "Said", "HAIFA BRUNNEY": "Karen", "JASMINE MCKENZIE": "Osgood", "JESSE MCCRERRY": "Said", "JOHN LUBINSKY": "Said", "JORDAN HOLLIBAUGH": "Gavin", "KATHERINE DE LA ROSA": "Karen", "KELSY YODER": "Said", "KINSIE HUSKINS": "Jordan", "KRISTEN VALENTY": "Jordan", "LETIKA WHITE": "Osgood", "LISA SIMMONS": "Osgood", "LUIS GIL": "Karen", "LYNDSEY LANE": "Osgood", "MARK VENNITTI": "Jordan", "MIKE WHITEMAN": "Osgood", "NANCY PRICE": "Jordan", "PAIGE LUDWIG": "Said", "PATRICK ARQUETTE": "Said", "PAULA PALLESCHI": "Said", "PILAR BENNETT": "Karen", "RACHELLE PARSLEY": "Said", "ROBERT HAYNER": "Jordan", "ROBIN BLAKE": "Gavin", "ROSS DIGIORGIO": "Osgood", "RUTH ESPINOZA": "Karen", "SAM BAMRICK": "Jordan", "SARA BUSH": "Said", "SLAVI JORDANOV": "Said", "STAN GORKSI": "Jordan", "THAER AHMED": "Said", "TRACI WILLIAMS-JONES": "Jordan", "TROY BORDEN": "Gavin", "YASMIN DE JESUS": "Karen", "ALI SWEAZY": "Osgood", "ALINA ILKAEVA": "Said", "ANA SORIA": "Karen", "ANGELA POTTS": "Osgood", "ANGELIQUE SOTONDJI": "Jordan", "ASHLEY HENRY": "Osgood", "AVA LAIRD": "Jordan", "BAILEY STRATHIE": "Osgood", "BENJAMIN GAYTAN": "Gavin", "BRAD GILLIAM": "Gavin", "BRANDON KIDD": "Said", "BRANDON MCCLENDON": "Said", "BRIAN ZINN": "Jordan", "CELINE WILLIAMS": "Jordan", "CHERYL KINSEY": "Jordan", "CHRISTIAN CHALKIAS": "Osgood", "CHRISTINA COUGHLIN": "Osgood", "CHUCK KINSEY": "Jordan", "CODA GAHRIS": "Jordan", "CRAIG MAURER": "Osgood", "DAIRDRE SCRIVEN": "Said", "DARREN HOGG": "Said", "DONALD PAYNE JR": "Osgood", "ELIAS PAPPAN": "Karen", "ELIZABETH BONAUDI": "Osgood", "ELIZABETH HOWARD": "Osgood", "ERIKA BRUNNER": "Gavin", "GLADIS CHAVEZ": "Karen", "HYPATIA ESPINAL": "Karen", "IZXEL MARTINEZ": "Karen", "JACOB ENGLISH": "Jordan", "JAIDEN BALLAH": "Said", "JASMIN ARCOS": "Karen", "JASMIN MONTOYA": "Karen", "JEFF MESSMER": "Gavin", "JENNIFER BLACKMORE": "Jordan", "JENNIFER HOWISON": "Jordan", "JESSICA TOWER": "Jordan", "JONNATHAN AGUDELO": "Karen", "JUSTIN BIERY": "Karen", "KATHY HAYES": "Jordan", "KATIE MANSOR": "Jordan", "KERWIN HEATH": "Said", "KYLA AHO": "Said", "LAUREN MCCLINTON": "Said", "LESLIE HERNANDEZ": "Karen", "LILIAN FUENTES": "Karen", "LIZBEL CONTRERAS": "Karen", "MANDY WILSON": "Jordan", "MARLA SEWELL": "Osgood", "MATHEA ARUDDA": "Karen", "MICHELE FREDERICK": "Osgood", "NANCY BAKER": "Unassigned", "NIA HARRINGTON": "Said", "NICK ZATEZALO": "Osgood", "NIKEHA HAYES": "Osgood", "NINA AVERY": "Jordan", "NORA KERELIUK": "Said", "PIERINA MANTILLA": "Karen", "ROSALIA PABLO": "Karen", "RUTH GONZALEZ": "Karen", "SAHEL ALAM": "Said", "SAM COOPER": "Gavin", "SARAH HERNANDEZ": "Osgood", "SASHA ANTONOVA": "Said", "SHANE STINER": "Jordan", "SHARON PANTELIS": "Jordan", "SHAYNE D. BOYD": "Said", "SHIRRELL BURNSIDE": "Osgood", "STEVEN OSBORN": "Jordan", "SUMMER DURHAM": "Osgood", "SUNI RIVAS": "Karen", "TAMARA CHARLTON": "Osgood", "TATIANA GRIGORITA": "Jordan", "THOMAS NEWMAN": "Gavin", "TINA-DUTT-HIREN": "Osgood", "TONY AMOS": "Osgood", "WENDY RAMIREZ": "Karen", "WHITNEY SCHMIDT": "Said", "YVETTA HARRISON": "Osgood"};
+var TODAY = new Date(); TODAY.setHours(0,0,0,0);
+var CUTOFF_1WK = new Date(TODAY); CUTOFF_1WK.setDate(TODAY.getDate()-7);
+
+var WEEKLY_GOALS = {"Cold Call":25,"First Meeting":5,"Break Bread":5,"Active Check-in":10,"Realtor Buddy Referral Ask":3};
+var SPECIAL_TYPES = ["Agent Appreciation","Business Planning Session","Lunch & Learn","Co-Marketing Setup"];
+var TYPE_ICONS = {
+  "Cold Call":"📞","Cold Outreach":"✉️","First Meeting":"🤝","Office Visit":"🏢",
+  "Break Bread":"🍞","Lunch & Learn":"🎓","Event / Networking":"🎪","Value-Add Touch":"💡","Marketing Support":"📣",
+  "Active Check-in":"💬","Pipeline Update":"📊","Thank You":"🙏","Birthday / Milestone":"🎂",
+  "Realtor Buddy Referral Ask":"🌟","Text / Email Touch":"📱","Re-engagement":"🔄",
+  "Agent Appreciation":"🏆","Business Planning Session":"📋","Co-Marketing Setup":"🤝"
+};
+var TYPE_COLORS = {
+  "Cold Call":"#E3F2FD","Cold Outreach":"#E3F2FD","First Meeting":"#E8F5E9","Office Visit":"#E8F5E9",
+  "Break Bread":"#FCE4EC","Lunch & Learn":"#F3E5F5","Event / Networking":"#EDE7F6","Value-Add Touch":"#FFF8E1","Marketing Support":"#FFF8E1",
+  "Active Check-in":"#FFF8E1","Pipeline Update":"#E8F5E9","Thank You":"#FCE4EC","Birthday / Milestone":"#FCE4EC",
+  "Realtor Buddy Referral Ask":"#FFF9C4","Text / Email Touch":"#F5F5F5","Re-engagement":"#FFEBEE",
+  "Agent Appreciation":"#F3E5F5","Business Planning Session":"#EDE7F6","Co-Marketing Setup":"#E8F5E9"
+};
+
+var activities = [], lpCallLogs = {}, weekChecks = {};
+var currentTab = "week";
+var weekKey = getWeekKey(TODAY);
+
+function getWeekKey(d){var dt=new Date(d);dt.setHours(0,0,0,0);var day=dt.getDay(),mon=new Date(dt);mon.setDate(dt.getDate()-(day===0?6:day-1));return mon.toISOString().split("T")[0];}
+function getWeekLabel(k){var mon=new Date(k),sun=new Date(mon);sun.setDate(mon.getDate()+6);var o={month:"short",day:"numeric"};return "Week of "+mon.toLocaleDateString("en-US",o)+" - "+sun.toLocaleDateString("en-US",o);}
+function fmt(d){if(!d)return "--";return new Date(d).toLocaleDateString("en-US",{month:"short",day:"numeric",year:"2-digit"});}
+function fmtShort(d){if(!d)return "--";return new Date(d).toLocaleDateString("en-US",{month:"short",day:"numeric"});}
+function isThisWeek(ds){return getWeekKey(new Date(ds+"T12:00:00"))===weekKey;}
+function isThisMonth(ds){var d=new Date(ds+"T12:00:00"),t=new Date(TODAY);return d.getMonth()===t.getMonth()&&d.getFullYear()===t.getFullYear();}
+function setSyncStatus(s){var dot=document.getElementById("syncDot"),txt=document.getElementById("syncTxt");if(s==="live"){dot.className="sync-dot live";txt.textContent="Live";}else if(s==="saving"){dot.className="sync-dot saving";txt.textContent="Saving...";}else{dot.className="sync-dot error";txt.textContent="Offline";}}
+
+function sbFetch(method,path,body){
+  var opts={method:method,headers:{"apikey":SUPABASE_KEY,"Authorization":"Bearer "+SUPABASE_KEY,"Content-Type":"application/json","Prefer":method==="POST"?"resolution=merge-duplicates,return=minimal":"return=representation"}};
+  if(body)opts.body=JSON.stringify(body);
+  return fetch(SUPABASE_URL+"/rest/v1/"+path,opts).then(function(r){if(!r.ok)return r.text().then(function(t){throw new Error(t);});return r.status===204?null:r.json();});
+}
+
+function loadAll(){
+  setSyncStatus("saving");
+  return Promise.all([
+    sbFetch("GET","amanda_activities?select=*&order=act_date.desc,created_at.desc"),
+    sbFetch("GET","call_logs?week_key=eq."+weekKey+"&select=*")
+  ]).then(function(res){
+    activities=res[0]||[];
+    lpCallLogs={};
+    if(res[1])res[1].forEach(function(r){lpCallLogs[r.agent_name]=r;});
+    setSyncStatus("live");
+    renderAll();
+  }).catch(function(e){setSyncStatus("error");console.log(e);});
+}
+
+function getCheckedThisWeek(){
+  var checked={};
+  activities.filter(function(a){return isThisWeek(a.act_date);}).forEach(function(a){checked[a.agent_name]=true;});
+  return checked;
+}
+
+function getNewAgentRotation(){
+  var contacted={}; 
+  activities.forEach(function(a){contacted[a.agent_name]=true;});
+  var never=AGENTS.filter(function(n){return!contacted[n];});
+  var wn=Math.floor((TODAY-new Date("2024-01-01"))/(7*86400000));
+  var pw=Math.min(5,never.length);
+  var si=never.length?(wn*pw)%never.length:0;
+  var result=[];
+  for(var i=0;i<pw;i++)result.push(never[(si+i)%never.length]);
+  return result;
+}
+
+function getHandoffList(){
+  var checked=getCheckedThisWeek();
+  var handoffs=[];
+  Object.keys(lpCallLogs).forEach(function(name){
+    if(!checked[name]){
+      handoffs.push({name:name,lp:lpCallLogs[name].lp,callDate:lpCallLogs[name].call_date});
+    }
+  });
+  return handoffs.slice(0,10);
+}
+
+function renderWeek(){
+  var checked=getCheckedThisWeek();
+  var newAgents=getNewAgentRotation();
+  var newDone=newAgents.filter(function(n){return checked[n];}).length;
+  var newPct=newAgents.length?Math.round(newDone/newAgents.length*100):0;
+  var bar=document.getElementById("new-prog");
+  bar.style.width=newPct+"%";bar.style.background=newPct===100?"#43A047":newPct>50?"#FB8C00":"#E53935";
+  document.getElementById("new-prog-txt").textContent=newDone+"/"+newAgents.length;
+
+  document.getElementById("new-agents-list").innerHTML=newAgents.length?newAgents.map(function(name){
+    var done=!!checked[name];
+    var lp=LP_MAP[name]||"Unassigned";
+    return '<div class="rot-row">'+
+      '<button class="chk-btn'+(done?" checked":"")+'" data-name="'+name+'" data-list="new" onclick="toggleCheck(this)">'+
+        (done?'<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#3B6D11" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>':"")+
+      '</button>'+
+      '<div class="rot-info">'+
+        '<div class="rot-name'+(done?'" style="text-decoration:line-through;color:#aaa"':'"')+'>'+name+'</div>'+
+        '<div class="rot-meta"><span class="lp-tag lp-tag-'+lp+'">'+lp+'</span><span class="new-badge">Never met</span></div>'+
+      '</div>'+
+    '</div>';
+  }).join(""):"<div class='no-data' style='padding:.75rem'>All new agents have been contacted!</div>";
+
+  var handoffs=getHandoffList();
+  var handoffDone=handoffs.filter(function(h){return checked[h.name];}).length;
+  var handoffPct=handoffs.length?Math.round(handoffDone/handoffs.length*100):0;
+  var hbar=document.getElementById("handoff-prog");
+  hbar.style.width=handoffPct+"%";hbar.style.background=handoffPct===100?"#43A047":handoffPct>50?"#FB8C00":"#E53935";
+  document.getElementById("handoff-prog-txt").textContent=handoffDone+"/"+handoffs.length;
+
+  document.getElementById("handoff-list").innerHTML=handoffs.length?handoffs.map(function(h){
+    var done=!!checked[h.name];
+    var days=h.callDate?Math.floor((TODAY-new Date(h.callDate+"T12:00:00"))/86400000):0;
+    var urgTag=days>=5?'<span class="overdue-badge">Follow up now!</span>':'<span class="warm-badge">Called '+days+"d ago</span>";
+    return '<div class="rot-row">'+
+      '<button class="chk-btn'+(done?" checked":"")+'" data-name="'+h.name+'" data-list="handoff" onclick="toggleCheck(this)">'+
+        (done?'<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#3B6D11" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>':"")+
+      '</button>'+
+      '<div class="rot-info">'+
+        '<div class="rot-name'+(done?'" style="text-decoration:line-through;color:#aaa"':'"')+'>'+h.name+'</div>'+
+        '<div class="rot-meta"><span class="lp-tag lp-tag-'+(h.lp||"Unassigned")+'">'+( h.lp||"Unassigned")+'</span>'+ urgTag+'</div>'+
+      '</div>'+
+    '</div>';
+  }).join(""):"<div class='no-data' style='padding:.75rem'>No LP handoffs this week yet.</div>";
+}
+
+function toggleCheck(btn){
+  var name=btn.getAttribute("data-name");
+  document.getElementById("act-type").value="Active Check-in";
+  document.getElementById("agent-input").value=name;
+  document.getElementById("act-date").value=TODAY.toISOString().split("T")[0];
+  switchTab("log");
+}
+
+function renderGoals(){
+  var counts={};
+  activities.filter(function(a){return isThisWeek(a.act_date);}).forEach(function(a){counts[a.act_type]=(counts[a.act_type]||0)+1;});
+  var types=Object.keys(WEEKLY_GOALS);
+  document.getElementById("goals-bar").innerHTML=types.map(function(t){
+    var done=counts[t]||0,goal=WEEKLY_GOALS[t];
+    var pct=Math.min(100,Math.round(done/goal*100));
+    var col=pct>=100?"#43A047":pct>=60?"#FB8C00":"#E53935";
+    return '<div class="gc"><div class="glbl">'+(TYPE_ICONS[t]||"")+" "+t+'</div>'+
+      '<div class="gnum"><span class="gval" style="color:'+col+'">'+done+'</span><span class="ggoal">/ '+goal+'</span></div>'+
+      '<div class="gtrack"><div class="gfill" style="width:'+pct+'%;background:'+col+'"></div></div>'+
+      '<div class="gpct">'+(pct>=100?"100% ✓":pct+"% of goal")+'</div></div>';
+  }).join("");
+}
+
+function logActivity(){
+  var agent=document.getElementById("agent-input").value.trim();
+  var type=document.getElementById("act-type").value;
+  var date=document.getElementById("act-date").value;
+  var outcome=document.getElementById("act-outcome").value;
+  var followup=document.getElementById("act-followup").value||null;
+  var notes=document.getElementById("act-notes").value.trim();
+  if(!agent){alert("Please enter an agent name.");return;}
+  if(!date){alert("Please select a date.");return;}
+  setSyncStatus("saving");
+  sbFetch("POST","amanda_activities",{agent_name:agent,act_type:type,act_date:date,outcome:outcome,follow_up_date:followup,notes:notes})
+    .then(function(){
+      setSyncStatus("live");
+      document.getElementById("agent-input").value="";
+      document.getElementById("act-notes").value="";
+      document.getElementById("act-followup").value="";
+      document.getElementById("act-outcome").value="neutral";
+      var c=document.getElementById("log-confirm");c.style.display="inline";
+      setTimeout(function(){c.style.display="none";},2000);
+      return loadAll();
+    }).catch(function(e){setSyncStatus("error");alert("Error saving. Please try again.");});
+}
+
+function deleteActivity(id){
+  if(!confirm("Delete this activity?"))return;
+  setSyncStatus("saving");
+  sbFetch("DELETE","amanda_activities?id=eq."+id)
+    .then(function(){setSyncStatus("live");return loadAll();})
+    .catch(function(){setSyncStatus("error");});
+}
+
+function renderFeed(){
+  var q=document.getElementById("feed-q").value.toLowerCase();
+  var type=document.getElementById("feed-type").value;
+  var range=document.getElementById("feed-range").value;
+  var list=activities.filter(function(a){
+    if(q&&a.agent_name.toLowerCase().indexOf(q)<0)return false;
+    if(type&&a.act_type!==type)return false;
+    if(range==="week"&&!isThisWeek(a.act_date))return false;
+    if(range==="month"&&!isThisMonth(a.act_date))return false;
+    return true;
+  });
+  var el=document.getElementById("feed-list");
+  if(!list.length){el.innerHTML='<div class="no-data">No activities found.</div>';return;}
+  el.innerHTML=list.map(function(a){
+    var icon=TYPE_ICONS[a.act_type]||"📌";
+    var bg=TYPE_COLORS[a.act_type]||"#F5F5F5";
+    var isSpecial=SPECIAL_TYPES.indexOf(a.act_type)>=0;
+    var outcomeClass={positive:"op-positive",neutral:"op-neutral",followup:"op-followup"}[a.outcome]||"op-neutral";
+    var outcomeLabel={positive:"Positive",neutral:"Neutral",followup:"Needs follow-up"}[a.outcome]||a.outcome;
+    return '<div class="act-item">'+
+      '<div class="act-icon" style="background:'+bg+'">'+icon+'</div>'+
+      '<div class="act-body">'+
+        '<div class="act-top">'+
+          '<span class="act-agent">'+a.agent_name+'</span>'+
+          '<div style="display:flex;gap:4px;align-items:center">'+
+            '<span class="act-type" style="background:'+bg+';color:#333">'+a.act_type+'</span>'+
+            (isSpecial?'<span class="special-tag">Special</span>':"")+
+            '<button class="btn btn-sm btn-danger" onclick="deleteActivity('+a.id+')" style="padding:2px 6px;font-size:10px">&times;</button>'+
+          '</div>'+
+        '</div>'+
+        '<div class="act-meta"><span>'+fmtShort(a.act_date)+'</span><span class="opill '+outcomeClass+'">'+outcomeLabel+'</span>'+(a.follow_up_date?'<span class="futag">Follow-up: '+fmtShort(a.follow_up_date)+'</span>':"")+'</div>'+
+        (a.notes?'<div class="act-note">&ldquo;'+a.notes+'&rdquo;</div>':"")+
+      '</div>'+
+    '</div>';
+  }).join("");
+}
+
+function renderFollowups(){
+  var todayStr=TODAY.toISOString().split("T")[0];
+  var list=activities.filter(function(a){return a.follow_up_date&&a.follow_up_date>=todayStr;}).sort(function(a,b){return a.follow_up_date.localeCompare(b.follow_up_date);});
+  var el=document.getElementById("followup-list");
+  if(!list.length){el.innerHTML='<div class="no-data">No pending follow-ups!</div>';return;}
+  el.innerHTML=list.map(function(a){
+    var days=Math.ceil((new Date(a.follow_up_date+"T12:00:00")-TODAY)/86400000);
+    var urgency=days===0?"Today":days===1?"Tomorrow":"In "+days+"d";
+    var urgCol=days===0?"#C62828":days<=2?"#E65100":"#43A047";
+    return '<div class="fu-row">'+
+      '<div style="font-size:18px;width:32px;text-align:center">'+(TYPE_ICONS[a.act_type]||"📌")+'</div>'+
+      '<div style="flex:1">'+
+        '<div style="font-weight:600;font-size:13px">'+a.agent_name+'</div>'+
+        '<div style="font-size:11px;color:#888;margin-top:1px">'+a.act_type+" · "+fmtShort(a.act_date)+(a.notes?' · &ldquo;'+a.notes.substring(0,40)+(a.notes.length>40?"...":"")+'&rdquo;':"")+"</div>"+
+      '</div>'+
+      '<span style="font-size:12px;font-weight:700;color:'+urgCol+'">'+urgency+'</span>'+
+    '</div>';
+  }).join("");
+}
+
+function renderDanielView(){
+  document.getElementById("daniel-week-lbl").textContent=getWeekLabel(weekKey);
+  var counts={};
+  activities.filter(function(a){return isThisWeek(a.act_date);}).forEach(function(a){counts[a.act_type]=(counts[a.act_type]||0)+1;});
+  var types=Object.keys(WEEKLY_GOALS);
+  var total=0,goalTotal=0;
+  var sumHtml=types.map(function(t){
+    var done=counts[t]||0,goal=WEEKLY_GOALS[t];
+    var pct=Math.min(100,Math.round(done/goal*100));
+    var col=pct>=100?"#43A047":pct>=60?"#FB8C00":"#E53935";
+    total+=done;goalTotal+=goal;
+    return '<div class="drow"><span>'+(TYPE_ICONS[t]||"")+" "+t+'</span><span style="font-weight:600;color:'+col+'">'+done+"/"+goal+" ("+pct+"%)"+(pct>=100?" ✓":"")+'</span></div>';
+  }).join("");
+  document.getElementById("daniel-summary").innerHTML=sumHtml+
+    '<div style="margin-top:.75rem;background:#eee;border-radius:20px;height:7px;overflow:hidden"><div style="height:7px;border-radius:20px;background:'+(Math.round(total/goalTotal*100)>=100?"#43A047":Math.round(total/goalTotal*100)>=60?"#FB8C00":"#E53935")+';width:'+Math.min(100,Math.round(total/goalTotal*100))+'%"></div></div>'+
+    '<div style="font-size:12px;color:#888;margin-top:5px">Overall: '+Math.min(100,Math.round(total/goalTotal*100))+"% — "+total+" of "+goalTotal+" activities this week</div>";
+
+  var newAgents=getNewAgentRotation();
+  var handoffs=getHandoffList();
+  var checked=getCheckedThisWeek();
+  var newDone=newAgents.filter(function(n){return checked[n];}).length;
+  var handoffDone=handoffs.filter(function(h){return checked[h.name];}).length;
+  document.getElementById("daniel-rotation").innerHTML=
+    '<div class="drow"><span>New agents reached</span><span style="font-weight:600;color:'+(newDone>=newAgents.length?"#43A047":newDone>0?"#FB8C00":"#E53935")+'">'+newDone+"/"+newAgents.length+'</span></div>'+
+    '<div class="drow"><span>LP handoffs followed up</span><span style="font-weight:600;color:'+(handoffDone>=handoffs.length&&handoffs.length>0?"#43A047":handoffDone>0?"#FB8C00":"#E53935")+'">'+handoffDone+"/"+handoffs.length+'</span></div>';
+
+  renderDanielTable();
+}
+
+function renderDanielTable(){
+  var q=document.getElementById("daniel-q").value.toLowerCase();
+  var type=document.getElementById("daniel-type").value;
+  var list=activities.filter(function(a){
+    if(!isThisWeek(a.act_date))return false;
+    if(q&&a.agent_name.toLowerCase().indexOf(q)<0)return false;
+    if(type&&a.act_type!==type)return false;
+    return true;
+  });
+  var lp_map_local=LP_MAP;
+  var outcomeLabel=function(o){return{positive:"Positive",neutral:"Neutral",followup:"Needs follow-up"}[o]||o;};
+  var outcomeCol=function(o){return{positive:"color:#43A047",neutral:"color:#888",followup:"color:#E65100"}[o]||"";};
+  document.getElementById("daniel-tbody").innerHTML=list.map(function(a){
+    return '<tr><td style="font-weight:600">'+a.agent_name+'</td>'+
+      '<td><span class="lp-tag lp-tag-'+(lp_map_local[a.agent_name]||"Unassigned")+'">'+( lp_map_local[a.agent_name]||"Unassigned")+'</span></td>'+
+      '<td style="font-size:12px">'+(TYPE_ICONS[a.act_type]||"")+" "+a.act_type+'</td>'+
+      '<td style="font-size:12px;color:#888">'+ fmtShort(a.act_date)+'</td>'+
+      '<td style="font-size:12px;'+outcomeCol(a.outcome)+'">'+outcomeLabel(a.outcome)+'</td>'+
+      '<td style="font-size:11px;color:#555;font-style:italic">'+(a.notes?'&ldquo;'+a.notes.substring(0,50)+(a.notes.length>50?"...":"")+'&rdquo;':"--")+'</td></tr>';
+  }).join("")||'<tr><td colspan="6" style="text-align:center;color:#aaa;padding:1.5rem">No activity logged this week yet.</td></tr>';
+}
+
+function renderAll(){
+  renderGoals();
+  if(currentTab==="week")renderWeek();
+  else if(currentTab==="feed")renderFeed();
+  else if(currentTab==="followups")renderFollowups();
+  else if(currentTab==="daniel")renderDanielView();
+}
+
+function switchTab(t){
+  currentTab=t;
+  var tabs=["week","log","followups","feed","daniel"];
+  document.querySelectorAll(".tab").forEach(function(el,i){el.classList.toggle("active",tabs[i]===t);});
+  document.querySelectorAll(".view").forEach(function(el){el.classList.remove("active");});
+  document.getElementById("view-"+t).classList.add("active");
+  renderAll();
+}
+
+function showSuggestions(){
+  var val=document.getElementById("agent-input").value.toLowerCase();
+  var list=document.getElementById("autocomplete-list");
+  if(!val||val.length<2){list.style.display="none";return;}
+  var matches=AGENTS.filter(function(a){return a.toLowerCase().indexOf(val)>=0;}).slice(0,8);
+  if(!matches.length){list.style.display="none";return;}
+  list.innerHTML=matches.map(function(a){return'<div class="autocomplete-item" data-name="'+a+'" onmousedown="selectAgent(this)">'+a+'</div>';}).join("");
+  list.style.display="block";
+}
+function selectAgent(el){document.getElementById("agent-input").value=el.getAttribute("data-name");document.getElementById("autocomplete-list").style.display="none";}
+function hideSuggestions(){setTimeout(function(){document.getElementById("autocomplete-list").style.display="none";},200);}
+
+setInterval(function(){if(currentTab==="daniel")loadAll();},30000);
+document.getElementById("act-date").value=TODAY.toISOString().split("T")[0];
+document.getElementById("weekPill").textContent=getWeekLabel(weekKey);
+loadAll();
+</script>
+</body>
+</html>
