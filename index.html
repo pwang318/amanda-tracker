@@ -145,13 +145,13 @@ tr:hover td{background:#fafbfc}
         <label>Activity type</label>
         <select id="act-type">
           <optgroup label="New Relationships">
-            <option>Cold Call</option>
+            <option>Cold Calls</option>
             <option>Cold Outreach</option>
-            <option>First Meeting</option>
+            <option>New Realtor Meeting</option>
             <option>Office Visit</option>
           </optgroup>
           <optgroup label="Relationship Deepening">
-            <option>Break Bread</option>
+            <option>Break Breads</option>
             <option>Lunch &amp; Learn</option>
             <option>Event / Networking</option>
             <option>Value-Add Touch</option>
@@ -159,8 +159,7 @@ tr:hover td{background:#fafbfc}
           </optgroup>
           <optgroup label="Retention &amp; Referrals">
             <option>Active Check-in</option>
-            <option>Pipeline Update</option>
-            <option>Thank You</option>
+                        <option>Thank You</option>
             <option>Birthday / Milestone</option>
             <option>Realtor Buddy Referral Ask</option>
             <option>Text / Email Touch</option>
@@ -204,10 +203,10 @@ tr:hover td{background:#fafbfc}
   <div class="filter-bar">
     <input type="text" id="feed-q" placeholder="Search agent..." oninput="renderFeed()">
     <select id="feed-type" onchange="renderFeed()"><option value="">All types</option>
-      <option>Cold Call</option><option>Cold Outreach</option><option>First Meeting</option><option>Office Visit</option>
-      <option>Break Bread</option><option>Lunch &amp; Learn</option><option>Event / Networking</option>
+      <option>Cold Calls</option><option>Cold Outreach</option><option>New Realtor Meeting</option><option>Office Visit</option>
+      <option>Break Breads</option><option>Lunch &amp; Learn</option><option>Event / Networking</option>
       <option>Value-Add Touch</option><option>Marketing Support</option><option>Active Check-in</option>
-      <option>Pipeline Update</option><option>Thank You</option><option>Birthday / Milestone</option>
+      <option>Thank You</option><option>Birthday / Milestone</option>
       <option>Realtor Buddy Referral Ask</option><option>Text / Email Touch</option><option>Re-engagement</option>
       <option>Agent Appreciation</option><option>Business Planning Session</option><option>Co-Marketing Setup</option>
     </select>
@@ -222,15 +221,12 @@ tr:hover td{background:#fafbfc}
     <h3>Weekly summary <span style="font-size:11px;font-weight:400;color:#888" id="daniel-week-lbl"></span></h3>
     <div id="daniel-summary"></div>
   </div>
-  <div class="daniel-card">
-    <h3>Rotation progress</h3>
-    <div id="daniel-rotation"></div>
-  </div>
+
   <div class="section-head">All activity this week
     <div style="display:flex;gap:6px">
       <input type="text" id="daniel-q" placeholder="Search..." oninput="renderDanielTable()" style="font-size:12px;width:130px">
       <select id="daniel-type" onchange="renderDanielTable()" style="font-size:12px"><option value="">All types</option>
-        <option>Cold Call</option><option>First Meeting</option><option>Break Bread</option><option>Active Check-in</option><option>Realtor Buddy Referral Ask</option>
+        <option>Cold Calls</option><option>New Realtor Meeting</option><option>Break Breads</option><option>Active Check-in</option><option>Realtor Buddy Referral Ask</option>
       </select>
     </div>
   </div>
@@ -246,19 +242,19 @@ var LP_MAP = {"TIARA VILLATORO": "Karen", "BRANDON THOMPSON": "Osgood", "MEGAN L
 var TODAY = new Date(); TODAY.setHours(0,0,0,0);
 var CUTOFF_1WK = new Date(TODAY); CUTOFF_1WK.setDate(TODAY.getDate()-7);
 
-var WEEKLY_GOALS = {"Cold Call":25,"First Meeting":5,"Break Bread":5,"Active Check-in":10,"Realtor Buddy Referral Ask":3};
+var WEEKLY_GOALS = {"Cold Calls":25,"New Realtor Meeting":5,"Break Breads":5,"Active Check-in":10,"Realtor Buddy Referral Ask":3};
 var SPECIAL_TYPES = ["Agent Appreciation","Business Planning Session","Lunch & Learn","Co-Marketing Setup"];
 var TYPE_ICONS = {
-  "Cold Call":"📞","Cold Outreach":"✉️","First Meeting":"🤝","Office Visit":"🏢",
-  "Break Bread":"🍞","Lunch & Learn":"🎓","Event / Networking":"🎪","Value-Add Touch":"💡","Marketing Support":"📣",
-  "Active Check-in":"💬","Pipeline Update":"📊","Thank You":"🙏","Birthday / Milestone":"🎂",
+  "Cold Calls":"📞","Cold Outreach":"✉️","New Realtor Meeting":"🤝","Office Visit":"🏢",
+  "Break Breads":"🍞","Lunch & Learn":"🎓","Event / Networking":"🎪","Value-Add Touch":"💡","Marketing Support":"📣",
+  "Active Check-in":"💬","Thank You":"🙏","Birthday / Milestone":"🎂",
   "Realtor Buddy Referral Ask":"🌟","Text / Email Touch":"📱","Re-engagement":"🔄",
   "Agent Appreciation":"🏆","Business Planning Session":"📋","Co-Marketing Setup":"🤝"
 };
 var TYPE_COLORS = {
-  "Cold Call":"#E3F2FD","Cold Outreach":"#E3F2FD","First Meeting":"#E8F5E9","Office Visit":"#E8F5E9",
-  "Break Bread":"#FCE4EC","Lunch & Learn":"#F3E5F5","Event / Networking":"#EDE7F6","Value-Add Touch":"#FFF8E1","Marketing Support":"#FFF8E1",
-  "Active Check-in":"#FFF8E1","Pipeline Update":"#E8F5E9","Thank You":"#FCE4EC","Birthday / Milestone":"#FCE4EC",
+  "Cold Calls":"#E3F2FD","Cold Outreach":"#E3F2FD","New Realtor Meeting":"#E8F5E9","Office Visit":"#E8F5E9",
+  "Break Breads":"#FCE4EC","Lunch & Learn":"#F3E5F5","Event / Networking":"#EDE7F6","Value-Add Touch":"#FFF8E1","Marketing Support":"#FFF8E1",
+  "Active Check-in":"#FFF8E1","Thank You":"#FCE4EC","Birthday / Milestone":"#FCE4EC",
   "Realtor Buddy Referral Ask":"#FFF9C4","Text / Email Touch":"#F5F5F5","Re-engagement":"#FFEBEE",
   "Agent Appreciation":"#F3E5F5","Business Planning Session":"#EDE7F6","Co-Marketing Setup":"#E8F5E9"
 };
@@ -478,14 +474,7 @@ function renderDanielView(){
     '<div style="margin-top:.75rem;background:#eee;border-radius:20px;height:7px;overflow:hidden"><div style="height:7px;border-radius:20px;background:'+(Math.round(total/goalTotal*100)>=100?"#43A047":Math.round(total/goalTotal*100)>=60?"#FB8C00":"#E53935")+';width:'+Math.min(100,Math.round(total/goalTotal*100))+'%"></div></div>'+
     '<div style="font-size:12px;color:#888;margin-top:5px">Overall: '+Math.min(100,Math.round(total/goalTotal*100))+"% — "+total+" of "+goalTotal+" activities this week</div>";
 
-  var newAgents=getNewAgentRotation();
-  var handoffs=getHandoffList();
-  var checked=getCheckedThisWeek();
-  var newDone=newAgents.filter(function(n){return checked[n];}).length;
-  var handoffDone=handoffs.filter(function(h){return checked[h.name];}).length;
-  document.getElementById("daniel-rotation").innerHTML=
-    '<div class="drow"><span>New agents reached</span><span style="font-weight:600;color:'+(newDone>=newAgents.length?"#43A047":newDone>0?"#FB8C00":"#E53935")+'">'+newDone+"/"+newAgents.length+'</span></div>'+
-    '<div class="drow"><span>LP handoffs followed up</span><span style="font-weight:600;color:'+(handoffDone>=handoffs.length&&handoffs.length>0?"#43A047":handoffDone>0?"#FB8C00":"#E53935")+'">'+handoffDone+"/"+handoffs.length+'</span></div>';
+
 
   renderDanielTable();
 }
@@ -561,6 +550,19 @@ function hideSuggestions(){setTimeout(function(){document.getElementById("autoco
 
 setInterval(function(){if(currentTab==="daniel")loadAll();},30000);
 document.getElementById("act-date").value=TODAY.toISOString().split("T")[0];
+document.getElementById("act-type").addEventListener("change",function(){
+  var type=this.value,fuDate=new Date(TODAY),days=0;
+  if(type==="Cold Calls"||type==="Cold Outreach")days=3;
+  else if(type==="New Realtor Meeting"||type==="Office Visit")days=7;
+  else if(type==="Break Breads"||type==="Lunch & Learn")days=7;
+  else if(type==="Realtor Buddy Referral Ask")days=5;
+  else if(type==="Re-engagement")days=7;
+  else if(type==="Active Check-in")days=14;
+  else if(type==="Business Planning Session")days=30;
+  else if(type==="Agent Appreciation")days=90;
+  if(days>0){fuDate.setDate(fuDate.getDate()+days);document.getElementById("act-followup").value=fuDate.toISOString().split("T")[0];}
+  else document.getElementById("act-followup").value="";
+});
 document.getElementById("weekPill").textContent=getWeekLabel(weekKey);
 loadAll();
 </script>
