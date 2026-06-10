@@ -318,22 +318,18 @@ function sbFetch(method,path,body){
   return fetch(SB_URL+"/rest/v1/"+path,opts).then(function(r){if(!r.ok)return r.text().then(function(t){throw new Error(t);});return r.status===204?null:r.json();});
 }
 
-function loadAll(){
+function loadAll(retries){
+  retries=retries||0;
   setSyncStatus("saving");
-  return fetch(SB_URL+"/rest/v1/amanda_activities?select=*&order=act_date.desc,created_at.desc",{
-    method:"GET",
-    headers:{"apikey":SB_KEY,"Authorization":"Bearer "+SB_KEY,"Content-Type":"application/json"}
-  }).then(function(r){
-    if(!r.ok)return r.text().then(function(t){throw new Error(t);});
-    return r.json();
-  }).then(function(rows){
-    activities=rows||[];
-    setSyncStatus("live");
-    renderAll();
-  }).catch(function(e){
-    setSyncStatus("error");
-    console.log("Amanda loadAll error:",e.message||e);
-  });
+  return sbFetch("GET","amanda_activities?select=*&order=act_date.desc,created_at.desc")
+    .then(function(rows){
+      activities=rows||[];
+      setSyncStatus("live");
+      renderAll();
+    }).catch(function(e){
+      if(retries<3){setTimeout(function(){loadAll(retries+1);},2000);}
+      else{setSyncStatus("error");console.log("Error:",e.message||e);}
+    });
 }
 
 function getCheckedThisWeek(){
