@@ -320,12 +320,20 @@ function sbFetch(method,path,body){
 
 function loadAll(){
   setSyncStatus("saving");
-  return sbFetch("GET","amanda_activities?select=*&order=act_date.desc,created_at.desc")
-    .then(function(rows){
-      activities=rows||[];
-      setSyncStatus("live");
-      renderAll();
-    }).catch(function(e){setSyncStatus("error");console.log(e);});
+  return fetch(SB_URL+"/rest/v1/amanda_activities?select=*&order=act_date.desc,created_at.desc",{
+    method:"GET",
+    headers:{"apikey":SB_KEY,"Authorization":"Bearer "+SB_KEY,"Content-Type":"application/json"}
+  }).then(function(r){
+    if(!r.ok)return r.text().then(function(t){throw new Error(t);});
+    return r.json();
+  }).then(function(rows){
+    activities=rows||[];
+    setSyncStatus("live");
+    renderAll();
+  }).catch(function(e){
+    setSyncStatus("error");
+    console.log("Amanda loadAll error:",e.message||e);
+  });
 }
 
 function getCheckedThisWeek(){
