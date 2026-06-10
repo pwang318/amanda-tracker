@@ -379,19 +379,14 @@ function toggleCheck(btn){
 var prospects = [];
 
 function loadProspects(){
-  var saved = localStorage.getItem("amanda_prospects_v1");
-  if(saved){
-    try{
+  prospects = PROSPECTS_SEED.slice();
+  try{
+    var saved = localStorage.getItem("amanda_prospects_v1");
+    if(saved){
       var d = JSON.parse(saved);
-      prospects = d.added ? PROSPECTS_SEED.concat(d.added) : PROSPECTS_SEED.slice();
-      if(d.updates) d.updates.forEach(function(u){
-        var p = prospects.find(function(x){return x.name===u.name;});
-        if(p){p.notes=u.notes;p.fu_date=u.fu_date;p.outcome=u.outcome;}
-      });
-    }catch(e){prospects=PROSPECTS_SEED.slice();}
-  } else {
-    prospects = PROSPECTS_SEED.slice();
-  }
+      if(d.added&&d.added.length) prospects = prospects.concat(d.added);
+    }
+  }catch(e){}
 }
 
 function saveProspects(){
@@ -468,7 +463,7 @@ function renderPipeline(){
     var fuDate = null;
   if(fu){
     // Handle both YYYY-MM-DD and M/D/YYYY formats
-    if(fu.indexOf("/")>-1){var p=fu.split("/");fuDate=new Date(p[2],p[0]-1,p[1]);}
+    if(fu.indexOf("/")>-1){var pts=fu.split("/");fuDate=new Date(pts[2],pts[0]-1,pts[1]);}
     else fuDate=new Date(fu+"T12:00:00");
   }
   var fuDays = fuDate ? Math.ceil((fuDate-TODAY)/86400000) : null;
@@ -696,19 +691,14 @@ var PROSPECTS_SEED = [{"name": "Kate Baker", "brokerage": "Keller Williams", "ph
 var prospects = [];
 
 function loadProspects(){
-  var saved = localStorage.getItem("amanda_prospects_v1");
-  if(saved){
-    try{
+  prospects = PROSPECTS_SEED.slice();
+  try{
+    var saved = localStorage.getItem("amanda_prospects_v1");
+    if(saved){
       var d = JSON.parse(saved);
-      prospects = d.added ? PROSPECTS_SEED.concat(d.added) : PROSPECTS_SEED.slice();
-      if(d.updates) d.updates.forEach(function(u){
-        var p = prospects.find(function(x){return x.name===u.name;});
-        if(p){p.notes=u.notes;p.fu_date=u.fu_date;p.outcome=u.outcome;}
-      });
-    }catch(e){prospects=PROSPECTS_SEED.slice();}
-  } else {
-    prospects = PROSPECTS_SEED.slice();
-  }
+      if(d.added&&d.added.length) prospects = prospects.concat(d.added);
+    }
+  }catch(e){}
 }
 
 function saveProspects(){
@@ -785,7 +775,7 @@ function renderPipeline(){
     var fuDate = null;
   if(fu){
     // Handle both YYYY-MM-DD and M/D/YYYY formats
-    if(fu.indexOf("/")>-1){var p=fu.split("/");fuDate=new Date(p[2],p[0]-1,p[1]);}
+    if(fu.indexOf("/")>-1){var pts=fu.split("/");fuDate=new Date(pts[2],pts[0]-1,pts[1]);}
     else fuDate=new Date(fu+"T12:00:00");
   }
   var fuDays = fuDate ? Math.ceil((fuDate-TODAY)/86400000) : null;
