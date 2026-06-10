@@ -234,6 +234,34 @@ tr:hover td{background:#fafbfc}
   <div class="tbl-wrap"><table><thead><tr><th>Agent</th><th>LP</th><th>Type</th><th>Date</th><th>Outcome</th><th>Notes</th></tr></thead><tbody id="daniel-tbody"></tbody></table></div>
 </div>
 </div>
+<div id="view-pipeline" class="view">
+  <div id="pipeline-stats" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px;margin-bottom:.85rem"></div>
+  <div style="background:#fff;border:1px solid #dde1e7;border-radius:12px;padding:.9rem 1.1rem;margin-bottom:.85rem">
+    <div style="font-size:13px;font-weight:700;margin-bottom:.6rem">Add new prospect</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:7px">
+      <div class="field"><label>Name</label><input type="text" id="p-name" placeholder="Full name"></div>
+      <div class="field"><label>Brokerage</label><input type="text" id="p-brokerage" placeholder="Company name"></div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:7px">
+      <div class="field"><label>Phone</label><input type="text" id="p-phone" placeholder="(614) 555-5555"></div>
+      <div class="field"><label>Email</label><input type="text" id="p-email" placeholder="email@example.com"></div>
+      <div class="field"><label>Follow-up date</label><input type="date" id="p-fu"></div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:7px">
+      <div class="field"><label>Status</label><select id="p-outcome"><option value="followup">Requires follow-up</option><option value="positive">Positive</option><option value="later">Later follow-up</option><option value="dnc">Do Not Contact</option></select></div>
+    </div>
+    <div class="field" style="margin-bottom:9px"><label>Notes</label><textarea id="p-notes" placeholder="Details, referrals mentioned, next steps..."></textarea></div>
+    <button class="btn btn-primary" onclick="addProspect()">Add prospect</button>
+    <span id="prospect-confirm" style="font-size:12px;color:#43A047;margin-left:10px;display:none">Saved!</span>
+  </div>
+  <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:.75rem;align-items:center">
+    <input type="text" id="p-search" placeholder="Search name or brokerage..." oninput="renderPipeline()" style="flex:1;min-width:160px;font-size:12px;padding:5px 9px;border:1px solid #dde1e7;border-radius:8px">
+    <select id="p-filter" onchange="renderPipeline()" style="font-size:12px;padding:5px 9px;border:1px solid #dde1e7;border-radius:8px"><option value="">All statuses</option><option value="positive">Positive</option><option value="followup">Follow-up</option><option value="later">Later</option><option value="dnc">Do Not Contact</option></select>
+  </div>
+  <div id="pipeline-list"></div>
+</div>
+
+</div>
 
 <script>
 var SUPABASE_URL = "https://uclucbdkjqyqdvifyptx.supabase.co";
@@ -280,16 +308,12 @@ function sbFetch(method,path,body){
 
 function loadAll(){
   setSyncStatus("saving");
-  return Promise.all([
-    sbFetch("GET","amanda_activities?select=*&order=act_date.desc,created_at.desc"),
-    sbFetch("GET","call_logs?week_key=eq."+weekKey+"&select=*")
-  ]).then(function(res){
-    activities=res[0]||[];
-    lpCallLogs={};
-    if(res[1])res[1].forEach(function(r){lpCallLogs[r.agent_name]=r;});
-    setSyncStatus("live");
-    renderAll();
-  }).catch(function(e){setSyncStatus("error");console.log(e);});
+  return sbFetch("GET","amanda_activities?select=*&order=act_date.desc,created_at.desc")
+    .then(function(rows){
+      activities=rows||[];
+      setSyncStatus("live");
+      renderAll();
+    }).catch(function(e){setSyncStatus("error");console.log(e);});
 }
 
 function getCheckedThisWeek(){
@@ -441,9 +465,16 @@ function renderPipeline(){
     var oc = (outcomeColors[p.outcome]||"#F5F5F5,#555").split(",");
     var ol = outcomeLabels[p.outcome]||p.outcome;
     var fu = p.fu_date;
-    var fuDays = fu ? Math.ceil((new Date(fu+"T12:00:00")-TODAY)/86400000) : null;
+    var fuDate = null;
+  if(fu){
+    // Handle both YYYY-MM-DD and M/D/YYYY formats
+    if(fu.indexOf("/")>-1){var p=fu.split("/");fuDate=new Date(p[2],p[0]-1,p[1]);}
+    else fuDate=new Date(fu+"T12:00:00");
+  }
+  var fuDays = fuDate ? Math.ceil((fuDate-TODAY)/86400000) : null;
+  var fuStr = fuDate ? fuDate.toLocaleDateString("en-US",{month:"short",day:"numeric"}) : null;
     var fuTag = fu ? (fuDays<=0?'<span style="background:#FFEBEE;color:#C62828;font-size:10px;padding:2px 7px;border-radius:20px;font-weight:600">'+(fuDays===0?"Due today":"Overdue "+(Math.abs(fuDays))+"d")+"</span>":
-      '<span style="background:#EDE7F6;color:#4527A0;font-size:10px;padding:2px 7px;border-radius:20px;font-weight:600">FU: '+new Date(fu+"T12:00:00").toLocaleDateString("en-US",{month:"short",day:"numeric"})+"</span>") : "";
+      '<span style="background:#EDE7F6;color:#4527A0;font-size:10px;padding:2px 7px;border-radius:20px;font-weight:600">FU: '+fuStr+"</span>") : "";
     return '<div style="background:#fff;border:1px solid #dde1e7;border-radius:12px;margin-bottom:7px;overflow:hidden">'+
       '<div style="padding:.75rem 1rem;display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:6px">'+
         '<div>'+
@@ -751,9 +782,16 @@ function renderPipeline(){
     var oc = (outcomeColors[p.outcome]||"#F5F5F5,#555").split(",");
     var ol = outcomeLabels[p.outcome]||p.outcome;
     var fu = p.fu_date;
-    var fuDays = fu ? Math.ceil((new Date(fu+"T12:00:00")-TODAY)/86400000) : null;
+    var fuDate = null;
+  if(fu){
+    // Handle both YYYY-MM-DD and M/D/YYYY formats
+    if(fu.indexOf("/")>-1){var p=fu.split("/");fuDate=new Date(p[2],p[0]-1,p[1]);}
+    else fuDate=new Date(fu+"T12:00:00");
+  }
+  var fuDays = fuDate ? Math.ceil((fuDate-TODAY)/86400000) : null;
+  var fuStr = fuDate ? fuDate.toLocaleDateString("en-US",{month:"short",day:"numeric"}) : null;
     var fuTag = fu ? (fuDays<=0?'<span style="background:#FFEBEE;color:#C62828;font-size:10px;padding:2px 7px;border-radius:20px;font-weight:600">'+(fuDays===0?"Due today":"Overdue "+(Math.abs(fuDays))+"d")+"</span>":
-      '<span style="background:#EDE7F6;color:#4527A0;font-size:10px;padding:2px 7px;border-radius:20px;font-weight:600">FU: '+new Date(fu+"T12:00:00").toLocaleDateString("en-US",{month:"short",day:"numeric"})+"</span>") : "";
+      '<span style="background:#EDE7F6;color:#4527A0;font-size:10px;padding:2px 7px;border-radius:20px;font-weight:600">FU: '+fuStr+"</span>") : "";
     return '<div style="background:#fff;border:1px solid #dde1e7;border-radius:12px;margin-bottom:7px;overflow:hidden">'+
       '<div style="padding:.75rem 1rem;display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:6px">'+
         '<div>'+
