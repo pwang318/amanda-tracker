@@ -3,94 +3,173 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Amanda - Relationship Manager Tracker</title>
+<title>Amanda | Relationship Manager Tracker</title>
 <style>
-*{box-sizing:border-box;margin:0;padding:0}
-body{font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif;color:#1a1a1a;font-size:14px;background:#f0f2f5;min-height:100vh}
-.app{max-width:920px;margin:0 auto;padding:1rem 1rem 3rem}
-.header{padding:.9rem 0 .6rem;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;border-bottom:1px solid #dde1e7;margin-bottom:.75rem}
-.brand{display:flex;align-items:center;gap:10px}
-.brand-logo{background:#7B1FA2;color:#fff;font-weight:700;font-size:13px;padding:6px 13px;border-radius:8px;letter-spacing:.05em}
-.brand-sub{font-size:12px;color:#666}
-.week-pill{font-size:11px;background:#e8eaf0;padding:4px 11px;border-radius:20px;color:#555}
-.sync{display:flex;align-items:center;gap:4px;font-size:11px;color:#888}
-.sync-dot{width:7px;height:7px;border-radius:50%;background:#ccc}
-.sync-dot.live{background:#43A047}.sync-dot.saving{background:#FB8C00}.sync-dot.error{background:#E53935}
-.tabs{display:flex;gap:0;border-bottom:1px solid #dde1e7;margin-bottom:.85rem;flex-wrap:wrap}
-.tab{padding:8px 15px;cursor:pointer;font-size:13px;font-weight:500;color:#888;border-bottom:2px solid transparent;margin-bottom:-1px}
-.tab.active{color:#7B1FA2;border-bottom-color:#7B1FA2}
-.tab:hover:not(.active){color:#555}
-.view{display:none}.view.active{display:block}
-.gbar{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:7px;margin-bottom:.85rem}
-.gc{background:#fff;border:1px solid #dde1e7;border-radius:10px;padding:.65rem .8rem}
-.glbl{font-size:10px;color:#888;font-weight:500;text-transform:uppercase;letter-spacing:.03em;margin-bottom:3px}
-.gnum{display:flex;align-items:baseline;gap:3px}
-.gval{font-size:19px;font-weight:700}
-.ggoal{font-size:11px;color:#888}
-.gtrack{background:#eee;border-radius:20px;height:3px;margin-top:5px;overflow:hidden}
-.gfill{height:3px;border-radius:20px}
-.gpct{font-size:10px;color:#888;margin-top:2px}
-.log-form{background:#fff;border:1px solid #dde1e7;border-radius:12px;padding:1rem 1.25rem;margin-bottom:.85rem}
-.log-form h3{font-size:14px;font-weight:700;margin-bottom:.75rem}
-.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:9px}
-.form-grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:9px}
-.field{display:flex;flex-direction:column;gap:3px}
-.field label{font-size:11px;color:#888;font-weight:500}
-input[type=text],input[type=date],select,textarea{padding:7px 10px;border:1px solid #dde1e7;border-radius:8px;font-size:13px;color:#1a1a1a;background:#fff;font-family:inherit;width:100%}
-textarea{resize:none;height:60px}
-.btn{border:1.5px solid #dde1e7;background:#fff;border-radius:8px;padding:7px 16px;cursor:pointer;font-size:13px;color:#333;font-weight:500;font-family:inherit}
-.btn:hover{background:#f5f6fa}
-.btn-primary{background:#7B1FA2;color:#fff;border-color:#7B1FA2}
-.btn-primary:hover{background:#6A1B9A}
-.btn-danger{background:#FFEBEE;color:#C62828;border-color:#EF9A9A}
-.btn-sm{padding:3px 9px;font-size:12px}
-.act-item{background:#fff;border:1px solid #dde1e7;border-radius:12px;padding:.85rem 1rem;margin-bottom:7px;display:flex;gap:10px}
-.act-icon{width:36px;height:36px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
-.act-body{flex:1;min-width:0}
-.act-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:3px;flex-wrap:wrap;gap:4px}
-.act-agent{font-weight:700;font-size:13px}
-.act-type{font-size:10px;font-weight:700;padding:2px 7px;border-radius:20px}
-.act-meta{font-size:11px;color:#888;display:flex;gap:6px;flex-wrap:wrap;margin-bottom:3px;align-items:center}
-.act-note{font-size:12px;color:#555;font-style:italic}
-.opill{font-size:10px;padding:1px 6px;border-radius:20px;font-weight:600}
-.op-positive{background:#EAF3DE;color:#3B6D11}
-.op-scheduled{background:#E3F2FD;color:#1565C0}
-.op-followup{background:#FFF8E1;color:#E65100}
-.futag{background:#EDE7F6;color:#4527A0;font-size:10px;padding:1px 6px;border-radius:20px;font-weight:600}
-.special-tag{background:#F3E5F5;color:#6A1B9A;font-size:10px;padding:1px 6px;border-radius:20px;font-weight:600}
-.no-data{text-align:center;padding:2.5rem;color:#aaa;font-size:13px}
-.tbl-wrap{max-height:380px;overflow-y:auto;border:1px solid #dde1e7;border-radius:12px}
-table{width:100%;border-collapse:collapse;font-size:13px}
-th{text-align:left;padding:8px 10px;font-weight:700;font-size:11px;color:#888;border-bottom:1px solid #e8eaf0;background:#f8f9fc;position:sticky;top:0;z-index:2;text-transform:uppercase;letter-spacing:.04em}
-td{padding:8px 10px;border-bottom:1px solid #f0f2f5;vertical-align:middle}
-tr:last-child td{border-bottom:none}
-tr:hover td{background:#fafbfc}
-.section-head{font-size:11px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.06em;margin:1rem 0 .5rem;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px}
-.filter-bar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:.75rem;align-items:center}
-.filter-bar input,.filter-bar select{font-size:12px;padding:5px 9px;border:1px solid #dde1e7;border-radius:8px;background:#fff;color:#1a1a1a}
-.daniel-card{background:#fff;border:1px solid #dde1e7;border-radius:12px;padding:1rem 1.25rem;margin-bottom:.85rem}
-.daniel-card h3{font-size:14px;font-weight:700;margin-bottom:.75rem}
-.drow{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #f0f2f5;font-size:13px}
-.drow:last-child{border-bottom:none}
-.autocomplete-wrap{position:relative}
-.autocomplete-list{position:absolute;top:100%;left:0;right:0;background:#fff;border:1px solid #dde1e7;border-radius:8px;max-height:180px;overflow-y:auto;z-index:50;box-shadow:0 4px 12px rgba(0,0,0,.08)}
-.autocomplete-item{padding:8px 10px;cursor:pointer;font-size:13px}
-.autocomplete-item:hover{background:#f5f6fa}
-.fu-row{background:#fff;border:1px solid #dde1e7;border-radius:10px;padding:.75rem 1rem;margin-bottom:7px;display:flex;align-items:center;gap:10px}
-.badge-a{background:#C6EFCE;color:#1B5E20;font-size:10px;font-weight:700;padding:1px 6px;border-radius:20px;display:inline-block}
-.badge-b{background:#BBDEFB;color:#0D47A1;font-size:10px;font-weight:700;padding:1px 6px;border-radius:20px;display:inline-block}
-.badge-c{background:#EEE;color:#424242;font-size:10px;font-weight:700;padding:1px 6px;border-radius:20px;display:inline-block}
-.lp-tag{display:inline-block;padding:1px 6px;border-radius:20px;font-size:10px;font-weight:600}
-.lp-tag-Gavin{background:#E8F5E9;color:#2E7D32}.lp-tag-Karen{background:#E3F2FD;color:#1565C0}
-.lp-tag-Osgood{background:#FFF8E1;color:#E65100}.lp-tag-Jordan{background:#FCE4EC;color:#880E4F}
-.lp-tag-Said{background:#EDE7F6;color:#4527A0}.lp-tag-Unassigned{background:#EEE;color:#555}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#F4F5F7;color:#1a1a2e;min-height:100vh}
+
+  /* HEADER */
+  .header{background:#2D1B69;padding:14px 24px;display:flex;justify-content:space-between;align-items:center}
+  .brand{display:flex;align-items:center;gap:10px}
+  .brand-logo{background:#fff;color:#2D1B69;font-weight:800;font-size:13px;padding:5px 10px;border-radius:6px;letter-spacing:1px}
+  .brand-sub{color:rgba(255,255,255,0.75);font-size:13px}
+  .header-right{display:flex;align-items:center;gap:10px}
+  .week-pill{background:rgba(255,255,255,0.15);color:#fff;font-size:12px;padding:4px 10px;border-radius:20px}
+  .sync{display:flex;align-items:center;gap:6px;font-size:12px;color:rgba(255,255,255,0.7)}
+  .sync-dot{width:7px;height:7px;border-radius:50%;background:#888}
+  .sync-dot.ok{background:#4CAF50}
+  .sync-dot.err{background:#f44336}
+
+  /* TABS */
+  .tabs{background:#fff;border-bottom:2px solid #eee;display:flex;padding:0 24px;overflow-x:auto}
+  .tab{padding:14px 18px;font-size:14px;font-weight:500;color:#888;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-2px;white-space:nowrap;transition:color .2s}
+  .tab:hover{color:#2D1B69}
+  .tab.active{color:#2D1B69;border-bottom-color:#2D1B69;font-weight:600}
+
+  /* VIEWS */
+  .view{display:none;padding:24px;max-width:900px;margin:0 auto}
+  .view.active{display:block}
+
+  /* CARDS */
+  .card{background:#fff;border-radius:12px;padding:24px;margin-bottom:16px;box-shadow:0 1px 4px rgba(0,0,0,0.07)}
+  .card h3{font-size:16px;font-weight:600;margin-bottom:16px;color:#2D1B69}
+
+  /* GOALS BAR */
+  .goals-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:20px}
+  .goal-card{background:#fff;border-radius:10px;padding:16px;box-shadow:0 1px 4px rgba(0,0,0,0.07)}
+  .goal-label{font-size:11px;color:#888;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px}
+  .goal-nums{font-size:22px;font-weight:700;color:#2D1B69}
+  .goal-sub{font-size:11px;color:#aaa;margin-top:2px}
+  .prog-track{background:#eee;border-radius:20px;height:6px;margin-top:8px;overflow:hidden}
+  .prog-fill{height:6px;border-radius:20px;background:#2D1B69;transition:width .5s}
+  .prog-fill.green{background:#4CAF50}
+  .prog-fill.orange{background:#FF9800}
+
+  /* REMINDER BANNER */
+  .reminder-banner{background:#FFF8E1;border:1px solid #FFE082;border-radius:10px;padding:12px 16px;margin-bottom:16px;font-size:13px;color:#7B6000;display:none}
+  .reminder-banner.show{display:flex;align-items:center;gap:8px}
+
+  /* LOG FORM */
+  .log-form h3{font-size:16px;font-weight:600;margin-bottom:20px;color:#2D1B69}
+  .form-row{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px}
+  .form-row.three{grid-template-columns:1fr 1fr 1fr}
+  .form-row.one{grid-template-columns:1fr}
+  .field{display:flex;flex-direction:column;gap:6px}
+  .field label{font-size:12px;font-weight:600;color:#555;text-transform:uppercase;letter-spacing:.4px}
+  .field input,.field select,.field textarea{border:1.5px solid #ddd;border-radius:8px;padding:10px 12px;font-size:14px;font-family:inherit;color:#333;background:#fff;transition:border .2s;width:100%}
+  .field input:focus,.field select:focus,.field textarea:focus{outline:none;border-color:#2D1B69}
+  .field textarea{resize:vertical;min-height:80px}
+  .followup-row{display:none}
+  .followup-row.show{display:grid}
+
+  /* AUTOCOMPLETE */
+  .autocomplete-wrap{position:relative}
+  .autocomplete-list{position:absolute;top:100%;left:0;right:0;background:#fff;border:1.5px solid #ddd;border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,0.12);z-index:100;max-height:200px;overflow-y:auto;display:none}
+  .autocomplete-list.open{display:block}
+  .ac-item{padding:10px 12px;font-size:14px;cursor:pointer;border-bottom:1px solid #f5f5f5}
+  .ac-item:hover{background:#f5f0ff}
+  .ac-item:last-child{border-bottom:none}
+
+  /* BUTTONS */
+  .btn-primary{background:#2D1B69;color:#fff;border:none;padding:12px 28px;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;transition:background .2s}
+  .btn-primary:hover{background:#3d2a85}
+  .btn-primary:disabled{background:#aaa;cursor:not-allowed}
+
+  /* SUCCESS / ERROR */
+  .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#333;color:#fff;padding:12px 24px;border-radius:8px;font-size:14px;z-index:999;opacity:0;transition:opacity .3s;pointer-events:none}
+  .toast.show{opacity:1}
+  .toast.success{background:#2E7D32}
+  .toast.error{background:#C62828}
+
+  /* FOLLOW-UPS */
+  .followup-item{display:flex;align-items:center;gap:12px;padding:12px;border-bottom:1px solid #f5f5f5}
+  .followup-item:last-child{border-bottom:none}
+  .fu-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+  .fu-dot.overdue{background:#f44336}
+  .fu-dot.today{background:#FF9800}
+  .fu-dot.soon{background:#2D1B69}
+  .fu-info{flex:1}
+  .fu-name{font-size:14px;font-weight:600}
+  .fu-meta{font-size:12px;color:#888;margin-top:2px}
+  .fu-date{font-size:12px;font-weight:600}
+  .fu-date.overdue{color:#f44336}
+  .fu-date.today{color:#FF9800}
+
+  /* FEED */
+  .feed-filters{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px}
+  .feed-filter{background:#eee;color:#555;border:none;padding:6px 14px;border-radius:20px;font-size:13px;cursor:pointer;transition:all .2s}
+  .feed-filter.active{background:#2D1B69;color:#fff}
+  .feed-item{padding:14px;border-bottom:1px solid #f5f5f5}
+  .feed-item:last-child{border-bottom:none}
+  .feed-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:4px}
+  .feed-agent{font-size:14px;font-weight:600}
+  .feed-date{font-size:12px;color:#aaa}
+  .feed-type{display:inline-block;background:#f0ecff;color:#2D1B69;font-size:11px;font-weight:600;padding:2px 8px;border-radius:20px;margin-bottom:4px}
+  .feed-outcome{font-size:12px;color:#888}
+  .feed-notes{font-size:13px;color:#555;margin-top:4px;font-style:italic}
+  .no-data{text-align:center;color:#aaa;padding:32px;font-size:14px}
+
+  /* DANIEL'S VIEW */
+  .daniel-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px}
+  .stat-card{background:#fff;border-radius:10px;padding:20px;box-shadow:0 1px 4px rgba(0,0,0,0.07);text-align:center}
+  .stat-num{font-size:36px;font-weight:800;color:#2D1B69}
+  .stat-label{font-size:12px;color:#888;margin-top:4px}
+  .activity-table{width:100%;border-collapse:collapse;font-size:13px}
+  .activity-table th{background:#f5f5f5;padding:10px 12px;text-align:left;font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:.4px;color:#888}
+  .activity-table td{padding:10px 12px;border-bottom:1px solid #f5f5f5}
+  .activity-table tr:last-child td{border-bottom:none}
+
+  /* AGENT HISTORY */
+  .agent-profile-card{background:#f5f0ff;border:1.5px solid #c5b0ff;border-radius:10px;padding:18px;margin-bottom:16px}
+  .ap-name{font-size:18px;font-weight:700;color:#2D1B69;margin-bottom:10px}
+  .ap-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+  .ap-row{font-size:13px;color:#555}
+  .ap-row span{font-weight:600;color:#333}
+
+  /* PIPELINE */
+  .pipeline-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px}
+  .ps-card{background:#fff;border-radius:10px;padding:14px;text-align:center;box-shadow:0 1px 4px rgba(0,0,0,0.07)}
+  .ps-num{font-size:24px;font-weight:800;color:#2D1B69}
+  .ps-label{font-size:11px;color:#aaa;margin-top:2px}
+  .prospect-card{border:1.5px solid #eee;border-radius:10px;padding:16px;margin-bottom:10px;background:#fff}
+  .prospect-card.dnc{border-color:#ffcdd2;background:#fff8f8}
+  .prospect-card.positive{border-color:#c8e6c9}
+  .pc-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px}
+  .pc-name{font-size:15px;font-weight:700}
+  .pc-brokerage{font-size:12px;color:#888;margin-top:2px}
+  .pc-status{font-size:11px;font-weight:700;padding:3px 9px;border-radius:20px}
+  .pc-status.active{background:#e8eaf6;color:#2D1B69}
+  .pc-status.positive{background:#e8f5e9;color:#2E7D32}
+  .pc-status.followup{background:#fff3e0;color:#E65100}
+  .pc-status.dnc{background:#ffebee;color:#c62828}
+  .pc-status.later{background:#f5f5f5;color:#777}
+  .pc-contact{font-size:12px;color:#666;margin:6px 0;display:flex;gap:16px;flex-wrap:wrap}
+  .pc-notes{font-size:13px;color:#555;font-style:italic;margin-top:6px;padding-top:6px;border-top:1px solid #f5f5f5}
+  .pc-fudate{font-size:12px;font-weight:600;color:#E65100;margin-top:4px}
+  .pc-fudate.overdue{color:#c62828}
+  .pc-actions{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
+  .btn-sm{background:#f5f5f5;border:none;padding:6px 12px;border-radius:6px;font-size:12px;cursor:pointer;font-weight:500}
+  .btn-sm:hover{background:#ebe5ff;color:#2D1B69}
+  .btn-sm.dnc{background:#ffebee;color:#c62828}
+  .add-prospect-form{background:#f8f6ff;border:1.5px dashed #c5b0ff;border-radius:10px;padding:20px;margin-bottom:16px}
+  .add-prospect-form h4{font-size:14px;font-weight:600;color:#2D1B69;margin-bottom:14px}
+
+  @media(max-width:600px){
+    .form-row,.form-row.three,.daniel-grid{grid-template-columns:1fr}
+    .view{padding:16px}
+    #weekBottomGrid{grid-template-columns:1fr !important}
+    .pipeline-stats{grid-template-columns:1fr 1fr}
+  }
 </style>
 </head>
 <body>
-<div class="app">
+
 <div class="header">
-  <div class="brand"><div class="brand-logo">AMANDA</div><div class="brand-sub">Relationship Manager Tracker</div></div>
-  <div style="display:flex;gap:8px;align-items:center">
+  <div class="brand">
+    <div class="brand-logo">AMANDA</div>
+    <div class="brand-sub">Relationship Manager Tracker</div>
+  </div>
+  <div class="header-right">
     <span class="week-pill" id="weekPill"></span>
     <div class="sync"><span class="sync-dot" id="syncDot"></span><span id="syncTxt">Connecting...</span></div>
   </div>
@@ -101,544 +180,1032 @@ tr:hover td{background:#fafbfc}
   <div class="tab" onclick="switchTab('log')">Log Activity</div>
   <div class="tab" onclick="switchTab('followups')">Follow-ups</div>
   <div class="tab" onclick="switchTab('feed')">Activity Feed</div>
+  <div class="tab" onclick="switchTab('history')">Agent History</div>
+  <div class="tab" onclick="switchTab('pipeline')">Outreach Pipeline</div>
   <div class="tab" onclick="switchTab('daniel')">Daniel's View</div>
-  <div class="tab" onclick="switchTab('pipeline')" style="color:#E65100;border-bottom-color:#E65100">Outreach Pipeline</div>
-  <div class="tab" onclick="switchTab('agenthistory')">Agent History</div>
 </div>
 
 <!-- MY WEEK TAB -->
 <div id="view-week" class="view active">
-  <div id="never-logged-alert" style="display:none;background:#FFEBEE;border:1px solid #EF9A9A;border-radius:8px;padding:9px 12px;font-size:12px;color:#C62828;margin-bottom:.75rem;font-weight:500">&#9888; You have not logged any activity in 3+ days. Daniel can see this. Time to log!</div>
-  <div id="quarterly-alert" style="display:none;background:#F3E5F5;border:1px solid #CE93D8;border-radius:8px;padding:9px 12px;font-size:12px;color:#6A1B9A;margin-bottom:.75rem;font-weight:500"></div>
-  <div class="gbar" id="goals-bar"></div>
+  <div id="reminderBanner" class="reminder-banner">
+    <span>📅</span><span id="reminderText"></span>
+  </div>
+
+  <!-- WEEKLY GOAL BARS -->
+  <div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+      <h3 style="margin:0">This Week</h3>
+      <span style="font-size:12px;color:#aaa" id="weekLabel2"></span>
+    </div>
+    <div id="weekGoalBars"><div class="no-data">Loading...</div></div>
+  </div>
+
+  <!-- MTD / YTD SCORECARD -->
+  <div class="card">
+    <div style="display:flex;gap:8px;margin-bottom:16px">
+      <button class="feed-filter active" id="btn-mtd" onclick="showPeriod('mtd')">Month to Date</button>
+      <button class="feed-filter" id="btn-ytd" onclick="showPeriod('ytd')">Year to Date</button>
+    </div>
+    <div id="periodScorecard"><div class="no-data">Loading...</div></div>
+  </div>
+
+  <!-- FOLLOW-UPS DUE + RECENT ACTIVITY side by side -->
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px" id="weekBottomGrid">
+    <div class="card" style="margin-bottom:0">
+      <h3>Follow-ups Due</h3>
+      <div id="weekFollowups"><div class="no-data">Loading...</div></div>
+    </div>
+    <div class="card" style="margin-bottom:0">
+      <h3>Last 5 Logged</h3>
+      <div id="weekRecent"><div class="no-data">Loading...</div></div>
+    </div>
+  </div>
 </div>
 
 <!-- LOG ACTIVITY TAB -->
 <div id="view-log" class="view">
-  <div class="log-form">
-    <h3>Log an activity</h3>
-    <div class="form-grid">
-      <div class="field">
-        <label>Agent name</label>
-        <div class="autocomplete-wrap">
-          <input type="text" id="agent-input" placeholder="Start typing agent name..." oninput="showSuggestions()" onblur="hideSuggestions()" autocomplete="off">
-          <div class="autocomplete-list" id="autocomplete-list" style="display:none"></div>
+  <div class="card">
+    <div class="log-form">
+      <h3>Log an activity</h3>
+      <div class="form-row">
+        <div class="field">
+          <label>Agent name</label>
+          <div class="autocomplete-wrap">
+            <input type="text" id="agentInput" placeholder="Start typing agent name..." autocomplete="off">
+            <div class="autocomplete-list" id="acList"></div>
+          </div>
+        </div>
+        <div class="field">
+          <label>Activity type</label>
+          <select id="activityType">
+            <optgroup label="New Relationships">
+              <option>Cold Calls</option>
+              <option>New Realtor Meeting</option>
+              <option>Open House Visit</option>
+            </optgroup>
+            <optgroup label="Relationship Deepening">
+              <option>Coffee Meeting</option>
+              <option>Lunch or Dinner</option>
+              <option>Break Breads</option>
+              <option>Pop-By</option>
+              <option>Market Update Call</option>
+              <option>Sent Market Report</option>
+              <option>Sent Referral</option>
+              <option>Co-hosted Event</option>
+            </optgroup>
+            <optgroup label="Retention and Referrals">
+              <option>Check-In Call</option>
+              <option>Closed Deal Thank You</option>
+              <option>Birthday Outreach</option>
+              <option>Holiday Outreach</option>
+              <option>Agent Appreciation</option>
+            </optgroup>
+            <optgroup label="Special Programs">
+              <option>Business Planning Session</option>
+              <option>Co-Marketing Discussion</option>
+              <option>Team Presentation</option>
+              <option>Recruiting Conversation</option>
+            </optgroup>
+          </select>
         </div>
       </div>
-      <div class="field">
-        <label>Activity type</label>
-        <select id="act-type">
-          <optgroup label="New Relationships">
-            <option>Cold Calls</option>
-            <option>New Realtor Meeting</option>
-            <option>Office Visit</option>
-          </optgroup>
-          <optgroup label="Relationship Deepening">
-            <option>Break Breads</option>
-            <option>Lunch &amp; Learn</option>
-            <option>Event / Networking</option>
-            <option>Value-Add Touch</option>
-            <option>Marketing Support</option>
-          </optgroup>
-          <optgroup label="Retention &amp; Referrals">
-            <option>Active Check-in</option>
-            <option>Thank You</option>
-            <option>Birthday / Milestone</option>
-            <option>Realtor Buddy Referral Ask</option>
-            <option>Text / Email Touch</option>
-            <option>Re-engagement</option>
-          </optgroup>
-          <optgroup label="Special Programs">
-            <option>Agent Appreciation</option>
-            <option>Business Planning Session</option>
-            <option>Co-Marketing Setup</option>
-          </optgroup>
-        </select>
+      <div class="form-row three">
+        <div class="field">
+          <label>Date</label>
+          <input type="date" id="activityDate">
+        </div>
+        <div class="field">
+          <label>Outcome</label>
+          <select id="activityOutcome">
+            <option value="">Select outcome...</option>
+            <option>Positive</option>
+            <option>Meeting Scheduled</option>
+            <option>Requires follow-up</option>
+            <option>Remove / No Further Contact</option>
+          </select>
+        </div>
+        <div class="field followup-row" id="followupRow">
+          <label>Follow-up date</label>
+          <input type="date" id="followupDate">
+        </div>
       </div>
-    </div>
-    <div class="form-grid-3">
-      <div class="field"><label>Date</label><input type="date" id="act-date"></div>
-      <div class="field"><label>Outcome</label>
-        <select id="act-outcome">
-          <option value="positive">Positive</option>
-          <option value="scheduled">Meeting Scheduled</option>
-          <option value="followup" selected>Requires follow-up</option>
-        </select>
+      <div class="form-row one">
+        <div class="field">
+          <label>Notes</label>
+          <textarea id="activityNotes" placeholder="Details, referrals mentioned, next steps..."></textarea>
+        </div>
       </div>
-      <div class="field"><label>Follow-up date</label><input type="date" id="act-followup"></div>
+      <button class="btn-primary" id="logBtn" onclick="logActivity()">Log activity</button>
     </div>
-    <div class="field" style="margin-bottom:10px">
-      <label>Notes</label>
-      <textarea id="act-notes" placeholder="Details, referrals mentioned, next steps..."></textarea>
-    </div>
-    <button class="btn btn-primary" onclick="logActivity()">Log activity</button>
-    <span id="log-confirm" style="font-size:12px;color:#43A047;margin-left:10px;display:none">Saved!</span>
   </div>
 </div>
 
 <!-- FOLLOW-UPS TAB -->
 <div id="view-followups" class="view">
-  <div class="section-head">Pending follow-ups <span style="font-size:11px;font-weight:400;text-transform:none;color:#aaa">sorted by due date</span></div>
-  <div id="followup-list"></div>
+  <div class="card">
+    <h3>Upcoming Follow-ups</h3>
+    <div id="followupsList"><div class="no-data">Loading...</div></div>
+  </div>
 </div>
 
-<!-- FEED TAB -->
+<!-- ACTIVITY FEED TAB -->
 <div id="view-feed" class="view">
-  <div class="filter-bar">
-    <input type="text" id="feed-q" placeholder="Search agent..." oninput="renderFeed()">
-    <select id="feed-type" onchange="renderFeed()"><option value="">All types</option>
-      <option>Cold Calls</option><option>New Realtor Meeting</option><option>Office Visit</option>
-      <option>Break Breads</option><option>Lunch &amp; Learn</option><option>Event / Networking</option>
-      <option>Value-Add Touch</option><option>Marketing Support</option><option>Active Check-in</option>
-      <option>Thank You</option><option>Birthday / Milestone</option>
-      <option>Realtor Buddy Referral Ask</option><option>Text / Email Touch</option><option>Re-engagement</option>
-      <option>Agent Appreciation</option><option>Business Planning Session</option><option>Co-Marketing Setup</option>
-    </select>
-    <select id="feed-range" onchange="renderFeed()"><option value="week">This week</option><option value="month">This month</option><option value="all">All time</option></select>
+  <div class="card">
+    <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:16px">
+      <input type="text" id="feedSearch" placeholder="Search agent name or notes..." oninput="applyFeedFilters()" style="border:1.5px solid #ddd;border-radius:8px;padding:10px 12px;font-size:14px;width:100%">
+      <div style="display:flex;gap:10px;flex-wrap:wrap">
+        <select id="feedTypeFilter" onchange="applyFeedFilters()" style="border:1.5px solid #ddd;border-radius:8px;padding:8px 12px;font-size:13px;flex:1">
+          <option value="all">All types</option>
+          <option>Cold Calls</option>
+          <option>New Realtor Meeting</option>
+          <option>Open House Visit</option>
+          <option>Coffee Meeting</option>
+          <option>Lunch or Dinner</option>
+          <option>Break Breads</option>
+          <option>Pop-By</option>
+          <option>Market Update Call</option>
+          <option>Check-In Call</option>
+          <option>Business Planning Session</option>
+          <option>Agent Appreciation</option>
+          <option>Birthday Outreach</option>
+          <option>Co-Marketing Discussion</option>
+        </select>
+        <select id="feedPeriodFilter" onchange="applyFeedFilters()" style="border:1.5px solid #ddd;border-radius:8px;padding:8px 12px;font-size:13px;flex:1">
+          <option value="all">All time</option>
+          <option value="week">This week</option>
+          <option value="month">This month</option>
+        </select>
+      </div>
+    </div>
+    <div id="feedList"><div class="no-data">Loading...</div></div>
   </div>
-  <div id="feed-list"></div>
 </div>
 
-<!-- DANIEL TAB -->
-<div id="view-daniel" class="view">
-  <div class="daniel-card">
-    <h3>Weekly summary <span style="font-size:11px;font-weight:400;color:#888" id="daniel-week-lbl"></span></h3>
-    <div id="daniel-summary"></div>
-  </div>
-  <div class="section-head">All activity this week
-    <div style="display:flex;gap:6px">
-      <input type="text" id="daniel-q" placeholder="Search..." oninput="renderDanielTable()" style="font-size:12px;width:130px">
-      <select id="daniel-type" onchange="renderDanielTable()" style="font-size:12px"><option value="">All types</option>
-        <option>Cold Calls</option><option>New Realtor Meeting</option><option>Break Breads</option><option>Active Check-in</option><option>Realtor Buddy Referral Ask</option>
+<!-- EDIT ACTIVITY MODAL -->
+<div id="editModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:500;align-items:center;justify-content:center;padding:20px">
+  <div style="background:#fff;border-radius:14px;padding:24px;width:100%;max-width:480px;box-shadow:0 8px 32px rgba(0,0,0,0.2)">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+      <h3 style="font-size:16px;font-weight:600;color:#2D1B69">Edit Activity</h3>
+      <button onclick="closeEditModal()" style="background:none;border:none;font-size:20px;cursor:pointer;color:#aaa">×</button>
+    </div>
+    <div style="font-size:13px;color:#888;margin-bottom:16px" id="editModalAgent"></div>
+    <div class="field" style="margin-bottom:14px">
+      <label>Outcome</label>
+      <select id="editOutcome">
+        <option value="">Select outcome...</option>
+        <option>Positive</option>
+        <option>Meeting Scheduled</option>
+        <option>Requires follow-up</option>
+        <option>Remove / No Further Contact</option>
       </select>
     </div>
-  </div>
-  <div class="tbl-wrap"><table><thead><tr><th>Agent</th><th>LP</th><th>Type</th><th>Date</th><th>Outcome</th><th>Notes</th></tr></thead><tbody id="daniel-tbody"></tbody></table></div>
-</div>
-
-<!-- PIPELINE TAB -->
-<div id="view-pipeline" class="view">
-  <div id="pipeline-stats" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px;margin-bottom:.85rem"></div>
-  <div style="background:#fff;border:1px solid #dde1e7;border-radius:12px;padding:.9rem 1.1rem;margin-bottom:.85rem">
-    <div style="font-size:13px;font-weight:700;margin-bottom:.6rem">Add new prospect</div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:7px">
-      <div class="field"><label>Name</label><input type="text" id="p-name" placeholder="Full name"></div>
-      <div class="field"><label>Brokerage</label><input type="text" id="p-brokerage" placeholder="Company name"></div>
+    <div class="field" style="margin-bottom:14px">
+      <label>Follow-up Date</label>
+      <input type="date" id="editFollowupDate">
     </div>
-    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:7px">
-      <div class="field"><label>Phone</label><input type="text" id="p-phone" placeholder="(614) 555-5555"></div>
-      <div class="field"><label>Email</label><input type="text" id="p-email" placeholder="email@example.com"></div>
-      <div class="field"><label>Follow-up date</label><input type="date" id="p-fu"></div>
+    <div class="field" style="margin-bottom:20px">
+      <label>Notes</label>
+      <textarea id="editNotes" style="min-height:90px" placeholder="Update notes..."></textarea>
     </div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:7px">
-      <div class="field"><label>Status</label><select id="p-outcome"><option value="followup">Requires follow-up</option><option value="positive">Positive</option><option value="scheduled">Meeting Scheduled</option><option value="later">Later follow-up</option><option value="dnc">Do Not Contact</option></select></div>
+    <div style="display:flex;gap:10px">
+      <button class="btn-primary" onclick="saveEditModal()">Save changes</button>
+      <button class="btn-sm" onclick="closeEditModal()">Cancel</button>
     </div>
-    <div class="field" style="margin-bottom:9px"><label>Notes</label><textarea id="p-notes" placeholder="Details, referrals mentioned, next steps..."></textarea></div>
-    <button class="btn btn-primary" onclick="addProspect()">Add prospect</button>
-    <span id="prospect-confirm" style="font-size:12px;color:#43A047;margin-left:10px;display:none">Saved!</span>
   </div>
-  <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:.75rem;align-items:center">
-    <input type="text" id="p-search" placeholder="Search name or brokerage..." oninput="renderPipeline()" style="flex:1;min-width:160px;font-size:12px;padding:5px 9px;border:1px solid #dde1e7;border-radius:8px">
-    <select id="p-filter" onchange="renderPipeline()" style="font-size:12px;padding:5px 9px;border:1px solid #dde1e7;border-radius:8px"><option value="">All statuses</option><option value="positive">Positive</option><option value="scheduled">Meeting Scheduled</option><option value="followup">Follow-up</option><option value="later">Later</option><option value="dnc">Do Not Contact</option></select>
-  </div>
-  <div id="pipeline-list"></div>
 </div>
 
 <!-- AGENT HISTORY TAB -->
-<div id="view-agenthistory" class="view">
-  <div style="background:#fff;border:1px solid #dde1e7;border-radius:12px;padding:.9rem 1.1rem;margin-bottom:.85rem">
-    <div style="font-size:13px;font-weight:600;color:#888;margin-bottom:.6rem">Search any agent to see full contact history</div>
-    <div style="position:relative">
-      <input type="text" id="ah-search" placeholder="Start typing agent name..." oninput="ahSearch()" onblur="ahHideSugg()" autocomplete="off" style="width:100%;padding:10px 14px;border:1.5px solid #7B1FA2;border-radius:12px;font-size:14px;font-family:inherit">
-      <div id="ah-suggestions" style="display:none;position:absolute;top:100%;left:0;right:0;background:#fff;border:1px solid #dde1e7;border-radius:8px;max-height:200px;overflow-y:auto;z-index:50;box-shadow:0 4px 12px rgba(0,0,0,.08)"></div>
+<div id="view-history" class="view">
+  <div class="card">
+    <div class="field" style="margin-bottom:16px">
+      <label>Search agent</label>
+      <input type="text" id="historySearch" placeholder="Type agent name..." oninput="searchHistory(this.value)">
+    </div>
+    <div id="historyResult"><div class="no-data">Search an agent to see their full contact history.</div></div>
+  </div>
+</div>
+
+<!-- OUTREACH PIPELINE TAB -->
+<div id="view-pipeline" class="view">
+  <div class="pipeline-stats" id="pipelineStats">
+    <div class="ps-card"><div class="ps-num" id="ps-total">—</div><div class="ps-label">Total Prospects</div></div>
+    <div class="ps-card"><div class="ps-num" id="ps-due">—</div><div class="ps-label">Follow-ups Due</div></div>
+    <div class="ps-card"><div class="ps-num" id="ps-dnc">—</div><div class="ps-label">Do Not Contact</div></div>
+    <div class="ps-card"><div class="ps-num" id="ps-nfm">—</div><div class="ps-label">Already w/ NFM</div></div>
+  </div>
+
+  <div class="add-prospect-form" id="addProspectForm" style="display:none">
+    <h4>Add New Prospect</h4>
+    <div class="form-row">
+      <div class="field"><label>Name</label><input type="text" id="np-name" placeholder="Full name"></div>
+      <div class="field"><label>Brokerage</label><input type="text" id="np-brokerage" placeholder="Company / Brokerage"></div>
+    </div>
+    <div class="form-row">
+      <div class="field"><label>Phone</label><input type="text" id="np-phone" placeholder="Phone number"></div>
+      <div class="field"><label>Email</label><input type="email" id="np-email" placeholder="Email address"></div>
+    </div>
+    <div class="form-row">
+      <div class="field">
+        <label>Status</label>
+        <select id="np-status">
+          <option value="Requires follow-up">Requires Follow-up</option>
+          <option value="DNC">Do Not Contact</option>
+          <option value="NFM">Already with NFM Team</option>
+        </select>
+      </div>
+      <div class="field"><label>Follow-up Date</label><input type="date" id="np-followup"></div>
+    </div>
+    <div class="form-row one">
+      <div class="field"><label>Notes</label><textarea id="np-notes" placeholder="Notes, touch history, anything relevant..."></textarea></div>
+    </div>
+    <div style="display:flex;gap:10px">
+      <button class="btn-primary" onclick="saveProspect()">Save Prospect</button>
+      <button class="btn-sm" onclick="toggleAddForm(false)">Cancel</button>
     </div>
   </div>
-  <div id="ah-result"><div style="text-align:center;padding:3rem;color:#aaa;font-size:13px">Type an agent name to see all LP call notes and your past activity with them.</div></div>
+
+  <div class="card" style="padding:16px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:10px">
+      <input type="text" id="pipelineSearch" placeholder="Search by name or brokerage..." oninput="filterPipeline()" style="border:1.5px solid #ddd;border-radius:8px;padding:9px 12px;font-size:14px;flex:1;min-width:180px">
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <select id="pipelineFilter" onchange="filterPipeline()" style="border:1.5px solid #ddd;border-radius:8px;padding:8px 12px;font-size:13px">
+          <option value="all">All statuses</option>
+          <option value="Requires follow-up">Requires Follow-up</option>
+          <option value="DNC">Do Not Contact</option>
+          <option value="NFM">Already w/ NFM</option>
+        </select>
+        <button class="btn-primary" onclick="toggleAddForm(true)" style="padding:8px 16px;font-size:13px">+ Add Prospect</button>
+      </div>
+    </div>
+    <div id="prospectList"><div class="no-data">Loading prospects...</div></div>
+  </div>
 </div>
 
+<!-- DANIEL'S VIEW TAB -->
+<div id="view-daniel" class="view">
+  <div class="daniel-grid" id="danielStats"></div>
+  <div class="card">
+    <h3>This Week's Activity</h3>
+    <div style="overflow-x:auto">
+      <table class="activity-table" id="danielTable">
+        <thead><tr><th>Agent</th><th>Activity</th><th>Outcome</th><th>Date</th><th>Notes</th></tr></thead>
+        <tbody id="danielBody"><tr><td colspan="5" style="text-align:center;padding:24px;color:#aaa">Loading...</td></tr></tbody>
+      </table>
+    </div>
+  </div>
 </div>
+
+<div class="toast" id="toast"></div>
+
 <script>
-// FIXED: Using legacy anon key (publishable key caused CORS errors from GitHub Pages)
-var SB_URL = "https://uclucbdkjqyqdvifyptx.supabase.co";
-var SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVjbHVjYmRranF5cWR2aWZ5cHR4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA0OTUyMTMsImV4cCI6MjA5NjA3MTIxM30.VnqWcFT1WLQwCJxSdEIzIgOvETaOQly2IQxht-9uI7E";
-var AGENTS = ["TIARA VILLATORO","BRANDON THOMPSON","MEGAN LYNCH","TODD STONE","DUSTIN GOLDMAN","TINA HOFFMAN","KEVIN SPEERT","OSCAR MARTINEZ","RACQUEL LUDAWAY","CHRIS REED","MICHELLE ERICKSON","SAHAR SHALASH","CINDA ERICKSON","CONNER KOCHANSKY","DEANNE RHYNEHARDT","DERON BENDER","INGRID CORREIA","JOHN BRUNNER","KANDIS HALL","KRISTINA MURPHY","MARK BOYD","MATTHEW MONTALVO","SETH COLBURN","ANNIE MORENO","DAN MANLEY","ELIZABETH ELLINGER","ERIKA WEHNER","HEATHER HENRY-MINOR","KATIE SUMMERS","KHADIJA FARAH","KISHMA JAMES","MARIA COMAS","MARTIN HOPKINS","MARY MCMICHAEL","MATT PIPER","NATALIE ESTRELLA","RAMI TAMIMI","STACEY LAMBRIGHT","TRACY BERARD","AIMEE WHITLOCK","ALEXIS REED","AMY AGRESTA","ANGELA PEREZ","BRIAN NANTHAVONGDOUANGSY","BRITNEY DODDS","CAROLE MCMAHON","CESIA ESPINOZA YOUNG","CHELSEA ANDERSON","COURTNEY HAMILTON","DEVIN JOHNSON","DIANNA JENKINS","HAIFA BRUNNEY","JACOB ENGLISH","JASMINE MCKENZIE","JESSE MCCRERRY","JOHN LUBINSKY","JORDAN HOLLIBAUGH","KATHERINE DE LA ROSA","KELSY YODER","KINSIE HUSKINS","KRISTEN VALENTY","LETIKA WHITE","LISA SIMMONS","LUIS GIL","LYNDSEY LANE","MIKE WHITEMAN","NANCY PRICE","PAIGE LUDWIG","PATRICK ARQUETTE","PAULA PALLESCHI","PILAR BENNETT","RACHELLE PARSLEY","ROBERT HAYNER","ROBIN BLAKE","ROSS DIGIORGIO","RUTH ESPINOZA","SAM BAMRICK","SARA BUSH","SLAVI JORDANOV","STAN GORKSI","THAER AHMED","TRACI WILLIAMS-JONES","TROY BORDEN","YASMIN DE JESUS","ALI SWEAZY","ALINA ILKAEVA","ANA SORIA","ANGELA POTTS","ANGELIQUE SOTONDJI","ASHLEY HENRY","AVA LAIRD","BAILEY STRATHIE","BENJAMIN GAYTAN","BRAD GILLIAM","BRANDON KIDD","BRANDON MCCLENDON","BRIAN ZINN","CELINE WILLIAMS","CHERYL KINSEY","CHRISTIAN CHALKIAS","CHRISTINA COUGHLIN","CHUCK KINSEY","CLAUDIA CHUECO","CODA GAHRIS","CRAIG MAURER","DAIRDRE SCRIVEN","DARREN HOGG","DONALD PAYNE","DONALD PAYNE JR","ELIAS PAPPAN","ELIZABETH BONAUDI","ELIZABETH HOWARD","ERIKA BRUNNER","GLADIS CHAVEZ","HYPATIA ESPINAL","IZXEL MARTINEZ","JAIDEN BALLAH","JASMIN ARCOS","JASMIN MONTOYA","JEFF MESSMER","JENNIFER BLACKMORE","JENNIFER HOWISON","JESSICA TOWER","JONNATHAN AGUDELO","JUSTIN BIERY","KATHY HAYES","KATIE MANSOR","KERWIN HEATH","KYLA AHO","LAUREN MCCLINTON","LESLIE HERNANDEZ","LILIAN FUENTES","LIZBEL CONTRERAS","MANDY WILSON","MARK VENNITTI","MARLA SEWELL","MATHEA ARUDDA","MICHELE FREDERICK","NANCY BAKER","NIA HARRINGTON","NICK ZATEZALO","NIKEHA HAYES","NINA AVERY","NORA KERELIUK","PIERINA MANTILLA","ROSALIA PABLO","RUTH GONZALEZ","SAHEL ALAM","SARAH HERNANDEZ","SASHA ANTONOVA","SHANE STINER","SHARON PANTELIS","SHAYNE D. BOYD","SHIRRELL BURNSIDE","STEVEN OSBORN","SUMMER DURHAM","SUNI RIVAS","TAMARA CHARLTON","TATIANA GRIGORITA","THOMAS NEWMAN","TINA-DUTT-HIREN","TOM NEWMAN","TONY AMOS","WENDY RAMIREZ","WHITNEY SCHMIDT","YVETTA HARRISON"];
-var LP_MAP = {"TIARA VILLATORO":"Karen","BRANDON THOMPSON":"Osgood","MEGAN LYNCH":"Gavin","TODD STONE":"Said","DUSTIN GOLDMAN":"Osgood","TINA HOFFMAN":"Gavin","KEVIN SPEERT":"Gavin","OSCAR MARTINEZ":"Karen","RACQUEL LUDAWAY":"Gavin","CHRIS REED":"Said","MICHELLE ERICKSON":"Gavin","SAHAR SHALASH":"Said","CINDA ERICKSON":"Gavin","CONNER KOCHANSKY":"Gavin","DEANNE RHYNEHARDT":"Osgood","DERON BENDER":"Gavin","INGRID CORREIA":"Gavin","JOHN BRUNNER":"Osgood","KANDIS HALL":"Osgood","KRISTINA MURPHY":"Osgood","MARK BOYD":"Gavin","MATTHEW MONTALVO":"Karen","SETH COLBURN":"Said","ANNIE MORENO":"Karen","DAN MANLEY":"Gavin","ELIZABETH ELLINGER":"Jordan","ERIKA WEHNER":"Gavin","HEATHER HENRY-MINOR":"Jordan","KATIE SUMMERS":"Gavin","KHADIJA FARAH":"Jordan","KISHMA JAMES":"Said","MARIA COMAS":"Karen","MARTIN HOPKINS":"Karen","MARY MCMICHAEL":"Said","MATT PIPER":"Osgood","NATALIE ESTRELLA":"Karen","RAMI TAMIMI":"Jordan","STACEY LAMBRIGHT":"Jordan","TRACY BERARD":"Jordan","AIMEE WHITLOCK":"Gavin","ALEXIS REED":"Said","AMY AGRESTA":"Gavin","ANGELA PEREZ":"Gavin","BRIAN NANTHAVONGDOUANGSY":"Osgood","BRITNEY DODDS":"Gavin","CAROLE MCMAHON":"Osgood","CESIA ESPINOZA YOUNG":"Karen","CHELSEA ANDERSON":"Osgood","COURTNEY HAMILTON":"Osgood","DEVIN JOHNSON":"Said","DIANNA JENKINS":"Said","HAIFA BRUNNEY":"Karen","JACOB ENGLISH":"Jordan","JASMINE MCKENZIE":"Osgood","JESSE MCCRERRY":"Said","JOHN LUBINSKY":"Said","JORDAN HOLLIBAUGH":"Gavin","KATHERINE DE LA ROSA":"Karen","KELSY YODER":"Said","KINSIE HUSKINS":"Jordan","KRISTEN VALENTY":"Jordan","LETIKA WHITE":"Osgood","LISA SIMMONS":"Osgood","LUIS GIL":"Karen","LYNDSEY LANE":"Osgood","MIKE WHITEMAN":"Osgood","NANCY PRICE":"Jordan","PAIGE LUDWIG":"Said","PATRICK ARQUETTE":"Said","PAULA PALLESCHI":"Said","PILAR BENNETT":"Karen","RACHELLE PARSLEY":"Said","ROBERT HAYNER":"Jordan","ROBIN BLAKE":"Gavin","ROSS DIGIORGIO":"Osgood","RUTH ESPINOZA":"Karen","SAM BAMRICK":"Jordan","SARA BUSH":"Said","SLAVI JORDANOV":"Said","STAN GORKSI":"Jordan","THAER AHMED":"Said","TRACI WILLIAMS-JONES":"Jordan","TROY BORDEN":"Gavin","YASMIN DE JESUS":"Karen","ALI SWEAZY":"Osgood","ALINA ILKAEVA":"Said","ANA SORIA":"Karen","ANGELA POTTS":"Osgood","ANGELIQUE SOTONDJI":"Jordan","ASHLEY HENRY":"Osgood","AVA LAIRD":"Jordan","BAILEY STRATHIE":"Osgood","BENJAMIN GAYTAN":"Gavin","BRAD GILLIAM":"Gavin","BRANDON KIDD":"Said","BRANDON MCCLENDON":"Said","BRIAN ZINN":"Jordan","CELINE WILLIAMS":"Jordan","CHERYL KINSEY":"Jordan","CHRISTIAN CHALKIAS":"Osgood","CHRISTINA COUGHLIN":"Osgood","CHUCK KINSEY":"Jordan","CLAUDIA CHUECO":"Karen","CODA GAHRIS":"Jordan","CRAIG MAURER":"Osgood","DAIRDRE SCRIVEN":"Said","DARREN HOGG":"Said","DONALD PAYNE":"Osgood","DONALD PAYNE JR":"Osgood","ELIAS PAPPAN":"Karen","ELIZABETH BONAUDI":"Osgood","ELIZABETH HOWARD":"Osgood","ERIKA BRUNNER":"Gavin","GLADIS CHAVEZ":"Karen","HYPATIA ESPINAL":"Karen","IZXEL MARTINEZ":"Karen","JAIDEN BALLAH":"Said","JASMIN ARCOS":"Karen","JASMIN MONTOYA":"Karen","JEFF MESSMER":"Gavin","JENNIFER BLACKMORE":"Jordan","JENNIFER HOWISON":"Jordan","JESSICA TOWER":"Jordan","JONNATHAN AGUDELO":"Karen","JUSTIN BIERY":"Karen","KATHY HAYES":"Jordan","KATIE MANSOR":"Jordan","KERWIN HEATH":"Said","KYLA AHO":"Said","LAUREN MCCLINTON":"Said","LESLIE HERNANDEZ":"Karen","LILIAN FUENTES":"Karen","LIZBEL CONTRERAS":"Karen","MANDY WILSON":"Jordan","MARK VENNITTI":"Jordan","MARLA SEWELL":"Osgood","MATHEA ARUDDA":"Karen","MICHELE FREDERICK":"Osgood","NANCY BAKER":"Osgood","NIA HARRINGTON":"Said","NICK ZATEZALO":"Osgood","NIKEHA HAYES":"Osgood","NINA AVERY":"Jordan","NORA KERELIUK":"Said","PIERINA MANTILLA":"Karen","ROSALIA PABLO":"Karen","RUTH GONZALEZ":"Karen","SAHEL ALAM":"Said","SARAH HERNANDEZ":"Osgood","SASHA ANTONOVA":"Said","SHANE STINER":"Jordan","SHARON PANTELIS":"Jordan","SHAYNE D. BOYD":"Said","SHIRRELL BURNSIDE":"Osgood","STEVEN OSBORN":"Jordan","SUMMER DURHAM":"Osgood","SUNI RIVAS":"Karen","TAMARA CHARLTON":"Osgood","TATIANA GRIGORITA":"Jordan","THOMAS NEWMAN":"Gavin","TINA-DUTT-HIREN":"Osgood","TOM NEWMAN":"Gavin","TONY AMOS":"Osgood","WENDY RAMIREZ":"Karen","WHITNEY SCHMIDT":"Said","YVETTA HARRISON":"Osgood"};
-var TODAY = new Date(); TODAY.setHours(0,0,0,0);
-var WEEKLY_GOALS = {"Cold Calls":25,"New Realtor Meeting":5,"Break Breads":5,"Active Check-in":10,"Realtor Buddy Referral Ask":3};
-var SPECIAL_TYPES = ["Agent Appreciation","Business Planning Session","Lunch & Learn","Co-Marketing Setup"];
-var TYPE_ICONS = {
-  "Cold Calls":"📞","New Realtor Meeting":"🤝","Office Visit":"🏢",
-  "Break Breads":"🍞","Lunch & Learn":"🎓","Event / Networking":"🎪","Value-Add Touch":"💡","Marketing Support":"📣",
-  "Active Check-in":"💬","Thank You":"🙏","Birthday / Milestone":"🎂",
-  "Realtor Buddy Referral Ask":"🌟","Text / Email Touch":"📱","Re-engagement":"🔄",
-  "Agent Appreciation":"🏆","Business Planning Session":"📋","Co-Marketing Setup":"🤝"
-};
-var TYPE_COLORS = {
-  "Cold Calls":"#E3F2FD","New Realtor Meeting":"#E8F5E9","Office Visit":"#E8F5E9",
-  "Break Breads":"#FCE4EC","Lunch & Learn":"#F3E5F5","Event / Networking":"#EDE7F6","Value-Add Touch":"#FFF8E1","Marketing Support":"#FFF8E1",
-  "Active Check-in":"#FFF8E1","Thank You":"#FCE4EC","Birthday / Milestone":"#FCE4EC",
-  "Realtor Buddy Referral Ask":"#FFF9C4","Text / Email Touch":"#F5F5F5","Re-engagement":"#FFEBEE",
-  "Agent Appreciation":"#F3E5F5","Business Planning Session":"#EDE7F6","Co-Marketing Setup":"#E8F5E9"
-};
+// ─── CONFIG ───────────────────────────────────────────────────────────────────
+const SB_URL = "https://uclucbdkjqyqdvifyptx.supabase.co";
+const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVjbHVjYmRranF5cWR2aWZ5cHR4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3MTY1NzEzMDMsImV4cCI6MjAzMjE0NzMwM30.qB5w3HyWDXuJ3cTSDkKBdiqh7vRXnkMoNMB1Y1YPzxA";
 
-var activities = [], weekKey = getWeekKey(new Date());
-var currentTab = "week";
+// ─── HELPERS ──────────────────────────────────────────────────────────────────
+async function sbFetch(path, options = {}) {
+  const headers = {
+    "apikey": SB_KEY,
+    "Authorization": "Bearer " + SB_KEY,
+    "Content-Type": "application/json",
+    "Prefer": options.prefer || "return=representation",
+    ...options.headers
+  };
+  delete options.headers;
+  delete options.prefer;
 
-function getWeekKey(d){var dt=new Date(d);dt.setHours(0,0,0,0);var day=dt.getDay(),mon=new Date(dt);mon.setDate(dt.getDate()-(day===0?6:day-1));return mon.toISOString().split("T")[0];}
-function getWeekLabel(k){var mon=new Date(k),sun=new Date(mon);sun.setDate(mon.getDate()+6);var o={month:"short",day:"numeric"};return "Week of "+mon.toLocaleDateString("en-US",o)+" - "+sun.toLocaleDateString("en-US",o);}
-function fmt(d){if(!d)return "--";return new Date(d).toLocaleDateString("en-US",{month:"short",day:"numeric",year:"2-digit"});}
-function fmtShort(d){if(!d)return "--";return new Date(d).toLocaleDateString("en-US",{month:"short",day:"numeric"});}
-function isThisWeek(ds){return getWeekKey(new Date(ds+"T12:00:00"))===weekKey;}
-function isThisMonth(ds){var d=new Date(ds+"T12:00:00"),t=new Date(TODAY);return d.getMonth()===t.getMonth()&&d.getFullYear()===t.getFullYear();}
-function setSyncStatus(s){var dot=document.getElementById("syncDot"),txt=document.getElementById("syncTxt");if(s==="live"){dot.className="sync-dot live";txt.textContent="Live";}else if(s==="saving"){dot.className="sync-dot saving";txt.textContent="Saving...";}else{dot.className="sync-dot error";txt.textContent="Offline";}}
+  const res = await fetch(SB_URL + "/rest/v1/" + path, { headers, ...options });
 
-function sbFetch(method,path,body){
-  var headers={"apikey":SB_KEY,"Authorization":"Bearer "+SB_KEY,"Content-Type":"application/json"};
-  if(method==="POST")headers["Prefer"]="return=minimal";
-  if(method==="DELETE")headers["Prefer"]="return=minimal";
-  var opts={method:method,headers:headers};
-  if(body)opts.body=JSON.stringify(body);
-  return fetch(SB_URL+"/rest/v1/"+path,opts).then(function(r){
-    if(!r.ok)return r.text().then(function(t){throw new Error(t);});
-    return r.status===204?null:r.json();
-  });
-}
+  // Always read body regardless of status
+  let body;
+  const text = await res.text();
+  try { body = text ? JSON.parse(text) : {}; }
+  catch { body = { message: text }; }
 
-function loadAll(){
-  setSyncStatus("saving");
-  return sbFetch("GET","amanda_activities?select=*&order=act_date.desc,created_at.desc")
-    .then(function(rows){
-      activities=rows||[];
-      setSyncStatus("live");
-      renderAll();
-    }).catch(function(e){
-      setSyncStatus("error");
-      console.error("Load error:",e.message||e);
-    });
-}
-
-function renderGoals(){
-  var counts={};
-  activities.filter(function(a){return isThisWeek(a.act_date);}).forEach(function(a){counts[a.act_type]=(counts[a.act_type]||0)+1;});
-  var types=Object.keys(WEEKLY_GOALS);
-  document.getElementById("goals-bar").innerHTML=types.map(function(t){
-    var done=counts[t]||0,goal=WEEKLY_GOALS[t];
-    var pct=Math.min(100,Math.round(done/goal*100));
-    var col=pct>=100?"#43A047":pct>=60?"#FB8C00":"#E53935";
-    return '<div class="gc"><div class="glbl">'+(TYPE_ICONS[t]||"")+" "+t+'</div>'+
-      '<div class="gnum"><span class="gval" style="color:'+col+'">'+done+'</span><span class="ggoal">/ '+goal+'</span></div>'+
-      '<div class="gtrack"><div class="gfill" style="width:'+pct+'%;background:'+col+'"></div></div>'+
-      '<div class="gpct">'+(pct>=100?"100% ✓":pct+"% of goal")+'</div></div>';
-  }).join("");
-}
-
-function logActivity(){
-  var agent=document.getElementById("agent-input").value.trim();
-  var type=document.getElementById("act-type").value;
-  var date=document.getElementById("act-date").value;
-  var outcome=document.getElementById("act-outcome").value;
-  var followup=document.getElementById("act-followup").value||null;
-  var notes=document.getElementById("act-notes").value.trim();
-  if(!agent){alert("Please enter an agent name.");return;}
-  if(!date){alert("Please select a date.");return;}
-  setSyncStatus("saving");
-  sbFetch("POST","amanda_activities",{agent_name:agent,act_type:type,act_date:date,outcome:outcome,follow_up_date:followup,notes:notes})
-    .then(function(){
-      setSyncStatus("live");
-      document.getElementById("agent-input").value="";
-      document.getElementById("act-notes").value="";
-      document.getElementById("act-followup").value="";
-      document.getElementById("act-outcome").value="followup";
-      var c=document.getElementById("log-confirm");c.style.display="inline";
-      setTimeout(function(){c.style.display="none";},2000);
-      loadAll();
-    }).catch(function(e){
-      setSyncStatus("error");
-      console.error("Save error:",e.message||e);
-      alert("Error saving. Please try again.");
-    });
-}
-
-function deleteActivity(id){
-  if(!confirm("Delete this activity?"))return;
-  setSyncStatus("saving");
-  sbFetch("DELETE","amanda_activities?id=eq."+id)
-    .then(function(){setSyncStatus("live");loadAll();})
-    .catch(function(e){setSyncStatus("error");console.error(e);});
-}
-
-function renderFeed(){
-  var q=document.getElementById("feed-q").value.toLowerCase();
-  var type=document.getElementById("feed-type").value;
-  var range=document.getElementById("feed-range").value;
-  var list=activities.filter(function(a){
-    if(q&&a.agent_name.toLowerCase().indexOf(q)<0)return false;
-    if(type&&a.act_type!==type)return false;
-    if(range==="week"&&!isThisWeek(a.act_date))return false;
-    if(range==="month"&&!isThisMonth(a.act_date))return false;
-    return true;
-  });
-  var el=document.getElementById("feed-list");
-  if(!list.length){el.innerHTML='<div class="no-data">No activities found.</div>';return;}
-  var outcomeLabel=function(o){return{positive:"Positive",scheduled:"Meeting Scheduled",followup:"Needs follow-up",neutral:"Neutral"}[o]||o;};
-  var outcomeClass=function(o){return{positive:"op-positive",scheduled:"op-scheduled",followup:"op-followup"}[o]||"op-positive";};
-  el.innerHTML=list.map(function(a){
-    var icon=TYPE_ICONS[a.act_type]||"📌";
-    var bg=TYPE_COLORS[a.act_type]||"#F5F5F5";
-    var isSpecial=SPECIAL_TYPES.indexOf(a.act_type)>=0;
-    return '<div class="act-item">'+
-      '<div class="act-icon" style="background:'+bg+'">'+icon+'</div>'+
-      '<div class="act-body">'+
-        '<div class="act-top">'+
-          '<span class="act-agent">'+a.agent_name+'</span>'+
-          '<div style="display:flex;gap:4px;align-items:center">'+
-            '<span class="act-type" style="background:'+bg+';color:#333">'+a.act_type+'</span>'+
-            (isSpecial?'<span class="special-tag">Special</span>':"")+
-            '<button class="btn btn-sm btn-danger" onclick="deleteActivity('+a.id+')" style="padding:2px 6px;font-size:10px">&times;</button>'+
-          '</div>'+
-        '</div>'+
-        '<div class="act-meta"><span>'+fmtShort(a.act_date)+'</span><span class="opill '+outcomeClass(a.outcome)+'">'+outcomeLabel(a.outcome)+'</span>'+(a.follow_up_date?'<span class="futag">Follow-up: '+fmtShort(a.follow_up_date)+'</span>':"")+'</div>'+
-        (a.notes?'<div class="act-note">&ldquo;'+a.notes+'&rdquo;</div>':"")+
-      '</div>'+
-    '</div>';
-  }).join("");
-}
-
-function renderFollowups(){
-  var todayStr=TODAY.toISOString().split("T")[0];
-  var list=activities.filter(function(a){return a.follow_up_date&&a.follow_up_date>=todayStr;}).sort(function(a,b){return a.follow_up_date.localeCompare(b.follow_up_date);});
-  var el=document.getElementById("followup-list");
-  if(!list.length){el.innerHTML='<div class="no-data">No pending follow-ups!</div>';return;}
-  el.innerHTML=list.map(function(a){
-    var days=Math.ceil((new Date(a.follow_up_date+"T12:00:00")-TODAY)/86400000);
-    var urgency=days===0?"Today":days===1?"Tomorrow":"In "+days+"d";
-    var urgCol=days===0?"#C62828":days<=2?"#E65100":"#43A047";
-    return '<div class="fu-row">'+
-      '<div style="font-size:18px;width:32px;text-align:center">'+(TYPE_ICONS[a.act_type]||"📌")+'</div>'+
-      '<div style="flex:1">'+
-        '<div style="font-weight:600;font-size:13px">'+a.agent_name+'</div>'+
-        '<div style="font-size:11px;color:#888;margin-top:1px">'+a.act_type+" · "+fmtShort(a.act_date)+(a.notes?' · &ldquo;'+a.notes.substring(0,40)+(a.notes.length>40?"...":"")+'&rdquo;':"")+"</div>"+
-      '</div>'+
-      '<span style="font-size:12px;font-weight:700;color:'+urgCol+'">'+urgency+'</span>'+
-    '</div>';
-  }).join("");
-}
-
-function renderDanielView(){
-  document.getElementById("daniel-week-lbl").textContent=getWeekLabel(weekKey);
-  var counts={};
-  activities.filter(function(a){return isThisWeek(a.act_date);}).forEach(function(a){counts[a.act_type]=(counts[a.act_type]||0)+1;});
-  var types=Object.keys(WEEKLY_GOALS);
-  var total=0,goalTotal=0;
-  var sumHtml=types.map(function(t){
-    var done=counts[t]||0,goal=WEEKLY_GOALS[t];
-    var pct=Math.min(100,Math.round(done/goal*100));
-    var col=pct>=100?"#43A047":pct>=60?"#FB8C00":"#E53935";
-    total+=done;goalTotal+=goal;
-    return '<div class="drow"><span>'+(TYPE_ICONS[t]||"")+" "+t+'</span><span style="font-weight:600;color:'+col+'">'+done+"/"+goal+" ("+pct+"%)"+(pct>=100?" ✓":"")+'</span></div>';
-  }).join("");
-  var overall=goalTotal?Math.min(100,Math.round(total/goalTotal*100)):0;
-  var oCol=overall>=100?"#43A047":overall>=60?"#FB8C00":"#E53935";
-  document.getElementById("daniel-summary").innerHTML=sumHtml+
-    '<div style="margin-top:.75rem;background:#eee;border-radius:20px;height:7px;overflow:hidden"><div style="height:7px;border-radius:20px;background:'+oCol+';width:'+overall+'%"></div></div>'+
-    '<div style="font-size:12px;color:#888;margin-top:5px">Overall: '+overall+"% — "+total+" of "+goalTotal+" activities this week</div>";
-  renderDanielTable();
-}
-
-function renderDanielTable(){
-  var q=document.getElementById("daniel-q").value.toLowerCase();
-  var type=document.getElementById("daniel-type").value;
-  var list=activities.filter(function(a){
-    if(!isThisWeek(a.act_date))return false;
-    if(q&&a.agent_name.toLowerCase().indexOf(q)<0)return false;
-    if(type&&a.act_type!==type)return false;
-    return true;
-  });
-  var outcomeLabel=function(o){return{positive:"Positive",scheduled:"Meeting Scheduled",neutral:"Neutral",followup:"Needs follow-up"}[o]||o;};
-  var outcomeCol=function(o){return{positive:"color:#43A047",scheduled:"color:#1565C0",neutral:"color:#888",followup:"color:#E65100"}[o]||"";};
-  document.getElementById("daniel-tbody").innerHTML=list.map(function(a){
-    return '<tr><td style="font-weight:600">'+a.agent_name+'</td>'+
-      '<td><span class="lp-tag lp-tag-'+(LP_MAP[a.agent_name]||"Unassigned")+'">'+(LP_MAP[a.agent_name]||"Unassigned")+'</span></td>'+
-      '<td style="font-size:12px">'+(TYPE_ICONS[a.act_type]||"")+" "+a.act_type+'</td>'+
-      '<td style="font-size:12px;color:#888">'+fmtShort(a.act_date)+'</td>'+
-      '<td style="font-size:12px;'+outcomeCol(a.outcome)+'">'+outcomeLabel(a.outcome)+'</td>'+
-      '<td style="font-size:11px;color:#555;font-style:italic">'+(a.notes?'&ldquo;'+a.notes.substring(0,50)+(a.notes.length>50?"...":"")+'&rdquo;':"--")+'</td></tr>';
-  }).join("")||'<tr><td colspan="6" style="text-align:center;color:#aaa;padding:1.5rem">No activity logged this week yet.</td></tr>';
-}
-
-function renderAlerts(){
-  var neverAlert=document.getElementById("never-logged-alert");
-  if(!activities.length){neverAlert.style.display="flex";}
-  else{
-    var last=activities[0];
-    var lastDate=new Date(last.act_date+"T12:00:00");lastDate.setHours(0,0,0,0);
-    var days=Math.floor((TODAY-lastDate)/86400000);
-    neverAlert.style.display=days>=3?"flex":"none";
+  if (!res.ok) {
+    const msg = body?.message || body?.error || body?.hint || `HTTP ${res.status}`;
+    throw new Error(msg);
   }
-  var qAlert=document.getElementById("quarterly-alert");
-  var month=TODAY.getMonth();
-  var msgs=[];
-  if(month===2||month===5||month===8||month===11)msgs.push("Quarter end: Time to schedule Agent Appreciation for your top agents!");
-  if(month%2===0)msgs.push("Bimonthly check: Time to schedule Business Planning Sessions with key agents!");
-  if(msgs.length){qAlert.style.display="flex";qAlert.innerHTML="&#128203; "+msgs.join("  |  ");}
-  else qAlert.style.display="none";
+  return body;
 }
 
-function renderAll(){
-  renderAlerts();
-  renderGoals();
-  if(currentTab==="week"){}
-  else if(currentTab==="feed")renderFeed();
-  else if(currentTab==="followups")renderFollowups();
-  else if(currentTab==="daniel")renderDanielView();
-  else if(currentTab==="pipeline")renderPipeline();
+function toast(msg, type = "success") {
+  const el = document.getElementById("toast");
+  el.textContent = msg;
+  el.className = "toast show " + type;
+  setTimeout(() => el.className = "toast", 3000);
 }
 
-function switchTab(t){
-  currentTab=t;
-  var tabs=["week","log","followups","feed","daniel","pipeline","agenthistory"];
-  document.querySelectorAll(".tab").forEach(function(el,i){el.classList.toggle("active",tabs[i]===t);});
-  document.querySelectorAll(".view").forEach(function(el){el.classList.remove("active");});
-  document.getElementById("view-"+t).classList.add("active");
-  renderAll();
+function fmtDate(d) {
+  if (!d) return "—";
+  const dt = new Date(d + "T12:00:00");
+  return dt.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 }
 
-function showSuggestions(){
-  var val=document.getElementById("agent-input").value.toLowerCase();
-  var list=document.getElementById("autocomplete-list");
-  if(!val||val.length<2){list.style.display="none";return;}
-  var matches=AGENTS.filter(function(a){return a.toLowerCase().indexOf(val)>=0;}).slice(0,8);
-  if(!matches.length){list.style.display="none";return;}
-  list.innerHTML=matches.map(function(a){return'<div class="autocomplete-item" data-name="'+a+'" onmousedown="selectAgent(this)">'+a+'</div>';}).join("");
-  list.style.display="block";
+function today() {
+  return new Date().toISOString().split("T")[0];
 }
-function selectAgent(el){document.getElementById("agent-input").value=el.getAttribute("data-name");document.getElementById("autocomplete-list").style.display="none";}
-function hideSuggestions(){setTimeout(function(){document.getElementById("autocomplete-list").style.display="none";},200);}
 
-// Pipeline (uses localStorage - no Supabase needed)
-var PROSPECTS_SEED=[{"name":"Kate Baker","brokerage":"Keller Williams","phone":"(614) 439-2047","email":"katebaker@kw.com","tier":"B","touchpoint":"Meeting","outcome":"positive","fu_date":"4/13/2026","notes":"Team leader KW Easton. Waiting on agent referrals. Taylor Cline (james hazley). SENT CODA AND GLADIS- get gift | 5/11 DO LUNCH SOON","date":"4/1/2026"},{"name":"Lori Newman","brokerage":"Key Realty","phone":"(937) 441-3610","email":"lori012674@gmail.com","tier":"C","touchpoint":"Call","outcome":"later","fu_date":"5/4/2026","notes":"TT Primarily listing agent, sending contact info and touching base | LM and text","date":"4/1/2026"},{"name":"Nikki (Jody Nicole) Miller","brokerage":"Realty ONE Group Refined","phone":"(740) 407-6113","email":"nikkimiller.realtor@gmail.com","tier":"B","touchpoint":"Meeting","outcome":"positive","fu_date":"5/6/2026","notes":"LM and text - Nikki. 4/21 LM and text | 5/20 11am granville. TT, getting something on the calendar for later May. busy and oldest graduating","date":"4/1/2026"},{"name":"Natalie Kurpita","brokerage":"The Westwood Real Estate Co.","phone":"(614) 306-7452","email":"natalie.kurpita@westwoodohio.com","tier":"C","touchpoint":"Voicemail","outcome":"followup","fu_date":"5/4/2026","notes":"LM and text. 4/21 LM and text | LM and text","date":"4/1/2026"},{"name":"Jamie Keisel","brokerage":"CRT Realtors","phone":"(740) 973-4147","email":"jamie@crtrealtors.com","tier":"C","touchpoint":"Voicemail","outcome":"followup","fu_date":"5/4/2026","notes":"LM and text. 4/21 LM and text | LM and text","date":"4/1/2026"},{"name":"Blake Park","brokerage":"Reafco","phone":"(614) 769-1555","email":"blake@reafco.com","tier":"B","touchpoint":"Meeting","outcome":"positive","fu_date":"4/17/2026","notes":"Reafco- Continual office visits | no responses from previous contacts","date":"4/2/2026"},{"name":"Eric Milisavljevich","brokerage":"Red 1 Realty","phone":"(740) 417-3665","email":"eric4short@gmail.com","tier":"B","touchpoint":"Meeting","outcome":"positive","fu_date":"5/11/2026","notes":"Meeting 5/21 @330pm - health things, wants buyer side, had surgery. Keep following up for coffee.","date":"4/2/2026"},{"name":"Annie Moreno","brokerage":"Coldwell Banker","phone":"(614) 800-3978","email":"annie.moreno@cbrealty.com","tier":"A","touchpoint":"Meeting","outcome":"followup","fu_date":"5/11/2026","notes":"ACTIVE MAY LEADS. 5/21 @12 RH. Karen will schedule a lunch! Re-Engagement. Talks to Karen weekly, super happy, doesn't need anything.","date":"4/2/2026"},{"name":"Cameron Mann","brokerage":"Columbus House Team - EXP","phone":"(614) 769-2500","email":"camsellscolumbus@gmail.com","tier":"B","touchpoint":"Meeting","outcome":"positive","fu_date":"5/11/2026","notes":"JUSTUS??? Personal contact. Rescheduled 4/17 10:30am.","date":"4/6/2026"},{"name":"Rosalia Pablo","brokerage":"Vision Realty","phone":"(614) 300-0094","email":"rosaliapp@visionrealty.com","tier":"A","touchpoint":"Call","outcome":"followup","fu_date":"4/13/2026","notes":"4/8 LAST LEAD. C-Agent. Tabby's agent, works with Karen for Spanish clients. Sent busy text - potential meeting with Karen.","date":"4/7/2026"},{"name":"Remington Lyman","brokerage":"Reafco","phone":"(614) 541-8475","email":"remington@reafco.com","tier":"B","touchpoint":"Meeting","outcome":"positive","fu_date":"4/17/2026","notes":"Has lenders but met 4/10 10:30am. Continual office visits.","date":"4/7/2026"},{"name":"Elizabeth Bonaudi","brokerage":"e-Merge Real Estate Champions","phone":"(740) 485-5530","email":"elizabeth.bonaudi@e-merge.com","tier":"A","touchpoint":"Meeting","outcome":"positive","fu_date":"5/11/2026","notes":"Call broke up. 4/15 10:30am coffee - Wiggan Street Coffee, Gambier.","date":"4/7/2026"},{"name":"Austin McClain","brokerage":"Reafco","phone":"(614) 710-4827","email":"austin@reafco.com","tier":"B","touchpoint":"Meeting","outcome":"positive","fu_date":"4/17/2026","notes":"Reafco- Casual chat. Went to office and met. Continual office visits.","date":"4/8/2026"},{"name":"Meg Michel","brokerage":"Remax","phone":"(937) 645-7666","email":"","tier":"B","touchpoint":"Meeting","outcome":"positive","fu_date":"5/11/2026","notes":"Personal contact. Writes for 4 sources. Kate + Steph in office. 1000 N Maple St Marysville OH 43040.","date":"4/9/2026"},{"name":"Levi Craddolph","brokerage":"Carleton Realty","phone":"(614) 813-0291","email":"lcraddolph87@gmail.com","tier":"B","touchpoint":"Meeting","outcome":"positive","fu_date":"","notes":"4/13 10:30am. Send us leads! F/U - does he have other agents?","date":"4/9/2026"},{"name":"Shannon Leyh","brokerage":"Shannon Leyh Real Estate","phone":"(614) 395-8526","email":"shannon@shannonleyh.com","tier":"B","touchpoint":"Meeting","outcome":"positive","fu_date":"5/11/2026","notes":"4/21 10:30am. Personal - Kristin from Chipotle connection.","date":"4/14/2026"},{"name":"Dairdre Skriven","brokerage":"Modern Ohio Realty","phone":"(614) 517-7919","email":"dairdre@homes4humans.com","tier":"A","touchpoint":"Meeting","outcome":"positive","fu_date":"","notes":"4/20 10:30am. Email sent to NYNY re: office/job change.","date":"4/15/2026"},{"name":"Coda Gahris","brokerage":"Keller Williams","phone":"(419) 951-5701","email":"coda.gahris@kw.com","tier":"A","touchpoint":"Meeting","outcome":"positive","fu_date":"","notes":"4/20 12:15pm. From Kate Baker KW referral.","date":"4/15/2026"},{"name":"Gladis Chavez","brokerage":"Keller Williams","phone":"(614) 603-9255","email":"gladischavez@kw.com","tier":"A","touchpoint":"Meeting","outcome":"positive","fu_date":"4/27/2026","notes":"4/16 3:30pm. From Kate Baker KW. 4/27 messaged about weekend clients!","date":"4/15/2026"},{"name":"Corry Stotts","brokerage":"The Parrett Group","phone":"(614) 580-6955","email":"corry@parrettgroup.com","tier":"B","touchpoint":"Meeting","outcome":"positive","fu_date":"5/11/2026","notes":"TT 4/21 3:30pm. Personal - Josie connection.","date":"4/16/2026"},{"name":"Megan Dodderer","brokerage":"CTC File","phone":"(614) 633-9753","email":"","tier":"A","touchpoint":"Meeting","outcome":"followup","fu_date":"Held","notes":"5/6 TT great experience, leaving for vaca. F/U late 4/20. Internal - LA BA on Daniel Wing CTC.","date":"4/16/2026"},{"name":"Michael Paolucci","brokerage":"Reafco","phone":"(614) 892-9184","email":"mike.paolucci@reafco.com","tier":"B","touchpoint":"Meeting","outcome":"positive","fu_date":"","notes":"4/17 Office Visit. Continual office visits.","date":"4/17/2026"},{"name":"Ryan Maguire","brokerage":"Reafco","phone":"(614) 714-5986","email":"ryan@reafco.com","tier":"B","touchpoint":"Meeting","outcome":"positive","fu_date":"","notes":"4/17 Office Visit. Continual office visits.","date":"4/17/2026"},{"name":"Joseph Tadres","brokerage":"Reafco","phone":"(614) 772-0645","email":"joseph@reafco.com","tier":"B","touchpoint":"Meeting","outcome":"positive","fu_date":"","notes":"4/17 Office Visit. Continual office visits.","date":"4/17/2026"},{"name":"Kwame Amoako","brokerage":"Reafco","phone":"(614) 927-5535","email":"kwame@reafco.com","tier":"B","touchpoint":"Meeting","outcome":"positive","fu_date":"","notes":"4/17 Office Visit. Continual office visits.","date":"4/17/2026"},{"name":"Bethany Gehring","brokerage":"Coldwell Banker Realty","phone":"(614) 940-8049","email":"bethany.gehring@cbrealty.com","tier":"C","touchpoint":"Call","outcome":"followup","fu_date":"5/4/2026","notes":"RESCHEDULE - 5/12 @930am sweetwaters dublin.","date":"4/21/2026"},{"name":"Patrick Arquette","brokerage":"","phone":"","email":"","tier":"B","touchpoint":"Meeting","outcome":"followup","fu_date":"","notes":"April Lead- had lunch with Nyny","date":"4/22/2026"},{"name":"Megan Winstead","brokerage":"Re Max Impact","phone":"(614) 800-6066","email":"meganwinstead88@gmail.com","tier":"B","touchpoint":"Call","outcome":"followup","fu_date":"5/11/2026","notes":"Meeting 5/1 10:30am ?","date":"4/23/2026"},{"name":"Nasser Hussain","brokerage":"Fiv Realty Co Ohio","phone":"(917) 280-8213","email":"nasserhus@gmail.com","tier":"B","touchpoint":"Call","outcome":"followup","fu_date":"","notes":"RESCHEDULE Meeting 5/4 1:30pm ?","date":"4/23/2026"},{"name":"Jasmine McKenzie","brokerage":"Coldwell Banker","phone":"(614) 689-3921","email":"jasmine.mckenzie@cbrealty.com","tier":"A","touchpoint":"FTF","outcome":"followup","fu_date":"5/11/2026","notes":"Meeting 5/7 3pm Del Mar ? WCR event. 4/27 messaged about weekend clients.","date":"4/24/2026"},{"name":"Ross Digiorgio","brokerage":"CTC File","phone":"614-599-6100","email":"ross@westwoodohio.com","tier":"B","touchpoint":"Call","outcome":"positive","fu_date":"5/11/2026","notes":"C-Agent. TT about CTC. Currently with us.","date":"4/28/2026"},{"name":"Yasmin De Jesus","brokerage":"CTC File","phone":"(614) 592-3240","email":"","tier":"B","touchpoint":"Call","outcome":"followup","fu_date":"","notes":"LAST LEAD?? C-Agent. TT about CTC. Ana Rosas A agent.","date":"4/28/2026"},{"name":"Katie Summers","brokerage":"Rockford","phone":"614-378-8819","email":"","tier":"A","touchpoint":"Meeting","outcome":"positive","fu_date":"","notes":"4/27 Rockford work lunch!","date":"4/28/2026"},{"name":"Erika Wehner","brokerage":"Rockford","phone":"614-266-1304","email":"","tier":"A","touchpoint":"Meeting","outcome":"positive","fu_date":"","notes":"4/27 Rockford work lunch!","date":"4/28/2026"},{"name":"Jess Anderson","brokerage":"Inspection","phone":"740-408-0044","email":"","tier":"B","touchpoint":"Call","outcome":"followup","fu_date":"5/11/2026","notes":"Good connection, will send","date":"4/28/2026"},{"name":"Seth Colburn","brokerage":"CTC File","phone":"(614) 477-7384","email":"seth.colburn@cbrealty.com","tier":"A","touchpoint":"Meeting","outcome":"followup","fu_date":"5/11/2026","notes":"TT northstar 5/14 2pm","date":"4/30/2026"},{"name":"Kaitlyn Kriger","brokerage":"Insurance","phone":"614-324-3818","email":"kaitlyn.kriger@goosehead.com","tier":"B","touchpoint":"Meeting","outcome":"positive","fu_date":"5/11/2026","notes":"Going to have HH with Riley and Sean Carpenter","date":"5/4/2026"},{"name":"Steven Osborn","brokerage":"","phone":"614-357-4320","email":"Steven@ParkerRealtyAssociates.com","tier":"A","touchpoint":"Meeting","outcome":"positive","fu_date":"5/4/2026","notes":"Steven sent someone, need Nick","date":"5/4/2026"},{"name":"Nickolas Pasquale","brokerage":"","phone":"740-513-1951","email":"Nickolas@parkerrealtyassociates.com","tier":"B","touchpoint":"Meeting","outcome":"positive","fu_date":"5/4/2026","notes":"Steven sent someone, need Nick","date":"5/4/2026"},{"name":"Natasha Petroff","brokerage":"","phone":"","email":"NatashaP@thomasriddle.com","tier":"B","touchpoint":"Meeting","outcome":"positive","fu_date":"4/29/2026","notes":"ROB RIGGLE WORKS WITH NATASHA","date":"4/29/2026"},{"name":"Brandon McClendon","brokerage":"","phone":"614-946-0661","email":"realtorbrandon2025@gmail.com","tier":"B","touchpoint":"Meeting","outcome":"positive","fu_date":"5/11/2026","notes":"Trying, just doesnt have anything","date":"5/1/2026"},{"name":"Riley Carpenter","brokerage":"Referral","phone":"614-607-4539","email":"","tier":"B","touchpoint":"Meeting","outcome":"positive","fu_date":"5/11/2026","notes":"5/6 4pm- Sean Carpenter also","date":"5/6/2026"},{"name":"Sean Carpenter","brokerage":"Referral","phone":"614-989-2277","email":"","tier":"B","touchpoint":"Meeting","outcome":"positive","fu_date":"","notes":"5/6 4pm- Sean Carpenter also","date":"5/6/2026"},{"name":"Bob McCarthy","brokerage":"ROCKFORD EVENT","phone":"614-207-7587","email":"","tier":"B","touchpoint":"FTF","outcome":"followup","fu_date":"","notes":"KW- Coda mentor- get gift","date":"5/5/2026"},{"name":"Yvetta Harrison","brokerage":"ROCKFORD EVENT","phone":"614-596-7950","email":"yvettaharrison@gmail.com","tier":"B","touchpoint":"FTF","outcome":"followup","fu_date":"Held","notes":"TT 5/13 @ 1pm grove city","date":"5/5/2026"},{"name":"Tammy Fast-Waller","brokerage":"ROCKFORD EVENT","phone":"614-3486487","email":"tammyfastwaller@howardhanna.com","tier":"B","touchpoint":"Meeting","outcome":"positive","fu_date":"","notes":"5/18 @ 12pm pickerington- TENTATIVE","date":"5/7/2026"},{"name":"Sahel Alam","brokerage":"C AGENT LIST","phone":"614-822-7223","email":"","tier":"A","touchpoint":"Meeting","outcome":"followup","fu_date":"","notes":"ACTIVE LEADS- 5/12 Lunch","date":"5/11/2026"},{"name":"Patrick Klein","brokerage":"C AGENT LIST","phone":"614-827-5463","email":"pk@buildvessel.com","tier":"B","touchpoint":"Meeting","outcome":"followup","fu_date":"","notes":"LAST LEAD FEB- Meet at private members club on 815 N High St, call him when we arrive. 5/18 3:30pm","date":"5/11/2026"},{"name":"Khadija Farah","brokerage":"","phone":"","email":"khadija.farah@kingthompson.com","tier":"A","touchpoint":"Meeting","outcome":"followup","fu_date":"","notes":"ACTIVE LEAD MAY- lunch with jordan","date":"5/12/2026"},{"name":"Ava Laird","brokerage":"","phone":"567-938-1743","email":"ava.laird@cbrealty.com","tier":"B","touchpoint":"Meeting","outcome":"followup","fu_date":"","notes":"5/19 @230pm","date":"5/12/2026"},{"name":"Tommi Clark","brokerage":"Sam Cooper Team","phone":"614-589-5684","email":"tommiclark@howardhanna.com","tier":"","touchpoint":"","outcome":"followup","fu_date":"","notes":"6/8 LM and text, 6/1, left another message and text. 5/27 Left a VM and text, busy, sent f/u text to schedule, nothing set yet","date":""},{"name":"Christopher Owens","brokerage":"Sam Cooper Team","phone":"614-774-3203","email":"chrisowens@howardhanna.com","tier":"","touchpoint":"","outcome":"followup","fu_date":"","notes":"6/8 LM and text. 6/1 Has a lot of moving parts, sent f/u text. 5/27 TT busy, sent f/u text with no response","date":""},{"name":"Leslie Fitch","brokerage":"Sam Cooper Team","phone":"614-554-1519","email":"lesliefitch@howardhanna.com","tier":"","touchpoint":"","outcome":"followup","fu_date":"","notes":"6/8 TT, not really active anymore. Send her rates for investment.","date":""},{"name":"Shawndel Shade","brokerage":"Sam Cooper Team","phone":"614-582-7278","email":"shawndelshade@howardhanna.com","tier":"","touchpoint":"","outcome":"followup","fu_date":"","notes":"6/8 TT very nice, busy, sent f/u text to schedule. will need to schedule week of June 22nd.","date":""},{"name":"Elizabeth Howard","brokerage":"Sam Cooper Team","phone":"937-467-0072","email":"elizabethhoward@howardhanna.com","tier":"","touchpoint":"","outcome":"followup","fu_date":"","notes":"Meeting 6/8 @3:30pm","date":""},{"name":"Sabrina Pest","brokerage":"Sam Cooper Team","phone":"614-715-0582","email":"sabrinapest@howardhanna.com","tier":"","touchpoint":"","outcome":"followup","fu_date":"","notes":"6/8 Left a VM and text","date":""},{"name":"Christian Chalkias","brokerage":"Sam Cooper Team","phone":"614-619-4663","email":"christianchalkias@howardhanna.com","tier":"","touchpoint":"","outcome":"followup","fu_date":"","notes":"Meeting 6/3 @3pm","date":""},{"name":"Credo Bizimana","brokerage":"Sam Cooper Team","phone":"380-710-5413","email":"credobizimana@howardhanna.com","tier":"","touchpoint":"","outcome":"followup","fu_date":"","notes":"6/8 LM and text, 6/1 Left a VM and text","date":""},{"name":"Racquel Ludaway","brokerage":"C AGENT LIST","phone":"614-681-8395","email":"","tier":"A","touchpoint":"","outcome":"followup","fu_date":"","notes":"ACTIVE MAY LEAD- Need to schedule golf","date":""},{"name":"Oscar Martinez","brokerage":"CTC","phone":"614-584-5216","email":"","tier":"A","touchpoint":"","outcome":"followup","fu_date":"","notes":"","date":""},{"name":"Chris Reed","brokerage":"CTC","phone":"614-317-5594","email":"","tier":"A","touchpoint":"Call","outcome":"followup","fu_date":"","notes":"ACTIVE LEAD MAY- TT, top agent, still schedule a lunch","date":"5/11/2026"},{"name":"Krista Mathers","brokerage":"CTC","phone":"614-949-1657","email":"","tier":"","touchpoint":"","outcome":"followup","fu_date":"","notes":"SET UP LUNCH","date":""}];
-var prospects=[];
-function loadProspects(){
-  prospects=PROSPECTS_SEED.slice();
-  try{
-    var saved=localStorage.getItem("amanda_prospects_v1");
-    if(saved){
-      var d=JSON.parse(saved);
-      if(d.added&&d.added.length)prospects=prospects.concat(d.added);
-    }
-  }catch(e){}
+function weekRange() {
+  const now = new Date();
+  const day = now.getDay();
+  const mon = new Date(now); mon.setDate(now.getDate() - ((day + 6) % 7));
+  const sun = new Date(mon); sun.setDate(mon.getDate() + 6);
+  const fmt = d => d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+  return { start: mon.toISOString().split("T")[0], end: sun.toISOString().split("T")[0], label: `Week of ${fmt(mon)} – ${fmt(sun)}` };
 }
-function saveProspects(){
-  var added=prospects.filter(function(p){return !PROSPECTS_SEED.find(function(s){return s.name===p.name;});});
-  try{localStorage.setItem("amanda_prospects_v1",JSON.stringify({added:added}));}catch(e){}
+
+// ─── INIT ─────────────────────────────────────────────────────────────────────
+const week = weekRange();
+document.getElementById("weekPill").textContent = week.label;
+document.getElementById("activityDate").value = today();
+
+async function init() {
+  try {
+    await sbFetch("amanda_activities?select=id&limit=1");
+    document.getElementById("syncDot").className = "sync-dot ok";
+    document.getElementById("syncTxt").textContent = "Connected";
+  } catch(e) {
+    document.getElementById("syncDot").className = "sync-dot err";
+    document.getElementById("syncTxt").textContent = "Connection error";
+    console.error("Supabase connection error:", e);
+  }
+  loadWeek();
+  loadFollowups();
+  loadFeed();
+  loadDaniel();
+  checkReminders();
+  initAutocomplete();
 }
-function addProspect(){
-  var name=document.getElementById("p-name").value.trim();
-  if(!name){alert("Please enter a name.");return;}
-  var p={name:name,brokerage:document.getElementById("p-brokerage").value.trim(),phone:document.getElementById("p-phone").value.trim(),email:document.getElementById("p-email").value.trim(),fu_date:document.getElementById("p-fu").value,notes:document.getElementById("p-notes").value.trim(),outcome:document.getElementById("p-outcome").value,date:TODAY.toISOString().split("T")[0]};
-  prospects.unshift(p);saveProspects();
-  ["p-name","p-brokerage","p-phone","p-email","p-fu","p-notes"].forEach(function(id){document.getElementById(id).value="";});
-  var c=document.getElementById("prospect-confirm");c.style.display="inline";setTimeout(function(){c.style.display="none";},2000);
-  renderPipeline();
-}
-function renderPipeline(){
-  var q=document.getElementById("p-search").value.toLowerCase();
-  var filter=document.getElementById("p-filter").value;
-  var todayStr=TODAY.toISOString().split("T")[0];
-  var list=prospects.filter(function(p){
-    if(q&&p.name.toLowerCase().indexOf(q)<0&&(p.brokerage||"").toLowerCase().indexOf(q)<0)return false;
-    if(filter&&p.outcome!==filter)return false;
-    return true;
+
+// ─── TABS ─────────────────────────────────────────────────────────────────────
+function switchTab(name) {
+  document.querySelectorAll(".tab").forEach((t, i) => {
+    const names = ["week","log","followups","feed","history","pipeline","daniel"];
+    t.classList.toggle("active", names[i] === name);
   });
-  list.sort(function(a,b){return(a.fu_date||"9999").localeCompare(b.fu_date||"9999");});
-  var total=prospects.length;
-  var fuDue=prospects.filter(function(p){return p.fu_date&&p.fu_date<=todayStr;}).length;
-  var positive=prospects.filter(function(p){return p.outcome==="positive"||p.outcome==="scheduled";}).length;
-  document.getElementById("pipeline-stats").innerHTML=[
-    {label:"Total prospects",val:total,col:"#7B1FA2"},
-    {label:"Follow-up due",val:fuDue,col:"#E53935"},
-    {label:"Positive / Scheduled",val:positive,col:"#43A047"},
-    {label:"In pipeline",val:prospects.filter(function(p){return p.outcome==="followup";}).length,col:"#FB8C00"}
-  ].map(function(s){return'<div style="background:#fff;border:1px solid #dde1e7;border-radius:10px;padding:.65rem .8rem;text-align:center"><div style="font-size:19px;font-weight:700;color:'+s.col+'">'+s.val+'</div><div style="font-size:10px;color:#888;margin-top:2px">'+s.label+'</div></div>';}).join("");
-  var ocColors={positive:"#EAF3DE,#3B6D11",scheduled:"#E3F2FD,#1565C0",followup:"#FFF8E1,#E65100",later:"#F5F5F5,#555",dnc:"#FFEBEE,#C62828"};
-  var ocLabels={positive:"Positive",scheduled:"Meeting Scheduled",followup:"Requires follow-up",later:"Later follow-up",dnc:"Do Not Contact"};
-  document.getElementById("pipeline-list").innerHTML=list.length?list.map(function(p){
-    var oc=(ocColors[p.outcome]||"#F5F5F5,#555").split(",");
-    var ol=ocLabels[p.outcome]||p.outcome;
-    var fu=p.fu_date,fuDate=null;
-    if(fu){if(fu.indexOf("/")>-1){var pts=fu.split("/");fuDate=new Date(pts[2],pts[0]-1,pts[1]);}else fuDate=new Date(fu+"T12:00:00");}
-    var fuDays=fuDate?Math.ceil((fuDate-TODAY)/86400000):null;
-    var fuStr=fuDate?fuDate.toLocaleDateString("en-US",{month:"short",day:"numeric"}):null;
-    var fuTag=fu?(fuDays<=0?'<span style="background:#FFEBEE;color:#C62828;font-size:10px;padding:2px 7px;border-radius:20px;font-weight:600">'+(fuDays===0?"Due today":"Overdue "+Math.abs(fuDays)+"d")+"</span>":'<span style="background:#EDE7F6;color:#4527A0;font-size:10px;padding:2px 7px;border-radius:20px;font-weight:600">FU: '+fuStr+"</span>"):"";
-    return'<div style="background:#fff;border:1px solid #dde1e7;border-radius:12px;margin-bottom:7px;overflow:hidden"><div style="padding:.75rem 1rem;display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:6px"><div><div style="font-weight:600;font-size:13px;display:flex;align-items:center;gap:6px">'+p.name+'<span style="background:'+oc[0]+';color:'+oc[1]+';font-size:10px;font-weight:600;padding:2px 7px;border-radius:20px">'+ol+'</span></div><div style="font-size:11px;color:#888;margin-top:2px">'+(p.brokerage||"")+(p.phone?' · '+p.phone:"")+'</div></div><div style="display:flex;gap:5px;align-items:center">'+fuTag+'</div></div>'+(p.notes?'<div style="padding:.4rem 1rem .65rem;border-top:1px solid #f0f2f5;font-size:12px;color:#555;font-style:italic;background:#fafafa">&ldquo;'+p.notes.substring(0,180)+(p.notes.length>180?"...":"")+'&rdquo;</div>':"")+'</div>';
-  }).join(""):'<div style="text-align:center;padding:2rem;color:#aaa;font-size:13px">No prospects found.</div>';
+  document.querySelectorAll(".view").forEach(v => v.classList.remove("active"));
+  document.getElementById("view-" + name).classList.add("active");
+  if (name === "pipeline") loadPipeline();
 }
 
-function ahSearch(){
-  var val=document.getElementById("ah-search").value.toLowerCase();
-  var sugg=document.getElementById("ah-suggestions");
-  if(!val||val.length<2){sugg.style.display="none";return;}
-  var matches=AGENTS.filter(function(a){return a.toLowerCase().indexOf(val)>=0;}).slice(0,8);
-  if(!matches.length){sugg.style.display="none";return;}
-  sugg.innerHTML=matches.map(function(a){return'<div style="padding:8px 10px;cursor:pointer;font-size:13px" data-name="'+a+'" onmousedown="ahSelect(this)">'+a+'</div>';}).join("");
-  sugg.style.display="block";
+// ─── MY WEEK ──────────────────────────────────────────────────────────────────
+const GOALS = [
+  { label: "Cold Calls",         type: "Cold Calls",           weekly: 25, monthly: 100 },
+  { label: "New Realtor Meetings", type: "New Realtor Meeting", weekly: 5,  monthly: 20  },
+  { label: "Break Breads",       type: "Break Breads",          weekly: 5,  monthly: 20  },
+  { label: "Active Check-ins",   type: "Check-In Call",         weekly: 10, monthly: 40  },
+  { label: "Follow-ups Logged",  type: "Requires follow-up",    weekly: 10, monthly: 40, byOutcome: true }
+];
+
+let periodData = { mtd: [], ytd: [] };
+let currentPeriod = "mtd";
+
+function showPeriod(p) {
+  currentPeriod = p;
+  document.getElementById("btn-mtd").classList.toggle("active", p === "mtd");
+  document.getElementById("btn-ytd").classList.toggle("active", p === "ytd");
+  renderPeriodScorecard();
 }
-function ahHideSugg(){setTimeout(function(){document.getElementById("ah-suggestions").style.display="none";},200);}
-function ahSelect(el){document.getElementById("ah-search").value=el.getAttribute("data-name");document.getElementById("ah-suggestions").style.display="none";ahRender(el.getAttribute("data-name"));}
-function ahRender(name){
-  var el=document.getElementById("ah-result");
-  el.innerHTML='<div style="text-align:center;padding:1rem;color:#888;font-size:12px">Loading...</div>';
-  var myTouches=activities.filter(function(a){return a.agent_name===name;});
-  sbFetch("GET","call_logs_history?agent_name=eq."+encodeURIComponent(name)+"&select=*&order=call_date.desc")
-    .then(function(hist){
-      var history=[];
-      (hist||[]).forEach(function(h){history.push({date:h.call_date,who:h.lp,type:"LP Call",note:h.note||"",source:"lp"});});
-      myTouches.forEach(function(a){history.push({date:a.act_date,who:"You",type:a.act_type,note:a.notes||"",source:"rm"});});
-      history.sort(function(a,b){return(b.date||"").localeCompare(a.date||"");});
-      if(!history.length){el.innerHTML='<div style="text-align:center;padding:2rem;color:#aaa;font-size:13px">No contact history yet for '+name+'.</div>';return;}
-      var ICONS={"LP Call":"📱","Cold Calls":"📞","New Realtor Meeting":"🤝","Break Breads":"🍞","Active Check-in":"💬","Realtor Buddy Referral Ask":"🌟","Re-engagement":"🔄","Agent Appreciation":"🏆","Business Planning Session":"📋"};
-      var html='<div style="background:#fff;border:1px solid #dde1e7;border-radius:12px;overflow:hidden">';
-      html+='<div style="padding:.85rem 1.1rem;border-bottom:1px solid #f0f2f5;display:flex;justify-content:space-between;align-items:center"><div style="font-weight:700;font-size:15px">'+name+'</div><div style="font-size:12px;color:#888">'+history.length+' total touches</div></div>';
-      html+=history.map(function(h){
-        var icon=ICONS[h.type]||"📌";
-        var bg=h.source==="lp"?"#E3F2FD":"#F3E5F5";
-        var srcLabel=h.source==="lp"?"LP Call":"Your Activity";
-        var srcStyle=h.source==="lp"?"background:#E3F2FD;color:#1565C0":"background:#F3E5F5;color:#6A1B9A";
-        return'<div style="display:flex;gap:10px;padding:8px 1.1rem;border-bottom:1px solid #f0f2f5">'+
-          '<div style="width:32px;height:32px;border-radius:8px;background:'+bg+';display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0">'+icon+'</div>'+
-          '<div style="flex:1"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:2px;flex-wrap:wrap;gap:4px">'+
-          '<div><span style="font-weight:600;font-size:12px">'+h.who+'</span>'+
-          '<span style="'+srcStyle+';font-size:10px;padding:1px 6px;border-radius:20px;font-weight:600;margin-left:5px">'+srcLabel+'</span></div>'+
-          '<span style="font-size:11px;color:#888">'+fmt(h.date)+'</span></div>'+
-          '<span style="font-size:10px;font-weight:600;padding:1px 7px;border-radius:20px;background:'+bg+';color:#333;margin-bottom:3px;display:inline-block">'+h.type+'</span>'+
-          (h.note?'<div style="font-size:12px;color:#555;font-style:italic">&ldquo;'+h.note+'&rdquo;</div>':"")+'</div></div>';
-      }).join("")+'</div>';
-      el.innerHTML=html;
-    }).catch(function(){
-      if(!myTouches.length){el.innerHTML='<div style="text-align:center;padding:2rem;color:#aaa;font-size:13px">No activity logged yet for '+name+'.</div>';return;}
-      el.innerHTML='<div style="background:#fff;border:1px solid #dde1e7;border-radius:12px;padding:1rem;font-size:13px;color:#888">Showing your activity only (LP history unavailable).</div>';
+
+function renderGoalBar(label, actual, target, pct) {
+  const color = pct >= 100 ? "#4CAF50" : pct >= 60 ? "#FF9800" : "#E53935";
+  return `
+    <div style="margin-bottom:14px">
+      <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:5px">
+        <span style="font-size:13px;font-weight:600;color:#333">${label}</span>
+        <span style="font-size:13px;font-weight:700;color:${color}">${actual}<span style="font-size:11px;color:#aaa;font-weight:400"> / ${target}</span></span>
+      </div>
+      <div style="background:#eee;border-radius:20px;height:8px;overflow:hidden">
+        <div style="width:${Math.min(100,pct)}%;height:8px;border-radius:20px;background:${color};transition:width .5s"></div>
+      </div>
+      <div style="font-size:11px;color:#aaa;margin-top:3px">${Math.round(pct)}% of goal</div>
+    </div>`;
+}
+
+function renderPeriodScorecard() {
+  const data = periodData[currentPeriod];
+  const label = currentPeriod === "mtd" ? "Month to Date" : "Year to Date";
+  const targets = GOALS.map(g => ({ ...g, target: currentPeriod === "mtd" ? g.monthly : g.monthly * 12 }));
+
+  if (!data.length) {
+    document.getElementById("periodScorecard").innerHTML = `<div class="no-data">No activity logged yet.</div>`;
+    return;
+  }
+
+  let html = `<div style="font-size:12px;color:#aaa;margin-bottom:12px;font-weight:500">${label} — ${data.length} total activities</div>`;
+  targets.forEach(g => {
+    const count = g.byOutcome
+      ? data.filter(a => a.outcome === g.type).length
+      : data.filter(a => a.activity_type === g.type).length;
+    const pct = (count / g.target) * 100;
+    html += renderGoalBar(g.label, count, g.target, pct);
+  });
+  document.getElementById("periodScorecard").innerHTML = html;
+}
+
+async function loadWeek() {
+  document.getElementById("weekLabel2").textContent = week.label;
+
+  try {
+    const now = new Date();
+    const monthStart = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,"0")}-01`;
+    const yearStart  = `${now.getFullYear()}-01-01`;
+
+    const [weekActs, mtdActs, ytdActs] = await Promise.all([
+      sbFetch(`amanda_activities?select=activity_type,outcome&date=gte.${week.start}&date=lte.${week.end}`),
+      sbFetch(`amanda_activities?select=activity_type,outcome&date=gte.${monthStart}`),
+      sbFetch(`amanda_activities?select=activity_type,outcome&date=gte.${yearStart}`)
+    ]);
+
+    periodData = { mtd: mtdActs, ytd: ytdActs };
+
+    // Weekly goal bars
+    let weekHtml = "";
+    GOALS.forEach(g => {
+      const count = g.byOutcome
+        ? weekActs.filter(a => a.outcome === g.type).length
+        : weekActs.filter(a => a.activity_type === g.type).length;
+      const pct = (count / g.weekly) * 100;
+      weekHtml += renderGoalBar(g.label, count, g.weekly, pct);
     });
+    document.getElementById("weekGoalBars").innerHTML = weekHtml;
+
+    renderPeriodScorecard();
+  } catch(e) {
+    console.error("Goals load error:", e);
+    document.getElementById("weekGoalBars").innerHTML = `<div class="no-data">Unable to load goals.</div>`;
+  }
+
+  // Follow-ups due this week
+  try {
+    const todayStr = today();
+    const fus = await sbFetch(`amanda_activities?select=agent_name,activity_type,followup_date,notes&followup_date=gte.${todayStr}&followup_date=lte.${week.end}&order=followup_date.asc&limit=10`);
+    // Also get overdue
+    const overdue = await sbFetch(`amanda_activities?select=agent_name,activity_type,followup_date,notes&followup_date=lt.${todayStr}&followup_date=not.is.null&order=followup_date.desc&limit=5`);
+    const all = [...overdue, ...fus];
+    if (!all.length) {
+      document.getElementById("weekFollowups").innerHTML = `<div class="no-data" style="padding:16px">No follow-ups due.</div>`;
+    } else {
+      document.getElementById("weekFollowups").innerHTML = all.map(f => {
+        const isOverdue = f.followup_date < todayStr;
+        const cls = isOverdue ? "overdue" : "today";
+        const label = isOverdue ? "Overdue" : fmtDate(f.followup_date);
+        return `<div class="followup-item">
+          <div class="fu-dot ${cls}"></div>
+          <div class="fu-info">
+            <div class="fu-name">${f.agent_name}</div>
+            <div class="fu-meta">${f.activity_type}</div>
+          </div>
+          <div class="fu-date ${cls}">${label}</div>
+        </div>`;
+      }).join("");
+    }
+  } catch(e) { console.error("Week follow-ups error:", e); }
+
+  // Last 5 logged
+  try {
+    const recent = await sbFetch(`amanda_activities?select=agent_name,activity_type,date,outcome&order=date.desc&limit=5`);
+    if (!recent.length) {
+      document.getElementById("weekRecent").innerHTML = `<div class="no-data" style="padding:16px">Nothing logged yet.</div>`;
+    } else {
+      document.getElementById("weekRecent").innerHTML = recent.map(r => `
+        <div class="feed-item">
+          <div class="feed-top"><span class="feed-agent">${r.agent_name}</span><span class="feed-date">${fmtDate(r.date)}</span></div>
+          <span class="feed-type">${r.activity_type}</span>
+          ${r.outcome ? `<div class="feed-outcome">${r.outcome}</div>` : ""}
+        </div>`).join("");
+    }
+  } catch(e) { console.error("Recent activity error:", e); }
 }
 
-document.getElementById("act-date").value=TODAY.toISOString().split("T")[0];
-document.getElementById("act-type").addEventListener("change",function(){
-  var type=this.value,fuDate=new Date(TODAY),days=0;
-  if(type==="Cold Calls")days=3;
-  else if(type==="New Realtor Meeting"||type==="Office Visit")days=7;
-  else if(type==="Break Breads"||type==="Lunch & Learn")days=7;
-  else if(type==="Realtor Buddy Referral Ask")days=5;
-  else if(type==="Re-engagement")days=7;
-  else if(type==="Active Check-in")days=14;
-  else if(type==="Business Planning Session")days=30;
-  else if(type==="Agent Appreciation")days=90;
-  if(days>0){fuDate.setDate(fuDate.getDate()+days);document.getElementById("act-followup").value=fuDate.toISOString().split("T")[0];}
-  else document.getElementById("act-followup").value="";
+// ─── REMINDERS ────────────────────────────────────────────────────────────────
+function checkReminders() {
+  const now = new Date();
+  const month = now.getMonth() + 1;
+  const msgs = [];
+  if ([3,6,9,12].includes(month)) msgs.push("Quarterly reminder: Business Planning Sessions are due this month.");
+  if ([1,3,5,7,9,11].includes(month)) msgs.push("Bimonthly reminder: Agent Appreciation outreach due this month.");
+  if (msgs.length) {
+    document.getElementById("reminderText").textContent = msgs[0];
+    document.getElementById("reminderBanner").classList.add("show");
+  }
+}
+
+// ─── AUTOCOMPLETE ─────────────────────────────────────────────────────────────
+let agentNames = [];
+async function initAutocomplete() {
+  try {
+    const agents = await sbFetch("agent_profiles?select=agent_name&order=agent_name.asc");
+    agentNames = agents.map(a => a.agent_name);
+  } catch(e) {
+    console.error("Autocomplete load error:", e);
+  }
+  const input = document.getElementById("agentInput");
+  const list = document.getElementById("acList");
+  input.addEventListener("input", () => {
+    const val = input.value.trim().toLowerCase();
+    if (!val) { list.classList.remove("open"); return; }
+    const matches = agentNames.filter(n => n.toLowerCase().includes(val)).slice(0, 8);
+    if (!matches.length) { list.classList.remove("open"); return; }
+    list.innerHTML = matches.map(n => `<div class="ac-item" onclick="selectAgent('${n.replace(/'/g,"\\'")}')">` + n + `</div>`).join("");
+    list.classList.add("open");
+  });
+  document.addEventListener("click", e => { if (!e.target.closest(".autocomplete-wrap")) list.classList.remove("open"); });
+}
+function selectAgent(name) {
+  document.getElementById("agentInput").value = name;
+  document.getElementById("acList").classList.remove("open");
+}
+
+// ─── OUTCOME → SHOW FOLLOW-UP DATE ───────────────────────────────────────────
+document.getElementById("activityOutcome").addEventListener("change", function() {
+  const row = document.getElementById("followupRow");
+  if (this.value === "Requires follow-up") {
+    row.classList.add("show");
+    // Auto-suggest +7 days
+    const d = new Date(); d.setDate(d.getDate()+7);
+    document.getElementById("followupDate").value = d.toISOString().split("T")[0];
+  } else {
+    row.classList.remove("show");
+    document.getElementById("followupDate").value = "";
+  }
 });
 
-document.getElementById("weekPill").textContent=getWeekLabel(weekKey);
-loadProspects();
-loadAll();
-setInterval(function(){loadAll();},30000);
+// ─── LOG ACTIVITY ─────────────────────────────────────────────────────────────
+async function logActivity() {
+  const agentName = document.getElementById("agentInput").value.trim();
+  const activityType = document.getElementById("activityType").value;
+  const date = document.getElementById("activityDate").value;
+  const outcome = document.getElementById("activityOutcome").value;
+  const followupDate = document.getElementById("followupDate").value || null;
+  const notes = document.getElementById("activityNotes").value.trim() || null;
+
+  if (!agentName) { toast("Please enter an agent name.", "error"); return; }
+  if (!date) { toast("Please select a date.", "error"); return; }
+  if (!outcome) { toast("Please select an outcome.", "error"); return; }
+
+  // Validate: if requires follow-up, must have a date
+  if (outcome === "Requires follow-up" && !followupDate) {
+    toast("Please set a follow-up date.", "error"); return;
+  }
+
+  const btn = document.getElementById("logBtn");
+  btn.disabled = true;
+  btn.textContent = "Saving...";
+
+  const payload = {
+    agent_name: agentName,
+    activity_type: activityType,
+    date,
+    outcome,
+    followup_date: followupDate,
+    notes
+  };
+
+  try {
+    await sbFetch("amanda_activities", {
+      method: "POST",
+      prefer: "return=minimal",
+      body: JSON.stringify(payload)
+    });
+
+    toast("Activity logged successfully.", "success");
+
+    // Reset form
+    document.getElementById("agentInput").value = "";
+    document.getElementById("activityType").selectedIndex = 0;
+    document.getElementById("activityDate").value = today();
+    document.getElementById("activityOutcome").value = "";
+    document.getElementById("followupDate").value = "";
+    document.getElementById("activityNotes").value = "";
+    document.getElementById("followupRow").classList.remove("show");
+
+    // Refresh data in background
+    loadWeek();
+    loadFollowups();
+    loadFeed();
+    loadDaniel();
+  } catch(e) {
+    console.error("Log activity error:", e);
+    toast("Save failed: " + e.message, "error");
+  } finally {
+    btn.disabled = false;
+    btn.textContent = "Log activity";
+  }
+}
+
+// ─── FOLLOW-UPS ───────────────────────────────────────────────────────────────
+async function loadFollowups() {
+  try {
+    const all = await sbFetch(`amanda_activities?select=id,agent_name,activity_type,followup_date,notes&followup_date=not.is.null&order=followup_date.asc&limit=100`);
+    const todayStr = today();
+    const overdue = all.filter(f => f.followup_date < todayStr);
+    const upcoming = all.filter(f => f.followup_date >= todayStr);
+    const sorted = [...overdue, ...upcoming];
+
+    if (!sorted.length) {
+      document.getElementById("followupsList").innerHTML = `<div class="no-data">No upcoming follow-ups.</div>`;
+      return;
+    }
+
+    document.getElementById("followupsList").innerHTML = sorted.map(f => {
+      const isOverdue = f.followup_date < todayStr;
+      const isToday = f.followup_date === todayStr;
+      const cls = isOverdue ? "overdue" : isToday ? "today" : "soon";
+      const daysUntil = Math.round((new Date(f.followup_date+"T12:00:00") - new Date()) / 86400000);
+      const label = isOverdue ? `Overdue by ${Math.abs(daysUntil)}d` : isToday ? "Today" : `In ${daysUntil}d`;
+      return `<div class="followup-item" id="fu-${f.id}">
+        <div class="fu-dot ${cls}"></div>
+        <div class="fu-info">
+          <div class="fu-name">${f.agent_name}</div>
+          <div class="fu-meta">${f.activity_type}${f.notes ? " · " + f.notes.substring(0,60) : ""}</div>
+          <div id="fu-edit-${f.id}" style="display:none;margin-top:8px;display:none">
+            <input type="date" id="fu-date-${f.id}" value="${f.followup_date}" style="border:1.5px solid #ddd;border-radius:6px;padding:6px 10px;font-size:13px;margin-right:8px">
+            <button class="btn-sm" onclick="saveFollowupDate(${f.id})">Save</button>
+            <button class="btn-sm" onclick="document.getElementById('fu-edit-${f.id}').style.display='none'" style="margin-left:4px">Cancel</button>
+          </div>
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px">
+          <div class="fu-date ${cls}">${label}</div>
+          <button class="btn-sm" onclick="toggleFuEdit(${f.id})" style="font-size:11px;padding:3px 8px">Edit date</button>
+        </div>
+      </div>`;
+    }).join("");
+  } catch(e) {
+    console.error("Follow-ups load error:", e);
+    document.getElementById("followupsList").innerHTML = `<div class="no-data">Unable to load follow-ups.</div>`;
+  }
+}
+
+function toggleFuEdit(id) {
+  const el = document.getElementById(`fu-edit-${id}`);
+  el.style.display = el.style.display === "none" ? "block" : "none";
+}
+
+async function saveFollowupDate(id) {
+  const newDate = document.getElementById(`fu-date-${id}`).value;
+  if (!newDate) { toast("Please select a date.", "error"); return; }
+  try {
+    await sbFetch(`amanda_activities?id=eq.${id}`, {
+      method: "PATCH", prefer: "return=minimal", body: JSON.stringify({ followup_date: newDate })
+    });
+    toast("Follow-up date updated.", "success");
+    loadFollowups();
+    loadWeek();
+  } catch(e) {
+    console.error("Follow-up date update error:", e);
+    toast("Save failed: " + e.message, "error");
+  }
+}
+
+// ─── ACTIVITY FEED ────────────────────────────────────────────────────────────
+let allFeedData = [];
+async function loadFeed() {
+  try {
+    allFeedData = await sbFetch("amanda_activities?select=*&order=date.desc&limit=200");
+    renderFeed(allFeedData);
+  } catch(e) {
+    console.error("Feed load error:", e);
+    document.getElementById("feedList").innerHTML = `<div class="no-data">Unable to load feed.</div>`;
+  }
+}
+
+function renderFeed(data) {
+  if (!data.length) { document.getElementById("feedList").innerHTML = `<div class="no-data">No activity yet.</div>`; return; }
+  document.getElementById("feedList").innerHTML = data.map(a => `
+    <div class="feed-item">
+      <div class="feed-top">
+        <span class="feed-agent">${a.agent_name}</span>
+        <div style="display:flex;align-items:center;gap:8px">
+          <span class="feed-date">${fmtDate(a.date)}</span>
+          <button class="btn-sm" onclick="openEditModal(${a.id})" style="font-size:11px;padding:3px 8px">Edit</button>
+        </div>
+      </div>
+      <span class="feed-type">${a.activity_type}</span>
+      ${a.outcome ? `<div class="feed-outcome">${a.outcome}</div>` : ""}
+      ${a.followup_date ? `<div class="feed-outcome" style="color:#E65100">Follow-up: ${fmtDate(a.followup_date)}</div>` : ""}
+      ${a.notes ? `<div class="feed-notes">"${a.notes}"</div>` : ""}
+    </div>`).join("");
+}
+
+function applyFeedFilters() {
+  const q = (document.getElementById("feedSearch")?.value || "").toLowerCase();
+  const type = document.getElementById("feedTypeFilter")?.value || "all";
+  const period = document.getElementById("feedPeriodFilter")?.value || "all";
+  const todayStr = today();
+  const weekStart = week.start;
+  const monthStart = todayStr.substring(0,7) + "-01";
+
+  let data = allFeedData;
+  if (q) data = data.filter(a => (a.agent_name||"").toLowerCase().includes(q) || (a.notes||"").toLowerCase().includes(q));
+  if (type !== "all") data = data.filter(a => a.activity_type === type);
+  if (period === "week") data = data.filter(a => a.date >= weekStart);
+  if (period === "month") data = data.filter(a => a.date >= monthStart);
+  renderFeed(data);
+}
+
+// ─── EDIT ACTIVITY MODAL ──────────────────────────────────────────────────────
+let editingActivityId = null;
+
+function openEditModal(id) {
+  const a = allFeedData.find(x => x.id === id);
+  if (!a) return;
+  editingActivityId = id;
+  document.getElementById("editModalAgent").textContent = a.agent_name + " — " + a.activity_type;
+  document.getElementById("editNotes").value = a.notes || "";
+  document.getElementById("editOutcome").value = a.outcome || "";
+  document.getElementById("editFollowupDate").value = a.followup_date || "";
+  document.getElementById("editModal").style.display = "flex";
+}
+
+function closeEditModal() {
+  document.getElementById("editModal").style.display = "none";
+  editingActivityId = null;
+}
+
+async function saveEditModal() {
+  if (!editingActivityId) return;
+  const payload = {
+    notes: document.getElementById("editNotes").value.trim() || null,
+    outcome: document.getElementById("editOutcome").value || null,
+    followup_date: document.getElementById("editFollowupDate").value || null
+  };
+  try {
+    await sbFetch(`amanda_activities?id=eq.${editingActivityId}`, {
+      method: "PATCH", prefer: "return=minimal", body: JSON.stringify(payload)
+    });
+    toast("Activity updated.", "success");
+    closeEditModal();
+    loadFeed();
+    loadFollowups();
+    loadWeek();
+  } catch(e) {
+    console.error("Edit activity error:", e);
+    toast("Save failed: " + e.message, "error");
+  }
+}
+
+// ─── AGENT HISTORY ────────────────────────────────────────────────────────────
+let historyTimer;
+function searchHistory(val) {
+  clearTimeout(historyTimer);
+  if (val.trim().length < 2) {
+    document.getElementById("historyResult").innerHTML = `<div class="no-data">Type at least 2 characters to search.</div>`;
+    return;
+  }
+  historyTimer = setTimeout(() => doSearchHistory(val.trim()), 400);
+}
+
+async function doSearchHistory(name) {
+  document.getElementById("historyResult").innerHTML = `<div class="no-data">Searching...</div>`;
+  try {
+    // Search both profiles AND activity logs — agent history works even without a profile
+    const [profiles, activities, callLogs] = await Promise.all([
+      sbFetch(`agent_profiles?agent_name=ilike.*${encodeURIComponent(name)}*&limit=5`).catch(() => []),
+      sbFetch(`amanda_activities?agent_name=ilike.*${encodeURIComponent(name)}*&order=date.desc&limit=50`).catch(() => []),
+      sbFetch(`call_logs?agent_name=ilike.*${encodeURIComponent(name)}*&order=week_start.desc&limit=50`).catch(() => [])
+    ]);
+
+    let html = "";
+
+    if (profiles.length) {
+      const p = profiles[0];
+      html += `<div class="agent-profile-card">
+        <div class="ap-name">${p.agent_name}</div>
+        <div class="ap-grid">
+          ${p.tier ? `<div class="ap-row">Tier <span>${p.tier}</span></div>` : ""}
+          ${p.assigned_lp ? `<div class="ap-row">LP <span>${p.assigned_lp}</span></div>` : ""}
+          ${p.status ? `<div class="ap-row">Status <span>${p.status}</span></div>` : ""}
+          ${p.email ? `<div class="ap-row">Email <span>${p.email}</span></div>` : ""}
+          ${p.phone ? `<div class="ap-row">Phone <span>${p.phone}</span></div>` : ""}
+          ${p.birthday ? `<div class="ap-row">Birthday <span>${fmtDate(p.birthday)}</span></div>` : ""}
+        </div>
+      </div>`;
+    }
+
+    if (!activities.length && !callLogs.length) {
+      html += `<div class="no-data">No contact history found for "${name}".</div>`;
+    } else {
+      if (!profiles.length) {
+        html += `<div style="padding:10px 12px;background:#fff8e1;border-radius:8px;font-size:13px;color:#7B6000;margin-bottom:12px">No agent profile found — showing activity log history only.</div>`;
+      }
+      const allItems = [
+        ...activities.map(a => ({ date: a.date, source: "RM", agent: a.agent_name, type: a.activity_type, outcome: a.outcome, notes: a.notes, followup_date: a.followup_date })),
+        ...callLogs.map(c => ({ date: c.week_start, source: "LP", agent: c.agent_name, type: "LP Call", outcome: c.outcome, notes: c.notes, lp: c.lp_name }))
+      ].sort((a, b) => (b.date||"").localeCompare(a.date||""));
+
+      html += `<div style="font-size:12px;color:#aaa;margin-bottom:8px">${allItems.length} contact records found</div>`;
+      html += allItems.map(item => `
+        <div class="feed-item">
+          <div class="feed-top">
+            <span class="feed-agent">${item.source === "LP" ? (item.lp || "LP") + " → " + item.agent : item.agent}</span>
+            <span class="feed-date">${fmtDate(item.date)}</span>
+          </div>
+          <span class="feed-type" style="${item.source==="LP"?"background:#e8f5e9;color:#2E7D32":""}">${item.type}</span>
+          ${item.outcome ? `<div class="feed-outcome">${item.outcome}</div>` : ""}
+          ${item.followup_date ? `<div class="feed-outcome" style="color:#E65100">Follow-up: ${fmtDate(item.followup_date)}</div>` : ""}
+          ${item.notes ? `<div class="feed-notes">"${item.notes}"</div>` : ""}
+        </div>`).join("");
+    }
+
+    document.getElementById("historyResult").innerHTML = html;
+  } catch(e) {
+    console.error("Agent history error:", e);
+    document.getElementById("historyResult").innerHTML = `<div class="no-data">Error loading history: ${e.message}</div>`;
+  }
+}
+
+// ─── DANIEL'S VIEW ────────────────────────────────────────────────────────────
+async function loadDaniel() {
+  try {
+    const [weekActs, totalActs] = await Promise.all([
+      sbFetch(`amanda_activities?select=*&date=gte.${week.start}&date=lte.${week.end}&order=date.desc`),
+      sbFetch(`amanda_activities?select=id`)
+    ]);
+
+    const newMeetings = weekActs.filter(a => a.activity_type === "New Realtor Meeting").length;
+    const coldCalls = weekActs.filter(a => a.activity_type === "Cold Calls").length;
+
+    document.getElementById("danielStats").innerHTML = `
+      <div class="stat-card"><div class="stat-num">${weekActs.length}</div><div class="stat-label">Activities This Week</div></div>
+      <div class="stat-card"><div class="stat-num">${newMeetings}</div><div class="stat-label">New Realtor Meetings</div></div>
+      <div class="stat-card"><div class="stat-num">${coldCalls}</div><div class="stat-label">Cold Calls</div></div>
+      <div class="stat-card"><div class="stat-num">${totalActs.length}</div><div class="stat-label">Total Activities (All Time)</div></div>`;
+
+    if (!weekActs.length) {
+      document.getElementById("danielBody").innerHTML = `<tr><td colspan="5" style="text-align:center;padding:24px;color:#aaa">No activity logged this week.</td></tr>`;
+    } else {
+      document.getElementById("danielBody").innerHTML = weekActs.map(a => `
+        <tr>
+          <td>${a.agent_name}</td>
+          <td>${a.activity_type}</td>
+          <td>${a.outcome || "—"}</td>
+          <td>${fmtDate(a.date)}</td>
+          <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${a.notes || "—"}</td>
+        </tr>`).join("");
+    }
+  } catch(e) {
+    console.error("Daniel's view error:", e);
+    document.getElementById("danielStats").innerHTML = `<div class="stat-card"><div class="stat-label">Unable to load data</div></div>`;
+  }
+}
+
+// ─── OUTREACH PIPELINE ───────────────────────────────────────────────────────
+let allProspects = [];
+let editingProspectId = null;
+
+async function loadPipeline() {
+  try {
+    allProspects = await sbFetch("outreach_prospects?select=*&order=followup_date.asc.nullslast");
+  } catch(e) {
+    // Table may not exist yet — show empty state
+    console.warn("outreach_prospects table not found or empty:", e.message);
+    allProspects = [];
+  }
+  renderPipelineStats();
+  filterPipeline();
+}
+
+function renderPipelineStats() {
+  const todayStr = today();
+  document.getElementById("ps-total").textContent = allProspects.filter(p => p.status === "Requires follow-up").length;
+  document.getElementById("ps-due").textContent = allProspects.filter(p => p.followup_date && p.followup_date <= todayStr && p.status === "Requires follow-up").length;
+  document.getElementById("ps-dnc").textContent = allProspects.filter(p => p.status === "DNC").length;
+  document.getElementById("ps-nfm").textContent = allProspects.filter(p => p.status === "NFM").length;
+}
+
+function filterPipeline() {
+  const q = (document.getElementById("pipelineSearch")?.value || "").toLowerCase();
+  const statusFilter = document.getElementById("pipelineFilter")?.value || "all";
+  let list = allProspects;
+  if (statusFilter !== "all") list = list.filter(p => p.status === statusFilter);
+  if (q) list = list.filter(p => (p.name||"").toLowerCase().includes(q) || (p.brokerage||"").toLowerCase().includes(q));
+  renderProspects(list);
+}
+
+function renderProspects(list) {
+  const todayStr = today();
+  if (!list.length) {
+    document.getElementById("prospectList").innerHTML = `<div class="no-data">No prospects found. Add one above.</div>`;
+    return;
+  }
+  document.getElementById("prospectList").innerHTML = list.map(p => {
+    const isDNC = p.status === "DNC";
+    const isNFM = p.status === "NFM";
+    const fuOverdue = p.followup_date && p.followup_date < todayStr;
+    const statusLabels = { "Requires follow-up": "Requires Follow-up", "DNC": "Do Not Contact", "NFM": "Already w/ NFM" };
+    const statusClasses = { "Requires follow-up": "followup", "DNC": "dnc", "NFM": "dnc" };
+    const statusClass = statusClasses[p.status] || "active";
+    const statusLabel = statusLabels[p.status] || p.status;
+    return `<div class="prospect-card ${isDNC||isNFM ? "dnc" : ""}">
+      <div class="pc-top">
+        <div>
+          <div class="pc-name">${p.name}</div>
+          <div class="pc-brokerage">${p.brokerage || "—"}</div>
+        </div>
+        <span class="pc-status ${statusClass}">${statusLabel}</span>
+      </div>
+      <div class="pc-contact">
+        ${p.phone ? `<span>📞 ${p.phone}</span>` : ""}
+        ${p.email ? `<span>✉️ ${p.email}</span>` : ""}
+      </div>
+      ${p.followup_date && !isDNC && !isNFM ? `<div class="pc-fudate ${fuOverdue?"overdue":""}">Follow-up: ${fuOverdue?"OVERDUE — ":""}${fmtDate(p.followup_date)}</div>` : ""}
+      ${p.notes ? `<div class="pc-notes">${p.notes}</div>` : ""}
+      <div class="pc-actions">
+        <button class="btn-sm" onclick="editProspect(${p.id})">Edit</button>
+        ${!isDNC && !isNFM ? `<button class="btn-sm dnc" onclick="markDNC(${p.id})">Do Not Contact</button>` : `<button class="btn-sm" onclick="unmarkDNC(${p.id})">Reactivate</button>`}
+      </div>
+    </div>`;
+  }).join("");
+}
+
+function toggleAddForm(show) {
+  editingProspectId = null;
+  document.getElementById("addProspectForm").style.display = show ? "block" : "none";
+  if (show) {
+    ["np-name","np-brokerage","np-phone","np-email","np-notes","np-followup"].forEach(id => document.getElementById(id).value = "");
+    document.getElementById("np-status").value = "Active";
+    document.getElementById("addProspectForm").querySelector("h4").textContent = "Add New Prospect";
+  }
+}
+
+function editProspect(id) {
+  const p = allProspects.find(x => x.id === id);
+  if (!p) return;
+  editingProspectId = id;
+  document.getElementById("np-name").value = p.name || "";
+  document.getElementById("np-brokerage").value = p.brokerage || "";
+  document.getElementById("np-phone").value = p.phone || "";
+  document.getElementById("np-email").value = p.email || "";
+  document.getElementById("np-status").value = p.status || "Active";
+  document.getElementById("np-followup").value = p.followup_date || "";
+  document.getElementById("np-notes").value = p.notes || "";
+  document.getElementById("addProspectForm").querySelector("h4").textContent = "Edit Prospect";
+  document.getElementById("addProspectForm").style.display = "block";
+  document.getElementById("addProspectForm").scrollIntoView({ behavior: "smooth" });
+}
+
+async function saveProspect() {
+  const name = document.getElementById("np-name").value.trim();
+  if (!name) { toast("Please enter a name.", "error"); return; }
+  const payload = {
+    name,
+    brokerage: document.getElementById("np-brokerage").value.trim() || null,
+    phone: document.getElementById("np-phone").value.trim() || null,
+    email: document.getElementById("np-email").value.trim() || null,
+    status: document.getElementById("np-status").value,
+    followup_date: document.getElementById("np-followup").value || null,
+    notes: document.getElementById("np-notes").value.trim() || null
+  };
+  try {
+    if (editingProspectId) {
+      await sbFetch(`outreach_prospects?id=eq.${editingProspectId}`, {
+        method: "PATCH", prefer: "return=minimal", body: JSON.stringify(payload)
+      });
+      toast("Prospect updated.", "success");
+    } else {
+      await sbFetch("outreach_prospects", {
+        method: "POST", prefer: "return=minimal", body: JSON.stringify(payload)
+      });
+      toast("Prospect added.", "success");
+    }
+    toggleAddForm(false);
+    loadPipeline();
+  } catch(e) {
+    console.error("Save prospect error:", e);
+    toast("Save failed: " + e.message, "error");
+  }
+}
+
+async function markDNC(id) {
+  try {
+    await sbFetch(`outreach_prospects?id=eq.${id}`, {
+      method: "PATCH", prefer: "return=minimal", body: JSON.stringify({ status: "DNC", followup_date: null })
+    });
+    toast("Marked as Do Not Contact.", "success");
+    loadPipeline();
+  } catch(e) {
+    console.error("DNC error:", e);
+    toast("Error: " + e.message, "error");
+  }
+}
+
+async function unmarkDNC(id) {
+  try {
+    await sbFetch(`outreach_prospects?id=eq.${id}`, {
+      method: "PATCH", prefer: "return=minimal", body: JSON.stringify({ status: "Active" })
+    });
+    toast("Prospect reactivated.", "success");
+    loadPipeline();
+  } catch(e) {
+    console.error("Reactivate error:", e);
+    toast("Error: " + e.message, "error");
+  }
+}
+
+// ─── START ────────────────────────────────────────────────────────────────────
+init();
 </script>
 </body>
 </html>
