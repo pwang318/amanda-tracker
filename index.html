@@ -1,1 +1,975 @@
 
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Amanda | Relationship Manager Tracker</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.0.0/tabler-icons.min.css">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f5f4f8;color:#1a1a2e;min-height:100vh}
+
+/* HEADER */
+.header{background:#1a0f3d;padding:14px 24px;display:flex;justify-content:space-between;align-items:center}
+.brand-wrap{display:flex;align-items:center;gap:10px}
+.brand-chip{background:#7F77DD;color:#fff;font-size:11px;font-weight:500;padding:4px 10px;border-radius:6px;letter-spacing:1px}
+.brand-sub{color:rgba(255,255,255,0.45);font-size:12px}
+.header-right{display:flex;align-items:center;gap:10px}
+.week-chip{background:rgba(255,255,255,0.1);color:rgba(255,255,255,0.8);font-size:11px;padding:4px 10px;border-radius:20px}
+.sync{display:flex;align-items:center;gap:5px;font-size:11px;color:rgba(255,255,255,0.5)}
+.sync-dot{width:6px;height:6px;border-radius:50%;background:#666}
+.sync-dot.ok{background:#1D9E75}
+.sync-dot.err{background:#E24B4A}
+
+/* TABS */
+.tabs{background:#fff;border-bottom:1px solid #e8e6f0;display:flex;padding:0 20px;overflow-x:auto;gap:2px}
+.tab{padding:12px 16px;font-size:13px;font-weight:400;color:#888;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;white-space:nowrap;transition:color .15s}
+.tab:hover{color:#534AB7}
+.tab.active{color:#534AB7;border-bottom-color:#534AB7;font-weight:500}
+
+/* VIEWS */
+.view{display:none;padding:20px;max-width:900px;margin:0 auto}
+.view.active{display:block}
+
+/* CARDS */
+.card{background:#fff;border:0.5px solid #e4e2ee;border-radius:12px;padding:18px 20px;margin-bottom:14px}
+.card-title{font-size:13px;font-weight:500;color:#1a1a2e;margin-bottom:16px;display:flex;justify-content:space-between;align-items:center}
+.card-sub{font-size:11px;color:#aaa;font-weight:400}
+
+/* BANNER */
+.banner{background:#EEEDFE;border:0.5px solid #AFA9EC;border-radius:8px;padding:10px 14px;font-size:12px;color:#3C3489;display:none;align-items:center;gap:8px;margin-bottom:14px}
+.banner.show{display:flex}
+
+/* GOAL BARS */
+.goal-row{margin-bottom:13px}
+.goal-row:last-child{margin-bottom:0}
+.goal-label-row{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:5px}
+.goal-name{font-size:12px;color:#666}
+.goal-actual{font-size:13px;font-weight:500;color:#1a1a2e}
+.goal-target{font-size:11px;color:#bbb;font-weight:400}
+.goal-track{background:#f0eef8;border-radius:20px;height:5px;overflow:hidden}
+.goal-fill{height:5px;border-radius:20px;transition:width .5s}
+.goal-pct{font-size:10px;color:#bbb;margin-top:3px}
+.ctc-divider{border-top:0.5px solid #eee;margin-top:14px;padding-top:12px;display:flex;justify-content:space-between;align-items:center}
+.ctc-label{font-size:12px;color:#666;display:flex;align-items:center;gap:6px}
+.ctc-count{font-size:22px;font-weight:500;color:#1a1a2e;text-align:right}
+.ctc-note{font-size:10px;color:#bbb;text-align:right}
+
+/* MTD TOGGLE */
+.period-toggle{display:flex;gap:6px;margin-bottom:16px}
+.ptoggle{padding:5px 14px;border-radius:20px;font-size:12px;border:0.5px solid #d0cde8;background:transparent;color:#888;cursor:pointer;font-family:inherit}
+.ptoggle.active{background:#EEEDFE;border-color:#AFA9EC;color:#3C3489;font-weight:500}
+
+/* BOTTOM GRID */
+.week-bottom{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.week-bottom .card{margin-bottom:0}
+
+/* FOLLOW-UP ITEMS */
+.fu-item{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:0.5px solid #f0eef8}
+.fu-item:last-child{border-bottom:none}
+.fu-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.fu-body{flex:1;min-width:0}
+.fu-name{font-size:12px;font-weight:500;color:#1a1a2e;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fu-meta{font-size:11px;color:#aaa}
+.fu-date{font-size:11px;font-weight:500;white-space:nowrap}
+.fu-edit-area{display:none;margin-top:6px}
+
+/* FEED ITEMS */
+.feed-item{padding:10px 0;border-bottom:0.5px solid #f0eef8}
+.feed-item:last-child{border-bottom:none}
+.feed-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:5px}
+.feed-agent{font-size:13px;font-weight:500;color:#1a1a2e}
+.feed-right{display:flex;align-items:center;gap:8px}
+.feed-date{font-size:11px;color:#bbb}
+.feed-badge{display:inline-block;font-size:10px;padding:2px 8px;border-radius:20px;font-weight:500}
+.feed-badge.rm{background:#EEEDFE;color:#3C3489}
+.feed-badge.ctc{background:#E1F5EE;color:#0F6E56}
+.feed-badge.lp{background:#E3F2FD;color:#1565C0}
+.feed-outcome{font-size:11px;color:#aaa;margin-top:3px}
+.feed-fu{font-size:11px;color:#B85B00;margin-top:2px}
+.feed-notes{font-size:12px;color:#777;margin-top:4px;font-style:italic}
+.no-data{text-align:center;color:#bbb;padding:28px;font-size:13px}
+
+/* FORM */
+.form-section{margin-bottom:20px}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px}
+.form-row.three{grid-template-columns:1fr 1fr 1fr}
+.form-row.one{grid-template-columns:1fr}
+.field{display:flex;flex-direction:column;gap:5px}
+.field label{font-size:11px;font-weight:500;color:#888;text-transform:uppercase;letter-spacing:.5px}
+.field input,.field select,.field textarea{border:0.5px solid #d8d6e8;border-radius:8px;padding:9px 11px;font-size:13px;font-family:inherit;color:#1a1a2e;background:#fff;width:100%;outline:none;transition:border .15s}
+.field input:focus,.field select:focus,.field textarea:focus{border-color:#7F77DD}
+.field textarea{resize:vertical;min-height:76px}
+.followup-row{display:none}
+.followup-row.show{display:grid}
+
+/* AUTOCOMPLETE */
+.ac-wrap{position:relative}
+.ac-list{position:absolute;top:100%;left:0;right:0;background:#fff;border:0.5px solid #d8d6e8;border-radius:8px;box-shadow:0 4px 16px rgba(45,27,105,0.1);z-index:100;max-height:200px;overflow-y:auto;display:none}
+.ac-list.open{display:block}
+.ac-item{padding:9px 12px;font-size:13px;cursor:pointer;border-bottom:0.5px solid #f5f4f8}
+.ac-item:hover{background:#f5f4f8}
+.ac-item:last-child{border-bottom:none}
+
+/* BUTTONS */
+.btn-primary{background:#534AB7;color:#fff;border:none;padding:10px 24px;border-radius:8px;font-size:13px;font-weight:500;cursor:pointer;font-family:inherit;transition:background .15s}
+.btn-primary:hover{background:#3C3489}
+.btn-primary:disabled{background:#bbb;cursor:not-allowed}
+.btn-sm{background:#f5f4f8;border:0.5px solid #e4e2ee;padding:5px 11px;border-radius:6px;font-size:11px;cursor:pointer;font-weight:500;color:#555;font-family:inherit}
+.btn-sm:hover{background:#EEEDFE;color:#534AB7;border-color:#AFA9EC}
+.btn-sm.danger{background:#fff0f0;color:#A32D2D;border-color:#f7c1c1}
+.btn-sm.danger:hover{background:#FCEBEB}
+
+/* TOAST */
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1a0f3d;color:#fff;padding:10px 20px;border-radius:8px;font-size:13px;z-index:999;opacity:0;transition:opacity .3s;pointer-events:none}
+.toast.show{opacity:1}
+.toast.success{background:#085041}
+.toast.error{background:#791F1F}
+
+/* PIPELINE */
+.pipe-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px}
+.ps-card{background:#fff;border:0.5px solid #e4e2ee;border-radius:10px;padding:14px;text-align:center}
+.ps-num{font-size:22px;font-weight:500;color:#534AB7}
+.ps-label{font-size:10px;color:#aaa;margin-top:2px}
+.prospect-card{border:0.5px solid #e4e2ee;border-radius:10px;padding:14px;margin-bottom:10px;background:#fff}
+.prospect-card.dnc{border-color:#F7C1C1;background:#FCEBEB}
+.prospect-card.nfm{border-color:#B5D4F4;background:#E6F1FB}
+.pc-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px}
+.pc-name{font-size:14px;font-weight:500;color:#1a1a2e}
+.pc-brokerage{font-size:11px;color:#aaa;margin-top:2px}
+.pc-badge{font-size:10px;font-weight:500;padding:3px 9px;border-radius:20px}
+.pc-badge.followup{background:#FFF3E0;color:#B85B00}
+.pc-badge.dnc{background:#FCEBEB;color:#A32D2D}
+.pc-badge.nfm{background:#E6F1FB;color:#185FA5}
+.pc-contact{font-size:11px;color:#777;margin:6px 0;display:flex;gap:14px;flex-wrap:wrap}
+.pc-notes{font-size:12px;color:#777;font-style:italic;margin-top:6px;padding-top:6px;border-top:0.5px solid #f0eef8}
+.pc-fudate{font-size:11px;font-weight:500;color:#B85B00;margin-top:4px}
+.pc-fudate.overdue{color:#A32D2D}
+.pc-actions{display:flex;gap:8px;margin-top:10px}
+.add-form{background:#f8f7fc;border:0.5px dashed #AFA9EC;border-radius:10px;padding:18px 20px;margin-bottom:14px}
+.add-form h4{font-size:13px;font-weight:500;color:#534AB7;margin-bottom:14px}
+
+/* AGENT HISTORY */
+.agent-card{background:#EEEDFE;border:0.5px solid #AFA9EC;border-radius:10px;padding:16px;margin-bottom:14px}
+.agent-card-name{font-size:16px;font-weight:500;color:#26215C;margin-bottom:10px}
+.agent-grid{display:grid;grid-template-columns:1fr 1fr;gap:5px}
+.agent-row{font-size:12px;color:#534AB7}
+.agent-row span{font-weight:500;color:#26215C}
+
+/* DANIEL TABLE */
+.dtable{width:100%;border-collapse:collapse;font-size:12px}
+.dtable th{background:#f5f4f8;padding:9px 12px;text-align:left;font-weight:500;font-size:10px;text-transform:uppercase;letter-spacing:.5px;color:#aaa;border-bottom:0.5px solid #e4e2ee}
+.dtable td{padding:9px 12px;border-bottom:0.5px solid #f0eef8;color:#1a1a2e}
+.dtable tr:last-child td{border-bottom:none}
+.stat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:14px}
+.stat-card{background:#fff;border:0.5px solid #e4e2ee;border-radius:10px;padding:16px;text-align:center}
+.stat-num{font-size:30px;font-weight:500;color:#534AB7}
+.stat-label{font-size:11px;color:#aaa;margin-top:3px}
+
+/* EDIT MODAL */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(26,15,61,0.5);z-index:500;align-items:center;justify-content:center;padding:20px}
+.modal-overlay.open{display:flex}
+.modal-box{background:#fff;border-radius:14px;padding:22px 24px;width:100%;max-width:460px}
+.modal-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+.modal-title{font-size:14px;font-weight:500;color:#1a1a2e}
+.modal-close{background:none;border:none;font-size:18px;cursor:pointer;color:#bbb;padding:2px}
+.modal-sub{font-size:12px;color:#aaa;margin-bottom:16px}
+
+/* SEARCH */
+.search-input{width:100%;padding:9px 12px;border:0.5px solid #d8d6e8;border-radius:8px;font-size:13px;font-family:inherit;color:#1a1a2e;outline:none;transition:border .15s;margin-bottom:14px}
+.search-input:focus{border-color:#7F77DD}
+
+@media(max-width:600px){
+  .form-row,.form-row.three,.stat-grid,.pipe-stats,.week-bottom{grid-template-columns:1fr}
+  .view{padding:14px}
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="brand-wrap">
+    <span class="brand-chip">AMANDA</span>
+    <span class="brand-sub">Relationship Manager</span>
+  </div>
+  <div class="header-right">
+    <span class="week-chip" id="weekPill"></span>
+    <div class="sync"><span class="sync-dot" id="syncDot"></span><span id="syncTxt">Connecting...</span></div>
+  </div>
+</div>
+
+<div class="tabs">
+  <div class="tab active" onclick="switchTab('week')">My Week</div>
+  <div class="tab" onclick="switchTab('log')">Log Activity</div>
+  <div class="tab" onclick="switchTab('followups')">Follow-ups</div>
+  <div class="tab" onclick="switchTab('feed')">Activity Feed</div>
+  <div class="tab" onclick="switchTab('history')">Agent History</div>
+  <div class="tab" onclick="switchTab('pipeline')">Outreach Pipeline</div>
+  <div class="tab" onclick="switchTab('daniel')">Daniel's View</div>
+</div>
+
+<!-- MY WEEK -->
+<div id="view-week" class="view active">
+  <div class="banner" id="reminderBanner"><i class="ti ti-calendar" aria-hidden="true"></i><span id="reminderText"></span></div>
+
+  <div class="card">
+    <div class="card-title">This week <span class="card-sub" id="weekLabel2"></span></div>
+    <div id="weekGoalBars"><div class="no-data">Loading...</div></div>
+  </div>
+
+  <div class="card">
+    <div class="period-toggle">
+      <button class="ptoggle active" id="btn-mtd" onclick="showPeriod('mtd')">Month to date</button>
+      <button class="ptoggle" id="btn-ytd" onclick="showPeriod('ytd')">Year to date</button>
+    </div>
+    <div id="periodScorecard"><div class="no-data">Loading...</div></div>
+  </div>
+
+  <div class="week-bottom">
+    <div class="card">
+      <div class="card-title" style="margin-bottom:12px">Follow-ups due</div>
+      <div id="weekFollowups"><div class="no-data" style="padding:16px">Loading...</div></div>
+    </div>
+    <div class="card">
+      <div class="card-title" style="margin-bottom:12px">Last 5 logged</div>
+      <div id="weekRecent"><div class="no-data" style="padding:16px">Loading...</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- LOG ACTIVITY -->
+<div id="view-log" class="view">
+  <div class="card">
+    <div class="card-title">Log an activity</div>
+    <div class="form-row">
+      <div class="field">
+        <label>Agent name</label>
+        <div class="ac-wrap">
+          <input type="text" id="agentInput" placeholder="Start typing..." autocomplete="off">
+          <div class="ac-list" id="acList"></div>
+        </div>
+      </div>
+      <div class="field">
+        <label>Activity type</label>
+        <select id="activityType">
+          <optgroup label="New Relationships">
+            <option>Cold Calls</option>
+            <option>New Realtor Meeting</option>
+            <option>Open House Visit</option>
+          </optgroup>
+          <optgroup label="Relationship Deepening">
+            <option>Coffee Meeting</option>
+            <option>Lunch or Dinner</option>
+            <option>Break Breads</option>
+            <option>Pop-By</option>
+            <option>Market Update Call</option>
+            <option>Sent Market Report</option>
+            <option>Sent Referral</option>
+            <option>Co-hosted Event</option>
+            <option>Realtor Buddy Referral Ask</option>
+          </optgroup>
+          <optgroup label="Retention and Referrals">
+            <option>Active Agent Check-in</option>
+            <option>CTC Call</option>
+            <option>Closed Deal Thank You</option>
+            <option>Birthday Outreach</option>
+            <option>Holiday Outreach</option>
+            <option>Agent Appreciation</option>
+          </optgroup>
+          <optgroup label="Special Programs">
+            <option>Business Planning Session</option>
+            <option>Co-Marketing Discussion</option>
+            <option>Team Presentation</option>
+            <option>Recruiting Conversation</option>
+          </optgroup>
+        </select>
+      </div>
+    </div>
+    <div class="form-row three">
+      <div class="field">
+        <label>Date</label>
+        <input type="date" id="activityDate">
+      </div>
+      <div class="field">
+        <label>Outcome</label>
+        <select id="activityOutcome">
+          <option value="">Select outcome...</option>
+          <option>Positive</option>
+          <option>Meeting Scheduled</option>
+          <option>Requires follow-up</option>
+          <option>Remove / No Further Contact</option>
+        </select>
+      </div>
+      <div class="field followup-row" id="followupRow">
+        <label>Follow-up date</label>
+        <input type="date" id="followupDate">
+      </div>
+    </div>
+    <div class="form-row one">
+      <div class="field">
+        <label>Notes</label>
+        <textarea id="activityNotes" placeholder="Details, referrals mentioned, next steps..."></textarea>
+      </div>
+    </div>
+    <button class="btn-primary" id="logBtn" onclick="logActivity()">Log activity</button>
+  </div>
+</div>
+
+<!-- FOLLOW-UPS -->
+<div id="view-followups" class="view">
+  <div class="card">
+    <div class="card-title">Upcoming follow-ups</div>
+    <div id="followupsList"><div class="no-data">Loading...</div></div>
+  </div>
+</div>
+
+<!-- ACTIVITY FEED -->
+<div id="view-feed" class="view">
+  <div class="card">
+    <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:16px">
+      <input type="text" class="search-input" style="margin-bottom:0" id="feedSearch" placeholder="Search agent name or notes..." oninput="applyFeedFilters()">
+      <div style="display:flex;gap:10px;flex-wrap:wrap">
+        <select id="feedTypeFilter" onchange="applyFeedFilters()" style="flex:1;padding:8px 11px;border:0.5px solid #d8d6e8;border-radius:8px;font-size:12px;font-family:inherit;color:#555;background:#fff">
+          <option value="all">All types</option>
+          <option>Cold Calls</option>
+          <option>New Realtor Meeting</option>
+          <option>Break Breads</option>
+          <option>Active Agent Check-in</option>
+          <option>CTC Call</option>
+          <option>Realtor Buddy Referral Ask</option>
+          <option>Coffee Meeting</option>
+          <option>Lunch or Dinner</option>
+          <option>Pop-By</option>
+          <option>Market Update Call</option>
+          <option>Business Planning Session</option>
+          <option>Agent Appreciation</option>
+          <option>Birthday Outreach</option>
+          <option>Co-Marketing Discussion</option>
+        </select>
+        <select id="feedPeriodFilter" onchange="applyFeedFilters()" style="flex:1;padding:8px 11px;border:0.5px solid #d8d6e8;border-radius:8px;font-size:12px;font-family:inherit;color:#555;background:#fff">
+          <option value="all">All time</option>
+          <option value="week">This week</option>
+          <option value="month">This month</option>
+        </select>
+      </div>
+    </div>
+    <div id="feedList"><div class="no-data">Loading...</div></div>
+  </div>
+</div>
+
+<!-- EDIT MODAL -->
+<div class="modal-overlay" id="editModal">
+  <div class="modal-box">
+    <div class="modal-header">
+      <span class="modal-title">Edit activity</span>
+      <button class="modal-close" onclick="closeEditModal()">×</button>
+    </div>
+    <div class="modal-sub" id="editModalAgent"></div>
+    <div class="field" style="margin-bottom:12px">
+      <label>Outcome</label>
+      <select id="editOutcome">
+        <option value="">Select outcome...</option>
+        <option>Positive</option>
+        <option>Meeting Scheduled</option>
+        <option>Requires follow-up</option>
+        <option>Remove / No Further Contact</option>
+      </select>
+    </div>
+    <div class="field" style="margin-bottom:12px">
+      <label>Follow-up date</label>
+      <input type="date" id="editFollowupDate">
+    </div>
+    <div class="field" style="margin-bottom:18px">
+      <label>Notes</label>
+      <textarea id="editNotes" placeholder="Update notes..."></textarea>
+    </div>
+    <div style="display:flex;gap:10px">
+      <button class="btn-primary" onclick="saveEditModal()">Save changes</button>
+      <button class="btn-sm" onclick="closeEditModal()">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- AGENT HISTORY -->
+<div id="view-history" class="view">
+  <div class="card">
+    <div class="field" style="margin-bottom:14px">
+      <label>Search agent</label>
+      <input type="text" id="historySearch" placeholder="Type agent name..." oninput="searchHistory(this.value)" style="border:0.5px solid #d8d6e8;border-radius:8px;padding:9px 11px;font-size:13px;font-family:inherit;color:#1a1a2e;width:100%;outline:none">
+    </div>
+    <div id="historyResult"><div class="no-data">Search an agent to see their full contact history.</div></div>
+  </div>
+</div>
+
+<!-- OUTREACH PIPELINE -->
+<div id="view-pipeline" class="view">
+  <div class="pipe-stats">
+    <div class="ps-card"><div class="ps-num" id="ps-total">—</div><div class="ps-label">Active prospects</div></div>
+    <div class="ps-card"><div class="ps-num" id="ps-due">—</div><div class="ps-label">Follow-ups due</div></div>
+    <div class="ps-card"><div class="ps-num" id="ps-dnc">—</div><div class="ps-label">Do not contact</div></div>
+    <div class="ps-card"><div class="ps-num" id="ps-nfm">—</div><div class="ps-label">Already w/ NFM</div></div>
+  </div>
+
+  <div class="add-form" id="addProspectForm" style="display:none">
+    <h4 id="addFormTitle">Add new prospect</h4>
+    <div class="form-row">
+      <div class="field"><label>Name</label><input type="text" id="np-name" placeholder="Full name"></div>
+      <div class="field"><label>Brokerage</label><input type="text" id="np-brokerage" placeholder="Company / Brokerage"></div>
+    </div>
+    <div class="form-row">
+      <div class="field"><label>Phone</label><input type="text" id="np-phone" placeholder="Phone number"></div>
+      <div class="field"><label>Email</label><input type="email" id="np-email" placeholder="Email address"></div>
+    </div>
+    <div class="form-row">
+      <div class="field">
+        <label>Status</label>
+        <select id="np-status">
+          <option value="Requires follow-up">Requires Follow-up</option>
+          <option value="DNC">Do Not Contact</option>
+          <option value="NFM">Already with NFM Team</option>
+        </select>
+      </div>
+      <div class="field"><label>Follow-up date</label><input type="date" id="np-followup"></div>
+    </div>
+    <div class="form-row one">
+      <div class="field"><label>Notes</label><textarea id="np-notes" placeholder="Notes, touch history, next steps..."></textarea></div>
+    </div>
+    <div style="display:flex;gap:10px">
+      <button class="btn-primary" onclick="saveProspect()">Save prospect</button>
+      <button class="btn-sm" onclick="toggleAddForm(false)">Cancel</button>
+    </div>
+  </div>
+
+  <div class="card" style="padding:16px 18px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:10px">
+      <input type="text" id="pipelineSearch" placeholder="Search by name or brokerage..." oninput="filterPipeline()" style="flex:1;min-width:160px;padding:8px 11px;border:0.5px solid #d8d6e8;border-radius:8px;font-size:12px;font-family:inherit;color:#1a1a2e;background:#fff;outline:none">
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <select id="pipelineFilter" onchange="filterPipeline()" style="padding:7px 11px;border:0.5px solid #d8d6e8;border-radius:8px;font-size:12px;font-family:inherit;color:#555;background:#fff">
+          <option value="all">All statuses</option>
+          <option value="Requires follow-up">Requires Follow-up</option>
+          <option value="DNC">Do Not Contact</option>
+          <option value="NFM">Already w/ NFM</option>
+        </select>
+        <button class="btn-primary" onclick="toggleAddForm(true)" style="padding:7px 14px;font-size:12px">+ Add prospect</button>
+      </div>
+    </div>
+    <div id="prospectList"><div class="no-data">Loading...</div></div>
+  </div>
+</div>
+
+<!-- DANIEL'S VIEW -->
+<div id="view-daniel" class="view">
+  <div class="stat-grid" id="danielStats"></div>
+  <div class="card">
+    <div class="card-title">This week's activity</div>
+    <div style="overflow-x:auto">
+      <table class="dtable">
+        <thead><tr><th>Agent</th><th>Activity</th><th>Outcome</th><th>Date</th><th>Notes</th></tr></thead>
+        <tbody id="danielBody"><tr><td colspan="5" style="text-align:center;padding:20px;color:#bbb">Loading...</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const SB_URL = "https://uclucbdkjqyqdvifyptx.supabase.co";
+const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVjbHVjYmRranF5cWR2aWZ5cHR4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA0OTUyMTMsImV4cCI6MjA5NjA3MTIxM30.VnqWcFT1WLQwCJxSdEIzIgOvETaOQly2IQxht-9uI7E";
+
+const GOALS = [
+  { label: "Cold calls",                 type: "Cold Calls",                   weekly: 25, monthly: 100 },
+  { label: "New realtor meetings",       type: "New Realtor Meeting",           weekly: 5,  monthly: 20  },
+  { label: "Break breads",              type: "Break Breads",                  weekly: 5,  monthly: 20  },
+  { label: "Active agent check-ins",    type: "Active Agent Check-in",         weekly: 15, monthly: 60  },
+  { label: "Realtor buddy referral ask",type: "Realtor Buddy Referral Ask",    weekly: 3,  monthly: 12  }
+];
+const CTC_TYPE = "CTC Call";
+
+async function sbFetch(path, options = {}) {
+  const headers = { "apikey": SB_KEY, "Authorization": "Bearer " + SB_KEY, "Content-Type": "application/json", "Prefer": options.prefer || "return=representation", ...options.headers };
+  delete options.headers; delete options.prefer;
+  const res = await fetch(SB_URL + "/rest/v1/" + path, { headers, ...options });
+  let body; const text = await res.text();
+  try { body = text ? JSON.parse(text) : {}; } catch { body = { message: text }; }
+  if (!res.ok) { throw new Error(body?.message || body?.error || body?.hint || `HTTP ${res.status}`); }
+  return body;
+}
+
+function toast(msg, type = "success") {
+  const el = document.getElementById("toast");
+  el.textContent = msg; el.className = "toast show " + type;
+  setTimeout(() => el.className = "toast", 3000);
+}
+
+function fmtDate(d) {
+  if (!d) return "—";
+  return new Date(d + "T12:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+}
+
+function today() { return new Date().toISOString().split("T")[0]; }
+
+function weekRange() {
+  const now = new Date(), day = now.getDay();
+  const mon = new Date(now); mon.setDate(now.getDate() - ((day + 6) % 7));
+  const sun = new Date(mon); sun.setDate(mon.getDate() + 6);
+  const fmt = d => d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+  return { start: mon.toISOString().split("T")[0], end: sun.toISOString().split("T")[0], label: `${fmt(mon)} – ${fmt(sun)}` };
+}
+
+const week = weekRange();
+document.getElementById("weekPill").textContent = week.label;
+document.getElementById("activityDate").value = today();
+
+async function init() {
+  try {
+    await sbFetch("amanda_activities?select=id&limit=1");
+    document.getElementById("syncDot").className = "sync-dot ok";
+    document.getElementById("syncTxt").textContent = "Live";
+  } catch(e) {
+    document.getElementById("syncDot").className = "sync-dot err";
+    document.getElementById("syncTxt").textContent = "Offline";
+    console.error("Connection error:", e);
+  }
+  loadWeek(); loadFollowups(); loadFeed(); loadDaniel(); checkReminders(); initAutocomplete();
+}
+
+function switchTab(name) {
+  const names = ["week","log","followups","feed","history","pipeline","daniel"];
+  document.querySelectorAll(".tab").forEach((t, i) => t.classList.toggle("active", names[i] === name));
+  document.querySelectorAll(".view").forEach(v => v.classList.remove("active"));
+  document.getElementById("view-" + name).classList.add("active");
+  if (name === "pipeline") loadPipeline();
+}
+
+let periodData = { mtd: [], ytd: [] }, currentPeriod = "mtd";
+
+function showPeriod(p) {
+  currentPeriod = p;
+  document.getElementById("btn-mtd").classList.toggle("active", p === "mtd");
+  document.getElementById("btn-ytd").classList.toggle("active", p === "ytd");
+  renderPeriodScorecard();
+}
+
+function goalColor(pct) { return pct >= 100 ? "#639922" : pct >= 60 ? "#EF9F27" : "#E24B4A"; }
+
+function renderGoalBar(label, actual, target, pct) {
+  const c = goalColor(pct);
+  return `<div class="goal-row">
+    <div class="goal-label-row">
+      <span class="goal-name">${label}</span>
+      <span><span class="goal-actual">${actual}</span> <span class="goal-target">/ ${target}</span></span>
+    </div>
+    <div class="goal-track"><div class="goal-fill" style="width:${Math.min(100,pct)}%;background:${c}"></div></div>
+    <div class="goal-pct">${Math.round(pct)}% of goal</div>
+  </div>`;
+}
+
+function renderCtcRow(count, label) {
+  return `<div class="ctc-divider">
+    <span class="ctc-label"><i class="ti ti-file-check" aria-hidden="true" style="font-size:14px;color:#aaa"></i>CTC calls${label ? " — " + label : ""}</span>
+    <div><div class="ctc-count">${count}</div><div class="ctc-note">tracked, no target</div></div>
+  </div>`;
+}
+
+function renderPeriodScorecard() {
+  const data = periodData[currentPeriod];
+  const isYTD = currentPeriod === "ytd";
+  const periodLabel = isYTD ? "Year to date" : "Month to date";
+  const multiplier = isYTD ? 12 : 1;
+  if (!data.length) {
+    document.getElementById("periodScorecard").innerHTML = `<div class="no-data">No activity logged yet.</div>`; return;
+  }
+  let html = `<div style="font-size:11px;color:#bbb;margin-bottom:14px">${periodLabel} — ${data.length} total activities</div>`;
+  GOALS.forEach(g => {
+    const target = g.monthly * multiplier;
+    const count = data.filter(a => a.act_type === g.type).length;
+    html += renderGoalBar(g.label, count, target, (count / target) * 100);
+  });
+  const ctcCount = data.filter(a => a.act_type === CTC_TYPE).length;
+  html += renderCtcRow(ctcCount, isYTD ? "YTD" : new Date().toLocaleString("en-US", { month: "long" }));
+  document.getElementById("periodScorecard").innerHTML = html;
+}
+
+async function loadWeek() {
+  document.getElementById("weekLabel2").textContent = week.label;
+  try {
+    const now = new Date();
+    const monthStart = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,"0")}-01`;
+    const yearStart = `${now.getFullYear()}-01-01`;
+    const [weekActs, mtdActs, ytdActs] = await Promise.all([
+      sbFetch(`amanda_activities?select=act_type,outcome&act_date=gte.${week.start}&act_date=lte.${week.end}`),
+      sbFetch(`amanda_activities?select=act_type,outcome&act_date=gte.${monthStart}`),
+      sbFetch(`amanda_activities?select=act_type,outcome&act_date=gte.${yearStart}`)
+    ]);
+    periodData = { mtd: mtdActs, ytd: ytdActs };
+    let html = "";
+    GOALS.forEach(g => {
+      const count = weekActs.filter(a => a.act_type === g.type).length;
+      html += renderGoalBar(g.label, count, g.weekly, (count / g.weekly) * 100);
+    });
+    const ctcWeek = weekActs.filter(a => a.act_type === CTC_TYPE).length;
+    html += renderCtcRow(ctcWeek, "this week");
+    document.getElementById("weekGoalBars").innerHTML = html;
+    renderPeriodScorecard();
+  } catch(e) {
+    console.error("Goals error:", e);
+    document.getElementById("weekGoalBars").innerHTML = `<div class="no-data">Unable to load goals.</div>`;
+  }
+
+  try {
+    const todayStr = today();
+    const [fus, overdue] = await Promise.all([
+      sbFetch(`amanda_activities?select=agent_name,act_type,follow_up_date&follow_up_date=gte.${todayStr}&follow_up_date=lte.${week.end}&order=follow_up_date.asc&limit=8`),
+      sbFetch(`amanda_activities?select=agent_name,act_type,follow_up_date&follow_up_date=lt.${todayStr}&follow_up_date=not.is.null&order=follow_up_date.desc&limit=4`)
+    ]);
+    const all = [...overdue, ...fus];
+    document.getElementById("weekFollowups").innerHTML = all.length ? all.map(f => {
+      const isOvr = f.follow_up_date < todayStr;
+      const c = isOvr ? "#E24B4A" : "#534AB7";
+      const lbl = isOvr ? "Overdue" : fmtDate(f.follow_up_date);
+      return `<div class="fu-item"><div class="fu-dot" style="background:${c}"></div><div class="fu-body"><div class="fu-name">${f.agent_name}</div><div class="fu-meta">${f.act_type}</div></div><div class="fu-date" style="color:${c}">${lbl}</div></div>`;
+    }).join("") : `<div class="no-data" style="padding:16px">No follow-ups due.</div>`;
+  } catch(e) { console.error("Followups error:", e); }
+
+  try {
+    const recent = await sbFetch(`amanda_activities?select=agent_name,act_type,act_date,outcome&order=act_date.desc&limit=5`);
+    document.getElementById("weekRecent").innerHTML = recent.length ? recent.map(r => {
+      const isCtc = r.act_type === CTC_TYPE;
+      return `<div class="feed-item">
+        <div class="feed-top"><span class="feed-agent">${r.agent_name}</span><span class="feed-date">${fmtDate(r.act_date)}</span></div>
+        <span class="feed-badge ${isCtc ? "ctc" : "rm"}">${r.act_type}</span>
+      </div>`;
+    }).join("") : `<div class="no-data" style="padding:16px">Nothing logged yet.</div>`;
+  } catch(e) { console.error("Recent error:", e); }
+}
+
+function checkReminders() {
+  const m = new Date().getMonth() + 1;
+  const msgs = [];
+  if ([3,6,9,12].includes(m)) msgs.push("Quarterly reminder: Business Planning Sessions are due this month.");
+  else if ([1,4,7,10].includes(m)) msgs.push("Bimonthly reminder: Agent Appreciation outreach due this month.");
+  if (msgs.length) { document.getElementById("reminderText").textContent = msgs[0]; document.getElementById("reminderBanner").classList.add("show"); }
+}
+
+let agentNames = [];
+async function initAutocomplete() {
+  try {
+    const agents = await sbFetch("agent_profiles?select=agent_name&order=agent_name.asc");
+    agentNames = agents.map(a => a.agent_name);
+  } catch(e) { console.error("Autocomplete error:", e); }
+  const input = document.getElementById("agentInput"), list = document.getElementById("acList");
+  input.addEventListener("input", () => {
+    const val = input.value.trim().toLowerCase();
+    if (!val) { list.classList.remove("open"); return; }
+    const matches = agentNames.filter(n => n.toLowerCase().includes(val)).slice(0, 8);
+    if (!matches.length) { list.classList.remove("open"); return; }
+    list.innerHTML = matches.map(n => `<div class="ac-item" onclick="selectAgent('${n.replace(/'/g,"\\'")}')">` + n + `</div>`).join("");
+    list.classList.add("open");
+  });
+  document.addEventListener("click", e => { if (!e.target.closest(".ac-wrap")) list.classList.remove("open"); });
+}
+function selectAgent(name) { document.getElementById("agentInput").value = name; document.getElementById("acList").classList.remove("open"); }
+
+document.getElementById("activityOutcome").addEventListener("change", function() {
+  const row = document.getElementById("followupRow");
+  if (this.value === "Requires follow-up") {
+    row.classList.add("show");
+    const d = new Date(); d.setDate(d.getDate()+7);
+    document.getElementById("followupDate").value = d.toISOString().split("T")[0];
+  } else { row.classList.remove("show"); document.getElementById("followupDate").value = ""; }
+});
+
+async function logActivity() {
+  const agentName = document.getElementById("agentInput").value.trim();
+  const activityType = document.getElementById("activityType").value;
+  const date = document.getElementById("activityDate").value;
+  const outcome = document.getElementById("activityOutcome").value;
+  const followupDate = document.getElementById("followupDate").value || null;
+  const notes = document.getElementById("activityNotes").value.trim() || null;
+  if (!agentName) { toast("Please enter an agent name.", "error"); return; }
+  if (!date) { toast("Please select a date.", "error"); return; }
+  if (!outcome) { toast("Please select an outcome.", "error"); return; }
+  if (outcome === "Requires follow-up" && !followupDate) { toast("Please set a follow-up date.", "error"); return; }
+  const btn = document.getElementById("logBtn");
+  btn.disabled = true; btn.textContent = "Saving...";
+  try {
+    await sbFetch("amanda_activities", { method: "POST", prefer: "return=minimal", body: JSON.stringify({ agent_name: agentName, act_type: activityType, act_date: date, outcome, follow_up_date: followupDate, notes }) });
+    toast("Activity logged.", "success");
+    document.getElementById("agentInput").value = "";
+    document.getElementById("activityType").selectedIndex = 0;
+    document.getElementById("activityDate").value = today();
+    document.getElementById("activityOutcome").value = "";
+    document.getElementById("followupDate").value = "";
+    document.getElementById("activityNotes").value = "";
+    document.getElementById("followupRow").classList.remove("show");
+    loadWeek(); loadFollowups(); loadFeed(); loadDaniel();
+  } catch(e) { console.error("Log error:", e); toast("Save failed: " + e.message, "error"); }
+  finally { btn.disabled = false; btn.textContent = "Log activity"; }
+}
+
+async function loadFollowups() {
+  try {
+    const all = await sbFetch(`amanda_activities?select=id,agent_name,act_type,follow_up_date,notes&follow_up_date=not.is.null&order=follow_up_date.asc&limit=100`);
+    const todayStr = today();
+    const sorted = [...all.filter(f => f.follow_up_date < todayStr), ...all.filter(f => f.follow_up_date >= todayStr)];
+    if (!sorted.length) { document.getElementById("followupsList").innerHTML = `<div class="no-data">No upcoming follow-ups.</div>`; return; }
+    document.getElementById("followupsList").innerHTML = sorted.map(f => {
+      const isOvr = f.follow_up_date < todayStr, isToday = f.follow_up_date === todayStr;
+      const cls = isOvr ? "overdue" : isToday ? "today" : "soon";
+      const days = Math.round((new Date(f.follow_up_date+"T12:00:00") - new Date()) / 86400000);
+      const lbl = isOvr ? `Overdue by ${Math.abs(days)}d` : isToday ? "Today" : `In ${days}d`;
+      const dotC = isOvr ? "#E24B4A" : isToday ? "#EF9F27" : "#534AB7";
+      const dateC = isOvr ? "#E24B4A" : isToday ? "#EF9F27" : "#534AB7";
+      return `<div class="fu-item" id="fu-${f.id}">
+        <div class="fu-dot" style="background:${dotC}"></div>
+        <div class="fu-body">
+          <div class="fu-name">${f.agent_name}</div>
+          <div class="fu-meta">${f.act_type}${f.notes ? " · " + f.notes.substring(0,50) : ""}</div>
+          <div id="fu-edit-${f.id}" class="fu-edit-area">
+            <input type="date" id="fu-date-${f.id}" value="${f.follow_up_date}" style="border:0.5px solid #d8d6e8;border-radius:6px;padding:5px 9px;font-size:12px;margin-right:6px;font-family:inherit">
+            <button class="btn-sm" onclick="saveFollowupDate(${f.id})">Save</button>
+            <button class="btn-sm" onclick="document.getElementById('fu-edit-${f.id}').style.display='none'" style="margin-left:4px">Cancel</button>
+          </div>
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:5px">
+          <div class="fu-date" style="color:${dateC}">${lbl}</div>
+          <button class="btn-sm" onclick="toggleFuEdit(${f.id})" style="font-size:10px;padding:3px 7px">Edit date</button>
+        </div>
+      </div>`;
+    }).join("");
+  } catch(e) { console.error("Followups error:", e); document.getElementById("followupsList").innerHTML = `<div class="no-data">Unable to load.</div>`; }
+}
+
+function toggleFuEdit(id) { const el = document.getElementById(`fu-edit-${id}`); el.style.display = el.style.display === "none" ? "block" : "none"; }
+
+async function saveFollowupDate(id) {
+  const d = document.getElementById(`fu-date-${id}`).value;
+  if (!d) { toast("Please select a date.", "error"); return; }
+  try {
+    await sbFetch(`amanda_activities?id=eq.${id}`, { method: "PATCH", prefer: "return=minimal", body: JSON.stringify({ follow_up_date: d }) });
+    toast("Follow-up date updated.", "success"); loadFollowups(); loadWeek();
+  } catch(e) { toast("Save failed: " + e.message, "error"); }
+}
+
+let allFeedData = [];
+async function loadFeed() {
+  try {
+    allFeedData = await sbFetch("amanda_activities?select=*&order=act_date.desc&limit=200");
+    renderFeed(allFeedData);
+  } catch(e) { console.error("Feed error:", e); document.getElementById("feedList").innerHTML = `<div class="no-data">Unable to load feed.</div>`; }
+}
+
+function renderFeed(data) {
+  if (!data.length) { document.getElementById("feedList").innerHTML = `<div class="no-data">No activity yet.</div>`; return; }
+  document.getElementById("feedList").innerHTML = data.map(a => {
+    const isCtc = a.act_type === CTC_TYPE;
+    return `<div class="feed-item">
+      <div class="feed-top">
+        <span class="feed-agent">${a.agent_name}</span>
+        <div class="feed-right">
+          <span class="feed-date">${fmtDate(a.act_date)}</span>
+          <button class="btn-sm" onclick="openEditModal(${a.id})" style="font-size:10px;padding:3px 8px">Edit</button>
+        </div>
+      </div>
+      <span class="feed-badge ${isCtc ? "ctc" : "rm"}">${a.act_type}</span>
+      ${a.outcome ? `<div class="feed-outcome">${a.outcome}</div>` : ""}
+      ${a.follow_up_date ? `<div class="feed-fu">Follow-up: ${fmtDate(a.follow_up_date)}</div>` : ""}
+      ${a.notes ? `<div class="feed-notes">"${a.notes}"</div>` : ""}
+    </div>`;
+  }).join("");
+}
+
+function applyFeedFilters() {
+  const q = (document.getElementById("feedSearch")?.value || "").toLowerCase();
+  const type = document.getElementById("feedTypeFilter")?.value || "all";
+  const period = document.getElementById("feedPeriodFilter")?.value || "all";
+  const todayStr = today(), weekStart = week.start, monthStart = todayStr.substring(0,7) + "-01";
+  let data = allFeedData;
+  if (q) data = data.filter(a => (a.agent_name||"").toLowerCase().includes(q) || (a.notes||"").toLowerCase().includes(q));
+  if (type !== "all") data = data.filter(a => a.act_type === type);
+  if (period === "week") data = data.filter(a => a.act_date >= weekStart);
+  if (period === "month") data = data.filter(a => a.act_date >= monthStart);
+  renderFeed(data);
+}
+
+let editingActivityId = null;
+function openEditModal(id) {
+  const a = allFeedData.find(x => x.id === id); if (!a) return;
+  editingActivityId = id;
+  document.getElementById("editModalAgent").textContent = a.agent_name + " — " + a.act_type;
+  document.getElementById("editNotes").value = a.notes || "";
+  document.getElementById("editOutcome").value = a.outcome || "";
+  document.getElementById("editFollowupDate").value = a.follow_up_date || "";
+  document.getElementById("editModal").classList.add("open");
+}
+function closeEditModal() { document.getElementById("editModal").classList.remove("open"); editingActivityId = null; }
+async function saveEditModal() {
+  if (!editingActivityId) return;
+  try {
+    await sbFetch(`amanda_activities?id=eq.${editingActivityId}`, { method: "PATCH", prefer: "return=minimal", body: JSON.stringify({ notes: document.getElementById("editNotes").value.trim() || null, outcome: document.getElementById("editOutcome").value || null, follow_up_date: document.getElementById("editFollowupDate").value || null }) });
+    toast("Activity updated.", "success"); closeEditModal(); loadFeed(); loadFollowups(); loadWeek();
+  } catch(e) { toast("Save failed: " + e.message, "error"); }
+}
+
+let historyTimer;
+function searchHistory(val) {
+  clearTimeout(historyTimer);
+  if (val.trim().length < 2) { document.getElementById("historyResult").innerHTML = `<div class="no-data">Type at least 2 characters.</div>`; return; }
+  historyTimer = setTimeout(() => doSearchHistory(val.trim()), 400);
+}
+async function doSearchHistory(name) {
+  document.getElementById("historyResult").innerHTML = `<div class="no-data">Searching...</div>`;
+  try {
+    const [profiles, activities, callLogs] = await Promise.all([
+      sbFetch(`agent_profiles?agent_name=ilike.*${encodeURIComponent(name)}*&limit=3`).catch(() => []),
+      sbFetch(`amanda_activities?agent_name=ilike.*${encodeURIComponent(name)}*&order=act_date.desc&limit=50`).catch(() => []),
+      sbFetch(`call_logs?agent_name=ilike.*${encodeURIComponent(name)}*&order=week_start.desc&limit=50`).catch(() => [])
+    ]);
+    let html = "";
+    if (profiles.length) {
+      const p = profiles[0];
+      html += `<div class="agent-card"><div class="agent-card-name">${p.agent_name}</div><div class="agent-grid">
+        ${p.tier ? `<div class="agent-row">Tier <span>${p.tier}</span></div>` : ""}
+        ${p.assigned_lp ? `<div class="agent-row">LP <span>${p.assigned_lp}</span></div>` : ""}
+        ${p.email ? `<div class="agent-row">Email <span>${p.email}</span></div>` : ""}
+        ${p.phone ? `<div class="agent-row">Phone <span>${p.phone}</span></div>` : ""}
+      </div></div>`;
+    }
+    if (!activities.length && !callLogs.length) {
+      html += `<div class="no-data">No contact history found for "${name}".</div>`;
+    } else {
+      if (!profiles.length) html += `<div style="padding:9px 12px;background:#FFF8E1;border-radius:8px;font-size:12px;color:#7B6000;margin-bottom:12px">No profile found — showing activity logs only.</div>`;
+      const items = [
+        ...activities.map(a => ({ date: a.act_date, source: "RM", agent: a.agent_name, type: a.act_type, outcome: a.outcome, notes: a.notes, fu: a.follow_up_date })),
+        ...callLogs.map(c => ({ date: c.week_start, source: "LP", agent: c.agent_name, type: "LP Call", outcome: c.outcome, notes: c.note, lp: c.lp }))
+      ].sort((a, b) => (b.date||"").localeCompare(a.date||""));
+      html += `<div style="font-size:11px;color:#bbb;margin-bottom:10px">${items.length} contact records</div>`;
+      html += items.map(item => {
+        const isCtc = item.type === CTC_TYPE, isLp = item.source === "LP";
+        return `<div class="feed-item">
+          <div class="feed-top"><span class="feed-agent">${isLp ? (item.lp || "LP") + " → " + item.agent : item.agent}</span><span class="feed-date">${fmtDate(item.date)}</span></div>
+          <span class="feed-badge ${isLp ? "lp" : isCtc ? "ctc" : "rm"}">${item.type}</span>
+          ${item.outcome ? `<div class="feed-outcome">${item.outcome}</div>` : ""}
+          ${item.fu ? `<div class="feed-fu">Follow-up: ${fmtDate(item.fu)}</div>` : ""}
+          ${item.notes ? `<div class="feed-notes">"${item.notes}"</div>` : ""}
+        </div>`;
+      }).join("");
+    }
+    document.getElementById("historyResult").innerHTML = html;
+  } catch(e) { document.getElementById("historyResult").innerHTML = `<div class="no-data">Error: ${e.message}</div>`; }
+}
+
+async function loadDaniel() {
+  try {
+    const [weekActs, totalActs] = await Promise.all([
+      sbFetch(`amanda_activities?select=*&act_date=gte.${week.start}&act_date=lte.${week.end}&order=act_date.desc`),
+      sbFetch(`amanda_activities?select=id`)
+    ]);
+    const meetings = weekActs.filter(a => a.act_type === "New Realtor Meeting").length;
+    const calls = weekActs.filter(a => a.act_type === "Cold Calls").length;
+    const ctc = weekActs.filter(a => a.act_type === CTC_TYPE).length;
+    document.getElementById("danielStats").innerHTML = [
+      { n: weekActs.length, l: "This week" }, { n: meetings, l: "New meetings" },
+      { n: calls, l: "Cold calls" }, { n: ctc, l: "CTC calls" }
+    ].map(s => `<div class="stat-card"><div class="stat-num">${s.n}</div><div class="stat-label">${s.l}</div></div>`).join("");
+    document.getElementById("danielBody").innerHTML = weekActs.length
+      ? weekActs.map(a => `<tr><td>${a.agent_name}</td><td>${a.act_type}</td><td>${a.outcome||"—"}</td><td>${fmtDate(a.act_date)}</td><td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${a.notes||"—"}</td></tr>`).join("")
+      : `<tr><td colspan="5" style="text-align:center;padding:20px;color:#bbb">No activity this week.</td></tr>`;
+  } catch(e) { console.error("Daniel error:", e); }
+}
+
+let allProspects = [], editingProspectId = null;
+async function loadPipeline() {
+  try { allProspects = await sbFetch("outreach_prospects?select=*&order=followup_date.asc.nullslast"); }
+  catch(e) { console.warn("Pipeline:", e.message); allProspects = []; }
+  renderPipelineStats(); filterPipeline();
+}
+function renderPipelineStats() {
+  const todayStr = today();
+  document.getElementById("ps-total").textContent = allProspects.filter(p => p.status === "Requires follow-up").length;
+  document.getElementById("ps-due").textContent = allProspects.filter(p => p.followup_date && p.followup_date <= todayStr && p.status === "Requires follow-up").length;
+  document.getElementById("ps-dnc").textContent = allProspects.filter(p => p.status === "DNC").length;
+  document.getElementById("ps-nfm").textContent = allProspects.filter(p => p.status === "NFM").length;
+}
+function filterPipeline() {
+  const q = (document.getElementById("pipelineSearch")?.value || "").toLowerCase();
+  const sf = document.getElementById("pipelineFilter")?.value || "all";
+  let list = allProspects;
+  if (sf !== "all") list = list.filter(p => p.status === sf);
+  if (q) list = list.filter(p => (p.name||"").toLowerCase().includes(q) || (p.brokerage||"").toLowerCase().includes(q));
+  renderProspects(list);
+}
+function renderProspects(list) {
+  const todayStr = today();
+  if (!list.length) { document.getElementById("prospectList").innerHTML = `<div class="no-data">No prospects found.</div>`; return; }
+  document.getElementById("prospectList").innerHTML = list.map(p => {
+    const isDNC = p.status === "DNC", isNFM = p.status === "NFM";
+    const fuOvr = p.followup_date && p.followup_date < todayStr;
+    const badgeClass = { "Requires follow-up": "followup", "DNC": "dnc", "NFM": "nfm" }[p.status] || "followup";
+    const badgeLabel = { "Requires follow-up": "Requires Follow-up", "DNC": "Do Not Contact", "NFM": "Already w/ NFM" }[p.status] || p.status;
+    return `<div class="prospect-card ${isDNC ? "dnc" : isNFM ? "nfm" : ""}">
+      <div class="pc-top">
+        <div><div class="pc-name">${p.name}</div><div class="pc-brokerage">${p.brokerage||"—"}</div></div>
+        <span class="pc-badge ${badgeClass}">${badgeLabel}</span>
+      </div>
+      <div class="pc-contact">
+        ${p.phone ? `<span><i class="ti ti-phone" aria-hidden="true" style="font-size:12px;vertical-align:-1px"></i> ${p.phone}</span>` : ""}
+        ${p.email ? `<span><i class="ti ti-mail" aria-hidden="true" style="font-size:12px;vertical-align:-1px"></i> ${p.email}</span>` : ""}
+      </div>
+      ${p.followup_date && !isDNC && !isNFM ? `<div class="pc-fudate ${fuOvr ? "overdue" : ""}">Follow-up: ${fuOvr ? "OVERDUE — " : ""}${fmtDate(p.followup_date)}</div>` : ""}
+      ${p.notes ? `<div class="pc-notes">${p.notes}</div>` : ""}
+      <div class="pc-actions">
+        <button class="btn-sm" onclick="editProspect(${p.id})">Edit</button>
+        ${!isDNC && !isNFM ? `<button class="btn-sm danger" onclick="markDNC(${p.id})">Do Not Contact</button>` : `<button class="btn-sm" onclick="unmarkDNC(${p.id})">Reactivate</button>`}
+      </div>
+    </div>`;
+  }).join("");
+}
+function toggleAddForm(show) {
+  editingProspectId = null;
+  document.getElementById("addProspectForm").style.display = show ? "block" : "none";
+  if (show) {
+    ["np-name","np-brokerage","np-phone","np-email","np-notes","np-followup"].forEach(id => document.getElementById(id).value = "");
+    document.getElementById("np-status").value = "Requires follow-up";
+    document.getElementById("addFormTitle").textContent = "Add new prospect";
+  }
+}
+function editProspect(id) {
+  const p = allProspects.find(x => x.id === id); if (!p) return;
+  editingProspectId = id;
+  document.getElementById("np-name").value = p.name||"";
+  document.getElementById("np-brokerage").value = p.brokerage||"";
+  document.getElementById("np-phone").value = p.phone||"";
+  document.getElementById("np-email").value = p.email||"";
+  document.getElementById("np-status").value = p.status||"Requires follow-up";
+  document.getElementById("np-followup").value = p.followup_date||"";
+  document.getElementById("np-notes").value = p.notes||"";
+  document.getElementById("addFormTitle").textContent = "Edit prospect";
+  document.getElementById("addProspectForm").style.display = "block";
+  document.getElementById("addProspectForm").scrollIntoView({ behavior: "smooth" });
+}
+async function saveProspect() {
+  const name = document.getElementById("np-name").value.trim();
+  if (!name) { toast("Please enter a name.", "error"); return; }
+  const payload = { name, brokerage: document.getElementById("np-brokerage").value.trim()||null, phone: document.getElementById("np-phone").value.trim()||null, email: document.getElementById("np-email").value.trim()||null, status: document.getElementById("np-status").value, followup_date: document.getElementById("np-followup").value||null, notes: document.getElementById("np-notes").value.trim()||null };
+  try {
+    if (editingProspectId) { await sbFetch(`outreach_prospects?id=eq.${editingProspectId}`, { method: "PATCH", prefer: "return=minimal", body: JSON.stringify(payload) }); toast("Prospect updated.", "success"); }
+    else { await sbFetch("outreach_prospects", { method: "POST", prefer: "return=minimal", body: JSON.stringify(payload) }); toast("Prospect added.", "success"); }
+    toggleAddForm(false); loadPipeline();
+  } catch(e) { toast("Save failed: " + e.message, "error"); }
+}
+async function markDNC(id) {
+  try { await sbFetch(`outreach_prospects?id=eq.${id}`, { method: "PATCH", prefer: "return=minimal", body: JSON.stringify({ status: "DNC", followup_date: null }) }); toast("Marked as Do Not Contact.", "success"); loadPipeline(); }
+  catch(e) { toast("Error: " + e.message, "error"); }
+}
+async function unmarkDNC(id) {
+  try { await sbFetch(`outreach_prospects?id=eq.${id}`, { method: "PATCH", prefer: "return=minimal", body: JSON.stringify({ status: "Requires follow-up" }) }); toast("Reactivated.", "success"); loadPipeline(); }
+  catch(e) { toast("Error: " + e.message, "error"); }
+}
+
+init();
+</script>
+</body>
+</html>
