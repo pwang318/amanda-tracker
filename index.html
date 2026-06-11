@@ -145,6 +145,21 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   .form-row,.form-row.three,.stat-grid,.pipe-stats,.week-bottom{grid-template-columns:1fr}
   .view{padding:14px}
 }
+
+/* CALENDAR */
+.cal-day{border-radius:8px;padding:4px;min-height:58px;border:0.5px solid transparent;cursor:pointer;position:relative}
+.cal-day:hover{background:#f5f4f8;border-color:#e4e2ee}
+.cal-day.other-month{opacity:.35}
+.cal-day.today .cal-num{background:#534AB7;color:#fff;border-radius:50%;width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:500}
+.cal-num{font-size:11px;color:#888;margin-bottom:3px;width:22px;height:22px;display:flex;align-items:center;justify-content:center}
+.cal-event{font-size:9px;padding:2px 4px;border-radius:4px;margin-bottom:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:500;cursor:pointer}
+.cal-event.meeting{background:#EEEDFE;color:#3C3489}
+.cal-event.followup{background:#FFF3E0;color:#B85B00}
+.cal-event.ctc{background:#E1F5EE;color:#0F6E56}
+.cal-event.other{background:#EEEDFE;color:#3C3489}
+.cal-day-item{display:flex;align-items:flex-start;gap:8px;padding:7px 0;border-bottom:0.5px solid #eee}
+.cal-day-item:last-child{border-bottom:none}
+.cal-day-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;margin-top:3px}
 </style>
 </head>
 <body>
@@ -167,6 +182,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   <div class="tab" onclick="switchTab('feed')">Activity Feed</div>
   <div class="tab" onclick="switchTab('history')">Agent History</div>
   <div class="tab" onclick="switchTab('pipeline')">Outreach Pipeline</div>
+  <div class="tab" onclick="switchTab('calendar')">📅 Calendar</div>
   <div class="tab" onclick="switchTab('daniel')">Daniel's View</div>
 </div>
 
@@ -425,6 +441,38 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   </div>
 </div>
 
+<!-- CALENDAR TAB -->
+<div id="view-calendar" class="view">
+  <div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+      <button class="btn-sm" onclick="calNav(-1)" style="font-size:13px;padding:6px 12px">← Prev</button>
+      <span style="font-size:14px;font-weight:500;color:#1a1a2e" id="calMonthLabel"></span>
+      <button class="btn-sm" onclick="calNav(1)" style="font-size:13px;padding:6px 12px">Next →</button>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px;margin-bottom:8px">
+      <div style="text-align:center;font-size:10px;color:#bbb;font-weight:500;padding:4px">Sun</div>
+      <div style="text-align:center;font-size:10px;color:#bbb;font-weight:500;padding:4px">Mon</div>
+      <div style="text-align:center;font-size:10px;color:#bbb;font-weight:500;padding:4px">Tue</div>
+      <div style="text-align:center;font-size:10px;color:#bbb;font-weight:500;padding:4px">Wed</div>
+      <div style="text-align:center;font-size:10px;color:#bbb;font-weight:500;padding:4px">Thu</div>
+      <div style="text-align:center;font-size:10px;color:#bbb;font-weight:500;padding:4px">Fri</div>
+      <div style="text-align:center;font-size:10px;color:#bbb;font-weight:500;padding:4px">Sat</div>
+    </div>
+    <div id="calGrid" style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px"></div>
+    <div id="calDayDetail" style="display:none;margin-top:12px;background:#f8f7fc;border:0.5px solid #AFA9EC;border-radius:10px;padding:14px">
+      <div style="font-size:12px;font-weight:500;color:#534AB7;margin-bottom:10px" id="calDayTitle"></div>
+      <div id="calDayItems"></div>
+    </div>
+  </div>
+  <div style="display:flex;gap:12px;flex-wrap:wrap;padding:4px 0 8px">
+    <span style="font-size:11px;color:#555;display:flex;align-items:center;gap:4px"><span style="background:#EEEDFE;color:#3C3489;font-size:10px;padding:1px 7px;border-radius:4px;font-weight:500">🌸 Meeting</span></span>
+    <span style="font-size:11px;color:#555;display:flex;align-items:center;gap:4px"><span style="background:#FFF3E0;color:#B85B00;font-size:10px;padding:1px 7px;border-radius:4px;font-weight:500">🌺 Follow-up</span></span>
+    <span style="font-size:11px;color:#555;display:flex;align-items:center;gap:4px"><span style="background:#E1F5EE;color:#0F6E56;font-size:10px;padding:1px 7px;border-radius:4px;font-weight:500">⚡ CTC</span></span>
+    <span style="font-size:11px;color:#555;display:flex;align-items:center;gap:4px"><span style="background:#EEEDFE;color:#3C3489;font-size:10px;padding:1px 7px;border-radius:4px;font-weight:500">🎯 Other</span></span>
+  </div>
+</div>
+
+
 <!-- DANIEL'S VIEW -->
 <div id="view-daniel" class="view">
   <div class="stat-grid" id="danielStats"></div>
@@ -435,6 +483,38 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
         <thead><tr><th>Agent</th><th>Activity</th><th>Outcome</th><th>Date</th><th>Notes</th></tr></thead>
         <tbody id="danielBody"><tr><td colspan="5" style="text-align:center;padding:20px;color:#bbb">Loading...</td></tr></tbody>
       </table>
+    </div>
+  </div>
+</div>
+
+
+<!-- EDIT CONTACT MODAL -->
+<div class="modal-overlay" id="contactModal">
+  <div class="modal-box">
+    <div class="modal-header">
+      <span class="modal-title">Edit contact info 🌸</span>
+      <button class="modal-close" onclick="closeContactModal()">×</button>
+    </div>
+    <div class="modal-sub" id="contactModalName"></div>
+    <div class="field" style="margin-bottom:12px">
+      <label>Phone</label>
+      <input type="text" id="contactPhone" placeholder="Phone number">
+    </div>
+    <div class="field" style="margin-bottom:12px">
+      <label>Email</label>
+      <input type="email" id="contactEmail" placeholder="Email address">
+    </div>
+    <div class="field" style="margin-bottom:12px">
+      <label>Brokerage</label>
+      <input type="text" id="contactBrokerage" placeholder="Brokerage / Company">
+    </div>
+    <div class="field" style="margin-bottom:18px">
+      <label>Birthday</label>
+      <input type="text" id="contactBirthday" placeholder="e.g. Mar 14">
+    </div>
+    <div style="display:flex;gap:10px">
+      <button class="btn-primary" onclick="saveContactModal()">Save changes</button>
+      <button class="btn-sm" onclick="closeContactModal()">Cancel</button>
     </div>
   </div>
 </div>
@@ -529,11 +609,12 @@ async function init() {
 }
 
 function switchTab(name) {
-  const names = ["week","log","followups","feed","history","pipeline","daniel"];
+  const names = ["week","log","followups","feed","history","pipeline","calendar","daniel"];
   document.querySelectorAll(".tab").forEach((t, i) => t.classList.toggle("active", names[i] === name));
   document.querySelectorAll(".view").forEach(v => v.classList.remove("active"));
   document.getElementById("view-" + name).classList.add("active");
   if (name === "pipeline") loadPipeline();
+  if (name === "calendar") loadCalendar();
 }
 
 let periodData = { mtd: [], ytd: [] }, currentPeriod = "mtd";
@@ -818,7 +899,7 @@ async function doSearchHistory(name) {
     const [profiles, activities, callLogs] = await Promise.all([
       sbFetch(`agent_profiles?agent_name=ilike.*${encodeURIComponent(name)}*&limit=3`).catch(() => []),
       sbFetch(`amanda_activities?agent_name=ilike.*${encodeURIComponent(name)}*&order=act_date.desc&limit=50`).catch(() => []),
-      sbFetch(`call_logs?agent_name=ilike.*${encodeURIComponent(name)}*&order=week_start.desc&limit=50`).catch(() => [])
+      sbFetch(`call_logs?agent_name=ilike.*${encodeURIComponent(name)}*&order=call_date.desc&limit=50`).catch(() => [])
     ]);
     let html = "";
     if (profiles.length) {
@@ -836,7 +917,7 @@ async function doSearchHistory(name) {
       if (!profiles.length) html += `<div style="padding:9px 12px;background:#FFF8E1;border-radius:8px;font-size:12px;color:#7B6000;margin-bottom:12px">No profile found — showing activity logs only.</div>`;
       const items = [
         ...activities.map(a => ({ date: a.act_date, source: "RM", agent: a.agent_name, type: a.act_type, outcome: a.outcome, notes: a.notes, fu: a.follow_up_date })),
-        ...callLogs.map(c => ({ date: c.week_start, source: "LP", agent: c.agent_name, type: "LP Call", outcome: c.outcome, notes: c.notes, lp: c.lp_name }))
+        ...callLogs.map(c => ({ date: c.call_date, source: "LP", agent: c.agent_name, type: "LP Call", outcome: c.outcome, notes: c.note, lp: c.lp }))
       ].sort((a, b) => (b.date||"").localeCompare(a.date||""));
       html += `<div style="font-size:11px;color:#bbb;margin-bottom:10px">🦋 ${items.length} contact records</div>`;
       html += items.map(item => {
@@ -907,15 +988,15 @@ function renderProspects(list) {
         <div><div class="pc-name">${p.name}</div><div class="pc-brokerage">${p.brokerage||"—"}</div></div>
         <span class="pc-badge ${badgeClass}">${badgeLabel}</span>
       </div>
-      <div class="pc-contact">
-        ${p.phone ? `<span>📞 ${p.phone}</span>` : ""}
-        ${p.email ? `<span>✉️ ${p.email}</span>` : ""}
+      <div class="pc-contact" style="justify-content:space-between;align-items:center">
+        <div style="display:flex;gap:14px;flex-wrap:wrap">${p.phone ? `<span>📞 ${p.phone}</span>` : '<span style="color:#ccc">No phone</span>'}${p.email ? ` <span>✉️ ${p.email}</span>` : ''}</div>
+        <button class="btn-sm" style="font-size:10px;padding:3px 8px;flex-shrink:0" onclick="openContactModal('" + p.name.replace(/'/g,"\\'") + "','" + (p.phone||'') + "','" + (p.email||'') + "','" + (p.brokerage||'') + "','')">Edit contact</button>
       </div>
       ${p.followup_date && !isDNC && !isNFM ? `<div class="pc-fudate ${fuOvr?"overdue":""}">🌺 Follow-up: ${fuOvr?"OVERDUE — ":""}${fmtDate(p.followup_date)}</div>` : ""}
       ${p.notes ? `<div class="pc-notes">${p.notes}</div>` : ""}
       <div class="pc-actions">
         <button class="btn-sm" onclick="editProspect(${p.id})">Edit</button>
-        ${!isDNC && !isNFM ? `<button class="btn-sm danger" onclick="markDNC(${p.id})">Do Not Contact</button>` : `<button class="btn-sm" onclick="unmarkDNC(${p.id})">Reactivate</button>`}
+        ${isDNC || isNFM ? `<button class="btn-sm" onclick="unmarkDNC(${p.id})">Reactivate</button>` : ""}
       </div>
     </div>`;
   }).join("");
@@ -961,6 +1042,166 @@ async function unmarkDNC(id) {
   try { await sbFetch(`outreach_prospects?id=eq.${id}`, { method: "PATCH", prefer: "return=minimal", body: JSON.stringify({ status: "Requires follow-up" }) }); toast("Reactivated 🌱", "success"); loadPipeline(); }
   catch(e) { toast("Error: " + e.message, "error"); }
 }
+
+// ─── CONTACT MODAL JS ────────────────────────────────────────────────────────
+let editingContactName = null;
+
+async function openContactModal(name, phone, email, brokerage, birthday) {
+  editingContactName = name;
+  document.getElementById("contactModalName").textContent = name;
+  document.getElementById("contactPhone").value = phone || "";
+  document.getElementById("contactEmail").value = email || "";
+  document.getElementById("contactBrokerage").value = brokerage || "";
+  document.getElementById("contactBirthday").value = birthday || "";
+  document.getElementById("contactModal").classList.add("open");
+}
+
+function closeContactModal() {
+  document.getElementById("contactModal").classList.remove("open");
+  editingContactName = null;
+}
+
+async function saveContactModal() {
+  if (!editingContactName) return;
+  const payload = {
+    agent_name: editingContactName,
+    phone: document.getElementById("contactPhone").value.trim() || null,
+    email: document.getElementById("contactEmail").value.trim() || null,
+    birthday: document.getElementById("contactBirthday").value.trim() || null
+  };
+  try {
+    const existing = await sbFetch(`agent_profiles?agent_name=eq.${encodeURIComponent(editingContactName)}&limit=1`).catch(() => []);
+    if (existing && existing.length > 0) {
+      await sbFetch(`agent_profiles?agent_name=eq.${encodeURIComponent(editingContactName)}`, {
+        method: "PATCH", prefer: "return=minimal", body: JSON.stringify(payload)
+      });
+    } else {
+      await sbFetch("agent_profiles", { method: "POST", prefer: "return=minimal", body: JSON.stringify(payload) });
+    }
+    toast("Contact updated 🌸", "success");
+    closeContactModal();
+    if (document.getElementById("historySearch").value.length >= 2) doSearchHistory(document.getElementById("historySearch").value.trim());
+  } catch(e) { toast("Save failed: " + e.message, "error"); }
+}
+
+// ─── CALENDAR JS ─────────────────────────────────────────────────────────────
+let calYear = new Date().getFullYear();
+let calMonth = new Date().getMonth();
+let calActivities = [];
+let selectedCalDay = null;
+
+const MEETING_TYPES = ["New Realtor Meeting","Coffee Meeting","Lunch or Dinner","Break Breads","Open House Visit","Pop-By","Co-hosted Event","Business Planning Session","Team Presentation"];
+
+function calEventClass(type) {
+  if (type === "CTC Call") return "ctc";
+  if (MEETING_TYPES.includes(type)) return "meeting";
+  return "other";
+}
+
+function calEventEmoji(type) {
+  if (type === "CTC Call") return "⚡";
+  if (MEETING_TYPES.includes(type)) return "🌸";
+  return "🎯";
+}
+
+function calNav(dir) {
+  calMonth += dir;
+  if (calMonth > 11) { calMonth = 0; calYear++; }
+  if (calMonth < 0) { calMonth = 11; calYear--; }
+  loadCalendar();
+}
+
+async function loadCalendar() {
+  try {
+    const startDate = new Date(calYear, calMonth, 1).toISOString().split("T")[0];
+    const endDate = new Date(calYear, calMonth + 1, 0).toISOString().split("T")[0];
+    const [acts, fuActs] = await Promise.all([
+      sbFetch(`amanda_activities?select=id,agent_name,act_type,act_date,outcome,notes&act_date=gte.${startDate}&act_date=lte.${endDate}&order=act_date.asc&limit=500`),
+      sbFetch(`amanda_activities?select=id,agent_name,act_type,follow_up_date,notes&follow_up_date=gte.${startDate}&follow_up_date=lte.${endDate}&follow_up_date=not.is.null&order=follow_up_date.asc&limit=200`)
+    ]);
+    calActivities = [
+      ...(acts || []).map(a => ({ ...a, calDate: a.act_date, calType: "activity" })),
+      ...(fuActs || []).map(a => ({ ...a, calDate: a.follow_up_date, calType: "followup" }))
+    ];
+  } catch(e) { console.error("Calendar load error:", e); calActivities = []; }
+  renderCalendar();
+}
+
+function renderCalendar() {
+  const monthNames = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+  document.getElementById("calMonthLabel").textContent = `${monthNames[calMonth]} ${calYear} 📅`;
+  const firstDay = new Date(calYear, calMonth, 1).getDay();
+  const daysInMonth = new Date(calYear, calMonth + 1, 0).getDate();
+  const daysInPrev = new Date(calYear, calMonth, 0).getDate();
+  const todayStr = today();
+  const byDate = {};
+  calActivities.forEach(a => {
+    if (!a.calDate) return;
+    if (!byDate[a.calDate]) byDate[a.calDate] = [];
+    byDate[a.calDate].push(a);
+  });
+  let html = "";
+  for (let i = firstDay - 1; i >= 0; i--) {
+    html += `<div class="cal-day other-month"><div class="cal-num">${daysInPrev - i}</div></div>`;
+  }
+  for (let d = 1; d <= daysInMonth; d++) {
+    const dateStr = `${calYear}-${String(calMonth+1).padStart(2,"0")}-${String(d).padStart(2,"0")}`;
+    const isToday = dateStr === todayStr;
+    const isSelected = selectedCalDay === dateStr;
+    const events = byDate[dateStr] || [];
+    html += `<div class="cal-day${isToday ? " today" : ""}" style="${isSelected ? "background:#EEEDFE;border-color:#AFA9EC;" : ""}" onclick="selectCalDay('${dateStr}')">`;
+    html += `<div class="cal-num">${d}</div>`;
+    events.slice(0, 2).forEach(e => {
+      const cls = e.calType === "followup" ? "followup" : calEventClass(e.act_type);
+      const emoji = e.calType === "followup" ? "🌺" : calEventEmoji(e.act_type);
+      html += `<div class="cal-event ${cls}">${emoji} ${e.agent_name}</div>`;
+    });
+    if (events.length > 2) html += `<div style="font-size:9px;color:#aaa;padding:1px 4px">+${events.length - 2} more</div>`;
+    html += `</div>`;
+  }
+  const total = firstDay + daysInMonth;
+  const remaining = total % 7 === 0 ? 0 : 7 - (total % 7);
+  for (let i = 1; i <= remaining; i++) {
+    html += `<div class="cal-day other-month"><div class="cal-num">${i}</div></div>`;
+  }
+  document.getElementById("calGrid").innerHTML = html;
+  if (selectedCalDay) showCalDayDetail(selectedCalDay);
+}
+
+function selectCalDay(dateStr) {
+  selectedCalDay = selectedCalDay === dateStr ? null : dateStr;
+  renderCalendar();
+  if (!selectedCalDay) document.getElementById("calDayDetail").style.display = "none";
+}
+
+function showCalDayDetail(dateStr) {
+  const events = calActivities.filter(a => a.calDate === dateStr);
+  const detail = document.getElementById("calDayDetail");
+  if (!events.length) { detail.style.display = "none"; return; }
+  const dt = new Date(dateStr + "T12:00:00");
+  const label = dt.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" });
+  const todayStr = today();
+  const isToday = dateStr === todayStr;
+  const isPast = dateStr < todayStr;
+  document.getElementById("calDayTitle").textContent = `${label}${isToday ? " — Today 🌟" : isPast ? "" : " — Upcoming ✨"}`;
+  document.getElementById("calDayItems").innerHTML = events.map(e => {
+    const isFollowup = e.calType === "followup";
+    const cls = isFollowup ? "followup" : calEventClass(e.act_type);
+    const dotColors = { meeting: "#534AB7", followup: "#B85B00", ctc: "#0F6E56", other: "#534AB7" };
+    const dotColor = dotColors[cls] || "#534AB7";
+    const emoji = isFollowup ? "🌺" : calEventEmoji(e.act_type);
+    return `<div class="cal-day-item">
+      <div class="cal-day-dot" style="background:${dotColor}"></div>
+      <div style="flex:1">
+        <div style="font-size:12px;font-weight:500;color:#1a1a2e">${e.agent_name}</div>
+        <div style="font-size:11px;color:#aaa">${emoji} ${isFollowup ? "Follow-up — " + e.act_type : e.act_type}${e.outcome ? " · " + e.outcome : ""}</div>
+        ${e.notes ? `<div style="font-size:11px;color:#777;font-style:italic;margin-top:2px">"${e.notes.substring(0,80)}"</div>` : ""}
+      </div>
+    </div>`;
+  }).join("");
+  detail.style.display = "block";
+}
+
 
 init();
 </script>
