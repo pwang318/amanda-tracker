@@ -154,6 +154,14 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .cal-day-item:last-child{border-bottom:none}
 .cal-day-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;margin-top:3px}
 @media(max-width:600px){.form-row,.form-row.three,.stat-grid,.pipe-stats,.week-bottom{grid-template-columns:1fr}.view{padding:14px}}
+
+.contact-row{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:0.5px solid #f0eef8;flex-wrap:wrap}
+.contact-row:last-child{border-bottom:none}
+.contact-avatar{width:34px;height:34px;border-radius:50%;background:#EEEDFE;color:#534AB7;font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.contact-info{flex:1;min-width:120px}
+.contact-name{font-size:13px;font-weight:600;color:#1a1a2e}
+.contact-meta{font-size:11px;color:#aaa;margin-top:2px;display:flex;gap:10px;flex-wrap:wrap}
+.contact-bday{font-size:11px;color:#E91E63;font-weight:500}
 </style>
 </head>
 <body>
@@ -177,6 +185,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   <div class="tab" onclick="switchTab('pipeline')">Outreach Pipeline</div>
   <div class="tab" onclick="switchTab('calendar')">&#128197; Calendar</div>
   <div class="tab" onclick="switchTab('daniel')">Daniel's View</div>
+  <div class="tab" onclick="switchTab('contacts')">&#128100; Contacts</div>
 </div>
 
 <div id="view-week" class="view active">
@@ -418,6 +427,22 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   </div>
 </div>
 
+<div id="view-contacts" class="view">
+  <div class="card">
+    <div class="card-title">&#128100; Agent contacts <span class="card-sub">Edit phone, email and birthday for any agent</span></div>
+    <div style="display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap">
+      <input type="text" id="contactsSearch" placeholder="Search by name, phone, email or birthday..." oninput="filterContacts()" style="flex:1;min-width:180px;padding:9px 11px;border:0.5px solid #d8d6e8;border-radius:8px;font-size:13px;font-family:inherit;color:#1a1a2e;outline:none">
+      <select id="contactsFilter" onchange="filterContacts()" style="padding:8px 11px;border:0.5px solid #d8d6e8;border-radius:8px;font-size:12px;font-family:inherit;color:#555;background:#fff">
+        <option value="all">All agents</option>
+        <option value="bday">Has birthday</option>
+        <option value="nobday">Missing birthday</option>
+        <option value="nophone">Missing phone</option>
+      </select>
+    </div>
+    <div id="contacts-list"><div class="no-data">Loading contacts...</div></div>
+  </div>
+</div>
+
 <div class="modal-overlay" id="contactModal">
   <div class="modal-box">
     <div class="modal-header"><span class="modal-title">Edit contact info &#127800;</span><button class="modal-close" onclick="closeContactModal()">x</button></div>
@@ -541,12 +566,13 @@ async function init(){
 }
 
 function switchTab(name){
-  const names=["week","log","followups","feed","history","pipeline","calendar","daniel"];
+  const names=["week","log","followups","feed","history","pipeline","calendar","daniel","contacts"];
   document.querySelectorAll(".tab").forEach((t,i)=>t.classList.toggle("active",names[i]===name));
   document.querySelectorAll(".view").forEach(v=>v.classList.remove("active"));
   document.getElementById("view-"+name).classList.add("active");
   if(name==="pipeline")loadPipeline();
   if(name==="calendar")loadCalendar();
+  if(name==="contacts")loadContacts();
 }
 
 let periodData={mtd:[],ytd:[]},currentPeriod="mtd";
@@ -976,7 +1002,7 @@ async function saveContactModal(){
     const existing=await sbFetch("agent_profiles?agent_name=eq."+encodeURIComponent(editingContactName)+"&limit=1").catch(()=>[]);
     if(existing&&existing.length>0){await sbFetch("agent_profiles?agent_name=eq."+encodeURIComponent(editingContactName),{method:"PATCH",prefer:"return=minimal",body:JSON.stringify(payload)});}
     else{await sbFetch("agent_profiles",{method:"POST",prefer:"return=minimal",body:JSON.stringify(payload)});}
-    toast("Contact updated &#127800;","success");closeContactModal();
+    toast("Contact updated &#127800;","success");closeContactModal();if(window._contactSaveCallback){window._contactSaveCallback();window._contactSaveCallback=null;}
     if(document.getElementById("historySearch").value.length>=2)doSearchHistory(document.getElementById("historySearch").value.trim());
   }catch(e){toast("Save failed: "+e.message,"error");}
 }
@@ -1041,6 +1067,74 @@ function showCalDayDetail(dateStr){
   }).join("");
   detail.style.display="block";
 }
+
+// ── CONTACTS TAB ──
+let allContacts=[],allAgentNames=[];
+
+async function loadContacts(){
+  const el=document.getElementById("contacts-list");
+  if(!el)return;
+  el.innerHTML='<div class="no-data">Loading...</div>';
+  try{
+    const[profiles,agentList]=await Promise.all([
+      sbFetch("agent_profiles?select=*&order=agent_name.asc&limit=500"),
+      sbFetch("agent_profiles?select=agent_name&order=agent_name.asc&limit=500")
+    ]);
+    allContacts=profiles||[];
+    allAgentNames=(agentList||[]).map(a=>a.agent_name);
+    filterContacts();
+  }catch(e){el.innerHTML='<div class="no-data">Unable to load contacts.</div>';}
+}
+
+function filterContacts(){
+  const q=(document.getElementById("contactsSearch")?.value||"").toLowerCase();
+  const f=document.getElementById("contactsFilter")?.value||"all";
+  let list=allContacts;
+  if(q)list=list.filter(c=>(c.agent_name||"").toLowerCase().includes(q)||(c.phone||"").includes(q)||(c.email||"").toLowerCase().includes(q)||(c.birthday||"").toLowerCase().includes(q));
+  if(f==="bday")list=list.filter(c=>c.birthday);
+  if(f==="nobday")list=list.filter(c=>!c.birthday);
+  if(f==="nophone")list=list.filter(c=>!c.phone);
+  renderContacts(list);
+}
+
+function renderContacts(list){
+  const el=document.getElementById("contacts-list");
+  if(!el)return;
+  if(!list.length){el.innerHTML='<div class="no-data">No contacts found.</div>';return;}
+  el.innerHTML=list.map(c=>{
+    const initials=(c.agent_name||"?").split(" ").map(w=>w[0]).slice(0,2).join("").toUpperCase();
+    const hasBday=c.birthday?true:false;
+    const sn=(c.agent_name||"").replace(/"/g,"&quot;");
+    return'<div class="contact-row">'+
+      '<div class="contact-avatar">'+initials+'</div>'+
+      '<div class="contact-info">'+
+        '<div class="contact-name">'+c.agent_name+'</div>'+
+        '<div class="contact-meta">'+
+          (c.phone?'<span>&#128222; '+c.phone+'</span>':'<span style="color:#ffb3b3">No phone</span>')+
+          (c.email?'<span>&#9993;&#65039; '+c.email+'</span>':'')+
+          (c.birthday?'<span class="contact-bday">&#127874; '+c.birthday+'</span>':'<span style="color:#ffb3b3">No birthday</span>')+
+        '</div>'+
+      '</div>'+
+      '<button class="btn-sm" onclick="openContactsEdit(this)" data-name="'+c.agent_name.replace(/"/g,'&quot;')+'" style="flex-shrink:0">Edit</button>'+
+    '</div>';
+  }).join("");
+}
+
+function openContactsEdit(nameOrEl){
+  const name=typeof nameOrEl==="string"?nameOrEl:(nameOrEl&&nameOrEl.dataset?nameOrEl.dataset.name:String(nameOrEl));
+  // Pre-fill and open the contact modal
+  const c=allContacts.find(x=>x.agent_name===name)||{agent_name:name};
+  editingContactName=name;
+  document.getElementById("contactModalName").textContent=name;
+  document.getElementById("contactPhone").value=c.phone||"";
+  document.getElementById("contactEmail").value=c.email||"";
+  document.getElementById("contactBrokerage").value=c.brokerage||"";
+  document.getElementById("contactBirthday").value=c.birthday||"";
+  document.getElementById("contactModal").classList.add("open");
+  // After save, reload contacts
+  window._contactSaveCallback=function(){loadContacts();};
+}
+
 
 init();
 </script>
