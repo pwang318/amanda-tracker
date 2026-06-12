@@ -82,6 +82,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .ac-item{padding:9px 12px;font-size:13px;cursor:pointer;border-bottom:0.5px solid #f5f4f8}
 .ac-item:hover{background:#f5f4f8}
 .ac-item:last-child{border-bottom:none}
+.ac-item-prospect{color:#534AB7;font-size:11px}
 .btn-primary{background:#534AB7;color:#fff;border:none;padding:10px 24px;border-radius:8px;font-size:13px;font-weight:500;cursor:pointer;font-family:inherit;transition:background .15s}
 .btn-primary:hover{background:#3C3489}
 .btn-primary:disabled{background:#bbb;cursor:not-allowed}
@@ -111,7 +112,11 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .pc-notes{font-size:12px;color:#777;font-style:italic;margin-top:6px;padding-top:6px;border-top:0.5px solid #f0eef8}
 .pc-fudate{font-size:11px;font-weight:500;color:#B85B00;margin-top:4px}
 .pc-fudate.overdue{color:#A32D2D}
-.pc-actions{display:flex;gap:8px;margin-top:10px}
+.pc-actions{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
+.pc-activity-feed{margin-top:10px;padding-top:10px;border-top:0.5px solid #f0eef8}
+.pc-activity-feed-title{font-size:10px;font-weight:600;color:#888;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px}
+.pc-activity-item{font-size:11px;color:#555;padding:4px 0;border-bottom:0.5px solid #f5f4f8;display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.pc-activity-item:last-child{border-bottom:none}
 .add-form{background:#f8f7fc;border:0.5px dashed #AFA9EC;border-radius:10px;padding:18px 20px;margin-bottom:14px}
 .add-form h4{font-size:13px;font-weight:500;color:#534AB7;margin-bottom:14px}
 .dtable{width:100%;border-collapse:collapse;font-size:12px}
@@ -154,7 +159,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 <body>
 <div class="header">
   <div class="brand-wrap">
-    <span class="brand-chip">AMANDA 🌻</span>
+    <span class="brand-chip">AMANDA &#127803;</span>
     <span class="brand-sub">Relationship Manager</span>
   </div>
   <div class="header-right">
@@ -170,13 +175,13 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   <div class="tab" onclick="switchTab('feed')">Activity Feed</div>
   <div class="tab" onclick="switchTab('history')">Agent History</div>
   <div class="tab" onclick="switchTab('pipeline')">Outreach Pipeline</div>
-  <div class="tab" onclick="switchTab('calendar')">📅 Calendar</div>
+  <div class="tab" onclick="switchTab('calendar')">&#128197; Calendar</div>
   <div class="tab" onclick="switchTab('daniel')">Daniel's View</div>
 </div>
 
 <div id="view-week" class="view active">
   <div class="card">
-    <div class="card-title">This week 🌟 <span class="card-sub" id="weekLabel2"></span></div>
+    <div class="card-title">This week &#127775; <span class="card-sub" id="weekLabel2"></span></div>
     <div id="weekGoalBars"><div class="no-data">Loading...</div></div>
   </div>
   <div class="card">
@@ -188,11 +193,11 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   </div>
   <div class="week-bottom">
     <div class="card">
-      <div class="card-title" style="margin-bottom:12px">🌺 Follow-ups due</div>
+      <div class="card-title" style="margin-bottom:12px">&#127866; Follow-ups due</div>
       <div id="weekFollowups"><div class="no-data" style="padding:16px">Loading...</div></div>
     </div>
     <div class="card">
-      <div class="card-title" style="margin-bottom:12px">✍️ Last 5 logged</div>
+      <div class="card-title" style="margin-bottom:12px">&#9997;&#65039; Last 5 logged</div>
       <div id="weekRecent"><div class="no-data" style="padding:16px">Loading...</div></div>
     </div>
   </div>
@@ -200,7 +205,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 
 <div id="view-log" class="view">
   <div class="card">
-    <div class="card-title">Log an activity ✨</div>
+    <div class="card-title">Log an activity &#10024;</div>
     <div class="form-row">
       <div class="field">
         <label>Agent name</label>
@@ -218,10 +223,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
             <option>Open House Visit</option>
           </optgroup>
           <optgroup label="Relationship Deepening">
-            <option>Coffee Meeting</option>
-            <option>Lunch or Dinner</option>
             <option>Break Breads</option>
-            <option>Pop-By</option>
             <option>Market Update Call</option>
             <option>Sent Market Report</option>
             <option>Sent Referral</option>
@@ -258,7 +260,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
         </select>
       </div>
       <div class="field followup-row" id="followupRow">
-        <label>Follow-up date</label>
+        <label>Follow-up date <span id="followup-hint" style="font-size:10px;color:#9C27B0;font-weight:400;text-transform:none;letter-spacing:0;margin-left:4px"></span></label>
         <input type="date" id="followupDate">
       </div>
     </div>
@@ -271,7 +273,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 
 <div id="view-followups" class="view">
   <div class="card">
-    <div class="card-title">🌺 Upcoming follow-ups</div>
+    <div class="card-title">&#127866; Upcoming follow-ups</div>
     <div id="followupsList"><div class="no-data">Loading...</div></div>
   </div>
 </div>
@@ -285,7 +287,6 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
           <option value="all">All types</option>
           <option>Cold Calls</option><option>New Realtor Meeting</option><option>Break Breads</option>
           <option>Active Agent Check-in</option><option>CTC Call</option><option>Realtor Buddy Referral Ask</option>
-          <option>Coffee Meeting</option><option>Lunch or Dinner</option><option>Pop-By</option>
           <option>Market Update Call</option><option>Business Planning Session</option>
           <option>Agent Appreciation</option><option>Birthday Outreach</option>
           <option>Co-Marketing Discussion</option>
@@ -303,7 +304,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 
 <div class="modal-overlay" id="editModal">
   <div class="modal-box">
-    <div class="modal-header"><span class="modal-title">Edit activity ✏️</span><button class="modal-close" onclick="closeEditModal()">×</button></div>
+    <div class="modal-header"><span class="modal-title">Edit activity &#9999;&#65039;</span><button class="modal-close" onclick="closeEditModal()">x</button></div>
     <div class="modal-sub" id="editModalAgent"></div>
     <div class="field" style="margin-bottom:12px"><label>Outcome</label><select id="editOutcome"><option value="">Select outcome...</option><option>Positive</option><option>Meeting Scheduled</option><option>Requires follow-up</option><option>Remove / No Further Contact</option></select></div>
     <div class="field" style="margin-bottom:12px"><label>Follow-up date</label><input type="date" id="editFollowupDate"></div>
@@ -317,8 +318,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 
 <div class="confirm-overlay" id="confirmModal">
   <div class="confirm-box">
-    <div class="confirm-title">Delete this activity? 🗑️</div>
-    <div class="confirm-sub" id="confirmSub">This can't be undone.</div>
+    <div class="confirm-title" id="confirmTitle">Delete this activity? &#128465;&#65039;</div>
+    <div class="confirm-sub" id="confirmSub">This cannot be undone.</div>
     <div class="confirm-btns">
       <button class="btn-sm danger" onclick="confirmDelete()">Yes, delete</button>
       <button class="btn-sm" onclick="closeConfirm()">Cancel</button>
@@ -338,13 +339,13 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 
 <div id="view-pipeline" class="view">
   <div class="pipe-stats">
-    <div class="ps-card"><div class="ps-num" id="ps-total">—</div><div class="ps-label">Active prospects</div></div>
-    <div class="ps-card"><div class="ps-num" id="ps-due">—</div><div class="ps-label">Follow-ups due</div></div>
-    <div class="ps-card"><div class="ps-num" id="ps-dnc">—</div><div class="ps-label">Do not contact</div></div>
-    <div class="ps-card"><div class="ps-num" id="ps-nfm">—</div><div class="ps-label">Already w/ NFM</div></div>
+    <div class="ps-card"><div class="ps-num" id="ps-total">&#8212;</div><div class="ps-label">Active prospects</div></div>
+    <div class="ps-card"><div class="ps-num" id="ps-due">&#8212;</div><div class="ps-label">Follow-ups due</div></div>
+    <div class="ps-card"><div class="ps-num" id="ps-dnc">&#8212;</div><div class="ps-label">Do not contact</div></div>
+    <div class="ps-card"><div class="ps-num" id="ps-nfm">&#8212;</div><div class="ps-label">Already w/ NFM</div></div>
   </div>
   <div class="add-form" id="addProspectForm" style="display:none">
-    <h4 id="addFormTitle">Add new prospect 🌸</h4>
+    <h4 id="addFormTitle">Add new prospect &#127800;</h4>
     <div class="form-row">
       <div class="field"><label>Name</label><input type="text" id="np-name" placeholder="Full name"></div>
       <div class="field"><label>Brokerage</label><input type="text" id="np-brokerage" placeholder="Company / Brokerage"></div>
@@ -383,9 +384,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 <div id="view-calendar" class="view">
   <div class="card">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
-      <button class="btn-sm" onclick="calNav(-1)" style="font-size:13px;padding:6px 12px">← Prev</button>
+      <button class="btn-sm" onclick="calNav(-1)" style="font-size:13px;padding:6px 12px">&#8592; Prev</button>
       <span style="font-size:14px;font-weight:500;color:#1a1a2e" id="calMonthLabel"></span>
-      <button class="btn-sm" onclick="calNav(1)" style="font-size:13px;padding:6px 12px">Next →</button>
+      <button class="btn-sm" onclick="calNav(1)" style="font-size:13px;padding:6px 12px">Next &#8594;</button>
     </div>
     <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px;margin-bottom:8px">
       <div style="text-align:center;font-size:10px;color:#bbb;font-weight:500;padding:4px">Sun</div>
@@ -419,7 +420,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 
 <div class="modal-overlay" id="contactModal">
   <div class="modal-box">
-    <div class="modal-header"><span class="modal-title">Edit contact info 🌸</span><button class="modal-close" onclick="closeContactModal()">×</button></div>
+    <div class="modal-header"><span class="modal-title">Edit contact info &#127800;</span><button class="modal-close" onclick="closeContactModal()">x</button></div>
     <div class="modal-sub" id="contactModalName"></div>
     <div class="field" style="margin-bottom:12px"><label>Phone</label><input type="text" id="contactPhone" placeholder="Phone number"></div>
     <div class="field" style="margin-bottom:12px"><label>Email</label><input type="email" id="contactEmail" placeholder="Email address"></div>
@@ -439,27 +440,35 @@ const SB_URL="https://uclucbdkjqyqdvifyptx.supabase.co";
 const SB_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVjbHVjYmRranF5cWR2aWZ5cHR4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA0OTUyMTMsImV4cCI6MjA5NjA3MTIxM30.VnqWcFT1WLQwCJxSdEIzIgOvETaOQly2IQxht-9uI7E";
 
 const EMOJI={
-  "Cold Calls":"🎯","New Realtor Meeting":"🌸","Break Breads":"🥐","Active Agent Check-in":"🫂",
-  "Realtor Buddy Referral Ask":"🌈","CTC Call":"⚡","Coffee Meeting":"☕","Lunch or Dinner":"🍜",
-  "Open House Visit":"🏡","Pop-By":"🌻","Market Update Call":"📊","Sent Market Report":"📬",
-  "Sent Referral":"💌","Co-hosted Event":"🎪","Closed Deal Thank You":"🎊","Birthday Outreach":"🎂",
-  "Holiday Outreach":"🎁","Agent Appreciation":"💐","Business Planning Session":"🗓️",
-  "Co-Marketing Discussion":"🤙","Team Presentation":"🎤","Recruiting Conversation":"🌟"
+  "Cold Calls":"&#127919;","New Realtor Meeting":"&#127800;","Break Breads":"&#129360;","Active Agent Check-in":"&#129309;",
+  "Realtor Buddy Referral Ask":"&#127752;","CTC Call":"&#9889;","Open House Visit":"&#127969;",
+  "Market Update Call":"&#128202;","Sent Market Report":"&#128172;","Sent Referral":"&#128140;",
+  "Co-hosted Event":"&#127914;","Closed Deal Thank You":"&#127882;","Birthday Outreach":"&#127874;",
+  "Holiday Outreach":"&#127873;","Agent Appreciation":"&#128144;","Business Planning Session":"&#128441;&#65039;",
+  "Co-Marketing Discussion":"&#129305;","Team Presentation":"&#127908;","Recruiting Conversation":"&#127775;"
 };
 const GOALS=[
-  {label:"🎯 Cold calls",type:"Cold Calls",weekly:25,monthly:100},
-  {label:"🌸 New realtor meetings",type:"New Realtor Meeting",weekly:5,monthly:20},
-  {label:"🥐 Break breads",type:"Break Breads",weekly:5,monthly:20},
-  {label:"🫂 Active agent check-ins",type:"Active Agent Check-in",weekly:15,monthly:60},
-  {label:"🌈 Realtor buddy referral ask",type:"Realtor Buddy Referral Ask",weekly:3,monthly:12}
+  {label:"&#127919; Cold calls",type:"Cold Calls",weekly:25,monthly:100},
+  {label:"&#127800; New realtor meetings",type:"New Realtor Meeting",weekly:5,monthly:20},
+  {label:"&#129360; Break breads",type:"Break Breads",weekly:5,monthly:20},
+  {label:"&#129309; Active agent check-ins",type:"Active Agent Check-in",weekly:15,monthly:60},
+  {label:"&#127752; Realtor buddy referral ask",type:"Realtor Buddy Referral Ask",weekly:3,monthly:12}
 ];
 const CTC_TYPE="CTC Call";
 function badgeEmoji(type){return EMOJI[type]?EMOJI[type]+" "+type:type;}
 
-// ── LOCAL DATE HELPER — avoids UTC timezone shift for EST users ──
-function localDateStr(d){const y=d.getFullYear(),m=String(d.getMonth()+1).padStart(2,'0'),dd=String(d.getDate()).padStart(2,'0');return `${y}-${m}-${dd}`;}
+const NEXT_CALL_DAYS={
+  "Cold Calls":3,"New Realtor Meeting":7,"Open House Visit":3,
+  "Break Breads":7,"Market Update Call":14,"Sent Market Report":7,"Sent Referral":3,
+  "Co-hosted Event":7,"Realtor Buddy Referral Ask":7,
+  "Active Agent Check-in":7,"CTC Call":1,"Closed Deal Thank You":30,
+  "Birthday Outreach":7,"Holiday Outreach":7,"Agent Appreciation":30,
+  "Business Planning Session":60,"Co-Marketing Discussion":14,
+  "Team Presentation":14,"Recruiting Conversation":7
+};
 
-// ── WEEK RANGE uses local dates — Mon–Sun, Sunday rolls to NEXT Monday ──
+function localDateStr(d){const y=d.getFullYear(),m=String(d.getMonth()+1).padStart(2,'0'),dd=String(d.getDate()).padStart(2,'0');return y+'-'+m+'-'+dd;}
+
 function weekRange(){
   const now=new Date(),day=now.getDay();
   const mon=new Date(now);
@@ -467,7 +476,7 @@ function weekRange(){
   mon.setHours(0,0,0,0);
   const sun=new Date(mon);sun.setDate(mon.getDate()+6);
   const fmt=d=>d.toLocaleDateString("en-US",{month:"short",day:"numeric"});
-  return{start:localDateStr(mon),end:localDateStr(sun),label:`${fmt(mon)} – ${fmt(sun)}`};
+  return{start:localDateStr(mon),end:localDateStr(sun),label:fmt(mon)+" - "+fmt(sun)};
 }
 
 function today(){return localDateStr(new Date());}
@@ -482,7 +491,7 @@ async function sbFetch(path,options={}){
   const res=await fetch(SB_URL+"/rest/v1/"+path,{headers,...options});
   let body;const text=await res.text();
   try{body=text?JSON.parse(text):{};}catch{body={message:text};}
-  if(!res.ok)throw new Error(body?.message||body?.error||body?.hint||`HTTP ${res.status}`);
+  if(!res.ok)throw new Error(body?.message||body?.error||body?.hint||"HTTP "+res.status);
   return body;
 }
 
@@ -493,15 +502,37 @@ function toast(msg,type="success"){
 }
 
 function fmtDate(d){
-  if(!d)return"—";
+  if(!d)return"&#8212;";
   return new Date(d+"T12:00:00").toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"});
 }
+
+function autoSetFollowUp(){
+  const type=document.getElementById("activityType").value;
+  const days=NEXT_CALL_DAYS[type]||7;
+  const d=new Date();d.setDate(d.getDate()+days);
+  document.getElementById("followupDate").value=localDateStr(d);
+  const hint=document.getElementById("followup-hint");
+  if(hint)hint.textContent="Suggested: "+days+"d after this activity";
+}
+
+document.getElementById("activityType").addEventListener("change",function(){
+  const outcome=document.getElementById("activityOutcome").value;
+  if(outcome==="Requires follow-up")autoSetFollowUp();
+});
+
+document.getElementById("activityOutcome").addEventListener("change",function(){
+  const row=document.getElementById("followupRow");
+  if(this.value==="Requires follow-up"){
+    row.classList.add("show");
+    autoSetFollowUp();
+  }else{row.classList.remove("show");document.getElementById("followupDate").value="";}
+});
 
 async function init(){
   try{
     await sbFetch("amanda_activities?select=id&limit=1");
     document.getElementById("syncDot").className="sync-dot ok";
-    document.getElementById("syncTxt").textContent="Live 🌟";
+    document.getElementById("syncTxt").textContent="Live &#127775;";
   }catch(e){
     document.getElementById("syncDot").className="sync-dot err";
     document.getElementById("syncTxt").textContent="Offline";
@@ -530,25 +561,18 @@ function showPeriod(p){
 function goalColor(pct){return pct>=100?"#639922":pct>=60?"#EF9F27":"#E24B4A";}
 
 function renderGoalBar(label,actual,target,pct){
-  const c=goalColor(pct),hit=pct>=100?" 🥳":"";
-  return`<div class="goal-row">
-    <div class="goal-label-row"><span class="goal-name">${label}</span><span><span class="goal-actual">${actual}</span><span class="goal-target"> / ${target}</span></span></div>
-    <div class="goal-track"><div class="goal-fill" style="width:${Math.min(100,pct)}%;background:${c}"></div></div>
-    <div class="goal-pct">${Math.round(pct)}% of goal${hit}</div>
-  </div>`;
+  const c=goalColor(pct),hit=pct>=100?" &#129395;":"";
+  return'<div class="goal-row"><div class="goal-label-row"><span class="goal-name">'+label+'</span><span><span class="goal-actual">'+actual+'</span><span class="goal-target"> / '+target+'</span></span></div><div class="goal-track"><div class="goal-fill" style="width:'+Math.min(100,pct)+'%;background:'+c+'"></div></div><div class="goal-pct">'+Math.round(pct)+'% of goal'+hit+'</div></div>';
 }
 
 function renderCtcRow(count,label){
-  return`<div class="ctc-divider">
-    <span class="ctc-label">⚡ CTC calls${label?" — "+label:""}</span>
-    <div><div class="ctc-count">${count}</div><div class="ctc-note">tracked, no target</div></div>
-  </div>`;
+  return'<div class="ctc-divider"><span class="ctc-label">&#9889; CTC calls'+( label?" &#8212; "+label:"")+'</span><div><div class="ctc-count">'+count+'</div><div class="ctc-note">tracked, no target</div></div></div>';
 }
 
 function renderPeriodScorecard(){
   const data=periodData[currentPeriod],isYTD=currentPeriod==="ytd",mult=isYTD?12:1;
-  if(!data.length){document.getElementById("periodScorecard").innerHTML=`<div class="no-data">No activity logged yet.</div>`;return;}
-  let html=`<div style="font-size:11px;color:#bbb;margin-bottom:14px">${isYTD?"Year to date":"Month to date"} — 🦋 ${data.length} total activities</div>`;
+  if(!data.length){document.getElementById("periodScorecard").innerHTML='<div class="no-data">No activity logged yet.</div>';return;}
+  let html='<div style="font-size:11px;color:#bbb;margin-bottom:14px">'+( isYTD?"Year to date":"Month to date")+' &#8212; &#129419; '+data.length+' total activities</div>';
   GOALS.forEach(g=>{
     const target=g.monthly*mult,count=data.filter(a=>a.act_type===g.type).length;
     html+=renderGoalBar(g.label,count,target,(count/target)*100);
@@ -561,12 +585,12 @@ async function loadWeek(){
   document.getElementById("weekLabel2").textContent=week.label;
   try{
     const now=new Date();
-    const monthStart=`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,"0")}-01`;
-    const yearStart=`${now.getFullYear()}-01-01`;
+    const monthStart=now.getFullYear()+"-"+String(now.getMonth()+1).padStart(2,"0")+"-01";
+    const yearStart=now.getFullYear()+"-01-01";
     const[weekActs,mtdActs,ytdActs]=await Promise.all([
-      sbFetch(`amanda_activities?select=act_type,outcome&act_date=gte.${week.start}&act_date=lte.${week.end}`),
-      sbFetch(`amanda_activities?select=act_type,outcome&act_date=gte.${monthStart}`),
-      sbFetch(`amanda_activities?select=act_type,outcome&act_date=gte.${yearStart}`)
+      sbFetch("amanda_activities?select=act_type,outcome&act_date=gte."+week.start+"&act_date=lte."+week.end),
+      sbFetch("amanda_activities?select=act_type,outcome&act_date=gte."+monthStart),
+      sbFetch("amanda_activities?select=act_type,outcome&act_date=gte."+yearStart)
     ]);
     periodData={mtd:mtdActs,ytd:ytdActs};
     let html="";
@@ -577,55 +601,58 @@ async function loadWeek(){
     html+=renderCtcRow(weekActs.filter(a=>a.act_type===CTC_TYPE).length,"this week");
     document.getElementById("weekGoalBars").innerHTML=html;
     renderPeriodScorecard();
-  }catch(e){document.getElementById("weekGoalBars").innerHTML=`<div class="no-data">Unable to load goals.</div>`;}
+  }catch(e){document.getElementById("weekGoalBars").innerHTML='<div class="no-data">Unable to load goals.</div>';}
 
   try{
     const todayStr=today();
     const[fus,overdue]=await Promise.all([
-      sbFetch(`amanda_activities?select=agent_name,act_type,follow_up_date&follow_up_date=gte.${todayStr}&follow_up_date=lte.${week.end}&order=follow_up_date.asc&limit=8`),
-      sbFetch(`amanda_activities?select=agent_name,act_type,follow_up_date&follow_up_date=lt.${todayStr}&follow_up_date=not.is.null&order=follow_up_date.desc&limit=4`)
+      sbFetch("amanda_activities?select=agent_name,act_type,follow_up_date&follow_up_date=gte."+todayStr+"&follow_up_date=lte."+week.end+"&order=follow_up_date.asc&limit=8"),
+      sbFetch("amanda_activities?select=agent_name,act_type,follow_up_date&follow_up_date=lt."+todayStr+"&follow_up_date=not.is.null&order=follow_up_date.desc&limit=4")
     ]);
     const all=[...overdue,...fus];
     document.getElementById("weekFollowups").innerHTML=all.length?all.map(f=>{
       const isOvr=f.follow_up_date<todayStr,c=isOvr?"#E24B4A":"#534AB7";
-      return`<div class="fu-item"><div class="fu-dot" style="background:${c}"></div><div class="fu-body"><div class="fu-name">${f.agent_name}</div><div class="fu-meta">${badgeEmoji(f.act_type)}</div></div><div class="fu-date" style="color:${c}">${isOvr?"Overdue":fmtDate(f.follow_up_date)}</div></div>`;
-    }).join(""):`<div class="no-data" style="padding:16px">No follow-ups due 🌈</div>`;
+      return'<div class="fu-item"><div class="fu-dot" style="background:'+c+'"></div><div class="fu-body"><div class="fu-name">'+f.agent_name+'</div><div class="fu-meta">'+badgeEmoji(f.act_type)+'</div></div><div class="fu-date" style="color:'+c+'">'+( isOvr?"Overdue":fmtDate(f.follow_up_date))+'</div></div>';
+    }).join(""):'<div class="no-data" style="padding:16px">No follow-ups due &#127752;</div>';
   }catch(e){console.error(e);}
 
   try{
-    const recent=await sbFetch(`amanda_activities?select=agent_name,act_type,act_date&order=act_date.desc&limit=5`);
-    document.getElementById("weekRecent").innerHTML=recent.length?recent.map(r=>`
-      <div class="feed-item">
-        <div class="feed-top"><span class="feed-agent">${r.agent_name}</span><span class="feed-date">${fmtDate(r.act_date)}</span></div>
-        <span class="feed-badge ${r.act_type===CTC_TYPE?"ctc":"rm"}">${badgeEmoji(r.act_type)}</span>
-      </div>`).join(""):`<div class="no-data" style="padding:16px">Nothing logged yet.</div>`;
+    const recent=await sbFetch("amanda_activities?select=agent_name,act_type,act_date&order=act_date.desc&limit=5");
+    document.getElementById("weekRecent").innerHTML=recent.length?recent.map(r=>
+      '<div class="feed-item"><div class="feed-top"><span class="feed-agent">'+r.agent_name+'</span><span class="feed-date">'+fmtDate(r.act_date)+'</span></div><span class="feed-badge '+( r.act_type===CTC_TYPE?"ctc":"rm")+'">'+badgeEmoji(r.act_type)+'</span></div>'
+    ).join(""):'<div class="no-data" style="padding:16px">Nothing logged yet.</div>';
   }catch(e){console.error(e);}
 }
 
-let agentNames=[];
+// CHANGE 2: Autocomplete includes prospects + agents
+let agentNames=[],prospectNames=[];
 async function initAutocomplete(){
-  try{const agents=await sbFetch("agent_profiles?select=agent_name&order=agent_name.asc");agentNames=agents.map(a=>a.agent_name);}catch(e){}
+  try{
+    const[agents,prospects]=await Promise.all([
+      sbFetch("agent_profiles?select=agent_name&order=agent_name.asc"),
+      sbFetch("outreach_prospects?select=name&order=name.asc")
+    ]);
+    agentNames=agents.map(a=>a.agent_name);
+    prospectNames=prospects.map(p=>p.name).filter(n=>n);
+  }catch(e){}
   const input=document.getElementById("agentInput"),list=document.getElementById("acList");
   input.addEventListener("input",()=>{
     const val=input.value.trim().toLowerCase();
     if(!val){list.classList.remove("open");return;}
-    const matches=agentNames.filter(n=>n.toLowerCase().includes(val)).slice(0,8);
-    if(!matches.length){list.classList.remove("open");return;}
-    list.innerHTML=matches.map(n=>`<div class="ac-item" onclick="selectAgent('${n.replace(/'/g,"\\'")}')">` +n+`</div>`).join("");
+    const agentMatches=agentNames.filter(n=>n.toLowerCase().includes(val)).slice(0,5);
+    const prospectMatches=prospectNames.filter(n=>n.toLowerCase().includes(val)&&!agentNames.includes(n)).slice(0,4);
+    if(!agentMatches.length&&!prospectMatches.length){list.classList.remove("open");return;}
+    let html=agentMatches.map(n=>'<div class="ac-item" onclick="selectAgent(\''+ n.replace(/'/g,"\\'") +'\')">'+n+'</div>').join("");
+    if(prospectMatches.length){
+      html+='<div style="font-size:10px;color:#9C27B0;font-weight:600;padding:6px 12px 2px;text-transform:uppercase;letter-spacing:.5px">Prospects</div>';
+      html+=prospectMatches.map(n=>'<div class="ac-item" onclick="selectAgent(\''+ n.replace(/'/g,"\\'") +'\')" style="color:#534AB7">&#127803; '+n+'</div>').join("");
+    }
+    list.innerHTML=html;
     list.classList.add("open");
   });
   document.addEventListener("click",e=>{if(!e.target.closest(".ac-wrap"))list.classList.remove("open");});
 }
 function selectAgent(name){document.getElementById("agentInput").value=name;document.getElementById("acList").classList.remove("open");}
-
-document.getElementById("activityOutcome").addEventListener("change",function(){
-  const row=document.getElementById("followupRow");
-  if(this.value==="Requires follow-up"){
-    row.classList.add("show");
-    const d=new Date();d.setDate(d.getDate()+7);
-    document.getElementById("followupDate").value=localDateStr(d);
-  }else{row.classList.remove("show");document.getElementById("followupDate").value="";}
-});
 
 async function logActivity(){
   const agentName=document.getElementById("agentInput").value.trim();
@@ -634,7 +661,7 @@ async function logActivity(){
   const outcome=document.getElementById("activityOutcome").value;
   const followupDate=document.getElementById("followupDate").value||null;
   const notes=document.getElementById("activityNotes").value.trim()||null;
-  if(!agentName){toast("Please enter an agent name. 🌸","error");return;}
+  if(!agentName){toast("Please enter an agent name. &#127800;","error");return;}
   if(!date){toast("Please select a date.","error");return;}
   if(!outcome){toast("Please select an outcome.","error");return;}
   if(outcome==="Requires follow-up"&&!followupDate){toast("Please set a follow-up date.","error");return;}
@@ -642,7 +669,7 @@ async function logActivity(){
   btn.disabled=true;btn.textContent="Saving...";
   try{
     await sbFetch("amanda_activities",{method:"POST",prefer:"return=minimal",body:JSON.stringify({agent_name:agentName,act_type:activityType,act_date:date,outcome,follow_up_date:followupDate,notes})});
-    toast("Logged! You're on a roll 🌟","success");
+    toast("Logged! You're on a roll &#127775;","success");
     document.getElementById("agentInput").value="";
     document.getElementById("activityType").selectedIndex=0;
     document.getElementById("activityDate").value=today();
@@ -650,6 +677,8 @@ async function logActivity(){
     document.getElementById("followupDate").value="";
     document.getElementById("activityNotes").value="";
     document.getElementById("followupRow").classList.remove("show");
+    // Refresh autocomplete to pick up any new agents
+    initAutocomplete();
     loadWeek();loadFollowups();loadFeed();loadDaniel();
   }catch(e){toast("Save failed: "+e.message,"error");}
   finally{btn.disabled=false;btn.textContent="Log activity";}
@@ -657,69 +686,46 @@ async function logActivity(){
 
 async function loadFollowups(){
   try{
-    const all=await sbFetch(`amanda_activities?select=id,agent_name,act_type,follow_up_date,notes&follow_up_date=not.is.null&order=follow_up_date.asc&limit=100`);
+    const all=await sbFetch("amanda_activities?select=id,agent_name,act_type,follow_up_date,notes&follow_up_date=not.is.null&order=follow_up_date.asc&limit=100");
     const todayStr=today();
     const sorted=[...all.filter(f=>f.follow_up_date<todayStr),...all.filter(f=>f.follow_up_date>=todayStr)];
-    if(!sorted.length){document.getElementById("followupsList").innerHTML=`<div class="no-data">No upcoming follow-ups 🌈</div>`;return;}
+    if(!sorted.length){document.getElementById("followupsList").innerHTML='<div class="no-data">No upcoming follow-ups &#127752;</div>';return;}
     document.getElementById("followupsList").innerHTML=sorted.map(f=>{
       const isOvr=f.follow_up_date<todayStr,isToday=f.follow_up_date===todayStr;
       const days=Math.round((new Date(f.follow_up_date+"T12:00:00")-new Date())/86400000);
-      const lbl=isOvr?`Overdue by ${Math.abs(days)}d`:isToday?"Today 🌺":`In ${days}d`;
+      const lbl=isOvr?"Overdue by "+Math.abs(days)+"d":isToday?"Today &#127866;":"In "+days+"d";
       const dotC=isOvr?"#E24B4A":isToday?"#EF9F27":"#534AB7";
-      return`<div class="fu-item" id="fu-${f.id}">
-        <div class="fu-dot" style="background:${dotC}"></div>
-        <div class="fu-body">
-          <div class="fu-name">${f.agent_name}</div>
-          <div class="fu-meta">${badgeEmoji(f.act_type)}${f.notes?" · "+f.notes.substring(0,50):""}</div>
-          <div id="fu-edit-${f.id}" class="fu-edit-area">
-            <input type="date" id="fu-date-${f.id}" value="${f.follow_up_date}" style="border:0.5px solid #d8d6e8;border-radius:6px;padding:5px 9px;font-size:12px;margin-right:6px;font-family:inherit">
-            <button class="btn-sm" onclick="saveFollowupDate(${f.id})">Save</button>
-            <button class="btn-sm" onclick="document.getElementById('fu-edit-${f.id}').style.display='none'" style="margin-left:4px">Cancel</button>
-          </div>
-        </div>
-        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:5px">
-          <div class="fu-date" style="color:${dotC}">${lbl}</div>
-          <button class="btn-sm" onclick="toggleFuEdit(${f.id})" style="font-size:10px;padding:3px 7px">Edit date</button>
-        </div>
-      </div>`;
+      return'<div class="fu-item" id="fu-'+f.id+'"><div class="fu-dot" style="background:'+dotC+'"></div><div class="fu-body"><div class="fu-name">'+f.agent_name+'</div><div class="fu-meta">'+badgeEmoji(f.act_type)+(f.notes?" &middot; "+f.notes.substring(0,50):"")+'</div><div id="fu-edit-'+f.id+'" class="fu-edit-area"><input type="date" id="fu-date-'+f.id+'" value="'+f.follow_up_date+'" style="border:0.5px solid #d8d6e8;border-radius:6px;padding:5px 9px;font-size:12px;margin-right:6px;font-family:inherit"><button class="btn-sm" onclick="saveFollowupDate('+f.id+')">Save</button><button class="btn-sm" onclick="document.getElementById('+"'fu-edit-"+f.id+"'"+').style.display=\'none\'" style="margin-left:4px">Cancel</button></div></div><div style="display:flex;flex-direction:column;align-items:flex-end;gap:5px"><div class="fu-date" style="color:'+dotC+'">'+lbl+'</div><button class="btn-sm" onclick="toggleFuEdit('+f.id+')" style="font-size:10px;padding:3px 7px">Edit date</button></div></div>';
     }).join("");
-  }catch(e){document.getElementById("followupsList").innerHTML=`<div class="no-data">Unable to load.</div>`;}
+  }catch(e){document.getElementById("followupsList").innerHTML='<div class="no-data">Unable to load.</div>';}
 }
 
-function toggleFuEdit(id){const el=document.getElementById(`fu-edit-${id}`);el.style.display=el.style.display==="none"?"block":"none";}
+function toggleFuEdit(id){const el=document.getElementById("fu-edit-"+id);el.style.display=el.style.display==="none"?"block":"none";}
 
 async function saveFollowupDate(id){
-  const d=document.getElementById(`fu-date-${id}`).value;
+  const d=document.getElementById("fu-date-"+id).value;
   if(!d){toast("Please select a date.","error");return;}
   try{
-    await sbFetch(`amanda_activities?id=eq.${id}`,{method:"PATCH",prefer:"return=minimal",body:JSON.stringify({follow_up_date:d})});
-    toast("Follow-up date updated 🌸","success");loadFollowups();loadWeek();
+    await sbFetch("amanda_activities?id=eq."+id,{method:"PATCH",prefer:"return=minimal",body:JSON.stringify({follow_up_date:d})});
+    toast("Follow-up date updated &#127800;","success");loadFollowups();loadWeek();
   }catch(e){toast("Save failed: "+e.message,"error");}
 }
 
 let allFeedData=[];
 async function loadFeed(){
   try{allFeedData=await sbFetch("amanda_activities?select=*&order=act_date.desc&limit=200");renderFeed(allFeedData);}
-  catch(e){document.getElementById("feedList").innerHTML=`<div class="no-data">Unable to load feed.</div>`;}
+  catch(e){document.getElementById("feedList").innerHTML='<div class="no-data">Unable to load feed.</div>';}
 }
 
 function renderFeed(data){
-  if(!data.length){document.getElementById("feedList").innerHTML=`<div class="no-data">No activity yet 🌱</div>`;return;}
-  document.getElementById("feedList").innerHTML=data.map(a=>`
-    <div class="feed-item">
-      <div class="feed-top">
-        <span class="feed-agent">${a.agent_name}</span>
-        <div class="feed-right">
-          <span class="feed-date">${fmtDate(a.act_date)}</span>
-          <button class="btn-sm" onclick="openEditModal(${a.id})" style="font-size:10px;padding:3px 8px">Edit</button>
-          <button class="btn-sm danger" onclick="openConfirm(${a.id},'${(a.agent_name||"").replace(/'/g,"\\'")}','${(a.act_type||"").replace(/'/g,"\\'")}')">Delete</button>
-        </div>
-      </div>
-      <span class="feed-badge ${a.act_type===CTC_TYPE?"ctc":"rm"}">${badgeEmoji(a.act_type)}</span>
-      ${a.outcome?`<div class="feed-outcome">${a.outcome}</div>`:""}
-      ${a.follow_up_date?`<div class="feed-fu">Follow-up: ${fmtDate(a.follow_up_date)}</div>`:""}
-      ${a.notes?`<div class="feed-notes">"${a.notes}"</div>`:""}
-    </div>`).join("");
+  if(!data.length){document.getElementById("feedList").innerHTML='<div class="no-data">No activity yet &#127807;</div>';return;}
+  document.getElementById("feedList").innerHTML=data.map(a=>
+    '<div class="feed-item"><div class="feed-top"><span class="feed-agent">'+a.agent_name+'</span><div class="feed-right"><span class="feed-date">'+fmtDate(a.act_date)+'</span><button class="btn-sm" onclick="openEditModal('+a.id+')" style="font-size:10px;padding:3px 8px">Edit</button><button class="btn-sm danger" onclick="openConfirm('+a.id+',\''+( a.agent_name||"").replace(/'/g,"\\'") +'\',\''+( a.act_type||"").replace(/'/g,"\\'") +'\')">Delete</button></div></div><span class="feed-badge '+( a.act_type===CTC_TYPE?"ctc":"rm")+'">'+badgeEmoji(a.act_type)+'</span>'+
+    (a.outcome?'<div class="feed-outcome">'+a.outcome+'</div>':"")+
+    (a.follow_up_date?'<div class="feed-fu">Follow-up: '+fmtDate(a.follow_up_date)+'</div>':"")+
+    (a.notes?'<div class="feed-notes">&ldquo;'+a.notes+'&rdquo;</div>':"")+
+    '</div>'
+  ).join("");
 }
 
 function applyFeedFilters(){
@@ -739,7 +745,7 @@ let editingActivityId=null;
 function openEditModal(id){
   const a=allFeedData.find(x=>x.id===id);if(!a)return;
   editingActivityId=id;
-  document.getElementById("editModalAgent").textContent=a.agent_name+" — "+a.act_type;
+  document.getElementById("editModalAgent").textContent=a.agent_name+" &#8212; "+a.act_type;
   document.getElementById("editNotes").value=a.notes||"";
   document.getElementById("editOutcome").value=a.outcome||"";
   document.getElementById("editFollowupDate").value=a.follow_up_date||"";
@@ -749,96 +755,119 @@ function closeEditModal(){document.getElementById("editModal").classList.remove(
 async function saveEditModal(){
   if(!editingActivityId)return;
   try{
-    await sbFetch(`amanda_activities?id=eq.${editingActivityId}`,{method:"PATCH",prefer:"return=minimal",body:JSON.stringify({notes:document.getElementById("editNotes").value.trim()||null,outcome:document.getElementById("editOutcome").value||null,follow_up_date:document.getElementById("editFollowupDate").value||null})});
-    toast("Updated! 🌸","success");closeEditModal();loadFeed();loadFollowups();loadWeek();
+    await sbFetch("amanda_activities?id=eq."+editingActivityId,{method:"PATCH",prefer:"return=minimal",body:JSON.stringify({notes:document.getElementById("editNotes").value.trim()||null,outcome:document.getElementById("editOutcome").value||null,follow_up_date:document.getElementById("editFollowupDate").value||null})});
+    toast("Updated! &#127800;","success");closeEditModal();loadFeed();loadFollowups();loadWeek();
   }catch(e){toast("Save failed: "+e.message,"error");}
 }
 
-let deletingId=null;
+// CHANGE 1: Unified confirm modal handles both activity delete and prospect delete
+let deletingId=null,deletingType=null;
 function openConfirm(id,agent,type){
-  deletingId=id;
-  document.getElementById("confirmSub").textContent=`"${agent} — ${type}" will be gone forever.`;
+  deletingId=id;deletingType="activity";
+  document.getElementById("confirmTitle").textContent="Delete this activity? &#128465;&#65039;";
+  document.getElementById("confirmSub").textContent='"'+agent+" &#8212; "+type+'" will be gone forever.';
   document.getElementById("confirmModal").classList.add("open");
 }
-function closeConfirm(){document.getElementById("confirmModal").classList.remove("open");deletingId=null;}
+function openConfirmProspect(id,nameOrBtn){
+  const name=typeof nameOrBtn==="string"?nameOrBtn:(nameOrBtn&&nameOrBtn.dataset?nameOrBtn.dataset.name:String(id));
+
+  deletingId=id;deletingType="prospect";
+  document.getElementById("confirmTitle").textContent="Delete this prospect? &#128465;&#65039;";
+  document.getElementById("confirmSub").textContent=name+" will be permanently removed.";
+  document.getElementById("confirmModal").classList.add("open");
+}
+function closeConfirm(){document.getElementById("confirmModal").classList.remove("open");deletingId=null;deletingType=null;}
 async function confirmDelete(){
   if(!deletingId)return;
   try{
-    await sbFetch(`amanda_activities?id=eq.${deletingId}`,{method:"DELETE",prefer:"return=minimal"});
-    toast("Deleted 🗑️","success");closeConfirm();loadFeed();loadFollowups();loadWeek();loadDaniel();
+    if(deletingType==="prospect"){
+      await sbFetch("outreach_prospects?id=eq."+deletingId,{method:"DELETE",prefer:"return=minimal"});
+      toast("Prospect deleted &#128465;&#65039;","success");closeConfirm();loadPipeline();
+    } else {
+      await sbFetch("amanda_activities?id=eq."+deletingId,{method:"DELETE",prefer:"return=minimal"});
+      toast("Deleted &#128465;&#65039;","success");closeConfirm();loadFeed();loadFollowups();loadWeek();loadDaniel();
+    }
   }catch(e){toast("Delete failed: "+e.message,"error");closeConfirm();}
 }
 
 let historyTimer;
 function searchHistory(val){
   clearTimeout(historyTimer);
-  if(val.trim().length<2){document.getElementById("historyResult").innerHTML=`<div class="no-data">Type at least 2 characters.</div>`;return;}
+  if(val.trim().length<2){document.getElementById("historyResult").innerHTML='<div class="no-data">Type at least 2 characters.</div>';return;}
   historyTimer=setTimeout(()=>doSearchHistory(val.trim()),400);
 }
 async function doSearchHistory(name){
-  document.getElementById("historyResult").innerHTML=`<div class="no-data">Searching... 🌸</div>`;
+  document.getElementById("historyResult").innerHTML='<div class="no-data">Searching... &#127800;</div>';
   try{
     const[profiles,activities,callLogs]=await Promise.all([
-      sbFetch(`agent_profiles?agent_name=ilike.*${encodeURIComponent(name)}*&limit=3`).catch(()=>[]),
-      sbFetch(`amanda_activities?agent_name=ilike.*${encodeURIComponent(name)}*&order=act_date.desc&limit=50`).catch(()=>[]),
-      sbFetch(`call_logs?agent_name=ilike.*${encodeURIComponent(name)}*&order=call_date.desc&limit=50`).catch(()=>[])
+      sbFetch("agent_profiles?agent_name=ilike.*"+encodeURIComponent(name)+"*&limit=3").catch(()=>[]),
+      sbFetch("amanda_activities?agent_name=ilike.*"+encodeURIComponent(name)+"*&order=act_date.desc&limit=50").catch(()=>[]),
+      sbFetch("call_logs?agent_name=ilike.*"+encodeURIComponent(name)+"*&order=call_date.desc&limit=50").catch(()=>[])
     ]);
     let html="";
     if(profiles.length){
       const p=profiles[0];
-      html+=`<div style="background:#EEEDFE;border:0.5px solid #AFA9EC;border-radius:10px;padding:16px;margin-bottom:14px">
-        <div style="font-size:16px;font-weight:500;color:#26215C;margin-bottom:10px">🌸 ${p.agent_name}</div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:5px;font-size:12px;color:#534AB7">
-          ${p.email?`<div>Email <span style="font-weight:500;color:#26215C">${p.email}</span></div>`:""}
-          ${p.phone?`<div>Phone <span style="font-weight:500;color:#26215C">${p.phone}</span></div>`:""}
-        </div>
-      </div>`;
+      html+='<div style="background:#EEEDFE;border:0.5px solid #AFA9EC;border-radius:10px;padding:16px;margin-bottom:14px"><div style="font-size:16px;font-weight:500;color:#26215C;margin-bottom:10px">&#127800; '+p.agent_name+'</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:5px;font-size:12px;color:#534AB7">'+
+      (p.email?'<div>Email <span style="font-weight:500;color:#26215C">'+p.email+'</span></div>':"")+
+      (p.phone?'<div>Phone <span style="font-weight:500;color:#26215C">'+p.phone+'</span></div>':"")+
+      '</div></div>';
     }
     const items=[
       ...activities.map(a=>({date:a.act_date,source:"RM",agent:a.agent_name,type:a.act_type,outcome:a.outcome,notes:a.notes,fu:a.follow_up_date})),
       ...callLogs.map(c=>({date:c.call_date,source:"LP",agent:c.agent_name,type:"LP Call",outcome:c.outcome,notes:c.note,lp:c.lp}))
     ].sort((a,b)=>(b.date||"").localeCompare(a.date||""));
-    if(!items.length&&!profiles.length){html+=`<div class="no-data">No contact history found for "${name}".</div>`;}
+    if(!items.length&&!profiles.length){html+='<div class="no-data">No contact history found for "'+name+'".</div>';}
     else{
-      html+=`<div style="font-size:11px;color:#bbb;margin-bottom:10px">🦋 ${items.length} contact records</div>`;
+      html+='<div style="font-size:11px;color:#bbb;margin-bottom:10px">&#129419; '+items.length+' contact records</div>';
       html+=items.map(item=>{
         const isCtc=item.type===CTC_TYPE,isLp=item.source==="LP";
-        return`<div class="feed-item">
-          <div class="feed-top"><span class="feed-agent">${isLp?(item.lp||"LP")+" → "+item.agent:item.agent}</span><span class="feed-date">${fmtDate(item.date)}</span></div>
-          <span class="feed-badge ${isLp?"lp":isCtc?"ctc":"rm"}">${badgeEmoji(item.type)}</span>
-          ${item.outcome?`<div class="feed-outcome">${item.outcome}</div>`:""}
-          ${item.fu?`<div class="feed-fu">Follow-up: ${fmtDate(item.fu)}</div>`:""}
-          ${item.notes?`<div class="feed-notes">"${item.notes}"</div>`:""}
-        </div>`;
+        return'<div class="feed-item"><div class="feed-top"><span class="feed-agent">'+( isLp?(item.lp||"LP")+" &rarr; "+item.agent:item.agent)+'</span><span class="feed-date">'+fmtDate(item.date)+'</span></div><span class="feed-badge '+( isLp?"lp":isCtc?"ctc":"rm")+'">'+badgeEmoji(item.type)+'</span>'+
+        (item.outcome?'<div class="feed-outcome">'+item.outcome+'</div>':"")+
+        (item.fu?'<div class="feed-fu">Follow-up: '+fmtDate(item.fu)+'</div>':"")+
+        (item.notes?'<div class="feed-notes">&ldquo;'+item.notes+'&rdquo;</div>':"")+
+        '</div>';
       }).join("");
     }
     document.getElementById("historyResult").innerHTML=html;
-  }catch(e){document.getElementById("historyResult").innerHTML=`<div class="no-data">Error: ${e.message}</div>`;}
+  }catch(e){document.getElementById("historyResult").innerHTML='<div class="no-data">Error: '+e.message+'</div>';}
 }
 
 async function loadDaniel(){
   try{
     const[weekActs,totalActs]=await Promise.all([
-      sbFetch(`amanda_activities?select=*&act_date=gte.${week.start}&act_date=lte.${week.end}&order=act_date.desc`),
-      sbFetch(`amanda_activities?select=id`)
+      sbFetch("amanda_activities?select=*&act_date=gte."+week.start+"&act_date=lte."+week.end+"&order=act_date.desc"),
+      sbFetch("amanda_activities?select=id")
     ]);
     const meetings=weekActs.filter(a=>a.act_type==="New Realtor Meeting").length;
     const calls=weekActs.filter(a=>a.act_type==="Cold Calls").length;
     const ctc=weekActs.filter(a=>a.act_type===CTC_TYPE).length;
     document.getElementById("danielStats").innerHTML=[
-      {n:weekActs.length,l:"This week"},{n:meetings,l:"🌸 New meetings"},
-      {n:calls,l:"🎯 Cold calls"},{n:ctc,l:"⚡ CTC calls"}
-    ].map(s=>`<div class="stat-card"><div class="stat-num">${s.n}</div><div class="stat-label">${s.l}</div></div>`).join("");
+      {n:weekActs.length,l:"This week"},{n:meetings,l:"&#127800; New meetings"},
+      {n:calls,l:"&#127919; Cold calls"},{n:ctc,l:"&#9889; CTC calls"}
+    ].map(s=>'<div class="stat-card"><div class="stat-num">'+s.n+'</div><div class="stat-label">'+s.l+'</div></div>').join("");
     document.getElementById("danielBody").innerHTML=weekActs.length
-      ?weekActs.map(a=>`<tr><td>${a.agent_name}</td><td>${badgeEmoji(a.act_type)}</td><td>${a.outcome||"—"}</td><td>${fmtDate(a.act_date)}</td><td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${a.notes||"—"}</td></tr>`).join("")
-      :`<tr><td colspan="5" style="text-align:center;padding:20px;color:#bbb">No activity this week 🌱</td></tr>`;
+      ?weekActs.map(a=>'<tr><td>'+a.agent_name+'</td><td>'+badgeEmoji(a.act_type)+'</td><td>'+( a.outcome||"&#8212;")+'</td><td>'+fmtDate(a.act_date)+'</td><td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+( a.notes||"&#8212;")+'</td></tr>').join("")
+      :'<tr><td colspan="5" style="text-align:center;padding:20px;color:#bbb">No activity this week &#127807;</td></tr>';
   }catch(e){console.error(e);}
 }
 
-let allProspects=[],editingProspectId=null;
+// CHANGE 3: Pipeline with activity history per prospect + delete button
+let allProspects=[],editingProspectId=null,prospectActivities={};
 async function loadPipeline(){
-  try{allProspects=await sbFetch("outreach_prospects?select=*&order=followup_date.asc.nullslast");}
-  catch(e){allProspects=[];}
+  try{
+    const[prospects,acts]=await Promise.all([
+      sbFetch("outreach_prospects?select=*&order=followup_date.asc.nullslast"),
+      sbFetch("amanda_activities?select=agent_name,act_type,act_date,outcome,notes&order=act_date.desc&limit=500")
+    ]);
+    allProspects=prospects||[];
+    // Group activities by agent name for quick lookup
+    prospectActivities={};
+    (acts||[]).forEach(a=>{
+      const n=a.agent_name;
+      if(!prospectActivities[n])prospectActivities[n]=[];
+      prospectActivities[n].push(a);
+    });
+  }catch(e){allProspects=[];}
   renderPipelineStats();filterPipeline();
 }
 function renderPipelineStats(){
@@ -856,40 +885,53 @@ function filterPipeline(){
   if(q)list=list.filter(p=>(p.name||"").toLowerCase().includes(q)||(p.brokerage||"").toLowerCase().includes(q));
   renderProspects(list);
 }
+function openPipelineContact(id){
+  const p=allProspects.find(x=>x.id===id);if(!p)return;
+  openContactModal(p.name||"",p.phone||"",p.email||"",p.brokerage||"","");
+}
+
 function renderProspects(list){
   const todayStr=today();
-  if(!list.length){document.getElementById("prospectList").innerHTML=`<div class="no-data">No prospects found.</div>`;return;}
+  if(!list.length){document.getElementById("prospectList").innerHTML='<div class="no-data">No prospects found.</div>';return;}
   document.getElementById("prospectList").innerHTML=list.map(p=>{
     const isDNC=p.status==="DNC",isNFM=p.status==="NFM";
     const fuOvr=p.followup_date&&p.followup_date<todayStr;
-    const badgeClass={"Requires follow-up":"followup","DNC":"dnc","NFM":"nfm"}[p.status]||"followup";
-    const badgeLabel={"Requires follow-up":"Requires Follow-up","DNC":"Do Not Contact","NFM":"Already w/ NFM"}[p.status]||p.status;
-    const safeName=(p.name||"").replace(/'/g,"\\'");
-    return`<div class="prospect-card ${isDNC?"dnc":isNFM?"nfm":""}">
-      <div class="pc-top">
-        <div><div class="pc-name">${p.name}</div><div class="pc-brokerage">${p.brokerage||"—"}</div></div>
-        <span class="pc-badge ${badgeClass}">${badgeLabel}</span>
-      </div>
-      <div class="pc-contact" style="justify-content:space-between;align-items:center">
-        <div style="display:flex;gap:14px;flex-wrap:wrap">${p.phone?`<span>📞 ${p.phone}</span>`:'<span style="color:#ccc">No phone</span>'}${p.email?` <span>✉️ ${p.email}</span>`:""}</div>
-        <button class="btn-sm" style="font-size:10px;padding:3px 8px;flex-shrink:0" onclick="openContactModal('${safeName}','${(p.phone||"").replace(/'/g,"\\'")}','${(p.email||"").replace(/'/g,"\\'")}','${(p.brokerage||"").replace(/'/g,"\\'")}','')">Edit contact</button>
-      </div>
-      ${p.followup_date&&!isDNC&&!isNFM?`<div class="pc-fudate ${fuOvr?"overdue":""}">🌺 Follow-up: ${fuOvr?"OVERDUE — ":""}${fmtDate(p.followup_date)}</div>`:""}
-      ${p.notes?`<div class="pc-notes">${p.notes}</div>`:""}
-      <div class="pc-actions">
-        <button class="btn-sm" onclick="editProspect(${p.id})">Edit</button>
-        ${isDNC||isNFM?`<button class="btn-sm" onclick="unmarkDNC(${p.id})">Reactivate</button>`:""}
-      </div>
-    </div>`;
+    const bClass={"Requires follow-up":"followup","DNC":"dnc","NFM":"nfm"}[p.status]||"followup";
+    const bLabel={"Requires follow-up":"Requires Follow-up","DNC":"Do Not Contact","NFM":"Already w/ NFM"}[p.status]||p.status;
+    const sn=(p.name||"").replace(/'/g,"\\'");
+    const sp=(p.phone||"").replace(/'/g,"\\'");
+    const se=(p.email||"").replace(/'/g,"\\'");
+    const sb=(p.brokerage||"").replace(/'/g,"\\'");
+    const acts=(prospectActivities[p.name]||[]).slice(0,3);
+    let actHtml="";
+    if(acts.length){
+      actHtml='<div class="pc-activity-feed"><div class="pc-activity-feed-title">&#128337; Recent activity</div>';
+      acts.forEach(a=>{actHtml+='<div class="pc-activity-item"><span>'+badgeEmoji(a.act_type)+" "+fmtDate(a.act_date)+(a.outcome?" &middot; "+a.outcome:"")+'</span><span style="color:#bbb;font-size:10px;white-space:nowrap">'+(a.notes?a.notes.substring(0,40)+"...":"")+'</span></div>';});
+      actHtml+='</div>';
+    }
+    let html='<div class="prospect-card '+(isDNC?"dnc":isNFM?"nfm":"")+'">';
+    html+='<div class="pc-top"><div><div class="pc-name">'+p.name+'</div><div class="pc-brokerage">'+(p.brokerage||"&mdash;")+'</div></div><span class="pc-badge '+bClass+'">'+bLabel+'</span></div>';
+    html+='<div class="pc-contact" style="justify-content:space-between;align-items:center">';
+    html+='<div style="display:flex;gap:14px;flex-wrap:wrap">'+(p.phone?'<span>&#128222; '+p.phone+'</span>':'<span style="color:#ccc">No phone</span>')+(p.email?' <span>&#9993;&#65039; '+p.email+'</span>':'')+'</div>';
+    html+='<button class="btn-sm" style="font-size:10px;padding:3px 8px;flex-shrink:0" onclick="openPipelineContact('+p.id+')">Edit contact</button></div>';
+    if(p.followup_date&&!isDNC&&!isNFM)html+='<div class="pc-fudate '+(fuOvr?"overdue":"")+'">&#127866; Follow-up: '+(fuOvr?"OVERDUE &mdash; ":"")+fmtDate(p.followup_date)+'</div>';
+    if(p.notes)html+='<div class="pc-notes">'+p.notes+'</div>';
+    html+=actHtml;
+    html+='<div class="pc-actions"><button class="btn-sm" onclick="editProspect('+p.id+')">Edit</button>';
+    if(isDNC||isNFM)html+='<button class="btn-sm" onclick="unmarkDNC('+p.id+')">Reactivate</button>';
+    html+='<button class="btn-sm danger" onclick="openConfirmProspect('+p.id+',this.dataset.name)" data-name="'+p.name.replace(/"/g,"&quot;")+'">Delete</button></div>';
+    html+='</div>';
+    return html;
   }).join("");
 }
+
 function toggleAddForm(show){
   editingProspectId=null;
   document.getElementById("addProspectForm").style.display=show?"block":"none";
   if(show){
     ["np-name","np-brokerage","np-phone","np-email","np-notes","np-followup"].forEach(id=>document.getElementById(id).value="");
     document.getElementById("np-status").value="Requires follow-up";
-    document.getElementById("addFormTitle").textContent="Add new prospect 🌸";
+    document.getElementById("addFormTitle").textContent="Add new prospect &#127800;";
   }
 }
 function editProspect(id){
@@ -899,7 +941,7 @@ function editProspect(id){
   document.getElementById("np-phone").value=p.phone||"";document.getElementById("np-email").value=p.email||"";
   document.getElementById("np-status").value=p.status||"Requires follow-up";document.getElementById("np-followup").value=p.followup_date||"";
   document.getElementById("np-notes").value=p.notes||"";
-  document.getElementById("addFormTitle").textContent="Edit prospect ✏️";
+  document.getElementById("addFormTitle").textContent="Edit prospect &#9999;&#65039;";
   document.getElementById("addProspectForm").style.display="block";
   document.getElementById("addProspectForm").scrollIntoView({behavior:"smooth"});
 }
@@ -908,13 +950,13 @@ async function saveProspect(){
   if(!name){toast("Please enter a name.","error");return;}
   const payload={name,brokerage:document.getElementById("np-brokerage").value.trim()||null,phone:document.getElementById("np-phone").value.trim()||null,email:document.getElementById("np-email").value.trim()||null,status:document.getElementById("np-status").value,followup_date:document.getElementById("np-followup").value||null,notes:document.getElementById("np-notes").value.trim()||null};
   try{
-    if(editingProspectId){await sbFetch(`outreach_prospects?id=eq.${editingProspectId}`,{method:"PATCH",prefer:"return=minimal",body:JSON.stringify(payload)});toast("Prospect updated 🌸","success");}
-    else{await sbFetch("outreach_prospects",{method:"POST",prefer:"return=minimal",body:JSON.stringify(payload)});toast("Prospect added 🌱","success");}
-    toggleAddForm(false);loadPipeline();
+    if(editingProspectId){await sbFetch("outreach_prospects?id=eq."+editingProspectId,{method:"PATCH",prefer:"return=minimal",body:JSON.stringify(payload)});toast("Prospect updated &#127800;","success");}
+    else{await sbFetch("outreach_prospects",{method:"POST",prefer:"return=minimal",body:JSON.stringify(payload)});toast("Prospect added &#127807;","success");}
+    toggleAddForm(false);loadPipeline();initAutocomplete();
   }catch(e){toast("Save failed: "+e.message,"error");}
 }
 async function unmarkDNC(id){
-  try{await sbFetch(`outreach_prospects?id=eq.${id}`,{method:"PATCH",prefer:"return=minimal",body:JSON.stringify({status:"Requires follow-up"})});toast("Reactivated 🌱","success");loadPipeline();}
+  try{await sbFetch("outreach_prospects?id=eq."+id,{method:"PATCH",prefer:"return=minimal",body:JSON.stringify({status:"Requires follow-up"})});toast("Reactivated &#127807;","success");loadPipeline();}
   catch(e){toast("Error: "+e.message,"error");}
 }
 
@@ -931,27 +973,27 @@ async function saveContactModal(){
   if(!editingContactName)return;
   const payload={agent_name:editingContactName,phone:document.getElementById("contactPhone").value.trim()||null,email:document.getElementById("contactEmail").value.trim()||null,birthday:document.getElementById("contactBirthday").value.trim()||null};
   try{
-    const existing=await sbFetch(`agent_profiles?agent_name=eq.${encodeURIComponent(editingContactName)}&limit=1`).catch(()=>[]);
-    if(existing&&existing.length>0){await sbFetch(`agent_profiles?agent_name=eq.${encodeURIComponent(editingContactName)}`,{method:"PATCH",prefer:"return=minimal",body:JSON.stringify(payload)});}
+    const existing=await sbFetch("agent_profiles?agent_name=eq."+encodeURIComponent(editingContactName)+"&limit=1").catch(()=>[]);
+    if(existing&&existing.length>0){await sbFetch("agent_profiles?agent_name=eq."+encodeURIComponent(editingContactName),{method:"PATCH",prefer:"return=minimal",body:JSON.stringify(payload)});}
     else{await sbFetch("agent_profiles",{method:"POST",prefer:"return=minimal",body:JSON.stringify(payload)});}
-    toast("Contact updated 🌸","success");closeContactModal();
+    toast("Contact updated &#127800;","success");closeContactModal();
     if(document.getElementById("historySearch").value.length>=2)doSearchHistory(document.getElementById("historySearch").value.trim());
   }catch(e){toast("Save failed: "+e.message,"error");}
 }
 
 let calYear=new Date().getFullYear(),calMonth=new Date().getMonth(),calActivities=[],selectedCalDay=null;
-const MEETING_TYPES=["New Realtor Meeting","Coffee Meeting","Lunch or Dinner","Break Breads","Open House Visit","Pop-By","Co-hosted Event","Business Planning Session","Team Presentation"];
+const MEETING_TYPES=["New Realtor Meeting","Break Breads","Open House Visit","Co-hosted Event","Business Planning Session","Team Presentation"];
 function calEventClass(type){if(type===CTC_TYPE)return"ctc";if(MEETING_TYPES.includes(type))return"meeting";return"other";}
-function calEventEmoji(type){if(type===CTC_TYPE)return"⚡";if(MEETING_TYPES.includes(type))return"🌸";return"🎯";}
+function calEventEmoji(type){if(type===CTC_TYPE)return"&#9889;";if(MEETING_TYPES.includes(type))return"&#127800;";return"&#127919;";}
 function calNav(dir){calMonth+=dir;if(calMonth>11){calMonth=0;calYear++;}if(calMonth<0){calMonth=11;calYear--;}loadCalendar();}
 async function loadCalendar(){
   try{
     const y=calYear,m=String(calMonth+1).padStart(2,"0");
-    const startDate=`${y}-${m}-01`;
+    const startDate=y+"-"+m+"-01";
     const endDate=localDateStr(new Date(calYear,calMonth+1,0));
     const[acts,fuActs]=await Promise.all([
-      sbFetch(`amanda_activities?select=id,agent_name,act_type,act_date,outcome,notes&act_date=gte.${startDate}&act_date=lte.${endDate}&order=act_date.asc&limit=500`),
-      sbFetch(`amanda_activities?select=id,agent_name,act_type,follow_up_date,notes&follow_up_date=gte.${startDate}&follow_up_date=lte.${endDate}&follow_up_date=not.is.null&order=follow_up_date.asc&limit=200`)
+      sbFetch("amanda_activities?select=id,agent_name,act_type,act_date,outcome,notes&act_date=gte."+startDate+"&act_date=lte."+endDate+"&order=act_date.asc&limit=500"),
+      sbFetch("amanda_activities?select=id,agent_name,act_type,follow_up_date,notes&follow_up_date=gte."+startDate+"&follow_up_date=lte."+endDate+"&follow_up_date=not.is.null&order=follow_up_date.asc&limit=200")
     ]);
     calActivities=[...(acts||[]).map(a=>({...a,calDate:a.act_date,calType:"activity"})),...(fuActs||[]).map(a=>({...a,calDate:a.follow_up_date,calType:"followup"}))];
   }catch(e){calActivities=[];}
@@ -959,7 +1001,7 @@ async function loadCalendar(){
 }
 function renderCalendar(){
   const monthNames=["January","February","March","April","May","June","July","August","September","October","November","December"];
-  document.getElementById("calMonthLabel").textContent=`${monthNames[calMonth]} ${calYear} 📅`;
+  document.getElementById("calMonthLabel").textContent=monthNames[calMonth]+" "+calYear+" &#128197;";
   const firstDay=new Date(calYear,calMonth,1).getDay();
   const daysInMonth=new Date(calYear,calMonth+1,0).getDate();
   const daysInPrev=new Date(calYear,calMonth,0).getDate();
@@ -967,19 +1009,19 @@ function renderCalendar(){
   const byDate={};
   calActivities.forEach(a=>{if(!a.calDate)return;if(!byDate[a.calDate])byDate[a.calDate]=[];byDate[a.calDate].push(a);});
   let html="";
-  for(let i=firstDay-1;i>=0;i--)html+=`<div class="cal-day other-month"><div class="cal-num">${daysInPrev-i}</div></div>`;
+  for(let i=firstDay-1;i>=0;i--)html+='<div class="cal-day other-month"><div class="cal-num">'+( daysInPrev-i)+'</div></div>';
   for(let d=1;d<=daysInMonth;d++){
-    const dateStr=`${calYear}-${String(calMonth+1).padStart(2,"0")}-${String(d).padStart(2,"0")}`;
+    const dateStr=calYear+"-"+String(calMonth+1).padStart(2,"0")+"-"+String(d).padStart(2,"0");
     const isToday=dateStr===todayStr,isSelected=selectedCalDay===dateStr;
     const events=byDate[dateStr]||[];
-    html+=`<div class="cal-day${isToday?" today":""}" style="${isSelected?"background:#EEEDFE;border-color:#AFA9EC;":""}" onclick="selectCalDay('${dateStr}')">`;
-    html+=`<div class="cal-num">${d}</div>`;
-    events.slice(0,2).forEach(e=>{const cls=e.calType==="followup"?"followup":calEventClass(e.act_type);const emoji=e.calType==="followup"?"🌺":calEventEmoji(e.act_type);html+=`<div class="cal-event ${cls}">${emoji} ${e.agent_name}</div>`;});
-    if(events.length>2)html+=`<div style="font-size:9px;color:#aaa;padding:1px 4px">+${events.length-2} more</div>`;
-    html+=`</div>`;
+    html+='<div class="cal-day'+( isToday?" today":"")+'" style="'+( isSelected?"background:#EEEDFE;border-color:#AFA9EC;":"")+'" onclick="selectCalDay(\''+ dateStr +'\')">';
+    html+='<div class="cal-num">'+d+'</div>';
+    events.slice(0,2).forEach(e=>{const cls=e.calType==="followup"?"followup":calEventClass(e.act_type);const emoji=e.calType==="followup"?"&#127866;":calEventEmoji(e.act_type);html+='<div class="cal-event '+cls+'">'+emoji+" "+e.agent_name+'</div>';});
+    if(events.length>2)html+='<div style="font-size:9px;color:#aaa;padding:1px 4px">+'+( events.length-2)+' more</div>';
+    html+='</div>';
   }
   const total=firstDay+daysInMonth,remaining=total%7===0?0:7-(total%7);
-  for(let i=1;i<=remaining;i++)html+=`<div class="cal-day other-month"><div class="cal-num">${i}</div></div>`;
+  for(let i=1;i<=remaining;i++)html+='<div class="cal-day other-month"><div class="cal-num">'+i+'</div></div>';
   document.getElementById("calGrid").innerHTML=html;
   if(selectedCalDay)showCalDayDetail(selectedCalDay);
 }
@@ -990,19 +1032,12 @@ function showCalDayDetail(dateStr){
   const dt=new Date(dateStr+"T12:00:00");
   const label=dt.toLocaleDateString("en-US",{weekday:"long",month:"long",day:"numeric"});
   const todayStr=today(),isToday=dateStr===todayStr,isPast=dateStr<todayStr;
-  document.getElementById("calDayTitle").textContent=`${label}${isToday?" — Today 🌟":isPast?"":" — Upcoming ✨"}`;
+  document.getElementById("calDayTitle").textContent=label+(isToday?" &#8212; Today &#127775;":isPast?"":" &#8212; Upcoming &#10024;");
   document.getElementById("calDayItems").innerHTML=events.map(e=>{
     const isFollowup=e.calType==="followup",cls=isFollowup?"followup":calEventClass(e.act_type);
     const dotColors={meeting:"#534AB7",followup:"#B85B00",ctc:"#0F6E56",other:"#534AB7"};
-    const dotColor=dotColors[cls]||"#534AB7";const emoji=isFollowup?"🌺":calEventEmoji(e.act_type);
-    return`<div class="cal-day-item">
-      <div class="cal-day-dot" style="background:${dotColor}"></div>
-      <div style="flex:1">
-        <div style="font-size:12px;font-weight:500;color:#1a1a2e">${e.agent_name}</div>
-        <div style="font-size:11px;color:#aaa">${emoji} ${isFollowup?"Follow-up — "+e.act_type:e.act_type}${e.outcome?" · "+e.outcome:""}</div>
-        ${e.notes?`<div style="font-size:11px;color:#777;font-style:italic;margin-top:2px">"${e.notes.substring(0,80)}"</div>`:""}
-      </div>
-    </div>`;
+    const dotColor=dotColors[cls]||"#534AB7";const emoji=isFollowup?"&#127866;":calEventEmoji(e.act_type);
+    return'<div class="cal-day-item"><div class="cal-day-dot" style="background:'+dotColor+'"></div><div style="flex:1"><div style="font-size:12px;font-weight:500;color:#1a1a2e">'+e.agent_name+'</div><div style="font-size:11px;color:#aaa">'+emoji+" "+(isFollowup?"Follow-up &#8212; "+e.act_type:e.act_type)+(e.outcome?" &middot; "+e.outcome:"")+'</div>'+( e.notes?'<div style="font-size:11px;color:#777;font-style:italic;margin-top:2px">&ldquo;'+e.notes.substring(0,80)+'&rdquo;</div>':"")+'</div></div>';
   }).join("");
   detail.style.display="block";
 }
