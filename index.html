@@ -211,6 +211,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
     </div>
   </div>
   <div class="card">
+    <div class="card-title" style="margin-bottom:12px">&#128680; Flagged by LPs <span class="card-sub" id="flaggedSub"></span></div>
+    <div id="weekFlagged"><div class="no-data" style="padding:16px">Loading...</div></div>
+  </div>
+  <div class="card">
     <div class="card-title" style="margin-bottom:12px">&#129489;&#8205;&#128269; Going quiet <span class="card-sub" id="quietSub"></span></div>
     <div id="weekQuiet"><div class="no-data" style="padding:16px">Loading...</div></div>
   </div>
@@ -501,8 +505,7 @@ const GOALS=[
   {label:"&#127919; Cold calls",type:"Cold Calls",weekly:25,monthly:100},
   {label:"&#127800; New realtor meetings",type:"New Realtor Meeting",weekly:5,monthly:20},
   {label:"&#129360; Break breads",type:"Break Breads",weekly:5,monthly:20},
-  {label:"&#129309; Active agent check-ins",type:"Active Agent Check-in",weekly:15,monthly:60},
-  {label:"&#127752; Realtor buddy referral ask",type:"Realtor Buddy Referral Ask",weekly:3,monthly:12}
+  {label:"&#127752; Realtor buddy intro",type:"Realtor Buddy Referral Ask",weekly:3,monthly:12}
 ];
 const CTC_TYPE="CTC Call";
 function badgeEmoji(type){return EMOJI[type]?EMOJI[type]+" "+type:type;}
@@ -587,7 +590,79 @@ async function init(){
     document.getElementById("syncDot").className="sync-dot err";
     document.getElementById("syncTxt").textContent="Offline";
   }
-  loadWeek();loadFollowups();loadFeed();loadDaniel();initAutocomplete();loadQuiet();
+  loadWeek();loadFollowups();loadFeed();loadDaniel();initAutocomplete();loadQuiet();loadFlagged();
+}
+
+async function loadQuietCoverage(){
+  try{
+    const[allAgents,priorActs,weekActs]=await Promise.all([
+      sbFetch("agent_profiles?select=agent_name&order=agent_name.asc&limit=500"),
+      sbFetch("amanda_activities?select=agent_name,act_date&act_date=lt."+week.start+"&order=act_date.desc&limit=3000"),
+      sbFetch("amanda_activities?select=agent_name&act_date=gte."+week.start+"&act_date=lte."+week.end)
+    ]);
+    const lastSeenBefore={};
+    priorActs.forEach(a=>{
+      const n=(a.agent_name||"").trim();
+      if(n && !lastSeenBefore[n]) lastSeenBefore[n]=a.act_date;
+    });
+    const touchedThisWeek=new Set(weekActs.map(a=>(a.agent_name||"").trim()).filter(Boolean));
+
+    const mondayDate=new Date(week.start+"T12:00:00");
+    const quietAsOfMonday=allAgents.map(a=>{
+      const name=(a.agent_name||"").trim();
+      if(!name) return null;
+      const last=lastSeenBefore[name];
+      const days=last?Math.round((mondayDate-new Date(last+"T12:00:00"))/86400000):null;
+      return (days===null||days>=60)?name:null;
+    }).filter(Boolean);
+
+    const coveredNames=quietAsOfMonday.filter(n=>touchedThisWeek.has(n));
+    const pct=quietAsOfMonday.length?Math.round(coveredNames.length/quietAsOfMonday.length*100):100;
+
+    return{
+      pct, total:quietAsOfMonday.length, covered:coveredNames.length,
+      names:quietAsOfMonday.map(n=>({name:n,covered:touchedThisWeek.has(n)}))
+    };
+  }catch(e){
+    console.error(e);
+    return{pct:0,total:0,covered:0,names:[]};
+  }
+}
+
+async function loadFlagged(){
+  try{
+    const flagged=await sbFetch("call_logs?flag_rm=eq.true&select=id,agent_name,lp,call_date,note,outcome&order=call_date.desc&limit=50");
+    document.getElementById("flaggedSub").textContent=flagged.length?flagged.length+" agent"+(flagged.length!==1?"s":""):"";
+
+    if(!flagged.length){
+      document.getElementById("weekFlagged").innerHTML='<div class="no-data" style="padding:16px">No agents flagged by LPs right now</div>';
+      return;
+    }
+
+    document.getElementById("weekFlagged").innerHTML=flagged.map(f=>{
+      const note=(f.note||"").trim();
+      const shortNote=note.length>100?note.substring(0,100)+"...":note;
+      return'<div class="fu-item" style="align-items:flex-start">'
+        +'<div class="fu-dot" style="background:#E24B4A;margin-top:5px"></div>'
+        +'<div class="fu-body">'
+        +'<div class="fu-name">'+f.agent_name+'<span style="font-size:10px;color:#bbb;font-weight:400;margin-left:6px">via '+( f.lp||"LP")+'</span></div>'
+        +( shortNote?'<div class="fu-meta" style="color:#666;margin-top:3px">&ldquo;'+shortNote+'&rdquo;</div>':'')
+        +'<div class="fu-meta" style="margin-top:2px">'+fmtDate(f.call_date)+( f.outcome?" &middot; "+f.outcome:"")+'</div>'
+        +'</div>'
+        +'<button onclick="resolveFlag(\''+f.id+'\')" style="font-size:10px;color:#888;background:none;border:1px solid #ddd;border-radius:6px;padding:4px 8px;cursor:pointer;font-family:inherit;white-space:nowrap">Mark handled</button>'
+        +'</div>';
+    }).join("");
+  }catch(e){
+    console.error(e);
+    document.getElementById("weekFlagged").innerHTML='<div class="no-data">Unable to load.</div>';
+  }
+}
+
+async function resolveFlag(id){
+  try{
+    await sbFetch("call_logs?id=eq."+encodeURIComponent(id),{method:"PATCH",prefer:"return=minimal",body:JSON.stringify({flag_rm:false})});
+    loadFlagged();
+  }catch(e){console.error(e);}
 }
 
 async function loadQuiet(){
@@ -709,6 +784,25 @@ async function loadWeek(){
     document.getElementById("weekGoalBars").innerHTML=html;
     renderPeriodScorecard();
   }catch(e){document.getElementById("weekGoalBars").innerHTML='<div class="no-data">Unable to load goals.</div>';}
+
+  try{
+    const cov=await loadQuietCoverage();
+    const pctColor=cov.pct>=100?"#1F6B45":cov.pct>=60?"#9A6A12":"#9B3B3B";
+    let covHtml='<div class="gr" style="border-top:1px solid #f0f0f5;padding-top:14px;margin-top:14px">'
+      +'<div class="gr-lr"><span class="gr-n">&#128269; Going-quiet coverage</span>'
+      +'<span><span class="gr-c">'+cov.pct+'%</span></span></div>'
+      +'<div class="g-track"><div class="g-fill" style="width:'+cov.pct+'%;background:'+pctColor+'"></div></div>'
+      +'<div style="font-size:10px;color:#bbb;margin-top:4px">'+cov.covered+' of '+cov.total+' agents flagged quiet on Monday touched this week</div>';
+    if(cov.names.length){
+      covHtml+='<div style="margin-top:10px;display:flex;flex-direction:column;gap:6px">'
+        +cov.names.slice(0,8).map(n=>'<div style="display:flex;justify-content:space-between;align-items:center;font-size:12px">'
+          +'<span style="color:#444">'+n.name+'</span>'
+          +'<span style="color:'+( n.covered?"#1F6B45":"#9A6A12")+';font-size:11px">'+( n.covered?"&#10003; Covered":"Not yet")+'</span></div>').join("")
+        +'</div>';
+    }
+    covHtml+='</div>';
+    document.getElementById("weekGoalBars").innerHTML+=covHtml;
+  }catch(e){console.error(e);}
 
   try{
     const todayStr=today();
@@ -1029,6 +1123,20 @@ function renderDanielPeriod(){
   });
   html+=renderCtcRow(data.filter(a=>a.act_type===CTC_TYPE).length,isWeek?"this week":isYTD?"YTD":new Date().toLocaleString("en-US",{month:"long"}));
   document.getElementById("danielGoals").innerHTML=html;
+  if(isWeek) renderDanielCoverage(); else document.getElementById("danielGoals").innerHTML+='';
+}
+
+async function renderDanielCoverage(){
+  try{
+    const cov=await loadQuietCoverage();
+    const pctColor=cov.pct>=100?"#1F6B45":cov.pct>=60?"#9A6A12":"#9B3B3B";
+    let covHtml='<div class="gr" style="border-top:1px solid #f0f0f5;padding-top:14px;margin-top:14px">'
+      +'<div class="gr-lr"><span class="gr-n">&#128269; Going-quiet coverage</span>'
+      +'<span><span class="gr-c">'+cov.pct+'%</span></span></div>'
+      +'<div class="g-track"><div class="g-fill" style="width:'+cov.pct+'%;background:'+pctColor+'"></div></div>'
+      +'<div style="font-size:10px;color:#bbb;margin-top:4px">'+cov.covered+' of '+cov.total+' agents flagged quiet on Monday touched this week</div></div>';
+    document.getElementById("danielGoals").innerHTML+=covHtml;
+  }catch(e){console.error(e);}
 }
 
 function renderDanielTable(acts){
