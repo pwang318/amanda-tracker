@@ -210,6 +210,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
       <div id="weekRecent"><div class="no-data" style="padding:16px">Loading...</div></div>
     </div>
   </div>
+  <div class="card">
+    <div class="card-title" style="margin-bottom:12px">&#129489;&#8205;&#128269; Going quiet <span class="card-sub" id="quietSub"></span></div>
+    <div id="weekQuiet"><div class="no-data" style="padding:16px">Loading...</div></div>
+  </div>
 </div>
 
 <div id="view-log" class="view">
@@ -416,8 +420,29 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 
 <div id="view-daniel" class="view">
   <div class="stat-grid" id="danielStats"></div>
+
   <div class="card">
-    <div class="card-title">This week's activity</div>
+    <div class="period-toggle">
+      <button class="ptoggle active" id="dbtn-week" onclick="showDanielPeriod('week')">This week</button>
+      <button class="ptoggle" id="dbtn-mtd" onclick="showDanielPeriod('mtd')">Month to date</button>
+      <button class="ptoggle" id="dbtn-ytd" onclick="showDanielPeriod('ytd')">Year to date</button>
+    </div>
+    <div id="danielGoals"><div class="no-data">Loading...</div></div>
+  </div>
+
+  <div class="week-bottom">
+    <div class="card">
+      <div class="card-title" style="margin-bottom:12px">&#127866; Follow-ups due</div>
+      <div id="danielFollowups"><div class="no-data" style="padding:16px">Loading...</div></div>
+    </div>
+    <div class="card">
+      <div class="card-title" style="margin-bottom:12px">&#129489;&#8205;&#128269; Going quiet</div>
+      <div id="danielQuiet"><div class="no-data" style="padding:16px">Loading...</div></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">This week's activity log</div>
     <div style="overflow-x:auto">
       <table class="dtable">
         <thead><tr><th>Agent</th><th>Activity</th><th>Outcome</th><th>Date</th><th>Notes</th></tr></thead>
@@ -562,7 +587,54 @@ async function init(){
     document.getElementById("syncDot").className="sync-dot err";
     document.getElementById("syncTxt").textContent="Offline";
   }
-  loadWeek();loadFollowups();loadFeed();loadDaniel();initAutocomplete();
+  loadWeek();loadFollowups();loadFeed();loadDaniel();initAutocomplete();loadQuiet();
+}
+
+async function loadQuiet(){
+  try{
+    const[allAgents,allActs]=await Promise.all([
+      sbFetch("agent_profiles?select=agent_name&order=agent_name.asc&limit=500"),
+      sbFetch("amanda_activities?select=agent_name,act_date&order=act_date.desc&limit=2000")
+    ]);
+    const lastSeen={};
+    allActs.forEach(a=>{
+      const n=(a.agent_name||"").trim();
+      if(n && !lastSeen[n]) lastSeen[n]=a.act_date; // first hit per name = most recent since sorted desc
+    });
+    const now=new Date();
+    const rows=allAgents.map(a=>{
+      const name=(a.agent_name||"").trim();
+      if(!name) return null;
+      const last=lastSeen[name];
+      let days;
+      if(!last){ days=null; }
+      else{ days=Math.round((now-new Date(last+"T12:00:00"))/86400000); }
+      return {name,last,days};
+    }).filter(Boolean);
+
+    const quiet=rows.filter(r=>r.days===null || r.days>=60).sort((a,b)=>{
+      if(a.days===null) return -1;
+      if(b.days===null) return 1;
+      return b.days-a.days;
+    });
+
+    document.getElementById("quietSub").textContent=quiet.length?quiet.length+" agent"+(quiet.length!==1?"s":""):"";
+
+    if(!quiet.length){
+      document.getElementById("weekQuiet").innerHTML='<div class="no-data" style="padding:16px">Everyone\'s been touched within 60 days &#127881;</div>';
+      return;
+    }
+
+    document.getElementById("weekQuiet").innerHTML=quiet.slice(0,12).map(r=>{
+      const isUrgent=r.days===null||r.days>=90;
+      const c=isUrgent?"#E24B4A":"#E8A33D";
+      const label=r.days===null?"No activity logged":r.days+"d since last touch";
+      return '<div class="fu-item"><div class="fu-dot" style="background:'+c+'"></div><div class="fu-body"><div class="fu-name">'+r.name+'</div><div class="fu-meta" style="color:'+c+'">'+(isUrgent?"&#128683; ":"&#9888;&#65039; ")+label+'</div></div></div>';
+    }).join("");
+  }catch(e){
+    console.error(e);
+    document.getElementById("weekQuiet").innerHTML='<div class="no-data">Unable to load.</div>';
+  }
 }
 
 function switchTab(name){
@@ -586,9 +658,18 @@ function showPeriod(p){
 
 function goalColor(pct){return pct>=100?"#639922":pct>=60?"#EF9F27":"#E24B4A";}
 
-function renderGoalBar(label,actual,target,pct){
+function renderGoalBar(label,actual,target,pct,actType){
   const c=goalColor(pct),hit=pct>=100?" &#129395;":"";
-  return'<div class="goal-row"><div class="goal-label-row"><span class="goal-name">'+label+'</span><span><span class="goal-actual">'+actual+'</span><span class="goal-target"> / '+target+'</span></span></div><div class="goal-track"><div class="goal-fill" style="width:'+Math.min(100,pct)+'%;background:'+c+'"></div></div><div class="goal-pct">'+Math.round(pct)+'% of goal'+hit+'</div></div>';
+  const clickAttr=actType?' onclick="jumpToFeedType(\''+actType.replace(/'/g,"\\'")+'\')" style="cursor:pointer"':"";
+  return'<div class="goal-row"'+clickAttr+'><div class="goal-label-row"><span class="goal-name">'+label+'</span><span><span class="goal-actual">'+actual+'</span><span class="goal-target"> / '+target+'</span></span></div><div class="goal-track"><div class="goal-fill" style="width:'+Math.min(100,pct)+'%;background:'+c+'"></div></div><div class="goal-pct">'+Math.round(pct)+'% of goal'+hit+'</div></div>';
+}
+
+function jumpToFeedType(actType){
+  switchTab("feed");
+  setTimeout(()=>{
+    const sel=document.getElementById("feedTypeFilter");
+    if(sel){ sel.value=actType; sel.dispatchEvent(new Event("change")); }
+  },50);
 }
 
 function renderCtcRow(count,label){
@@ -601,7 +682,7 @@ function renderPeriodScorecard(){
   let html='<div style="font-size:11px;color:#bbb;margin-bottom:14px">'+( isYTD?"Year to date":"Month to date")+' &#8212; &#129419; '+data.length+' total activities</div>';
   GOALS.forEach(g=>{
     const target=g.monthly*mult,count=data.filter(a=>a.act_type===g.type).length;
-    html+=renderGoalBar(g.label,count,target,(count/target)*100);
+    html+=renderGoalBar(g.label,count,target,(count/target)*100,g.type);
   });
   html+=renderCtcRow(data.filter(a=>a.act_type===CTC_TYPE).length,isYTD?"YTD":new Date().toLocaleString("en-US",{month:"long"}));
   document.getElementById("periodScorecard").innerHTML=html;
@@ -622,7 +703,7 @@ async function loadWeek(){
     let html="";
     GOALS.forEach(g=>{
       const count=weekActs.filter(a=>a.act_type===g.type).length;
-      html+=renderGoalBar(g.label,count,g.weekly,(count/g.weekly)*100);
+      html+=renderGoalBar(g.label,count,g.weekly,(count/g.weekly)*100,g.type);
     });
     html+=renderCtcRow(weekActs.filter(a=>a.act_type===CTC_TYPE).length,"this week");
     document.getElementById("weekGoalBars").innerHTML=html;
@@ -858,12 +939,20 @@ async function doSearchHistory(name){
   }catch(e){document.getElementById("historyResult").innerHTML='<div class="no-data">Error: '+e.message+'</div>';}
 }
 
+let danielPeriodData={week:[],mtd:[],ytd:[]},currentDanielPeriod="week";
+
 async function loadDaniel(){
   try{
-    const[weekActs,totalActs]=await Promise.all([
+    const now=new Date();
+    const monthStart=now.getFullYear()+"-"+String(now.getMonth()+1).padStart(2,"0")+"-01";
+    const yearStart=now.getFullYear()+"-01-01";
+    const[weekActs,mtdActs,ytdActs]=await Promise.all([
       sbFetch("amanda_activities?select=*&act_date=gte."+week.start+"&act_date=lte."+week.end+"&order=act_date.desc"),
-      sbFetch("amanda_activities?select=id")
+      sbFetch("amanda_activities?select=*&act_date=gte."+monthStart+"&order=act_date.desc"),
+      sbFetch("amanda_activities?select=*&act_date=gte."+yearStart+"&order=act_date.desc")
     ]);
+    danielPeriodData={week:weekActs,mtd:mtdActs,ytd:ytdActs};
+
     const meetings=weekActs.filter(a=>a.act_type==="New Realtor Meeting").length;
     const calls=weekActs.filter(a=>a.act_type==="Cold Calls").length;
     const ctc=weekActs.filter(a=>a.act_type===CTC_TYPE).length;
@@ -871,10 +960,81 @@ async function loadDaniel(){
       {n:weekActs.length,l:"This week"},{n:meetings,l:"&#127800; New meetings"},
       {n:calls,l:"&#127919; Cold calls"},{n:ctc,l:"&#9889; CTC calls"}
     ].map(s=>'<div class="stat-card"><div class="stat-num">'+s.n+'</div><div class="stat-label">'+s.l+'</div></div>').join("");
-    document.getElementById("danielBody").innerHTML=weekActs.length
-      ?weekActs.map(a=>'<tr><td>'+a.agent_name+'</td><td>'+badgeEmoji(a.act_type)+'</td><td>'+( a.outcome||"&#8212;")+'</td><td>'+fmtDate(a.act_date)+'</td><td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+( a.notes||"&#8212;")+'</td></tr>').join("")
-      :'<tr><td colspan="5" style="text-align:center;padding:20px;color:#bbb">No activity this week &#127807;</td></tr>';
+
+    renderDanielPeriod();
+    renderDanielTable(weekActs);
   }catch(e){console.error(e);}
+
+  try{
+    const todayStr=today();
+    const[fus,overdue]=await Promise.all([
+      sbFetch("amanda_activities?select=agent_name,act_type,follow_up_date&follow_up_date=gte."+todayStr+"&follow_up_date=lte."+week.end+"&order=follow_up_date.asc&limit=8"),
+      sbFetch("amanda_activities?select=agent_name,act_type,follow_up_date&follow_up_date=lt."+todayStr+"&follow_up_date=not.is.null&order=follow_up_date.desc&limit=4")
+    ]);
+    const all=[...overdue,...fus];
+    document.getElementById("danielFollowups").innerHTML=all.length?all.map(f=>{
+      const isOvr=f.follow_up_date<todayStr,c=isOvr?"#E24B4A":"#534AB7";
+      return'<div class="fu-item"><div class="fu-dot" style="background:'+c+'"></div><div class="fu-body"><div class="fu-name">'+f.agent_name+'</div><div class="fu-meta">'+badgeEmoji(f.act_type)+'</div></div><div class="fu-date" style="color:'+c+'">'+( isOvr?"Overdue":fmtDate(f.follow_up_date))+'</div></div>';
+    }).join(""):'<div class="no-data" style="padding:16px">No follow-ups due &#127752;</div>';
+  }catch(e){console.error(e);}
+
+  try{
+    const[allAgents,allActs]=await Promise.all([
+      sbFetch("agent_profiles?select=agent_name&order=agent_name.asc&limit=500"),
+      sbFetch("amanda_activities?select=agent_name,act_date&order=act_date.desc&limit=2000")
+    ]);
+    const lastSeen={};
+    allActs.forEach(a=>{
+      const n=(a.agent_name||"").trim();
+      if(n && !lastSeen[n]) lastSeen[n]=a.act_date;
+    });
+    const now2=new Date();
+    const rows=allAgents.map(a=>{
+      const name=(a.agent_name||"").trim();
+      if(!name) return null;
+      const last=lastSeen[name];
+      const days=last?Math.round((now2-new Date(last+"T12:00:00"))/86400000):null;
+      return {name,days};
+    }).filter(Boolean);
+    const quiet=rows.filter(r=>r.days===null||r.days>=60).sort((a,b)=>{
+      if(a.days===null) return -1;
+      if(b.days===null) return 1;
+      return b.days-a.days;
+    });
+    document.getElementById("danielQuiet").innerHTML=quiet.length?quiet.slice(0,8).map(r=>{
+      const isUrgent=r.days===null||r.days>=90,c=isUrgent?"#E24B4A":"#E8A33D";
+      const label=r.days===null?"No activity logged":r.days+"d since last touch";
+      return '<div class="fu-item"><div class="fu-dot" style="background:'+c+'"></div><div class="fu-body"><div class="fu-name">'+r.name+'</div><div class="fu-meta" style="color:'+c+'">'+(isUrgent?"&#128683; ":"&#9888;&#65039; ")+label+'</div></div></div>';
+    }).join(""):'<div class="no-data" style="padding:16px">Everyone touched within 60 days &#127881;</div>';
+  }catch(e){console.error(e);}
+}
+
+function showDanielPeriod(p){
+  currentDanielPeriod=p;
+  document.getElementById("dbtn-week").classList.toggle("active",p==="week");
+  document.getElementById("dbtn-mtd").classList.toggle("active",p==="mtd");
+  document.getElementById("dbtn-ytd").classList.toggle("active",p==="ytd");
+  renderDanielPeriod();
+  renderDanielTable(danielPeriodData[p]||[]);
+}
+
+function renderDanielPeriod(){
+  const data=danielPeriodData[currentDanielPeriod]||[];
+  const isWeek=currentDanielPeriod==="week",isYTD=currentDanielPeriod==="ytd",mult=isYTD?12:1;
+  if(!data.length){document.getElementById("danielGoals").innerHTML='<div class="no-data">No activity logged yet.</div>';return;}
+  let html='<div style="font-size:11px;color:#bbb;margin-bottom:14px">'+(isWeek?"This week":isYTD?"Year to date":"Month to date")+' &#8212; &#129419; '+data.length+' total activities</div>';
+  GOALS.forEach(g=>{
+    const target=isWeek?g.weekly:g.monthly*mult,count=data.filter(a=>a.act_type===g.type).length;
+    html+=renderGoalBar(g.label,count,target,(count/target)*100,g.type);
+  });
+  html+=renderCtcRow(data.filter(a=>a.act_type===CTC_TYPE).length,isWeek?"this week":isYTD?"YTD":new Date().toLocaleString("en-US",{month:"long"}));
+  document.getElementById("danielGoals").innerHTML=html;
+}
+
+function renderDanielTable(acts){
+  document.getElementById("danielBody").innerHTML=acts.length
+    ?acts.map(a=>'<tr><td>'+a.agent_name+'</td><td>'+badgeEmoji(a.act_type)+'</td><td>'+( a.outcome||"&#8212;")+'</td><td>'+fmtDate(a.act_date)+'</td><td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+( a.notes||"&#8212;")+'</td></tr>').join("")
+    :'<tr><td colspan="5" style="text-align:center;padding:20px;color:#bbb">No activity in this period &#127807;</td></tr>';
 }
 
 // CHANGE 3: Pipeline with activity history per prospect + delete button
