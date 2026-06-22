@@ -586,7 +586,7 @@ async function init(){
   try{
     await sbFetch("amanda_activities?select=id&limit=1");
     document.getElementById("syncDot").className="sync-dot ok";
-    document.getElementById("syncTxt").textContent="Live &#127775;";
+    document.getElementById("syncTxt").textContent="Live 🌟";
   }catch(e){
     document.getElementById("syncDot").className="sync-dot err";
     document.getElementById("syncTxt").textContent="Offline";
@@ -947,7 +947,7 @@ let editingActivityId=null;
 function openEditModal(id){
   const a=allFeedData.find(x=>x.id===id);if(!a)return;
   editingActivityId=id;
-  document.getElementById("editModalAgent").textContent=a.agent_name+" &#8212; "+a.act_type;
+  document.getElementById("editModalAgent").textContent=a.agent_name+" — "+a.act_type;
   document.getElementById("editNotes").value=a.notes||"";
   document.getElementById("editOutcome").value=a.outcome||"";
   document.getElementById("editFollowupDate").value=a.follow_up_date||"";
@@ -966,15 +966,15 @@ async function saveEditModal(){
 let deletingId=null,deletingType=null;
 function openConfirm(id,agent,type){
   deletingId=id;deletingType="activity";
-  document.getElementById("confirmTitle").textContent="Delete this activity? &#128465;&#65039;";
-  document.getElementById("confirmSub").textContent='"'+agent+" &#8212; "+type+'" will be gone forever.';
+  document.getElementById("confirmTitle").textContent="Delete this activity? 🗑️";
+  document.getElementById("confirmSub").textContent='"'+agent+" — "+type+'" will be gone forever.';
   document.getElementById("confirmModal").classList.add("open");
 }
 function openConfirmProspect(id,nameOrBtn){
   const name=typeof nameOrBtn==="string"?nameOrBtn:(nameOrBtn&&nameOrBtn.dataset?nameOrBtn.dataset.name:String(id));
 
   deletingId=id;deletingType="prospect";
-  document.getElementById("confirmTitle").textContent="Delete this prospect? &#128465;&#65039;";
+  document.getElementById("confirmTitle").textContent="Delete this prospect? 🗑️";
   document.getElementById("confirmSub").textContent=name+" will be permanently removed.";
   document.getElementById("confirmModal").classList.add("open");
 }
@@ -1226,7 +1226,7 @@ function toggleAddForm(show){
   if(show){
     ["np-name","np-brokerage","np-phone","np-email","np-notes","np-followup"].forEach(id=>document.getElementById(id).value="");
     document.getElementById("np-status").value="Requires follow-up";
-    document.getElementById("addFormTitle").textContent="Add new prospect &#127800;";
+    document.getElementById("addFormTitle").textContent="Add new prospect 🌸";
   }
 }
 function editProspect(id){
@@ -1236,7 +1236,7 @@ function editProspect(id){
   document.getElementById("np-phone").value=p.phone||"";document.getElementById("np-email").value=p.email||"";
   document.getElementById("np-status").value=p.status||"Requires follow-up";document.getElementById("np-followup").value=p.followup_date||"";
   document.getElementById("np-notes").value=p.notes||"";
-  document.getElementById("addFormTitle").textContent="Edit prospect &#9999;&#65039;";
+  document.getElementById("addFormTitle").textContent="Edit prospect ✏️";
   document.getElementById("addProspectForm").style.display="block";
   document.getElementById("addProspectForm").scrollIntoView({behavior:"smooth"});
 }
@@ -1296,7 +1296,7 @@ async function loadCalendar(){
 }
 function renderCalendar(){
   const monthNames=["January","February","March","April","May","June","July","August","September","October","November","December"];
-  document.getElementById("calMonthLabel").textContent=monthNames[calMonth]+" "+calYear+" &#128197;";
+  document.getElementById("calMonthLabel").textContent=monthNames[calMonth]+" "+calYear+" 📅";
   const firstDay=new Date(calYear,calMonth,1).getDay();
   const daysInMonth=new Date(calYear,calMonth+1,0).getDate();
   const daysInPrev=new Date(calYear,calMonth,0).getDate();
@@ -1327,7 +1327,7 @@ function showCalDayDetail(dateStr){
   const dt=new Date(dateStr+"T12:00:00");
   const label=dt.toLocaleDateString("en-US",{weekday:"long",month:"long",day:"numeric"});
   const todayStr=today(),isToday=dateStr===todayStr,isPast=dateStr<todayStr;
-  document.getElementById("calDayTitle").textContent=label+(isToday?" &#8212; Today &#127775;":isPast?"":" &#8212; Upcoming &#10024;");
+  document.getElementById("calDayTitle").textContent=label+(isToday?" — Today 🌟":isPast?"":" — Upcoming ✨");
   document.getElementById("calDayItems").innerHTML=events.map(e=>{
     const isFollowup=e.calType==="followup",cls=isFollowup?"followup":calEventClass(e.act_type);
     const dotColors={meeting:"#534AB7",followup:"#B85B00",ctc:"#0F6E56",other:"#534AB7"};
