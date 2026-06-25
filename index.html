@@ -17,6 +17,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .sync{display:flex;align-items:center;gap:5px;font-size:11px;color:rgba(255,255,255,0.5)}
 .sync-dot{width:6px;height:6px;border-radius:50%;background:#666}
 .sync-dot.ok{background:#1D9E75}.sync-dot.err{background:#E24B4A}
+.sync-btn{background:none;border:none;color:rgba(255,255,255,0.7);font-size:11px;cursor:pointer;padding:4px 8px;border-radius:4px;transition:all .2s}
+.sync-btn:hover{background:rgba(255,255,255,0.1);color:#fff}
 .tabs{background:#fff;border-bottom:1px solid #e8e6f0;display:flex;padding:0 20px;overflow-x:auto;gap:2px}
 .tab{padding:12px 16px;font-size:13px;font-weight:400;color:#888;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;white-space:nowrap;transition:color .15s}
 .tab:hover{color:#534AB7}
@@ -90,7 +92,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .btn-sm:hover{background:#EEEDFE;color:#534AB7;border-color:#AFA9EC}
 .btn-sm.danger{background:#fff0f0;color:#A32D2D;border-color:#f7c1c1}
 .btn-sm.danger:hover{background:#FCEBEB}
-.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1a0f3d;color:#fff;padding:10px 20px;border-radius:8px;font-size:13px;z-index:999;opacity:0;transition:opacity .3s;pointer-events:none}
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1a0f3d;color:#fff;padding:10px 20px;border-radius:8px;font-size:13px;z-index:999;opacity:0;transition:opacity .3s;pointer-events:none;max-width:400px}
 .toast.show{opacity:1}
 .toast.success{background:#085041}
 .toast.error{background:#791F1F}
@@ -162,17 +164,19 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .contact-name{font-size:13px;font-weight:600;color:#1a1a2e}
 .contact-meta{font-size:11px;color:#aaa;margin-top:2px;display:flex;gap:10px;flex-wrap:wrap}
 .contact-bday{font-size:11px;color:#E91E63;font-weight:500}
+.error-banner{background:#FFF3CD;border:0.5px solid #FFE69C;border-radius:8px;padding:12px;margin-bottom:14px;color:#856404;font-size:12px}
+.error-banner strong{color:#333}
 </style>
 </head>
 <body>
 <div class="header">
   <div class="brand-wrap">
-    <span class="brand-chip">AMANDA &#127803;</span>
+    <span class="brand-chip">AMANDA 🌿</span>
     <span class="brand-sub">Relationship Manager</span>
   </div>
   <div class="header-right">
     <span class="week-chip" id="weekPill"></span>
-    <div class="sync"><span class="sync-dot" id="syncDot"></span><span id="syncTxt">Connecting...</span></div>
+    <div class="sync"><span class="sync-dot" id="syncDot"></span><span id="syncTxt">Connecting...</span><button class="sync-btn" id="syncBtn" onclick="testConnection()" title="Test connection">🔄</button></div>
   </div>
 </div>
 
@@ -181,16 +185,18 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   <div class="tab" onclick="switchTab('log')">Log Activity</div>
   <div class="tab" onclick="switchTab('followups')">Follow-ups</div>
   <div class="tab" onclick="switchTab('feed')">Activity Feed</div>
+  <div class="tab" onclick="switchTab('network')">🌐 Network</div>
+  <div class="tab" onclick="switchTab('health')">🏥 Health Check</div>
   <div class="tab" onclick="switchTab('history')">Agent History</div>
   <div class="tab" onclick="switchTab('pipeline')">Outreach Pipeline</div>
-  <div class="tab" onclick="switchTab('calendar')">&#128197; Calendar</div>
+  <div class="tab" onclick="switchTab('calendar')">📅 Calendar</div>
   <div class="tab" onclick="switchTab('daniel')">Daniel's View</div>
-  <div class="tab" onclick="switchTab('contacts')">&#128100; Contacts</div>
+  <div class="tab" onclick="switchTab('contacts')">👤 Contacts</div>
 </div>
 
 <div id="view-week" class="view active">
   <div class="card">
-    <div class="card-title">This week &#127775; <span class="card-sub" id="weekLabel2"></span></div>
+    <div class="card-title">This week 🌞 <span class="card-sub" id="weekLabel2"></span></div>
     <div id="weekGoalBars"><div class="no-data">Loading...</div></div>
   </div>
   <div class="card">
@@ -202,27 +208,28 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   </div>
   <div class="week-bottom">
     <div class="card">
-      <div class="card-title" style="margin-bottom:12px">&#127866; Follow-ups due</div>
+      <div class="card-title" style="margin-bottom:12px">🍕 Follow-ups due</div>
       <div id="weekFollowups"><div class="no-data" style="padding:16px">Loading...</div></div>
     </div>
     <div class="card">
-      <div class="card-title" style="margin-bottom:12px">&#9997;&#65039; Last 5 logged</div>
+      <div class="card-title" style="margin-bottom:12px">✍️ Last 5 logged</div>
       <div id="weekRecent"><div class="no-data" style="padding:16px">Loading...</div></div>
     </div>
   </div>
   <div class="card">
-    <div class="card-title" style="margin-bottom:12px">&#128680; Flagged by LPs <span class="card-sub" id="flaggedSub"></span></div>
+    <div class="card-title" style="margin-bottom:12px">🚩 Flagged by LPs <span class="card-sub" id="flaggedSub"></span></div>
     <div id="weekFlagged"><div class="no-data" style="padding:16px">Loading...</div></div>
   </div>
   <div class="card">
-    <div class="card-title" style="margin-bottom:12px">&#129489;&#8205;&#128269; Going quiet <span class="card-sub" id="quietSub"></span></div>
+    <div class="card-title" style="margin-bottom:12px">🔍 Going quiet <span class="card-sub" id="quietSub"></span></div>
     <div id="weekQuiet"><div class="no-data" style="padding:16px">Loading...</div></div>
   </div>
 </div>
 
 <div id="view-log" class="view">
+  <div id="logErrorBanner"></div>
   <div class="card">
-    <div class="card-title">Log an activity &#10024;</div>
+    <div class="card-title">Log an activity ✨</div>
     <div class="form-row">
       <div class="field">
         <label>Agent name</label>
@@ -291,7 +298,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 
 <div id="view-followups" class="view">
   <div class="card">
-    <div class="card-title">&#127866; Upcoming follow-ups</div>
+    <div class="card-title">🍕 Upcoming follow-ups</div>
     <div id="followupsList"><div class="no-data">Loading...</div></div>
   </div>
 </div>
@@ -322,7 +329,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 
 <div class="modal-overlay" id="editModal">
   <div class="modal-box">
-    <div class="modal-header"><span class="modal-title">Edit activity &#9999;&#65039;</span><button class="modal-close" onclick="closeEditModal()">x</button></div>
+    <div class="modal-header"><span class="modal-title">Edit activity ✏️</span><button class="modal-close" onclick="closeEditModal()">x</button></div>
     <div class="modal-sub" id="editModalAgent"></div>
     <div class="field" style="margin-bottom:12px"><label>Outcome</label><select id="editOutcome"><option value="">Select outcome...</option><option>Positive</option><option>Meeting Scheduled</option><option>Requires follow-up</option><option>Remove / No Further Contact</option></select></div>
     <div class="field" style="margin-bottom:12px"><label>Follow-up date</label><input type="date" id="editFollowupDate"></div>
@@ -336,7 +343,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 
 <div class="confirm-overlay" id="confirmModal">
   <div class="confirm-box">
-    <div class="confirm-title" id="confirmTitle">Delete this activity? &#128465;&#65039;</div>
+    <div class="confirm-title" id="confirmTitle">Delete this activity? 🗑️</div>
     <div class="confirm-sub" id="confirmSub">This cannot be undone.</div>
     <div class="confirm-btns">
       <button class="btn-sm danger" onclick="confirmDelete()">Yes, delete</button>
@@ -357,13 +364,13 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 
 <div id="view-pipeline" class="view">
   <div class="pipe-stats">
-    <div class="ps-card"><div class="ps-num" id="ps-total">&#8212;</div><div class="ps-label">Active prospects</div></div>
-    <div class="ps-card"><div class="ps-num" id="ps-due">&#8212;</div><div class="ps-label">Follow-ups due</div></div>
-    <div class="ps-card"><div class="ps-num" id="ps-dnc">&#8212;</div><div class="ps-label">Do not contact</div></div>
-    <div class="ps-card"><div class="ps-num" id="ps-nfm">&#8212;</div><div class="ps-label">Already w/ NFM</div></div>
+    <div class="ps-card"><div class="ps-num" id="ps-total">—</div><div class="ps-label">Active prospects</div></div>
+    <div class="ps-card"><div class="ps-num" id="ps-due">—</div><div class="ps-label">Follow-ups due</div></div>
+    <div class="ps-card"><div class="ps-num" id="ps-dnc">—</div><div class="ps-label">Do not contact</div></div>
+    <div class="ps-card"><div class="ps-num" id="ps-nfm">—</div><div class="ps-label">Already w/ NFM</div></div>
   </div>
   <div class="add-form" id="addProspectForm" style="display:none">
-    <h4 id="addFormTitle">Add new prospect &#127800;</h4>
+    <h4 id="addFormTitle">Add new prospect 🌸</h4>
     <div class="form-row">
       <div class="field"><label>Name</label><input type="text" id="np-name" placeholder="Full name"></div>
       <div class="field"><label>Brokerage</label><input type="text" id="np-brokerage" placeholder="Company / Brokerage"></div>
@@ -402,9 +409,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 <div id="view-calendar" class="view">
   <div class="card">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
-      <button class="btn-sm" onclick="calNav(-1)" style="font-size:13px;padding:6px 12px">&#8592; Prev</button>
+      <button class="btn-sm" onclick="calNav(-1)" style="font-size:13px;padding:6px 12px">← Prev</button>
       <span style="font-size:14px;font-weight:500;color:#1a1a2e" id="calMonthLabel"></span>
-      <button class="btn-sm" onclick="calNav(1)" style="font-size:13px;padding:6px 12px">Next &#8594;</button>
+      <button class="btn-sm" onclick="calNav(1)" style="font-size:13px;padding:6px 12px">Next →</button>
     </div>
     <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px;margin-bottom:8px">
       <div style="text-align:center;font-size:10px;color:#bbb;font-weight:500;padding:4px">Sun</div>
@@ -437,11 +444,11 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 
   <div class="week-bottom">
     <div class="card">
-      <div class="card-title" style="margin-bottom:12px">&#127866; Follow-ups due</div>
+      <div class="card-title" style="margin-bottom:12px">🍕 Follow-ups due</div>
       <div id="danielFollowups"><div class="no-data" style="padding:16px">Loading...</div></div>
     </div>
     <div class="card">
-      <div class="card-title" style="margin-bottom:12px">&#129489;&#8205;&#128269; Going quiet</div>
+      <div class="card-title" style="margin-bottom:12px">🔍 Going quiet</div>
       <div id="danielQuiet"><div class="no-data" style="padding:16px">Loading...</div></div>
     </div>
   </div>
@@ -457,9 +464,115 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   </div>
 </div>
 
+<div id="view-health" class="view">
+  <div class="card">
+    <div class="card-title">🏥 Data Health Check</div>
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px">
+      <div style="text-align:center;padding:16px;background:#FCEBEB;border:0.5px solid #f7c1c1;border-radius:10px;cursor:pointer" onclick="switchTab('feed');applyFeedFilters()">
+        <div style="font-size:28px;font-weight:600;color:#A32D2D" id="hc-no-outcome">0</div>
+        <div style="font-size:11px;color:#888;margin-top:6px">Activities<br>No Outcome</div>
+      </div>
+      <div style="text-align:center;padding:16px;background:#FFF3E0;border:0.5px solid #FFE69C;border-radius:10px;cursor:pointer" onclick="switchTab('followups')">
+        <div style="font-size:28px;font-weight:600;color:#B85B00" id="hc-overdue">0</div>
+        <div style="font-size:11px;color:#888;margin-top:6px">Follow-ups<br>Overdue</div>
+      </div>
+      <div style="text-align:center;padding:16px;background:#F3E5F5;border:0.5px solid #CE93D8;border-radius:10px;cursor:pointer" onclick="switchTab('contacts')">
+        <div style="font-size:28px;font-weight:600;color:#7B1FA2" id="hc-missing-contact">0</div>
+        <div style="font-size:11px;color:#888;margin-top:6px">Agents Missing<br>Phone/Email</div>
+      </div>
+      <div style="text-align:center;padding:16px;background:#E8F5E9;border:0.5px solid #81C784;border-radius:10px">
+        <div style="font-size:28px;font-weight:600;color:#2E7D32" id="hc-good">✓</div>
+        <div style="font-size:11px;color:#888;margin-top:6px">Data Quality<br>Score</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">⚠️ Issues Found</div>
+    <div id="healthIssues"><div class="no-data">Loading...</div></div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">📊 Prospect Funnel</div>
+    <div style="display:flex;flex-direction:column;gap:16px">
+      <div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+          <span style="font-size:12px;font-weight:500;color:#666">Requires Follow-up</span>
+          <span style="font-size:13px;font-weight:600;color:#534AB7" id="funnel-rfu">0</span>
+        </div>
+        <div style="background:#f0eef8;border-radius:20px;height:8px;overflow:hidden">
+          <div style="background:#534AB7;height:8px;border-radius:20px;width:45%;transition:width .5s" id="funnel-rfu-bar"></div>
+        </div>
+      </div>
+      <div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+          <span style="font-size:12px;font-weight:500;color:#666">Already w/ NFM</span>
+          <span style="font-size:13px;font-weight:600;color:#2E7D32" id="funnel-nfm">0</span>
+        </div>
+        <div style="background:#f0eef8;border-radius:20px;height:8px;overflow:hidden">
+          <div style="background:#2E7D32;height:8px;border-radius:20px;width:50%;transition:width .5s" id="funnel-nfm-bar"></div>
+        </div>
+      </div>
+      <div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+          <span style="font-size:12px;font-weight:500;color:#666">Do Not Contact</span>
+          <span style="font-size:13px;font-weight:600;color:#A32D2D" id="funnel-dnc">0</span>
+        </div>
+        <div style="background:#f0eef8;border-radius:20px;height:8px;overflow:hidden">
+          <div style="background:#A32D2D;height:8px;border-radius:20px;width:5%;transition:width .5s" id="funnel-dnc-bar"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="view-network" class="view">
+  <div class="card">
+    <div class="card-title">🌐 Network Activity <span class="card-sub">All RM + LP activities unified</span></div>
+    <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:16px">
+      <input type="text" id="networkSearch" placeholder="Search agent name, activity type, or notes..." oninput="applyNetworkFilters()" style="padding:9px 12px;border:0.5px solid #d8d6e8;border-radius:8px;font-size:13px;font-family:inherit;color:#1a1a2e;outline:none;width:100%">
+      <div style="display:flex;gap:10px;flex-wrap:wrap">
+        <select id="networkSourceFilter" onchange="applyNetworkFilters()" style="flex:1;padding:8px 11px;border:0.5px solid #d8d6e8;border-radius:8px;font-size:12px;font-family:inherit;color:#555;background:#fff">
+          <option value="all">All sources</option>
+          <option value="RM">Amanda Only</option>
+          <option value="LP">LP Only</option>
+        </select>
+        <select id="networkPeriodFilter" onchange="applyNetworkFilters()" style="flex:1;padding:8px 11px;border:0.5px solid #d8d6e8;border-radius:8px;font-size:12px;font-family:inherit;color:#555;background:#fff">
+          <option value="all">All time</option>
+          <option value="week">This week</option>
+          <option value="month">This month</option>
+          <option value="quarter">Last 90 days</option>
+        </select>
+      </div>
+    </div>
+    <div id="networkList"><div class="no-data">Loading network activity...</div></div>
+  </div>
+  <div class="card">
+    <div class="card-title">📊 Network Stats</div>
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px">
+      <div style="text-align:center;padding:12px;background:#f5f4f8;border-radius:8px">
+        <div style="font-size:24px;font-weight:500;color:#534AB7" id="networkTotalRm">—</div>
+        <div style="font-size:10px;color:#aaa;margin-top:3px">Amanda activities</div>
+      </div>
+      <div style="text-align:center;padding:12px;background:#f5f4f8;border-radius:8px">
+        <div style="font-size:24px;font-weight:500;color:#1565C0" id="networkTotalLp">—</div>
+        <div style="font-size:10px;color:#aaa;margin-top:3px">LP activities</div>
+      </div>
+      <div style="text-align:center;padding:12px;background:#f5f4f8;border-radius:8px">
+        <div style="font-size:24px;font-weight:500;color:#639922" id="networkTotalAgents">—</div>
+        <div style="font-size:10px;color:#aaa;margin-top:3px">Agents touched</div>
+      </div>
+      <div style="text-align:center;padding:12px;background:#f5f4f8;border-radius:8px">
+        <div style="font-size:24px;font-weight:500;color:#EF9F27" id="networkLastSync">—</div>
+        <div style="font-size:10px;color:#aaa;margin-top:3px">Last sync</div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <div id="view-contacts" class="view">
   <div class="card">
-    <div class="card-title">&#128100; Agent contacts <span class="card-sub">Edit phone, email and birthday for any agent</span></div>
+    <div class="card-title">👤 Agent contacts <span class="card-sub">Edit phone, email and birthday for any agent</span></div>
     <div style="display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap">
       <input type="text" id="contactsSearch" placeholder="Search by name, phone, email or birthday..." oninput="filterContacts()" style="flex:1;min-width:180px;padding:9px 11px;border:0.5px solid #d8d6e8;border-radius:8px;font-size:13px;font-family:inherit;color:#1a1a2e;outline:none">
       <select id="contactsFilter" onchange="filterContacts()" style="padding:8px 11px;border:0.5px solid #d8d6e8;border-radius:8px;font-size:12px;font-family:inherit;color:#555;background:#fff">
@@ -475,7 +588,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 
 <div class="modal-overlay" id="contactModal">
   <div class="modal-box">
-    <div class="modal-header"><span class="modal-title">Edit contact info &#127800;</span><button class="modal-close" onclick="closeContactModal()">x</button></div>
+    <div class="modal-header"><span class="modal-title">Edit contact info 🌸</span><button class="modal-close" onclick="closeContactModal()">x</button></div>
     <div class="modal-sub" id="contactModalName"></div>
     <div class="field" style="margin-bottom:12px"><label>Phone</label><input type="text" id="contactPhone" placeholder="Phone number"></div>
     <div class="field" style="margin-bottom:12px"><label>Email</label><input type="email" id="contactEmail" placeholder="Email address"></div>
@@ -495,18 +608,18 @@ const SB_URL="https://uclucbdkjqyqdvifyptx.supabase.co";
 const SB_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVjbHVjYmRranF5cWR2aWZ5cHR4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA0OTUyMTMsImV4cCI6MjA5NjA3MTIxM30.VnqWcFT1WLQwCJxSdEIzIgOvETaOQly2IQxht-9uI7E";
 
 const EMOJI={
-  "Cold Calls":"&#127919;","New Realtor Meeting":"&#127800;","New Agent Follow-up":"&#127793;","Break Breads":"&#129360;","Active Agent Check-in":"&#129309;",
-  "Realtor Buddy Referral Ask":"&#127752;","CTC Call":"&#9889;","Open House Visit":"&#127969;",
-  "Market Update Call":"&#128202;","Sent Market Report":"&#128172;","Sent Referral":"&#128140;",
-  "Co-hosted Event":"&#127914;","Closed Deal Thank You":"&#127882;","Birthday Outreach":"&#127874;",
-  "Holiday Outreach":"&#127873;","Agent Appreciation":"&#128144;","Business Planning Session":"&#128441;&#65039;",
-  "Co-Marketing Discussion":"&#129305;","Team Presentation":"&#127908;","Recruiting Conversation":"&#127775;"
+  "Cold Calls":"🏹","New Realtor Meeting":"🌸","New Agent Follow-up":"🌻","Break Breads":"🤝","Active Agent Check-in":"🤙",
+  "Realtor Buddy Referral Ask":"🌾","CTC Call":"⚡","Open House Visit":"🏠",
+  "Market Update Call":"📊","Sent Market Report":"💬","Sent Referral":"💌",
+  "Co-hosted Event":"🎉","Closed Deal Thank You":"🍰","Birthday Outreach":"🍰",
+  "Holiday Outreach":"🎅","Agent Appreciation":"❤️","Business Planning Session":"📋️",
+  "Co-Marketing Discussion":"🤝","Team Presentation":"🎬","Recruiting Conversation":"👑"
 };
 const GOALS=[
-  {label:"&#127919; Cold calls",type:"Cold Calls",weekly:25,monthly:100},
-  {label:"&#127800; New realtor meetings",type:"New Realtor Meeting",weekly:5,monthly:20},
-  {label:"&#129360; Break breads",type:"Break Breads",weekly:5,monthly:20},
-  {label:"&#127752; Realtor buddy intro",type:"Realtor Buddy Referral Ask",weekly:3,monthly:12}
+  {label:"🏹 Cold calls",type:"Cold Calls",weekly:25,monthly:100},
+  {label:"🌸 New realtor meetings",type:"New Realtor Meeting",weekly:5,monthly:20},
+  {label:"🤝 Break breads",type:"Break Breads",weekly:5,monthly:20},
+  {label:"🌾 Realtor buddy intro",type:"Realtor Buddy Referral Ask",weekly:3,monthly:12}
 ];
 const CTC_TYPE="CTC Call";
 function badgeEmoji(type){return EMOJI[type]?EMOJI[type]+" "+type:type;}
@@ -539,13 +652,22 @@ const week=weekRange();
 document.getElementById("weekPill").textContent=week.label;
 document.getElementById("activityDate").value=today();
 
+// ENHANCED sbFetch with better error handling
 async function sbFetch(path,options={}){
   const headers={"apikey":SB_KEY,"Authorization":"Bearer "+SB_KEY,"Content-Type":"application/json","Prefer":options.prefer||"return=representation",...options.headers};
   delete options.headers;delete options.prefer;
   const res=await fetch(SB_URL+"/rest/v1/"+path,{headers,...options});
-  let body;const text=await res.text();
-  try{body=text?JSON.parse(text):{};}catch{body={message:text};}
-  if(!res.ok)throw new Error(body?.message||body?.error||body?.hint||"HTTP "+res.status);
+  const text=await res.text();
+  let body;
+  try{body=text?JSON.parse(text):{};}catch(e){body={error:"Parse error",raw:text};}
+  if(!res.ok){
+    const errMsg=body?.message||body?.error||body?.hint||body?.raw||"HTTP "+res.status;
+    const err=new Error(errMsg);
+    err.status=res.status;
+    err.body=body;
+    console.error("SB Error:",{path,status:res.status,message:errMsg,body});
+    throw err;
+  }
   return body;
 }
 
@@ -556,7 +678,7 @@ function toast(msg,type="success"){
 }
 
 function fmtDate(d){
-  if(!d)return"&#8212;";
+  if(!d)return"—";
   return new Date(d+"T12:00:00").toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"});
 }
 
@@ -582,15 +704,62 @@ document.getElementById("activityOutcome").addEventListener("change",function(){
   }else{row.classList.remove("show");document.getElementById("followupDate").value="";}
 });
 
-async function init(){
+// Connection test with actual write validation
+async function testConnection(){
+  const btn=document.getElementById("syncBtn");
+  btn.disabled=true;btn.style.opacity="0.5";
+  const dot=document.getElementById("syncDot");
+  const txt=document.getElementById("syncTxt");
+  
   try{
+    // Test READ access
     await sbFetch("amanda_activities?select=id&limit=1");
-    document.getElementById("syncDot").className="sync-dot ok";
-    document.getElementById("syncTxt").textContent="Live 🌟";
+    
+    // Test WRITE access with a dummy record
+    const testId="test-"+Date.now();
+    await sbFetch("amanda_activities",{method:"POST",prefer:"return=minimal",body:JSON.stringify({
+      id:testId,
+      agent_name:"__TEST__",
+      act_type:"CTC Call",
+      act_date:today(),
+      outcome:"Positive"
+    })});
+    
+    // Clean up test record
+    await sbFetch("amanda_activities?id=eq."+testId,{method:"DELETE",prefer:"return=minimal"}).catch(()=>{});
+    
+    dot.className="sync-dot ok";
+    txt.textContent="Live ✅ (read & write OK)";
+    clearLogErrorBanner();
   }catch(e){
-    document.getElementById("syncDot").className="sync-dot err";
-    document.getElementById("syncTxt").textContent="Offline";
+    dot.className="sync-dot err";
+    const msg=e.message||"Connection failed";
+    const isWrite=msg.includes("permission")||msg.includes("policy")||msg.includes("RLS")?
+      " – write access blocked (RLS policy?)":
+      msg.includes("401")||msg.includes("403")?
+      " – auth issue":
+      "";
+    txt.textContent="Offline "+isWrite;
+    showLogErrorBanner("Connection test failed: "+msg+isWrite);
+    console.error("Connection test error:",e);
+  }finally{
+    btn.disabled=false;btn.style.opacity="1";
   }
+}
+
+function showLogErrorBanner(msg){
+  const banner=document.getElementById("logErrorBanner");
+  if(!banner)return;
+  banner.innerHTML='<div class="error-banner"><strong>⚠️ Connection issue:</strong> '+msg+'</div>';
+}
+
+function clearLogErrorBanner(){
+  const banner=document.getElementById("logErrorBanner");
+  if(banner)banner.innerHTML="";
+}
+
+async function init(){
+  testConnection();
   loadWeek();loadFollowups();loadFeed();loadDaniel();initAutocomplete();loadQuiet();loadFlagged();
 }
 
@@ -647,8 +816,8 @@ async function loadFlagged(){
         +'<div class="fu-dot" style="background:#E24B4A;margin-top:5px"></div>'
         +'<div class="fu-body">'
         +'<div class="fu-name">'+f.agent_name+'<span style="font-size:10px;color:#bbb;font-weight:400;margin-left:6px">via '+( f.lp||"LP")+'</span></div>'
-        +( shortNote?'<div class="fu-meta" style="color:#666;margin-top:3px">&ldquo;'+shortNote+'&rdquo;</div>':'')
-        +'<div class="fu-meta" style="margin-top:2px">'+fmtDate(f.call_date)+( f.outcome?" &middot; "+f.outcome:"")+'</div>'
+        +( shortNote?'<div class="fu-meta" style="color:#666;margin-top:3px">"'+shortNote+'"</div>':'')
+        +'<div class="fu-meta" style="margin-top:2px">'+fmtDate(f.call_date)+( f.outcome?" · "+f.outcome:"")+'</div>'
         +'</div>'
         +'<button onclick="resolveFlag(\''+f.id+'\')" style="font-size:10px;color:#888;background:none;border:1px solid #ddd;border-radius:6px;padding:4px 8px;cursor:pointer;font-family:inherit;white-space:nowrap">Mark handled</button>'
         +'</div>';
@@ -675,7 +844,7 @@ async function loadQuiet(){
     const lastSeen={};
     allActs.forEach(a=>{
       const n=(a.agent_name||"").trim();
-      if(n && !lastSeen[n]) lastSeen[n]=a.act_date; // first hit per name = most recent since sorted desc
+      if(n && !lastSeen[n]) lastSeen[n]=a.act_date;
     });
     const now=new Date();
     const rows=allAgents.map(a=>{
@@ -697,7 +866,7 @@ async function loadQuiet(){
     document.getElementById("quietSub").textContent=quiet.length?quiet.length+" agent"+(quiet.length!==1?"s":""):"";
 
     if(!quiet.length){
-      document.getElementById("weekQuiet").innerHTML='<div class="no-data" style="padding:16px">Everyone\'s been touched within 60 days &#127881;</div>';
+      document.getElementById("weekQuiet").innerHTML='<div class="no-data" style="padding:16px">Everyone\'s been touched within 60 days 🎉</div>';
       return;
     }
 
@@ -705,7 +874,7 @@ async function loadQuiet(){
       const isUrgent=r.days===null||r.days>=90;
       const c=isUrgent?"#E24B4A":"#E8A33D";
       const label=r.days===null?"No activity logged":r.days+"d since last touch";
-      return '<div class="fu-item"><div class="fu-dot" style="background:'+c+'"></div><div class="fu-body"><div class="fu-name">'+r.name+'</div><div class="fu-meta" style="color:'+c+'">'+(isUrgent?"&#128683; ":"&#9888;&#65039; ")+label+'</div></div></div>';
+      return '<div class="fu-item"><div class="fu-dot" style="background:'+c+'"></div><div class="fu-body"><div class="fu-name">'+r.name+'</div><div class="fu-meta" style="color:'+c+'">'+(isUrgent?"🚨 ":"⚠️ ")+label+'</div></div></div>';
     }).join("");
   }catch(e){
     console.error(e);
@@ -714,13 +883,15 @@ async function loadQuiet(){
 }
 
 function switchTab(name){
-  const names=["week","log","followups","feed","history","pipeline","calendar","daniel","contacts"];
+  const names=["week","log","followups","feed","network","health","history","pipeline","calendar","daniel","contacts"];
   document.querySelectorAll(".tab").forEach((t,i)=>t.classList.toggle("active",names[i]===name));
   document.querySelectorAll(".view").forEach(v=>v.classList.remove("active"));
   document.getElementById("view-"+name).classList.add("active");
   if(name==="pipeline")loadPipeline();
   if(name==="calendar")loadCalendar();
   if(name==="contacts")loadContacts();
+  if(name==="network")loadNetwork();
+  if(name==="health")loadHealth();
 }
 
 let periodData={mtd:[],ytd:[]},currentPeriod="mtd";
@@ -735,7 +906,7 @@ function showPeriod(p){
 function goalColor(pct){return pct>=100?"#639922":pct>=60?"#EF9F27":"#E24B4A";}
 
 function renderGoalBar(label,actual,target,pct,actType){
-  const c=goalColor(pct),hit=pct>=100?" &#129395;":"";
+  const c=goalColor(pct),hit=pct>=100?" ✌️":"";
   const clickAttr=actType?' onclick="jumpToFeedType(\''+actType.replace(/'/g,"\\'")+'\')" style="cursor:pointer"':"";
   return'<div class="goal-row"'+clickAttr+'><div class="goal-label-row"><span class="goal-name">'+label+'</span><span><span class="goal-actual">'+actual+'</span><span class="goal-target"> / '+target+'</span></span></div><div class="goal-track"><div class="goal-fill" style="width:'+Math.min(100,pct)+'%;background:'+c+'"></div></div><div class="goal-pct">'+Math.round(pct)+'% of goal'+hit+'</div></div>';
 }
@@ -749,13 +920,13 @@ function jumpToFeedType(actType){
 }
 
 function renderCtcRow(count,label){
-  return'<div class="ctc-divider"><span class="ctc-label">&#9889; CTC calls'+( label?" &#8212; "+label:"")+'</span><div><div class="ctc-count">'+count+'</div><div class="ctc-note">tracked, no target</div></div></div>';
+  return'<div class="ctc-divider"><span class="ctc-label">⚡ CTC calls'+( label?" — "+label:"")+'</span><div><div class="ctc-count">'+count+'</div><div class="ctc-note">tracked, no target</div></div></div>';
 }
 
 function renderPeriodScorecard(){
   const data=periodData[currentPeriod],isYTD=currentPeriod==="ytd",mult=isYTD?12:1;
   if(!data.length){document.getElementById("periodScorecard").innerHTML='<div class="no-data">No activity logged yet.</div>';return;}
-  let html='<div style="font-size:11px;color:#bbb;margin-bottom:14px">'+( isYTD?"Year to date":"Month to date")+' &#8212; &#129419; '+data.length+' total activities</div>';
+  let html='<div style="font-size:11px;color:#bbb;margin-bottom:14px">'+( isYTD?"Year to date":"Month to date")+' — 🎯 '+data.length+' total activities</div>';
   GOALS.forEach(g=>{
     const target=g.monthly*mult,count=data.filter(a=>a.act_type===g.type).length;
     html+=renderGoalBar(g.label,count,target,(count/target)*100,g.type);
@@ -790,7 +961,7 @@ async function loadWeek(){
     const cov=await loadQuietCoverage();
     const pctColor=cov.pct>=100?"#1F6B45":cov.pct>=60?"#9A6A12":"#9B3B3B";
     let covHtml='<div class="gr" style="border-top:1px solid #f0f0f5;padding-top:14px;margin-top:14px">'
-      +'<div class="gr-lr"><span class="gr-n">&#128269; Going-quiet coverage</span>'
+      +'<div class="gr-lr"><span class="gr-n">🔍 Going-quiet coverage</span>'
       +'<span><span class="gr-c">'+cov.pct+'%</span></span></div>'
       +'<div class="g-track"><div class="g-fill" style="width:'+cov.pct+'%;background:'+pctColor+'"></div></div>'
       +'<div style="font-size:10px;color:#bbb;margin-top:4px">'+cov.covered+' of '+cov.total+' agents flagged quiet on Monday touched this week</div>';
@@ -798,7 +969,7 @@ async function loadWeek(){
       covHtml+='<div style="margin-top:10px;display:flex;flex-direction:column;gap:6px">'
         +cov.names.slice(0,8).map(n=>'<div style="display:flex;justify-content:space-between;align-items:center;font-size:12px">'
           +'<span style="color:#444">'+n.name+'</span>'
-          +'<span style="color:'+( n.covered?"#1F6B45":"#9A6A12")+';font-size:11px">'+( n.covered?"&#10003; Covered":"Not yet")+'</span></div>').join("")
+          +'<span style="color:'+( n.covered?"#1F6B45":"#9A6A12")+';font-size:11px">'+( n.covered?"✓ Covered":"Not yet")+'</span></div>').join("")
         +'</div>';
     }
     covHtml+='</div>';
@@ -815,7 +986,7 @@ async function loadWeek(){
     document.getElementById("weekFollowups").innerHTML=all.length?all.map(f=>{
       const isOvr=f.follow_up_date<todayStr,c=isOvr?"#E24B4A":"#534AB7";
       return'<div class="fu-item"><div class="fu-dot" style="background:'+c+'"></div><div class="fu-body"><div class="fu-name">'+f.agent_name+'</div><div class="fu-meta">'+badgeEmoji(f.act_type)+'</div></div><div class="fu-date" style="color:'+c+'">'+( isOvr?"Overdue":fmtDate(f.follow_up_date))+'</div></div>';
-    }).join(""):'<div class="no-data" style="padding:16px">No follow-ups due &#127752;</div>';
+    }).join(""):'<div class="no-data" style="padding:16px">No follow-ups due 🌾</div>';
   }catch(e){console.error(e);}
 
   try{
@@ -826,7 +997,6 @@ async function loadWeek(){
   }catch(e){console.error(e);}
 }
 
-// CHANGE 2: Autocomplete includes prospects + agents
 let agentNames=[],prospectNames=[];
 async function initAutocomplete(){
   try{
@@ -836,7 +1006,7 @@ async function initAutocomplete(){
     ]);
     agentNames=agents.map(a=>a.agent_name);
     prospectNames=prospects.map(p=>p.name).filter(n=>n);
-  }catch(e){}
+  }catch(e){console.error("Autocomplete init error:",e);}
   const input=document.getElementById("agentInput"),list=document.getElementById("acList");
   input.addEventListener("input",()=>{
     const val=input.value.trim().toLowerCase();
@@ -847,7 +1017,7 @@ async function initAutocomplete(){
     let html=agentMatches.map(n=>'<div class="ac-item" onclick="selectAgent(\''+ n.replace(/'/g,"\\'") +'\')">'+n+'</div>').join("");
     if(prospectMatches.length){
       html+='<div style="font-size:10px;color:#9C27B0;font-weight:600;padding:6px 12px 2px;text-transform:uppercase;letter-spacing:.5px">Prospects</div>';
-      html+=prospectMatches.map(n=>'<div class="ac-item" onclick="selectAgent(\''+ n.replace(/'/g,"\\'") +'\')" style="color:#534AB7">&#127803; '+n+'</div>').join("");
+      html+=prospectMatches.map(n=>'<div class="ac-item" onclick="selectAgent(\''+ n.replace(/'/g,"\\'") +'\')" style="color:#534AB7">🌿 '+n+'</div>').join("");
     }
     list.innerHTML=html;
     list.classList.add("open");
@@ -863,15 +1033,62 @@ async function logActivity(){
   const outcome=document.getElementById("activityOutcome").value;
   const followupDate=document.getElementById("followupDate").value||null;
   const notes=document.getElementById("activityNotes").value.trim()||null;
-  if(!agentName){toast("Please enter an agent name. &#127800;","error");return;}
-  if(!date){toast("Please select a date.","error");return;}
-  if(!outcome){toast("Please select an outcome.","error");return;}
-  if(outcome==="Requires follow-up"&&!followupDate){toast("Please set a follow-up date.","error");return;}
+  
+  clearLogErrorBanner();
+  
+  // VALIDATION: Agent name required
+  if(!agentName){
+    toast("Please enter an agent name. 🌸","error");
+    return;
+  }
+  
+  // VALIDATION: Date required
+  if(!date){
+    toast("Please select a date.","error");
+    return;
+  }
+  
+  // VALIDATION: Outcome required
+  if(!outcome){
+    toast("Outcome is required before saving.","error");
+    return;
+  }
+  
+  // VALIDATION: Follow-up date required when outcome = "Requires follow-up"
+  if(outcome==="Requires follow-up"&&!followupDate){
+    toast("Set a follow-up date when outcome is 'Requires follow-up'.","error");
+    return;
+  }
+  
+  // VALIDATION: Notes required for CTC calls (min 15 chars)
+  if(activityType==="CTC Call"&&(!notes||notes.length<15)){
+    toast("CTC calls need detailed notes (minimum 15 characters).","error");
+    return;
+  }
+  
+  // VALIDATION: Notes required for Birthday/Deal Thank You
+  if((activityType==="Birthday Outreach"||activityType==="Closed Deal Thank You")&&(!notes||notes.length<10)){
+    toast(activityType+" needs notes (minimum 10 characters).","error");
+    return;
+  }
+  
+  // DUPLICATE DETECTION: Check if same agent/type/date already logged
+  try{
+    const existing=await sbFetch("amanda_activities?agent_name=eq."+encodeURIComponent(agentName)+"&act_type=eq."+encodeURIComponent(activityType)+"&act_date=eq."+date+"&limit=1");
+    if(existing.length>0){
+      const proceed=confirm("⚠️ Already logged "+activityType+" for "+agentName+" on "+date+".\n\nLog another?");
+      if(!proceed)return;
+    }
+  }catch(e){
+    console.warn("Duplicate check failed (non-critical):",e);
+  }
+  
   const btn=document.getElementById("logBtn");
   btn.disabled=true;btn.textContent="Saving...";
+  
   try{
     await sbFetch("amanda_activities",{method:"POST",prefer:"return=minimal",body:JSON.stringify({agent_name:agentName,act_type:activityType,act_date:date,outcome,follow_up_date:followupDate,notes})});
-    toast("Logged! You're on a roll &#127775;","success");
+    toast("Logged! You're on a roll 🌾","success");
     document.getElementById("agentInput").value="";
     document.getElementById("activityType").selectedIndex=0;
     document.getElementById("activityDate").value=today();
@@ -879,10 +1096,21 @@ async function logActivity(){
     document.getElementById("followupDate").value="";
     document.getElementById("activityNotes").value="";
     document.getElementById("followupRow").classList.remove("show");
-    // Refresh autocomplete to pick up any new agents
     initAutocomplete();
-    loadWeek();loadFollowups();loadFeed();loadDaniel();
-  }catch(e){toast("Save failed: "+e.message,"error");}
+    loadWeek();loadFollowups();loadFeed();loadDaniel();loadHealth();
+  }catch(e){
+    const msg=e.message||"Unknown error";
+    console.error("Log error:",e);
+    if(msg.includes("permission")||msg.includes("policy")||msg.includes("RLS")){
+      showLogErrorBanner("Write permission denied – check RLS policy on amanda_activities table");
+      toast("Save failed: Permission denied (RLS policy).","error");
+    }else if(msg.includes("401")||msg.includes("403")){
+      showLogErrorBanner("Authentication failed – may need to whitelist Supabase domain");
+      toast("Save failed: Auth error. Contact IT.","error");
+    }else{
+      toast("Save failed: "+msg,"error");
+    }
+  }
   finally{btn.disabled=false;btn.textContent="Log activity";}
 }
 
@@ -891,15 +1119,32 @@ async function loadFollowups(){
     const all=await sbFetch("amanda_activities?select=id,agent_name,act_type,follow_up_date,notes&follow_up_date=not.is.null&order=follow_up_date.asc&limit=100");
     const todayStr=today();
     const sorted=[...all.filter(f=>f.follow_up_date<todayStr),...all.filter(f=>f.follow_up_date>=todayStr)];
-    if(!sorted.length){document.getElementById("followupsList").innerHTML='<div class="no-data">No upcoming follow-ups &#127752;</div>';return;}
+    if(!sorted.length){document.getElementById("followupsList").innerHTML='<div class="no-data">No upcoming follow-ups 🌾</div>';return;}
     document.getElementById("followupsList").innerHTML=sorted.map(f=>{
       const isOvr=f.follow_up_date<todayStr,isToday=f.follow_up_date===todayStr;
       const days=Math.round((new Date(f.follow_up_date+"T12:00:00")-new Date())/86400000);
-      const lbl=isOvr?"Overdue by "+Math.abs(days)+"d":isToday?"Today &#127866;":"In "+days+"d";
-      const dotC=isOvr?"#E24B4A":isToday?"#EF9F27":"#534AB7";
-      return'<div class="fu-item" id="fu-'+f.id+'"><div class="fu-dot" style="background:'+dotC+'"></div><div class="fu-body"><div class="fu-name">'+f.agent_name+'</div><div class="fu-meta">'+badgeEmoji(f.act_type)+(f.notes?" &middot; "+f.notes.substring(0,50):"")+'</div><div id="fu-edit-'+f.id+'" class="fu-edit-area"><input type="date" id="fu-date-'+f.id+'" value="'+f.follow_up_date+'" style="border:0.5px solid #d8d6e8;border-radius:6px;padding:5px 9px;font-size:12px;margin-right:6px;font-family:inherit"><button class="btn-sm" onclick="saveFollowupDate('+f.id+')">Save</button><button class="btn-sm" onclick="document.getElementById('+"'fu-edit-"+f.id+"'"+').style.display=\'none\'" style="margin-left:4px">Cancel</button></div></div><div style="display:flex;flex-direction:column;align-items:flex-end;gap:5px"><div class="fu-date" style="color:'+dotC+'">'+lbl+'</div><button class="btn-sm" onclick="toggleFuEdit('+f.id+')" style="font-size:10px;padding:3px 7px">Edit date</button></div></div>';
+      
+      // Enhanced escalation: Red 5+d, Orange 1-4d, Yellow today, Blue future
+      let dotC, bgC, label;
+      if(isOvr){
+        const daysOverdue=Math.abs(days);
+        if(daysOverdue>=5){
+          dotC="#A32D2D";bgC="#FCEBEB";label="🚨 OVERDUE "+daysOverdue+"d";
+        }else{
+          dotC="#E24B4A";bgC="#FFF3E0";label="⚠️ OVERDUE "+daysOverdue+"d";
+        }
+      }else if(isToday){
+        dotC="#EF9F27";bgC="#FFF8E1";label="TODAY 🍕";
+      }else{
+        dotC="#534AB7";bgC="#EEEDFE";label="In "+days+"d";
+      }
+      
+      return'<div class="fu-item" id="fu-'+f.id+'" style="background:'+bgC+';padding:12px;border-radius:8px;border:0.5px solid '+(bgC==="#FCEBEB"?"#f7c1c1":bgC==="#FFF3E0"?"#FFE69C":"#f0eef8")+'"><div class="fu-dot" style="background:'+dotC+'"></div><div class="fu-body"><div class="fu-name">'+f.agent_name+'</div><div class="fu-meta">'+badgeEmoji(f.act_type)+(f.notes?" · "+f.notes.substring(0,45):"")+'</div><div id="fu-edit-'+f.id+'" class="fu-edit-area"><input type="date" id="fu-date-'+f.id+'" value="'+f.follow_up_date+'" style="border:0.5px solid #d8d6e8;border-radius:6px;padding:5px 9px;font-size:12px;margin-right:6px;font-family:inherit"><button class="btn-sm" onclick="saveFollowupDate('+f.id+')">Save</button><button class="btn-sm" onclick="document.getElementById('+"'fu-edit-"+f.id+"'"+').style.display=\'none\'" style="margin-left:4px">Cancel</button></div></div><div style="display:flex;flex-direction:column;align-items:flex-end;gap:5px"><div class="fu-date" style="color:'+dotC+';font-weight:600">'+label+'</div><button class="btn-sm" onclick="toggleFuEdit('+f.id+')" style="font-size:10px;padding:3px 7px">Edit date</button></div></div>';
     }).join("");
-  }catch(e){document.getElementById("followupsList").innerHTML='<div class="no-data">Unable to load.</div>';}
+  }catch(e){
+    console.error(e);
+    document.getElementById("followupsList").innerHTML='<div class="no-data">Unable to load.</div>';
+  }
 }
 
 function toggleFuEdit(id){const el=document.getElementById("fu-edit-"+id);el.style.display=el.style.display==="none"?"block":"none";}
@@ -909,7 +1154,7 @@ async function saveFollowupDate(id){
   if(!d){toast("Please select a date.","error");return;}
   try{
     await sbFetch("amanda_activities?id=eq."+id,{method:"PATCH",prefer:"return=minimal",body:JSON.stringify({follow_up_date:d})});
-    toast("Follow-up date updated &#127800;","success");loadFollowups();loadWeek();
+    toast("Follow-up date updated 🌸","success");loadFollowups();loadWeek();
   }catch(e){toast("Save failed: "+e.message,"error");}
 }
 
@@ -919,13 +1164,144 @@ async function loadFeed(){
   catch(e){document.getElementById("feedList").innerHTML='<div class="no-data">Unable to load feed.</div>';}
 }
 
+
+async function loadNetwork(){
+  try{
+    const[rmActs,lpActs]=await Promise.all([
+      sbFetch("amanda_activities?select=*&order=act_date.desc&limit=500"),
+      sbFetch("call_logs?select=*&order=call_date.desc&limit=500")
+    ]);
+    allNetworkData=[
+      ...(rmActs||[]).map(a=>({...a,source:"RM",displayDate:a.act_date,displayType:a.act_type})),
+      ...(lpActs||[]).map(c=>({...c,source:"LP",displayDate:c.call_date,displayType:c.activity_type||"LP Call"}))
+    ].sort((a,b)=>(b.displayDate||"").localeCompare(a.displayDate||""));
+    
+    // Update stats
+    const rmCount=(rmActs||[]).length;
+    const lpCount=(lpActs||[]).length;
+    const agentNames=new Set([...(rmActs||[]).map(a=>a.agent_name),...(lpActs||[]).map(c=>c.agent_name)]);
+    document.getElementById("networkTotalRm").textContent=rmCount;
+    document.getElementById("networkTotalLp").textContent=lpCount;
+    document.getElementById("networkTotalAgents").textContent=agentNames.size;
+    document.getElementById("networkLastSync").textContent=new Date().toLocaleTimeString("en-US",{hour:"2-digit",minute:"2-digit"});
+    
+    applyNetworkFilters();
+  }catch(e){
+    console.error(e);
+    document.getElementById("networkList").innerHTML='<div class="no-data">Unable to load network.</div>';
+  }
+}
+
+function applyNetworkFilters(){
+  const q=(document.getElementById("networkSearch")?.value||"").toLowerCase();
+  const source=document.getElementById("networkSourceFilter")?.value||"all";
+  const period=document.getElementById("networkPeriodFilter")?.value||"all";
+  const weekStart=week.start,monthStart=today().substring(0,7)+"-01";
+  const quarterStart=new Date();quarterStart.setDate(quarterStart.getDate()-90);const qStart=localDateStr(quarterStart);
+  
+  let data=allNetworkData;
+  if(q)data=data.filter(a=>(a.agent_name||"").toLowerCase().includes(q)||(a.displayType||"").toLowerCase().includes(q)||(a.notes||"").toLowerCase().includes(q)||(a.note||"").toLowerCase().includes(q));
+  if(source!=="all")data=data.filter(a=>a.source===source);
+  if(period==="week")data=data.filter(a=>a.displayDate>=weekStart);
+  if(period==="month")data=data.filter(a=>a.displayDate>=monthStart);
+  if(period==="quarter")data=data.filter(a=>a.displayDate>=qStart);
+  
+  renderNetworkFeed(data);
+}
+
+function renderNetworkFeed(data){
+  if(!data.length){document.getElementById("networkList").innerHTML='<div class="no-data">No network activity found 🦜</div>';return;}
+  document.getElementById("networkList").innerHTML=data.map(a=>{
+    const isRm=a.source==="RM";
+    const isCtc=(isRm?a.act_type:a.activity_type)===CTC_TYPE;
+    const badgeClass=isRm?(isCtc?"ctc":"rm"):"lp";
+    const badgeText=isRm?badgeEmoji(a.act_type||""):badgeEmoji(a.activity_type||"LP Call");
+    const lpLabel=isRm?"":'<span style="font-size:10px;color:#bbb;font-weight:400;margin-left:6px">via '+(a.lp||"LP")+'</span>';
+    return'<div class="feed-item"><div class="feed-top"><span class="feed-agent">'+a.agent_name+lpLabel+'</span><div class="feed-right"><span class="feed-date">'+fmtDate(a.displayDate)+'</span>'+( isRm?'<button class="btn-sm" onclick="openEditModal('+a.id+')" style="font-size:10px;padding:3px 8px">Edit</button><button class="btn-sm danger" onclick="openConfirm('+a.id+',\''+a.agent_name.replace(/'/g,"\\'") +'\',\''+a.displayType.replace(/'/g,"\\'") +'\')">Delete</button>':'')+'</div></div><span class="feed-badge '+badgeClass+'">'+badgeText+'</span>'+
+    (a.outcome?'<div class="feed-outcome">'+a.outcome+'</div>':"")+
+    ((isRm?a.follow_up_date:null)?'<div class="feed-fu">Follow-up: '+fmtDate(isRm?a.follow_up_date:null)+'</div>':"")+
+    ((isRm?a.notes:a.note)?'<div class="feed-notes">"'+(isRm?a.notes:a.note)+'"</div>':"")+
+    '</div>';
+  }).join("");
+}
+
+async function loadHealth(){
+  try{
+    const[rmActs,prospects,agents]=await Promise.all([
+      sbFetch("amanda_activities?select=*&limit=1000"),
+      sbFetch("outreach_prospects?select=*&limit=500"),
+      sbFetch("agent_profiles?select=*&limit=500")
+    ]);
+    
+    const noOutcome=rmActs.filter(a=>!a.outcome);
+    const todayStr=today();
+    const overdueFus=rmActs.filter(a=>a.follow_up_date&&a.follow_up_date<todayStr);
+    const missingContact=agents.filter(a=>(!a.phone||!a.phone.trim())&&(!a.email||!a.email.trim()));
+    const prospectsMissingContact=prospects.filter(p=>(!p.phone||!p.phone.trim())&&(!p.email||!p.email.trim())&&p.status==="Requires follow-up");
+    const requiresFuNoDate=rmActs.filter(a=>a.outcome==="Requires follow-up"&&!a.follow_up_date);
+    const criticalNoNotes=rmActs.filter(a=>(a.act_type==="CTC Call"||a.act_type==="Birthday Outreach"||a.act_type==="Closed Deal Thank You")&&(!a.notes||a.notes.length<10));
+    
+    const totalActivities=rmActs.length||1;
+    const healthyActivities=rmActs.filter(a=>a.outcome&&a.notes&&a.notes.length>5).length;
+    const healthScore=Math.round((healthyActivities/totalActivities)*100);
+    
+    document.getElementById("hc-no-outcome").textContent=noOutcome.length;
+    document.getElementById("hc-overdue").textContent=overdueFus.length;
+    document.getElementById("hc-missing-contact").textContent=missingContact.length;
+    document.getElementById("hc-good").textContent=healthScore+"%";
+    
+    let html="";
+    const issueCount=noOutcome.length+overdueFus.length+missingContact.length+prospectsMissingContact.length+requiresFuNoDate.length+criticalNoNotes.length;
+    
+    if(issueCount===0){
+      html='<div style="text-align:center;padding:28px;color:#2E7D32"><div style="font-size:40px;margin-bottom:8px">✓</div><div style="font-size:14px;font-weight:500">All systems healthy!</div></div>';
+    }else{
+      if(noOutcome.length){
+        html+='<div style="background:#FCEBEB;border:0.5px solid #f7c1c1;border-radius:8px;padding:12px;margin-bottom:10px"><div style="font-weight:500;color:#A32D2D;margin-bottom:6px">🔴 '+noOutcome.length+' activities missing outcomes</div><div style="font-size:11px;color:#888">Set outcomes for: '+noOutcome.slice(0,3).map(a=>a.agent_name).join(", ")+(noOutcome.length>3?"...":"")+'</div></div>';
+      }
+      if(overdueFus.length){
+        const mostOverdue=overdueFus[0];
+        const daysOverdue=Math.round((new Date()-new Date(mostOverdue.follow_up_date+"T12:00:00"))/86400000);
+        html+='<div style="background:#FFF3E0;border:0.5px solid #FFE69C;border-radius:8px;padding:12px;margin-bottom:10px"><div style="font-weight:500;color:#B85B00;margin-bottom:6px">🟠 '+overdueFus.length+' follow-ups overdue</div><div style="font-size:11px;color:#888">Most overdue: '+mostOverdue.agent_name+" ("+daysOverdue+"d)"+' </div></div>';
+      }
+      if(missingContact.length){
+        html+='<div style="background:#F3E5F5;border:0.5px solid #CE93D8;border-radius:8px;padding:12px;margin-bottom:10px"><div style="font-weight:500;color:#7B1FA2;margin-bottom:6px">📱 '+missingContact.length+' agents missing phone/email</div><div style="font-size:11px;color:#888">Update contact info in Contacts tab</div></div>';
+      }
+      if(requiresFuNoDate.length){
+        html+='<div style="background:#FCEBEB;border:0.5px solid #f7c1c1;border-radius:8px;padding:12px;margin-bottom:10px"><div style="font-weight:500;color:#A32D2D;margin-bottom:6px">⚠️ '+requiresFuNoDate.length+' "Requires follow-up" without dates</div><div style="font-size:11px;color:#888">These follow-ups will get lost!</div></div>';
+      }
+      if(criticalNoNotes.length){
+        html+='<div style="background:#FFF3E0;border:0.5px solid #FFE69C;border-radius:8px;padding:12px;margin-bottom:10px"><div style="font-weight:500;color:#B85B00;margin-bottom:6px">📝 '+criticalNoNotes.length+' CTC/Birthday/Thank You without notes</div><div style="font-size:11px;color:#888">Critical activities need detailed notes for context</div></div>';
+      }
+    }
+    
+    document.getElementById("healthIssues").innerHTML=html;
+    
+    const rfuCount=prospects.filter(p=>p.status==="Requires follow-up").length;
+    const nfmCount=prospects.filter(p=>p.status==="NFM").length;
+    const dncCount=prospects.filter(p=>p.status==="DNC").length;
+    const totalProspects=rfuCount+nfmCount+dncCount||1;
+    
+    document.getElementById("funnel-rfu").textContent=rfuCount;
+    document.getElementById("funnel-nfm").textContent=nfmCount;
+    document.getElementById("funnel-dnc").textContent=dncCount;
+    document.getElementById("funnel-rfu-bar").style.width=(rfuCount/totalProspects*100)+"%";
+    document.getElementById("funnel-nfm-bar").style.width=(nfmCount/totalProspects*100)+"%";
+    document.getElementById("funnel-dnc-bar").style.width=(dncCount/totalProspects*100)+"%";
+    
+  }catch(e){
+    console.error("Health check error:",e);
+    document.getElementById("healthIssues").innerHTML='<div class="no-data">Error loading health check: '+e.message+'</div>';
+  }
+}
+
 function renderFeed(data){
-  if(!data.length){document.getElementById("feedList").innerHTML='<div class="no-data">No activity yet &#127807;</div>';return;}
+  if(!data.length){document.getElementById("feedList").innerHTML='<div class="no-data">No activity yet 🦜</div>';return;}
   document.getElementById("feedList").innerHTML=data.map(a=>
     '<div class="feed-item"><div class="feed-top"><span class="feed-agent">'+a.agent_name+'</span><div class="feed-right"><span class="feed-date">'+fmtDate(a.act_date)+'</span><button class="btn-sm" onclick="openEditModal('+a.id+')" style="font-size:10px;padding:3px 8px">Edit</button><button class="btn-sm danger" onclick="openConfirm('+a.id+',\''+( a.agent_name||"").replace(/'/g,"\\'") +'\',\''+( a.act_type||"").replace(/'/g,"\\'") +'\')">Delete</button></div></div><span class="feed-badge '+( a.act_type===CTC_TYPE?"ctc":"rm")+'">'+badgeEmoji(a.act_type)+'</span>'+
     (a.outcome?'<div class="feed-outcome">'+a.outcome+'</div>':"")+
     (a.follow_up_date?'<div class="feed-fu">Follow-up: '+fmtDate(a.follow_up_date)+'</div>':"")+
-    (a.notes?'<div class="feed-notes">&ldquo;'+a.notes+'&rdquo;</div>':"")+
+    (a.notes?'<div class="feed-notes">"'+a.notes+'"</div>':"")+
     '</div>'
   ).join("");
 }
@@ -958,11 +1334,10 @@ async function saveEditModal(){
   if(!editingActivityId)return;
   try{
     await sbFetch("amanda_activities?id=eq."+editingActivityId,{method:"PATCH",prefer:"return=minimal",body:JSON.stringify({notes:document.getElementById("editNotes").value.trim()||null,outcome:document.getElementById("editOutcome").value||null,follow_up_date:document.getElementById("editFollowupDate").value||null})});
-    toast("Updated! &#127800;","success");closeEditModal();loadFeed();loadFollowups();loadWeek();
+    toast("Updated! 🌸","success");closeEditModal();loadFeed();loadFollowups();loadWeek();
   }catch(e){toast("Save failed: "+e.message,"error");}
 }
 
-// CHANGE 1: Unified confirm modal handles both activity delete and prospect delete
 let deletingId=null,deletingType=null;
 function openConfirm(id,agent,type){
   deletingId=id;deletingType="activity";
@@ -972,7 +1347,6 @@ function openConfirm(id,agent,type){
 }
 function openConfirmProspect(id,nameOrBtn){
   const name=typeof nameOrBtn==="string"?nameOrBtn:(nameOrBtn&&nameOrBtn.dataset?nameOrBtn.dataset.name:String(id));
-
   deletingId=id;deletingType="prospect";
   document.getElementById("confirmTitle").textContent="Delete this prospect? 🗑️";
   document.getElementById("confirmSub").textContent=name+" will be permanently removed.";
@@ -984,10 +1358,10 @@ async function confirmDelete(){
   try{
     if(deletingType==="prospect"){
       await sbFetch("outreach_prospects?id=eq."+deletingId,{method:"DELETE",prefer:"return=minimal"});
-      toast("Prospect deleted &#128465;&#65039;","success");closeConfirm();loadPipeline();
+      toast("Prospect deleted 🗑️","success");closeConfirm();loadPipeline();
     } else {
       await sbFetch("amanda_activities?id=eq."+deletingId,{method:"DELETE",prefer:"return=minimal"});
-      toast("Deleted &#128465;&#65039;","success");closeConfirm();loadFeed();loadFollowups();loadWeek();loadDaniel();
+      toast("Deleted 🗑️","success");closeConfirm();loadFeed();loadFollowups();loadWeek();loadDaniel();
     }
   }catch(e){toast("Delete failed: "+e.message,"error");closeConfirm();}
 }
@@ -999,39 +1373,72 @@ function searchHistory(val){
   historyTimer=setTimeout(()=>doSearchHistory(val.trim()),400);
 }
 async function doSearchHistory(name){
-  document.getElementById("historyResult").innerHTML='<div class="no-data">Searching... &#127800;</div>';
+  document.getElementById("historyResult").innerHTML='<div class="no-data">Searching... 🌸</div>';
   try{
     const[profiles,activities,callLogs]=await Promise.all([
       sbFetch("agent_profiles?agent_name=ilike.*"+encodeURIComponent(name)+"*&limit=3").catch(()=>[]),
-      sbFetch("amanda_activities?agent_name=ilike.*"+encodeURIComponent(name)+"*&order=act_date.desc&limit=50").catch(()=>[]),
-      sbFetch("call_logs?agent_name=ilike.*"+encodeURIComponent(name)+"*&order=call_date.desc&limit=50").catch(()=>[])
+      sbFetch("amanda_activities?agent_name=ilike.*"+encodeURIComponent(name)+"*&order=act_date.desc&limit=500").catch(()=>[]),
+      sbFetch("call_logs?agent_name=ilike.*"+encodeURIComponent(name)+"*&order=call_date.desc&limit=500").catch(()=>[])
     ]);
     let html="";
     if(profiles.length){
       const p=profiles[0];
-      html+='<div style="background:#EEEDFE;border:0.5px solid #AFA9EC;border-radius:10px;padding:16px;margin-bottom:14px"><div style="font-size:16px;font-weight:500;color:#26215C;margin-bottom:10px">&#127800; '+p.agent_name+'</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:5px;font-size:12px;color:#534AB7">'+
-      (p.email?'<div>Email <span style="font-weight:500;color:#26215C">'+p.email+'</span></div>':"")+
-      (p.phone?'<div>Phone <span style="font-weight:500;color:#26215C">'+p.phone+'</span></div>':"")+
+      // Birthday calculation
+      let bdayInfo="";
+      if(p.birthday){
+        const [month,day]=p.birthday.split(" ");
+        const monthNum=new Date(Date.parse(month+" 1, 2021")).getMonth();
+        const today2=new Date();
+        let bdayThisYear=new Date(today2.getFullYear(),monthNum,parseInt(day));
+        if(bdayThisYear<today2){bdayThisYear.setFullYear(today2.getFullYear()+1);}
+        const daysUntil=Math.round((bdayThisYear-today2)/86400000);
+        const bdayColor=daysUntil<=7?"#E91E63":daysUntil<=30?"#9C27B0":"#888";
+        bdayInfo='<div style="color:'+bdayColor+';font-weight:500">🍰 '+p.birthday+' ('+daysUntil+' days away)</div>';
+      }
+      
+      // Last touch info
+      const allActivity=[...activities,...callLogs].sort((a,b)=>(new Date(b.act_date||b.call_date)-new Date(a.act_date||a.call_date)));
+      const lastTouch=allActivity[0];
+      const lastTouchRM=activities[0];
+      const lastTouchLP=callLogs[0];
+      let touchInfo="";
+      if(lastTouch){
+        const isRM=lastTouch.act_date!==undefined;
+        const lastDate=isRM?lastTouch.act_date:lastTouch.call_date;
+        const days=Math.round((new Date()-new Date(lastDate+"T12:00:00"))/86400000);
+        const color=days>60?"#A32D2D":days>30?"#E24B4A":"#2E7D32";
+        const source=isRM?"Amanda":"LP";
+        touchInfo='<div style="color:'+color+';font-size:11px;margin-top:6px">📍 Last touch: '+source+' '+days+'d ago</div>';
+      }
+      
+      html+='<div style="background:#EEEDFE;border:0.5px solid #AFA9EC;border-radius:10px;padding:16px;margin-bottom:14px"><div style="font-size:16px;font-weight:500;color:#26215C;margin-bottom:10px">🌸 '+p.agent_name+'</div><div style="display:flex;flex-direction:column;gap:8px;font-size:12px">'+
+      (p.email?'<div>✉️ Email <span style="font-weight:500;color:#26215C">'+p.email+'</span></div>':"")+
+      (p.phone?'<div>☎️ Phone <span style="font-weight:500;color:#26215C">'+p.phone+'</span></div>':"")+
+      bdayInfo+
+      touchInfo+
       '</div></div>';
     }
     const items=[
-      ...activities.map(a=>({date:a.act_date,source:"RM",agent:a.agent_name,type:a.act_type,outcome:a.outcome,notes:a.notes,fu:a.follow_up_date})),
-      ...callLogs.map(c=>({date:c.call_date,source:"LP",agent:c.agent_name,type:"LP Call",outcome:c.outcome,notes:c.note,lp:c.lp}))
+      ...activities.map(a=>({id:a.id,date:a.act_date,source:"RM",agent:a.agent_name,type:a.act_type,outcome:a.outcome,notes:a.notes,fu:a.follow_up_date})),
+      ...callLogs.map(c=>({id:c.id,date:c.call_date,source:"LP",agent:c.agent_name,type:"LP Call",outcome:c.outcome,notes:c.note,lp:c.lp}))
     ].sort((a,b)=>(b.date||"").localeCompare(a.date||""));
     if(!items.length&&!profiles.length){html+='<div class="no-data">No contact history found for "'+name+'".</div>';}
     else{
-      html+='<div style="font-size:11px;color:#bbb;margin-bottom:10px">&#129419; '+items.length+' contact records</div>';
+      html+='<div style="font-size:11px;color:#bbb;margin-bottom:10px">🎯 '+items.length+' total contact records (scrollable)</div>';
       html+=items.map(item=>{
         const isCtc=item.type===CTC_TYPE,isLp=item.source==="LP";
-        return'<div class="feed-item"><div class="feed-top"><span class="feed-agent">'+( isLp?(item.lp||"LP")+" &rarr; "+item.agent:item.agent)+'</span><span class="feed-date">'+fmtDate(item.date)+'</span></div><span class="feed-badge '+( isLp?"lp":isCtc?"ctc":"rm")+'">'+badgeEmoji(item.type)+'</span>'+
+        return'<div class="feed-item"><div class="feed-top"><span class="feed-agent">'+( isLp?(item.lp||"LP")+" → "+item.agent:item.agent)+'</span><div class="feed-right"><span class="feed-date">'+fmtDate(item.date)+'</span>'+( isLp?'':'<button class="btn-sm" onclick="openEditModal('+item.id+')" style="font-size:10px;padding:3px 8px">Edit</button><button class="btn-sm danger" onclick="openConfirm('+item.id+',\''+item.agent.replace(/'/g,"\\'") +'\',\''+item.type.replace(/'/g,"\\'") +'\')">Delete</button>')+'</div></div><span class="feed-badge '+( isLp?"lp":isCtc?"ctc":"rm")+'">'+badgeEmoji(item.type)+'</span>'+
         (item.outcome?'<div class="feed-outcome">'+item.outcome+'</div>':"")+
         (item.fu?'<div class="feed-fu">Follow-up: '+fmtDate(item.fu)+'</div>':"")+
-        (item.notes?'<div class="feed-notes">&ldquo;'+item.notes+'&rdquo;</div>':"")+
+        (item.notes?'<div class="feed-notes">"'+item.notes+'"</div>':"")+
         '</div>';
       }).join("");
     }
     document.getElementById("historyResult").innerHTML=html;
-  }catch(e){document.getElementById("historyResult").innerHTML='<div class="no-data">Error: '+e.message+'</div>';}
+  }catch(e){
+    console.error("History error:",e);
+    document.getElementById("historyResult").innerHTML='<div class="no-data">Error: '+e.message+'</div>';
+  }
 }
 
 let danielPeriodData={week:[],mtd:[],ytd:[]},currentDanielPeriod="week";
@@ -1052,8 +1459,8 @@ async function loadDaniel(){
     const calls=weekActs.filter(a=>a.act_type==="Cold Calls").length;
     const ctc=weekActs.filter(a=>a.act_type===CTC_TYPE).length;
     document.getElementById("danielStats").innerHTML=[
-      {n:weekActs.length,l:"This week"},{n:meetings,l:"&#127800; New meetings"},
-      {n:calls,l:"&#127919; Cold calls"},{n:ctc,l:"&#9889; CTC calls"}
+      {n:weekActs.length,l:"This week"},{n:meetings,l:"🌸 New meetings"},
+      {n:calls,l:"🏹 Cold calls"},{n:ctc,l:"⚡ CTC calls"}
     ].map(s=>'<div class="stat-card"><div class="stat-num">'+s.n+'</div><div class="stat-label">'+s.l+'</div></div>').join("");
 
     renderDanielPeriod();
@@ -1070,7 +1477,7 @@ async function loadDaniel(){
     document.getElementById("danielFollowups").innerHTML=all.length?all.map(f=>{
       const isOvr=f.follow_up_date<todayStr,c=isOvr?"#E24B4A":"#534AB7";
       return'<div class="fu-item"><div class="fu-dot" style="background:'+c+'"></div><div class="fu-body"><div class="fu-name">'+f.agent_name+'</div><div class="fu-meta">'+badgeEmoji(f.act_type)+'</div></div><div class="fu-date" style="color:'+c+'">'+( isOvr?"Overdue":fmtDate(f.follow_up_date))+'</div></div>';
-    }).join(""):'<div class="no-data" style="padding:16px">No follow-ups due &#127752;</div>';
+    }).join(""):'<div class="no-data" style="padding:16px">No follow-ups due 🌾</div>';
   }catch(e){console.error(e);}
 
   try{
@@ -1099,8 +1506,8 @@ async function loadDaniel(){
     document.getElementById("danielQuiet").innerHTML=quiet.length?quiet.slice(0,8).map(r=>{
       const isUrgent=r.days===null||r.days>=90,c=isUrgent?"#E24B4A":"#E8A33D";
       const label=r.days===null?"No activity logged":r.days+"d since last touch";
-      return '<div class="fu-item"><div class="fu-dot" style="background:'+c+'"></div><div class="fu-body"><div class="fu-name">'+r.name+'</div><div class="fu-meta" style="color:'+c+'">'+(isUrgent?"&#128683; ":"&#9888;&#65039; ")+label+'</div></div></div>';
-    }).join(""):'<div class="no-data" style="padding:16px">Everyone touched within 60 days &#127881;</div>';
+      return '<div class="fu-item"><div class="fu-dot" style="background:'+c+'"></div><div class="fu-body"><div class="fu-name">'+r.name+'</div><div class="fu-meta" style="color:'+c+'">'+(isUrgent?"🚨 ":"⚠️ ")+label+'</div></div></div>';
+    }).join(""):'<div class="no-data" style="padding:16px">Everyone touched within 60 days 🎉</div>';
   }catch(e){console.error(e);}
 }
 
@@ -1117,7 +1524,7 @@ function renderDanielPeriod(){
   const data=danielPeriodData[currentDanielPeriod]||[];
   const isWeek=currentDanielPeriod==="week",isYTD=currentDanielPeriod==="ytd",mult=isYTD?12:1;
   if(!data.length){document.getElementById("danielGoals").innerHTML='<div class="no-data">No activity logged yet.</div>';return;}
-  let html='<div style="font-size:11px;color:#bbb;margin-bottom:14px">'+(isWeek?"This week":isYTD?"Year to date":"Month to date")+' &#8212; &#129419; '+data.length+' total activities</div>';
+  let html='<div style="font-size:11px;color:#bbb;margin-bottom:14px">'+(isWeek?"This week":isYTD?"Year to date":"Month to date")+' — 🎯 '+data.length+' total activities</div>';
   GOALS.forEach(g=>{
     const target=isWeek?g.weekly:g.monthly*mult,count=data.filter(a=>a.act_type===g.type).length;
     html+=renderGoalBar(g.label,count,target,(count/target)*100,g.type);
@@ -1132,7 +1539,7 @@ async function renderDanielCoverage(){
     const cov=await loadQuietCoverage();
     const pctColor=cov.pct>=100?"#1F6B45":cov.pct>=60?"#9A6A12":"#9B3B3B";
     let covHtml='<div class="gr" style="border-top:1px solid #f0f0f5;padding-top:14px;margin-top:14px">'
-      +'<div class="gr-lr"><span class="gr-n">&#128269; Going-quiet coverage</span>'
+      +'<div class="gr-lr"><span class="gr-n">🔍 Going-quiet coverage</span>'
       +'<span><span class="gr-c">'+cov.pct+'%</span></span></div>'
       +'<div class="g-track"><div class="g-fill" style="width:'+cov.pct+'%;background:'+pctColor+'"></div></div>'
       +'<div style="font-size:10px;color:#bbb;margin-top:4px">'+cov.covered+' of '+cov.total+' agents flagged quiet on Monday touched this week</div></div>';
@@ -1142,11 +1549,10 @@ async function renderDanielCoverage(){
 
 function renderDanielTable(acts){
   document.getElementById("danielBody").innerHTML=acts.length
-    ?acts.map(a=>'<tr><td>'+a.agent_name+'</td><td>'+badgeEmoji(a.act_type)+'</td><td>'+( a.outcome||"&#8212;")+'</td><td>'+fmtDate(a.act_date)+'</td><td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+( a.notes||"&#8212;")+'</td></tr>').join("")
-    :'<tr><td colspan="5" style="text-align:center;padding:20px;color:#bbb">No activity in this period &#127807;</td></tr>';
+    ?acts.map(a=>'<tr><td>'+a.agent_name+'</td><td>'+badgeEmoji(a.act_type)+'</td><td>'+( a.outcome||"—")+'</td><td>'+fmtDate(a.act_date)+'</td><td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+( a.notes||"—")+'</td></tr>').join("")
+    :'<tr><td colspan="5" style="text-align:center;padding:20px;color:#bbb">No activity in this period 🦜</td></tr>';
 }
 
-// CHANGE 3: Pipeline with activity history per prospect + delete button
 let allProspects=[],editingProspectId=null,prospectActivities={};
 async function loadPipeline(){
   try{
@@ -1155,7 +1561,6 @@ async function loadPipeline(){
       sbFetch("amanda_activities?select=agent_name,act_type,act_date,outcome,notes&order=act_date.desc&limit=500")
     ]);
     allProspects=prospects||[];
-    // Group activities by agent name for quick lookup
     prospectActivities={};
     (acts||[]).forEach(a=>{
       const n=a.agent_name;
@@ -1200,16 +1605,16 @@ function renderProspects(list){
     const acts=(prospectActivities[p.name]||[]).slice(0,3);
     let actHtml="";
     if(acts.length){
-      actHtml='<div class="pc-activity-feed"><div class="pc-activity-feed-title">&#128337; Recent activity</div>';
-      acts.forEach(a=>{actHtml+='<div class="pc-activity-item"><span>'+badgeEmoji(a.act_type)+" "+fmtDate(a.act_date)+(a.outcome?" &middot; "+a.outcome:"")+'</span><span style="color:#bbb;font-size:10px;white-space:nowrap">'+(a.notes?a.notes.substring(0,40)+"...":"")+'</span></div>';});
+      actHtml='<div class="pc-activity-feed"><div class="pc-activity-feed-title">⏰ Recent activity</div>';
+      acts.forEach(a=>{actHtml+='<div class="pc-activity-item"><span>'+badgeEmoji(a.act_type)+" "+fmtDate(a.act_date)+(a.outcome?" · "+a.outcome:"")+'</span><span style="color:#bbb;font-size:10px;white-space:nowrap">'+(a.notes?a.notes.substring(0,40)+"...":"")+'</span></div>';});
       actHtml+='</div>';
     }
     let html='<div class="prospect-card '+(isDNC?"dnc":isNFM?"nfm":"")+'">';
-    html+='<div class="pc-top"><div><div class="pc-name">'+p.name+'</div><div class="pc-brokerage">'+(p.brokerage||"&mdash;")+'</div></div><span class="pc-badge '+bClass+'">'+bLabel+'</span></div>';
+    html+='<div class="pc-top"><div><div class="pc-name">'+p.name+'</div><div class="pc-brokerage">'+(p.brokerage||"—")+'</div></div><span class="pc-badge '+bClass+'">'+bLabel+'</span></div>';
     html+='<div class="pc-contact" style="justify-content:space-between;align-items:center">';
-    html+='<div style="display:flex;gap:14px;flex-wrap:wrap">'+(p.phone?'<span>&#128222; '+p.phone+'</span>':'<span style="color:#ccc">No phone</span>')+(p.email?' <span>&#9993;&#65039; '+p.email+'</span>':'')+'</div>';
+    html+='<div style="display:flex;gap:14px;flex-wrap:wrap">'+(p.phone?'<span>☎️ '+p.phone+'</span>':'<span style="color:#ccc">No phone</span>')+(p.email?' <span>✉️ '+p.email+'</span>':'')+'</div>';
     html+='<button class="btn-sm" style="font-size:10px;padding:3px 8px;flex-shrink:0" onclick="openPipelineContact('+p.id+')">Edit contact</button></div>';
-    if(p.followup_date&&!isDNC&&!isNFM)html+='<div class="pc-fudate '+(fuOvr?"overdue":"")+'">&#127866; Follow-up: '+(fuOvr?"OVERDUE &mdash; ":"")+fmtDate(p.followup_date)+'</div>';
+    if(p.followup_date&&!isDNC&&!isNFM)html+='<div class="pc-fudate '+(fuOvr?"overdue":"")+'">🍕 Follow-up: '+(fuOvr?"OVERDUE — ":"")+fmtDate(p.followup_date)+'</div>';
     if(p.notes)html+='<div class="pc-notes">'+p.notes+'</div>';
     html+=actHtml;
     html+='<div class="pc-actions"><button class="btn-sm" onclick="editProspect('+p.id+')">Edit</button>';
@@ -1245,13 +1650,13 @@ async function saveProspect(){
   if(!name){toast("Please enter a name.","error");return;}
   const payload={name,brokerage:document.getElementById("np-brokerage").value.trim()||null,phone:document.getElementById("np-phone").value.trim()||null,email:document.getElementById("np-email").value.trim()||null,status:document.getElementById("np-status").value,followup_date:document.getElementById("np-followup").value||null,notes:document.getElementById("np-notes").value.trim()||null};
   try{
-    if(editingProspectId){await sbFetch("outreach_prospects?id=eq."+editingProspectId,{method:"PATCH",prefer:"return=minimal",body:JSON.stringify(payload)});toast("Prospect updated &#127800;","success");}
-    else{await sbFetch("outreach_prospects",{method:"POST",prefer:"return=minimal",body:JSON.stringify(payload)});toast("Prospect added &#127807;","success");}
+    if(editingProspectId){await sbFetch("outreach_prospects?id=eq."+editingProspectId,{method:"PATCH",prefer:"return=minimal",body:JSON.stringify(payload)});toast("Prospect updated 🌸","success");}
+    else{await sbFetch("outreach_prospects",{method:"POST",prefer:"return=minimal",body:JSON.stringify(payload)});toast("Prospect added 🦜","success");}
     toggleAddForm(false);loadPipeline();initAutocomplete();
   }catch(e){toast("Save failed: "+e.message,"error");}
 }
 async function unmarkDNC(id){
-  try{await sbFetch("outreach_prospects?id=eq."+id,{method:"PATCH",prefer:"return=minimal",body:JSON.stringify({status:"Requires follow-up"})});toast("Reactivated &#127807;","success");loadPipeline();}
+  try{await sbFetch("outreach_prospects?id=eq."+id,{method:"PATCH",prefer:"return=minimal",body:JSON.stringify({status:"Requires follow-up"})});toast("Reactivated 🦜","success");loadPipeline();}
   catch(e){toast("Error: "+e.message,"error");}
 }
 
@@ -1271,7 +1676,7 @@ async function saveContactModal(){
     const existing=await sbFetch("agent_profiles?agent_name=eq."+encodeURIComponent(editingContactName)+"&limit=1").catch(()=>[]);
     if(existing&&existing.length>0){await sbFetch("agent_profiles?agent_name=eq."+encodeURIComponent(editingContactName),{method:"PATCH",prefer:"return=minimal",body:JSON.stringify(payload)});}
     else{await sbFetch("agent_profiles",{method:"POST",prefer:"return=minimal",body:JSON.stringify(payload)});}
-    toast("Contact updated &#127800;","success");closeContactModal();if(window._contactSaveCallback){window._contactSaveCallback();window._contactSaveCallback=null;}
+    toast("Contact updated 🌸","success");closeContactModal();if(window._contactSaveCallback){window._contactSaveCallback();window._contactSaveCallback=null;}
     if(document.getElementById("historySearch").value.length>=2)doSearchHistory(document.getElementById("historySearch").value.trim());
   }catch(e){toast("Save failed: "+e.message,"error");}
 }
@@ -1279,7 +1684,7 @@ async function saveContactModal(){
 let calYear=new Date().getFullYear(),calMonth=new Date().getMonth(),calActivities=[],selectedCalDay=null;
 const MEETING_TYPES=["New Realtor Meeting","Break Breads","Open House Visit","Co-hosted Event","Business Planning Session","Team Presentation"];
 function calEventClass(type){if(type===CTC_TYPE)return"ctc";if(MEETING_TYPES.includes(type))return"meeting";return"other";}
-function calEventEmoji(type){if(type===CTC_TYPE)return"&#9889;";if(MEETING_TYPES.includes(type))return"&#127800;";return"&#127919;";}
+function calEventEmoji(type){if(type===CTC_TYPE)return"⚡";if(MEETING_TYPES.includes(type))return"🌸";return"🏹";}
 function calNav(dir){calMonth+=dir;if(calMonth>11){calMonth=0;calYear++;}if(calMonth<0){calMonth=11;calYear--;}loadCalendar();}
 async function loadCalendar(){
   try{
@@ -1311,7 +1716,7 @@ function renderCalendar(){
     const events=byDate[dateStr]||[];
     html+='<div class="cal-day'+( isToday?" today":"")+'" style="'+( isSelected?"background:#EEEDFE;border-color:#AFA9EC;":"")+'" onclick="selectCalDay(\''+ dateStr +'\')">';
     html+='<div class="cal-num">'+d+'</div>';
-    events.slice(0,2).forEach(e=>{const cls=e.calType==="followup"?"followup":calEventClass(e.act_type);const emoji=e.calType==="followup"?"&#127866;":calEventEmoji(e.act_type);html+='<div class="cal-event '+cls+'">'+emoji+" "+e.agent_name+'</div>';});
+    events.slice(0,2).forEach(e=>{const cls=e.calType==="followup"?"followup":calEventClass(e.act_type);const emoji=e.calType==="followup"?"🍕":calEventEmoji(e.act_type);html+='<div class="cal-event '+cls+'">'+emoji+" "+e.agent_name+'</div>';});
     if(events.length>2)html+='<div style="font-size:9px;color:#aaa;padding:1px 4px">+'+( events.length-2)+' more</div>';
     html+='</div>';
   }
@@ -1331,13 +1736,12 @@ function showCalDayDetail(dateStr){
   document.getElementById("calDayItems").innerHTML=events.map(e=>{
     const isFollowup=e.calType==="followup",cls=isFollowup?"followup":calEventClass(e.act_type);
     const dotColors={meeting:"#534AB7",followup:"#B85B00",ctc:"#0F6E56",other:"#534AB7"};
-    const dotColor=dotColors[cls]||"#534AB7";const emoji=isFollowup?"&#127866;":calEventEmoji(e.act_type);
-    return'<div class="cal-day-item"><div class="cal-day-dot" style="background:'+dotColor+'"></div><div style="flex:1"><div style="font-size:12px;font-weight:500;color:#1a1a2e">'+e.agent_name+'</div><div style="font-size:11px;color:#aaa">'+emoji+" "+(isFollowup?"Follow-up &#8212; "+e.act_type:e.act_type)+(e.outcome?" &middot; "+e.outcome:"")+'</div>'+( e.notes?'<div style="font-size:11px;color:#777;font-style:italic;margin-top:2px">&ldquo;'+e.notes.substring(0,80)+'&rdquo;</div>':"")+'</div></div>';
+    const dotColor=dotColors[cls]||"#534AB7";const emoji=isFollowup?"🍕":calEventEmoji(e.act_type);
+    return'<div class="cal-day-item"><div class="cal-day-dot" style="background:'+dotColor+'"></div><div style="flex:1"><div style="font-size:12px;font-weight:500;color:#1a1a2e">'+e.agent_name+'</div><div style="font-size:11px;color:#aaa">'+emoji+" "+(isFollowup?"Follow-up — "+e.act_type:e.act_type)+(e.outcome?" · "+e.outcome:"")+'</div>'+( e.notes?'<div style="font-size:11px;color:#777;font-style:italic;margin-top:2px">"'+e.notes.substring(0,80)+'"</div>':"")+'</div></div>';
   }).join("");
   detail.style.display="block";
 }
 
-// ── CONTACTS TAB ──
 let allContacts=[],allAgentNames=[];
 
 async function loadContacts(){
@@ -1379,9 +1783,9 @@ function renderContacts(list){
       '<div class="contact-info">'+
         '<div class="contact-name">'+c.agent_name+'</div>'+
         '<div class="contact-meta">'+
-          (c.phone?'<span>&#128222; '+c.phone+'</span>':'<span style="color:#ffb3b3">No phone</span>')+
-          (c.email?'<span>&#9993;&#65039; '+c.email+'</span>':'')+
-          (c.birthday?'<span class="contact-bday">&#127874; '+c.birthday+'</span>':'<span style="color:#ffb3b3">No birthday</span>')+
+          (c.phone?'<span>☎️ '+c.phone+'</span>':'<span style="color:#ffb3b3">No phone</span>')+
+          (c.email?'<span>✉️ '+c.email+'</span>':'')+
+          (c.birthday?'<span class="contact-bday">🍰 '+c.birthday+'</span>':'<span style="color:#ffb3b3">No birthday</span>')+
         '</div>'+
       '</div>'+
       '<button class="btn-sm" onclick="openContactsEdit(this)" data-name="'+c.agent_name.replace(/"/g,'&quot;')+'" style="flex-shrink:0">Edit</button>'+
@@ -1391,7 +1795,6 @@ function renderContacts(list){
 
 function openContactsEdit(nameOrEl){
   const name=typeof nameOrEl==="string"?nameOrEl:(nameOrEl&&nameOrEl.dataset?nameOrEl.dataset.name:String(nameOrEl));
-  // Pre-fill and open the contact modal
   const c=allContacts.find(x=>x.agent_name===name)||{agent_name:name};
   editingContactName=name;
   document.getElementById("contactModalName").textContent=name;
@@ -1400,7 +1803,6 @@ function openContactsEdit(nameOrEl){
   document.getElementById("contactBrokerage").value=c.brokerage||"";
   document.getElementById("contactBirthday").value=c.birthday||"";
   document.getElementById("contactModal").classList.add("open");
-  // After save, reload contacts
   window._contactSaveCallback=function(){loadContacts();};
 }
 
