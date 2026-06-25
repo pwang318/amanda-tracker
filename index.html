@@ -721,10 +721,8 @@ async function testConnection(){
     // Test READ access
     await sbFetch("amanda_activities?select=id&limit=1");
     
-    // Test WRITE access with a dummy record
-    const testId="test-"+Date.now();
-    await sbFetch("amanda_activities",{method:"POST",prefer:"return=minimal",body:JSON.stringify({
-      id:testId,
+    // Test WRITE access with a dummy record (let DB auto-generate ID)
+    const testRecord=await sbFetch("amanda_activities",{method:"POST",prefer:"return=representation",body:JSON.stringify({
       agent_name:"__TEST__",
       act_type:"CTC Call",
       act_date:today(),
@@ -732,7 +730,9 @@ async function testConnection(){
     })});
     
     // Clean up test record
-    await sbFetch("amanda_activities?id=eq."+testId,{method:"DELETE",prefer:"return=minimal"}).catch(()=>{});
+    if(testRecord&&testRecord[0]){
+      await sbFetch("amanda_activities?id=eq."+testRecord[0].id,{method:"DELETE",prefer:"return=minimal"}).catch(()=>{});
+    }
     
     dot.className="sync-dot ok";
     txt.textContent="Live ✅ (read & write OK)";
@@ -926,7 +926,7 @@ function jumpToFeedType(actType){
 }
 
 function renderCtcRow(count,label){
-  return'<div class="ctc-divider"><span class="ctc-label">⚡ CTC calls'+( label?" — "+label:"")+'</span><div><div class="ctc-count">'+count+'</div><div class="ctc-note">tracked, no target</div></div></div>';
+  return'<div class="ctc-divider" onclick="jumpToFeedType(\'CTC Call\')" style="cursor:pointer"><span class="ctc-label">⚡ CTC calls'+( label?" — "+label:"")+'</span><div><div class="ctc-count">'+count+'</div><div class="ctc-note">tracked, no target</div></div></div>';
 }
 
 function renderPeriodScorecard(){
