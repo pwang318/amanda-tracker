@@ -277,6 +277,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   </div>
   <div class="card">
     <div class="period-toggle">
+      <button class="ptoggle" id="btn-daily" onclick="showPeriod('daily')">Daily</button>
+      <button class="ptoggle" id="btn-wtd" onclick="showPeriod('wtd')">Week to date</button>
       <button class="ptoggle active" id="btn-mtd" onclick="showPeriod('mtd')">Month to date</button>
       <button class="ptoggle" id="btn-ytd" onclick="showPeriod('ytd')">Year to date</button>
     </div>
@@ -596,6 +598,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   <div class="card">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
       <div class="period-toggle" style="margin-bottom:0">
+        <button class="ptoggle" id="dbtn-daily" onclick="showDanielPeriod('daily')">Daily</button>
         <button class="ptoggle active" id="dbtn-week" onclick="showDanielPeriod('week')">This week</button>
         <button class="ptoggle" id="dbtn-mtd" onclick="showDanielPeriod('mtd')">Month to date</button>
         <button class="ptoggle" id="dbtn-ytd" onclick="showDanielPeriod('ytd')">Year to date</button>
@@ -1143,20 +1146,43 @@ async function loadFlagged(){
 
     document.getElementById("weekFlagged").innerHTML=flagged.map(f=>{
       const note=(f.note||"").trim();
-      const shortNote=note.length>100?note.substring(0,100)+"...":note;
+      const isLong=note.length>80;
+      const shortNote=isLong?note.substring(0,80)+"...":note;
+      const noteId="flag-note-"+f.id;
+      const btnId="flag-btn-"+f.id;
       return'<div class="fu-item" style="align-items:flex-start">'
         +'<div class="fu-dot" style="background:#E24B4A;margin-top:5px"></div>'
-        +'<div class="fu-body">'
-        +'<div class="fu-name">'+f.agent_name+'<span style="font-size:10px;color:#bbb;font-weight:400;margin-left:6px">via '+( f.lp||"LP")+'</span></div>'
-        +( shortNote?'<div class="fu-meta" style="color:#666;margin-top:3px">"'+shortNote+'"</div>':'')
-        +'<div class="fu-meta" style="margin-top:2px">'+fmtDate(f.call_date)+( f.outcome?" · "+f.outcome:"")+'</div>'
+        +'<div class="fu-body" style="flex:1">'
+        +'<div class="fu-name">'+f.agent_name+'<span style="font-size:10px;color:#bbb;font-weight:400;margin-left:6px">via '+(f.lp||"LP")+'</span></div>'
+        +(note
+          ?'<div class="fu-meta" style="color:#444;margin-top:4px;line-height:1.5">'
+            +'<span id="'+noteId+'">'+shortNote+'</span>'
+            +(isLong?'<span id="'+btnId+'" onclick="toggleFlagNote(\''+noteId+'\',\''+btnId+'\',\''+note.replace(/'/g,"\\'").replace(/\n/g," ")+'\',\''+shortNote.replace(/'/g,"\\'")+'\',\''+( isLong?'1':'0')+'\')" style="color:#534AB7;cursor:pointer;font-size:11px;margin-left:5px;text-decoration:underline">See more</span>':"")
+          +'</div>'
+          :"")
+        +'<div class="fu-meta" style="margin-top:4px;color:#aaa">'+fmtDate(f.call_date)+(f.outcome?" · "+f.outcome:"")+'</div>'
         +'</div>'
-        +'<button onclick="resolveFlag(\''+f.id+'\')" style="font-size:10px;color:#888;background:none;border:1px solid #ddd;border-radius:6px;padding:4px 8px;cursor:pointer;font-family:inherit;white-space:nowrap">Mark handled</button>'
+        +'<button onclick="resolveFlag(\''+f.id+'\')" style="font-size:10px;color:#888;background:none;border:1px solid #ddd;border-radius:6px;padding:4px 8px;cursor:pointer;font-family:inherit;white-space:nowrap;flex-shrink:0;margin-left:8px">Mark handled</button>'
         +'</div>';
     }).join("");
   }catch(e){
     console.error(e);
     document.getElementById("weekFlagged").innerHTML='<div class="no-data">Unable to load.</div>';
+  }
+}
+
+function toggleFlagNote(noteId,btnId,fullText,shortText,isShowing){
+  const noteEl=document.getElementById(noteId);
+  const btnEl=document.getElementById(btnId);
+  if(!noteEl||!btnEl)return;
+  if(isShowing==="1"){
+    noteEl.textContent=fullText;
+    btnEl.textContent="See less";
+    btnEl.setAttribute("onclick","toggleFlagNote('"+noteId+"','"+btnId+"','"+fullText.replace(/'/g,"\\'")+"','"+shortText.replace(/'/g,"\\'")+"','0')");
+  }else{
+    noteEl.textContent=shortText;
+    btnEl.textContent="See more";
+    btnEl.setAttribute("onclick","toggleFlagNote('"+noteId+"','"+btnId+"','"+fullText.replace(/'/g,"\\'")+"','"+shortText.replace(/'/g,"\\'")+"','1')");
   }
 }
 
@@ -1231,8 +1257,9 @@ let periodData={mtd:[],ytd:[]},currentPeriod="mtd";
 
 function showPeriod(p){
   currentPeriod=p;
-  document.getElementById("btn-mtd").classList.toggle("active",p==="mtd");
-  document.getElementById("btn-ytd").classList.toggle("active",p==="ytd");
+  ["daily","wtd","mtd","ytd"].forEach(id=>{
+    document.getElementById("btn-"+id)?.classList.toggle("active",p===id);
+  });
   renderPeriodScorecard();
 }
 
@@ -1257,14 +1284,27 @@ function renderCtcRow(count,label){
 }
 
 function renderPeriodScorecard(){
-  const data=periodData[currentPeriod],isYTD=currentPeriod==="ytd",mult=isYTD?12:1;
-  if(!data.length){document.getElementById("periodScorecard").innerHTML='<div class="no-data">No activity logged yet.</div>';return;}
-  let html='<div style="font-size:11px;color:#bbb;margin-bottom:14px">'+( isYTD?"Year to date":"Month to date")+' — 🎯 '+data.length+' total activities</div>';
+  const data=periodData[currentPeriod]||[];
+  const labels={daily:"Today",wtd:"Week to date",mtd:"Month to date",ytd:"Year to date"};
+  const goalMultipliers={
+    daily:{multiplier:1/5,base:"weekly"}, // daily = weekly goal / 5 days
+    wtd:{multiplier:1,base:"weekly"},
+    mtd:{multiplier:1,base:"monthly"},
+    ytd:{multiplier:12,base:"monthly"}
+  };
+  const cfg=goalMultipliers[currentPeriod]||goalMultipliers.mtd;
+  const isYTD=currentPeriod==="ytd";
+  const label=labels[currentPeriod]||"Month to date";
+  if(!data.length){document.getElementById("periodScorecard").innerHTML='<div class="no-data">No activity logged yet for this period.</div>';return;}
+  let html='<div style="font-size:11px;color:#bbb;margin-bottom:14px">'+label+' — 🎯 '+data.length+' total activities</div>';
   GOALS.forEach(g=>{
-    const target=g.monthly*mult,count=data.filter(a=>a.act_type===g.type).length;
-    html+=renderGoalBar(g.label,count,target,(count/target)*100,g.type);
+    const target=cfg.base==="weekly"
+      ?(currentPeriod==="daily"?Math.ceil(g.weekly/5):g.weekly)
+      :Math.round(g.monthly*cfg.multiplier);
+    const count=data.filter(a=>a.act_type===g.type).length;
+    html+=renderGoalBar(g.label,count,target,target?(count/target)*100:0,g.type);
   });
-  html+=renderCtcRow(data.filter(a=>a.act_type===CTC_TYPE).length,isYTD?"YTD":new Date().toLocaleString("en-US",{month:"long"}));
+  html+=renderCtcRow(data.filter(a=>a.act_type===CTC_TYPE).length,label.toLowerCase());
   document.getElementById("periodScorecard").innerHTML=html;
 }
 
@@ -1274,12 +1314,14 @@ async function loadWeek(){
     const now=new Date();
     const monthStart=now.getFullYear()+"-"+String(now.getMonth()+1).padStart(2,"0")+"-01";
     const yearStart=now.getFullYear()+"-01-01";
-    const[weekActs,mtdActs,ytdActs]=await Promise.all([
+    const todayStr=today();
+    const[weekActs,mtdActs,ytdActs,dailyActs]=await Promise.all([
       sbFetch("amanda_activities?select=act_type,outcome&act_date=gte."+week.start+"&act_date=lte."+week.end),
       sbFetch("amanda_activities?select=act_type,outcome&act_date=gte."+monthStart),
-      sbFetch("amanda_activities?select=act_type,outcome&act_date=gte."+yearStart)
+      sbFetch("amanda_activities?select=act_type,outcome&act_date=gte."+yearStart),
+      sbFetch("amanda_activities?select=act_type,outcome&act_date=eq."+todayStr)
     ]);
-    periodData={mtd:mtdActs,ytd:ytdActs};
+    periodData={daily:dailyActs,wtd:weekActs,mtd:mtdActs,ytd:ytdActs};
     let html="";
     GOALS.forEach(g=>{
       const count=weekActs.filter(a=>a.act_type===g.type).length;
@@ -2458,14 +2500,15 @@ async function loadDaniel(){
     const now=new Date();
     const monthStart=now.getFullYear()+"-"+String(now.getMonth()+1).padStart(2,"0")+"-01";
     const yearStart=now.getFullYear()+"-01-01";
-    const[weekActs,mtdActs,ytdActs,aTierAgents,mtdReferrals]=await Promise.all([
+    const[weekActs,mtdActs,ytdActs,aTierAgents,mtdReferrals,dailyActs]=await Promise.all([
       sbFetch("amanda_activities?select=*&act_date=gte."+week.start+"&act_date=lte."+week.end+"&order=act_date.desc"),
       sbFetch("amanda_activities?select=*&act_date=gte."+monthStart+"&order=act_date.desc"),
       sbFetch("amanda_activities?select=*&act_date=gte."+yearStart+"&order=act_date.desc"),
       sbFetch("agent_profiles?select=agent_name,tier&tier=eq.A&limit=200").catch(()=>[]),
-      sbFetch("amanda_activities?select=agent_name,act_date&act_type=eq.Sent Referral&act_date=gte."+monthStart).catch(()=>[])
+      sbFetch("amanda_activities?select=agent_name,act_date&act_type=eq.Sent Referral&act_date=gte."+monthStart).catch(()=>[]),
+      sbFetch("amanda_activities?select=*&act_date=eq."+today()+"&order=act_date.desc")
     ]);
-    danielPeriodData={week:weekActs,mtd:mtdActs,ytd:ytdActs};
+    danielPeriodData={daily:dailyActs,week:weekActs,mtd:mtdActs,ytd:ytdActs};
 
     const meetings=weekActs.filter(a=>a.act_type==="New Realtor Meeting").length;
     const mtdMeetings=mtdActs.filter(a=>a.act_type==="New Realtor Meeting").length;
@@ -2579,25 +2622,28 @@ async function loadDaniel(){
 
 function showDanielPeriod(p){
   currentDanielPeriod=p;
-  document.getElementById("dbtn-week").classList.toggle("active",p==="week");
-  document.getElementById("dbtn-mtd").classList.toggle("active",p==="mtd");
-  document.getElementById("dbtn-ytd").classList.toggle("active",p==="ytd");
+  ["daily","week","mtd","ytd"].forEach(id=>{
+    document.getElementById("dbtn-"+id)?.classList.toggle("active",p===id);
+  });
   renderDanielPeriod();
   renderDanielTable(danielPeriodData[p]||[]);
 }
 
 function renderDanielPeriod(){
   const data=danielPeriodData[currentDanielPeriod]||[];
-  const isWeek=currentDanielPeriod==="week",isYTD=currentDanielPeriod==="ytd",mult=isYTD?12:1;
-  if(!data.length){document.getElementById("danielGoals").innerHTML='<div class="no-data">No activity logged yet.</div>';return;}
-  let html='<div style="font-size:11px;color:#bbb;margin-bottom:14px">'+(isWeek?"This week":isYTD?"Year to date":"Month to date")+' — 🎯 '+data.length+' total activities</div>';
+  const labelMap={daily:"Today",week:"This week",mtd:"Month to date",ytd:"Year to date"};
+  const label=labelMap[currentDanielPeriod]||"Month to date";
+  const isWeek=currentDanielPeriod==="week",isYTD=currentDanielPeriod==="ytd",isDaily=currentDanielPeriod==="daily";
+  const goalTarget=g=>isDaily?Math.ceil(g.weekly/5):isWeek?g.weekly:isYTD?g.monthly*12:g.monthly;
+  if(!data.length){document.getElementById("danielGoals").innerHTML='<div class="no-data">No activity logged yet for this period.</div>';return;}
+  let html='<div style="font-size:11px;color:#bbb;margin-bottom:14px">'+label+' — 🎯 '+data.length+' total activities</div>';
   GOALS.forEach(g=>{
-    const target=isWeek?g.weekly:g.monthly*mult,count=data.filter(a=>a.act_type===g.type).length;
-    html+=renderGoalBar(g.label,count,target,(count/target)*100,g.type);
+    const target=goalTarget(g),count=data.filter(a=>a.act_type===g.type).length;
+    html+=renderGoalBar(g.label,count,target,target?(count/target)*100:0,g.type);
   });
-  html+=renderCtcRow(data.filter(a=>a.act_type===CTC_TYPE).length,isWeek?"this week":isYTD?"YTD":new Date().toLocaleString("en-US",{month:"long"}));
+  html+=renderCtcRow(data.filter(a=>a.act_type===CTC_TYPE).length,label.toLowerCase());
   document.getElementById("danielGoals").innerHTML=html;
-  if(isWeek) renderDanielCoverage(); else document.getElementById("danielGoals").innerHTML+='';
+  if(isWeek)renderDanielCoverage();
 }
 
 async function renderDanielCoverage(){
