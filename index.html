@@ -79,6 +79,38 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .field textarea{resize:vertical;min-height:76px}
 .followup-row{display:none}
 .followup-row.show{display:grid}
+.intake-block{display:none;background:#FFF8E1;border:1px solid #FFE69C;border-radius:10px;padding:14px;margin-bottom:14px}
+.intake-block.show{display:block}
+.intake-block-title{font-size:12px;font-weight:600;color:#B85B00;margin-bottom:10px;display:flex;align-items:center;gap:6px}
+.intake-check{display:flex;align-items:center;gap:9px;font-size:13px;font-weight:400;text-transform:none;letter-spacing:0;color:#534030;cursor:pointer;padding:7px 0}
+.intake-check input[type=checkbox]{width:17px;height:17px;cursor:pointer;accent-color:#B85B00;flex-shrink:0}
+.intake-check.done{color:#2E7D32}
+#globalLockBanner{background:#A32D2D;color:#fff;padding:11px 18px;font-size:13px;font-weight:500;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+#globalLockBanner .lock-resume-btn{background:#fff;color:#A32D2D;border:none;border-radius:7px;padding:7px 14px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit}
+.log-locked-card{background:#FCEBEB;border:1px solid #f7c1c1;border-radius:10px;padding:16px;margin-bottom:14px}
+.log-locked-title{font-size:14px;font-weight:600;color:#A32D2D;margin-bottom:4px}
+.log-locked-sub{font-size:12px;color:#888}
+/* Birthday alert */
+.bday-alert{background:linear-gradient(135deg,#FCE4EC,#F3E5F5);border:1px solid #F48FB1;border-radius:10px;padding:13px 16px;margin-bottom:12px}
+.bday-alert-title{font-size:12px;font-weight:600;color:#880E4F;margin-bottom:7px}
+.bday-alert-item{display:flex;align-items:center;justify-content:space-between;font-size:13px;padding:4px 0;border-bottom:0.5px solid #f8bbd0}
+.bday-alert-item:last-child{border-bottom:none}
+/* Tier badges */
+.tier-badge{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;font-size:10px;font-weight:700;flex-shrink:0}
+.tier-A{background:#FFD700;color:#5D4E00}
+.tier-B{background:#C0C0C0;color:#333}
+.tier-C{background:#CD7F32;color:#fff}
+/* Inline log from follow-ups */
+.fu-inline-log{display:none;background:#f8f8ff;border:0.5px solid #d8d6e8;border-radius:8px;padding:12px;margin-top:10px}
+.fu-inline-log.show{display:block}
+.fu-inline-log select,.fu-inline-log textarea,.fu-inline-log input[type=date]{width:100%;border:0.5px solid #d8d6e8;border-radius:6px;padding:7px 10px;font-size:12px;font-family:inherit;color:#1a1a2e;outline:none;margin-bottom:8px;box-sizing:border-box}
+.fu-inline-log .inline-row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+/* Quiet agents card */
+.quiet-agent-row{display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:0.5px solid #f0eef8;font-size:13px}
+.quiet-agent-row:last-child{border-bottom:none}
+/* Dedup warning */
+.dedup-warn{background:#FFF8E1;border:1px solid #FFE69C;border-radius:8px;padding:10px 14px;margin-bottom:10px;font-size:12px;color:#B85B00;display:none}
+.dedup-warn.show{display:block}
 .ac-wrap{position:relative}
 .ac-list{position:absolute;top:100%;left:0;right:0;background:#fff;border:0.5px solid #d8d6e8;border-radius:8px;box-shadow:0 4px 16px rgba(45,27,105,0.1);z-index:100;max-height:200px;overflow-y:auto;display:none}
 .ac-list.open{display:block}
@@ -195,7 +227,15 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   <div class="tab" onclick="switchTab('contacts')">👤 Contacts</div>
 </div>
 
+<div id="globalLockBanner" style="display:none"></div>
+
 <div id="view-week" class="view active">
+  <div id="bdayAlertCard" style="display:none" class="card" style="padding:0">
+    <div class="bday-alert">
+      <div class="bday-alert-title">🍰 Upcoming Birthdays</div>
+      <div id="bdayAlertList"></div>
+    </div>
+  </div>
   <div class="card">
     <div class="card-title">This week 🌞 <span class="card-sub" id="weekLabel2"></span></div>
     <div id="weekGoalBars"><div class="no-data">Loading...</div></div>
@@ -229,69 +269,91 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 
 <div id="view-log" class="view">
   <div id="logErrorBanner"></div>
+
+  <div id="logLockedCard" class="log-locked-card" style="display:none">
+    <div class="log-locked-title">🔒 One more thing to wrap up</div>
+    <div class="log-locked-sub" id="logLockedSub"></div>
+  </div>
+
   <div class="card">
-    <div class="card-title">Log an activity ✨</div>
-    <div class="form-row">
-      <div class="field">
-        <label>Agent name</label>
-        <div class="ac-wrap">
-          <input type="text" id="agentInput" placeholder="Start typing..." autocomplete="off">
-          <div class="ac-list" id="acList"></div>
+    <div id="logNormalFields">
+      <div class="card-title">Log an activity ✨</div>
+      <div id="dedupWarn" class="dedup-warn"></div>
+      <div class="form-row">
+        <div class="field">
+          <label>Agent name</label>
+          <div class="ac-wrap">
+            <input type="text" id="agentInput" placeholder="Start typing..." autocomplete="off">
+            <div class="ac-list" id="acList"></div>
+          </div>
+        </div>
+        <div class="field">
+          <label>Activity type</label>
+          <select id="activityType">
+            <optgroup label="New Relationships">
+              <option>Cold Calls</option>
+              <option>New Realtor Meeting</option>
+              <option>Open House Visit</option>
+            </optgroup>
+            <optgroup label="Relationship Deepening">
+              <option>New Agent Follow-up</option>
+              <option>Break Breads</option>
+              <option>Market Update Call</option>
+              <option>Sent Market Report</option>
+              <option>Sent Referral</option>
+              <option>Co-hosted Event</option>
+              <option>Realtor Buddy Referral Ask</option>
+            </optgroup>
+            <optgroup label="Retention and Referrals">
+              <option>Active Agent Check-in</option>
+              <option>CTC Call</option>
+              <option>Closed Deal Thank You</option>
+              <option>Birthday Outreach</option>
+              <option>Holiday Outreach</option>
+              <option>Agent Appreciation</option>
+            </optgroup>
+            <optgroup label="Special Programs">
+              <option>Business Planning Session</option>
+              <option>Co-Marketing Discussion</option>
+              <option>Team Presentation</option>
+              <option>Recruiting Conversation</option>
+            </optgroup>
+          </select>
         </div>
       </div>
-      <div class="field">
-        <label>Activity type</label>
-        <select id="activityType">
-          <optgroup label="New Relationships">
-            <option>Cold Calls</option>
-            <option>New Realtor Meeting</option>
-            <option>Open House Visit</option>
-          </optgroup>
-          <optgroup label="Relationship Deepening">
-            <option>New Agent Follow-up</option>
-            <option>Break Breads</option>
-            <option>Market Update Call</option>
-            <option>Sent Market Report</option>
-            <option>Sent Referral</option>
-            <option>Co-hosted Event</option>
-            <option>Realtor Buddy Referral Ask</option>
-          </optgroup>
-          <optgroup label="Retention and Referrals">
-            <option>Active Agent Check-in</option>
-            <option>CTC Call</option>
-            <option>Closed Deal Thank You</option>
-            <option>Birthday Outreach</option>
-            <option>Holiday Outreach</option>
-            <option>Agent Appreciation</option>
-          </optgroup>
-          <optgroup label="Special Programs">
-            <option>Business Planning Session</option>
-            <option>Co-Marketing Discussion</option>
-            <option>Team Presentation</option>
-            <option>Recruiting Conversation</option>
-          </optgroup>
-        </select>
+      <div class="form-row three">
+        <div class="field"><label>Date</label><input type="date" id="activityDate"></div>
+        <div class="field">
+          <label>Outcome</label>
+          <select id="activityOutcome">
+            <option value="">Select outcome...</option>
+            <option>Positive</option>
+            <option>Meeting Scheduled</option>
+            <option>Requires follow-up</option>
+            <option>Remove / No Further Contact</option>
+          </select>
+        </div>
+        <div class="field followup-row" id="followupRow">
+          <label>Follow-up date <span id="followup-hint" style="font-size:10px;color:#9C27B0;font-weight:400;text-transform:none;letter-spacing:0;margin-left:4px"></span></label>
+          <input type="date" id="followupDate">
+        </div>
+      </div>
+      <div class="form-row one">
+        <div class="field"><label>Notes</label><textarea id="activityNotes" placeholder="Details, referrals mentioned, next steps..."></textarea></div>
       </div>
     </div>
-    <div class="form-row three">
-      <div class="field"><label>Date</label><input type="date" id="activityDate"></div>
-      <div class="field">
-        <label>Outcome</label>
-        <select id="activityOutcome">
-          <option value="">Select outcome...</option>
-          <option>Positive</option>
-          <option>Meeting Scheduled</option>
-          <option>Requires follow-up</option>
-          <option>Remove / No Further Contact</option>
-        </select>
-      </div>
-      <div class="field followup-row" id="followupRow">
-        <label>Follow-up date <span id="followup-hint" style="font-size:10px;color:#9C27B0;font-weight:400;text-transform:none;letter-spacing:0;margin-left:4px"></span></label>
-        <input type="date" id="followupDate">
-      </div>
-    </div>
+
     <div class="form-row one">
-      <div class="field"><label>Notes</label><textarea id="activityNotes" placeholder="Details, referrals mentioned, next steps..."></textarea></div>
+      <div class="field intake-block" id="intakeBlock">
+        <div class="intake-block-title">🔔 New Realtor Meeting — Day-Of Checklist</div>
+        <label class="intake-check"><input type="checkbox" id="intakeRetainedReport" onchange="updateIntakeProgress()"> Added agent to Retained Realtor Report</label>
+        <label class="intake-check"><input type="checkbox" id="intakeSaEmail" onchange="updateIntakeProgress()"> Sent post-meeting email from Sa Team — Nyny CC'd</label>
+        <label class="intake-check"><input type="checkbox" id="intakeHomebot" onchange="updateIntakeProgress()"> Added agent to HomeBot</label>
+        <label class="intake-check"><input type="checkbox" id="intakeListreports" onchange="updateIntakeProgress()"> Added agent to ListReports</label>
+        <label class="intake-check"><input type="checkbox" id="intakeTotalExpert" onchange="updateIntakeProgress()"> Added agent to Total Expert</label>
+        <label class="intake-check"><input type="checkbox" id="intakeGroupText" onchange="updateIntakeProgress()"> Sent follow-up group text introducing Nyny</label>
+        <div id="intakeProgress" style="font-size:11px;color:#B85B00;margin-top:6px;font-weight:500">0 of 6 complete</div>
+      </div>
     </div>
     <button class="btn-primary" id="logBtn" onclick="logActivity()">Log activity</button>
   </div>
@@ -322,6 +384,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
           <option value="week">This week</option>
           <option value="month">This month</option>
         </select>
+        <button onclick="exportToCSV()" style="padding:8px 14px;background:#534AB7;color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:500;cursor:pointer;font-family:inherit;white-space:nowrap">⬇️ Export CSV</button>
       </div>
     </div>
     <div id="feedList"><div class="no-data">Loading...</div></div>
@@ -435,11 +498,15 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   <div class="stat-grid" id="danielStats"></div>
 
   <div class="card">
-    <div class="period-toggle">
-      <button class="ptoggle active" id="dbtn-week" onclick="showDanielPeriod('week')">This week</button>
-      <button class="ptoggle" id="dbtn-mtd" onclick="showDanielPeriod('mtd')">Month to date</button>
-      <button class="ptoggle" id="dbtn-ytd" onclick="showDanielPeriod('ytd')">Year to date</button>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+      <div class="period-toggle" style="margin-bottom:0">
+        <button class="ptoggle active" id="dbtn-week" onclick="showDanielPeriod('week')">This week</button>
+        <button class="ptoggle" id="dbtn-mtd" onclick="showDanielPeriod('mtd')">Month to date</button>
+        <button class="ptoggle" id="dbtn-ytd" onclick="showDanielPeriod('ytd')">Year to date</button>
+      </div>
+      <button onclick="generateWeeklySummary()" style="padding:7px 13px;background:#534AB7;color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:500;cursor:pointer;font-family:inherit;white-space:nowrap">📋 Copy summary</button>
     </div>
+    <pre id="danielSummaryOut" style="display:none;background:#f8f8ff;border:0.5px solid #d8d6e8;border-radius:8px;padding:12px;font-size:11px;font-family:monospace;white-space:pre-wrap;margin-bottom:14px;color:#26215C"></pre>
     <div id="danielGoals"><div class="no-data">Loading...</div></div>
   </div>
 
@@ -594,7 +661,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
     <div class="field" style="margin-bottom:12px"><label>Phone</label><input type="text" id="contactPhone" placeholder="Phone number"></div>
     <div class="field" style="margin-bottom:12px"><label>Email</label><input type="email" id="contactEmail" placeholder="Email address"></div>
     <div class="field" style="margin-bottom:12px"><label>Home Address</label><input type="text" id="contactBrokerage" placeholder="Home address"></div>
-    <div class="field" style="margin-bottom:18px"><label>Birthday</label><input type="text" id="contactBirthday" placeholder="e.g. Mar 14"></div>
+    <div class="field" style="margin-bottom:12px"><label>Birthday</label><input type="text" id="contactBirthday" placeholder="e.g. Mar 14"></div>
+    <div class="field" style="margin-bottom:18px"><label>Tier</label><select id="contactTier"><option value="">No tier set</option><option value="A">🥇 A-Tier (Top producer, active partner)</option><option value="B">🥈 B-Tier (Mid-tier, building relationship)</option><option value="C">🥉 C-Tier (New or low-volume)</option></select></div>
     <div style="display:flex;gap:10px">
       <button class="btn-primary" onclick="saveContactModal()">Save changes</button>
       <button class="btn-sm" onclick="closeContactModal()">Cancel</button>
@@ -623,6 +691,7 @@ const GOALS=[
   {label:"🌾 Realtor buddy intro",type:"Realtor Buddy Referral Ask",weekly:3,monthly:12}
 ];
 const CTC_TYPE="CTC Call";
+const ACT_TYPE_OPTIONS='<optgroup label="New Relationships"><option>Cold Calls</option><option>New Realtor Meeting</option><option>Open House Visit</option></optgroup><optgroup label="Relationship Deepening"><option>New Agent Follow-up</option><option>Break Breads</option><option>Market Update Call</option><option>Sent Market Report</option><option>Sent Referral</option><option>Co-hosted Event</option><option>Realtor Buddy Referral Ask</option></optgroup><optgroup label="Retention and Referrals"><option>Active Agent Check-in</option><option>CTC Call</option><option>Closed Deal Thank You</option><option>Birthday Outreach</option><option>Holiday Outreach</option><option>Agent Appreciation</option></optgroup><optgroup label="Special Programs"><option>Business Planning Session</option><option>Co-Marketing Discussion</option><option>Team Presentation</option><option>Recruiting Conversation</option></optgroup>';
 function badgeEmoji(type){return EMOJI[type]?EMOJI[type]+" "+type:type;}
 
 const NEXT_CALL_DAYS={
@@ -697,9 +766,159 @@ function autoSetFollowUp(){
   if(hint)hint.textContent="Suggested: "+days+"d after this activity";
 }
 
+const INTAKE_CHECK_IDS=["intakeRetainedReport","intakeSaEmail","intakeHomebot","intakeListreports","intakeTotalExpert","intakeGroupText"];
+const INTAKE_LABELS={
+  intakeRetainedReport:"Add agent to Retained Realtor Report",
+  intakeSaEmail:"Send post-meeting email from Sa Team (CC Nyny)",
+  intakeHomebot:"Add agent to HomeBot",
+  intakeListreports:"Add agent to ListReports",
+  intakeTotalExpert:"Add agent to Total Expert",
+  intakeGroupText:"Send follow-up group text introducing Nyny"
+};
+const PENDING_PREFIX="⏳ INTAKE PENDING ";
+const COMPLETE_TAG="✅ Day-of checklist complete: Retained Report ✓ · Sa Email+CC Nyny ✓ · HomeBot ✓ · ListReports ✓ · Total Expert ✓ · Group Text ✓";
+let openIntake=null; // {id, agent_name, act_date, outcome, follow_up_date, freeNotes, states}
+
+function getIntakeStates(){
+  const s={};
+  INTAKE_CHECK_IDS.forEach(id=>{s[id]=document.getElementById(id).checked;});
+  return s;
+}
+function setIntakeStates(states){
+  INTAKE_CHECK_IDS.forEach(id=>{document.getElementById(id).checked=!!(states&&states[id]);});
+  updateIntakeProgress(true);
+}
+function allIntakeDone(states){
+  return INTAKE_CHECK_IDS.every(id=>states&&states[id]);
+}
+function buildPendingNotes(states,freeNotes){
+  return PENDING_PREFIX+JSON.stringify(states)+"\n\n"+(freeNotes||"");
+}
+function parseIntakeNotes(notes){
+  if(!notes||!notes.startsWith(PENDING_PREFIX))return null;
+  const rest=notes.slice(PENDING_PREFIX.length);
+  const splitIdx=rest.indexOf("\n\n");
+  const jsonPart=splitIdx>=0?rest.slice(0,splitIdx):rest;
+  const freeNotes=splitIdx>=0?rest.slice(splitIdx+2):"";
+  try{return{states:JSON.parse(jsonPart),freeNotes};}
+  catch(e){return{states:{},freeNotes:rest};}
+}
+
+function toggleIntakeBlock(){
+  const type=document.getElementById("activityType").value;
+  const block=document.getElementById("intakeBlock");
+  if(openIntake||type==="New Realtor Meeting"){
+    block.classList.add("show");
+  }else{
+    block.classList.remove("show");
+  }
+}
+
+function updateIntakeProgress(skipPersist){
+  let done=0;
+  INTAKE_CHECK_IDS.forEach(id=>{
+    const el=document.getElementById(id);
+    const label=el.closest(".intake-check");
+    if(el.checked){done++;label.classList.add("done");}
+    else{label.classList.remove("done");}
+  });
+  const prog=document.getElementById("intakeProgress");
+  if(done===6){
+    prog.textContent="✓ All 6 complete — ready to save";
+    prog.style.color="#2E7D32";
+  }else{
+    prog.textContent=done+" of 6 complete";
+    prog.style.color="#B85B00";
+  }
+  // If resuming an open checklist, persist progress on every click so it survives refresh / device switch
+  if(openIntake&&!skipPersist){
+    const states=getIntakeStates();
+    openIntake.states=states;
+    const partialNotes=buildPendingNotes(states,openIntake.freeNotes);
+    sbFetch("amanda_activities?id=eq."+openIntake.id,{method:"PATCH",prefer:"return=minimal",body:JSON.stringify({notes:partialNotes})}).catch(e=>console.warn("Checklist progress save failed:",e));
+  }
+}
+
+function resetIntakeChecklist(){
+  INTAKE_CHECK_IDS.forEach(id=>{document.getElementById(id).checked=false;});
+  updateIntakeProgress(true);
+}
+
+// Checks Supabase for any "New Realtor Meeting" still tagged PENDING. If found, locks the whole
+// Log Activity tab (and shows a banner on every tab) until that single checklist is finished.
+async function checkOpenIntake(){
+  try{
+    const rows=await sbFetch("amanda_activities?act_type=eq."+encodeURIComponent("New Realtor Meeting")+"&order=act_date.desc&limit=30");
+    const pendingRow=rows.find(r=>r.notes&&r.notes.startsWith(PENDING_PREFIX));
+    if(pendingRow){
+      const parsed=parseIntakeNotes(pendingRow.notes);
+      openIntake={id:pendingRow.id,agent_name:pendingRow.agent_name,act_date:pendingRow.act_date,outcome:pendingRow.outcome,follow_up_date:pendingRow.follow_up_date,freeNotes:parsed?parsed.freeNotes:"",states:parsed?parsed.states:{}};
+    }else{
+      openIntake=null;
+    }
+  }catch(e){
+    console.warn("checkOpenIntake failed (non-critical):",e);
+  }
+  applyLockState();
+}
+
+function applyLockState(){
+  const banner=document.getElementById("globalLockBanner");
+  const lockedCard=document.getElementById("logLockedCard");
+  const normalFields=document.getElementById("logNormalFields");
+  const btn=document.getElementById("logBtn");
+
+  if(openIntake){
+    banner.style.display="flex";
+    banner.innerHTML='<span>🔒 Open checklist: <strong>'+openIntake.agent_name+'</strong> — met '+fmtDate(openIntake.act_date)+'.</span><button class="lock-resume-btn" onclick="switchTab(\'log\')">Resume checklist</button>';
+    lockedCard.style.display="block";
+    document.getElementById("logLockedSub").textContent=openIntake.agent_name+" — meeting logged "+fmtDate(openIntake.act_date)+". A few steps left below.";
+    normalFields.style.display="none";
+    setIntakeStates(openIntake.states);
+    document.getElementById("intakeBlock").classList.add("show");
+    btn.textContent="Mark checklist complete & continue";
+    btn.onclick=completeIntakeChecklist;
+  }else{
+    banner.style.display="none";
+    lockedCard.style.display="none";
+    normalFields.style.display="block";
+    toggleIntakeBlock();
+    btn.textContent="Log activity";
+    btn.onclick=logActivity;
+  }
+}
+
+async function completeIntakeChecklist(){
+  if(!openIntake)return;
+  const states=getIntakeStates();
+  const missing=INTAKE_CHECK_IDS.filter(id=>!states[id]);
+  if(missing.length>0){
+    toast("Still needed: "+INTAKE_LABELS[missing[0]]+(missing.length>1?" (+"+(missing.length-1)+" more)":"")+".","error");
+    return;
+  }
+  const btn=document.getElementById("logBtn");
+  btn.disabled=true;btn.textContent="Saving...";
+  try{
+    const finalNotes=openIntake.freeNotes?COMPLETE_TAG+"\n\n"+openIntake.freeNotes:COMPLETE_TAG;
+    await sbFetch("amanda_activities?id=eq."+openIntake.id,{method:"PATCH",prefer:"return=minimal",body:JSON.stringify({notes:finalNotes,edited_at:new Date().toISOString()})});
+    toast("Checklist complete! 🎉 You're unlocked — keep going.","success");
+    openIntake=null;
+    resetIntakeChecklist();
+    applyLockState();
+    loadWeek();loadFollowups();loadFeed();loadDaniel();loadHealth();
+  }catch(e){
+    console.error("Complete checklist error:",e);
+    toast("Save failed: "+(e.message||"Unknown error"),"error");
+  }finally{
+    btn.disabled=false;
+    if(!openIntake)btn.textContent="Log activity";
+  }
+}
+
 document.getElementById("activityType").addEventListener("change",function(){
   const outcome=document.getElementById("activityOutcome").value;
   if(outcome==="Requires follow-up")autoSetFollowUp();
+  toggleIntakeBlock();
 });
 
 document.getElementById("activityOutcome").addEventListener("change",function(){
@@ -767,6 +986,8 @@ function clearLogErrorBanner(){
 async function init(){
   testConnection();
   loadWeek();loadFollowups();loadFeed();loadDaniel();initAutocomplete();loadQuiet();loadFlagged();
+  checkOpenIntake();
+  document.getElementById("agentInput").addEventListener("input",checkDedupOnInput);
 }
 
 async function loadQuietCoverage(){
@@ -961,6 +1182,7 @@ async function loadWeek(){
     html+=renderCtcRow(weekActs.filter(a=>a.act_type===CTC_TYPE).length,"this week");
     document.getElementById("weekGoalBars").innerHTML=html;
     renderPeriodScorecard();
+    loadBirthdayAlerts();
   }catch(e){document.getElementById("weekGoalBars").innerHTML='<div class="no-data">Unable to load goals.</div>';}
 
   try{
@@ -1033,6 +1255,13 @@ async function initAutocomplete(){
 function selectAgent(name){document.getElementById("agentInput").value=name;document.getElementById("acList").classList.remove("open");}
 
 async function logActivity(){
+  // GUARD: cannot log anything new while a checklist is open — this is the whole point
+  if(openIntake){
+    toast("Finish your open checklist for "+openIntake.agent_name+" first — nothing else can be logged.","error");
+    switchTab("log");
+    return;
+  }
+  
   const agentName=document.getElementById("agentInput").value.trim();
   const activityType=document.getElementById("activityType").value;
   const date=document.getElementById("activityDate").value;
@@ -1078,6 +1307,12 @@ async function logActivity(){
     return;
   }
   
+  // New Realtor Meeting: ALWAYS save same-day, no matter what — tag as pending or complete
+  // based on the checklist right now. If pending, the app locks until it's finished.
+  const isNewRealtorMeeting=activityType==="New Realtor Meeting";
+  const intakeStates=isNewRealtorMeeting?getIntakeStates():null;
+  const intakeComplete=isNewRealtorMeeting?allIntakeDone(intakeStates):true;
+  
   // DUPLICATE DETECTION: Check if same agent/type/date already logged
   try{
     const existing=await sbFetch("amanda_activities?agent_name=eq."+encodeURIComponent(agentName)+"&act_type=eq."+encodeURIComponent(activityType)+"&act_date=eq."+date+"&limit=1");
@@ -1089,12 +1324,17 @@ async function logActivity(){
     console.warn("Duplicate check failed (non-critical):",e);
   }
   
+  let finalNotes=notes;
+  if(isNewRealtorMeeting){
+    finalNotes=intakeComplete?(notes?COMPLETE_TAG+"\n\n"+notes:COMPLETE_TAG):buildPendingNotes(intakeStates,notes);
+  }
+  
   const btn=document.getElementById("logBtn");
   btn.disabled=true;btn.textContent="Saving...";
   
   try{
-    await sbFetch("amanda_activities",{method:"POST",prefer:"return=minimal",body:JSON.stringify({agent_name:agentName,act_type:activityType,act_date:date,outcome,follow_up_date:followupDate,notes})});
-    toast("Logged! You're on a roll 🌾","success");
+    const inserted=await sbFetch("amanda_activities",{method:"POST",body:JSON.stringify({agent_name:agentName,act_type:activityType,act_date:date,outcome,follow_up_date:followupDate,notes:finalNotes})});
+    
     document.getElementById("agentInput").value="";
     document.getElementById("activityType").selectedIndex=0;
     document.getElementById("activityDate").value=today();
@@ -1102,6 +1342,18 @@ async function logActivity(){
     document.getElementById("followupDate").value="";
     document.getElementById("activityNotes").value="";
     document.getElementById("followupRow").classList.remove("show");
+    
+    if(isNewRealtorMeeting&&!intakeComplete){
+      const row=inserted&&inserted[0]?inserted[0]:null;
+      toast("Meeting logged for "+agentName+"! Just a few quick steps left below.","success");
+      if(row){
+        openIntake={id:row.id,agent_name:agentName,act_date:date,outcome,follow_up_date:followupDate,freeNotes:notes,states:intakeStates};
+      }
+    }else{
+      toast("Logged! You're on a roll 🌾","success");
+      resetIntakeChecklist();
+    }
+    applyLockState();
     initAutocomplete();
     loadWeek();loadFollowups();loadFeed();loadDaniel();loadHealth();
   }catch(e){
@@ -1117,7 +1369,10 @@ async function logActivity(){
       toast("Save failed: "+msg,"error");
     }
   }
-  finally{btn.disabled=false;btn.textContent="Log activity";}
+  finally{
+    btn.disabled=false;
+    if(!openIntake)btn.textContent="Log activity";
+  }
 }
 
 async function loadFollowups(){
@@ -1145,7 +1400,39 @@ async function loadFollowups(){
         dotC="#534AB7";bgC="#EEEDFE";label="In "+days+"d";
       }
       
-      return'<div class="fu-item" id="fu-'+f.id+'" style="background:'+bgC+';padding:12px;border-radius:8px;border:0.5px solid '+(bgC==="#FCEBEB"?"#f7c1c1":bgC==="#FFF3E0"?"#FFE69C":"#f0eef8")+'"><div class="fu-dot" style="background:'+dotC+'"></div><div class="fu-body"><div class="fu-name">'+f.agent_name+'</div><div class="fu-meta">'+badgeEmoji(f.act_type)+(f.notes?" · "+f.notes.substring(0,45):"")+'</div><div id="fu-edit-'+f.id+'" class="fu-edit-area"><input type="date" id="fu-date-'+f.id+'" value="'+f.follow_up_date+'" style="border:0.5px solid #d8d6e8;border-radius:6px;padding:5px 9px;font-size:12px;margin-right:6px;font-family:inherit"><button class="btn-sm" onclick="saveFollowupDate('+f.id+')">Save</button><button class="btn-sm" onclick="document.getElementById('+"'fu-edit-"+f.id+"'"+').style.display=\'none\'" style="margin-left:4px">Cancel</button></div></div><div style="display:flex;flex-direction:column;align-items:flex-end;gap:5px"><div class="fu-date" style="color:'+dotC+';font-weight:600">'+label+'</div><button class="btn-sm" onclick="toggleFuEdit('+f.id+')" style="font-size:10px;padding:3px 7px">Edit date</button></div></div>';
+      return'<div class="fu-item" id="fu-'+f.id+'" style="background:'+bgC+';padding:12px;border-radius:8px;border:0.5px solid '+(bgC==="#FCEBEB"?"#f7c1c1":bgC==="#FFF3E0"?"#FFE69C":"#f0eef8")+'">'+
+      '<div class="fu-dot" style="background:'+dotC+'"></div>'+
+      '<div class="fu-body">'+
+        '<div class="fu-name">'+f.agent_name+'</div>'+
+        '<div class="fu-meta">'+badgeEmoji(f.act_type)+(f.notes?" · "+f.notes.substring(0,45):"")+'</div>'+
+        '<div id="fu-edit-'+f.id+'" class="fu-edit-area"><input type="date" id="fu-date-'+f.id+'" value="'+f.follow_up_date+'" style="border:0.5px solid #d8d6e8;border-radius:6px;padding:5px 9px;font-size:12px;margin-right:6px;font-family:inherit"><button class="btn-sm" onclick="saveFollowupDate('+f.id+')">Save</button><button class="btn-sm" onclick="document.getElementById('+"'fu-edit-"+f.id+"'"+').style.display=\'none\'" style="margin-left:4px">Cancel</button></div>'+
+        '<div id="fu-log-'+f.id+'" class="fu-inline-log">'+
+          '<div style="font-size:11px;font-weight:600;color:#534AB7;margin-bottom:8px">Log outcome for '+f.agent_name+'</div>'+
+          '<select id="fu-log-type-'+f.id+'">'+ACT_TYPE_OPTIONS+'</select>'+
+          '<div class="inline-row"><select id="fu-log-outcome-'+f.id+'"><option value="">Outcome...</option><option>Positive</option><option>Meeting Scheduled</option><option>Requires follow-up</option><option>Remove / No Further Contact</option></select>'+
+          '<input type="date" id="fu-log-newfu-'+f.id+'" placeholder="New follow-up date (if needed)"></div>'+
+          '<textarea id="fu-log-notes-'+f.id+'" placeholder="Notes..." rows="2"></textarea>'+
+          '<div style="display:flex;gap:8px">'+
+          '<button class="btn-sm" style="background:#534AB7;color:#fff;border:none;border-radius:6px;padding:6px 12px;cursor:pointer;font-family:inherit;font-size:12px" onclick="saveInlineLog('+f.id+',\''+f.agent_name.replace(/'/g,"\\'")+'\',\''+f.act_date+'\')">Save & clear follow-up</button>'+
+          '<button class="btn-sm" onclick="document.getElementById(\'fu-log-'+f.id+'\').classList.remove(\'show\')" style="font-size:11px">Cancel</button>'+
+          '</div>'+
+        '</div>'+
+        '<div id="fu-handled-'+f.id+'" class="fu-inline-log">'+
+          '<div style="font-size:11px;font-weight:600;color:#2E7D32;margin-bottom:8px">Mark as handled — add a note (optional)</div>'+
+          '<textarea id="fu-handled-notes-'+f.id+'" placeholder="e.g. Called, going to re-engage in 60 days..." rows="2"></textarea>'+
+          '<div style="display:flex;gap:8px">'+
+          '<button class="btn-sm" style="background:#2E7D32;color:#fff;border:none;border-radius:6px;padding:6px 12px;cursor:pointer;font-family:inherit;font-size:12px" onclick="confirmMarkHandled('+f.id+',\''+f.agent_name.replace(/'/g,"\\'")+'\')">Confirm handled</button>'+
+          '<button class="btn-sm" onclick="document.getElementById(\'fu-handled-'+f.id+'\').classList.remove(\'show\')" style="font-size:11px">Cancel</button>'+
+          '</div>'+
+        '</div>'+
+      '</div>'+
+      '<div style="display:flex;flex-direction:column;align-items:flex-end;gap:5px">'+
+        '<div class="fu-date" style="color:'+dotC+';font-weight:600">'+label+'</div>'+
+        '<button class="btn-sm" style="font-size:10px;padding:4px 9px;background:#534AB7;color:#fff;border:none;border-radius:6px;cursor:pointer;font-family:inherit" onclick="toggleFuInlineLog('+f.id+')">Log outcome</button>'+
+        '<button class="btn-sm" style="font-size:10px;padding:4px 9px;background:#2E7D32;color:#fff;border:none;border-radius:6px;cursor:pointer;font-family:inherit" onclick="toggleFuHandled('+f.id+')">Mark as handled</button>'+
+        '<button class="btn-sm" onclick="toggleFuEdit('+f.id+')" style="font-size:10px;padding:3px 7px">Edit date</button>'+
+      '</div>'+
+      '</div>';
     }).join("");
   }catch(e){
     console.error(e);
@@ -1163,6 +1450,170 @@ async function saveFollowupDate(id){
     toast("Follow-up date updated 🌸","success");loadFollowups();loadWeek();
   }catch(e){toast("Save failed: "+e.message,"error");}
 }
+
+// ── FEATURE 1: Log directly from follow-ups ──────────────────────────────────
+function toggleFuInlineLog(id){
+  document.getElementById("fu-log-"+id).classList.toggle("show");
+  document.getElementById("fu-handled-"+id).classList.remove("show");
+  document.getElementById("fu-edit-"+id).style.display="none";
+}
+function toggleFuHandled(id){
+  document.getElementById("fu-handled-"+id).classList.toggle("show");
+  document.getElementById("fu-log-"+id).classList.remove("show");
+  document.getElementById("fu-edit-"+id).style.display="none";
+}
+async function saveInlineLog(id,agentName,origDate){
+  if(openIntake){toast("Finish the open checklist for "+openIntake.agent_name+" first.","error");return;}
+  const actType=document.getElementById("fu-log-type-"+id).value;
+  const outcome=document.getElementById("fu-log-outcome-"+id).value;
+  const newFu=document.getElementById("fu-log-newfu-"+id).value||null;
+  const notes=document.getElementById("fu-log-notes-"+id).value.trim()||null;
+  if(!outcome){toast("Select an outcome first.","error");return;}
+  if(outcome==="Requires follow-up"&&!newFu){toast("Set a new follow-up date.","error");return;}
+  if(actType==="CTC Call"&&(!notes||notes.length<15)){toast("CTC calls need detailed notes (minimum 15 characters).","error");return;}
+  if((actType==="Birthday Outreach"||actType==="Closed Deal Thank You")&&(!notes||notes.length<10)){toast(actType+" needs notes (minimum 10 characters).","error");return;}
+  try{
+    await Promise.all([
+      sbFetch("amanda_activities",{method:"POST",body:JSON.stringify({agent_name:agentName,act_type:actType,act_date:today(),outcome,follow_up_date:newFu,notes})}),
+      sbFetch("amanda_activities?id=eq."+id,{method:"PATCH",prefer:"return=minimal",body:JSON.stringify({follow_up_date:null,edited_at:new Date().toISOString()})})
+    ]);
+    toast("Logged + follow-up cleared for "+agentName+" ✓","success");
+    loadFollowups();loadWeek();loadFeed();loadHealth();
+  }catch(e){toast("Save failed: "+e.message,"error");}
+}
+
+// ── FEATURE 5: Mark as handled with optional note ─────────────────────────────
+async function confirmMarkHandled(id,agentName){
+  const note=document.getElementById("fu-handled-notes-"+id).value.trim()||null;
+  try{
+    const patchPayload={follow_up_date:null,edited_at:new Date().toISOString()};
+    if(note){patchPayload.notes=note;}
+    await sbFetch("amanda_activities?id=eq."+id,{method:"PATCH",prefer:"return=minimal",body:JSON.stringify(patchPayload)});
+    toast(agentName+" marked as handled ✓","success");
+    loadFollowups();loadWeek();loadFeed();loadHealth();
+  }catch(e){toast("Failed: "+e.message,"error");}
+}
+// Keep old markFollowupHandled as direct no-note path (for Health Check clickthrough if ever needed)
+async function markFollowupHandled(id,agentName){
+  try{
+    await sbFetch("amanda_activities?id=eq."+id,{method:"PATCH",prefer:"return=minimal",body:JSON.stringify({follow_up_date:null,edited_at:new Date().toISOString()})});
+    toast(agentName+" marked as handled ✓","success");
+    loadFollowups();loadWeek();loadFeed();loadHealth();
+  }catch(e){toast("Failed: "+e.message,"error");}
+}
+
+// ── FEATURE 4: Birthday alerts on My Week ────────────────────────────────────
+async function loadBirthdayAlerts(){
+  try{
+    const agents=await sbFetch("agent_profiles?select=agent_name,birthday&not.birthday.is.null&limit=500");
+    const today2=new Date();
+    const upcoming=[];
+    agents.forEach(a=>{
+      if(!a.birthday)return;
+      const parts=a.birthday.trim().split(" ");
+      if(parts.length<2)return;
+      const monthNum=new Date(Date.parse(parts[0]+" 1, 2021")).getMonth();
+      const day=parseInt(parts[1]);
+      if(isNaN(monthNum)||isNaN(day))return;
+      let bday=new Date(today2.getFullYear(),monthNum,day);
+      if(bday<today2)bday=new Date(today2.getFullYear()+1,monthNum,day);
+      const daysUntil=Math.round((bday-today2)/86400000);
+      if(daysUntil<=14)upcoming.push({name:a.agent_name,birthday:a.birthday,days:daysUntil});
+    });
+    upcoming.sort((a,b)=>a.days-b.days);
+    const card=document.getElementById("bdayAlertCard");
+    if(!upcoming.length){card.style.display="none";return;}
+    card.style.display="block";
+    document.getElementById("bdayAlertList").innerHTML=upcoming.map(u=>{
+      const urgency=u.days===0?"🎂 TODAY!":u.days<=3?"in "+u.days+"d ⚡":"in "+u.days+"d";
+      const color=u.days<=3?"#880E4F":"#6A1B9A";
+      return'<div class="bday-alert-item"><span style="font-weight:500">'+u.name+'</span><span style="color:'+color+';font-weight:600;font-size:12px">🍰 '+u.birthday+' — '+urgency+'</span></div>';
+    }).join("");
+  }catch(e){console.warn("Birthday alert load failed:",e);}
+}
+
+// ── FEATURE 3: Tier badges in contacts + history ─────────────────────────────
+function tierBadge(tier){
+  if(!tier)return"";
+  return'<span class="tier-badge tier-'+tier+'">'+tier+'</span>';
+}
+
+// ── FEATURE 7: Agent name deduplication warning ───────────────────────────────
+let dedupTimeout=null;
+async function checkDedupOnInput(){
+  const name=document.getElementById("agentInput").value.trim();
+  const warn=document.getElementById("dedupWarn");
+  if(!name||name.length<3){warn.classList.remove("show");return;}
+  clearTimeout(dedupTimeout);
+  dedupTimeout=setTimeout(async()=>{
+    try{
+      const matches=await sbFetch("agent_profiles?agent_name=ilike.*"+encodeURIComponent(name)+"*&limit=5");
+      const exact=matches.filter(m=>m.agent_name.toLowerCase()!==name.toLowerCase());
+      if(exact.length){
+        warn.classList.add("show");
+        warn.innerHTML="⚠️ Similar agent names already exist: <strong>"+exact.map(m=>m.agent_name).join(", ")+"</strong> — make sure this isn't a duplicate.";
+      }else{warn.classList.remove("show");}
+    }catch(e){warn.classList.remove("show");}
+  },600);
+}
+
+// ── FEATURE 8: Export to CSV ─────────────────────────────────────────────────
+async function exportToCSV(){
+  try{
+    const acts=await sbFetch("amanda_activities?select=*&order=act_date.desc&limit=5000");
+    const headers=["Agent Name","Activity Type","Date","Outcome","Follow-up Date","Notes"];
+    const rows=acts.map(a=>[
+      a.agent_name||"",a.act_type||"",a.act_date||"",a.outcome||"",a.follow_up_date||"",
+      (a.notes||"").replace(/"/g,"'").replace(/\n/g," ")
+    ]);
+    const csv=[headers,...rows].map(r=>r.map(v=>'"'+v+'"').join(",")).join("\n");
+    const blob=new Blob([csv],{type:"text/csv"});
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement("a");
+    a.href=url;a.download="amanda-activities-"+today()+".csv";a.click();
+    URL.revokeObjectURL(url);
+    toast("Exported "+acts.length+" activities to CSV ✓","success");
+  }catch(e){toast("Export failed: "+e.message,"error");}
+}
+
+// ── FEATURE 6: Weekly summary for Daniel ─────────────────────────────────────
+async function generateWeeklySummary(){
+  try{
+    const[weekActs,fuActs]=await Promise.all([
+      sbFetch("amanda_activities?select=*&act_date=gte."+week.start+"&act_date=lte."+week.end),
+      sbFetch("amanda_activities?select=agent_name,follow_up_date&follow_up_date=not.is.null&follow_up_date=gte."+today()+"&order=follow_up_date.asc&limit=10")
+    ]);
+    const counts={};
+    weekActs.forEach(a=>{counts[a.act_type]=(counts[a.act_type]||0)+1;});
+    const newMeetings=weekActs.filter(a=>a.act_type==="New Realtor Meeting");
+    const ctc=weekActs.filter(a=>a.act_type==="CTC Call");
+    const lines=[
+      "📊 Weekly Activity Summary — "+week.label,
+      "──────────────────────────────",
+      "Total activities: "+weekActs.length,
+      "New realtor meetings: "+newMeetings.length+(newMeetings.length?"  ("+newMeetings.map(a=>a.agent_name).join(", ")+")":""),
+      "CTC calls: "+ctc.length,
+      "Cold calls: "+(counts["Cold Calls"]||0),
+      "Break breads: "+(counts["Break Breads"]||0),
+      "Realtor buddy asks: "+(counts["Realtor Buddy Referral Ask"]||0),
+      "",
+      "📅 Upcoming follow-ups:",
+      ...fuActs.slice(0,5).map(f=>"  • "+f.agent_name+" — "+f.follow_up_date),
+      "",
+      "Generated by Amanda Tracker "+new Date().toLocaleString()
+    ];
+    const summary=lines.join("\n");
+    navigator.clipboard.writeText(summary).then(()=>{
+      toast("Weekly summary copied to clipboard — paste into email ✓","success");
+    }).catch(()=>{
+      const el=document.getElementById("danielSummaryOut");
+      if(el){el.style.display="block";el.textContent=summary;}
+      toast("Summary ready — see below","success");
+    });
+  }catch(e){toast("Summary failed: "+e.message,"error");}
+}
+
+
 
 let allFeedData=[];
 async function loadFeed(){
@@ -1233,6 +1684,7 @@ function renderNetworkFeed(data){
 
 async function loadHealth(){
   try{
+    await checkOpenIntake();
     const[rmActs,prospects,agents]=await Promise.all([
       sbFetch("amanda_activities?select=*&limit=1000"),
       sbFetch("outreach_prospects?select=*&limit=500"),
@@ -1257,11 +1709,14 @@ async function loadHealth(){
     document.getElementById("hc-good").textContent=healthScore+"%";
     
     let html="";
-    const issueCount=noOutcome.length+overdueFus.length+missingContact.length+prospectsMissingContact.length+requiresFuNoDate.length+criticalNoNotes.length;
+    const issueCount=(openIntake?1:0)+noOutcome.length+overdueFus.length+missingContact.length+prospectsMissingContact.length+requiresFuNoDate.length+criticalNoNotes.length;
     
     if(issueCount===0){
       html='<div style="text-align:center;padding:28px;color:#2E7D32"><div style="font-size:40px;margin-bottom:8px">✓</div><div style="font-size:14px;font-weight:500">All systems healthy!</div></div>';
     }else{
+      if(openIntake){
+        html+='<div style="background:#FCEBEB;border:1px solid #f7c1c1;border-radius:8px;padding:12px;margin-bottom:10px;cursor:pointer" onclick="switchTab(\'log\')"><div style="font-weight:600;color:#A32D2D;margin-bottom:6px">🔒 Open intake checklist — '+openIntake.agent_name+'</div><div style="font-size:11px;color:#888">Met '+fmtDate(openIntake.act_date)+'. Logging is locked app-wide until this is finished. Tap to resume.</div></div>';
+      }
       if(noOutcome.length){
         html+='<div style="background:#FCEBEB;border:0.5px solid #f7c1c1;border-radius:8px;padding:12px;margin-bottom:10px"><div style="font-weight:500;color:#A32D2D;margin-bottom:6px">🔴 '+noOutcome.length+' activities missing outcomes</div><div style="font-size:11px;color:#888">Set outcomes for: '+noOutcome.slice(0,3).map(a=>a.agent_name).join(", ")+(noOutcome.length>3?"...":"")+'</div></div>';
       }
@@ -1678,7 +2133,7 @@ function openContactModal(name,phone,email,brokerage,birthday){
 function closeContactModal(){document.getElementById("contactModal").classList.remove("open");editingContactName=null;}
 async function saveContactModal(){
   if(!editingContactName)return;
-  const payload={agent_name:editingContactName,phone:document.getElementById("contactPhone").value.trim()||null,email:document.getElementById("contactEmail").value.trim()||null,birthday:document.getElementById("contactBirthday").value.trim()||null};
+  const payload={agent_name:editingContactName,phone:document.getElementById("contactPhone").value.trim()||null,email:document.getElementById("contactEmail").value.trim()||null,birthday:document.getElementById("contactBirthday").value.trim()||null,tier:document.getElementById("contactTier").value||null};
   try{
     const existing=await sbFetch("agent_profiles?agent_name=eq."+encodeURIComponent(editingContactName)+"&limit=1").catch(()=>[]);
     if(existing&&existing.length>0){await sbFetch("agent_profiles?agent_name=eq."+encodeURIComponent(editingContactName),{method:"PATCH",prefer:"return=minimal",body:JSON.stringify(payload)});}
@@ -1788,7 +2243,7 @@ function renderContacts(list){
     return'<div class="contact-row">'+
       '<div class="contact-avatar">'+initials+'</div>'+
       '<div class="contact-info">'+
-        '<div class="contact-name">'+c.agent_name+'</div>'+
+        '<div class="contact-name" style="display:flex;align-items:center;gap:7px">'+c.agent_name+tierBadge(c.tier)+'</div>'+
         '<div class="contact-meta">'+
           (c.phone?'<span>☎️ '+c.phone+'</span>':'<span style="color:#ffb3b3">No phone</span>')+
           (c.email?'<span>✉️ '+c.email+'</span>':'')+
@@ -1809,6 +2264,7 @@ function openContactsEdit(nameOrEl){
   document.getElementById("contactEmail").value=c.email||"";
   document.getElementById("contactBrokerage").value=c.brokerage||"";
   document.getElementById("contactBirthday").value=c.birthday||"";
+  document.getElementById("contactTier").value=c.tier||"";
   document.getElementById("contactModal").classList.add("open");
   window._contactSaveCallback=function(){loadContacts();};
 }
