@@ -111,6 +111,40 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 /* Dedup warning */
 .dedup-warn{background:#FFF8E1;border:1px solid #FFE69C;border-radius:8px;padding:10px 14px;margin-bottom:10px;font-size:12px;color:#B85B00;display:none}
 .dedup-warn.show{display:block}
+/* Reconnect tab */
+.rc-upload-zone{border:2px dashed #d8d6e8;border-radius:10px;padding:20px;text-align:center;cursor:pointer;transition:border-color .2s;margin-bottom:16px}
+.rc-upload-zone:hover,.rc-upload-zone.drag{border-color:#534AB7;background:#f8f8ff}
+.rc-upload-zone input[type=file]{display:none}
+.rc-summary{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px}
+.rc-stat{text-align:center;padding:12px 8px;background:#f8f8ff;border:0.5px solid #e8e6f8;border-radius:10px}
+.rc-stat-num{font-size:22px;font-weight:600;color:#534AB7}
+.rc-stat-label{font-size:10px;color:#888;margin-top:4px}
+.rc-filters{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
+.rc-filters select,.rc-filters input{padding:7px 10px;border:0.5px solid #d8d6e8;border-radius:8px;font-size:12px;font-family:inherit;color:#1a1a2e;background:#fff;outline:none}
+.rc-filters input{flex:1;min-width:140px}
+.rc-section-header{font-size:11px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;padding:8px 0 6px;border-bottom:1.5px solid;margin-bottom:8px}
+.rc-agent{background:#fff;border:0.5px solid #e8e6f8;border-radius:10px;padding:12px 14px;margin-bottom:8px;transition:box-shadow .15s}
+.rc-agent:hover{box-shadow:0 2px 8px rgba(83,74,183,.1)}
+.rc-agent-top{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
+.rc-agent-name{font-size:14px;font-weight:600;color:#1a1a2e}
+.rc-agent-meta{font-size:11px;color:#888;margin-top:3px;display:flex;flex-wrap:wrap;gap:8px}
+.rc-agent-actions{display:flex;gap:6px;flex-shrink:0;flex-wrap:wrap;justify-content:flex-end}
+.rc-badge{display:inline-block;padding:2px 8px;border-radius:12px;font-size:10px;font-weight:700}
+.rc-badge-A{background:#FFD700;color:#5D4E00}
+.rc-badge-B{background:#C0C0C0;color:#333}
+.rc-badge-C{background:#CD7F32;color:#fff}
+.rc-badge-U{background:#f0eef8;color:#888}
+.rc-badge-days-hot{background:#FCEBEB;color:#A32D2D;border-radius:10px;padding:2px 7px;font-size:10px;font-weight:600}
+.rc-badge-days-warm{background:#FFF3E0;color:#B85B00;border-radius:10px;padding:2px 7px;font-size:10px;font-weight:600}
+.rc-badge-days-cold{background:#EEF2FF;color:#534AB7;border-radius:10px;padding:2px 7px;font-size:10px;font-weight:600}
+.rc-inline-form{display:none;background:#f8f8ff;border:0.5px solid #d8d6e8;border-radius:8px;padding:12px;margin-top:10px}
+.rc-inline-form.show{display:block}
+.rc-inline-form select,.rc-inline-form textarea,.rc-inline-form input[type=date]{width:100%;border:0.5px solid #d8d6e8;border-radius:6px;padding:7px 10px;font-size:12px;font-family:inherit;color:#1a1a2e;outline:none;margin-bottom:8px;box-sizing:border-box}
+.rc-inline-row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.rc-remove-form{display:none;background:#FFF3E0;border:0.5px solid #FFE69C;border-radius:8px;padding:12px;margin-top:10px}
+.rc-remove-form.show{display:block}
+.rc-contacted-badge{display:inline-block;background:#E8F5E9;color:#2E7D32;border:0.5px solid #81C784;border-radius:12px;font-size:10px;font-weight:600;padding:2px 8px;margin-left:6px}
+.rc-removed-badge{display:inline-block;background:#f5f5f5;color:#999;border:0.5px solid #ddd;border-radius:12px;font-size:10px;font-weight:600;padding:2px 8px;margin-left:6px}
 .ac-wrap{position:relative}
 .ac-list{position:absolute;top:100%;left:0;right:0;background:#fff;border:0.5px solid #d8d6e8;border-radius:8px;box-shadow:0 4px 16px rgba(45,27,105,0.1);z-index:100;max-height:200px;overflow-y:auto;display:none}
 .ac-list.open{display:block}
@@ -220,6 +254,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   <div class="tab" onclick="switchTab('feed')">Activity Feed</div>
   <div class="tab" onclick="switchTab('network')">🌐 Network</div>
   <div class="tab" onclick="switchTab('health')">🏥 Health Check</div>
+  <div class="tab" onclick="switchTab('reconnect')">🔁 Reconnect</div>
   <div class="tab" onclick="switchTab('history')">Agent History</div>
   <div class="tab" onclick="switchTab('pipeline')">Outreach Pipeline</div>
   <div class="tab" onclick="switchTab('calendar')">📅 Calendar</div>
@@ -261,6 +296,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
     <div class="card-title" style="margin-bottom:12px">🚩 Flagged by LPs <span class="card-sub" id="flaggedSub"></span></div>
     <div id="weekFlagged"><div class="no-data" style="padding:16px">Loading...</div></div>
   </div>
+  <div class="card" id="weekCtcTrigger" style="display:none;padding:14px 16px"></div>
   <div class="card">
     <div class="card-title" style="margin-bottom:12px">🔍 Going quiet <span class="card-sub" id="quietSub"></span></div>
     <div id="weekQuiet"><div class="no-data" style="padding:16px">Loading...</div></div>
@@ -384,6 +420,13 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
           <option value="week">This week</option>
           <option value="month">This month</option>
         </select>
+        <select id="feedOutcomeFilter" onchange="applyFeedFilters()" style="flex:1;padding:8px 11px;border:0.5px solid #d8d6e8;border-radius:8px;font-size:12px;font-family:inherit;color:#555;background:#fff">
+          <option value="all">All outcomes</option>
+          <option value="Positive">Positive</option>
+          <option value="Meeting Scheduled">Meeting Scheduled</option>
+          <option value="Requires follow-up">Requires follow-up</option>
+          <option value="Remove / No Further Contact">Remove / No Further Contact</option>
+        </select>
         <button onclick="exportToCSV()" style="padding:8px 14px;background:#534AB7;color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:500;cursor:pointer;font-family:inherit;white-space:nowrap">⬇️ Export CSV</button>
       </div>
     </div>
@@ -413,6 +456,59 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
       <button class="btn-sm danger" onclick="confirmDelete()">Yes, delete</button>
       <button class="btn-sm" onclick="closeConfirm()">Cancel</button>
     </div>
+  </div>
+</div>
+
+<div id="view-reconnect" class="view">
+  <!-- Clean header - no upload zone visible to Amanda -->
+  <div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+      <div>
+        <div class="card-title" style="margin-bottom:2px">🔁 Reconnect List</div>
+        <div style="font-size:11px;color:#aaa" id="rcUploadMeta">Loading...</div>
+      </div>
+      <button onclick="loadReconnect()" style="padding:6px 12px;background:#f0eef8;color:#534AB7;border:0.5px solid #d8d6e8;border-radius:8px;font-size:12px;font-weight:500;cursor:pointer;font-family:inherit">↻ Refresh</button>
+    </div>
+    <div class="rc-summary" id="rcSummary" style="display:none">
+      <div class="rc-stat"><div class="rc-stat-num" id="rc-total">0</div><div class="rc-stat-label">Total agents</div></div>
+      <div class="rc-stat"><div class="rc-stat-num" id="rc-urgent" style="color:#A32D2D">0</div><div class="rc-stat-label">A/B tier priority</div></div>
+      <div class="rc-stat"><div class="rc-stat-num" id="rc-contacted" style="color:#2E7D32">0</div><div class="rc-stat-label">Contacted this cycle</div></div>
+      <div class="rc-stat"><div class="rc-stat-num" id="rc-removed" style="color:#999">0</div><div class="rc-stat-label">Removed / no engage</div></div>
+    </div>
+  </div>
+
+  <!-- Filters -->
+  <div class="card" id="rcFiltersCard" style="display:none">
+    <div class="rc-filters">
+      <select id="rcGradeFilter" onchange="renderReconnect()">
+        <option value="all">All grades</option>
+        <option value="A">🥇 A-tier only</option>
+        <option value="B">🥈 B-tier only</option>
+        <option value="C">🥉 C-tier only</option>
+        <option value="U">Ungraded</option>
+      </select>
+      <select id="rcUrgencyFilter" onchange="renderReconnect()">
+        <option value="all">All urgency</option>
+        <option value="hot">90-120 days (just fell off)</option>
+        <option value="warm">121-180 days (cooling)</option>
+        <option value="cold">180+ days (cold)</option>
+      </select>
+      <select id="rcStatusFilter" onchange="renderReconnect()">
+        <option value="active">Active only</option>
+        <option value="contacted">Contacted</option>
+        <option value="removed">Removed</option>
+        <option value="all">Show all</option>
+      </select>
+      <select id="rcSortBy" onchange="renderReconnect()">
+        <option value="grade">Sort: Grade then days</option>
+        <option value="days_desc">Sort: Days (longest first)</option>
+        <option value="days_asc">Sort: Days (newest first)</option>
+        <option value="closes">Sort: Closes past year</option>
+        <option value="name">Sort: Name A–Z</option>
+      </select>
+      <input type="text" id="rcSearch" placeholder="Search name..." oninput="renderReconnect()">
+    </div>
+    <div id="rcList"><div class="no-data">Upload a Power BI export to see your reconnect list.</div></div>
   </div>
 </div>
 
@@ -508,6 +604,11 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
     </div>
     <pre id="danielSummaryOut" style="display:none;background:#f8f8ff;border:0.5px solid #d8d6e8;border-radius:8px;padding:12px;font-size:11px;font-family:monospace;white-space:pre-wrap;margin-bottom:14px;color:#26215C"></pre>
     <div id="danielGoals"><div class="no-data">Loading...</div></div>
+  </div>
+
+  <div class="card" id="danielMomCard" style="display:none">
+    <div class="card-title" style="margin-bottom:12px">📈 Month-over-month</div>
+    <div id="danielMom"></div>
   </div>
 
   <div class="week-bottom">
@@ -645,6 +746,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
       <input type="text" id="contactsSearch" placeholder="Search by name, phone, email or birthday..." oninput="filterContacts()" style="flex:1;min-width:180px;padding:9px 11px;border:0.5px solid #d8d6e8;border-radius:8px;font-size:13px;font-family:inherit;color:#1a1a2e;outline:none">
       <select id="contactsFilter" onchange="filterContacts()" style="padding:8px 11px;border:0.5px solid #d8d6e8;border-radius:8px;font-size:12px;font-family:inherit;color:#555;background:#fff">
         <option value="all">All agents</option>
+        <option value="tier-A">🥇 A-tier</option>
+        <option value="tier-B">🥈 B-tier</option>
+        <option value="tier-C">🥉 C-tier</option>
+        <option value="notier">No tier set</option>
         <option value="bday">Has birthday</option>
         <option value="nobday">Missing birthday</option>
         <option value="nophone">Missing phone</option>
@@ -1090,14 +1195,14 @@ async function loadQuiet(){
       return b.days-a.days;
     });
 
-    document.getElementById("quietSub").textContent=quiet.length?quiet.length+" agent"+(quiet.length!==1?"s":""):"";
+    document.getElementById("quietSub").textContent=quiet.length?quiet.length+" agent"+(quiet.length!==1?"s":"")+" going quiet":"";
 
     if(!quiet.length){
       document.getElementById("weekQuiet").innerHTML='<div class="no-data" style="padding:16px">Everyone\'s been touched within 60 days 🎉</div>';
       return;
     }
 
-    document.getElementById("weekQuiet").innerHTML=quiet.slice(0,12).map(r=>{
+    document.getElementById("weekQuiet").innerHTML=quiet.map(r=>{
       const isUrgent=r.days===null||r.days>=90;
       const c=isUrgent?"#E24B4A":"#E8A33D";
       const label=r.days===null?"No activity logged":r.days+"d since last touch";
@@ -1110,7 +1215,7 @@ async function loadQuiet(){
 }
 
 function switchTab(name){
-  const names=["week","log","followups","feed","network","health","history","pipeline","calendar","daniel","contacts"];
+  const names=["week","log","followups","feed","network","health","reconnect","history","pipeline","calendar","daniel","contacts"];
   document.querySelectorAll(".tab").forEach((t,i)=>t.classList.toggle("active",names[i]===name));
   document.querySelectorAll(".view").forEach(v=>v.classList.remove("active"));
   document.getElementById("view-"+name).classList.add("active");
@@ -1119,6 +1224,7 @@ function switchTab(name){
   if(name==="contacts")loadContacts();
   if(name==="network")loadNetwork();
   if(name==="health")loadHealth();
+  if(name==="reconnect")loadReconnect();
 }
 
 let periodData={mtd:[],ytd:[]},currentPeriod="mtd";
@@ -1223,6 +1329,30 @@ async function loadWeek(){
       '<div class="feed-item"><div class="feed-top"><span class="feed-agent">'+r.agent_name+'</span><span class="feed-date">'+fmtDate(r.act_date)+'</span></div><span class="feed-badge '+( r.act_type===CTC_TYPE?"ctc":"rm")+'">'+badgeEmoji(r.act_type)+'</span></div>'
     ).join(""):'<div class="no-data" style="padding:16px">Nothing logged yet.</div>';
   }catch(e){console.error(e);}
+
+  // Fix 10: CTC trigger — agents with recent closes who haven't been thanked yet
+  try{
+    const cutoff=new Date();cutoff.setDate(cutoff.getDate()-14);
+    const cutoffStr=cutoff.toISOString().split("T")[0];
+    const[recentCloses,recentCtc]=await Promise.all([
+      sbFetch("call_logs?select=agent_name,call_date,outcome&outcome=ilike.*close*&call_date=gte."+cutoffStr+"&order=call_date.desc&limit=50").catch(()=>[]),
+      sbFetch("amanda_activities?select=agent_name,act_date&act_type=eq.Closed Deal Thank You&act_date=gte."+cutoffStr).catch(()=>[])
+    ]);
+    const thankedSet=new Set(recentCtc.map(a=>(a.agent_name||"").toLowerCase().trim()));
+    const needsCtc=[...new Map(recentCloses.map(c=>[( c.agent_name||"").toLowerCase().trim(),c])).values()]
+      .filter(c=>!thankedSet.has((c.agent_name||"").toLowerCase().trim()))
+      .slice(0,6);
+    const ctcEl=document.getElementById("weekCtcTrigger");
+    if(ctcEl){
+      if(needsCtc.length){
+        ctcEl.innerHTML='<div class="card-title" style="margin-bottom:10px">⚡ CTC Calls Needed <span class="card-sub">closed in last 14d, not yet thanked</span></div>'+
+          needsCtc.map(c=>'<div class="fu-item"><div class="fu-dot" style="background:#534AB7"></div><div class="fu-body"><div class="fu-name">'+c.agent_name+'</div><div class="fu-meta" style="color:#534AB7">Closed '+fmtDate(c.call_date)+'</div></div><button class="btn-sm" style="background:#534AB7;color:#fff;border:none;border-radius:6px;padding:4px 10px;font-size:11px;cursor:pointer;font-family:inherit" onclick="document.getElementById(\'agentInput\').value=\''+c.agent_name.replace(/'/g,"\\'")+'\';document.getElementById(\'activityType\').value=\'Closed Deal Thank You\';switchTab(\'log\')">Log CTC</button></div>').join("");
+        ctcEl.style.display="block";
+      }else{
+        ctcEl.style.display="none";
+      }
+    }
+  }catch(e){console.warn("CTC trigger:",e);}
 }
 
 let agentNames=[],prospectNames=[];
@@ -1561,59 +1691,471 @@ async function checkDedupOnInput(){
 async function exportToCSV(){
   try{
     const acts=await sbFetch("amanda_activities?select=*&order=act_date.desc&limit=5000");
-    const headers=["Agent Name","Activity Type","Date","Outcome","Follow-up Date","Notes"];
+    const headers=["Agent Name","Activity Type","Date","Outcome","Follow-up Date","Notes","Edited At"];
+    const sanitize=v=>{
+      if(v===null||v===undefined)return"";
+      return String(v)
+        .replace(/✅ Day-of checklist complete:[^\n]*/g,"[Intake complete]") // strip long intake tags
+        .replace(/⏳ INTAKE PENDING [^\n]*/g,"[Intake pending]")           // strip pending JSON tags
+        .replace(/"/g,"'")    // double quotes → single
+        .replace(/\r?\n/g," ") // newlines → space
+        .replace(/,/g,";")     // commas → semicolons inside values
+        .trim();
+    };
     const rows=acts.map(a=>[
-      a.agent_name||"",a.act_type||"",a.act_date||"",a.outcome||"",a.follow_up_date||"",
-      (a.notes||"").replace(/"/g,"'").replace(/\n/g," ")
+      sanitize(a.agent_name),sanitize(a.act_type),sanitize(a.act_date),
+      sanitize(a.outcome),sanitize(a.follow_up_date),sanitize(a.notes),
+      sanitize(a.edited_at?a.edited_at.split("T")[0]:"")
     ]);
-    const csv=[headers,...rows].map(r=>r.map(v=>'"'+v+'"').join(",")).join("\n");
-    const blob=new Blob([csv],{type:"text/csv"});
+    // BOM prefix so Excel opens UTF-8 correctly
+    const csv="\uFEFF"+[headers,...rows].map(r=>r.map(v=>'"'+v+'"').join(",")).join("\r\n");
+    const blob=new Blob([csv],{type:"text/csv;charset=utf-8;"});
     const url=URL.createObjectURL(blob);
     const a=document.createElement("a");
     a.href=url;a.download="amanda-activities-"+today()+".csv";a.click();
     URL.revokeObjectURL(url);
-    toast("Exported "+acts.length+" activities to CSV ✓","success");
+    toast("Exported "+acts.length+" activities ✓","success");
   }catch(e){toast("Export failed: "+e.message,"error");}
 }
 
 // ── FEATURE 6: Weekly summary for Daniel ─────────────────────────────────────
 async function generateWeeklySummary(){
   try{
-    const[weekActs,fuActs]=await Promise.all([
+    const now=new Date();
+    const monthStart=now.getFullYear()+"-"+String(now.getMonth()+1).padStart(2,"0")+"-01";
+    const[weekActs,mtdActs,fuActs,rcContacted,aTierAgents]=await Promise.all([
       sbFetch("amanda_activities?select=*&act_date=gte."+week.start+"&act_date=lte."+week.end),
-      sbFetch("amanda_activities?select=agent_name,follow_up_date&follow_up_date=not.is.null&follow_up_date=gte."+today()+"&order=follow_up_date.asc&limit=10")
+      sbFetch("amanda_activities?select=act_type,agent_name&act_date=gte."+monthStart),
+      sbFetch("amanda_activities?select=agent_name,follow_up_date&follow_up_date=not.is.null&follow_up_date=gte."+today()+"&order=follow_up_date.asc&limit=5"),
+      sbFetch(RC_TABLE+"?select=agent_name&status=eq.contacted&limit=100").catch(()=>[]),
+      sbFetch("agent_profiles?select=agent_name,tier&tier=eq.A&limit=200").catch(()=>[])
     ]);
     const counts={};
     weekActs.forEach(a=>{counts[a.act_type]=(counts[a.act_type]||0)+1;});
+    const mtdCounts={};
+    mtdActs.forEach(a=>{mtdCounts[a.act_type]=(mtdCounts[a.act_type]||0)+1;});
     const newMeetings=weekActs.filter(a=>a.act_type==="New Realtor Meeting");
-    const ctc=weekActs.filter(a=>a.act_type==="CTC Call");
+    const mtdMeetings=mtdCounts["New Realtor Meeting"]||0;
+    const mtdPct=Math.round((mtdMeetings/20)*100);
+    const referralsSent=counts["Sent Referral"]||0;
+    const aTierNames=new Set(aTierAgents.map(a=>(a.agent_name||"").toLowerCase()));
+    const aTierTouched=[...new Set(mtdActs.map(a=>(a.agent_name||"").toLowerCase()))].filter(n=>aTierNames.has(n)).length;
     const lines=[
       "📊 Weekly Activity Summary — "+week.label,
-      "──────────────────────────────",
-      "Total activities: "+weekActs.length,
-      "New realtor meetings: "+newMeetings.length+(newMeetings.length?"  ("+newMeetings.map(a=>a.agent_name).join(", ")+")":""),
-      "CTC calls: "+ctc.length,
-      "Cold calls: "+(counts["Cold Calls"]||0),
-      "Break breads: "+(counts["Break Breads"]||0),
-      "Realtor buddy asks: "+(counts["Realtor Buddy Referral Ask"]||0),
+      "══════════════════════════════════",
       "",
-      "📅 Upcoming follow-ups:",
-      ...fuActs.slice(0,5).map(f=>"  • "+f.agent_name+" — "+f.follow_up_date),
+      "🌸 NEW REALTOR MEETINGS",
+      "   This week: "+newMeetings.length+" / 5 goal"+(newMeetings.length?" ("+newMeetings.map(a=>a.agent_name).join(", ")+")":""),
+      "   Month to date: "+mtdMeetings+" / 20 goal ("+mtdPct+"%)",
       "",
-      "Generated by Amanda Tracker "+new Date().toLocaleString()
+      "📞 ACTIVITY THIS WEEK",
+      "   Cold calls: "+(counts["Cold Calls"]||0)+" / 25 goal",
+      "   Break breads: "+(counts["Break Breads"]||0),
+      "   CTC calls: "+(counts[CTC_TYPE]||0),
+      "   Realtor buddy asks: "+(counts["Realtor Buddy Referral Ask"]||0),
+      "   Total logged: "+weekActs.length,
+      ...(referralsSent?["   Referrals sent to agents: "+referralsSent+" 🌟"]:[]),
+      "",
+      ...(aTierNames.size?["🥇 A-TIER COVERAGE (MTD)","   "+aTierTouched+" of "+aTierNames.size+" A-tier agents touched this month",""]:[]),
+      ...(rcContacted.length?["🔁 RECONNECT","   "+rcContacted.length+" agent"+(rcContacted.length!==1?"s":"")+" re-engaged this cycle",""]:[]),
+      "📅 UPCOMING FOLLOW-UPS",
+      ...fuActs.map(f=>"   • "+f.agent_name+" — "+f.follow_up_date),
+      ...(fuActs.length===0?["   None scheduled"]:[]),
+      "",
+      "Generated "+new Date().toLocaleDateString("en-US",{weekday:"short",month:"short",day:"numeric",year:"numeric"})
     ];
     const summary=lines.join("\n");
+    const el=document.getElementById("danielSummaryOut");
     navigator.clipboard.writeText(summary).then(()=>{
-      toast("Weekly summary copied to clipboard — paste into email ✓","success");
+      if(el)el.style.display="none";
+      toast("Weekly summary copied — paste into email ✓","success");
     }).catch(()=>{
-      const el=document.getElementById("danielSummaryOut");
       if(el){el.style.display="block";el.textContent=summary;}
-      toast("Summary ready — see below","success");
+      toast("Summary ready below — select all and copy","success");
     });
   }catch(e){toast("Summary failed: "+e.message,"error");}
 }
 
 
+
+// ── 🔁 RECONNECT TAB ─────────────────────────────────────────────────────────
+let rcData=[];
+let rcLpLastTouch={}; // agent_name.toLowerCase() → {lp, date, days}
+const RC_TABLE="reconnect_agents";
+
+async function loadReconnect(){
+  const meta=document.getElementById("rcUploadMeta");
+  meta.textContent="Loading...";
+  try{
+    // Load reconnect list + LP last touch in parallel
+    const[rows,lpCalls]=await Promise.all([
+      sbFetch(RC_TABLE+"?select=*&order=grade.asc.nullslast,days_since.desc&limit=500"),
+      sbFetch("call_logs?select=agent_name,call_date,lp&order=call_date.desc&limit=2000").catch(()=>[])
+    ]);
+
+    // Build LP last touch map (case-insensitive)
+    rcLpLastTouch={};
+    lpCalls.forEach(c=>{
+      const key=(c.agent_name||"").trim().toLowerCase();
+      if(!rcLpLastTouch[key]){
+        const days=c.call_date?Math.round((new Date()-new Date(c.call_date+"T12:00:00"))/86400000):null;
+        rcLpLastTouch[key]={lp:c.lp,date:c.call_date,days};
+      }
+    });
+
+    rcData=rows;
+
+    if(!rows.length){
+      meta.textContent="No agents loaded yet — list will appear after Power BI sync";
+      document.getElementById("rcSummary").style.display="none";
+      document.getElementById("rcFiltersCard").style.display="none";
+      document.getElementById("rcList").innerHTML='<div class="no-data" style="padding:24px;text-align:center"><div style="font-size:32px;margin-bottom:8px">🔁</div><div style="font-weight:500;color:#534AB7;margin-bottom:4px">Reconnect list is empty</div><div style="font-size:12px;color:#aaa">Agents who have gone quiet will appear here once the list is synced.</div></div>';
+      return;
+    }
+
+    const uploadDate=rows.find(r=>r.uploaded_at)?.uploaded_at;
+    meta.textContent=uploadDate?"Last synced: "+new Date(uploadDate).toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"})+" · "+rows.length+" agents":""+rows.length+" agents";
+    updateRcSummary();
+    renderReconnect();
+    document.getElementById("rcSummary").style.display="grid";
+    document.getElementById("rcFiltersCard").style.display="block";
+  }catch(e){
+    console.error("loadReconnect:",e);
+    meta.textContent="Error loading — try refreshing";
+  }
+}
+
+function updateRcSummary(){
+  const active=rcData.filter(r=>r.status==="active"||!r.status);
+  const contacted=rcData.filter(r=>r.status==="contacted");
+  const removed=rcData.filter(r=>r.status==="removed");
+  const abTier=active.filter(r=>r.grade==="A"||r.grade==="B");
+  document.getElementById("rc-total").textContent=active.length;
+  document.getElementById("rc-urgent").textContent=abTier.length;
+  document.getElementById("rc-contacted").textContent=contacted.length;
+  document.getElementById("rc-removed").textContent=removed.length;
+  document.getElementById("rcSummary").style.display="grid";
+  document.getElementById("rcFiltersCard").style.display="block";
+}
+
+function renderReconnect(){
+  const grade=document.getElementById("rcGradeFilter").value;
+  const urgency=document.getElementById("rcUrgencyFilter").value;
+  const status=document.getElementById("rcStatusFilter").value;
+  const sort=document.getElementById("rcSortBy").value;
+  const q=(document.getElementById("rcSearch").value||"").toLowerCase();
+
+  let list=[...rcData];
+
+  // Status filter
+  if(status==="active") list=list.filter(r=>!r.status||r.status==="active");
+  else if(status==="contacted") list=list.filter(r=>r.status==="contacted");
+  else if(status==="removed") list=list.filter(r=>r.status==="removed");
+
+  // Grade filter
+  if(grade!=="all"){
+    if(grade==="U") list=list.filter(r=>!r.grade);
+    else list=list.filter(r=>r.grade===grade);
+  }
+
+  // Urgency filter
+  if(urgency==="hot") list=list.filter(r=>r.days_since&&r.days_since<=120);
+  else if(urgency==="warm") list=list.filter(r=>r.days_since&&r.days_since>120&&r.days_since<=180);
+  else if(urgency==="cold") list=list.filter(r=>r.days_since&&r.days_since>180);
+
+  // Search
+  if(q) list=list.filter(r=>(r.agent_name||"").toLowerCase().includes(q)||(r.email||"").toLowerCase().includes(q));
+
+  // Sort
+  const gradeOrder={A:0,B:1,C:2,null:3,undefined:3};
+  if(sort==="grade") list.sort((a,b)=>{
+    const gd=(gradeOrder[a.grade]??3)-(gradeOrder[b.grade]??3);
+    return gd!==0?gd:(b.days_since||0)-(a.days_since||0);
+  });
+  else if(sort==="days_desc") list.sort((a,b)=>(b.days_since||0)-(a.days_since||0));
+  else if(sort==="days_asc") list.sort((a,b)=>(a.days_since||0)-(b.days_since||0));
+  else if(sort==="closes") list.sort((a,b)=>(b.closes_past_year||0)-(a.closes_past_year||0));
+  else if(sort==="name") list.sort((a,b)=>(a.agent_name||"").localeCompare(b.agent_name||""));
+
+  if(!list.length){
+    document.getElementById("rcList").innerHTML='<div class="no-data">No agents match these filters.</div>';
+    return;
+  }
+
+  // Group by status=active vs contacted vs removed for visual separation
+  const active=list.filter(r=>!r.status||r.status==="active");
+  const contacted=list.filter(r=>r.status==="contacted");
+  const removed=list.filter(r=>r.status==="removed");
+
+  let html="";
+  if(active.length){
+    html+=renderRcGroup(active,"active");
+  }
+  if(contacted.length&&(status==="all"||status==="contacted")){
+    html+='<div class="rc-section-header" style="color:#2E7D32;border-color:#81C784;margin-top:16px">✅ Contacted this cycle ('+contacted.length+')</div>';
+    html+=renderRcGroup(contacted,"contacted");
+  }
+  if(removed.length&&(status==="all"||status==="removed")){
+    html+='<div class="rc-section-header" style="color:#999;border-color:#ddd;margin-top:16px">🗑 Removed / no engage ('+removed.length+')</div>';
+    html+=renderRcGroup(removed,"removed");
+  }
+  document.getElementById("rcList").innerHTML=html;
+}
+
+function urgencyClass(days){
+  if(!days) return "rc-badge-days-cold";
+  if(days<=120) return "rc-badge-days-hot";
+  if(days<=180) return "rc-badge-days-warm";
+  return "rc-badge-days-cold";
+}
+function urgencyLabel(days){
+  if(!days) return "No date";
+  if(days<=120) return days+"d 🔴";
+  if(days<=180) return days+"d 🟠";
+  return days+"d";
+}
+
+function renderRcGroup(list,groupStatus){
+  return list.map(r=>{
+    const rid=r.id;
+    const gradeBadge=r.grade?'<span class="rc-badge rc-badge-'+r.grade+'">'+r.grade+'</span>':'<span class="rc-badge rc-badge-U">?</span>';
+    const daysBadge='<span class="'+urgencyClass(r.days_since)+'">'+urgencyLabel(r.days_since)+'</span>';
+    const contactedBadge=r.status==="contacted"?'<span class="rc-contacted-badge">✓ Contacted</span>':"";
+    const removedBadge=r.status==="removed"?'<span class="rc-removed-badge">Removed</span>':"";
+    const lastInteraction=r.last_interaction_type?(r.last_interaction_type+(r.last_interaction_date?" — "+r.last_interaction_date:"")):"No prior interaction";
+    const closesInfo=r.closes_past_year?r.closes_past_year+" close"+(r.closes_past_year!==1?"s":"")+(r.volume_past_year?" / $"+Number(r.volume_past_year).toLocaleString():""):"";
+    const contactInfo=[r.phone?"📱 "+r.phone:null,r.email?"✉️ "+r.email:null].filter(Boolean).join(" · ");
+
+    // Fix 2: LP last touch cross-reference
+    const lpKey=(r.agent_name||"").trim().toLowerCase();
+    const lpTouch=rcLpLastTouch[lpKey];
+    const lpTouchStr=lpTouch
+      ?'<span style="color:'+(lpTouch.days<=7?"#2E7D32":lpTouch.days<=30?"#534AB7":"#aaa")+'">LP ('+lpTouch.lp+'): '+lpTouch.days+'d ago</span>'
+      :'<span style="color:#ddd">LP: no calls logged</span>';
+
+    let actions="";
+    if(groupStatus!=="removed"){
+      actions+='<button class="btn-sm" style="background:#534AB7;color:#fff;border:none;border-radius:6px;padding:5px 10px;font-size:11px;cursor:pointer;font-family:inherit" onclick="rcToggleLog('+rid+')">Log outreach</button>';
+      if(groupStatus!=="contacted"){
+        actions+='<button class="btn-sm" style="background:#2E7D32;color:#fff;border:none;border-radius:6px;padding:5px 10px;font-size:11px;cursor:pointer;font-family:inherit" onclick="rcMarkContacted('+rid+')" >Mark contacted</button>';
+      }else{
+        actions+='<button class="btn-sm" onclick="rcMarkActive('+rid+')" style="font-size:11px;padding:4px 8px">Undo</button>';
+      }
+      actions+='<button class="btn-sm" onclick="rcToggleRemove('+rid+')" style="font-size:11px;padding:4px 8px;color:#A32D2D">Remove</button>';
+    }else{
+      actions+='<button class="btn-sm" onclick="rcMarkActive('+rid+')" style="font-size:11px;padding:4px 8px">Restore</button>';
+    }
+
+    return'<div class="rc-agent" id="rca-'+rid+'">'+
+      '<div class="rc-agent-top">'+
+        '<div>'+
+          '<div class="rc-agent-name">'+r.agent_name+' '+gradeBadge+' '+daysBadge+contactedBadge+removedBadge+'</div>'+
+          '<div class="rc-agent-meta">'+
+            '<span>Last lead: '+lastInteraction+'</span>'+
+            (closesInfo?'<span>'+closesInfo+'</span>':'')+
+            '<span>'+lpTouchStr+'</span>'+
+            (contactInfo?'<span>'+contactInfo+'</span>':'')+
+            (r.notes?'<span>📝 '+r.notes+'</span>':'')+
+          '</div>'+
+        '</div>'+
+        '<div class="rc-agent-actions">'+actions+'</div>'+
+      '</div>'+
+      // Inline log form
+      '<div id="rc-log-'+rid+'" class="rc-inline-form">'+
+        '<div style="font-size:11px;font-weight:600;color:#534AB7;margin-bottom:8px">Log outreach — '+r.agent_name+'</div>'+
+        '<select id="rc-log-type-'+rid+'">'+ACT_TYPE_OPTIONS+'</select>'+
+        '<div class="rc-inline-row">'+
+          '<select id="rc-log-outcome-'+rid+'"><option value="">Outcome...</option><option>Positive</option><option>Meeting Scheduled</option><option>Requires follow-up</option><option>Remove / No Further Contact</option></select>'+
+          '<input type="date" id="rc-log-fu-'+rid+'" placeholder="Follow-up date (if needed)">'+
+        '</div>'+
+        '<textarea id="rc-log-notes-'+rid+'" placeholder="Notes..." rows="2"></textarea>'+
+        '<div style="display:flex;gap:8px">'+
+          '<button class="btn-sm" style="background:#534AB7;color:#fff;border:none;border-radius:6px;padding:6px 12px;cursor:pointer;font-family:inherit;font-size:12px" onclick="rcSaveLog('+rid+',\''+r.agent_name.replace(/'/g,"\\'")+'\')">Save & mark contacted</button>'+
+          '<button class="btn-sm" onclick="rcToggleLog('+rid+')" style="font-size:11px">Cancel</button>'+
+        '</div>'+
+      '</div>'+
+      // Remove form
+      '<div id="rc-remove-'+rid+'" class="rc-remove-form">'+
+        '<div style="font-size:11px;font-weight:600;color:#B85B00;margin-bottom:8px">Remove '+r.agent_name+' from reconnect list</div>'+
+        '<input type="text" id="rc-remove-reason-'+rid+'" placeholder="Reason (optional — e.g. moved, retired, DNC...)" style="width:100%;border:0.5px solid #FFE69C;border-radius:6px;padding:7px 10px;font-size:12px;font-family:inherit;outline:none;box-sizing:border-box;margin-bottom:8px">'+
+        '<div style="display:flex;gap:8px">'+
+          '<button class="btn-sm" style="background:#A32D2D;color:#fff;border:none;border-radius:6px;padding:6px 12px;cursor:pointer;font-family:inherit;font-size:12px" onclick="rcConfirmRemove('+rid+')">Confirm remove</button>'+
+          '<button class="btn-sm" onclick="rcToggleRemove('+rid+')" style="font-size:11px">Cancel</button>'+
+        '</div>'+
+      '</div>'+
+    '</div>';
+  }).join("");
+}
+
+function rcToggleLog(id){
+  document.getElementById("rc-log-"+id).classList.toggle("show");
+  document.getElementById("rc-remove-"+id).classList.remove("show");
+}
+function rcToggleRemove(id){
+  document.getElementById("rc-remove-"+id).classList.toggle("show");
+  document.getElementById("rc-log-"+id).classList.remove("show");
+}
+
+async function rcSaveLog(id,agentName){
+  if(openIntake){toast("Finish your open checklist for "+openIntake.agent_name+" first.","error");return;}
+  const actType=document.getElementById("rc-log-type-"+id).value;
+  const outcome=document.getElementById("rc-log-outcome-"+id).value;
+  const fu=document.getElementById("rc-log-fu-"+id).value||null;
+  const notes=document.getElementById("rc-log-notes-"+id).value.trim()||null;
+  if(!outcome){toast("Select an outcome first.","error");return;}
+  if(outcome==="Requires follow-up"&&!fu){toast("Set a follow-up date.","error");return;}
+  if(actType==="CTC Call"&&(!notes||notes.length<15)){toast("CTC calls need notes (min 15 chars).","error");return;}
+  try{
+    await Promise.all([
+      sbFetch("amanda_activities",{method:"POST",body:JSON.stringify({agent_name:agentName,act_type:actType,act_date:today(),outcome,follow_up_date:fu,notes})}),
+      sbFetch(RC_TABLE+"?id=eq."+id,{method:"PATCH",prefer:"return=minimal",body:JSON.stringify({status:"contacted",contacted_at:new Date().toISOString()})})
+    ]);
+    toast(agentName+" logged + marked contacted ✓","success");
+    const row=rcData.find(r=>r.id===id);
+    if(row){row.status="contacted";row.contacted_at=new Date().toISOString();}
+    updateRcSummary();
+    renderReconnect();
+    loadWeek();loadFeed();loadHealth();
+  }catch(e){toast("Save failed: "+e.message,"error");}
+}
+
+async function rcMarkContacted(id){
+  try{
+    await sbFetch(RC_TABLE+"?id=eq."+id,{method:"PATCH",prefer:"return=minimal",body:JSON.stringify({status:"contacted",contacted_at:new Date().toISOString()})});
+    const row=rcData.find(r=>r.id===id);
+    if(row){row.status="contacted";row.contacted_at=new Date().toISOString();}
+    toast("Marked as contacted ✓","success");
+    updateRcSummary();renderReconnect();
+  }catch(e){toast("Failed: "+e.message,"error");}
+}
+
+async function rcMarkActive(id){
+  try{
+    await sbFetch(RC_TABLE+"?id=eq."+id,{method:"PATCH",prefer:"return=minimal",body:JSON.stringify({status:"active",contacted_at:null,removed_reason:null})});
+    const row=rcData.find(r=>r.id===id);
+    if(row){row.status="active";row.contacted_at=null;row.removed_reason=null;}
+    toast("Restored to active ✓","success");
+    updateRcSummary();renderReconnect();
+  }catch(e){toast("Failed: "+e.message,"error");}
+}
+
+async function rcConfirmRemove(id){
+  const reason=document.getElementById("rc-remove-reason-"+id).value.trim()||null;
+  try{
+    await sbFetch(RC_TABLE+"?id=eq."+id,{method:"PATCH",prefer:"return=minimal",body:JSON.stringify({status:"removed",removed_reason:reason,removed_at:new Date().toISOString()})});
+    const row=rcData.find(r=>r.id===id);
+    if(row){row.status="removed";row.removed_reason=reason;}
+    toast("Removed from reconnect list ✓","success");
+    updateRcSummary();renderReconnect();
+  }catch(e){toast("Failed: "+e.message,"error");}
+}
+
+// ── Power BI XLSX Upload ───────────────────────────────────────────────────────
+function rcHandleDrop(e){
+  e.preventDefault();
+  const f=e.dataTransfer.files[0];
+  if(f)rcHandleFile(f);
+}
+
+async function rcHandleFile(file){
+  if(!file||!file.name.endsWith(".xlsx")){toast("Please upload a .xlsx file.","error");return;}
+  toast("Parsing Power BI export...","success");
+  try{
+    const buf=await file.arrayBuffer();
+    const agents=await rcParseXLSX(buf);
+    if(!agents.length){toast("No agents found in file.","error");return;}
+    toast("Saving "+agents.length+" agents to Supabase...","success");
+    await rcUploadToSupabase(agents);
+    toast("✅ Reconnect list updated — "+agents.length+" agents loaded.","success");
+    loadReconnect();
+  }catch(e){
+    console.error("Upload error:",e);
+    toast("Upload failed: "+e.message,"error");
+  }
+}
+
+async function rcParseXLSX(arrayBuffer){
+  // Use SheetJS if available, otherwise fallback to basic CSV-style parse
+  try{
+    const XLSX=window.XLSX||await import("https://cdn.sheetjs.com/xlsx-0.20.1/package/xlsx.mjs");
+    const wb=XLSX.read(arrayBuffer,{type:"array"});
+    const ws=wb.Sheets[wb.SheetNames[0]];
+    const raw=XLSX.utils.sheet_to_json(ws,{defval:null});
+    const uploadedAt=new Date().toISOString();
+    return raw.filter(r=>r["Agent"]&&typeof r["Agent"]==="string"&&r["Agent"].trim()&&!r["Agent"].includes("filter"))
+      .map(r=>{
+        const latestStr=r["Latest Interaction"]||"";
+        const daysMatch=latestStr.match(/\((\d+) Days Ago\)/);
+        const dateMatch=latestStr.match(/(\d+\/\d+\/\d+)/);
+        const typeMatch=latestStr.match(/ - ([A-Za-z ]+) \(/);
+        return{
+          agent_name:(r["Agent"]||"").trim(),
+          lo:(r["LO"]||"").trim(),
+          grade:r["Grade"]?String(r["Grade"]).trim():null,
+          latest_interaction:latestStr||null,
+          last_interaction_type:typeMatch?typeMatch[1].trim():null,
+          last_interaction_date:dateMatch?dateMatch[1]:null,
+          days_since:daysMatch?parseInt(daysMatch[1]):null,
+          closes_past_year:r["Closed Past Year"]?parseInt(r["Closed Past Year"])||0:0,
+          volume_past_year:r["Closed Past Year Vol"]?parseInt(r["Closed Past Year Vol"])||0:0,
+          email:r["Email"]?String(r["Email"]).trim().toLowerCase():null,
+          phone:r["Phone Number"]?String(r["Phone Number"]).trim():null,
+          address:r["Address"]?String(r["Address"]).trim():null,
+          birthday:r["Birthday"]?String(r["Birthday"]).trim():null,
+          notes:r["Notes"]?String(r["Notes"]).trim():null,
+          status:"active",
+          uploaded_at:uploadedAt
+        };
+      });
+  }catch(e){throw new Error("Could not parse XLSX: "+e.message);}
+}
+
+async function rcUploadToSupabase(agents){
+  // 1. Load existing statuses to preserve contacted/removed across uploads
+  const existing=await sbFetch(RC_TABLE+"?select=agent_name,status,contacted_at,removed_reason,removed_at&limit=1000").catch(()=>[]);
+  const preserveMap={};
+  existing.forEach(r=>{
+    const key=(r.agent_name||"").toLowerCase().trim();
+    if(r.status==="contacted"||r.status==="removed"){
+      preserveMap[key]={status:r.status,contacted_at:r.contacted_at||null,removed_reason:r.removed_reason||null,removed_at:r.removed_at||null};
+    }
+  });
+
+  // 2. Apply preserved statuses to new upload
+  const uploadedAt=new Date().toISOString();
+  agents.forEach(a=>{
+    const key=(a.agent_name||"").toLowerCase().trim();
+    if(preserveMap[key]){
+      Object.assign(a,preserveMap[key]);
+    }else{
+      a.status="active";
+    }
+    a.uploaded_at=uploadedAt;
+  });
+
+  // 3. Delete existing records safely - only after we have new data ready
+  try{
+    await sbFetch(RC_TABLE+"?uploaded_at=not.is.null",{method:"DELETE",prefer:"return=minimal"});
+  }catch(e){
+    // Table may be empty - that's fine
+    console.warn("Delete step (non-critical):",e.message);
+  }
+
+  // 4. Insert in batches of 50 with error handling per batch
+  const batchSize=50;
+  let inserted=0;
+  for(let i=0;i<agents.length;i+=batchSize){
+    const batch=agents.slice(i,i+batchSize);
+    try{
+      await sbFetch(RC_TABLE,{method:"POST",prefer:"return=minimal",body:JSON.stringify(batch)});
+      inserted+=batch.length;
+    }catch(e){
+      console.error("Batch insert failed at index "+i+":",e.message);
+      throw new Error("Upload partially failed at agent "+i+" — "+e.message);
+    }
+  }
+  return inserted;
+}
 
 let allFeedData=[];
 async function loadFeed(){
@@ -1698,6 +2240,7 @@ async function loadHealth(){
     const prospectsMissingContact=prospects.filter(p=>(!p.phone||!p.phone.trim())&&(!p.email||!p.email.trim())&&p.status==="Requires follow-up");
     const requiresFuNoDate=rmActs.filter(a=>a.outcome==="Requires follow-up"&&!a.follow_up_date);
     const criticalNoNotes=rmActs.filter(a=>(a.act_type==="CTC Call"||a.act_type==="Birthday Outreach"||a.act_type==="Closed Deal Thank You")&&(!a.notes||a.notes.length<10));
+    const untiered=agents.filter(a=>!a.tier);
     
     const totalActivities=rmActs.length||1;
     const healthyActivities=rmActs.filter(a=>a.outcome&&a.notes&&a.notes.length>5).length;
@@ -1709,7 +2252,7 @@ async function loadHealth(){
     document.getElementById("hc-good").textContent=healthScore+"%";
     
     let html="";
-    const issueCount=(openIntake?1:0)+noOutcome.length+overdueFus.length+missingContact.length+prospectsMissingContact.length+requiresFuNoDate.length+criticalNoNotes.length;
+    const issueCount=(openIntake?1:0)+noOutcome.length+overdueFus.length+missingContact.length+prospectsMissingContact.length+requiresFuNoDate.length+criticalNoNotes.length+(untiered.length>0?1:0);
     
     if(issueCount===0){
       html='<div style="text-align:center;padding:28px;color:#2E7D32"><div style="font-size:40px;margin-bottom:8px">✓</div><div style="font-size:14px;font-weight:500">All systems healthy!</div></div>';
@@ -1733,6 +2276,9 @@ async function loadHealth(){
       }
       if(criticalNoNotes.length){
         html+='<div style="background:#FFF3E0;border:0.5px solid #FFE69C;border-radius:8px;padding:12px;margin-bottom:10px"><div style="font-weight:500;color:#B85B00;margin-bottom:6px">📝 '+criticalNoNotes.length+' CTC/Birthday/Thank You without notes</div><div style="font-size:11px;color:#888">Critical activities need detailed notes for context</div></div>';
+      }
+      if(untiered.length){
+        html+='<div style="background:#EEF2FF;border:0.5px solid #C7D2FE;border-radius:8px;padding:12px;margin-bottom:10px;cursor:pointer" onclick="switchTab(\'contacts\')"><div style="font-weight:500;color:#3730A3;margin-bottom:6px">🏷️ '+untiered.length+' agents have no tier set (A/B/C)</div><div style="font-size:11px;color:#888">Tier your agents in Contacts so Daniel\'s View shows A-tier coverage → tap to go there</div></div>';
       }
     }
     
@@ -1771,12 +2317,14 @@ function applyFeedFilters(){
   const q=(document.getElementById("feedSearch")?.value||"").toLowerCase();
   const type=document.getElementById("feedTypeFilter")?.value||"all";
   const period=document.getElementById("feedPeriodFilter")?.value||"all";
+  const outcome=document.getElementById("feedOutcomeFilter")?.value||"all";
   const weekStart=week.start,monthStart=today().substring(0,7)+"-01";
   let data=allFeedData;
   if(q)data=data.filter(a=>(a.agent_name||"").toLowerCase().includes(q)||(a.notes||"").toLowerCase().includes(q));
   if(type!=="all")data=data.filter(a=>a.act_type===type);
   if(period==="week")data=data.filter(a=>a.act_date>=weekStart);
   if(period==="month")data=data.filter(a=>a.act_date>=monthStart);
+  if(outcome!=="all")data=data.filter(a=>a.outcome===outcome);
   renderFeed(data);
 }
 
@@ -1910,23 +2458,79 @@ async function loadDaniel(){
     const now=new Date();
     const monthStart=now.getFullYear()+"-"+String(now.getMonth()+1).padStart(2,"0")+"-01";
     const yearStart=now.getFullYear()+"-01-01";
-    const[weekActs,mtdActs,ytdActs]=await Promise.all([
+    const[weekActs,mtdActs,ytdActs,aTierAgents,mtdReferrals]=await Promise.all([
       sbFetch("amanda_activities?select=*&act_date=gte."+week.start+"&act_date=lte."+week.end+"&order=act_date.desc"),
       sbFetch("amanda_activities?select=*&act_date=gte."+monthStart+"&order=act_date.desc"),
-      sbFetch("amanda_activities?select=*&act_date=gte."+yearStart+"&order=act_date.desc")
+      sbFetch("amanda_activities?select=*&act_date=gte."+yearStart+"&order=act_date.desc"),
+      sbFetch("agent_profiles?select=agent_name,tier&tier=eq.A&limit=200").catch(()=>[]),
+      sbFetch("amanda_activities?select=agent_name,act_date&act_type=eq.Sent Referral&act_date=gte."+monthStart).catch(()=>[])
     ]);
     danielPeriodData={week:weekActs,mtd:mtdActs,ytd:ytdActs};
 
     const meetings=weekActs.filter(a=>a.act_type==="New Realtor Meeting").length;
+    const mtdMeetings=mtdActs.filter(a=>a.act_type==="New Realtor Meeting").length;
+    const mtdMeetingGoal=20;
+    const mtdPct=Math.min(100,Math.round((mtdMeetings/mtdMeetingGoal)*100));
     const calls=weekActs.filter(a=>a.act_type==="Cold Calls").length;
     const ctc=weekActs.filter(a=>a.act_type===CTC_TYPE).length;
-    document.getElementById("danielStats").innerHTML=[
-      {n:weekActs.length,l:"This week"},{n:meetings,l:"🌸 New meetings"},
-      {n:calls,l:"🏹 Cold calls"},{n:ctc,l:"⚡ CTC calls"}
-    ].map(s=>'<div class="stat-card"><div class="stat-num">'+s.n+'</div><div class="stat-label">'+s.l+'</div></div>').join("");
+
+    const aTierNames=new Set(aTierAgents.map(a=>(a.agent_name||"").trim().toLowerCase()));
+    const aTierTouched=aTierNames.size?[...new Set(mtdActs.map(a=>(a.agent_name||"").trim().toLowerCase()))].filter(n=>aTierNames.has(n)).length:null;
+
+    const barColor=mtdPct>=100?"#2E7D32":mtdPct>=60?"#534AB7":"#E24B4A";
+    const progressBar='<div style="margin-top:8px"><div style="display:flex;justify-content:space-between;font-size:10px;color:#888;margin-bottom:3px"><span>MTD meetings</span><span style="font-weight:600;color:'+barColor+'">'+mtdMeetings+' / '+mtdMeetingGoal+'</span></div><div style="background:#f0eef8;border-radius:20px;height:6px"><div style="background:'+barColor+';height:6px;border-radius:20px;width:'+mtdPct+'%;transition:width .5s"></div></div></div>';
+
+    // Referral stat card
+    const referralCard=mtdReferrals.length
+      ?'<div class="stat-card"><div class="stat-num" style="color:#1565C0">'+mtdReferrals.length+'</div><div class="stat-label">💌 Referrals sent MTD</div></div>'
+      :(aTierTouched===null?'<div class="stat-card"><div class="stat-num">'+ctc+'</div><div class="stat-label">⚡ CTC calls</div></div>':"");
+
+    document.getElementById("danielStats").innerHTML=
+      '<div class="stat-card"><div class="stat-num">'+weekActs.length+'</div><div class="stat-label">This week</div></div>'+
+      '<div class="stat-card"><div class="stat-num" style="color:'+barColor+'">'+mtdMeetings+'<span style="font-size:16px;color:#aaa"> /'+mtdMeetingGoal+'</span></div><div class="stat-label">🌸 MTD meetings</div>'+progressBar+'</div>'+
+      (aTierTouched!==null?'<div class="stat-card"><div class="stat-num" style="color:#5D4E00">'+aTierTouched+'<span style="font-size:16px;color:#aaa"> /'+aTierNames.size+'</span></div><div class="stat-label">🥇 A-tier touched MTD</div></div>':'')+
+      (mtdReferrals.length?'<div class="stat-card"><div class="stat-num" style="color:#1565C0">'+mtdReferrals.length+'</div><div class="stat-label">💌 Referrals sent MTD</div></div>':
+      '<div class="stat-card"><div class="stat-num">'+ctc+'</div><div class="stat-label">⚡ CTC calls</div></div>');
 
     renderDanielPeriod();
     renderDanielTable(weekActs);
+
+    // Month-over-month comparison
+    const prevMonthEnd=new Date(now.getFullYear(),now.getMonth(),0);
+    const prevMonthStart=new Date(now.getFullYear(),now.getMonth()-1,1);
+    const prevStart=prevMonthStart.toISOString().split("T")[0];
+    const prevEnd=prevMonthEnd.toISOString().split("T")[0];
+    const prevActs=await sbFetch("amanda_activities?select=act_type&act_date=gte."+prevStart+"&act_date=lte."+prevEnd).catch(()=>[]);
+    const prevMeetings=prevActs.filter(a=>a.act_type==="New Realtor Meeting").length;
+    const prevCalls=prevActs.filter(a=>a.act_type==="Cold Calls").length;
+    const prevReferrals=prevActs.filter(a=>a.act_type==="Sent Referral").length;
+    const momCard=document.getElementById("danielMomCard");
+    const momEl=document.getElementById("danielMom");
+    if(momEl&&momCard){
+      const prevMonthName=prevMonthStart.toLocaleString("en-US",{month:"long"});
+      const thisMonthName=now.toLocaleString("en-US",{month:"long"});
+      const momRow=(label,prev,curr,goal)=>{
+        const diff=curr-prev;
+        const arrow=diff>0?'<span style="color:#2E7D32">▲'+diff+'</span>':diff<0?'<span style="color:#A32D2D">▼'+Math.abs(diff)+'</span>':'<span style="color:#aaa">—</span>';
+        const pct=goal?Math.round((curr/goal)*100)+"% of goal":"";
+        return'<div style="display:grid;grid-template-columns:1fr 60px 60px 60px 80px;gap:8px;align-items:center;padding:7px 0;border-bottom:0.5px solid #f0eef8;font-size:12px">'+
+          '<span style="color:#444">'+label+'</span>'+
+          '<span style="color:#aaa;text-align:center">'+prev+'</span>'+
+          '<span style="font-weight:600;text-align:center">'+curr+'</span>'+
+          '<span style="text-align:center">'+arrow+'</span>'+
+          '<span style="color:#534AB7;font-size:11px">'+pct+'</span>'+
+          '</div>';
+      };
+      momEl.innerHTML=
+        '<div style="display:grid;grid-template-columns:1fr 60px 60px 60px 80px;gap:8px;font-size:10px;font-weight:600;color:#aaa;text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px;padding-bottom:4px;border-bottom:1px solid #e8e6f8">'+
+          '<span></span><span style="text-align:center">'+prevMonthName.slice(0,3)+'</span><span style="text-align:center">'+thisMonthName.slice(0,3)+'</span><span style="text-align:center">Change</span><span>vs Goal</span>'+
+        '</div>'+
+        momRow("🌸 New meetings",prevMeetings,mtdMeetings,20)+
+        momRow("🏹 Cold calls",prevCalls,mtdActs.filter(a=>a.act_type==="Cold Calls").length,100)+
+        momRow("💌 Referrals sent",prevReferrals,mtdReferrals.length,0)+
+        momRow("⚡ CTC calls",prevActs.filter(a=>a.act_type==="CTC Call").length,mtdActs.filter(a=>a.act_type==="CTC Call").length,0);
+      momCard.style.display="block";
+    }
   }catch(e){console.error(e);}
 
   try{
@@ -1965,7 +2569,7 @@ async function loadDaniel(){
       if(b.days===null) return 1;
       return b.days-a.days;
     });
-    document.getElementById("danielQuiet").innerHTML=quiet.length?quiet.slice(0,8).map(r=>{
+    document.getElementById("danielQuiet").innerHTML=quiet.length?quiet.map(r=>{
       const isUrgent=r.days===null||r.days>=90,c=isUrgent?"#E24B4A":"#E8A33D";
       const label=r.days===null?"No activity logged":r.days+"d since last touch";
       return '<div class="fu-item"><div class="fu-dot" style="background:'+c+'"></div><div class="fu-body"><div class="fu-name">'+r.name+'</div><div class="fu-meta" style="color:'+c+'">'+(isUrgent?"🚨 ":"⚠️ ")+label+'</div></div></div>';
@@ -2143,7 +2747,7 @@ async function saveContactModal(){
   }catch(e){toast("Save failed: "+e.message,"error");}
 }
 
-let calYear=new Date().getFullYear(),calMonth=new Date().getMonth(),calActivities=[],selectedCalDay=null;
+let calYear=new Date().getFullYear(),calMonth=new Date().getMonth(),calActivities=[],calBirthdays={},selectedCalDay=null;
 const MEETING_TYPES=["New Realtor Meeting","Break Breads","Open House Visit","Co-hosted Event","Business Planning Session","Team Presentation"];
 function calEventClass(type){if(type===CTC_TYPE)return"ctc";if(MEETING_TYPES.includes(type))return"meeting";return"other";}
 function calEventEmoji(type){if(type===CTC_TYPE)return"⚡";if(MEETING_TYPES.includes(type))return"🌸";return"🏹";}
@@ -2153,12 +2757,27 @@ async function loadCalendar(){
     const y=calYear,m=String(calMonth+1).padStart(2,"0");
     const startDate=y+"-"+m+"-01";
     const endDate=localDateStr(new Date(calYear,calMonth+1,0));
-    const[acts,fuActs]=await Promise.all([
+    const[acts,fuActs,agents]=await Promise.all([
       sbFetch("amanda_activities?select=id,agent_name,act_type,act_date,outcome,notes&act_date=gte."+startDate+"&act_date=lte."+endDate+"&order=act_date.asc&limit=500"),
-      sbFetch("amanda_activities?select=id,agent_name,act_type,follow_up_date,notes&follow_up_date=gte."+startDate+"&follow_up_date=lte."+endDate+"&follow_up_date=not.is.null&order=follow_up_date.asc&limit=200")
+      sbFetch("amanda_activities?select=id,agent_name,act_type,follow_up_date,notes&follow_up_date=gte."+startDate+"&follow_up_date=lte."+endDate+"&follow_up_date=not.is.null&order=follow_up_date.asc&limit=200"),
+      sbFetch("agent_profiles?select=agent_name,birthday&not.birthday.is.null&limit=500").catch(()=>[])
     ]);
     calActivities=[...(acts||[]).map(a=>({...a,calDate:a.act_date,calType:"activity"})),...(fuActs||[]).map(a=>({...a,calDate:a.follow_up_date,calType:"followup"}))];
-  }catch(e){calActivities=[];}
+    calBirthdays={};
+    (agents||[]).forEach(a=>{
+      if(!a.birthday)return;
+      const parts=a.birthday.trim().split(" ");
+      if(parts.length<2)return;
+      const monthNum=new Date(Date.parse(parts[0]+" 1, 2021")).getMonth();
+      const day=parseInt(parts[1]);
+      if(isNaN(monthNum)||isNaN(day))return;
+      if(monthNum===calMonth){
+        const dateStr=calYear+"-"+String(calMonth+1).padStart(2,"0")+"-"+String(day).padStart(2,"0");
+        if(!calBirthdays[dateStr])calBirthdays[dateStr]=[];
+        calBirthdays[dateStr].push(a.agent_name);
+      }
+    });
+  }catch(e){calActivities=[];calBirthdays={};}
   renderCalendar();
 }
 function renderCalendar(){
@@ -2176,10 +2795,14 @@ function renderCalendar(){
     const dateStr=calYear+"-"+String(calMonth+1).padStart(2,"0")+"-"+String(d).padStart(2,"0");
     const isToday=dateStr===todayStr,isSelected=selectedCalDay===dateStr;
     const events=byDate[dateStr]||[];
+    const bdayNames=calBirthdays[dateStr]||[];
     html+='<div class="cal-day'+( isToday?" today":"")+'" style="'+( isSelected?"background:#EEEDFE;border-color:#AFA9EC;":"")+'" onclick="selectCalDay(\''+ dateStr +'\')">';
-    html+='<div class="cal-num">'+d+'</div>';
-    events.slice(0,2).forEach(e=>{const cls=e.calType==="followup"?"followup":calEventClass(e.act_type);const emoji=e.calType==="followup"?"🍕":calEventEmoji(e.act_type);html+='<div class="cal-event '+cls+'">'+emoji+" "+e.agent_name+'</div>';});
-    if(events.length>2)html+='<div style="font-size:9px;color:#aaa;padding:1px 4px">+'+( events.length-2)+' more</div>';
+    html+='<div class="cal-num">'+d+(bdayNames.length?' <span style="font-size:9px">🍰</span>':'')+'</div>';
+    bdayNames.slice(0,1).forEach(n=>{html+='<div class="cal-event" style="background:#FCE4EC;color:#880E4F;border-radius:4px;font-size:9px;padding:1px 4px;margin-bottom:1px">🍰 '+n+'</div>';});
+    events.slice(0,bdayNames.length?1:2).forEach(e=>{const cls=e.calType==="followup"?"followup":calEventClass(e.act_type);const emoji=e.calType==="followup"?"🍕":calEventEmoji(e.act_type);html+='<div class="cal-event '+cls+'">'+emoji+" "+e.agent_name+'</div>';});
+    const totalShown=bdayNames.slice(0,1).length+events.slice(0,bdayNames.length?1:2).length;
+    const totalAll=bdayNames.length+events.length;
+    if(totalAll>totalShown)html+='<div style="font-size:9px;color:#aaa;padding:1px 4px">+'+(totalAll-totalShown)+' more</div>';
     html+='</div>';
   }
   const total=firstDay+daysInMonth,remaining=total%7===0?0:7-(total%7);
@@ -2189,8 +2812,10 @@ function renderCalendar(){
 }
 function selectCalDay(dateStr){selectedCalDay=selectedCalDay===dateStr?null:dateStr;renderCalendar();if(!selectedCalDay)document.getElementById("calDayDetail").style.display="none";}
 function showCalDayDetail(dateStr){
-  const events=calActivities.filter(a=>a.calDate===dateStr),detail=document.getElementById("calDayDetail");
-  if(!events.length){detail.style.display="none";return;}
+  const events=calActivities.filter(a=>a.calDate===dateStr);
+  const bdayNames=calBirthdays[dateStr]||[];
+  const detail=document.getElementById("calDayDetail");
+  if(!events.length&&!bdayNames.length){detail.style.display="none";return;}
   const dt=new Date(dateStr+"T12:00:00");
   const label=dt.toLocaleDateString("en-US",{weekday:"long",month:"long",day:"numeric"});
   const todayStr=today(),isToday=dateStr===todayStr,isPast=dateStr<todayStr;
@@ -2226,9 +2851,13 @@ function filterContacts(){
   const f=document.getElementById("contactsFilter")?.value||"all";
   let list=allContacts;
   if(q)list=list.filter(c=>(c.agent_name||"").toLowerCase().includes(q)||(c.phone||"").includes(q)||(c.email||"").toLowerCase().includes(q)||(c.birthday||"").toLowerCase().includes(q));
-  if(f==="bday")list=list.filter(c=>c.birthday);
-  if(f==="nobday")list=list.filter(c=>!c.birthday);
-  if(f==="nophone")list=list.filter(c=>!c.phone);
+  if(f==="tier-A")list=list.filter(c=>c.tier==="A");
+  else if(f==="tier-B")list=list.filter(c=>c.tier==="B");
+  else if(f==="tier-C")list=list.filter(c=>c.tier==="C");
+  else if(f==="notier")list=list.filter(c=>!c.tier);
+  else if(f==="bday")list=list.filter(c=>c.birthday);
+  else if(f==="nobday")list=list.filter(c=>!c.birthday);
+  else if(f==="nophone")list=list.filter(c=>!c.phone);
   renderContacts(list);
 }
 
