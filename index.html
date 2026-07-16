@@ -363,6 +363,38 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Inter','Segoe UI',sans-serif;
       <div id="bdayAlertList"></div>
     </div>
   </div>
+
+  <!-- Quick Log Card -->
+  <div class="card" style="padding:16px 18px">
+    <div style="font-size:13px;font-weight:600;color:var(--text-1);margin-bottom:10px">Quick log — Agent Talk-to 📞</div>
+    <div style="display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap">
+      <div class="ac-wrap" style="flex:1;min-width:160px">
+        <input type="text" id="quickLogAgent" placeholder="Agent name..." autocomplete="off"
+          oninput="quickLogAutoComplete(this.value)"
+          style="width:100%;border:1px solid var(--border);border-radius:var(--radius-sm);padding:9px 12px;font-size:13px;font-family:inherit;color:var(--text-1);outline:none"
+          onkeydown="if(event.key==='Enter')quickLogSave()">
+        <div id="quickLogAcList" class="ac-list"></div>
+      </div>
+      <select id="quickLogType" style="border:1px solid var(--border);border-radius:var(--radius-sm);padding:9px 11px;font-size:12px;font-family:inherit;color:var(--text-1);outline:none;background:var(--surface)">
+        <option value="Active Agent Talk-to">Talk-to (text/call)</option>
+        <option value="Birthday Outreach">Birthday outreach</option>
+        <option value="CTC Call">CTC call</option>
+        <option value="Active Agent Check-in">Check-in</option>
+        <option value="Sent Market Report">Market report</option>
+        <option value="Sent Referral">Referral sent</option>
+        <option value="Holiday Outreach">Holiday outreach</option>
+        <option value="Agent Appreciation">Appreciation</option>
+      </select>
+      <select id="quickLogOutcome" style="border:1px solid var(--border);border-radius:var(--radius-sm);padding:9px 11px;font-size:12px;font-family:inherit;color:var(--text-1);outline:none;background:var(--surface)">
+        <option value="Positive">Positive</option>
+        <option value="No answer">No answer</option>
+        <option value="Requires follow-up">Requires follow-up</option>
+        <option value="Left voicemail">Left voicemail</option>
+      </select>
+      <button onclick="quickLogSave()" style="padding:9px 18px;background:var(--brand);color:#fff;border:none;border-radius:var(--radius-sm);font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap">Log it</button>
+    </div>
+    <div id="quickLogMsg" style="display:none;margin-top:8px;font-size:12px;color:var(--success);font-weight:500"></div>
+  </div>
   <div class="card">
     <div class="card-title">This week <span class="card-sub" id="weekLabel2"></span></div>
     <div id="weekGoalBars"><div class="no-data">Loading...</div></div>
@@ -1985,6 +2017,45 @@ async function generateWeeklySummary(){
 }
 
 
+
+// ── QUICK LOG ─────────────────────────────────────────────────────────────────
+function quickLogAutoComplete(q){
+  const list=document.getElementById("quickLogAcList");
+  if(!q||q.length<2){list.classList.remove("open");return;}
+  const matches=(allAgentNames||[]).filter(n=>n.toLowerCase().includes(q.toLowerCase())).slice(0,6);
+  if(!matches.length){list.classList.remove("open");return;}
+  list.innerHTML=matches.map(n=>'<div class="ac-item" onclick="document.getElementById(\'quickLogAgent\').value=\''+n.replace(/'/g,"\\'")+'\';document.getElementById(\'quickLogAcList\').classList.remove(\'open\')">'+n+'</div>').join("");
+  list.classList.add("open");
+}
+async function quickLogSave(){
+  if(openIntake){toast("Finish the open checklist for "+openIntake.agent_name+" first.","error");return;}
+  const agentName=(document.getElementById("quickLogAgent").value||"").trim();
+  const actType=document.getElementById("quickLogType").value;
+  const outcome=document.getElementById("quickLogOutcome").value;
+  if(!agentName){toast("Enter an agent name.","error");document.getElementById("quickLogAgent").focus();return;}
+  const btn=document.querySelector('[onclick="quickLogSave()"]');
+  if(btn){btn.disabled=true;btn.textContent="Saving...";}
+  try{
+    await sbFetch("amanda_activities",{method:"POST",prefer:"return=minimal",body:JSON.stringify({agent_name:agentName,act_type:actType,act_date:today(),outcome,notes:null})});
+    const msg=document.getElementById("quickLogMsg");
+    msg.style.display="block";
+    msg.textContent="✓ "+agentName+" — "+actType+" logged";
+    document.getElementById("quickLogAgent").value="";
+    document.getElementById("quickLogAcList").classList.remove("open");
+    setTimeout(()=>{if(msg)msg.style.display="none";},3000);
+    loadWeek();loadFeed();
+  }catch(e){
+    toast("Save failed: "+e.message,"error");
+  }finally{
+    if(btn){btn.disabled=false;btn.textContent="Log it";}
+  }
+}
+document.addEventListener("click",function(e){
+  if(!e.target.closest("#quickLogAgent")&&!e.target.closest("#quickLogAcList")){
+    const l=document.getElementById("quickLogAcList");
+    if(l)l.classList.remove("open");
+  }
+});
 
 // ── 🔁 RECONNECT TAB ─────────────────────────────────────────────────────────
 let rcData=[];
