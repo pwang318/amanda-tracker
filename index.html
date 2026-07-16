@@ -210,6 +210,12 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Inter','Segoe UI',sans-serif;
 .rc-inline-row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .rc-remove-form{display:none;background:var(--warning-bg);border:1px solid #FDE68A;border-radius:var(--radius-sm);padding:14px;margin-top:10px}
 .rc-remove-form.show{display:block}
+.gr{margin-bottom:12px}
+.gr-lr{display:flex;justify-content:space-between;align-items:center;margin-bottom:5px}
+.gr-n{font-size:12px;font-weight:500;color:var(--text-2)}
+.gr-c{font-size:13px;font-weight:700}
+.g-track{background:var(--surface-2);border-radius:20px;height:5px;overflow:hidden;margin-bottom:4px}
+.g-fill{height:5px;border-radius:20px;background:var(--brand);transition:width .5s}
 .rc-contacted-badge{display:inline-block;background:var(--success-bg);color:var(--success);border:1px solid #6EE7C4;border-radius:20px;font-size:10px;font-weight:600;padding:2px 9px;margin-left:6px}
 .rc-removed-badge{display:inline-block;background:#f5f5f5;color:#999;border:1px solid #e0e0e0;border-radius:20px;font-size:10px;font-weight:600;padding:2px 9px;margin-left:6px}
 
@@ -350,7 +356,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Inter','Segoe UI',sans-serif;
   <div class="tab" onclick="switchTab('history')">Agent History</div>
   <div class="tab" onclick="switchTab('pipeline')">Outreach Pipeline</div>
   <div class="tab" onclick="switchTab('calendar')">📅 Calendar</div>
-  <div class="tab" onclick="switchTab('daniel')">Daniel's View</div>
+  <div class="tab" onclick="switchTab('daniel')">Management</div>
   <div class="tab" onclick="switchTab('contacts')">👤 Contacts</div>
 </div>
 
@@ -1535,7 +1541,7 @@ async function loadWeek(){
     const cov=await loadQuietCoverage();
     const pctColor=cov.pct>=100?"#1F6B45":cov.pct>=60?"#9A6A12":"#9B3B3B";
     let covHtml='<div class="gr" style="border-top:1px solid #f0f0f5;padding-top:14px;margin-top:14px">'
-      +'<div class="gr-lr"><span class="gr-n">🔍 Going-quiet coverage</span>'
+      +'<div class="gr-lr"><span class="gr-n">🔍 At Risk — Coverage</span>'
       +'<span><span class="gr-c">'+cov.pct+'%</span></span></div>'
       +'<div class="g-track"><div class="g-fill" style="width:'+cov.pct+'%;background:'+pctColor+'"></div></div>'
       +'<div style="font-size:10px;color:#bbb;margin-top:4px">'+cov.covered+' of '+cov.total+' agents flagged quiet on Monday touched this week</div>';
@@ -2957,7 +2963,7 @@ async function renderDanielCoverage(){
     const covered=cov.names.filter(n=>n.covered);
 
     let covHtml='<div class="gr" style="border-top:1px solid #f0f0f5;padding-top:14px;margin-top:14px">'
-      +'<div class="gr-lr"><span class="gr-n">🔍 Going-quiet coverage</span>'
+      +'<div class="gr-lr"><span class="gr-n">🔍 At Risk — Coverage</span>'
       +'<span><span class="gr-c" style="color:'+pctColor+'">'+cov.pct+'%</span></span></div>'
       +'<div class="g-track"><div class="g-fill" style="width:'+cov.pct+'%;background:'+pctColor+'"></div></div>'
       +'<div style="font-size:10px;color:#bbb;margin-top:4px;margin-bottom:12px">'+cov.covered+' of '+cov.total+' going-quiet agents touched this week</div>';
