@@ -913,11 +913,14 @@ const GOALS=[
   {label:"Cold calls",type:"Cold Calls",weekly:125,monthly:500},
   {label:"New realtor meetings",type:"New Realtor Meeting",weekly:5,monthly:20},
   {label:"Break breads",type:"Break Breads",weekly:5,monthly:20},
-  {label:"Active Agent Talk-to's",type:"Active Agent Talk-to",weekly:100,monthly:400},
+  {label:"Active Agent Talk-to's",type:"__talkto__",weekly:100,monthly:400},
   {label:"Realtor buddy asks",type:"Realtor Buddy Referral Ask",weekly:3,monthly:12}
 ];
 const GOAL_THRESHOLD=0.8; // 80% = passing
 const CTC_TYPE="CTC Call";
+// All activity types that count toward the Active Agent Talk-to goal
+const TALKTO_TYPES=["Active Agent Talk-to","Active Agent Check-in","CTC Call","Birthday Outreach","Holiday Outreach","Agent Appreciation","Closed Deal Thank You","Market Update Call","Sent Market Report","Sent Referral","Co-Marketing Discussion"];
+function cntTalkTo(acts){return(acts||[]).filter(function(a){return TALKTO_TYPES.indexOf((a.act_type||"").trim())>=0;}).length;}
 const ACT_TYPE_OPTIONS='<optgroup label="New Relationships"><option>Cold Calls</option><option>New Realtor Meeting</option><option>Open House Visit</option></optgroup><optgroup label="Relationship Deepening"><option>New Agent Follow-up</option><option>Break Breads</option><option>Market Update Call</option><option>Sent Market Report</option><option>Sent Referral</option><option>Co-hosted Event</option><option>Realtor Buddy Referral Ask</option></optgroup><optgroup label="Management"><option>Active Agent Talk-to</option></optgroup><optgroup label="Retention and Referrals"><option>Active Agent Check-in</option><option>CTC Call</option><option>Closed Deal Thank You</option><option>Birthday Outreach</option><option>Holiday Outreach</option><option>Agent Appreciation</option></optgroup><optgroup label="Special Programs"><option>Business Planning Session</option><option>Co-Marketing Discussion</option><option>Team Presentation</option><option>Recruiting Conversation</option></optgroup>';
 function badgeEmoji(type){return EMOJI[type]?EMOJI[type]+" "+type:type;}
 
@@ -1464,7 +1467,7 @@ function renderPeriodScorecard(){
     const target=cfg.base==="weekly"
       ?(currentPeriod==="daily"?Math.ceil(g.weekly/5):g.weekly)
       :Math.round(g.monthly*cfg.multiplier);
-    const count=data.filter(a=>a.act_type===g.type).length;
+    const count=g.type==="__talkto__"?cntTalkTo(data):data.filter(a=>a.act_type===g.type).length;
     html+=renderGoalBar(g.label,count,target,target?(count/target)*100:0,g.type);
   });
   html+=renderCtcRow(data.filter(a=>a.act_type===CTC_TYPE).length,label.toLowerCase());
@@ -1487,7 +1490,7 @@ async function loadWeek(){
     periodData={daily:dailyActs,wtd:weekActs,mtd:mtdActs,ytd:ytdActs};
     let html="";
     GOALS.forEach(g=>{
-      const count=weekActs.filter(a=>a.act_type===g.type).length;
+      const count=g.type==="__talkto__"?cntTalkTo(weekActs):weekActs.filter(a=>a.act_type===g.type).length;
       html+=renderGoalBar(g.label,count,g.weekly,(count/g.weekly)*100,g.type);
     });
     html+=renderCtcRow(weekActs.filter(a=>a.act_type===CTC_TYPE).length,"this week");
@@ -2763,7 +2766,7 @@ async function loadDaniel(){
     document.getElementById("danielRetentionGrid").innerHTML=gridHeader
       +retentionRow("Unique agents touched",uniqDaily,uniqWtd,uniqMtd,uniqYtd,"")
       +(aTierTotal?retentionRow("A-tier agents touched",aTierTouched(dailyActs),aTierTouched(weekActs),aTierMtd+" of "+aTierTotal,aTierTouched(ytdActs),"highest-value agents"):"")
-      +retentionRow("Active Agent Talk-to's",c(dailyActs,"Active Agent Talk-to"),c(weekActs,"Active Agent Talk-to"),c(mtdActs,"Active Agent Talk-to")+" / 400",c(ytdActs,"Active Agent Talk-to"),"texts, calls with existing agents")
+      +retentionRow("Active Agent Talk-to's",cntTalkTo(dailyActs),cntTalkTo(weekActs),cntTalkTo(mtdActs)+" / 400",cntTalkTo(ytdActs),"all meaningful touches with existing agents")
       +retentionRow("Break breads",c(dailyActs,"Break Breads"),c(weekActs,"Break Breads"),c(mtdActs,"Break Breads")+" / 20",c(ytdActs,"Break Breads"),"")
       +retentionRow("CTC calls",c(dailyActs,CTC_TYPE),c(weekActs,CTC_TYPE),c(mtdActs,CTC_TYPE),c(ytdActs,CTC_TYPE),"post-close thank you")
       +retentionRow("Referrals sent to agents",c(dailyActs,"Sent Referral"),c(weekActs,"Sent Referral"),c(mtdActs,"Sent Referral"),c(ytdActs,"Sent Referral"),"value delivered")
@@ -2802,7 +2805,7 @@ async function loadDaniel(){
         +'</div>'
         +trendRow("New meetings",c(prevActs,"New Realtor Meeting"),mtdMeetings,20)
         +trendRow("Cold calls",c(prevActs,"Cold Calls"),c(mtdActs,"Cold Calls"),500)
-        +trendRow("Active Agent Talk-to's",c(prevActs,"Active Agent Talk-to"),c(mtdActs,"Active Agent Talk-to"),400)
+        +trendRow("Active Agent Talk-to's",cntTalkTo(prevActs),cntTalkTo(mtdActs),400)
         +trendRow("Break breads",c(prevActs,"Break Breads"),c(mtdActs,"Break Breads"),20)
         +trendRow("Unique agents touched",uniq(prevActs),uniqMtd,null)
         +trendRow("Referrals sent",c(prevActs,"Sent Referral"),c(mtdActs,"Sent Referral"),null)
@@ -2867,7 +2870,7 @@ function renderDanielPeriod(){
   if(!data.length){document.getElementById("danielGoals").innerHTML='<div class="no-data">No activity logged yet for this period.</div>';return;}
   let html='<div style="font-size:11px;color:#bbb;margin-bottom:14px">'+label+' — '+data.length+' total activities</div>';
   GOALS.forEach(g=>{
-    const target=goalTarget(g),count=data.filter(a=>a.act_type===g.type).length;
+    const target=goalTarget(g),count=g.type==="__talkto__"?cntTalkTo(data):data.filter(a=>a.act_type===g.type).length;
     html+=renderGoalBar(g.label,count,target,target?(count/target)*100:0,g.type);
   });
   html+=renderCtcRow(data.filter(a=>a.act_type===CTC_TYPE).length,label.toLowerCase());
