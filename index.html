@@ -6,233 +6,325 @@
 <title>Amanda | Relationship Manager Tracker</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.0.0/tabler-icons.min.css">
 <style>
+/* ── DESIGN TOKENS ─────────────────────────────────────────────── */
+:root{
+  --bg:#F6F5FB;
+  --surface:#FFFFFF;
+  --surface-2:#F0EFF8;
+  --border:#E5E3F0;
+  --border-light:#EEECF8;
+  --brand:#5B4FCF;
+  --brand-dark:#3D3399;
+  --brand-light:#EAE8FB;
+  --brand-mid:#7B72DB;
+  --text-1:#18182A;
+  --text-2:#52527A;
+  --text-3:#9898B8;
+  --text-4:#BBBBD4;
+  --success:#1A9E75;
+  --success-bg:#E6F7F2;
+  --warning:#D97706;
+  --warning-bg:#FEF3C7;
+  --danger:#C0392B;
+  --danger-bg:#FEF0EE;
+  --rose:#E91E8C;
+  --radius-sm:8px;
+  --radius:12px;
+  --radius-lg:16px;
+  --shadow-sm:0 1px 4px rgba(60,50,160,.06);
+  --shadow:0 2px 12px rgba(60,50,160,.09);
+  --shadow-lg:0 8px 32px rgba(60,50,160,.13);
+}
+
+/* ── RESET ─────────────────────────────────────────────────────── */
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f5f4f8;color:#1a1a2e;min-height:100vh}
-.header{background:#1a0f3d;padding:14px 24px;display:flex;justify-content:space-between;align-items:center}
+body{font-family:-apple-system,BlinkMacSystemFont,'Inter','Segoe UI',sans-serif;background:var(--bg);color:var(--text-1);min-height:100vh;-webkit-font-smoothing:antialiased}
+
+/* ── HEADER ────────────────────────────────────────────────────── */
+.header{background:linear-gradient(135deg,#1E1654 0%,#2D2480 100%);padding:14px 24px;display:flex;justify-content:space-between;align-items:center;box-shadow:0 2px 12px rgba(30,22,84,.3)}
 .brand-wrap{display:flex;align-items:center;gap:10px}
-.brand-chip{background:#7F77DD;color:#fff;font-size:11px;font-weight:500;padding:4px 10px;border-radius:6px;letter-spacing:1px}
-.brand-sub{color:rgba(255,255,255,0.45);font-size:12px}
+.brand-chip{background:rgba(255,255,255,.18);color:#fff;font-size:11px;font-weight:600;padding:4px 12px;border-radius:20px;letter-spacing:.8px;backdrop-filter:blur(4px)}
+.brand-sub{color:rgba(255,255,255,.4);font-size:12px;letter-spacing:.2px}
 .header-right{display:flex;align-items:center;gap:10px}
-.week-chip{background:rgba(255,255,255,0.1);color:rgba(255,255,255,0.8);font-size:11px;padding:4px 10px;border-radius:20px}
-.sync{display:flex;align-items:center;gap:5px;font-size:11px;color:rgba(255,255,255,0.5)}
-.sync-dot{width:6px;height:6px;border-radius:50%;background:#666}
-.sync-dot.ok{background:#1D9E75}.sync-dot.err{background:#E24B4A}
-.sync-btn{background:none;border:none;color:rgba(255,255,255,0.7);font-size:11px;cursor:pointer;padding:4px 8px;border-radius:4px;transition:all .2s}
-.sync-btn:hover{background:rgba(255,255,255,0.1);color:#fff}
-.tabs{background:#fff;border-bottom:1px solid #e8e6f0;display:flex;padding:0 20px;overflow-x:auto;gap:2px}
-.tab{padding:12px 16px;font-size:13px;font-weight:400;color:#888;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;white-space:nowrap;transition:color .15s}
-.tab:hover{color:#534AB7}
-.tab.active{color:#534AB7;border-bottom-color:#534AB7;font-weight:500}
-.view{display:none;padding:20px;max-width:900px;margin:0 auto}
+.week-chip{background:rgba(255,255,255,.12);color:rgba(255,255,255,.85);font-size:11px;padding:5px 12px;border-radius:20px;font-weight:500}
+.sync{display:flex;align-items:center;gap:5px;font-size:11px;color:rgba(255,255,255,.45)}
+.sync-dot{width:7px;height:7px;border-radius:50%;background:#555}
+.sync-dot.ok{background:#22C99A}.sync-dot.err{background:#F06260}
+.sync-btn{background:none;border:none;color:rgba(255,255,255,.6);font-size:13px;cursor:pointer;padding:5px 9px;border-radius:8px;transition:all .2s}
+.sync-btn:hover{background:rgba(255,255,255,.15);color:#fff}
+
+/* ── TABS ──────────────────────────────────────────────────────── */
+.tabs{background:var(--surface);border-bottom:1px solid var(--border);display:flex;padding:0 20px;overflow-x:auto;gap:2px;scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tab{padding:13px 16px;font-size:13px;font-weight:400;color:var(--text-3);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;white-space:nowrap;transition:all .18s;letter-spacing:.1px}
+.tab:hover{color:var(--brand)}
+.tab.active{color:var(--brand);border-bottom-color:var(--brand);font-weight:600}
+
+/* ── VIEWS ─────────────────────────────────────────────────────── */
+.view{display:none;padding:22px 20px;max-width:920px;margin:0 auto}
 .view.active{display:block}
-.card{background:#fff;border:0.5px solid #e4e2ee;border-radius:12px;padding:18px 20px;margin-bottom:14px}
-.card-title{font-size:13px;font-weight:500;color:#1a1a2e;margin-bottom:16px;display:flex;justify-content:space-between;align-items:center}
-.card-sub{font-size:11px;color:#aaa;font-weight:400}
-.goal-row{margin-bottom:13px}
+
+/* ── CARDS ─────────────────────────────────────────────────────── */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:20px 22px;margin-bottom:14px;box-shadow:var(--shadow-sm)}
+.card-title{font-size:13px;font-weight:600;color:var(--text-1);margin-bottom:16px;display:flex;justify-content:space-between;align-items:center;letter-spacing:.1px}
+.card-sub{font-size:11px;color:var(--text-4);font-weight:400}
+
+/* ── GOAL BARS ─────────────────────────────────────────────────── */
+.goal-row{margin-bottom:14px}
 .goal-row:last-child{margin-bottom:0}
-.goal-label-row{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:5px}
-.goal-name{font-size:12px;color:#666}
-.goal-actual{font-size:13px;font-weight:500;color:#1a1a2e}
-.goal-target{font-size:11px;color:#bbb;font-weight:400}
-.goal-track{background:#f0eef8;border-radius:20px;height:5px;overflow:hidden}
-.goal-fill{height:5px;border-radius:20px;transition:width .5s}
-.goal-pct{font-size:10px;color:#bbb;margin-top:3px}
-.ctc-divider{border-top:0.5px solid #eee;margin-top:14px;padding-top:12px;display:flex;justify-content:space-between;align-items:center}
-.ctc-label{font-size:12px;color:#666;display:flex;align-items:center;gap:6px}
-.ctc-count{font-size:22px;font-weight:500;color:#1a1a2e;text-align:right}
-.ctc-note{font-size:10px;color:#bbb;text-align:right}
-.period-toggle{display:flex;gap:6px;margin-bottom:16px}
-.ptoggle{padding:5px 14px;border-radius:20px;font-size:12px;border:0.5px solid #d0cde8;background:transparent;color:#888;cursor:pointer;font-family:inherit}
-.ptoggle.active{background:#EEEDFE;border-color:#AFA9EC;color:#3C3489;font-weight:500}
+.goal-label-row{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px}
+.goal-name{font-size:12px;color:var(--text-2);font-weight:500}
+.goal-actual{font-size:13px;font-weight:700;color:var(--text-1)}
+.goal-target{font-size:11px;color:var(--text-4);font-weight:400}
+.goal-track{background:var(--surface-2);border-radius:20px;height:6px;overflow:hidden}
+.goal-fill{height:6px;border-radius:20px;transition:width .6s cubic-bezier(.4,0,.2,1)}
+.goal-pct{font-size:10px;color:var(--text-4);margin-top:3px}
+.ctc-divider{border-top:1px solid var(--border-light);margin-top:14px;padding-top:12px;display:flex;justify-content:space-between;align-items:center}
+.ctc-label{font-size:12px;color:var(--text-2);display:flex;align-items:center;gap:6px;font-weight:500}
+.ctc-count{font-size:24px;font-weight:700;color:var(--text-1);text-align:right}
+.ctc-note{font-size:10px;color:var(--text-4);text-align:right}
+
+/* ── PERIOD TOGGLE ─────────────────────────────────────────────── */
+.period-toggle{display:flex;gap:6px;margin-bottom:18px;flex-wrap:wrap}
+.ptoggle{padding:6px 16px;border-radius:20px;font-size:12px;border:1px solid var(--border);background:transparent;color:var(--text-3);cursor:pointer;font-family:inherit;font-weight:500;transition:all .18s}
+.ptoggle:hover{color:var(--brand);border-color:var(--brand-mid)}
+.ptoggle.active{background:var(--brand-light);border-color:var(--brand-mid);color:var(--brand-dark);font-weight:600}
+
+/* ── LAYOUT HELPERS ────────────────────────────────────────────── */
 .week-bottom{display:grid;grid-template-columns:1fr 1fr;gap:14px}
 .week-bottom .card{margin-bottom:0}
-.fu-item{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:0.5px solid #f0eef8}
+
+/* ── FOLLOW-UPS ────────────────────────────────────────────────── */
+.fu-item{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--border-light)}
 .fu-item:last-child{border-bottom:none}
-.fu-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.fu-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
 .fu-body{flex:1;min-width:0}
-.fu-name{font-size:12px;font-weight:500;color:#1a1a2e;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.fu-meta{font-size:11px;color:#aaa}
-.fu-date{font-size:11px;font-weight:500;white-space:nowrap}
+.fu-name{font-size:13px;font-weight:600;color:var(--text-1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fu-meta{font-size:11px;color:var(--text-3);margin-top:1px}
+.fu-date{font-size:11px;font-weight:600;white-space:nowrap}
 .fu-edit-area{display:none;margin-top:6px}
-.feed-item{padding:10px 0;border-bottom:0.5px solid #f0eef8}
+
+/* ── FEED ──────────────────────────────────────────────────────── */
+.feed-item{padding:12px 0;border-bottom:1px solid var(--border-light)}
 .feed-item:last-child{border-bottom:none}
 .feed-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:5px}
-.feed-agent{font-size:13px;font-weight:500;color:#1a1a2e}
+.feed-agent{font-size:13px;font-weight:600;color:var(--text-1)}
 .feed-right{display:flex;align-items:center;gap:6px}
-.feed-date{font-size:11px;color:#bbb}
-.feed-badge{display:inline-block;font-size:11px;padding:3px 9px;border-radius:20px;font-weight:500}
-.feed-badge.rm{background:#EEEDFE;color:#3C3489}
-.feed-badge.ctc{background:#E1F5EE;color:#0F6E56}
-.feed-badge.lp{background:#E3F2FD;color:#1565C0}
-.feed-outcome{font-size:11px;color:#aaa;margin-top:3px}
-.feed-fu{font-size:11px;color:#B85B00;margin-top:2px}
-.feed-notes{font-size:12px;color:#777;margin-top:4px;font-style:italic}
-.feed-edited{font-size:10px;color:#999;margin-top:3px;font-style:italic}
-.no-data{text-align:center;color:#bbb;padding:28px;font-size:13px}
+.feed-date{font-size:11px;color:var(--text-4)}
+.feed-badge{display:inline-block;font-size:11px;padding:3px 10px;border-radius:20px;font-weight:600;letter-spacing:.1px}
+.feed-badge.rm{background:var(--brand-light);color:var(--brand-dark)}
+.feed-badge.ctc{background:#E2F7F0;color:#0D6E50}
+.feed-badge.lp{background:#E8F2FE;color:#1558C0}
+.feed-outcome{font-size:11px;color:var(--text-3);margin-top:3px}
+.feed-fu{font-size:11px;color:var(--warning);margin-top:2px;font-weight:500}
+.feed-notes{font-size:12px;color:var(--text-2);margin-top:4px;font-style:italic;line-height:1.5}
+.feed-edited{font-size:10px;color:var(--text-4);margin-top:3px;font-style:italic}
+.no-data{text-align:center;color:var(--text-4);padding:32px;font-size:13px;line-height:1.6}
+
+/* ── FORMS ─────────────────────────────────────────────────────── */
 .form-row{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px}
 .form-row.three{grid-template-columns:1fr 1fr 1fr}
 .form-row.one{grid-template-columns:1fr}
 .field{display:flex;flex-direction:column;gap:5px}
-.field label{font-size:11px;font-weight:500;color:#888;text-transform:uppercase;letter-spacing:.5px}
-.field input,.field select,.field textarea{border:0.5px solid #d8d6e8;border-radius:8px;padding:9px 11px;font-size:13px;font-family:inherit;color:#1a1a2e;background:#fff;width:100%;outline:none;transition:border .15s}
-.field input:focus,.field select:focus,.field textarea:focus{border-color:#7F77DD}
-.field textarea{resize:vertical;min-height:76px}
+.field label{font-size:11px;font-weight:600;color:var(--text-3);text-transform:uppercase;letter-spacing:.6px}
+.field input,.field select,.field textarea{border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 12px;font-size:13px;font-family:inherit;color:var(--text-1);background:var(--surface);width:100%;outline:none;transition:border-color .15s,box-shadow .15s}
+.field input:focus,.field select:focus,.field textarea:focus{border-color:var(--brand-mid);box-shadow:0 0 0 3px rgba(91,79,207,.1)}
+.field textarea{resize:vertical;min-height:80px;line-height:1.5}
 .followup-row{display:none}
 .followup-row.show{display:grid}
-.intake-block{display:none;background:#FFF8E1;border:1px solid #FFE69C;border-radius:10px;padding:14px;margin-bottom:14px}
+
+/* ── INTAKE CHECKLIST ──────────────────────────────────────────── */
+.intake-block{display:none;background:#FFFBEB;border:1px solid #FDE68A;border-radius:var(--radius);padding:16px;margin-bottom:16px}
 .intake-block.show{display:block}
-.intake-block-title{font-size:12px;font-weight:600;color:#B85B00;margin-bottom:10px;display:flex;align-items:center;gap:6px}
-.intake-check{display:flex;align-items:center;gap:9px;font-size:13px;font-weight:400;text-transform:none;letter-spacing:0;color:#534030;cursor:pointer;padding:7px 0}
-.intake-check input[type=checkbox]{width:17px;height:17px;cursor:pointer;accent-color:#B85B00;flex-shrink:0}
-.intake-check.done{color:#2E7D32}
-#globalLockBanner{background:#A32D2D;color:#fff;padding:11px 18px;font-size:13px;font-weight:500;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
-#globalLockBanner .lock-resume-btn{background:#fff;color:#A32D2D;border:none;border-radius:7px;padding:7px 14px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit}
-.log-locked-card{background:#FCEBEB;border:1px solid #f7c1c1;border-radius:10px;padding:16px;margin-bottom:14px}
-.log-locked-title{font-size:14px;font-weight:600;color:#A32D2D;margin-bottom:4px}
-.log-locked-sub{font-size:12px;color:#888}
-/* Birthday alert */
-.bday-alert{background:linear-gradient(135deg,#FCE4EC,#F3E5F5);border:1px solid #F48FB1;border-radius:10px;padding:13px 16px;margin-bottom:12px}
-.bday-alert-title{font-size:12px;font-weight:600;color:#880E4F;margin-bottom:7px}
-.bday-alert-item{display:flex;align-items:center;justify-content:space-between;font-size:13px;padding:4px 0;border-bottom:0.5px solid #f8bbd0}
+.intake-block-title{font-size:12px;font-weight:700;color:#92400E;margin-bottom:12px;display:flex;align-items:center;gap:6px;text-transform:uppercase;letter-spacing:.4px}
+.intake-check{display:flex;align-items:center;gap:10px;font-size:13px;font-weight:400;text-transform:none;letter-spacing:0;color:#78350F;cursor:pointer;padding:8px 0;border-bottom:1px solid #FEF3C7}
+.intake-check:last-of-type{border-bottom:none}
+.intake-check input[type=checkbox]{width:17px;height:17px;cursor:pointer;accent-color:#D97706;flex-shrink:0}
+.intake-check.done{color:var(--success);text-decoration:line-through;opacity:.7}
+
+/* ── LOCK BANNER ───────────────────────────────────────────────── */
+#globalLockBanner{background:linear-gradient(90deg,#9B1C1C,#C0392B);color:#fff;padding:12px 20px;font-size:13px;font-weight:500;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;box-shadow:0 2px 8px rgba(192,57,43,.3)}
+#globalLockBanner .lock-resume-btn{background:#fff;color:var(--danger);border:none;border-radius:var(--radius-sm);padding:7px 16px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;transition:opacity .15s}
+#globalLockBanner .lock-resume-btn:hover{opacity:.88}
+.log-locked-card{background:var(--danger-bg);border:1px solid #FACACA;border-radius:var(--radius);padding:16px;margin-bottom:14px}
+.log-locked-title{font-size:14px;font-weight:700;color:var(--danger);margin-bottom:4px}
+.log-locked-sub{font-size:12px;color:var(--text-2)}
+
+/* ── BIRTHDAY ALERT ────────────────────────────────────────────── */
+.bday-alert{background:linear-gradient(135deg,#FDF2F8,#FAF0FE);border:1px solid #F0ABCF;border-radius:var(--radius);padding:14px 16px;margin-bottom:14px;box-shadow:var(--shadow-sm)}
+.bday-alert-title{font-size:11px;font-weight:700;color:#831843;margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px}
+.bday-alert-item{display:flex;align-items:center;justify-content:space-between;font-size:13px;padding:5px 0;border-bottom:1px solid #FCE7F3}
 .bday-alert-item:last-child{border-bottom:none}
-/* Tier badges */
-.tier-badge{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;font-size:10px;font-weight:700;flex-shrink:0}
-.tier-A{background:#FFD700;color:#5D4E00}
-.tier-B{background:#C0C0C0;color:#333}
-.tier-C{background:#CD7F32;color:#fff}
-/* Inline log from follow-ups */
-.fu-inline-log{display:none;background:#f8f8ff;border:0.5px solid #d8d6e8;border-radius:8px;padding:12px;margin-top:10px}
+
+/* ── TIER BADGES ───────────────────────────────────────────────── */
+.tier-badge{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;font-size:10px;font-weight:800;flex-shrink:0}
+.tier-A{background:#FFC107;color:#5D4000}
+.tier-B{background:#B0BEC5;color:#263238}
+.tier-C{background:#C07D3E;color:#fff}
+
+/* ── INLINE LOG ────────────────────────────────────────────────── */
+.fu-inline-log{display:none;background:var(--surface-2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:14px;margin-top:10px}
 .fu-inline-log.show{display:block}
-.fu-inline-log select,.fu-inline-log textarea,.fu-inline-log input[type=date]{width:100%;border:0.5px solid #d8d6e8;border-radius:6px;padding:7px 10px;font-size:12px;font-family:inherit;color:#1a1a2e;outline:none;margin-bottom:8px;box-sizing:border-box}
+.fu-inline-log select,.fu-inline-log textarea,.fu-inline-log input[type=date]{width:100%;border:1px solid var(--border);border-radius:var(--radius-sm);padding:8px 10px;font-size:12px;font-family:inherit;color:var(--text-1);outline:none;margin-bottom:8px;box-sizing:border-box;background:var(--surface)}
 .fu-inline-log .inline-row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-/* Quiet agents card */
-.quiet-agent-row{display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:0.5px solid #f0eef8;font-size:13px}
+
+/* ── QUIET AGENTS ──────────────────────────────────────────────── */
+.quiet-agent-row{display:flex;align-items:center;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--border-light);font-size:13px}
 .quiet-agent-row:last-child{border-bottom:none}
-/* Dedup warning */
-.dedup-warn{background:#FFF8E1;border:1px solid #FFE69C;border-radius:8px;padding:10px 14px;margin-bottom:10px;font-size:12px;color:#B85B00;display:none}
+
+/* ── DEDUP WARNING ─────────────────────────────────────────────── */
+.dedup-warn{background:var(--warning-bg);border:1px solid #FDE68A;border-radius:var(--radius-sm);padding:10px 14px;margin-bottom:12px;font-size:12px;color:#92400E;display:none}
 .dedup-warn.show{display:block}
-/* Reconnect tab */
-.rc-upload-zone{border:2px dashed #d8d6e8;border-radius:10px;padding:20px;text-align:center;cursor:pointer;transition:border-color .2s;margin-bottom:16px}
-.rc-upload-zone:hover,.rc-upload-zone.drag{border-color:#534AB7;background:#f8f8ff}
+
+/* ── RECONNECT TAB ─────────────────────────────────────────────── */
+.rc-upload-zone{border:2px dashed var(--border);border-radius:var(--radius);padding:24px;text-align:center;cursor:pointer;transition:all .2s;margin-bottom:16px}
+.rc-upload-zone:hover,.rc-upload-zone.drag{border-color:var(--brand);background:var(--brand-light)}
 .rc-upload-zone input[type=file]{display:none}
 .rc-summary{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px}
-.rc-stat{text-align:center;padding:12px 8px;background:#f8f8ff;border:0.5px solid #e8e6f8;border-radius:10px}
-.rc-stat-num{font-size:22px;font-weight:600;color:#534AB7}
-.rc-stat-label{font-size:10px;color:#888;margin-top:4px}
-.rc-filters{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
-.rc-filters select,.rc-filters input{padding:7px 10px;border:0.5px solid #d8d6e8;border-radius:8px;font-size:12px;font-family:inherit;color:#1a1a2e;background:#fff;outline:none}
+.rc-stat{text-align:center;padding:14px 8px;background:var(--surface-2);border:1px solid var(--border-light);border-radius:var(--radius);transition:box-shadow .15s}
+.rc-stat:hover{box-shadow:var(--shadow-sm)}
+.rc-stat-num{font-size:24px;font-weight:700;color:var(--brand)}
+.rc-stat-label{font-size:10px;color:var(--text-3);margin-top:4px;font-weight:500;letter-spacing:.2px}
+.rc-filters{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px}
+.rc-filters select,.rc-filters input{padding:8px 11px;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:12px;font-family:inherit;color:var(--text-1);background:var(--surface);outline:none;transition:border-color .15s}
+.rc-filters select:focus,.rc-filters input:focus{border-color:var(--brand-mid)}
 .rc-filters input{flex:1;min-width:140px}
-.rc-section-header{font-size:11px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;padding:8px 0 6px;border-bottom:1.5px solid;margin-bottom:8px}
-.rc-agent{background:#fff;border:0.5px solid #e8e6f8;border-radius:10px;padding:12px 14px;margin-bottom:8px;transition:box-shadow .15s}
-.rc-agent:hover{box-shadow:0 2px 8px rgba(83,74,183,.1)}
+.rc-section-header{font-size:10px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;padding:10px 0 7px;border-bottom:2px solid;margin-bottom:10px}
+.rc-agent{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px;margin-bottom:8px;transition:all .18s}
+.rc-agent:hover{box-shadow:var(--shadow);border-color:var(--border-light);transform:translateY(-1px)}
 .rc-agent-top{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
-.rc-agent-name{font-size:14px;font-weight:600;color:#1a1a2e}
-.rc-agent-meta{font-size:11px;color:#888;margin-top:3px;display:flex;flex-wrap:wrap;gap:8px}
+.rc-agent-name{font-size:14px;font-weight:700;color:var(--text-1)}
+.rc-agent-meta{font-size:11px;color:var(--text-3);margin-top:4px;display:flex;flex-wrap:wrap;gap:8px;line-height:1.6}
 .rc-agent-actions{display:flex;gap:6px;flex-shrink:0;flex-wrap:wrap;justify-content:flex-end}
-.rc-badge{display:inline-block;padding:2px 8px;border-radius:12px;font-size:10px;font-weight:700}
-.rc-badge-A{background:#FFD700;color:#5D4E00}
-.rc-badge-B{background:#C0C0C0;color:#333}
-.rc-badge-C{background:#CD7F32;color:#fff}
-.rc-badge-U{background:#f0eef8;color:#888}
-.rc-badge-days-hot{background:#FCEBEB;color:#A32D2D;border-radius:10px;padding:2px 7px;font-size:10px;font-weight:600}
-.rc-badge-days-warm{background:#FFF3E0;color:#B85B00;border-radius:10px;padding:2px 7px;font-size:10px;font-weight:600}
-.rc-badge-days-cold{background:#EEF2FF;color:#534AB7;border-radius:10px;padding:2px 7px;font-size:10px;font-weight:600}
-.rc-inline-form{display:none;background:#f8f8ff;border:0.5px solid #d8d6e8;border-radius:8px;padding:12px;margin-top:10px}
+.rc-badge{display:inline-block;padding:2px 9px;border-radius:20px;font-size:10px;font-weight:700;letter-spacing:.2px}
+.rc-badge-A{background:#FFC107;color:#5D4000}
+.rc-badge-B{background:#B0BEC5;color:#263238}
+.rc-badge-C{background:#C07D3E;color:#fff}
+.rc-badge-U{background:var(--surface-2);color:var(--text-3)}
+.rc-badge-days-hot{background:var(--danger-bg);color:var(--danger);border-radius:20px;padding:2px 8px;font-size:10px;font-weight:700}
+.rc-badge-days-warm{background:var(--warning-bg);color:var(--warning);border-radius:20px;padding:2px 8px;font-size:10px;font-weight:700}
+.rc-badge-days-cold{background:var(--brand-light);color:var(--brand);border-radius:20px;padding:2px 8px;font-size:10px;font-weight:700}
+.rc-inline-form{display:none;background:var(--surface-2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:14px;margin-top:10px}
 .rc-inline-form.show{display:block}
-.rc-inline-form select,.rc-inline-form textarea,.rc-inline-form input[type=date]{width:100%;border:0.5px solid #d8d6e8;border-radius:6px;padding:7px 10px;font-size:12px;font-family:inherit;color:#1a1a2e;outline:none;margin-bottom:8px;box-sizing:border-box}
+.rc-inline-form select,.rc-inline-form textarea,.rc-inline-form input[type=date]{width:100%;border:1px solid var(--border);border-radius:var(--radius-sm);padding:8px 10px;font-size:12px;font-family:inherit;color:var(--text-1);outline:none;margin-bottom:8px;box-sizing:border-box;background:var(--surface)}
 .rc-inline-row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-.rc-remove-form{display:none;background:#FFF3E0;border:0.5px solid #FFE69C;border-radius:8px;padding:12px;margin-top:10px}
+.rc-remove-form{display:none;background:var(--warning-bg);border:1px solid #FDE68A;border-radius:var(--radius-sm);padding:14px;margin-top:10px}
 .rc-remove-form.show{display:block}
-.rc-contacted-badge{display:inline-block;background:#E8F5E9;color:#2E7D32;border:0.5px solid #81C784;border-radius:12px;font-size:10px;font-weight:600;padding:2px 8px;margin-left:6px}
-.rc-removed-badge{display:inline-block;background:#f5f5f5;color:#999;border:0.5px solid #ddd;border-radius:12px;font-size:10px;font-weight:600;padding:2px 8px;margin-left:6px}
+.rc-contacted-badge{display:inline-block;background:var(--success-bg);color:var(--success);border:1px solid #6EE7C4;border-radius:20px;font-size:10px;font-weight:600;padding:2px 9px;margin-left:6px}
+.rc-removed-badge{display:inline-block;background:#f5f5f5;color:#999;border:1px solid #e0e0e0;border-radius:20px;font-size:10px;font-weight:600;padding:2px 9px;margin-left:6px}
+
+/* ── AUTOCOMPLETE ──────────────────────────────────────────────── */
 .ac-wrap{position:relative}
-.ac-list{position:absolute;top:100%;left:0;right:0;background:#fff;border:0.5px solid #d8d6e8;border-radius:8px;box-shadow:0 4px 16px rgba(45,27,105,0.1);z-index:100;max-height:200px;overflow-y:auto;display:none}
+.ac-list{position:absolute;top:calc(100% + 4px);left:0;right:0;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow-lg);z-index:100;max-height:220px;overflow-y:auto;display:none}
 .ac-list.open{display:block}
-.ac-item{padding:9px 12px;font-size:13px;cursor:pointer;border-bottom:0.5px solid #f5f4f8}
-.ac-item:hover{background:#f5f4f8}
+.ac-item{padding:10px 14px;font-size:13px;cursor:pointer;border-bottom:1px solid var(--border-light);transition:background .12s}
+.ac-item:hover{background:var(--brand-light);color:var(--brand-dark)}
 .ac-item:last-child{border-bottom:none}
-.ac-item-prospect{color:#534AB7;font-size:11px}
-.btn-primary{background:#534AB7;color:#fff;border:none;padding:10px 24px;border-radius:8px;font-size:13px;font-weight:500;cursor:pointer;font-family:inherit;transition:background .15s}
-.btn-primary:hover{background:#3C3489}
-.btn-primary:disabled{background:#bbb;cursor:not-allowed}
-.btn-sm{background:#f5f4f8;border:0.5px solid #e4e2ee;padding:4px 10px;border-radius:6px;font-size:11px;cursor:pointer;font-weight:500;color:#555;font-family:inherit}
-.btn-sm:hover{background:#EEEDFE;color:#534AB7;border-color:#AFA9EC}
-.btn-sm.danger{background:#fff0f0;color:#A32D2D;border-color:#f7c1c1}
-.btn-sm.danger:hover{background:#FCEBEB}
-.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1a0f3d;color:#fff;padding:10px 20px;border-radius:8px;font-size:13px;z-index:999;opacity:0;transition:opacity .3s;pointer-events:none;max-width:400px}
-.toast.show{opacity:1}
-.toast.success{background:#085041}
-.toast.error{background:#791F1F}
+.ac-item-prospect{color:var(--brand);font-size:11px;font-weight:500}
+
+/* ── BUTTONS ───────────────────────────────────────────────────── */
+.btn-primary{background:var(--brand);color:#fff;border:none;padding:11px 26px;border-radius:var(--radius-sm);font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;transition:all .18s;letter-spacing:.2px}
+.btn-primary:hover{background:var(--brand-dark);box-shadow:0 4px 12px rgba(91,79,207,.3)}
+.btn-primary:disabled{background:var(--text-4);cursor:not-allowed;box-shadow:none}
+.btn-sm{background:var(--surface-2);border:1px solid var(--border);padding:5px 11px;border-radius:var(--radius-sm);font-size:11px;cursor:pointer;font-weight:600;color:var(--text-2);font-family:inherit;transition:all .15s}
+.btn-sm:hover{background:var(--brand-light);color:var(--brand);border-color:var(--brand-mid)}
+.btn-sm.danger{background:#FFF5F5;color:var(--danger);border-color:#FACACA}
+.btn-sm.danger:hover{background:var(--danger-bg)}
+
+/* ── TOAST ─────────────────────────────────────────────────────── */
+.toast{position:fixed;bottom:28px;left:50%;transform:translateX(-50%) translateY(8px);background:#1E1654;color:#fff;padding:11px 22px;border-radius:var(--radius);font-size:13px;z-index:999;opacity:0;transition:all .3s cubic-bezier(.4,0,.2,1);pointer-events:none;max-width:420px;box-shadow:var(--shadow-lg);font-weight:500}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.toast.success{background:#0A6B4C}
+.toast.error{background:#8B1F1F}
+
+/* ── PIPELINE ──────────────────────────────────────────────────── */
 .pipe-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px}
-.ps-card{background:#fff;border:0.5px solid #e4e2ee;border-radius:10px;padding:14px;text-align:center}
-.ps-num{font-size:22px;font-weight:500;color:#534AB7}
-.ps-label{font-size:10px;color:#aaa;margin-top:2px}
-.prospect-card{border:0.5px solid #e4e2ee;border-radius:10px;padding:14px;margin-bottom:10px;background:#fff}
-.prospect-card.dnc{border-color:#F7C1C1;background:#FCEBEB}
-.prospect-card.nfm{border-color:#B5D4F4;background:#E6F1FB}
+.ps-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px;text-align:center;box-shadow:var(--shadow-sm)}
+.ps-num{font-size:22px;font-weight:700;color:var(--brand)}
+.ps-label{font-size:10px;color:var(--text-3);margin-top:2px;font-weight:500}
+.prospect-card{border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin-bottom:10px;background:var(--surface);box-shadow:var(--shadow-sm);transition:box-shadow .18s}
+.prospect-card:hover{box-shadow:var(--shadow)}
+.prospect-card.dnc{border-color:#FACACA;background:var(--danger-bg)}
+.prospect-card.nfm{border-color:#BFDBFE;background:#EFF6FF}
 .pc-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px}
-.pc-name{font-size:14px;font-weight:500;color:#1a1a2e}
-.pc-brokerage{font-size:11px;color:#aaa;margin-top:2px}
-.pc-badge{font-size:10px;font-weight:500;padding:3px 9px;border-radius:20px}
-.pc-badge.followup{background:#FFF3E0;color:#B85B00}
-.pc-badge.dnc{background:#FCEBEB;color:#A32D2D}
-.pc-badge.nfm{background:#E6F1FB;color:#185FA5}
-.pc-contact{font-size:11px;color:#777;margin:6px 0;display:flex;gap:14px;flex-wrap:wrap}
-.pc-notes{font-size:12px;color:#777;font-style:italic;margin-top:6px;padding-top:6px;border-top:0.5px solid #f0eef8}
-.pc-fudate{font-size:11px;font-weight:500;color:#B85B00;margin-top:4px}
-.pc-fudate.overdue{color:#A32D2D}
-.pc-actions{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
-.pc-activity-feed{margin-top:10px;padding-top:10px;border-top:0.5px solid #f0eef8}
-.pc-activity-feed-title{font-size:10px;font-weight:600;color:#888;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px}
-.pc-activity-item{font-size:11px;color:#555;padding:4px 0;border-bottom:0.5px solid #f5f4f8;display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.pc-name{font-size:14px;font-weight:700;color:var(--text-1)}
+.pc-brokerage{font-size:11px;color:var(--text-3);margin-top:2px}
+.pc-badge{font-size:10px;font-weight:600;padding:3px 10px;border-radius:20px}
+.pc-badge.followup{background:var(--warning-bg);color:var(--warning)}
+.pc-badge.dnc{background:var(--danger-bg);color:var(--danger)}
+.pc-badge.nfm{background:#EFF6FF;color:#1D4ED8}
+.pc-contact{font-size:11px;color:var(--text-2);margin:6px 0;display:flex;gap:14px;flex-wrap:wrap}
+.pc-notes{font-size:12px;color:var(--text-2);font-style:italic;margin-top:6px;padding-top:6px;border-top:1px solid var(--border-light);line-height:1.5}
+.pc-fudate{font-size:11px;font-weight:600;color:var(--warning);margin-top:4px}
+.pc-fudate.overdue{color:var(--danger)}
+.pc-actions{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}
+.pc-activity-feed{margin-top:12px;padding-top:12px;border-top:1px solid var(--border-light)}
+.pc-activity-feed-title{font-size:10px;font-weight:700;color:var(--text-3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:7px}
+.pc-activity-item{font-size:11px;color:var(--text-2);padding:5px 0;border-bottom:1px solid var(--border-light);display:flex;justify-content:space-between;align-items:baseline;gap:8px}
 .pc-activity-item:last-child{border-bottom:none}
-.add-form{background:#f8f7fc;border:0.5px dashed #AFA9EC;border-radius:10px;padding:18px 20px;margin-bottom:14px}
-.add-form h4{font-size:13px;font-weight:500;color:#534AB7;margin-bottom:14px}
+.add-form{background:var(--brand-light);border:1px dashed var(--brand-mid);border-radius:var(--radius);padding:20px 22px;margin-bottom:14px}
+.add-form h4{font-size:13px;font-weight:600;color:var(--brand);margin-bottom:14px}
+
+/* ── TABLE ─────────────────────────────────────────────────────── */
 .dtable{width:100%;border-collapse:collapse;font-size:12px}
-.dtable th{background:#f5f4f8;padding:9px 12px;text-align:left;font-weight:500;font-size:10px;text-transform:uppercase;letter-spacing:.5px;color:#aaa;border-bottom:0.5px solid #e4e2ee}
-.dtable td{padding:9px 12px;border-bottom:0.5px solid #f0eef8;color:#1a1a2e}
+.dtable th{background:var(--surface-2);padding:10px 12px;text-align:left;font-weight:700;font-size:10px;text-transform:uppercase;letter-spacing:.6px;color:var(--text-3);border-bottom:1px solid var(--border)}
+.dtable td{padding:10px 12px;border-bottom:1px solid var(--border-light);color:var(--text-1)}
 .dtable tr:last-child td{border-bottom:none}
-.stat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:14px}
-.stat-card{background:#fff;border:0.5px solid #e4e2ee;border-radius:10px;padding:16px;text-align:center}
-.stat-num{font-size:30px;font-weight:500;color:#534AB7}
-.stat-label{font-size:11px;color:#aaa;margin-top:3px}
-.modal-overlay{display:none;position:fixed;inset:0;background:rgba(26,15,61,0.5);z-index:500;align-items:center;justify-content:center;padding:20px}
+.dtable tbody tr:hover td{background:var(--surface-2)}
+
+/* ── STAT CARDS (Daniel) ───────────────────────────────────────── */
+.stat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px}
+.stat-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:18px 16px;text-align:center;box-shadow:var(--shadow-sm);transition:box-shadow .18s}
+.stat-card:hover{box-shadow:var(--shadow)}
+.stat-num{font-size:32px;font-weight:700;color:var(--brand)}
+.stat-label{font-size:11px;color:var(--text-3);margin-top:4px;font-weight:500;letter-spacing:.1px}
+
+/* ── MODALS ────────────────────────────────────────────────────── */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(18,12,50,.55);z-index:500;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(3px)}
 .modal-overlay.open{display:flex}
-.modal-box{background:#fff;border-radius:14px;padding:22px 24px;width:100%;max-width:460px}
+.modal-box{background:var(--surface);border-radius:var(--radius-lg);padding:24px 26px;width:100%;max-width:460px;box-shadow:var(--shadow-lg)}
 .modal-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
-.modal-title{font-size:14px;font-weight:500;color:#1a1a2e}
-.modal-close{background:none;border:none;font-size:18px;cursor:pointer;color:#bbb;padding:2px}
-.modal-sub{font-size:12px;color:#aaa;margin-bottom:16px}
-.confirm-overlay{display:none;position:fixed;inset:0;background:rgba(26,15,61,0.5);z-index:600;align-items:center;justify-content:center;padding:20px}
+.modal-title{font-size:15px;font-weight:700;color:var(--text-1)}
+.modal-close{background:none;border:none;font-size:18px;cursor:pointer;color:var(--text-4);padding:2px;transition:color .15s}
+.modal-close:hover{color:var(--text-1)}
+.modal-sub{font-size:12px;color:var(--text-3);margin-bottom:18px}
+.confirm-overlay{display:none;position:fixed;inset:0;background:rgba(18,12,50,.55);z-index:600;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(3px)}
 .confirm-overlay.open{display:flex}
-.confirm-box{background:#fff;border-radius:14px;padding:22px 24px;width:100%;max-width:360px;text-align:center}
-.confirm-title{font-size:15px;font-weight:500;color:#1a1a2e;margin-bottom:8px}
-.confirm-sub{font-size:13px;color:#aaa;margin-bottom:20px}
+.confirm-box{background:var(--surface);border-radius:var(--radius-lg);padding:28px 26px;width:100%;max-width:360px;text-align:center;box-shadow:var(--shadow-lg)}
+.confirm-title{font-size:16px;font-weight:700;color:var(--text-1);margin-bottom:8px}
+.confirm-sub{font-size:13px;color:var(--text-2);margin-bottom:22px;line-height:1.5}
 .confirm-btns{display:flex;gap:10px;justify-content:center}
-.cal-day{border-radius:8px;padding:4px;min-height:58px;border:0.5px solid transparent;cursor:pointer;position:relative}
-.cal-day:hover{background:#f5f4f8;border-color:#e4e2ee}
-.cal-day.other-month{opacity:.35}
-.cal-day.today .cal-num{background:#534AB7;color:#fff;border-radius:50%;width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:500}
-.cal-num{font-size:11px;color:#888;margin-bottom:3px;width:22px;height:22px;display:flex;align-items:center;justify-content:center}
-.cal-event{font-size:9px;padding:2px 4px;border-radius:4px;margin-bottom:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:500;cursor:pointer}
-.cal-event.meeting{background:#EEEDFE;color:#3C3489}
-.cal-event.followup{background:#FFF3E0;color:#B85B00}
-.cal-event.ctc{background:#E1F5EE;color:#0F6E56}
-.cal-event.other{background:#EEEDFE;color:#3C3489}
-.cal-day-item{display:flex;align-items:flex-start;gap:8px;padding:7px 0;border-bottom:0.5px solid #eee}
+
+/* ── CALENDAR ──────────────────────────────────────────────────── */
+.cal-day{border-radius:var(--radius-sm);padding:5px;min-height:62px;border:1px solid transparent;cursor:pointer;position:relative;transition:all .15s}
+.cal-day:hover{background:var(--surface-2);border-color:var(--border)}
+.cal-day.other-month{opacity:.3}
+.cal-day.today .cal-num{background:var(--brand);color:#fff;border-radius:50%;width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700}
+.cal-num{font-size:11px;color:var(--text-3);margin-bottom:3px;width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-weight:500}
+.cal-event{font-size:9px;padding:2px 5px;border-radius:4px;margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:600;cursor:pointer}
+.cal-event.meeting{background:var(--brand-light);color:var(--brand-dark)}
+.cal-event.followup{background:var(--warning-bg);color:var(--warning)}
+.cal-event.ctc{background:#E2F7F0;color:#0D6E50}
+.cal-event.other{background:var(--brand-light);color:var(--brand-dark)}
+.cal-day-item{display:flex;align-items:flex-start;gap:8px;padding:7px 0;border-bottom:1px solid var(--border-light)}
 .cal-day-item:last-child{border-bottom:none}
 .cal-day-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;margin-top:3px}
-@media(max-width:600px){.form-row,.form-row.three,.stat-grid,.pipe-stats,.week-bottom{grid-template-columns:1fr}.view{padding:14px}}
 
-.contact-row{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:0.5px solid #f0eef8;flex-wrap:wrap}
+/* ── CONTACTS ──────────────────────────────────────────────────── */
+.contact-row{display:flex;align-items:center;gap:12px;padding:11px 0;border-bottom:1px solid var(--border-light);flex-wrap:wrap;transition:background .12s}
 .contact-row:last-child{border-bottom:none}
-.contact-avatar{width:34px;height:34px;border-radius:50%;background:#EEEDFE;color:#534AB7;font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.contact-avatar{width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,var(--brand-light),var(--brand-mid));color:var(--brand-dark);font-size:13px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0}
 .contact-info{flex:1;min-width:120px}
-.contact-name{font-size:13px;font-weight:600;color:#1a1a2e}
-.contact-meta{font-size:11px;color:#aaa;margin-top:2px;display:flex;gap:10px;flex-wrap:wrap}
-.contact-bday{font-size:11px;color:#E91E63;font-weight:500}
-.error-banner{background:#FFF3CD;border:0.5px solid #FFE69C;border-radius:8px;padding:12px;margin-bottom:14px;color:#856404;font-size:12px}
-.error-banner strong{color:#333}
+.contact-name{font-size:13px;font-weight:700;color:var(--text-1)}
+.contact-meta{font-size:11px;color:var(--text-3);margin-top:2px;display:flex;gap:10px;flex-wrap:wrap}
+.contact-bday{font-size:11px;color:var(--rose);font-weight:600}
+
+/* ── ERROR BANNERS ─────────────────────────────────────────────── */
+.error-banner{background:var(--warning-bg);border:1px solid #FDE68A;border-radius:var(--radius-sm);padding:12px;margin-bottom:14px;color:#92400E;font-size:12px}
+.error-banner strong{color:var(--text-1)}
+
+/* ── RESPONSIVE ────────────────────────────────────────────────── */
+@media(max-width:600px){.form-row,.form-row.three,.stat-grid,.pipe-stats,.week-bottom{grid-template-columns:1fr}.view{padding:16px 14px}}
 </style>
 </head>
 <body>
@@ -272,7 +364,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
     </div>
   </div>
   <div class="card">
-    <div class="card-title">This week 🌞 <span class="card-sub" id="weekLabel2"></span></div>
+    <div class="card-title">This week <span class="card-sub" id="weekLabel2"></span></div>
     <div id="weekGoalBars"><div class="no-data">Loading...</div></div>
   </div>
   <div class="card">
@@ -286,21 +378,21 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   </div>
   <div class="week-bottom">
     <div class="card">
-      <div class="card-title" style="margin-bottom:12px">🍕 Follow-ups due</div>
+      <div class="card-title" style="margin-bottom:12px">Follow-ups due</div>
       <div id="weekFollowups"><div class="no-data" style="padding:16px">Loading...</div></div>
     </div>
     <div class="card">
-      <div class="card-title" style="margin-bottom:12px">✍️ Last 5 logged</div>
+      <div class="card-title" style="margin-bottom:12px">Last logged</div>
       <div id="weekRecent"><div class="no-data" style="padding:16px">Loading...</div></div>
     </div>
   </div>
   <div class="card">
-    <div class="card-title" style="margin-bottom:12px">🚩 Flagged by LPs <span class="card-sub" id="flaggedSub"></span></div>
+    <div class="card-title" style="margin-bottom:12px">Flagged by LPs <span class="card-sub" id="flaggedSub"></span></div>
     <div id="weekFlagged"><div class="no-data" style="padding:16px">Loading...</div></div>
   </div>
   <div class="card" id="weekCtcTrigger" style="display:none;padding:14px 16px"></div>
   <div class="card">
-    <div class="card-title" style="margin-bottom:12px">🔍 Going quiet <span class="card-sub" id="quietSub"></span></div>
+    <div class="card-title" style="margin-bottom:12px">At Risk — Need a Touch <span class="card-sub" id="quietSub"></span></div>
     <div id="weekQuiet"><div class="no-data" style="padding:16px">Loading...</div></div>
   </div>
 </div>
@@ -315,7 +407,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 
   <div class="card">
     <div id="logNormalFields">
-      <div class="card-title">Log an activity ✨</div>
+      <div class="card-title">Log an activity</div>
       <div id="dedupWarn" class="dedup-warn"></div>
       <div class="form-row">
         <div class="field">
@@ -341,6 +433,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
               <option>Sent Referral</option>
               <option>Co-hosted Event</option>
               <option>Realtor Buddy Referral Ask</option>
+            </optgroup>
+            <optgroup label="Management">
+              <option>Active Agent Talk-to</option>
             </optgroup>
             <optgroup label="Retention and Referrals">
               <option>Active Agent Check-in</option>
@@ -399,7 +494,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 
 <div id="view-followups" class="view">
   <div class="card">
-    <div class="card-title">🍕 Upcoming follow-ups</div>
+    <div class="card-title">Upcoming follow-ups</div>
     <div id="followupsList"><div class="no-data">Loading...</div></div>
   </div>
 </div>
@@ -593,40 +688,62 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 </div>
 
 <div id="view-daniel" class="view">
-  <div class="stat-grid" id="danielStats"></div>
 
-  <div class="card">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
-      <div class="period-toggle" style="margin-bottom:0">
-        <button class="ptoggle" id="dbtn-daily" onclick="showDanielPeriod('daily')">Daily</button>
-        <button class="ptoggle active" id="dbtn-week" onclick="showDanielPeriod('week')">This week</button>
-        <button class="ptoggle" id="dbtn-mtd" onclick="showDanielPeriod('mtd')">Month to date</button>
-        <button class="ptoggle" id="dbtn-ytd" onclick="showDanielPeriod('ytd')">Year to date</button>
-      </div>
-      <button onclick="generateWeeklySummary()" style="padding:7px 13px;background:#534AB7;color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:500;cursor:pointer;font-family:inherit;white-space:nowrap">📋 Copy summary</button>
+  <!-- TOP: Period selector + Copy summary -->
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:10px">
+    <div class="period-toggle" style="margin-bottom:0">
+      <button class="ptoggle" id="dbtn-daily" onclick="showDanielPeriod('daily')">Today</button>
+      <button class="ptoggle active" id="dbtn-week" onclick="showDanielPeriod('week')">This week</button>
+      <button class="ptoggle" id="dbtn-mtd" onclick="showDanielPeriod('mtd')">Month to date</button>
+      <button class="ptoggle" id="dbtn-ytd" onclick="showDanielPeriod('ytd')">Year to date</button>
     </div>
-    <pre id="danielSummaryOut" style="display:none;background:#f8f8ff;border:0.5px solid #d8d6e8;border-radius:8px;padding:12px;font-size:11px;font-family:monospace;white-space:pre-wrap;margin-bottom:14px;color:#26215C"></pre>
+    <button onclick="generateWeeklySummary()" style="padding:8px 16px;background:var(--brand);color:#fff;border:none;border-radius:var(--radius-sm);font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap">Copy summary</button>
+  </div>
+  <pre id="danielSummaryOut" style="display:none;background:var(--surface-2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:14px;font-size:11px;font-family:monospace;white-space:pre-wrap;margin-bottom:14px;color:var(--text-1);line-height:1.6"></pre>
+
+  <!-- GROWTH METRICS -->
+  <div class="card">
+    <div class="card-title" style="margin-bottom:4px">Growth</div>
+    <div style="font-size:11px;color:var(--text-3);margin-bottom:16px">New agents added and meetings held</div>
+    <div id="danielGrowthGrid"></div>
+  </div>
+
+  <!-- RETENTION METRICS -->
+  <div class="card">
+    <div class="card-title" style="margin-bottom:4px">Retention</div>
+    <div style="font-size:11px;color:var(--text-3);margin-bottom:16px">Keeping existing agents active and engaged</div>
+    <div id="danielRetentionGrid"></div>
+  </div>
+
+  <!-- ACTIVITY METRICS -->
+  <div class="card">
+    <div class="card-title" style="margin-bottom:4px">Activity</div>
+    <div style="font-size:11px;color:var(--text-3);margin-bottom:16px">All outreach activity vs goals</div>
     <div id="danielGoals"><div class="no-data">Loading...</div></div>
   </div>
 
+  <!-- TRENDS: Month over month -->
   <div class="card" id="danielMomCard" style="display:none">
-    <div class="card-title" style="margin-bottom:12px">📈 Month-over-month</div>
+    <div class="card-title" style="margin-bottom:4px">Trends</div>
+    <div style="font-size:11px;color:var(--text-3);margin-bottom:16px">Month-over-month comparison</div>
     <div id="danielMom"></div>
   </div>
 
+  <!-- BOTTOM: Follow-ups + At Risk -->
   <div class="week-bottom">
     <div class="card">
-      <div class="card-title" style="margin-bottom:12px">🍕 Follow-ups due</div>
+      <div class="card-title" style="margin-bottom:12px">Follow-ups due</div>
       <div id="danielFollowups"><div class="no-data" style="padding:16px">Loading...</div></div>
     </div>
     <div class="card">
-      <div class="card-title" style="margin-bottom:12px">🔍 Going quiet</div>
+      <div class="card-title" style="margin-bottom:12px">At Risk — Need a Touch</div>
       <div id="danielQuiet"><div class="no-data" style="padding:16px">Loading...</div></div>
     </div>
   </div>
 
+  <!-- ACTIVITY LOG -->
   <div class="card">
-    <div class="card-title">This week's activity log</div>
+    <div class="card-title">Activity log</div>
     <div style="overflow-x:auto">
       <table class="dtable">
         <thead><tr><th>Agent</th><th>Activity</th><th>Outcome</th><th>Date</th><th>Notes</th></tr></thead>
@@ -638,7 +755,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 
 <div id="view-health" class="view">
   <div class="card">
-    <div class="card-title">🏥 Data Health Check</div>
+    <div class="card-title">Data Health Check</div>
     <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px">
       <div style="text-align:center;padding:16px;background:#FCEBEB;border:0.5px solid #f7c1c1;border-radius:10px;cursor:pointer" onclick="switchTab('feed');applyFeedFilters()">
         <div style="font-size:28px;font-weight:600;color:#A32D2D" id="hc-no-outcome">0</div>
@@ -660,12 +777,12 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   </div>
 
   <div class="card">
-    <div class="card-title">⚠️ Issues Found</div>
+    <div class="card-title">Issues Found</div>
     <div id="healthIssues"><div class="no-data">Loading...</div></div>
   </div>
 
   <div class="card">
-    <div class="card-title">📊 Prospect Funnel</div>
+    <div class="card-title">Prospect Funnel</div>
     <div style="display:flex;flex-direction:column;gap:16px">
       <div>
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
@@ -720,7 +837,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
     <div id="networkList"><div class="no-data">Loading network activity...</div></div>
   </div>
   <div class="card">
-    <div class="card-title">📊 Network Stats</div>
+    <div class="card-title">Network Stats</div>
     <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px">
       <div style="text-align:center;padding:12px;background:#f5f4f8;border-radius:8px">
         <div style="font-size:24px;font-weight:500;color:#534AB7" id="networkTotalRm">—</div>
@@ -744,7 +861,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 
 <div id="view-contacts" class="view">
   <div class="card">
-    <div class="card-title">👤 Agent contacts <span class="card-sub">Edit phone, email and birthday for any agent</span></div>
+    <div class="card-title">Agent contacts <span class="card-sub">Edit phone, email and birthday for any agent</span></div>
     <div style="display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap">
       <input type="text" id="contactsSearch" placeholder="Search by name, phone, email or birthday..." oninput="filterContacts()" style="flex:1;min-width:180px;padding:9px 11px;border:0.5px solid #d8d6e8;border-radius:8px;font-size:13px;font-family:inherit;color:#1a1a2e;outline:none">
       <select id="contactsFilter" onchange="filterContacts()" style="padding:8px 11px;border:0.5px solid #d8d6e8;border-radius:8px;font-size:12px;font-family:inherit;color:#555;background:#fff">
@@ -785,7 +902,7 @@ const SB_URL="https://uclucbdkjqyqdvifyptx.supabase.co";
 const SB_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVjbHVjYmRranF5cWR2aWZ5cHR4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA0OTUyMTMsImV4cCI6MjA5NjA3MTIxM30.VnqWcFT1WLQwCJxSdEIzIgOvETaOQly2IQxht-9uI7E";
 
 const EMOJI={
-  "Cold Calls":"🏹","New Realtor Meeting":"🌸","New Agent Follow-up":"🌻","Break Breads":"🤝","Active Agent Check-in":"🤙",
+  "Cold Calls":"🏹","New Realtor Meeting":"🌸","New Agent Follow-up":"🌻","Break Breads":"🤝","Active Agent Check-in":"🤙","Active Agent Talk-to":"📞",
   "Realtor Buddy Referral Ask":"🌾","CTC Call":"⚡","Open House Visit":"🏠",
   "Market Update Call":"📊","Sent Market Report":"💬","Sent Referral":"💌",
   "Co-hosted Event":"🎉","Closed Deal Thank You":"🍰","Birthday Outreach":"🍰",
@@ -793,13 +910,15 @@ const EMOJI={
   "Co-Marketing Discussion":"🤝","Team Presentation":"🎬","Recruiting Conversation":"👑"
 };
 const GOALS=[
-  {label:"🏹 Cold calls",type:"Cold Calls",weekly:25,monthly:100},
-  {label:"🌸 New realtor meetings",type:"New Realtor Meeting",weekly:5,monthly:20},
-  {label:"🤝 Break breads",type:"Break Breads",weekly:5,monthly:20},
-  {label:"🌾 Realtor buddy intro",type:"Realtor Buddy Referral Ask",weekly:3,monthly:12}
+  {label:"Cold calls",type:"Cold Calls",weekly:25,monthly:100},
+  {label:"New realtor meetings",type:"New Realtor Meeting",weekly:5,monthly:20},
+  {label:"Break breads",type:"Break Breads",weekly:5,monthly:20},
+  {label:"Active Agent Talk-to's",type:"Active Agent Talk-to",weekly:20,monthly:80},
+  {label:"Realtor buddy asks",type:"Realtor Buddy Referral Ask",weekly:3,monthly:12}
 ];
+const GOAL_THRESHOLD=0.8; // 80% = passing
 const CTC_TYPE="CTC Call";
-const ACT_TYPE_OPTIONS='<optgroup label="New Relationships"><option>Cold Calls</option><option>New Realtor Meeting</option><option>Open House Visit</option></optgroup><optgroup label="Relationship Deepening"><option>New Agent Follow-up</option><option>Break Breads</option><option>Market Update Call</option><option>Sent Market Report</option><option>Sent Referral</option><option>Co-hosted Event</option><option>Realtor Buddy Referral Ask</option></optgroup><optgroup label="Retention and Referrals"><option>Active Agent Check-in</option><option>CTC Call</option><option>Closed Deal Thank You</option><option>Birthday Outreach</option><option>Holiday Outreach</option><option>Agent Appreciation</option></optgroup><optgroup label="Special Programs"><option>Business Planning Session</option><option>Co-Marketing Discussion</option><option>Team Presentation</option><option>Recruiting Conversation</option></optgroup>';
+const ACT_TYPE_OPTIONS='<optgroup label="New Relationships"><option>Cold Calls</option><option>New Realtor Meeting</option><option>Open House Visit</option></optgroup><optgroup label="Relationship Deepening"><option>New Agent Follow-up</option><option>Break Breads</option><option>Market Update Call</option><option>Sent Market Report</option><option>Sent Referral</option><option>Co-hosted Event</option><option>Realtor Buddy Referral Ask</option></optgroup><optgroup label="Management"><option>Active Agent Talk-to</option></optgroup><optgroup label="Retention and Referrals"><option>Active Agent Check-in</option><option>CTC Call</option><option>Closed Deal Thank You</option><option>Birthday Outreach</option><option>Holiday Outreach</option><option>Agent Appreciation</option></optgroup><optgroup label="Special Programs"><option>Business Planning Session</option><option>Co-Marketing Discussion</option><option>Team Presentation</option><option>Recruiting Conversation</option></optgroup>';
 function badgeEmoji(type){return EMOJI[type]?EMOJI[type]+" "+type:type;}
 
 const NEXT_CALL_DAYS={
@@ -1124,9 +1243,16 @@ async function loadQuietCoverage(){
     const coveredNames=quietAsOfMonday.filter(n=>touchedThisWeek.has(n));
     const pct=quietAsOfMonday.length?Math.round(coveredNames.length/quietAsOfMonday.length*100):100;
 
+    // Build rich names list with days silent for the coverage widget
+    const richNames=quietAsOfMonday.map(n=>{
+      const last=lastSeenBefore[n];
+      const days=last?Math.round((new Date()-new Date(last+"T12:00:00"))/86400000):null;
+      return{name:n,covered:touchedThisWeek.has(n),days:days||"60+"};
+    }).sort((a,b)=>(a.covered===b.covered)?0:a.covered?1:-1); // uncovered first
+
     return{
       pct, total:quietAsOfMonday.length, covered:coveredNames.length,
-      names:quietAsOfMonday.map(n=>({name:n,covered:touchedThisWeek.has(n)}))
+      names:richNames
     };
   }catch(e){
     console.error(e);
@@ -1195,44 +1321,69 @@ async function resolveFlag(id){
 
 async function loadQuiet(){
   try{
-    const[allAgents,allActs]=await Promise.all([
+    const[allAgents,allActs,lpCalls]=await Promise.all([
       sbFetch("agent_profiles?select=agent_name&order=agent_name.asc&limit=500"),
-      sbFetch("amanda_activities?select=agent_name,act_date&order=act_date.desc&limit=2000")
+      sbFetch("amanda_activities?select=agent_name,act_date&order=act_date.desc&limit=2000"),
+      sbFetch("call_logs?select=agent_name,call_date&order=call_date.desc&limit=2000").catch(()=>[])
     ]);
-    const lastSeen={};
+
+    // Build last-touch maps
+    const lastSeenRM={};
     allActs.forEach(a=>{
       const n=(a.agent_name||"").trim();
-      if(n && !lastSeen[n]) lastSeen[n]=a.act_date;
+      if(n&&!lastSeenRM[n])lastSeenRM[n]=a.act_date;
     });
+    const lastSeenLP={};
+    lpCalls.forEach(c=>{
+      const n=(c.agent_name||"").trim();
+      if(n&&!lastSeenLP[n])lastSeenLP[n]=c.call_date;
+    });
+
     const now=new Date();
     const rows=allAgents.map(a=>{
       const name=(a.agent_name||"").trim();
-      if(!name) return null;
-      const last=lastSeen[name];
-      let days;
-      if(!last){ days=null; }
-      else{ days=Math.round((now-new Date(last+"T12:00:00"))/86400000); }
-      return {name,last,days};
+      if(!name)return null;
+      const lastRM=lastSeenRM[name];
+      const lastLP=lastSeenLP[name];
+      const daysRM=lastRM?Math.round((now-new Date(lastRM+"T12:00:00"))/86400000):null;
+      const daysLP=lastLP?Math.round((now-new Date(lastLP+"T12:00:00"))/86400000):null;
+      return{name,daysRM,daysLP};
     }).filter(Boolean);
 
-    const quiet=rows.filter(r=>r.days===null || r.days>=60).sort((a,b)=>{
-      if(a.days===null) return -1;
-      if(b.days===null) return 1;
-      return b.days-a.days;
+    // At Risk = no Amanda touch in 60+ days
+    const quiet=rows.filter(r=>r.daysRM===null||r.daysRM>=60).sort((a,b)=>{
+      if(a.daysRM===null&&b.daysRM===null)return 0;
+      if(a.daysRM===null)return-1;
+      if(b.daysRM===null)return 1;
+      return b.daysRM-a.daysRM;
     });
 
-    document.getElementById("quietSub").textContent=quiet.length?quiet.length+" agent"+(quiet.length!==1?"s":"")+" going quiet":"";
+    document.getElementById("quietSub").textContent=quiet.length?quiet.length+" agent"+(quiet.length!==1?"s":""):"";
 
     if(!quiet.length){
-      document.getElementById("weekQuiet").innerHTML='<div class="no-data" style="padding:16px">Everyone\'s been touched within 60 days 🎉</div>';
+      document.getElementById("weekQuiet").innerHTML='<div class="no-data" style="padding:16px">Everyone\'s been touched within 60 days</div>';
       return;
     }
 
     document.getElementById("weekQuiet").innerHTML=quiet.map(r=>{
-      const isUrgent=r.days===null||r.days>=90;
-      const c=isUrgent?"#E24B4A":"#E8A33D";
-      const label=r.days===null?"No activity logged":r.days+"d since last touch";
-      return '<div class="fu-item"><div class="fu-dot" style="background:'+c+'"></div><div class="fu-body"><div class="fu-name">'+r.name+'</div><div class="fu-meta" style="color:'+c+'">'+(isUrgent?"🚨 ":"⚠️ ")+label+'</div></div></div>';
+      const isUrgent=r.daysRM===null||r.daysRM>=90;
+      const dotColor=isUrgent?"var(--danger)":"var(--warning)";
+      const rmLabel=r.daysRM===null?"No activity logged":r.daysRM+"d since last touch";
+      const lpLabel=r.daysLP!==null?'<span style="color:var(--text-4);margin-left:8px">LP: '+r.daysLP+'d ago</span>'
+        :'<span style="color:var(--text-4);margin-left:8px">LP: no calls logged</span>';
+      const urgencyLabel=isUrgent
+        ?'<span style="color:var(--danger);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.4px">Urgent</span>'
+        :'<span style="color:var(--warning);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.4px">At Risk</span>';
+      return'<div class="quiet-agent-row">'
+        +'<div style="display:flex;align-items:center;gap:8px;flex:1;min-width:0">'
+        +'<div style="width:7px;height:7px;border-radius:50%;background:'+dotColor+';flex-shrink:0"></div>'
+        +'<div><div style="font-size:13px;font-weight:600;color:var(--text-1)">'+r.name+'</div>'
+        +'<div style="font-size:11px;color:var(--text-3);margin-top:1px">'+rmLabel+lpLabel+'</div></div></div>'
+        +'<div style="display:flex;align-items:center;gap:8px;flex-shrink:0">'
+        +urgencyLabel
+        +'<button onclick="document.getElementById(\'agentInput\').value=\''+r.name.replace(/'/g,"\\'")+'\';switchTab(\'log\')" '
+        +'style="font-size:10px;padding:4px 10px;background:var(--brand);color:#fff;border:none;border-radius:6px;cursor:pointer;font-family:inherit;font-weight:600">Log outreach</button>'
+        +'</div></div>';
     }).join("");
   }catch(e){
     console.error(e);
@@ -1266,9 +1417,21 @@ function showPeriod(p){
 function goalColor(pct){return pct>=100?"#639922":pct>=60?"#EF9F27":"#E24B4A";}
 
 function renderGoalBar(label,actual,target,pct,actType){
-  const c=goalColor(pct),hit=pct>=100?" ✌️":"";
+  const isGreen=pct>=100,isPass=pct>=80,c=pct>=100?"var(--success)":pct>=80?"var(--brand)":pct>=50?"var(--warning)":"var(--danger)";
+  const passBadge=pct>=100
+    ?'<span style="font-size:10px;font-weight:700;color:var(--success)">Goal hit</span>'
+    :pct>=80
+    ?'<span style="font-size:10px;font-weight:700;color:var(--brand)">On track</span>'
+    :'<span style="font-size:10px;font-weight:700;color:var(--danger)">Below 80%</span>';
   const clickAttr=actType?' onclick="jumpToFeedType(\''+actType.replace(/'/g,"\\'")+'\')" style="cursor:pointer"':"";
-  return'<div class="goal-row"'+clickAttr+'><div class="goal-label-row"><span class="goal-name">'+label+'</span><span><span class="goal-actual">'+actual+'</span><span class="goal-target"> / '+target+'</span></span></div><div class="goal-track"><div class="goal-fill" style="width:'+Math.min(100,pct)+'%;background:'+c+'"></div></div><div class="goal-pct">'+Math.round(pct)+'% of goal'+hit+'</div></div>';
+  // 80% threshold marker on the track
+  const thresholdMarker='<div style="position:absolute;left:80%;top:-2px;bottom:-2px;width:2px;background:rgba(0,0,0,.12);border-radius:2px" title="80% goal"></div>';
+  return'<div class="goal-row"'+clickAttr+'>'
+    +'<div class="goal-label-row"><span class="goal-name">'+label+'</span>'
+    +'<div style="display:flex;align-items:center;gap:10px"><span><span class="goal-actual">'+actual+'</span><span class="goal-target"> / '+target+'</span></span>'+passBadge+'</div></div>'
+    +'<div class="goal-track" style="position:relative">'+thresholdMarker+'<div class="goal-fill" style="width:'+Math.min(100,pct)+'%;background:'+c+'"></div></div>'
+    +'<div class="goal-pct">'+Math.round(pct)+'% of goal</div>'
+    +'</div>';
 }
 
 function jumpToFeedType(actType){
@@ -1296,7 +1459,7 @@ function renderPeriodScorecard(){
   const isYTD=currentPeriod==="ytd";
   const label=labels[currentPeriod]||"Month to date";
   if(!data.length){document.getElementById("periodScorecard").innerHTML='<div class="no-data">No activity logged yet for this period.</div>';return;}
-  let html='<div style="font-size:11px;color:#bbb;margin-bottom:14px">'+label+' — 🎯 '+data.length+' total activities</div>';
+  let html='<div style="font-size:11px;color:#bbb;margin-bottom:14px">'+label+' — '+data.length+' total activities</div>';
   GOALS.forEach(g=>{
     const target=cfg.base==="weekly"
       ?(currentPeriod==="daily"?Math.ceil(g.weekly/5):g.weekly)
@@ -1362,7 +1525,7 @@ async function loadWeek(){
     document.getElementById("weekFollowups").innerHTML=all.length?all.map(f=>{
       const isOvr=f.follow_up_date<todayStr,c=isOvr?"#E24B4A":"#534AB7";
       return'<div class="fu-item"><div class="fu-dot" style="background:'+c+'"></div><div class="fu-body"><div class="fu-name">'+f.agent_name+'</div><div class="fu-meta">'+badgeEmoji(f.act_type)+'</div></div><div class="fu-date" style="color:'+c+'">'+( isOvr?"Overdue":fmtDate(f.follow_up_date))+'</div></div>';
-    }).join(""):'<div class="no-data" style="padding:16px">No follow-ups due 🌾</div>';
+    }).join(""):'<div class="no-data" style="padding:16px">No follow-ups due</div>';
   }catch(e){console.error(e);}
 
   try{
@@ -1522,7 +1685,7 @@ async function logActivity(){
         openIntake={id:row.id,agent_name:agentName,act_date:date,outcome,follow_up_date:followupDate,freeNotes:notes,states:intakeStates};
       }
     }else{
-      toast("Logged! You're on a roll 🌾","success");
+      toast("Logged successfully","success");
       resetIntakeChecklist();
     }
     applyLockState();
@@ -1552,7 +1715,7 @@ async function loadFollowups(){
     const all=await sbFetch("amanda_activities?select=id,agent_name,act_type,follow_up_date,notes&follow_up_date=not.is.null&order=follow_up_date.asc&limit=100");
     const todayStr=today();
     const sorted=[...all.filter(f=>f.follow_up_date<todayStr),...all.filter(f=>f.follow_up_date>=todayStr)];
-    if(!sorted.length){document.getElementById("followupsList").innerHTML='<div class="no-data">No upcoming follow-ups 🌾</div>';return;}
+    if(!sorted.length){document.getElementById("followupsList").innerHTML='<div class="no-data">No upcoming follow-ups</div>';return;}
     document.getElementById("followupsList").innerHTML=sorted.map(f=>{
       const isOvr=f.follow_up_date<todayStr,isToday=f.follow_up_date===todayStr;
       const days=Math.round((new Date(f.follow_up_date+"T12:00:00")-new Date())/86400000);
@@ -1567,7 +1730,7 @@ async function loadFollowups(){
           dotC="#E24B4A";bgC="#FFF3E0";label="⚠️ OVERDUE "+daysOverdue+"d";
         }
       }else if(isToday){
-        dotC="#EF9F27";bgC="#FFF8E1";label="TODAY 🍕";
+        dotC="#EF9F27";bgC="#FFF8E1";label="Today";
       }else{
         dotC="#534AB7";bgC="#EEEDFE";label="In "+days+"d";
       }
@@ -1619,7 +1782,7 @@ async function saveFollowupDate(id){
   if(!d){toast("Please select a date.","error");return;}
   try{
     await sbFetch("amanda_activities?id=eq."+id,{method:"PATCH",prefer:"return=minimal",body:JSON.stringify({follow_up_date:d})});
-    toast("Follow-up date updated 🌸","success");loadFollowups();loadWeek();
+    toast("Follow-up date updated","success");loadFollowups();loadWeek();
   }catch(e){toast("Save failed: "+e.message,"error");}
 }
 
@@ -1796,7 +1959,7 @@ async function generateWeeklySummary(){
       "   CTC calls: "+(counts[CTC_TYPE]||0),
       "   Realtor buddy asks: "+(counts["Realtor Buddy Referral Ask"]||0),
       "   Total logged: "+weekActs.length,
-      ...(referralsSent?["   Referrals sent to agents: "+referralsSent+" 🌟"]:[]),
+      ...(referralsSent?["   Referrals sent to agents: "+referralsSent+""]:[]),
       "",
       ...(aTierNames.size?["🥇 A-TIER COVERAGE (MTD)","   "+aTierTouched+" of "+aTierNames.size+" A-tier agents touched this month",""]:[]),
       ...(rcContacted.length?["🔁 RECONNECT","   "+rcContacted.length+" agent"+(rcContacted.length!==1?"s":"")+" re-engaged this cycle",""]:[]),
@@ -2108,7 +2271,7 @@ async function rcHandleFile(file){
     if(!agents.length){toast("No agents found in file.","error");return;}
     toast("Saving "+agents.length+" agents to Supabase...","success");
     await rcUploadToSupabase(agents);
-    toast("✅ Reconnect list updated — "+agents.length+" agents loaded.","success");
+    toast("Reconnect list updated — "+agents.length+" agents loaded.","success");
     loadReconnect();
   }catch(e){
     console.error("Upload error:",e);
@@ -2251,7 +2414,7 @@ function applyNetworkFilters(){
 }
 
 function renderNetworkFeed(data){
-  if(!data.length){document.getElementById("networkList").innerHTML='<div class="no-data">No network activity found 🦜</div>';return;}
+  if(!data.length){document.getElementById("networkList").innerHTML='<div class="no-data">No network activity found</div>';return;}
   document.getElementById("networkList").innerHTML=data.map(a=>{
     const isRm=a.source==="RM";
     const isCtc=(isRm?a.act_type:a.activity_type)===CTC_TYPE;
@@ -2345,7 +2508,7 @@ async function loadHealth(){
 }
 
 function renderFeed(data){
-  if(!data.length){document.getElementById("feedList").innerHTML='<div class="no-data">No activity yet 🦜</div>';return;}
+  if(!data.length){document.getElementById("feedList").innerHTML='<div class="no-data">No activity logged yet</div>';return;}
   document.getElementById("feedList").innerHTML=data.map(a=>
     '<div class="feed-item"><div class="feed-top"><span class="feed-agent">'+a.agent_name+'</span><div class="feed-right"><span class="feed-date">'+fmtDate(a.act_date)+'</span><button class="btn-sm" onclick="openEditModal('+a.id+')" style="font-size:10px;padding:3px 8px">Edit</button><button class="btn-sm danger" onclick="openConfirm('+a.id+',\''+( a.agent_name||"").replace(/'/g,"\\'") +'\',\''+( a.act_type||"").replace(/'/g,"\\'") +'\')">Delete</button></div></div><span class="feed-badge '+( a.act_type===CTC_TYPE?"ctc":"rm")+'">'+badgeEmoji(a.act_type)+'</span>'+
     (a.outcome?'<div class="feed-outcome">'+a.outcome+'</div>':"")+
@@ -2409,7 +2572,7 @@ async function confirmDelete(){
   try{
     if(deletingType==="prospect"){
       await sbFetch("outreach_prospects?id=eq."+deletingId,{method:"DELETE",prefer:"return=minimal"});
-      toast("Prospect deleted 🗑️","success");closeConfirm();loadPipeline();
+      toast("Prospect deleted","success");closeConfirm();loadPipeline();
     } else {
       await sbFetch("amanda_activities?id=eq."+deletingId,{method:"DELETE",prefer:"return=minimal"});
       toast("Deleted 🗑️","success");closeConfirm();loadFeed();loadFollowups();loadWeek();loadDaniel();
@@ -2475,7 +2638,7 @@ async function doSearchHistory(name){
     ].sort((a,b)=>(b.date||"").localeCompare(a.date||""));
     if(!items.length&&!profiles.length){html+='<div class="no-data">No contact history found for "'+name+'".</div>';}
     else{
-      html+='<div style="font-size:11px;color:#bbb;margin-bottom:10px">🎯 '+items.length+' total contact records (scrollable)</div>';
+      html+='<div style="font-size:11px;color:#bbb;margin-bottom:10px">'+items.length+' contact records</div>';
       html+=items.map(item=>{
         const isCtc=item.type===CTC_TYPE,isLp=item.source==="LP";
         return'<div class="feed-item"><div class="feed-top"><span class="feed-agent">'+( isLp?(item.lp||"LP")+" → "+item.agent:item.agent)+'</span><div class="feed-right"><span class="feed-date">'+fmtDate(item.date)+'</span>'+( isLp?'':'<button class="btn-sm" onclick="openEditModal('+item.id+')" style="font-size:10px;padding:3px 8px">Edit</button><button class="btn-sm danger" onclick="openConfirm('+item.id+',\''+item.agent.replace(/'/g,"\\'") +'\',\''+item.type.replace(/'/g,"\\'") +'\')">Delete</button>')+'</div></div><span class="feed-badge '+( isLp?"lp":isCtc?"ctc":"rm")+'">'+badgeEmoji(item.type)+'</span>'+
@@ -2498,84 +2661,157 @@ let danielPeriodData={week:[],mtd:[],ytd:[]},currentDanielPeriod="week";
 async function loadDaniel(){
   try{
     const now=new Date();
+    const todayStr=today();
     const monthStart=now.getFullYear()+"-"+String(now.getMonth()+1).padStart(2,"0")+"-01";
     const yearStart=now.getFullYear()+"-01-01";
-    const[weekActs,mtdActs,ytdActs,aTierAgents,mtdReferrals,dailyActs]=await Promise.all([
+    const prevMonthStart=new Date(now.getFullYear(),now.getMonth()-1,1);
+    const prevMonthEnd=new Date(now.getFullYear(),now.getMonth(),0);
+    const prevStart=prevMonthStart.toISOString().split("T")[0];
+    const prevEnd=prevMonthEnd.toISOString().split("T")[0];
+
+    const[dailyActs,weekActs,mtdActs,ytdActs,prevActs,aTierAgents,rcContacted,allAgents,allActs]=await Promise.all([
+      sbFetch("amanda_activities?select=act_type,agent_name,act_date,outcome&act_date=eq."+todayStr),
       sbFetch("amanda_activities?select=*&act_date=gte."+week.start+"&act_date=lte."+week.end+"&order=act_date.desc"),
-      sbFetch("amanda_activities?select=*&act_date=gte."+monthStart+"&order=act_date.desc"),
-      sbFetch("amanda_activities?select=*&act_date=gte."+yearStart+"&order=act_date.desc"),
+      sbFetch("amanda_activities?select=act_type,agent_name,act_date,outcome&act_date=gte."+monthStart),
+      sbFetch("amanda_activities?select=act_type,agent_name,act_date&act_date=gte."+yearStart),
+      sbFetch("amanda_activities?select=act_type,agent_name&act_date=gte."+prevStart+"&act_date=lte."+prevEnd).catch(()=>[]),
       sbFetch("agent_profiles?select=agent_name,tier&tier=eq.A&limit=200").catch(()=>[]),
-      sbFetch("amanda_activities?select=agent_name,act_date&act_type=eq.Sent Referral&act_date=gte."+monthStart).catch(()=>[]),
-      sbFetch("amanda_activities?select=*&act_date=eq."+today()+"&order=act_date.desc")
+      sbFetch(RC_TABLE+"?select=agent_name&status=eq.contacted&limit=100").catch(()=>[]),
+      sbFetch("agent_profiles?select=agent_name&limit=500").catch(()=>[]),
+      sbFetch("amanda_activities?select=agent_name,act_date&order=act_date.desc&limit=2000").catch(()=>[])
     ]);
+
     danielPeriodData={daily:dailyActs,week:weekActs,mtd:mtdActs,ytd:ytdActs};
 
-    const meetings=weekActs.filter(a=>a.act_type==="New Realtor Meeting").length;
-    const mtdMeetings=mtdActs.filter(a=>a.act_type==="New Realtor Meeting").length;
-    const mtdMeetingGoal=20;
-    const mtdPct=Math.min(100,Math.round((mtdMeetings/mtdMeetingGoal)*100));
-    const calls=weekActs.filter(a=>a.act_type==="Cold Calls").length;
-    const ctc=weekActs.filter(a=>a.act_type===CTC_TYPE).length;
+    // ── Helper: count by type ─────────────────────────────────────
+    const c=(acts,type)=>acts.filter(a=>a.act_type===type).length;
+    const uniq=(acts)=>new Set(acts.map(a=>(a.agent_name||"").toLowerCase().trim()).filter(Boolean)).size;
 
-    const aTierNames=new Set(aTierAgents.map(a=>(a.agent_name||"").trim().toLowerCase()));
-    const aTierTouched=aTierNames.size?[...new Set(mtdActs.map(a=>(a.agent_name||"").trim().toLowerCase()))].filter(n=>aTierNames.has(n)).length:null;
+    // ── A-tier setup ──────────────────────────────────────────────
+    const aTierNames=new Set(aTierAgents.map(a=>(a.agent_name||"").toLowerCase().trim()));
+    const aTierTotal=aTierNames.size;
+    const aTierTouched=(acts)=>[...new Set(acts.map(a=>(a.agent_name||"").toLowerCase().trim()))].filter(n=>aTierNames.has(n)).length;
 
-    const barColor=mtdPct>=100?"#2E7D32":mtdPct>=60?"#534AB7":"#E24B4A";
-    const progressBar='<div style="margin-top:8px"><div style="display:flex;justify-content:space-between;font-size:10px;color:#888;margin-bottom:3px"><span>MTD meetings</span><span style="font-weight:600;color:'+barColor+'">'+mtdMeetings+' / '+mtdMeetingGoal+'</span></div><div style="background:#f0eef8;border-radius:20px;height:6px"><div style="background:'+barColor+';height:6px;border-radius:20px;width:'+mtdPct+'%;transition:width .5s"></div></div></div>';
+    // ── At risk count ─────────────────────────────────────────────
+    const lastSeen={};
+    allActs.forEach(a=>{const n=(a.agent_name||"").trim();if(n&&!lastSeen[n])lastSeen[n]=a.act_date;});
+    const atRiskCount=allAgents.filter(a=>{
+      const name=(a.agent_name||"").trim();
+      if(!name)return false;
+      const last=lastSeen[name];
+      const days=last?Math.round((now-new Date(last+"T12:00:00"))/86400000):null;
+      return days===null||days>=60;
+    }).length;
 
-    // Referral stat card
-    const referralCard=mtdReferrals.length
-      ?'<div class="stat-card"><div class="stat-num" style="color:#1565C0">'+mtdReferrals.length+'</div><div class="stat-label">💌 Referrals sent MTD</div></div>'
-      :(aTierTouched===null?'<div class="stat-card"><div class="stat-num">'+ctc+'</div><div class="stat-label">⚡ CTC calls</div></div>':"");
+    // ── Pace: are we on track for monthly goals? ──────────────────
+    const daysInMonth=new Date(now.getFullYear(),now.getMonth()+1,0).getDate();
+    const dayOfMonth=now.getDate();
+    const paceMultiplier=daysInMonth/dayOfMonth; // project MTD to end of month
+    const mtdMeetings=c(mtdActs,"New Realtor Meeting");
+    const projectedMeetings=Math.round(mtdMeetings*paceMultiplier);
+    const meetingPct=Math.min(100,Math.round((mtdMeetings/20)*100));
+    const meetingColor=meetingPct>=100?"var(--success)":meetingPct>=60?"var(--brand)":"var(--danger)";
 
-    document.getElementById("danielStats").innerHTML=
-      '<div class="stat-card"><div class="stat-num">'+weekActs.length+'</div><div class="stat-label">This week</div></div>'+
-      '<div class="stat-card"><div class="stat-num" style="color:'+barColor+'">'+mtdMeetings+'<span style="font-size:16px;color:#aaa"> /'+mtdMeetingGoal+'</span></div><div class="stat-label">🌸 MTD meetings</div>'+progressBar+'</div>'+
-      (aTierTouched!==null?'<div class="stat-card"><div class="stat-num" style="color:#5D4E00">'+aTierTouched+'<span style="font-size:16px;color:#aaa"> /'+aTierNames.size+'</span></div><div class="stat-label">🥇 A-tier touched MTD</div></div>':'')+
-      (mtdReferrals.length?'<div class="stat-card"><div class="stat-num" style="color:#1565C0">'+mtdReferrals.length+'</div><div class="stat-label">💌 Referrals sent MTD</div></div>':
-      '<div class="stat-card"><div class="stat-num">'+ctc+'</div><div class="stat-label">⚡ CTC calls</div></div>');
+    // ── GROWTH METRICS ────────────────────────────────────────────
+    const growthMetricRow=(label,daily,wtd,mtd,ytd,goal,goalPeriod)=>{
+      const pct=goal?Math.min(100,Math.round((mtd/goal)*100)):null;
+      const pctBadge=pct!==null?'<span style="font-size:10px;padding:2px 7px;border-radius:20px;font-weight:600;background:'+(pct>=100?"var(--success-bg)":pct>=60?"var(--brand-light)":"var(--danger-bg)")+';color:'+(pct>=100?"var(--success)":pct>=60?"var(--brand)":"var(--danger)")+'">'+pct+'%</span>':"";
+      return'<div style="display:grid;grid-template-columns:1.6fr 60px 60px 70px 70px 80px;gap:10px;align-items:center;padding:9px 0;border-bottom:1px solid var(--border-light);font-size:13px">'
+        +'<span style="font-weight:500;color:var(--text-1)">'+label+'</span>'
+        +'<span style="text-align:center;color:var(--text-3)">'+daily+'</span>'
+        +'<span style="text-align:center;color:var(--text-2)">'+wtd+'</span>'
+        +'<span style="text-align:center;font-weight:600;color:var(--text-1)">'+mtd+(goal?'<span style="font-size:10px;color:var(--text-4);font-weight:400">/'+goal+'</span>':'')+'</span>'
+        +'<span style="text-align:center;color:var(--text-3)">'+ytd+'</span>'
+        +'<span style="text-align:right">'+pctBadge+'</span>'
+        +'</div>';
+    };
+    const gridHeader='<div style="display:grid;grid-template-columns:1.6fr 60px 60px 70px 70px 80px;gap:10px;padding:0 0 8px;border-bottom:2px solid var(--border);margin-bottom:4px">'
+      +'<span style="font-size:10px;font-weight:700;color:var(--text-4);text-transform:uppercase;letter-spacing:.5px">Metric</span>'
+      +'<span style="font-size:10px;font-weight:700;color:var(--text-4);text-align:center;text-transform:uppercase;letter-spacing:.5px">Today</span>'
+      +'<span style="font-size:10px;font-weight:700;color:var(--text-4);text-align:center;text-transform:uppercase;letter-spacing:.5px">WTD</span>'
+      +'<span style="font-size:10px;font-weight:700;color:var(--text-1);text-align:center;text-transform:uppercase;letter-spacing:.5px">MTD</span>'
+      +'<span style="font-size:10px;font-weight:700;color:var(--text-4);text-align:center;text-transform:uppercase;letter-spacing:.5px">YTD</span>'
+      +'<span style="font-size:10px;font-weight:700;color:var(--text-4);text-align:right;text-transform:uppercase;letter-spacing:.5px">vs Goal</span>'
+      +'</div>';
+
+    document.getElementById("danielGrowthGrid").innerHTML=gridHeader
+      +growthMetricRow("New realtor meetings",c(dailyActs,"New Realtor Meeting"),c(weekActs,"New Realtor Meeting"),mtdMeetings,c(ytdActs,"New Realtor Meeting"),20,"MTD")
+      +growthMetricRow("Cold calls",c(dailyActs,"Cold Calls"),c(weekActs,"Cold Calls"),c(mtdActs,"Cold Calls"),c(ytdActs,"Cold Calls"),100,"MTD")
+      +growthMetricRow("Realtor buddy asks",c(dailyActs,"Realtor Buddy Referral Ask"),c(weekActs,"Realtor Buddy Referral Ask"),c(mtdActs,"Realtor Buddy Referral Ask"),c(ytdActs,"Realtor Buddy Referral Ask"),12,"MTD")
+      +'<div style="margin-top:10px;padding:10px 12px;background:var(--surface-2);border-radius:var(--radius-sm);font-size:12px;color:var(--text-2)">'
+      +'On pace for <strong style="color:'+meetingColor+'">'+projectedMeetings+'</strong> new meetings this month '
+      +'<span style="color:var(--text-4)">(goal: 20 · 80% pass = 16)</span>'
+      +'</div>';
+
+    // ── RETENTION METRICS ─────────────────────────────────────────
+    const retentionRow=(label,daily,wtd,mtd,ytd,note)=>{
+      return'<div style="display:grid;grid-template-columns:1.6fr 60px 60px 70px 70px 80px;gap:10px;align-items:center;padding:9px 0;border-bottom:1px solid var(--border-light);font-size:13px">'
+        +'<div><span style="font-weight:500;color:var(--text-1)">'+label+'</span>'+(note?'<div style="font-size:10px;color:var(--text-4);margin-top:1px">'+note+'</div>':'')+'</div>'
+        +'<span style="text-align:center;color:var(--text-3)">'+daily+'</span>'
+        +'<span style="text-align:center;color:var(--text-2)">'+wtd+'</span>'
+        +'<span style="text-align:center;font-weight:600;color:var(--text-1)">'+mtd+'</span>'
+        +'<span style="text-align:center;color:var(--text-3)">'+ytd+'</span>'
+        +'<span></span>'
+        +'</div>';
+    };
+    const uniqMtd=uniq(mtdActs);
+    const uniqWtd=uniq(weekActs);
+    const uniqDaily=uniq(dailyActs);
+    const uniqYtd=uniq(ytdActs);
+    const aTierMtd=aTierTotal?aTierTouched(mtdActs):0;
+
+    document.getElementById("danielRetentionGrid").innerHTML=gridHeader
+      +retentionRow("Unique agents touched",uniqDaily,uniqWtd,uniqMtd,uniqYtd,"")
+      +(aTierTotal?retentionRow("A-tier agents touched",aTierTouched(dailyActs),aTierTouched(weekActs),aTierMtd+" of "+aTierTotal,aTierTouched(ytdActs),"highest-value agents"):"")
+      +retentionRow("Active Agent Talk-to's",c(dailyActs,"Active Agent Talk-to"),c(weekActs,"Active Agent Talk-to"),c(mtdActs,"Active Agent Talk-to")+" / 80",c(ytdActs,"Active Agent Talk-to"),"texts, calls with existing agents")
+      +retentionRow("Break breads",c(dailyActs,"Break Breads"),c(weekActs,"Break Breads"),c(mtdActs,"Break Breads")+" / 20",c(ytdActs,"Break Breads"),"")
+      +retentionRow("CTC calls",c(dailyActs,CTC_TYPE),c(weekActs,CTC_TYPE),c(mtdActs,CTC_TYPE),c(ytdActs,CTC_TYPE),"post-close thank you")
+      +retentionRow("Referrals sent to agents",c(dailyActs,"Sent Referral"),c(weekActs,"Sent Referral"),c(mtdActs,"Sent Referral"),c(ytdActs,"Sent Referral"),"value delivered")
+      +retentionRow("Reconnect contacts",0,0,rcContacted.length,"—","agents brought back")
+      +'<div style="margin-top:10px;padding:10px 12px;background:'+(atRiskCount>20?"var(--danger-bg)":"var(--success-bg)")+';border-radius:var(--radius-sm);font-size:12px;color:var(--text-2)">'
+      +'<strong style="color:'+(atRiskCount>20?"var(--danger)":"var(--success)")+'">'+atRiskCount+'</strong> agents at risk of going cold (60+ days no touch)'
+      +'</div>';
 
     renderDanielPeriod();
     renderDanielTable(weekActs);
 
-    // Month-over-month comparison
-    const prevMonthEnd=new Date(now.getFullYear(),now.getMonth(),0);
-    const prevMonthStart=new Date(now.getFullYear(),now.getMonth()-1,1);
-    const prevStart=prevMonthStart.toISOString().split("T")[0];
-    const prevEnd=prevMonthEnd.toISOString().split("T")[0];
-    const prevActs=await sbFetch("amanda_activities?select=act_type&act_date=gte."+prevStart+"&act_date=lte."+prevEnd).catch(()=>[]);
-    const prevMeetings=prevActs.filter(a=>a.act_type==="New Realtor Meeting").length;
-    const prevCalls=prevActs.filter(a=>a.act_type==="Cold Calls").length;
-    const prevReferrals=prevActs.filter(a=>a.act_type==="Sent Referral").length;
+    // ── TRENDS: Month-over-month ─────────────────────────────────
+    const prevMonthName=prevMonthStart.toLocaleString("en-US",{month:"long"});
+    const thisMonthName=now.toLocaleString("en-US",{month:"long"});
     const momCard=document.getElementById("danielMomCard");
     const momEl=document.getElementById("danielMom");
     if(momEl&&momCard){
-      const prevMonthName=prevMonthStart.toLocaleString("en-US",{month:"long"});
-      const thisMonthName=now.toLocaleString("en-US",{month:"long"});
-      const momRow=(label,prev,curr,goal)=>{
+      const trendRow=(label,prev,curr,goal)=>{
         const diff=curr-prev;
-        const arrow=diff>0?'<span style="color:#2E7D32">▲'+diff+'</span>':diff<0?'<span style="color:#A32D2D">▼'+Math.abs(diff)+'</span>':'<span style="color:#aaa">—</span>';
-        const pct=goal?Math.round((curr/goal)*100)+"% of goal":"";
-        return'<div style="display:grid;grid-template-columns:1fr 60px 60px 60px 80px;gap:8px;align-items:center;padding:7px 0;border-bottom:0.5px solid #f0eef8;font-size:12px">'+
-          '<span style="color:#444">'+label+'</span>'+
-          '<span style="color:#aaa;text-align:center">'+prev+'</span>'+
-          '<span style="font-weight:600;text-align:center">'+curr+'</span>'+
-          '<span style="text-align:center">'+arrow+'</span>'+
-          '<span style="color:#534AB7;font-size:11px">'+pct+'</span>'+
-          '</div>';
+        const trend=diff>0?'<span style="color:var(--success);font-weight:700">▲'+diff+'</span>':diff<0?'<span style="color:var(--danger);font-weight:700">▼'+Math.abs(diff)+'</span>':'<span style="color:var(--text-4)">—</span>';
+        const pct=goal?'<span style="font-size:11px;color:'+(curr>=goal?"var(--success)":curr/goal>=.6?"var(--brand)":"var(--danger)")+'">'+Math.round(curr/goal*100)+'%</span>':"";
+        return'<div style="display:grid;grid-template-columns:1.4fr 60px 70px 60px 70px;gap:10px;align-items:center;padding:8px 0;border-bottom:1px solid var(--border-light);font-size:13px">'
+          +'<span style="font-weight:500;color:var(--text-1)">'+label+'</span>'
+          +'<span style="text-align:center;color:var(--text-3)">'+prev+'</span>'
+          +'<span style="text-align:center;font-weight:600;color:var(--text-1)">'+curr+(goal?'<span style="font-size:10px;color:var(--text-4)">/'+goal+'</span>':'')+'</span>'
+          +'<span style="text-align:center">'+trend+'</span>'
+          +'<span style="text-align:right">'+pct+'</span>'
+          +'</div>';
       };
-      momEl.innerHTML=
-        '<div style="display:grid;grid-template-columns:1fr 60px 60px 60px 80px;gap:8px;font-size:10px;font-weight:600;color:#aaa;text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px;padding-bottom:4px;border-bottom:1px solid #e8e6f8">'+
-          '<span></span><span style="text-align:center">'+prevMonthName.slice(0,3)+'</span><span style="text-align:center">'+thisMonthName.slice(0,3)+'</span><span style="text-align:center">Change</span><span>vs Goal</span>'+
-        '</div>'+
-        momRow("🌸 New meetings",prevMeetings,mtdMeetings,20)+
-        momRow("🏹 Cold calls",prevCalls,mtdActs.filter(a=>a.act_type==="Cold Calls").length,100)+
-        momRow("💌 Referrals sent",prevReferrals,mtdReferrals.length,0)+
-        momRow("⚡ CTC calls",prevActs.filter(a=>a.act_type==="CTC Call").length,mtdActs.filter(a=>a.act_type==="CTC Call").length,0);
+      momEl.innerHTML='<div style="display:grid;grid-template-columns:1.4fr 60px 70px 60px 70px;gap:10px;padding-bottom:8px;border-bottom:2px solid var(--border);margin-bottom:4px">'
+        +'<span style="font-size:10px;font-weight:700;color:var(--text-4);text-transform:uppercase;letter-spacing:.5px"></span>'
+        +'<span style="font-size:10px;font-weight:700;color:var(--text-4);text-align:center;text-transform:uppercase;letter-spacing:.5px">'+prevMonthName.slice(0,3)+'</span>'
+        +'<span style="font-size:10px;font-weight:700;color:var(--text-1);text-align:center;text-transform:uppercase;letter-spacing:.5px">'+thisMonthName.slice(0,3)+'</span>'
+        +'<span style="font-size:10px;font-weight:700;color:var(--text-4);text-align:center;text-transform:uppercase;letter-spacing:.5px">Change</span>'
+        +'<span style="font-size:10px;font-weight:700;color:var(--text-4);text-align:right;text-transform:uppercase;letter-spacing:.5px">vs Goal</span>'
+        +'</div>'
+        +trendRow("New meetings",c(prevActs,"New Realtor Meeting"),mtdMeetings,20)
+        +trendRow("Cold calls",c(prevActs,"Cold Calls"),c(mtdActs,"Cold Calls"),100)
+        +trendRow("Active Agent Talk-to's",c(prevActs,"Active Agent Talk-to"),c(mtdActs,"Active Agent Talk-to"),80)
+        +trendRow("Break breads",c(prevActs,"Break Breads"),c(mtdActs,"Break Breads"),20)
+        +trendRow("Unique agents touched",uniq(prevActs),uniqMtd,null)
+        +trendRow("Referrals sent",c(prevActs,"Sent Referral"),c(mtdActs,"Sent Referral"),null)
+        +trendRow("CTC calls",c(prevActs,CTC_TYPE),c(mtdActs,CTC_TYPE),null);
       momCard.style.display="block";
     }
-  }catch(e){console.error(e);}
+  }catch(e){console.error("loadDaniel error:",e);}
 
+  // ── FOLLOW-UPS ───────────────────────────────────────────────────
   try{
     const todayStr=today();
     const[fus,overdue]=await Promise.all([
@@ -2584,39 +2820,32 @@ async function loadDaniel(){
     ]);
     const all=[...overdue,...fus];
     document.getElementById("danielFollowups").innerHTML=all.length?all.map(f=>{
-      const isOvr=f.follow_up_date<todayStr,c=isOvr?"#E24B4A":"#534AB7";
-      return'<div class="fu-item"><div class="fu-dot" style="background:'+c+'"></div><div class="fu-body"><div class="fu-name">'+f.agent_name+'</div><div class="fu-meta">'+badgeEmoji(f.act_type)+'</div></div><div class="fu-date" style="color:'+c+'">'+( isOvr?"Overdue":fmtDate(f.follow_up_date))+'</div></div>';
-    }).join(""):'<div class="no-data" style="padding:16px">No follow-ups due 🌾</div>';
+      const isOvr=f.follow_up_date<todayStr,c2=isOvr?"var(--danger)":"var(--brand)";
+      return'<div class="fu-item"><div class="fu-dot" style="background:'+c2+'"></div><div class="fu-body"><div class="fu-name">'+f.agent_name+'</div><div class="fu-meta">'+badgeEmoji(f.act_type)+'</div></div><div class="fu-date" style="color:'+c2+'">'+(isOvr?"Overdue":fmtDate(f.follow_up_date))+'</div></div>';
+    }).join(""):'<div class="no-data" style="padding:16px">No follow-ups due</div>';
   }catch(e){console.error(e);}
 
+  // ── AT RISK ──────────────────────────────────────────────────────
   try{
-    const[allAgents,allActs]=await Promise.all([
-      sbFetch("agent_profiles?select=agent_name&order=agent_name.asc&limit=500"),
+    const[agts,acts2]=await Promise.all([
+      sbFetch("agent_profiles?select=agent_name&limit=500"),
       sbFetch("amanda_activities?select=agent_name,act_date&order=act_date.desc&limit=2000")
     ]);
-    const lastSeen={};
-    allActs.forEach(a=>{
-      const n=(a.agent_name||"").trim();
-      if(n && !lastSeen[n]) lastSeen[n]=a.act_date;
-    });
-    const now2=new Date();
-    const rows=allAgents.map(a=>{
-      const name=(a.agent_name||"").trim();
-      if(!name) return null;
-      const last=lastSeen[name];
-      const days=last?Math.round((now2-new Date(last+"T12:00:00"))/86400000):null;
-      return {name,days};
-    }).filter(Boolean);
-    const quiet=rows.filter(r=>r.days===null||r.days>=60).sort((a,b)=>{
-      if(a.days===null) return -1;
-      if(b.days===null) return 1;
-      return b.days-a.days;
-    });
+    const ls={};
+    acts2.forEach(a=>{const n=(a.agent_name||"").trim();if(n&&!ls[n])ls[n]=a.act_date;});
+    const now3=new Date();
+    const quiet=agts.map(a=>{
+      const name=(a.agent_name||"").trim();if(!name)return null;
+      const last=ls[name];
+      const days=last?Math.round((now3-new Date(last+"T12:00:00"))/86400000):null;
+      return{name,days};
+    }).filter(Boolean).filter(r=>r.days===null||r.days>=60)
+      .sort((a,b)=>(a.days===null?-1:b.days===null?1:b.days-a.days));
     document.getElementById("danielQuiet").innerHTML=quiet.length?quiet.map(r=>{
-      const isUrgent=r.days===null||r.days>=90,c=isUrgent?"#E24B4A":"#E8A33D";
+      const isUrgent=r.days===null||r.days>=90,c3=isUrgent?"var(--danger)":"var(--warning)";
       const label=r.days===null?"No activity logged":r.days+"d since last touch";
-      return '<div class="fu-item"><div class="fu-dot" style="background:'+c+'"></div><div class="fu-body"><div class="fu-name">'+r.name+'</div><div class="fu-meta" style="color:'+c+'">'+(isUrgent?"🚨 ":"⚠️ ")+label+'</div></div></div>';
-    }).join(""):'<div class="no-data" style="padding:16px">Everyone touched within 60 days 🎉</div>';
+      return'<div class="fu-item"><div class="fu-dot" style="background:'+c3+'"></div><div class="fu-body"><div class="fu-name">'+r.name+'</div><div class="fu-meta" style="color:'+c3+'">'+label+'</div></div></div>';
+    }).join(""):'<div class="no-data" style="padding:16px">Everyone touched within 60 days</div>';
   }catch(e){console.error(e);}
 }
 
@@ -2636,7 +2865,7 @@ function renderDanielPeriod(){
   const isWeek=currentDanielPeriod==="week",isYTD=currentDanielPeriod==="ytd",isDaily=currentDanielPeriod==="daily";
   const goalTarget=g=>isDaily?Math.ceil(g.weekly/5):isWeek?g.weekly:isYTD?g.monthly*12:g.monthly;
   if(!data.length){document.getElementById("danielGoals").innerHTML='<div class="no-data">No activity logged yet for this period.</div>';return;}
-  let html='<div style="font-size:11px;color:#bbb;margin-bottom:14px">'+label+' — 🎯 '+data.length+' total activities</div>';
+  let html='<div style="font-size:11px;color:#bbb;margin-bottom:14px">'+label+' — '+data.length+' total activities</div>';
   GOALS.forEach(g=>{
     const target=goalTarget(g),count=data.filter(a=>a.act_type===g.type).length;
     html+=renderGoalBar(g.label,count,target,target?(count/target)*100:0,g.type);
@@ -2650,11 +2879,36 @@ async function renderDanielCoverage(){
   try{
     const cov=await loadQuietCoverage();
     const pctColor=cov.pct>=100?"#1F6B45":cov.pct>=60?"#9A6A12":"#9B3B3B";
+    const notCovered=cov.names.filter(n=>!n.covered);
+    const covered=cov.names.filter(n=>n.covered);
+
     let covHtml='<div class="gr" style="border-top:1px solid #f0f0f5;padding-top:14px;margin-top:14px">'
       +'<div class="gr-lr"><span class="gr-n">🔍 Going-quiet coverage</span>'
-      +'<span><span class="gr-c">'+cov.pct+'%</span></span></div>'
+      +'<span><span class="gr-c" style="color:'+pctColor+'">'+cov.pct+'%</span></span></div>'
       +'<div class="g-track"><div class="g-fill" style="width:'+cov.pct+'%;background:'+pctColor+'"></div></div>'
-      +'<div style="font-size:10px;color:#bbb;margin-top:4px">'+cov.covered+' of '+cov.total+' agents flagged quiet on Monday touched this week</div></div>';
+      +'<div style="font-size:10px;color:#bbb;margin-top:4px;margin-bottom:12px">'+cov.covered+' of '+cov.total+' going-quiet agents touched this week</div>';
+
+    if(notCovered.length){
+      covHtml+='<div style="font-size:11px;font-weight:600;color:#9B3B3B;margin-bottom:8px">Still needs attention ('+notCovered.length+')</div>';
+      covHtml+=notCovered.map(n=>'<div style="display:flex;align-items:center;justify-content:space-between;padding:7px 0;border-bottom:0.5px solid #f5f5f8">'
+        +'<span style="font-size:13px;font-weight:500;color:#1a1a2e">'+n.name+'</span>'
+        +'<div style="display:flex;gap:6px;align-items:center">'
+        +'<span style="font-size:10px;color:#9A6A12;font-weight:500">'+n.days+'d silent</span>'
+        +'<button onclick="document.getElementById(\'agentInput\').value=\''+n.name.replace(/'/g,"\\'")+'\';switchTab(\'log\')" style="font-size:10px;padding:3px 9px;background:#534AB7;color:#fff;border:none;border-radius:6px;cursor:pointer;font-family:inherit">Log outreach</button>'
+        +'</div></div>'
+      ).join("");
+    }
+
+    if(covered.length){
+      covHtml+='<div style="font-size:11px;font-weight:600;color:#1F6B45;margin-top:12px;margin-bottom:6px">Touched this week ('+covered.length+')</div>';
+      covHtml+=covered.map(n=>'<div style="display:flex;align-items:center;justify-content:space-between;padding:5px 0;border-bottom:0.5px solid #f5f5f8">'
+        +'<span style="font-size:12px;color:#555">'+n.name+'</span>'
+        +'<span style="font-size:10px;color:#1F6B45;font-weight:500">✓ Covered</span>'
+        +'</div>'
+      ).join("");
+    }
+
+    covHtml+='</div>';
     document.getElementById("danielGoals").innerHTML+=covHtml;
   }catch(e){console.error(e);}
 }
@@ -2662,7 +2916,7 @@ async function renderDanielCoverage(){
 function renderDanielTable(acts){
   document.getElementById("danielBody").innerHTML=acts.length
     ?acts.map(a=>'<tr><td>'+a.agent_name+'</td><td>'+badgeEmoji(a.act_type)+'</td><td>'+( a.outcome||"—")+'</td><td>'+fmtDate(a.act_date)+'</td><td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+( a.notes||"—")+'</td></tr>').join("")
-    :'<tr><td colspan="5" style="text-align:center;padding:20px;color:#bbb">No activity in this period 🦜</td></tr>';
+    :'<tr><td colspan="5" style="text-align:center;padding:20px;color:#bbb">No activity in this period</td></tr>';
 }
 
 let allProspects=[],editingProspectId=null,prospectActivities={};
@@ -2726,7 +2980,7 @@ function renderProspects(list){
     html+='<div class="pc-contact" style="justify-content:space-between;align-items:center">';
     html+='<div style="display:flex;gap:14px;flex-wrap:wrap">'+(p.phone?'<span>☎️ '+p.phone+'</span>':'<span style="color:#ccc">No phone</span>')+(p.email?' <span>✉️ '+p.email+'</span>':'')+'</div>';
     html+='<button class="btn-sm" style="font-size:10px;padding:3px 8px;flex-shrink:0" onclick="openPipelineContact('+p.id+')">Edit contact</button></div>';
-    if(p.followup_date&&!isDNC&&!isNFM)html+='<div class="pc-fudate '+(fuOvr?"overdue":"")+'">🍕 Follow-up: '+(fuOvr?"OVERDUE — ":"")+fmtDate(p.followup_date)+'</div>';
+    if(p.followup_date&&!isDNC&&!isNFM)html+='<div class="pc-fudate '+(fuOvr?"overdue":"")+'">Follow-up: '+(fuOvr?"OVERDUE — ":"")+fmtDate(p.followup_date)+'</div>';
     if(p.notes)html+='<div class="pc-notes">'+p.notes+'</div>';
     html+=actHtml;
     html+='<div class="pc-actions"><button class="btn-sm" onclick="editProspect('+p.id+')">Edit</button>';
@@ -2762,13 +3016,13 @@ async function saveProspect(){
   if(!name){toast("Please enter a name.","error");return;}
   const payload={name,brokerage:document.getElementById("np-brokerage").value.trim()||null,phone:document.getElementById("np-phone").value.trim()||null,email:document.getElementById("np-email").value.trim()||null,status:document.getElementById("np-status").value,followup_date:document.getElementById("np-followup").value||null,notes:document.getElementById("np-notes").value.trim()||null};
   try{
-    if(editingProspectId){await sbFetch("outreach_prospects?id=eq."+editingProspectId,{method:"PATCH",prefer:"return=minimal",body:JSON.stringify(payload)});toast("Prospect updated 🌸","success");}
-    else{await sbFetch("outreach_prospects",{method:"POST",prefer:"return=minimal",body:JSON.stringify(payload)});toast("Prospect added 🦜","success");}
+    if(editingProspectId){await sbFetch("outreach_prospects?id=eq."+editingProspectId,{method:"PATCH",prefer:"return=minimal",body:JSON.stringify(payload)});toast("Prospect updated","success");}
+    else{await sbFetch("outreach_prospects",{method:"POST",prefer:"return=minimal",body:JSON.stringify(payload)});toast("Prospect added","success");}
     toggleAddForm(false);loadPipeline();initAutocomplete();
   }catch(e){toast("Save failed: "+e.message,"error");}
 }
 async function unmarkDNC(id){
-  try{await sbFetch("outreach_prospects?id=eq."+id,{method:"PATCH",prefer:"return=minimal",body:JSON.stringify({status:"Requires follow-up"})});toast("Reactivated 🦜","success");loadPipeline();}
+  try{await sbFetch("outreach_prospects?id=eq."+id,{method:"PATCH",prefer:"return=minimal",body:JSON.stringify({status:"Requires follow-up"})});toast("Reactivated","success");loadPipeline();}
   catch(e){toast("Error: "+e.message,"error");}
 }
 
@@ -2865,7 +3119,7 @@ function showCalDayDetail(dateStr){
   const dt=new Date(dateStr+"T12:00:00");
   const label=dt.toLocaleDateString("en-US",{weekday:"long",month:"long",day:"numeric"});
   const todayStr=today(),isToday=dateStr===todayStr,isPast=dateStr<todayStr;
-  document.getElementById("calDayTitle").textContent=label+(isToday?" — Today 🌟":isPast?"":" — Upcoming ✨");
+  document.getElementById("calDayTitle").textContent=label+(isToday?" — Today":isPast?"":" — Upcoming");
   document.getElementById("calDayItems").innerHTML=events.map(e=>{
     const isFollowup=e.calType==="followup",cls=isFollowup?"followup":calEventClass(e.act_type);
     const dotColors={meeting:"#534AB7",followup:"#B85B00",ctc:"#0F6E56",other:"#534AB7"};
