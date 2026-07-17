@@ -1606,10 +1606,10 @@ async function initAutocomplete(){
   try{
     const[agents,prospects]=await Promise.all([
       sbFetch("agent_profiles?select=agent_name&order=agent_name.asc"),
-      sbFetch("outreach_prospects?select=name&order=name.asc")
+      sbFetch("outreach_prospects?select=agent_name&order=agent_name.asc")
     ]);
     agentNames=agents.map(a=>a.agent_name);
-    prospectNames=prospects.map(p=>p.name).filter(n=>n);
+    prospectNames=prospects.map(p=>p.agent_name).filter(n=>n);
   }catch(e){console.error("Autocomplete init error:",e);}
   const input=document.getElementById("agentInput"),list=document.getElementById("acList");
   input.addEventListener("input",()=>{
@@ -3003,7 +3003,7 @@ let allProspects=[],editingProspectId=null,prospectActivities={};
 async function loadPipeline(){
   try{
     const[prospects,acts]=await Promise.all([
-      sbFetch("outreach_prospects?select=*&order=followup_date.asc.nullslast"),
+      sbFetch("outreach_prospects?select=*&order=follow_up_date.asc.nullslast"),
       sbFetch("amanda_activities?select=agent_name,act_type,act_date,outcome,notes&order=act_date.desc&limit=500")
     ]);
     allProspects=prospects||[];
@@ -3019,7 +3019,7 @@ async function loadPipeline(){
 function renderPipelineStats(){
   const todayStr=today();
   document.getElementById("ps-total").textContent=allProspects.filter(p=>p.status==="Requires follow-up").length;
-  document.getElementById("ps-due").textContent=allProspects.filter(p=>p.followup_date&&p.followup_date<=todayStr&&p.status==="Requires follow-up").length;
+  document.getElementById("ps-due").textContent=allProspects.filter(p=>p.follow_up_date&&p.follow_up_date<=todayStr&&p.status==="Requires follow-up").length;
   document.getElementById("ps-dnc").textContent=allProspects.filter(p=>p.status==="DNC").length;
   document.getElementById("ps-nfm").textContent=allProspects.filter(p=>p.status==="NFM").length;
 }
@@ -3028,12 +3028,12 @@ function filterPipeline(){
   const sf=document.getElementById("pipelineFilter")?.value||"all";
   let list=allProspects;
   if(sf!=="all")list=list.filter(p=>p.status===sf);
-  if(q)list=list.filter(p=>(p.name||"").toLowerCase().includes(q)||(p.brokerage||"").toLowerCase().includes(q));
+  if(q)list=list.filter(p=>(p.agent_name||"").toLowerCase().includes(q)||(p.brokerage||"").toLowerCase().includes(q));
   renderProspects(list);
 }
 function openPipelineContact(id){
   const p=allProspects.find(x=>x.id===id);if(!p)return;
-  openContactModal(p.name||"",p.phone||"",p.email||"",p.brokerage||"","");
+  openContactModal(p.agent_name||"",p.phone||"",p.email||"",p.brokerage||"","");
 }
 
 function renderProspects(list){
@@ -3041,14 +3041,14 @@ function renderProspects(list){
   if(!list.length){document.getElementById("prospectList").innerHTML='<div class="no-data">No prospects found.</div>';return;}
   document.getElementById("prospectList").innerHTML=list.map(p=>{
     const isDNC=p.status==="DNC",isNFM=p.status==="NFM";
-    const fuOvr=p.followup_date&&p.followup_date<todayStr;
+    const fuOvr=p.follow_up_date&&p.follow_up_date<todayStr;
     const bClass={"Requires follow-up":"followup","DNC":"dnc","NFM":"nfm"}[p.status]||"followup";
     const bLabel={"Requires follow-up":"Requires Follow-up","DNC":"Do Not Contact","NFM":"Already w/ NFM"}[p.status]||p.status;
-    const sn=(p.name||"").replace(/'/g,"\\'");
+    const sn=(p.agent_name||"").replace(/'/g,"\\'");
     const sp=(p.phone||"").replace(/'/g,"\\'");
     const se=(p.email||"").replace(/'/g,"\\'");
     const sb=(p.brokerage||"").replace(/'/g,"\\'");
-    const acts=(prospectActivities[p.name]||[]).slice(0,3);
+    const acts=(prospectActivities[p.agent_name]||[]).slice(0,3);
     let actHtml="";
     if(acts.length){
       actHtml='<div class="pc-activity-feed"><div class="pc-activity-feed-title">⏰ Recent activity</div>';
@@ -3056,7 +3056,7 @@ function renderProspects(list){
       actHtml+='</div>';
     }
     let html='<div class="prospect-card '+(isDNC?"dnc":isNFM?"nfm":"")+'">';
-    html+='<div class="pc-top"><div><div class="pc-name">'+p.name+'</div><div class="pc-brokerage">'+(p.brokerage||"—")+'</div></div><span class="pc-badge '+bClass+'">'+bLabel+'</span></div>';
+    html+='<div class="pc-top"><div><div class="pc-name">'+p.agent_name+'</div><div class="pc-brokerage">'+(p.brokerage||"—")+'</div></div><span class="pc-badge '+bClass+'">'+bLabel+'</span></div>';
     html+='<div class="pc-contact" style="justify-content:space-between;align-items:center">';
     html+='<div style="display:flex;gap:14px;flex-wrap:wrap">'+(p.phone?'<span>☎️ '+p.phone+'</span>':'<span style="color:#ccc">No phone</span>')+(p.email?' <span>✉️ '+p.email+'</span>':'')+'</div>';
     html+='<button class="btn-sm" style="font-size:10px;padding:3px 8px;flex-shrink:0" onclick="openPipelineContact('+p.id+')">Edit contact</button></div>';
@@ -3083,9 +3083,9 @@ function toggleAddForm(show){
 function editProspect(id){
   const p=allProspects.find(x=>x.id===id);if(!p)return;
   editingProspectId=id;
-  document.getElementById("np-name").value=p.name||"";document.getElementById("np-brokerage").value=p.brokerage||"";
+  document.getElementById("np-name").value=p.agent_name||"";document.getElementById("np-brokerage").value=p.brokerage||"";
   document.getElementById("np-phone").value=p.phone||"";document.getElementById("np-email").value=p.email||"";
-  document.getElementById("np-status").value=p.status||"Requires follow-up";document.getElementById("np-followup").value=p.followup_date||"";
+  document.getElementById("np-status").value=p.status||"Requires follow-up";document.getElementById("np-followup").value=p.follow_up_date||"";
   document.getElementById("np-notes").value=p.notes||"";
   document.getElementById("addFormTitle").textContent="Edit prospect ✏️";
   document.getElementById("addProspectForm").style.display="block";
@@ -3094,7 +3094,7 @@ function editProspect(id){
 async function saveProspect(){
   const name=document.getElementById("np-name").value.trim();
   if(!name){toast("Please enter a name.","error");return;}
-  const payload={name,brokerage:document.getElementById("np-brokerage").value.trim()||null,phone:document.getElementById("np-phone").value.trim()||null,email:document.getElementById("np-email").value.trim()||null,status:document.getElementById("np-status").value,followup_date:document.getElementById("np-followup").value||null,notes:document.getElementById("np-notes").value.trim()||null};
+  const payload={agent_name:name,brokerage:document.getElementById("np-brokerage").value.trim()||null,phone:document.getElementById("np-phone").value.trim()||null,email:document.getElementById("np-email").value.trim()||null,status:document.getElementById("np-status").value,follow_up_date:document.getElementById("np-followup").value||null,notes:document.getElementById("np-notes").value.trim()||null};
   try{
     if(editingProspectId){await sbFetch("outreach_prospects?id=eq."+editingProspectId,{method:"PATCH",prefer:"return=minimal",body:JSON.stringify(payload)});toast("Prospect updated","success");}
     else{await sbFetch("outreach_prospects",{method:"POST",prefer:"return=minimal",body:JSON.stringify(payload)});toast("Prospect added","success");}
