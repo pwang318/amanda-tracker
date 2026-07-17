@@ -372,33 +372,72 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Inter','Segoe UI',sans-serif;
 
   <!-- Quick Log Card -->
   <div class="card" style="padding:16px 18px">
-    <div style="font-size:13px;font-weight:600;color:var(--text-1);margin-bottom:10px">Quick log — Agent Talk-to 📞</div>
-    <div style="display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap">
-      <div class="ac-wrap" style="flex:1;min-width:160px">
-        <input type="text" id="quickLogAgent" placeholder="Agent name..." autocomplete="off"
-          oninput="quickLogAutoComplete(this.value)"
-          style="width:100%;border:1px solid var(--border);border-radius:var(--radius-sm);padding:9px 12px;font-size:13px;font-family:inherit;color:var(--text-1);outline:none"
-          onkeydown="if(event.key==='Enter')quickLogSave()">
-        <div id="quickLogAcList" class="ac-list"></div>
-      </div>
-      <select id="quickLogType" style="border:1px solid var(--border);border-radius:var(--radius-sm);padding:9px 11px;font-size:12px;font-family:inherit;color:var(--text-1);outline:none;background:var(--surface)">
-        <option value="Active Agent Talk-to">Talk-to (text/call)</option>
-        <option value="Birthday Outreach">Birthday outreach</option>
-        <option value="CTC Call">CTC call</option>
-        <option value="Active Agent Check-in">Check-in</option>
-        <option value="Sent Market Report">Market report</option>
-        <option value="Sent Referral">Referral sent</option>
-        <option value="Holiday Outreach">Holiday outreach</option>
-        <option value="Agent Appreciation">Appreciation</option>
-      </select>
-      <select id="quickLogOutcome" style="border:1px solid var(--border);border-radius:var(--radius-sm);padding:9px 11px;font-size:12px;font-family:inherit;color:var(--text-1);outline:none;background:var(--surface)">
-        <option value="Positive">Positive</option>
-        <option value="No answer">No answer</option>
-        <option value="Requires follow-up">Requires follow-up</option>
-        <option value="Left voicemail">Left voicemail</option>
-      </select>
-      <button onclick="quickLogSave()" style="padding:9px 18px;background:var(--brand);color:#fff;border:none;border-radius:var(--radius-sm);font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap">Log it</button>
+    <div style="display:flex;gap:0;margin-bottom:12px;background:var(--surface-2);border-radius:var(--radius-sm);padding:3px">
+      <button id="ql-tab-talkto" onclick="switchQuickLogTab('talkto')"
+        style="flex:1;padding:7px;border:none;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;background:var(--brand);color:#fff;transition:all .15s">
+        📞 Agent Talk-to
+      </button>
+      <button id="ql-tab-coldcall" onclick="switchQuickLogTab('coldcall')"
+        style="flex:1;padding:7px;border:none;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;background:transparent;color:var(--text-3);transition:all .15s">
+        🏹 Cold Call
+      </button>
     </div>
+
+    <!-- Talk-to form -->
+    <div id="ql-talkto-form">
+      <div style="display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap">
+        <div class="ac-wrap" style="flex:1;min-width:160px">
+          <input type="text" id="quickLogAgent" placeholder="Agent name..." autocomplete="off"
+            oninput="quickLogAutoComplete(this.value)"
+            style="width:100%;border:1px solid var(--border);border-radius:var(--radius-sm);padding:9px 12px;font-size:13px;font-family:inherit;color:var(--text-1);outline:none"
+            onkeydown="if(event.key==='Enter')quickLogSave()">
+          <div id="quickLogAcList" class="ac-list"></div>
+        </div>
+        <select id="quickLogType" style="border:1px solid var(--border);border-radius:var(--radius-sm);padding:9px 11px;font-size:12px;font-family:inherit;color:var(--text-1);outline:none;background:var(--surface)">
+          <option value="Active Agent Talk-to">Talk-to (text/call)</option>
+          <option value="Birthday Outreach">Birthday outreach</option>
+          <option value="CTC Call">CTC call</option>
+          <option value="Active Agent Check-in">Check-in</option>
+          <option value="Sent Market Report">Market report</option>
+          <option value="Sent Referral">Referral sent</option>
+          <option value="Holiday Outreach">Holiday outreach</option>
+          <option value="Agent Appreciation">Appreciation</option>
+        </select>
+        <select id="quickLogOutcome" style="border:1px solid var(--border);border-radius:var(--radius-sm);padding:9px 11px;font-size:12px;font-family:inherit;color:var(--text-1);outline:none;background:var(--surface)">
+          <option value="Positive">Positive</option>
+          <option value="No answer">No answer</option>
+          <option value="Requires follow-up">Requires follow-up</option>
+          <option value="Left voicemail">Left voicemail</option>
+        </select>
+        <button onclick="quickLogSave()" style="padding:9px 18px;background:var(--brand);color:#fff;border:none;border-radius:var(--radius-sm);font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap">Log it</button>
+      </div>
+    </div>
+
+    <!-- Cold Call form -->
+    <div id="ql-coldcall-form" style="display:none">
+      <div style="display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap">
+        <div class="ac-wrap" style="flex:1.5;min-width:160px">
+          <input type="text" id="ccName" placeholder="Agent name..." autocomplete="off"
+            oninput="ccAutoComplete(this.value)"
+            style="width:100%;border:1px solid var(--border);border-radius:var(--radius-sm);padding:9px 12px;font-size:13px;font-family:inherit;color:var(--text-1);outline:none"
+            onkeydown="if(event.key==='Enter')ccSave()">
+          <div id="ccAcList" class="ac-list"></div>
+        </div>
+        <input type="text" id="ccPhone" placeholder="Phone (optional)" 
+          style="flex:1;min-width:120px;border:1px solid var(--border);border-radius:var(--radius-sm);padding:9px 12px;font-size:13px;font-family:inherit;color:var(--text-1);outline:none">
+        <select id="ccOutcome" style="border:1px solid var(--border);border-radius:var(--radius-sm);padding:9px 11px;font-size:12px;font-family:inherit;color:var(--text-1);outline:none;background:var(--surface)">
+          <option value="Left voicemail">Left voicemail</option>
+          <option value="No answer">No answer</option>
+          <option value="Positive">Talked — Positive</option>
+          <option value="Meeting Scheduled">Meeting scheduled!</option>
+          <option value="Requires follow-up">Requires follow-up</option>
+          <option value="Remove / No Further Contact">Remove — not interested</option>
+        </select>
+        <button onclick="ccSave()" style="padding:9px 18px;background:var(--brand);color:#fff;border:none;border-radius:var(--radius-sm);font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap">Log call</button>
+      </div>
+      <div style="font-size:11px;color:var(--text-3);margin-top:8px">Logs the cold call + adds to pipeline automatically if not already there</div>
+    </div>
+
     <div id="quickLogMsg" style="display:none;margin-top:8px;font-size:12px;color:var(--success);font-weight:500"></div>
   </div>
   <div class="card">
@@ -2025,6 +2064,82 @@ async function generateWeeklySummary(){
 
 
 // ── QUICK LOG ─────────────────────────────────────────────────────────────────
+function switchQuickLogTab(tab){
+  const isTalkto = tab === 'talkto';
+  document.getElementById('ql-talkto-form').style.display = isTalkto ? 'block' : 'none';
+  document.getElementById('ql-coldcall-form').style.display = isTalkto ? 'none' : 'block';
+  document.getElementById('ql-tab-talkto').style.background = isTalkto ? 'var(--brand)' : 'transparent';
+  document.getElementById('ql-tab-talkto').style.color = isTalkto ? '#fff' : 'var(--text-3)';
+  document.getElementById('ql-tab-coldcall').style.background = isTalkto ? 'transparent' : 'var(--brand)';
+  document.getElementById('ql-tab-coldcall').style.color = isTalkto ? 'var(--text-3)' : '#fff';
+}
+
+function ccAutoComplete(q){
+  const list = document.getElementById('ccAcList');
+  if(!q||q.length<2){list.classList.remove('open');return;}
+  const all = [...(allAgentNames||[]), ...(prospectNames||[])];
+  const matches = [...new Set(all)].filter(n=>n.toLowerCase().includes(q.toLowerCase())).slice(0,6);
+  if(!matches.length){list.classList.remove('open');return;}
+  list.innerHTML = matches.map(n=>'<div class="ac-item" onclick="document.getElementById(\'ccName\').value=\''+n.replace(/'/g,"\\'")+'\';document.getElementById(\'ccAcList\').classList.remove(\'open\')">'+n+'</div>').join('');
+  list.classList.add('open');
+}
+
+async function ccSave(){
+  if(openIntake){toast("Finish the open checklist for "+openIntake.agent_name+" first.","error");return;}
+  const name = (document.getElementById('ccName').value||'').trim();
+  const phone = (document.getElementById('ccPhone').value||'').trim()||null;
+  const outcome = document.getElementById('ccOutcome').value;
+  if(!name){toast("Enter an agent name.","error");document.getElementById('ccName').focus();return;}
+  const btn = document.querySelector('[onclick="ccSave()"]');
+  if(btn){btn.disabled=true;btn.textContent="Saving...";}
+  try{
+    // 1. Log the cold call activity
+    await sbFetch("amanda_activities",{method:"POST",prefer:"return=minimal",body:JSON.stringify({
+      agent_name:name, act_type:"Cold Calls", act_date:today(), outcome, notes:null
+    })});
+
+    // 2. Check if already in prospects or agents
+    const [existingProspect, existingAgent] = await Promise.all([
+      sbFetch("outreach_prospects?agent_name=eq."+encodeURIComponent(name)+"&select=id&limit=1").catch(()=>[]),
+      sbFetch("agent_profiles?agent_name=eq."+encodeURIComponent(name)+"&select=id&limit=1").catch(()=>[])
+    ]);
+
+    // 3. Add to pipeline if not already there
+    const isDNC = outcome === "Remove / No Further Contact";
+    if(!existingProspect.length && !existingAgent.length){
+      await sbFetch("outreach_prospects",{method:"POST",prefer:"return=minimal",body:JSON.stringify({
+        agent_name:name, phone, status: isDNC ? "DNC" : "Requires follow-up",
+        notes:"Added via cold call log"
+      })});
+    } else if(existingProspect.length && isDNC){
+      await sbFetch("outreach_prospects?id=eq."+existingProspect[0].id,{method:"PATCH",prefer:"return=minimal",body:JSON.stringify({status:"DNC"})});
+    }
+
+    const msg = document.getElementById('quickLogMsg');
+    msg.style.display='block';
+    msg.textContent = isDNC
+      ? '✓ '+name+' — logged & marked DNC'
+      : existingProspect.length||existingAgent.length
+        ? '✓ '+name+' — cold call logged'
+        : '✓ '+name+' — logged & added to pipeline';
+    document.getElementById('ccName').value='';
+    document.getElementById('ccPhone').value='';
+    document.getElementById('ccAcList').classList.remove('open');
+    setTimeout(()=>{if(msg)msg.style.display='none';},3000);
+    loadWeek();
+  }catch(e){
+    toast("Save failed: "+e.message,"error");
+  }finally{
+    if(btn){btn.disabled=false;btn.textContent="Log call";}
+  }
+}
+
+document.addEventListener("click",function(e){
+  if(!e.target.closest("#ccName")&&!e.target.closest("#ccAcList")){
+    const l=document.getElementById("ccAcList");
+    if(l)l.classList.remove("open");
+  }
+});
 function quickLogAutoComplete(q){
   const list=document.getElementById("quickLogAcList");
   if(!q||q.length<2){list.classList.remove("open");return;}
