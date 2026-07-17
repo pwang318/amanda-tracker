@@ -346,44 +346,51 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Inter','Segoe UI',sans-serif;
 </div>
 
 <div class="tabs">
-  <div class="tab active" onclick="switchTab('week')">My Week</div>
+  <div class="tab active" onclick="switchTab('week')">Snapshot</div>
   <div class="tab" onclick="switchTab('log')">Log Activity</div>
-  <div class="tab" onclick="switchTab('followups')">Follow-ups</div>
-  <div class="tab" onclick="switchTab('feed')">Activity Feed</div>
-  <div class="tab" onclick="switchTab('network')">🌐 Network</div>
-  <div class="tab" onclick="switchTab('health')">🏥 Health Check</div>
+  <div class="tab" onclick="switchTab('pipeline')">Outreach</div>
   <div class="tab" onclick="switchTab('reconnect')">🔁 Reconnect</div>
-  <div class="tab" onclick="switchTab('history')">Agent History</div>
-  <div class="tab" onclick="switchTab('pipeline')">Outreach Pipeline</div>
+  <div class="tab" onclick="switchTab('feed')">Activity Feed</div>
   <div class="tab" onclick="switchTab('calendar')">📅 Calendar</div>
-  <div class="tab" onclick="switchTab('daniel')">Management</div>
-  <div class="tab" onclick="switchTab('contacts')">👤 Contacts</div>
+  <div class="tab" onclick="switchTab('contacts')">Contacts</div>
 </div>
 
 <div id="globalLockBanner" style="display:none"></div>
 
 <div id="view-week" class="view active">
-  <div id="bdayAlertCard" style="display:none" class="card" style="padding:0">
-    <div class="bday-alert">
-      <div class="bday-alert-title">🍰 Upcoming Birthdays</div>
-      <div id="bdayAlertList"></div>
+  <!-- SNAPSHOT SCORECARD -->
+
+  <!-- Today's scorecard -->
+  <div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+      <div>
+        <div style="font-size:16px;font-weight:700;color:var(--text-1)" id="snapshotDayLabel">Today</div>
+        <div style="font-size:11px;color:var(--text-3);margin-top:2px" id="snapshotWeekLabel"></div>
+      </div>
+      <div class="period-toggle" style="margin-bottom:0">
+        <button class="ptoggle active" id="btn-daily" onclick="showPeriod('daily')">Today</button>
+        <button class="ptoggle" id="btn-wtd" onclick="showPeriod('wtd')">WTD</button>
+        <button class="ptoggle" id="btn-mtd" onclick="showPeriod('mtd')">MTD</button>
+        <button class="ptoggle" id="btn-ytd" onclick="showPeriod('ytd')">YTD</button>
+      </div>
     </div>
+    <div id="snapshotStats" style="display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:16px"></div>
+    <div id="weekGoalBars" style="display:none"></div>
+    <div id="periodScorecard" style="display:none"></div>
   </div>
 
-  <!-- Quick Log Card -->
+  <!-- Quick Log -->
   <div class="card" style="padding:16px 18px">
     <div style="display:flex;gap:0;margin-bottom:12px;background:var(--surface-2);border-radius:var(--radius-sm);padding:3px">
       <button id="ql-tab-talkto" onclick="switchQuickLogTab('talkto')"
         style="flex:1;padding:7px;border:none;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;background:var(--brand);color:#fff;transition:all .15s">
-        📞 Agent Talk-to
+        📞 Realtor Talk-to
       </button>
       <button id="ql-tab-coldcall" onclick="switchQuickLogTab('coldcall')"
         style="flex:1;padding:7px;border:none;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;background:transparent;color:var(--text-3);transition:all .15s">
         🏹 Cold Call
       </button>
     </div>
-
-    <!-- Talk-to form -->
     <div id="ql-talkto-form">
       <div style="display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap">
         <div class="ac-wrap" style="flex:1;min-width:160px">
@@ -412,8 +419,6 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Inter','Segoe UI',sans-serif;
         <button onclick="quickLogSave()" style="padding:9px 18px;background:var(--brand);color:#fff;border:none;border-radius:var(--radius-sm);font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap">Log it</button>
       </div>
     </div>
-
-    <!-- Cold Call form -->
     <div id="ql-coldcall-form" style="display:none">
       <div style="display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap">
         <div class="ac-wrap" style="flex:1.5;min-width:160px">
@@ -423,7 +428,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Inter','Segoe UI',sans-serif;
             onkeydown="if(event.key==='Enter')ccSave()">
           <div id="ccAcList" class="ac-list"></div>
         </div>
-        <input type="text" id="ccPhone" placeholder="Phone (optional)" 
+        <input type="text" id="ccPhone" placeholder="Phone (optional)"
           style="flex:1;min-width:120px;border:1px solid var(--border);border-radius:var(--radius-sm);padding:9px 12px;font-size:13px;font-family:inherit;color:var(--text-1);outline:none">
         <select id="ccOutcome" style="border:1px solid var(--border);border-radius:var(--radius-sm);padding:9px 11px;font-size:12px;font-family:inherit;color:var(--text-1);outline:none;background:var(--surface)">
           <option value="Left voicemail">Left voicemail</option>
@@ -437,40 +442,26 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Inter','Segoe UI',sans-serif;
       </div>
       <div style="font-size:11px;color:var(--text-3);margin-top:8px">Logs the cold call + adds to pipeline automatically if not already there</div>
     </div>
-
     <div id="quickLogMsg" style="display:none;margin-top:8px;font-size:12px;color:var(--success);font-weight:500"></div>
   </div>
-  <div class="card">
-    <div class="card-title">This week <span class="card-sub" id="weekLabel2"></span></div>
-    <div id="weekGoalBars"><div class="no-data">Loading...</div></div>
-  </div>
-  <div class="card">
-    <div class="period-toggle">
-      <button class="ptoggle" id="btn-daily" onclick="showPeriod('daily')">Daily</button>
-      <button class="ptoggle" id="btn-wtd" onclick="showPeriod('wtd')">Week to date</button>
-      <button class="ptoggle active" id="btn-mtd" onclick="showPeriod('mtd')">Month to date</button>
-      <button class="ptoggle" id="btn-ytd" onclick="showPeriod('ytd')">Year to date</button>
-    </div>
-    <div id="periodScorecard"><div class="no-data">Loading...</div></div>
-  </div>
+
+  <!-- Attention items — 2 col -->
   <div class="week-bottom">
     <div class="card">
-      <div class="card-title" style="margin-bottom:12px">Follow-ups due</div>
-      <div id="weekFollowups"><div class="no-data" style="padding:16px">Loading...</div></div>
+      <div class="card-title" style="margin-bottom:12px">Needs attention <span class="card-sub" id="flaggedSub"></span></div>
+      <!-- Birthdays -->
+      <div id="bdayAlertList" style="margin-bottom:8px"></div>
+      <!-- CTC trigger -->
+      <div id="weekCtcTrigger"></div>
+      <!-- Follow-ups due -->
+      <div id="weekFollowups"></div>
+      <!-- Flagged by LPs -->
+      <div id="weekFlagged"></div>
     </div>
     <div class="card">
-      <div class="card-title" style="margin-bottom:12px">Last logged</div>
-      <div id="weekRecent"><div class="no-data" style="padding:16px">Loading...</div></div>
+      <div class="card-title" style="margin-bottom:12px">At Risk — Need a Touch <span class="card-sub" id="quietSub"></span></div>
+      <div id="weekQuiet"><div class="no-data" style="padding:16px">Loading...</div></div>
     </div>
-  </div>
-  <div class="card">
-    <div class="card-title" style="margin-bottom:12px">Flagged by LPs <span class="card-sub" id="flaggedSub"></span></div>
-    <div id="weekFlagged"><div class="no-data" style="padding:16px">Loading...</div></div>
-  </div>
-  <div class="card" id="weekCtcTrigger" style="display:none;padding:14px 16px"></div>
-  <div class="card">
-    <div class="card-title" style="margin-bottom:12px">At Risk — Need a Touch <span class="card-sub" id="quietSub"></span></div>
-    <div id="weekQuiet"><div class="no-data" style="padding:16px">Loading...</div></div>
   </div>
 </div>
 
@@ -1486,11 +1477,56 @@ function switchTab(name){
 
 let periodData={mtd:[],ytd:[]},currentPeriod="mtd";
 
+function renderSnapshotStats(acts, period){
+  const labels={daily:"Today",wtd:"This week",mtd:"This month",ytd:"This year"};
+  const goals={
+    daily:{coldCalls:25,talkTos:20,meetings:1,breakBreads:1,buddyAsks:1},
+    wtd:{coldCalls:125,talkTos:100,meetings:5,breakBreads:5,buddyAsks:3},
+    mtd:{coldCalls:500,talkTos:400,meetings:20,breakBreads:20,buddyAsks:12},
+    ytd:{coldCalls:6000,talkTos:4800,meetings:240,breakBreads:240,buddyAsks:144}
+  };
+  const g=goals[period]||goals.daily;
+  const coldCalls=(acts||[]).filter(a=>a.act_type==="Cold Calls").length;
+  const talkTos=cntTalkTo(acts);
+  const meetings=(acts||[]).filter(a=>a.act_type==="New Realtor Meeting").length;
+  const breakBreads=(acts||[]).filter(a=>a.act_type==="Break Breads").length;
+  const buddyAsks=(acts||[]).filter(a=>a.act_type==="Realtor Buddy Referral Ask").length;
+
+  const statCard=(num,goal,label)=>{
+    const pct=goal?Math.round(num/goal*100):0;
+    const hit=pct>=100,track=pct>=80,low=pct<50;
+    const color=hit?"var(--success)":track?"var(--brand)":low?"var(--danger)":"var(--warning)";
+    const badge=hit?"Goal hit":track?"On track":low?"Needs push":"Almost there";
+    const badgeBg=hit?"var(--success-bg)":track?"var(--brand-light)":low?"var(--danger-bg)":"var(--warning-bg)";
+    const badgeColor=hit?"var(--success)":track?"var(--brand)":low?"var(--danger)":"var(--warning)";
+    return'<div style="text-align:center;padding:14px 8px;background:var(--surface-2);border:1px solid var(--border-light);border-radius:var(--radius);transition:box-shadow .15s">'
+      +'<div style="font-size:28px;font-weight:700;color:'+color+';line-height:1">'+num+'</div>'
+      +'<div style="font-size:10px;color:var(--text-3);margin-top:2px">/ '+goal+'</div>'
+      +'<div style="font-size:9px;font-weight:700;margin-top:6px;padding:2px 7px;border-radius:20px;background:'+badgeBg+';color:'+badgeColor+'">'+badge+'</div>'
+      +'<div style="font-size:10px;color:var(--text-2);margin-top:5px;font-weight:500">'+label+'</div>'
+      +'</div>';
+  };
+
+  const el=document.getElementById("snapshotStats");
+  if(el) el.innerHTML=
+    statCard(coldCalls,g.coldCalls,"Cold Calls")+
+    statCard(talkTos,g.talkTos,"Realtor Talk-to's")+
+    statCard(meetings,g.meetings,"New Realtor Meetings")+
+    statCard(breakBreads,g.breakBreads,"Break Breads")+
+    statCard(buddyAsks,g.buddyAsks,"Realtor Buddy Intros");
+
+  // Update day label
+  const dayEl=document.getElementById("snapshotDayLabel");
+  if(dayEl) dayEl.textContent=labels[period]||"Today";
+}
+
 function showPeriod(p){
   currentPeriod=p;
   ["daily","wtd","mtd","ytd"].forEach(id=>{
     document.getElementById("btn-"+id)?.classList.toggle("active",p===id);
   });
+  const data=periodData[p]||[];
+  renderSnapshotStats(data,p);
   renderPeriodScorecard();
 }
 
@@ -1565,6 +1601,11 @@ async function loadWeek(){
       sbFetch("amanda_activities?select=act_type,outcome&act_date=eq."+todayStr)
     ]);
     periodData={daily:dailyActs,wtd:weekActs,mtd:mtdActs,ytd:ytdActs};
+    renderSnapshotStats(dailyActs,"daily");
+
+    // Update week label
+    const wlEl=document.getElementById("snapshotWeekLabel");
+    if(wlEl) wlEl.textContent=week.label;
     let html="";
     GOALS.forEach(g=>{
       const count=g.type==="__talkto__"?cntTalkTo(weekActs):weekActs.filter(a=>a.act_type===g.type).length;
@@ -2117,11 +2158,26 @@ async function ccSave(){
 
     const msg = document.getElementById('quickLogMsg');
     msg.style.display='block';
-    msg.textContent = isDNC
-      ? '✓ '+name+' — logged & marked DNC'
-      : existingProspect.length||existingAgent.length
-        ? '✓ '+name+' — cold call logged'
-        : '✓ '+name+' — logged & added to pipeline';
+
+    if(outcome === "Meeting Scheduled"){
+      msg.style.color='var(--success)';
+      msg.textContent = '✓ '+name+' — cold call logged! Go to Log Activity to log the New Realtor Meeting.';
+      // Pre-fill the log form and switch
+      setTimeout(()=>{
+        document.getElementById('agentInput').value = name;
+        document.getElementById('activityType').value = 'New Realtor Meeting';
+        switchTab('log');
+      }, 1500);
+    } else if(isDNC){
+      msg.style.color='var(--danger)';
+      msg.textContent = '✓ '+name+' — logged & marked Do Not Contact';
+    } else if(existingProspect.length||existingAgent.length){
+      msg.style.color='var(--success)';
+      msg.textContent = '✓ '+name+' — cold call logged';
+    } else {
+      msg.style.color='var(--success)';
+      msg.textContent = '✓ '+name+' — logged & added to pipeline';
+    }
     document.getElementById('ccName').value='';
     document.getElementById('ccPhone').value='';
     document.getElementById('ccAcList').classList.remove('open');
@@ -3175,7 +3231,7 @@ function renderProspects(list){
     html+='<div class="pc-contact" style="justify-content:space-between;align-items:center">';
     html+='<div style="display:flex;gap:14px;flex-wrap:wrap">'+(p.phone?'<span>☎️ '+p.phone+'</span>':'<span style="color:#ccc">No phone</span>')+(p.email?' <span>✉️ '+p.email+'</span>':'')+'</div>';
     html+='<button class="btn-sm" style="font-size:10px;padding:3px 8px;flex-shrink:0" onclick="openPipelineContact('+p.id+')">Edit contact</button></div>';
-    if(p.followup_date&&!isDNC&&!isNFM)html+='<div class="pc-fudate '+(fuOvr?"overdue":"")+'">Follow-up: '+(fuOvr?"OVERDUE — ":"")+fmtDate(p.followup_date)+'</div>';
+    if(p.follow_up_date&&!isDNC&&!isNFM)html+='<div class="pc-fudate '+(fuOvr?"overdue":"")+'">Follow-up: '+(fuOvr?"OVERDUE — ":"")+fmtDate(p.follow_up_date)+'</div>';
     if(p.notes)html+='<div class="pc-notes">'+p.notes+'</div>';
     html+=actHtml;
     html+='<div class="pc-actions"><button class="btn-sm" onclick="editProspect('+p.id+')">Edit</button>';
