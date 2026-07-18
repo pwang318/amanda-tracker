@@ -929,7 +929,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Inter','Segoe UI',sans-serif;
 
 <div id="view-contacts" class="view">
   <div class="card">
-    <div class="card-title">Agent contacts <span class="card-sub">Edit phone, email and birthday for any agent</span></div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+      <div class="card-title" style="margin-bottom:0">Agent contacts <span class="card-sub">Edit phone, email and birthday for any agent</span></div>
+      <button onclick="openAddAgentModal()" style="padding:8px 14px;background:var(--brand);color:#fff;border:none;border-radius:var(--radius-sm);font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap">+ Add agent</button>
+    </div>
     <div style="display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap">
       <input type="text" id="contactsSearch" placeholder="Search by name, phone, email or birthday..." oninput="filterContacts()" style="flex:1;min-width:180px;padding:9px 11px;border:0.5px solid #d8d6e8;border-radius:8px;font-size:13px;font-family:inherit;color:#1a1a2e;outline:none">
       <select id="contactsFilter" onchange="filterContacts()" style="padding:8px 11px;border:0.5px solid #d8d6e8;border-radius:8px;font-size:12px;font-family:inherit;color:#555;background:#fff">
@@ -947,18 +950,39 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Inter','Segoe UI',sans-serif;
   </div>
 </div>
 
+<!-- Add Agent Modal -->
+<div class="modal-overlay" id="addAgentModal">
+  <div class="modal-box">
+    <div class="modal-header"><span class="modal-title">Add new agent</span><button class="modal-close" onclick="closeAddAgentModal()">×</button></div>
+    <div class="modal-sub">Add an agent to your contacts directory</div>
+    <div class="field" style="margin-bottom:12px"><label>Agent name *</label><input type="text" id="addAgentName" placeholder="Full name"></div>
+    <div class="field" style="margin-bottom:12px"><label>Phone</label><input type="text" id="addAgentPhone" placeholder="Phone number"></div>
+    <div class="field" style="margin-bottom:12px"><label>Email</label><input type="email" id="addAgentEmail" placeholder="Email address"></div>
+    <div class="field" style="margin-bottom:12px"><label>Brokerage</label><input type="text" id="addAgentBrokerage" placeholder="Brokerage name"></div>
+    <div class="field" style="margin-bottom:12px"><label>Birthday</label><input type="text" id="addAgentBirthday" placeholder="e.g. Mar 14"></div>
+    <div class="field" style="margin-bottom:18px"><label>Tier</label><select id="addAgentTier"><option value="">No tier set</option><option value="A">🥇 A-Tier</option><option value="B">🥈 B-Tier</option><option value="C">🥉 C-Tier</option></select></div>
+    <div style="display:flex;gap:10px">
+      <button class="btn-primary" onclick="saveNewAgent()">Add agent</button>
+      <button class="btn-sm" onclick="closeAddAgentModal()">Cancel</button>
+    </div>
+  </div>
+</div>
+
 <div class="modal-overlay" id="contactModal">
   <div class="modal-box">
-    <div class="modal-header"><span class="modal-title">Edit contact info 🌸</span><button class="modal-close" onclick="closeContactModal()">x</button></div>
+    <div class="modal-header"><span class="modal-title">Edit contact info</span><button class="modal-close" onclick="closeContactModal()">×</button></div>
     <div class="modal-sub" id="contactModalName"></div>
     <div class="field" style="margin-bottom:12px"><label>Phone</label><input type="text" id="contactPhone" placeholder="Phone number"></div>
     <div class="field" style="margin-bottom:12px"><label>Email</label><input type="email" id="contactEmail" placeholder="Email address"></div>
     <div class="field" style="margin-bottom:12px"><label>Home Address</label><input type="text" id="contactBrokerage" placeholder="Home address"></div>
     <div class="field" style="margin-bottom:12px"><label>Birthday</label><input type="text" id="contactBirthday" placeholder="e.g. Mar 14"></div>
     <div class="field" style="margin-bottom:18px"><label>Tier</label><select id="contactTier"><option value="">No tier set</option><option value="A">🥇 A-Tier (Top producer, active partner)</option><option value="B">🥈 B-Tier (Mid-tier, building relationship)</option><option value="C">🥉 C-Tier (New or low-volume)</option></select></div>
-    <div style="display:flex;gap:10px">
-      <button class="btn-primary" onclick="saveContactModal()">Save changes</button>
-      <button class="btn-sm" onclick="closeContactModal()">Cancel</button>
+    <div style="display:flex;gap:10px;justify-content:space-between">
+      <div style="display:flex;gap:10px">
+        <button class="btn-primary" onclick="saveContactModal()">Save changes</button>
+        <button class="btn-sm" onclick="closeContactModal()">Cancel</button>
+      </div>
+      <button class="btn-sm danger" onclick="deleteAgent()" id="deleteAgentBtn">Delete agent</button>
     </div>
   </div>
 </div>
@@ -3352,6 +3376,49 @@ async function unmarkDNC(id){
 }
 
 let editingContactName=null;
+function openAddAgentModal(){
+  document.getElementById("addAgentName").value="";
+  document.getElementById("addAgentPhone").value="";
+  document.getElementById("addAgentEmail").value="";
+  document.getElementById("addAgentBrokerage").value="";
+  document.getElementById("addAgentBirthday").value="";
+  document.getElementById("addAgentTier").value="";
+  document.getElementById("addAgentModal").classList.add("open");
+}
+function closeAddAgentModal(){
+  document.getElementById("addAgentModal").classList.remove("open");
+}
+async function saveNewAgent(){
+  const name=(document.getElementById("addAgentName").value||"").trim();
+  if(!name){toast("Enter the agent name.","error");return;}
+  try{
+    await sbFetch("agent_profiles",{method:"POST",prefer:"return=minimal",body:JSON.stringify({
+      agent_name:name,
+      phone:document.getElementById("addAgentPhone").value.trim()||null,
+      email:document.getElementById("addAgentEmail").value.trim()||null,
+      brokerage:document.getElementById("addAgentBrokerage").value.trim()||null,
+      birthday:document.getElementById("addAgentBirthday").value.trim()||null,
+      tier:document.getElementById("addAgentTier").value||null
+    })});
+    toast(name+" added to contacts ✓","success");
+    closeAddAgentModal();
+    loadContacts();
+    initAutocomplete();
+  }catch(e){toast("Failed: "+e.message,"error");}
+}
+async function deleteAgent(){
+  const name=document.getElementById("contactModalName").textContent;
+  if(!name)return;
+  if(!confirm("Delete "+name+" from contacts? This cannot be undone."))return;
+  try{
+    await sbFetch("agent_profiles?agent_name=eq."+encodeURIComponent(name),{method:"DELETE",prefer:"return=minimal"});
+    toast(name+" deleted from contacts","success");
+    closeContactModal();
+    loadContacts();
+    initAutocomplete();
+  }catch(e){toast("Delete failed: "+e.message,"error");}
+}
+
 function openContactModal(name,phone,email,brokerage,birthday){
   editingContactName=name;
   document.getElementById("contactModalName").textContent=name;
