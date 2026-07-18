@@ -1333,39 +1333,82 @@ async function loadQuietCoverage(){
 
 async function loadFlagged(){
   try{
-    const flagged=await sbFetch("call_logs?flag_rm=eq.true&select=id,agent_name,lp,call_date,note,outcome&order=call_date.desc&limit=50");
+    const flagged=await sbFetch("call_logs?flag_rm=eq.true&select=id,agent_name,lp,call_date,note,outcome,rm_note,rm_note_at&order=call_date.desc&limit=50");
     document.getElementById("flaggedSub").textContent=flagged.length?flagged.length+" agent"+(flagged.length!==1?"s":""):"";
 
     if(!flagged.length){
-      document.getElementById("weekFlagged").innerHTML='<div class="no-data" style="padding:16px">No agents flagged by LPs right now</div>';
+      document.getElementById("weekFlagged").innerHTML='';
       return;
     }
 
-    document.getElementById("weekFlagged").innerHTML=flagged.map(f=>{
+    let html='<div style="font-size:11px;font-weight:700;color:var(--danger);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;padding-top:8px;border-top:1px solid var(--border-light)">🚩 Flagged by LPs — action needed</div>';
+
+    html+=flagged.map(f=>{
       const note=(f.note||"").trim();
-      const isLong=note.length>80;
-      const shortNote=isLong?note.substring(0,80)+"...":note;
+      const isLong=note.length>100;
+      const shortNote=isLong?note.substring(0,100)+"...":note;
       const noteId="flag-note-"+f.id;
       const btnId="flag-btn-"+f.id;
-      return'<div class="fu-item" style="align-items:flex-start">'
-        +'<div class="fu-dot" style="background:#E24B4A;margin-top:5px"></div>'
-        +'<div class="fu-body" style="flex:1">'
-        +'<div class="fu-name">'+f.agent_name+'<span style="font-size:10px;color:#bbb;font-weight:400;margin-left:6px">via '+(f.lp||"LP")+'</span></div>'
+      const safeAgent=(f.agent_name||"").replace(/'/g,"\\'");
+      const hasReply=f.rm_note&&f.rm_note.trim();
+
+      return'<div id="flag-card-'+f.id+'" style="background:var(--danger-bg);border:1px solid var(--border-danger);border-radius:var(--radius);padding:12px 14px;margin-bottom:8px">'
+        // Header
+        +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">'
+        +'<div><span style="font-size:14px;font-weight:700;color:var(--text-1)">'+f.agent_name+'</span>'
+        +'<span style="font-size:11px;color:var(--text-3);margin-left:8px">via '+(f.lp||"LP")+'</span></div>'
+        +'<span style="font-size:10px;color:var(--text-3)">'+fmtDate(f.call_date)+(f.outcome?" · "+f.outcome:"")+'</span>'
+        +'</div>'
+        // LP note
         +(note
-          ?'<div class="fu-meta" style="color:#444;margin-top:4px;line-height:1.5">'
+          ?'<div style="font-size:13px;color:var(--text-1);line-height:1.5;margin-bottom:10px;padding:8px 10px;background:rgba(255,255,255,.6);border-radius:6px">'
             +'<span id="'+noteId+'">'+shortNote+'</span>'
-            +(isLong?'<span id="'+btnId+'" onclick="toggleFlagNote(\''+noteId+'\',\''+btnId+'\',\''+note.replace(/'/g,"\\'").replace(/\n/g," ")+'\',\''+shortNote.replace(/'/g,"\\'")+'\',\''+( isLong?'1':'0')+'\')" style="color:#534AB7;cursor:pointer;font-size:11px;margin-left:5px;text-decoration:underline">See more</span>':"")
+            +(isLong?'<span id="'+btnId+'" onclick="toggleFlagNote(\''+noteId+'\',\''+btnId+'\',\''+note.replace(/'/g,"\\'").replace(/\n/g," ")+'\',\''+shortNote.replace(/'/g,"\\'")+'\',\''+(isLong?'1':'0')+'\')" style="color:var(--brand);cursor:pointer;font-size:11px;margin-left:5px;font-weight:600">See more</span>':"")
           +'</div>'
           :"")
-        +'<div class="fu-meta" style="margin-top:4px;color:#aaa">'+fmtDate(f.call_date)+(f.outcome?" · "+f.outcome:"")+'</div>'
+        // Amanda's existing reply if any
+        +(hasReply
+          ?'<div style="background:#E8F5E9;border:1px solid #81C784;border-radius:6px;padding:8px 10px;margin-bottom:10px;font-size:12px;color:#1B5E20">'
+            +'<div style="font-size:10px;font-weight:700;color:#2E7D32;margin-bottom:3px">Your response · '+fmtDate(f.rm_note_at)+'</div>'
+            +f.rm_note
+          +'</div>'
+          :"")
+        // Reply box (collapsed by default, shown on demand)
+        +'<div id="flag-reply-'+f.id+'" style="display:none;margin-bottom:10px">'
+        +'<textarea id="flag-reply-text-'+f.id+'" placeholder="Type your response to '+(f.lp||"LP")+'..." rows="2" '
+        +'style="width:100%;border:1px solid var(--border);border-radius:6px;padding:8px 10px;font-size:12px;font-family:inherit;color:var(--text-1);outline:none;resize:vertical;box-sizing:border-box;margin-bottom:6px"></textarea>'
+        +'<div style="display:flex;gap:6px">'
+        +'<button onclick="sendFlagReply('+f.id+')" style="padding:6px 14px;background:var(--brand);color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">Send response</button>'
+        +'<button onclick="document.getElementById(\'flag-reply-'+f.id+'\').style.display=\'none\'" style="padding:6px 10px;background:#fff;color:var(--text-2);border:1px solid var(--border);border-radius:6px;font-size:12px;cursor:pointer;font-family:inherit">Cancel</button>'
+        +'</div></div>'
+        // Action buttons
+        +'<div style="display:flex;gap:8px">'
+        +'<button onclick="document.getElementById(\'agentInput\').value=\''+safeAgent+'\';switchTab(\'log\')" '
+        +'style="flex:1;padding:7px;background:var(--brand);color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">Log outreach</button>'
+        +'<button onclick="document.getElementById(\'flag-reply-'+f.id+'\').style.display=\'block\';document.getElementById(\'flag-reply-text-'+f.id+'\').focus()" '
+        +'style="padding:7px 14px;background:#fff;color:var(--brand);border:1px solid var(--brand);border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">'+(hasReply?"Edit reply":"Reply to LP")+'</button>'
+        +'<button onclick="resolveFlag(\''+f.id+'\')" '
+        +'style="padding:7px 14px;background:#fff;color:var(--text-2);border:1px solid var(--border);border-radius:6px;font-size:12px;cursor:pointer;font-family:inherit">Mark handled</button>'
         +'</div>'
-        +'<button onclick="resolveFlag(\''+f.id+'\')" style="font-size:10px;color:#888;background:none;border:1px solid #ddd;border-radius:6px;padding:4px 8px;cursor:pointer;font-family:inherit;white-space:nowrap;flex-shrink:0;margin-left:8px">Mark handled</button>'
         +'</div>';
     }).join("");
+
+    document.getElementById("weekFlagged").innerHTML=html;
   }catch(e){
     console.error(e);
     document.getElementById("weekFlagged").innerHTML='<div class="no-data">Unable to load.</div>';
   }
+}
+
+async function sendFlagReply(id){
+  const text=(document.getElementById("flag-reply-text-"+id).value||"").trim();
+  if(!text){toast("Type a response first.","error");return;}
+  try{
+    await sbFetch("call_logs?id=eq."+id,{method:"PATCH",prefer:"return=minimal",
+      body:JSON.stringify({rm_note:text,rm_note_at:new Date().toISOString()})});
+    toast("Response sent ✓","success");
+    loadFlagged();
+  }catch(e){toast("Failed: "+e.message,"error");}
 }
 
 function toggleFlagNote(noteId,btnId,fullText,shortText,isShowing){
@@ -1477,6 +1520,25 @@ function switchTab(name){
 
 let periodData={mtd:[],ytd:[]},currentPeriod="mtd";
 
+function snapshotDrillDown(type){
+  // Switch to Activity Feed and filter by this type
+  switchTab('feed');
+  setTimeout(()=>{
+    const typeSelect=document.getElementById('feedTypeFilter');
+    const periodSelect=document.getElementById('feedPeriodFilter');
+    if(typeSelect){
+      if(type==='__talkto__'){
+        // Show all talk-to types — just filter to today
+        typeSelect.value='all';
+      }else{
+        typeSelect.value=type;
+      }
+    }
+    if(periodSelect) periodSelect.value='week';
+    applyFeedFilters();
+  },200);
+}
+
 function renderSnapshotStats(acts, period){
   const labels={daily:"Today",wtd:"This week",mtd:"This month",ytd:"This year"};
   const goals={
@@ -1492,14 +1554,15 @@ function renderSnapshotStats(acts, period){
   const breakBreads=(acts||[]).filter(a=>a.act_type==="Break Breads").length;
   const buddyAsks=(acts||[]).filter(a=>a.act_type==="Realtor Buddy Referral Ask").length;
 
-  const statCard=(num,goal,label)=>{
+  const statCard=(num,goal,label,filterType)=>{
     const pct=goal?Math.round(num/goal*100):0;
     const hit=pct>=100,track=pct>=80,low=pct<50;
     const color=hit?"var(--success)":track?"var(--brand)":low?"var(--danger)":"var(--warning)";
     const badge=hit?"Goal hit":track?"On track":low?"Needs push":"Almost there";
     const badgeBg=hit?"var(--success-bg)":track?"var(--brand-light)":low?"var(--danger-bg)":"var(--warning-bg)";
     const badgeColor=hit?"var(--success)":track?"var(--brand)":low?"var(--danger)":"var(--warning)";
-    return'<div style="text-align:center;padding:14px 8px;background:var(--surface-2);border:1px solid var(--border-light);border-radius:var(--radius);transition:box-shadow .15s">'
+    const clickFn=filterType?'onclick="snapshotDrillDown(\''+filterType+'\')" style="cursor:pointer"':'';
+    return'<div '+clickFn+' style="text-align:center;padding:14px 8px;background:var(--surface-2);border:1px solid var(--border-light);border-radius:var(--radius);transition:box-shadow .15s" onmouseover="this.style.boxShadow=\'var(--shadow)\'" onmouseout="this.style.boxShadow=\'none\'">'
       +'<div style="font-size:28px;font-weight:700;color:'+color+';line-height:1">'+num+'</div>'
       +'<div style="font-size:10px;color:var(--text-3);margin-top:2px">/ '+goal+'</div>'
       +'<div style="font-size:9px;font-weight:700;margin-top:6px;padding:2px 7px;border-radius:20px;background:'+badgeBg+';color:'+badgeColor+'">'+badge+'</div>'
@@ -1509,11 +1572,11 @@ function renderSnapshotStats(acts, period){
 
   const el=document.getElementById("snapshotStats");
   if(el) el.innerHTML=
-    statCard(coldCalls,g.coldCalls,"Cold Calls")+
-    statCard(talkTos,g.talkTos,"Realtor Talk-to's")+
-    statCard(meetings,g.meetings,"New Realtor Meetings")+
-    statCard(breakBreads,g.breakBreads,"Break Breads")+
-    statCard(buddyAsks,g.buddyAsks,"Realtor Buddy Intros");
+    statCard(coldCalls,g.coldCalls,"Cold Calls","Cold Calls")+
+    statCard(talkTos,g.talkTos,"Realtor Talk-to's","__talkto__")+
+    statCard(meetings,g.meetings,"New Realtor Meetings","New Realtor Meeting")+
+    statCard(breakBreads,g.breakBreads,"Break Breads","Break Breads")+
+    statCard(buddyAsks,g.buddyAsks,"Realtor Buddy Intros","Realtor Buddy Referral Ask");
 
   // Update day label
   const dayEl=document.getElementById("snapshotDayLabel");
@@ -1645,8 +1708,18 @@ async function loadWeek(){
     ]);
     const all=[...overdue,...fus];
     document.getElementById("weekFollowups").innerHTML=all.length?all.map(f=>{
-      const isOvr=f.follow_up_date<todayStr,c=isOvr?"#E24B4A":"#534AB7";
-      return'<div class="fu-item"><div class="fu-dot" style="background:'+c+'"></div><div class="fu-body"><div class="fu-name">'+f.agent_name+'</div><div class="fu-meta">'+badgeEmoji(f.act_type)+'</div></div><div class="fu-date" style="color:'+c+'">'+( isOvr?"Overdue":fmtDate(f.follow_up_date))+'</div></div>';
+      const isOvr=f.follow_up_date<todayStr;
+      const c=isOvr?"var(--danger)":"var(--brand)";
+      const safeAgent=(f.agent_name||"").replace(/'/g,"\\'");
+      return'<div class="fu-item" style="align-items:center">'
+        +'<div class="fu-dot" style="background:'+c+'"></div>'
+        +'<div class="fu-body"><div class="fu-name">'+f.agent_name+'</div>'
+        +'<div class="fu-meta">'+badgeEmoji(f.act_type)+'</div></div>'
+        +'<div style="display:flex;align-items:center;gap:6px;flex-shrink:0">'
+        +'<span class="fu-date" style="color:'+c+'">'+(isOvr?"Overdue":fmtDate(f.follow_up_date))+'</span>'
+        +'<button onclick="document.getElementById(\'agentInput\').value=\''+safeAgent+'\';switchTab(\'log\')" '
+        +'style="font-size:10px;padding:3px 9px;background:var(--brand);color:#fff;border:none;border-radius:6px;cursor:pointer;font-family:inherit;font-weight:600">Log</button>'
+        +'</div></div>';
     }).join(""):'<div class="no-data" style="padding:16px">No follow-ups due</div>';
   }catch(e){console.error(e);}
 
