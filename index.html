@@ -407,11 +407,11 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI'
           <div id="quickLogAcList" class="ac-list"></div>
         </div>
         <select id="quickLogType" style="border:1px solid var(--border);border-radius:var(--radius-sm);padding:9px 11px;font-size:12px;font-family:inherit;color:var(--text-1);outline:none;background:var(--surface)">
-          <option value="Active Agent Talk-to">Talk-to (text/call)</option>
+          <option value="Agent Talk-to">Talk-to (text/call)</option>
           <option value="Birthday Outreach">Birthday outreach</option>
           <option value="CTC Call">CTC call</option>
-          <option value="Active Agent Check-in">Check-in</option>
-          <option value="Sent Market Report">Market report</option>
+          
+          <option value="Market Update">Market update</option>
           <option value="Sent Referral">Referral sent</option>
           <option value="Holiday Outreach">Holiday outreach</option>
           <option value="Agent Appreciation">Appreciation</option>
@@ -1013,10 +1013,10 @@ const SB_URL="https://uclucbdkjqyqdvifyptx.supabase.co";
 const SB_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVjbHVjYmRranF5cWR2aWZ5cHR4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA0OTUyMTMsImV4cCI6MjA5NjA3MTIxM30.VnqWcFT1WLQwCJxSdEIzIgOvETaOQly2IQxht-9uI7E";
 
 const EMOJI={
-  "Cold Calls":"🏹","New Realtor Meeting":"🌸","New Agent Follow-up":"🌻","Break Breads":"🤝","Active Agent Check-in":"🤙","Active Agent Talk-to":"📞",
+  "Cold Calls":"🏹","New Realtor Meeting":"🌸","New Agent Follow-up":"🌻","Break Breads":"🤝","Agent Talk-to":"🤙","Agent Talk-to":"📞",
   "Realtor Buddy Referral Ask":"🌾","CTC Call":"⚡","Open House Visit":"🏠",
-  "Market Update Call":"📊","Sent Market Report":"💬","Sent Referral":"💌",
-  "Co-hosted Event":"🎉","Closed Deal Thank You":"🍰","Birthday Outreach":"🍰",
+  "Market Update":"📊","Market Update":"💬","Sent Referral":"💌",
+  "Co-hosted Event":"🎉","CTC Call":"🍰","Birthday Outreach":"🍰",
   "Holiday Outreach":"🎅","Agent Appreciation":"❤️","Business Planning Session":"📋️",
   "Co-Marketing Discussion":"🤝","Team Presentation":"🎬","Recruiting Conversation":"👑"
 };
@@ -1030,14 +1030,14 @@ const GOALS=[
 const GOAL_THRESHOLD=0.8; // 80% = passing
 const CTC_TYPE="CTC Call";
 // All activity types that count toward the Active Agent Talk-to goal
-const TALKTO_TYPES=["Active Agent Talk-to","Active Agent Check-in","CTC Call","Birthday Outreach","Holiday Outreach","Agent Appreciation","Closed Deal Thank You","Market Update Call","Sent Market Report","Sent Referral","Co-Marketing Discussion"];
+const TALKTO_TYPES=["Agent Talk-to","CTC Call","Birthday Outreach","Holiday Outreach","Agent Appreciation","Market Update","Sent Referral","Co-Marketing Discussion","New Agent Follow-up"];
 function properCase(str){
   if(!str)return"";
   return str.toLowerCase().replace(/\b\w/g,c=>c.toUpperCase());
 }
 
 function cntTalkTo(acts){return(acts||[]).filter(function(a){return TALKTO_TYPES.indexOf((a.act_type||"").trim())>=0;}).length;}
-const ACT_TYPE_OPTIONS='<optgroup label="New Relationships"><option>Cold Calls</option><option>New Realtor Meeting</option><option>Open House Visit</option></optgroup><optgroup label="Relationship Deepening"><option>New Agent Follow-up</option><option>Break Breads</option><option>Market Update Call</option><option>Sent Market Report</option><option>Sent Referral</option><option>Co-hosted Event</option><option>Realtor Buddy Referral Ask</option></optgroup><optgroup label="Management"><option>Active Agent Talk-to</option></optgroup><optgroup label="Retention and Referrals"><option>Active Agent Check-in</option><option>CTC Call</option><option>Closed Deal Thank You</option><option>Birthday Outreach</option><option>Holiday Outreach</option><option>Agent Appreciation</option></optgroup><optgroup label="Special Programs"><option>Business Planning Session</option><option>Co-Marketing Discussion</option><option>Team Presentation</option><option>Recruiting Conversation</option></optgroup>';
+const ACT_TYPE_OPTIONS='<optgroup label="New Relationships"><option>Cold Calls</option><option>New Realtor Meeting</option></optgroup><optgroup label="Relationship Deepening"><option>New Agent Follow-up</option><option>Break Breads</option><option>Market Update</option><option>Sent Referral</option><option>Co-hosted Event</option><option>Realtor Buddy Referral Ask</option></optgroup><optgroup label="Retention and Referrals"><option>Agent Talk-to</option><option>CTC Call</option><option>Birthday Outreach</option><option>Holiday Outreach</option><option>Agent Appreciation</option><option>Co-Marketing Discussion</option></optgroup><optgroup label="Special Programs"><option>Business Planning Session</option><option>Co-Marketing Discussion</option><option>Team Presentation</option><option>Recruiting Conversation</option></optgroup>';
 function badgeEmoji(type){return EMOJI[type]?EMOJI[type]+" "+type:type;}
 
 const NEXT_CALL_DAYS={
@@ -1045,15 +1045,15 @@ const NEXT_CALL_DAYS={
   "New Realtor Meeting":"next_monday",
   "New Agent Follow-up":7,
   "Break Breads":14,
-  "Market Update Call":14,
-  "Sent Market Report":14,
+  "Market Update":14,
+  
   "Sent Referral":3,
   "Co-hosted Event":7,
   "Realtor Buddy Referral Ask":7,
-  "Active Agent Talk-to":30,
-  "Active Agent Check-in":14,
+  "Agent Talk-to":30,
+  
   "CTC Call":null,
-  "Closed Deal Thank You":null,
+  
   "Birthday Outreach":30,
   "Holiday Outreach":30,
   "Agent Appreciation":30,
@@ -2007,7 +2007,7 @@ async function logActivity(){
   }
   
   // VALIDATION: Notes required for Birthday/Deal Thank You
-  if((activityType==="Birthday Outreach"||activityType==="Closed Deal Thank You")&&(!notes||notes.length<10)){
+  if((activityType==="Birthday Outreach"||activityType==="CTC Call")&&(!notes||notes.length<10)){
     toast(activityType+" needs notes (minimum 10 characters).","error");
     return;
   }
@@ -2178,7 +2178,7 @@ async function saveInlineLog(id,agentName,origDate){
   if(!outcome){toast("Select an outcome first.","error");return;}
   if(outcome==="Requires follow-up"&&!newFu){toast("Set a new follow-up date.","error");return;}
   if(actType==="CTC Call"&&(!notes||notes.length<15)){toast("CTC calls need detailed notes (minimum 15 characters).","error");return;}
-  if((actType==="Birthday Outreach"||actType==="Closed Deal Thank You")&&(!notes||notes.length<10)){toast(actType+" needs notes (minimum 10 characters).","error");return;}
+  if((actType==="Birthday Outreach"||actType==="CTC Call")&&(!notes||notes.length<10)){toast(actType+" needs notes (minimum 10 characters).","error");return;}
   try{
     await Promise.all([
       sbFetch("amanda_activities",{method:"POST",body:JSON.stringify({agent_name:agentName,act_type:actType,act_date:today(),outcome,follow_up_date:newFu,notes})}),
@@ -2966,7 +2966,7 @@ async function loadHealth(){
     const missingContact=agents.filter(a=>(!a.phone||!a.phone.trim())&&(!a.email||!a.email.trim()));
     const prospectsMissingContact=prospects.filter(p=>(!p.phone||!p.phone.trim())&&(!p.email||!p.email.trim())&&p.status==="Requires follow-up");
     const requiresFuNoDate=rmActs.filter(a=>a.outcome==="Requires follow-up"&&!a.follow_up_date);
-    const criticalNoNotes=rmActs.filter(a=>(a.act_type==="CTC Call"||a.act_type==="Birthday Outreach"||a.act_type==="Closed Deal Thank You")&&(!a.notes||a.notes.length<10));
+    const criticalNoNotes=rmActs.filter(a=>(a.act_type==="CTC Call"||a.act_type==="Birthday Outreach"||a.act_type==="CTC Call")&&(!a.notes||a.notes.length<10));
     const untiered=agents.filter(a=>!a.tier);
     
     const totalActivities=rmActs.length||1;
