@@ -453,7 +453,6 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Inter','Segoe UI',sans-serif;
   <div class="card" id="onboardingCard" style="display:none">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px">
       <div><span class="card-title">Gifting Campaign Follow-Up</span> <span class="card-sub" id="onboardingSub"></span></div>
-      <div id="onboardingCounter"></div>
     </div>
     <div id="onboardingList"></div>
   </div>
@@ -1137,14 +1136,6 @@ function toast(msg,type="success"){
   setTimeout(()=>el.className="toast",3200);
 }
 
-function toTitleCase(str){
-  if(!str)return str;
-  // Only convert if string is all caps (Power BI export format)
-  if(str===str.toUpperCase()){
-    return str.toLowerCase().replace(/\b\w/g,function(c){return c.toUpperCase();});
-  }
-  return str;
-}
 function fmtDate(d){
   if(!d)return"—";
   return new Date(d+"T12:00:00").toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"});
@@ -1528,36 +1519,33 @@ async function resolveFlag(id){
 async function loadQuiet(){
   try{
     const[allAgents,allActs,lpCalls]=await Promise.all([
-      sbFetch("agent_profiles?select=agent_name&order=agent_name.asc&limit=500"),
+      sbFetch("agent_profiles?select=agent_name,retained&order=agent_name.asc&limit=500"),
       sbFetch("amanda_activities?select=agent_name,act_date&order=act_date.desc&limit=2000"),
       sbFetch("call_logs?select=agent_name,call_date&order=call_date.desc&limit=2000").catch(()=>[])
     ]);
 
-    // Build last-touch maps
     const lastSeenRM={};
-    allActs.forEach(a=>{
-      const n=(a.agent_name||"").trim();
-      if(n&&!lastSeenRM[n])lastSeenRM[n]=a.act_date;
-    });
+    allActs.forEach(a=>{const n=(a.agent_name||"").trim();if(n&&!lastSeenRM[n])lastSeenRM[n]=a.act_date;});
     const lastSeenLP={};
-    lpCalls.forEach(c=>{
-      const n=(c.agent_name||"").trim();
-      if(n&&!lastSeenLP[n])lastSeenLP[n]=c.call_date;
-    });
+    lpCalls.forEach(c=>{const n=(c.agent_name||"").trim();if(n&&!lastSeenLP[n])lastSeenLP[n]=c.call_date;});
 
     const now=new Date();
     const rows=allAgents.map(a=>{
-      const name=(a.agent_name||"").trim();
-      if(!name)return null;
+      const name=(a.agent_name||"").trim();if(!name)return null;
       const lastRM=lastSeenRM[name];
       const lastLP=lastSeenLP[name];
       const daysRM=lastRM?Math.round((now-new Date(lastRM+"T12:00:00"))/86400000):null;
       const daysLP=lastLP?Math.round((now-new Date(lastLP+"T12:00:00"))/86400000):null;
-      return{name,daysRM,daysLP};
+      const retained=!!a.retained;
+      const threshold=retained?21:60;
+      return{name,daysRM,daysLP,retained,threshold};
     }).filter(Boolean);
 
-    // At Risk = no Amanda touch in 60+ days
-    const quiet=rows.filter(r=>r.daysRM===null||r.daysRM>=60).sort((a,b)=>{
+    // At Risk = no Amanda touch beyond threshold (21 days for retained, 60 for others)
+    const quiet=rows.filter(r=>r.daysRM===null||r.daysRM>=r.threshold).sort((a,b)=>{
+      // Retained agents first, then by days
+      if(a.retained&&!b.retained)return-1;
+      if(!a.retained&&b.retained)return 1;
       if(a.daysRM===null&&b.daysRM===null)return 0;
       if(a.daysRM===null)return-1;
       if(b.daysRM===null)return 1;
@@ -1567,12 +1555,12 @@ async function loadQuiet(){
     document.getElementById("quietSub").textContent=quiet.length?quiet.length+" agent"+(quiet.length!==1?"s":""):"";
 
     if(!quiet.length){
-      document.getElementById("weekQuiet").innerHTML='<div class="no-data" style="padding:16px">Everyone\'s been touched within 60 days</div>';
+      document.getElementById("weekQuiet").innerHTML='<div class="no-data" style="padding:16px">Everyone\'s been touched recently</div>';
       return;
     }
 
     document.getElementById("weekQuiet").innerHTML=quiet.map(r=>{
-      const isUrgent=r.daysRM===null||r.daysRM>=90;
+      const isUrgent=r.daysRM===null||r.daysRM>=(r.retained?35:90);
       const dotColor=isUrgent?"var(--danger)":"var(--warning)";
       const rmLabel=r.daysRM===null?"No activity logged":r.daysRM+"d since last touch";
       const lpLabel=r.daysLP!==null?'<span style="color:var(--text-4);margin-left:8px">LP: '+r.daysLP+'d ago</span>'
@@ -1580,10 +1568,12 @@ async function loadQuiet(){
       const urgencyLabel=isUrgent
         ?'<span style="color:var(--danger);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.4px">Urgent</span>'
         :'<span style="color:var(--warning);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.4px">At Risk</span>';
+      const retainedBadge=r.retained
+        ?'<span style="font-size:9px;padding:1px 6px;background:var(--brand-light);color:var(--brand);border-radius:20px;font-weight:600;margin-left:5px">Retained</span>':"";
       return'<div class="quiet-agent-row">'
         +'<div style="display:flex;align-items:center;gap:8px;flex:1;min-width:0">'
         +'<div style="width:7px;height:7px;border-radius:50%;background:'+dotColor+';flex-shrink:0"></div>'
-        +'<div><div style="font-size:13px;font-weight:600;color:var(--text-1)">'+r.name+'</div>'
+        +'<div><div style="font-size:13px;font-weight:600;color:var(--text-1)">'+r.name+retainedBadge+'</div>'
         +'<div style="font-size:11px;color:var(--text-3);margin-top:1px">'+rmLabel+lpLabel+'</div></div></div>'
         +'<div style="display:flex;align-items:center;gap:8px;flex-shrink:0">'
         +urgencyLabel
@@ -1746,25 +1736,20 @@ function renderPeriodScorecard(){
 
 async function loadOnboarding(){
   try{
+    // Get all new realtor meetings in last 35 days
     const cutoff=new Date();cutoff.setDate(cutoff.getDate()-35);
     const cutoffStr=localDateStr(cutoff);
-    const [meetings,weekCheckIns]=await Promise.all([
-      sbFetch("amanda_activities?select=agent_name,act_date&act_type=eq.New Realtor Meeting&act_date=gte."+cutoffStr+"&order=act_date.desc"),
-      sbFetch("amanda_activities?select=agent_name&act_type=eq.Active Agent Talk-to&act_date=gte."+week.start+"&act_date=lte."+week.end).catch(()=>[])
-    ]);
+    const meetings=await sbFetch("amanda_activities?select=agent_name,act_date&act_type=eq.New Realtor Meeting&act_date=gte."+cutoffStr+"&order=act_date.desc");
     if(!meetings||!meetings.length){
       document.getElementById("onboardingCard").style.display="none";
       return;
     }
-    const checkedInThisWeek=new Set((weekCheckIns||[]).map(a=>(a.agent_name||"").trim().toLowerCase()));
-    // Dedupe by agent (case-insensitive), keep LATEST meeting date
+
+    // Dedupe by agent, keep earliest meeting date per agent
     const agentMap={};
     meetings.forEach(m=>{
-      const key=(m.agent_name||"").trim().toLowerCase();
-      if(!key)return;
-      if(!agentMap[key]||m.act_date>agentMap[key].date){
-        agentMap[key]={name:m.agent_name,date:m.act_date};
-      }
+      const n=m.agent_name;
+      if(!agentMap[n]||m.act_date<agentMap[n])agentMap[n]=m.act_date;
     });
 
     const weekTasks=[
@@ -1784,9 +1769,7 @@ async function loadOnboarding(){
     let html="";
     let count=0;
 
-    Object.entries(agentMap).forEach(([key,agent])=>{
-      const name=agent.name;
-      const metDate=agent.date;
+    Object.entries(agentMap).forEach(([name,metDate])=>{
       const met=new Date(metDate+"T12:00:00");
       const daysSince=Math.floor((today2-met)/86400000);
       const weekNum=Math.floor(daysSince/7)+1;
@@ -1801,19 +1784,17 @@ async function loadOnboarding(){
       const checkInDate=new Date(met);checkInDate.setDate(met.getDate()+(weekNum*7));
       checkInDate.setHours(0,0,0,0);
       const daysUntil=Math.floor((checkInDate-today2)/86400000);
-      const alreadyDone=checkedInThisWeek.has((name||"").trim().toLowerCase());
-      const isDue=daysUntil<=0&&!alreadyDone;
-      const isSoon=daysUntil<=3&&!alreadyDone;
-      const isDone=alreadyDone;
+      const isDue=daysUntil<=0;
+      const isSoon=daysUntil<=3;
 
       const safeAgent=name.replace(/'/g,"\\'");
       html+='<div style="display:flex;align-items:flex-start;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border-light)">'
         +'<div><div style="font-size:13px;font-weight:600;color:var(--text-1)">'
-        +toTitleCase(name)+' <span style="display:inline-block;padding:2px 8px;border-radius:20px;font-size:10px;font-weight:700;background:'+bg+';color:'+color+'">Week '+weekNum+' of 5</span></div>'
+        +name+' <span style="display:inline-block;padding:2px 8px;border-radius:20px;font-size:10px;font-weight:700;background:'+bg+';color:'+color+'">Week '+weekNum+' of 5</span></div>'
         +'<div style="font-size:11px;color:var(--text-3);margin-top:2px">Met '+fmtDate(metDate)+'</div>'
         +'<div style="font-size:12px;color:var(--text-2);margin-top:3px;font-style:italic">'+task+'</div></div>'
         +'<div style="text-align:right;flex-shrink:0;margin-left:12px">'
-        +'<div style="font-size:11px;font-weight:600;color:'+(isDone?'var(--success)':isDue?'var(--danger)':isSoon?'var(--amber)':'var(--text-3)')+';margin-bottom:6px">'+(isDone?'Done this week':isDue?'Due now':isSoon?'Due soon':'This week')+'</div>'
+        +'<div style="font-size:11px;font-weight:600;color:'+(isDue?'var(--danger)':'var(--success)')+';margin-bottom:6px">'+(isDue?'Due now':isSoon?'Due soon':'This week')+'</div>'
         +'<button onclick="document.getElementById(\'agentInput\').value=\''+safeAgent+'\';document.getElementById(\'activityType\').value=\'Active Agent Talk-to\';switchTab(\'log\')" '
         +'style="padding:5px 12px;background:var(--brand);color:#fff;border:none;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit">Log check-in</button>'
         +'</div></div>';
@@ -1827,18 +1808,7 @@ async function loadOnboarding(){
     document.getElementById("onboardingCard").style.display="block";
     document.getElementById("onboardingSub").textContent=count+" agent"+(count!==1?"s":"")+" this cycle";
 
-    // Live MTD meeting count
-    const monthStart=new Date();monthStart.setDate(1);
-    const mtdMeetings=await sbFetch("amanda_activities?select=id&act_type=eq.New Realtor Meeting&act_date=gte."+localDateStr(monthStart)+"&limit=100").catch(()=>[]);
-    const mtdCount=mtdMeetings.length;
-    const pct=Math.min(100,Math.round(mtdCount/20*100));
-    const counterEl=document.getElementById("onboardingCounter");
-    if(counterEl) counterEl.innerHTML=
-      '<div style="display:flex;align-items:center;gap:8px;background:var(--surface-2);border-radius:20px;padding:5px 12px">'
-      +'<div><div style="display:flex;align-items:baseline;gap:4px"><span style="font-size:13px;font-weight:700;color:var(--brand)">'+mtdCount+' / 20</span><span style="font-size:10px;color:var(--text-3)">meetings this month</span></div>'
-      +'<div style="width:80px;height:4px;background:var(--border);border-radius:20px;overflow:hidden;margin-top:4px"><div style="height:4px;background:var(--brand);border-radius:20px;width:'+pct+'%"></div></div></div>'
-      +'<span style="font-size:10px;font-weight:700;color:var(--brand)">'+pct+'%</span>'
-      +'</div>';
+
     document.getElementById("onboardingList").innerHTML=html;
   }catch(e){console.error("Onboarding error:",e);}
 }
