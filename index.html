@@ -27,6 +27,7 @@
   --warning-bg:#F7EDE0;
   --danger:#A85450;
   --danger-bg:#F5EAEA;
+  --border-danger:#D9B5B3;
   --rose:#C4748A;
   --accent:#6B8F71;
   --radius-sm:8px;
@@ -446,6 +447,15 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Inter','Segoe UI',sans-serif;
       <div style="font-size:11px;color:var(--text-3);margin-top:8px">Logs the cold call + adds to pipeline automatically if not already there</div>
     </div>
     <div id="quickLogMsg" style="display:none;margin-top:8px;font-size:12px;color:var(--success);font-weight:500"></div>
+  </div>
+
+  <!-- Onboarding tracker -->
+  <div class="card" id="onboardingCard" style="display:none">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px">
+      <div><span class="card-title">Gifting Campaign Follow-Up</span> <span class="card-sub" id="onboardingSub"></span></div>
+      <div id="onboardingCounter"></div>
+    </div>
+    <div id="onboardingList"></div>
   </div>
 
   <!-- Attention items — 2 col -->
@@ -1025,14 +1035,64 @@ const ACT_TYPE_OPTIONS='<optgroup label="New Relationships"><option>Cold Calls</
 function badgeEmoji(type){return EMOJI[type]?EMOJI[type]+" "+type:type;}
 
 const NEXT_CALL_DAYS={
-  "Cold Calls":3,"New Realtor Meeting":7,"New Agent Follow-up":7,"Open House Visit":3,
-  "Break Breads":7,"Market Update Call":14,"Sent Market Report":7,"Sent Referral":3,
-  "Co-hosted Event":7,"Realtor Buddy Referral Ask":7,
-  "Active Agent Check-in":7,"CTC Call":1,"Closed Deal Thank You":30,
-  "Birthday Outreach":7,"Holiday Outreach":7,"Agent Appreciation":30,
-  "Business Planning Session":60,"Co-Marketing Discussion":14,
-  "Team Presentation":14,"Recruiting Conversation":7
+  "Cold Calls":3,
+  "New Realtor Meeting":"next_monday",
+  "New Agent Follow-up":7,
+  "Break Breads":14,
+  "Market Update Call":14,
+  "Sent Market Report":14,
+  "Sent Referral":3,
+  "Co-hosted Event":7,
+  "Realtor Buddy Referral Ask":7,
+  "Active Agent Talk-to":30,
+  "Active Agent Check-in":14,
+  "CTC Call":null,
+  "Closed Deal Thank You":null,
+  "Birthday Outreach":30,
+  "Holiday Outreach":30,
+  "Agent Appreciation":30,
+  "Business Planning Session":60,
+  "Co-Marketing Discussion":14,
+  "Team Presentation":14,
+  "Recruiting Conversation":7
 };
+
+function nextMonday(){
+  const d=new Date();
+  const day=d.getDay();
+  const daysUntil=day===1?7:(8-day)%7;
+  d.setDate(d.getDate()+daysUntil);
+  return d;
+}
+
+function autoSetFollowUp(){
+  const type=document.getElementById("activityType").value;
+  const days=NEXT_CALL_DAYS[type];
+  const hint=document.getElementById("followup-hint");
+  const row=document.getElementById("followupRow");
+
+  // CTC and Closed Deal Thank You — no follow-up needed
+  if(days===null){
+    document.getElementById("followupDate").value="";
+    if(row)row.classList.remove("show");
+    if(hint)hint.textContent="No follow-up needed — handle immediately";
+    return;
+  }
+
+  let d;
+  let hintText;
+  if(days==="next_monday"){
+    d=nextMonday();
+    hintText="Next Monday — Week 1 of 5 check-in";
+  }else{
+    d=new Date();d.setDate(d.getDate()+(days||7));
+    hintText="Suggested: "+days+" days after this activity";
+  }
+
+  document.getElementById("followupDate").value=localDateStr(d);
+  if(hint)hint.textContent=hintText;
+  if(row)row.classList.add("show");
+}
 
 function localDateStr(d){const y=d.getFullYear(),m=String(d.getMonth()+1).padStart(2,'0'),dd=String(d.getDate()).padStart(2,'0');return y+'-'+m+'-'+dd;}
 
@@ -1087,14 +1147,6 @@ function fmtDateTime(d){
   return new Date(d).toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric",hour:"2-digit",minute:"2-digit"});
 }
 
-function autoSetFollowUp(){
-  const type=document.getElementById("activityType").value;
-  const days=NEXT_CALL_DAYS[type]||7;
-  const d=new Date();d.setDate(d.getDate()+days);
-  document.getElementById("followupDate").value=localDateStr(d);
-  const hint=document.getElementById("followup-hint");
-  if(hint)hint.textContent="Suggested: "+days+"d after this activity";
-}
 
 const INTAKE_CHECK_IDS=["intakeRetainedReport","intakeSaEmail","intakeHomebot","intakeListreports","intakeTotalExpert","intakeGroupText"];
 const INTAKE_LABELS={
@@ -1235,7 +1287,7 @@ async function completeIntakeChecklist(){
     openIntake=null;
     resetIntakeChecklist();
     applyLockState();
-    loadWeek();loadFollowups();loadFeed();loadDaniel();loadHealth();
+    loadWeek();loadFollowups();loadFeed();loadDaniel();loadHealth();loadOnboarding();
   }catch(e){
     console.error("Complete checklist error:",e);
     toast("Save failed: "+(e.message||"Unknown error"),"error");
@@ -1315,7 +1367,7 @@ function clearLogErrorBanner(){
 
 async function init(){
   testConnection();
-  loadWeek();loadFollowups();loadFeed();loadDaniel();initAutocomplete();loadQuiet();loadFlagged();
+  loadWeek();loadFollowups();loadFeed();loadDaniel();initAutocomplete();loadQuiet();loadFlagged();loadOnboarding();
   checkOpenIntake();
   document.getElementById("agentInput").addEventListener("input",checkDedupOnInput);
 }
@@ -1684,6 +1736,96 @@ function renderPeriodScorecard(){
   document.getElementById("periodScorecard").innerHTML=html;
 }
 
+async function loadOnboarding(){
+  try{
+    // Get all new realtor meetings in last 35 days
+    const cutoff=new Date();cutoff.setDate(cutoff.getDate()-35);
+    const cutoffStr=localDateStr(cutoff);
+    const meetings=await sbFetch("amanda_activities?select=agent_name,act_date&act_type=eq.New Realtor Meeting&act_date=gte."+cutoffStr+"&order=act_date.desc");
+    if(!meetings||!meetings.length){
+      document.getElementById("onboardingCard").style.display="none";
+      return;
+    }
+
+    // Dedupe by agent, keep earliest meeting date per agent
+    const agentMap={};
+    meetings.forEach(m=>{
+      const n=m.agent_name;
+      if(!agentMap[n]||m.act_date<agentMap[n])agentMap[n]=m.act_date;
+    });
+
+    const weekTasks=[
+      "Check in and see how things are going. Let them know you are here for their buyers whenever they need you.",
+      "Share something useful — a market update, a rate insight, or something relevant to their business right now.",
+      "Ask how their pipeline looks and if they have any buyers coming up. Position yourself as their go-to resource.",
+      "Go deeper — ask what is working for them, what they are hearing from buyers, and show genuine interest in their business.",
+      "Natural ask — you have been consistently in touch and built real rapport. Ask if they have anyone coming up you can help with."
+    ];
+
+    const weekColors=["#4A6B50","#2E6DA4","#B87333","#7B52A8","#A85450"];
+    const weekBgs=["#EBF3EC","#E8F0F7","#FFF3E0","#F3E8FF","#FFE8E8"];
+
+    const today2=new Date();today2.setHours(0,0,0,0);
+    const nextMon=nextMonday();
+
+    let html="";
+    let count=0;
+
+    Object.entries(agentMap).forEach(([name,metDate])=>{
+      const met=new Date(metDate+"T12:00:00");
+      const daysSince=Math.floor((today2-met)/86400000);
+      const weekNum=Math.floor(daysSince/7)+1;
+      if(weekNum<1||weekNum>5)return;
+
+      count++;
+      const task=weekTasks[weekNum-1];
+      const color=weekColors[weekNum-1];
+      const bg=weekBgs[weekNum-1];
+
+      // Is check-in due this Monday?
+      const checkInDate=new Date(met);checkInDate.setDate(met.getDate()+(weekNum*7));
+      checkInDate.setHours(0,0,0,0);
+      const daysUntil=Math.floor((checkInDate-today2)/86400000);
+      const isDue=daysUntil<=0;
+      const isSoon=daysUntil<=3;
+
+      const safeAgent=name.replace(/'/g,"\\'");
+      html+='<div style="display:flex;align-items:flex-start;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border-light)">'
+        +'<div><div style="font-size:13px;font-weight:600;color:var(--text-1)">'
+        +name+' <span style="display:inline-block;padding:2px 8px;border-radius:20px;font-size:10px;font-weight:700;background:'+bg+';color:'+color+'">Week '+weekNum+' of 5</span></div>'
+        +'<div style="font-size:11px;color:var(--text-3);margin-top:2px">Met '+fmtDate(metDate)+'</div>'
+        +'<div style="font-size:12px;color:var(--text-2);margin-top:3px;font-style:italic">'+task+'</div></div>'
+        +'<div style="text-align:right;flex-shrink:0;margin-left:12px">'
+        +'<div style="font-size:11px;font-weight:600;color:'+(isDue?'var(--danger)':'var(--success)')+';margin-bottom:6px">'+(isDue?'Due now':isSoon?'Due soon':'This week')+'</div>'
+        +'<button onclick="document.getElementById(\'agentInput\').value=\''+safeAgent+'\';document.getElementById(\'activityType\').value=\'Active Agent Talk-to\';switchTab(\'log\')" '
+        +'style="padding:5px 12px;background:var(--brand);color:#fff;border:none;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit">Log check-in</button>'
+        +'</div></div>';
+    });
+
+    if(!count){
+      document.getElementById("onboardingCard").style.display="none";
+      return;
+    }
+
+    document.getElementById("onboardingCard").style.display="block";
+    document.getElementById("onboardingSub").textContent=count+" agent"+(count!==1?"s":"")+" this cycle";
+
+    // Live MTD meeting count
+    const monthStart=new Date();monthStart.setDate(1);
+    const mtdMeetings=await sbFetch("amanda_activities?select=id&act_type=eq.New Realtor Meeting&act_date=gte."+localDateStr(monthStart)+"&limit=100").catch(()=>[]);
+    const mtdCount=mtdMeetings.length;
+    const pct=Math.min(100,Math.round(mtdCount/20*100));
+    const counterEl=document.getElementById("onboardingCounter");
+    if(counterEl) counterEl.innerHTML=
+      '<div style="display:flex;align-items:center;gap:8px;background:var(--surface-2);border-radius:20px;padding:5px 12px">'
+      +'<div><div style="display:flex;align-items:baseline;gap:4px"><span style="font-size:13px;font-weight:700;color:var(--brand)">'+mtdCount+' / 20</span><span style="font-size:10px;color:var(--text-3)">meetings this month</span></div>'
+      +'<div style="width:80px;height:4px;background:var(--border);border-radius:20px;overflow:hidden;margin-top:4px"><div style="height:4px;background:var(--brand);border-radius:20px;width:'+pct+'%"></div></div></div>'
+      +'<span style="font-size:10px;font-weight:700;color:var(--brand)">'+pct+'%</span>'
+      +'</div>';
+    document.getElementById("onboardingList").innerHTML=html;
+  }catch(e){console.error("Onboarding error:",e);}
+}
+
 async function loadWeek(){
   const wl2=document.getElementById("snapshotWeekLabel");
   if(wl2)wl2.textContent=week.label;
@@ -1919,7 +2061,7 @@ async function logActivity(){
     }
     applyLockState();
     initAutocomplete();
-    loadWeek();loadFollowups();loadFeed();loadDaniel();loadHealth();
+    loadWeek();loadFollowups();loadFeed();loadDaniel();loadHealth();loadOnboarding();
   }catch(e){
     const msg=e.message||"Unknown error";
     console.error("Log error:",e);
