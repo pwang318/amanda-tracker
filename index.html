@@ -5,7 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Amanda | Relationship Manager Tracker</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.0.0/tabler-icons.min.css">
-<style>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 /* ── DESIGN TOKENS ─────────────────────────────────────────────── */
 :root{
   --bg:#F5F2EC;
@@ -40,7 +41,7 @@
 
 /* ── RESET ─────────────────────────────────────────────────────── */
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:-apple-system,BlinkMacSystemFont,'Inter','Segoe UI',sans-serif;background:var(--bg);color:var(--text-1);min-height:100vh;-webkit-font-smoothing:antialiased}
+body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--text-1);min-height:100vh;-webkit-font-smoothing:antialiased}
 
 /* ── HEADER ────────────────────────────────────────────────────── */
 .header{background:linear-gradient(135deg,#3D5442 0%,#5A7A60 100%);padding:14px 24px;display:flex;justify-content:space-between;align-items:center;box-shadow:0 2px 12px rgba(40,60,40,.25)}
@@ -1029,6 +1030,11 @@ const GOAL_THRESHOLD=0.8; // 80% = passing
 const CTC_TYPE="CTC Call";
 // All activity types that count toward the Active Agent Talk-to goal
 const TALKTO_TYPES=["Active Agent Talk-to","Active Agent Check-in","CTC Call","Birthday Outreach","Holiday Outreach","Agent Appreciation","Closed Deal Thank You","Market Update Call","Sent Market Report","Sent Referral","Co-Marketing Discussion"];
+function properCase(str){
+  if(!str)return"";
+  return str.toLowerCase().replace(/\b\w/g,c=>c.toUpperCase());
+}
+
 function cntTalkTo(acts){return(acts||[]).filter(function(a){return TALKTO_TYPES.indexOf((a.act_type||"").trim())>=0;}).length;}
 const ACT_TYPE_OPTIONS='<optgroup label="New Relationships"><option>Cold Calls</option><option>New Realtor Meeting</option><option>Open House Visit</option></optgroup><optgroup label="Relationship Deepening"><option>New Agent Follow-up</option><option>Break Breads</option><option>Market Update Call</option><option>Sent Market Report</option><option>Sent Referral</option><option>Co-hosted Event</option><option>Realtor Buddy Referral Ask</option></optgroup><optgroup label="Management"><option>Active Agent Talk-to</option></optgroup><optgroup label="Retention and Referrals"><option>Active Agent Check-in</option><option>CTC Call</option><option>Closed Deal Thank You</option><option>Birthday Outreach</option><option>Holiday Outreach</option><option>Agent Appreciation</option></optgroup><optgroup label="Special Programs"><option>Business Planning Session</option><option>Co-Marketing Discussion</option><option>Team Presentation</option><option>Recruiting Conversation</option></optgroup>';
 function badgeEmoji(type){return EMOJI[type]?EMOJI[type]+" "+type:type;}
@@ -1438,7 +1444,7 @@ async function loadFlagged(){
       return'<div id="flag-card-'+f.id+'" style="background:var(--danger-bg);border:1px solid var(--border-danger);border-radius:var(--radius);padding:12px 14px;margin-bottom:8px">'
         // Header
         +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">'
-        +'<div><span style="font-size:14px;font-weight:700;color:var(--text-1)">'+f.agent_name+'</span>'
+        +'<div><span style="font-size:14px;font-weight:700;color:var(--text-1)">'+properCase(f.agent_name)+'</span>'
         +'<span style="font-size:11px;color:var(--text-3);margin-left:8px">via '+(f.lp||"LP")+'</span></div>'
         +'<span style="font-size:10px;color:var(--text-3)">'+fmtDate(f.call_date)+(f.outcome?" · "+f.outcome:"")+'</span>'
         +'</div>'
@@ -1573,7 +1579,7 @@ async function loadQuiet(){
       return'<div class="quiet-agent-row">'
         +'<div style="display:flex;align-items:center;gap:8px;flex:1;min-width:0">'
         +'<div style="width:7px;height:7px;border-radius:50%;background:'+dotColor+';flex-shrink:0"></div>'
-        +'<div><div style="font-size:13px;font-weight:600;color:var(--text-1)">'+r.name+retainedBadge+'</div>'
+        +'<div><div style="font-size:13px;font-weight:600;color:var(--text-1)">'+properCase(r.name)+retainedBadge+'</div>'
         +'<div style="font-size:11px;color:var(--text-3);margin-top:1px">'+rmLabel+lpLabel+'</div></div></div>'
         +'<div style="display:flex;align-items:center;gap:8px;flex-shrink:0">'
         +urgencyLabel
@@ -1875,7 +1881,7 @@ async function loadWeek(){
       const safeAgent=(f.agent_name||"").replace(/'/g,"\\'");
       return'<div class="fu-item" style="align-items:center">'
         +'<div class="fu-dot" style="background:'+c+'"></div>'
-        +'<div class="fu-body"><div class="fu-name">'+f.agent_name+'</div>'
+        +'<div class="fu-body"><div class="fu-name">'+properCase(f.agent_name)+'</div>'
         +'<div class="fu-meta">'+badgeEmoji(f.act_type)+'</div></div>'
         +'<div style="display:flex;align-items:center;gap:6px;flex-shrink:0">'
         +'<span class="fu-date" style="color:'+c+'">'+(isOvr?"Overdue":fmtDate(f.follow_up_date))+'</span>'
@@ -1888,7 +1894,7 @@ async function loadWeek(){
   try{
     const recent=await sbFetch("amanda_activities?select=agent_name,act_type,act_date&order=act_date.desc&limit=5");
     document.getElementById("weekRecent").innerHTML=recent.length?recent.map(r=>
-      '<div class="feed-item"><div class="feed-top"><span class="feed-agent">'+r.agent_name+'</span><span class="feed-date">'+fmtDate(r.act_date)+'</span></div><span class="feed-badge '+( r.act_type===CTC_TYPE?"ctc":"rm")+'">'+badgeEmoji(r.act_type)+'</span></div>'
+      '<div class="feed-item"><div class="feed-top"><span class="feed-agent">'+properCase(r.agent_name)+'</span><span class="feed-date">'+fmtDate(r.act_date)+'</span></div><span class="feed-badge '+( r.act_type===CTC_TYPE?"ctc":"rm")+'">'+badgeEmoji(r.act_type)+'</span></div>'
     ).join(""):'<div class="no-data" style="padding:16px">Nothing logged yet.</div>';
   }catch(e){console.error(e);}
 
@@ -2095,7 +2101,7 @@ async function loadFollowups(){
       return'<div class="fu-item" id="fu-'+f.id+'" style="background:'+bgC+';padding:12px;border-radius:8px;border:0.5px solid '+(bgC==="#FCEBEB"?"#f7c1c1":bgC==="#FFF3E0"?"#FFE69C":"#EDE9E0")+'">'+
       '<div class="fu-dot" style="background:'+dotC+'"></div>'+
       '<div class="fu-body">'+
-        '<div class="fu-name">'+f.agent_name+'</div>'+
+        '<div class="fu-name">'+properCase(f.agent_name)+'</div>'+
         '<div class="fu-meta">'+badgeEmoji(f.act_type)+(f.notes?" · "+f.notes.substring(0,45):"")+'</div>'+
         '<div id="fu-edit-'+f.id+'" class="fu-edit-area"><input type="date" id="fu-date-'+f.id+'" value="'+f.follow_up_date+'" style="border:0.5px solid #D9D3C7;border-radius:6px;padding:5px 9px;font-size:12px;margin-right:6px;font-family:inherit"><button class="btn-sm" onclick="saveFollowupDate('+f.id+')">Save</button><button class="btn-sm" onclick="document.getElementById('+"'fu-edit-"+f.id+"'"+').style.display=\'none\'" style="margin-left:4px">Cancel</button></div>'+
         '<div id="fu-log-'+f.id+'" class="fu-inline-log">'+
@@ -2926,7 +2932,7 @@ function renderNetworkFeed(data){
     const badgeClass=isRm?(isCtc?"ctc":"rm"):"lp";
     const badgeText=isRm?badgeEmoji(a.act_type||""):badgeEmoji(a.activity_type||"LP Call");
     const lpLabel=isRm?"":'<span style="font-size:10px;color:#bbb;font-weight:400;margin-left:6px">via '+(a.lp||"LP")+'</span>';
-    return'<div class="feed-item"><div class="feed-top"><span class="feed-agent">'+a.agent_name+lpLabel+'</span><div class="feed-right"><span class="feed-date">'+fmtDate(a.displayDate)+'</span>'+( isRm?'<button class="btn-sm" onclick="openEditModal('+a.id+')" style="font-size:10px;padding:3px 8px">Edit</button><button class="btn-sm danger" onclick="openConfirm('+a.id+',\''+a.agent_name.replace(/'/g,"\\'") +'\',\''+a.displayType.replace(/'/g,"\\'") +'\')">Delete</button>':'')+'</div></div><span class="feed-badge '+badgeClass+'">'+badgeText+'</span>'+
+    return'<div class="feed-item"><div class="feed-top"><span class="feed-agent">'+properCase(a.agent_name)+lpLabel+'</span><div class="feed-right"><span class="feed-date">'+fmtDate(a.displayDate)+'</span>'+( isRm?'<button class="btn-sm" onclick="openEditModal('+a.id+')" style="font-size:10px;padding:3px 8px">Edit</button><button class="btn-sm danger" onclick="openConfirm('+a.id+',\''+a.agent_name.replace(/'/g,"\\'") +'\',\''+a.displayType.replace(/'/g,"\\'") +'\')">Delete</button>':'')+'</div></div><span class="feed-badge '+badgeClass+'">'+badgeText+'</span>'+
     (a.outcome?'<div class="feed-outcome">'+a.outcome+'</div>':"")+
     ((isRm?a.follow_up_date:null)?'<div class="feed-fu">Follow-up: '+fmtDate(isRm?a.follow_up_date:null)+'</div>':"")+
     ((isRm?a.notes:a.note)?'<div class="feed-notes">"'+(isRm?a.notes:a.note)+'"</div>':"")+
@@ -3342,7 +3348,7 @@ async function loadDaniel(){
     const all=[...overdue,...fus];
     document.getElementById("danielFollowups").innerHTML=all.length?all.map(f=>{
       const isOvr=f.follow_up_date<todayStr,c2=isOvr?"var(--danger)":"var(--brand)";
-      return'<div class="fu-item"><div class="fu-dot" style="background:'+c2+'"></div><div class="fu-body"><div class="fu-name">'+f.agent_name+'</div><div class="fu-meta">'+badgeEmoji(f.act_type)+'</div></div><div class="fu-date" style="color:'+c2+'">'+(isOvr?"Overdue":fmtDate(f.follow_up_date))+'</div></div>';
+      return'<div class="fu-item"><div class="fu-dot" style="background:'+c2+'"></div><div class="fu-body"><div class="fu-name">'+properCase(f.agent_name)+'</div><div class="fu-meta">'+badgeEmoji(f.act_type)+'</div></div><div class="fu-date" style="color:'+c2+'">'+(isOvr?"Overdue":fmtDate(f.follow_up_date))+'</div></div>';
     }).join(""):'<div class="no-data" style="padding:16px">No follow-ups due</div>';
   }catch(e){console.error(e);}
 
@@ -3497,7 +3503,7 @@ function renderProspects(list){
       actHtml+='</div>';
     }
     let html='<div class="prospect-card '+(isDNC?"dnc":isNFM?"nfm":"")+'">';
-    html+='<div class="pc-top"><div><div class="pc-name">'+p.agent_name+'</div><div class="pc-brokerage">'+(p.brokerage||"—")+'</div></div><span class="pc-badge '+bClass+'">'+bLabel+'</span></div>';
+    html+='<div class="pc-top"><div><div class="pc-name">'+properCase(p.agent_name)+'</div><div class="pc-brokerage">'+(p.brokerage||"—")+'</div></div><span class="pc-badge '+bClass+'">'+bLabel+'</span></div>';
     html+='<div class="pc-contact" style="justify-content:space-between;align-items:center">';
     html+='<div style="display:flex;gap:14px;flex-wrap:wrap">'+(p.phone?'<span>☎️ '+p.phone+'</span>':'<span style="color:#ccc">No phone</span>')+(p.email?' <span>✉️ '+p.email+'</span>':'')+'</div>';
     html+='<button class="btn-sm" style="font-size:10px;padding:3px 8px;flex-shrink:0" onclick="openPipelineContact('+p.id+')">Edit contact</button></div>';
