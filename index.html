@@ -1878,7 +1878,7 @@ async function loadWeek(){
     const todayStr=today();
     const[fus,overdue]=await Promise.all([
       sbFetch("amanda_activities?select=agent_name,act_type,follow_up_date&follow_up_date=gte."+todayStr+"&follow_up_date=lte."+week.end+"&order=follow_up_date.asc&limit=8"),
-      sbFetch("amanda_activities?select=agent_name,act_type,follow_up_date&follow_up_date=lt."+todayStr+"&follow_up_date=not.is.null&order=follow_up_date.desc&limit=4")
+      sbFetch("amanda_activities?select=id,agent_name,act_type,follow_up_date&follow_up_date=lt."+todayStr+"&follow_up_date=not.is.null&order=follow_up_date.desc&limit=4")
     ]);
     const all=[...overdue,...fus];
     document.getElementById("weekFollowups").innerHTML=all.length?all.map(f=>{
@@ -2876,7 +2876,7 @@ async function loadFeed(){
   try{
     const[rmActs,lpActs]=await Promise.all([
       sbFetch("amanda_activities?select=*&order=act_date.desc&limit=500"),
-      sbFetch("call_logs?select=agent_name,call_date,activity_type,outcome,note,lp&order=call_date.desc&limit=500").catch(()=>[])
+      sbFetch("call_logs?select=agent_name,call_date,act_type,outcome,note,lp&order=call_date.desc&limit=500").catch(()=>[])
     ]);
     const rm=(rmActs||[]).map(a=>({...a,_source:'amanda',_date:a.act_date,_type:a.act_type,_note:a.notes,_outcome:a.outcome,_agent:a.agent_name,_lp:null}));
     const lp=(lpActs||[]).map(c=>({...c,_source:'lp',_date:c.call_date,_type:c.activity_type||'LP Call',_note:c.note,_outcome:c.outcome,_agent:c.agent_name,_lp:c.lp}));
@@ -3350,7 +3350,7 @@ async function loadDaniel(){
     const todayStr=today();
     const[fus,overdue]=await Promise.all([
       sbFetch("amanda_activities?select=agent_name,act_type,follow_up_date&follow_up_date=gte."+todayStr+"&follow_up_date=lte."+week.end+"&order=follow_up_date.asc&limit=8"),
-      sbFetch("amanda_activities?select=agent_name,act_type,follow_up_date&follow_up_date=lt."+todayStr+"&follow_up_date=not.is.null&order=follow_up_date.desc&limit=4")
+      sbFetch("amanda_activities?select=id,agent_name,act_type,follow_up_date&follow_up_date=lt."+todayStr+"&follow_up_date=not.is.null&order=follow_up_date.desc&limit=4")
     ]);
     const all=[...overdue,...fus];
     document.getElementById("danielFollowups").innerHTML=all.length?all.map(f=>{
