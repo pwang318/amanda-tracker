@@ -1752,12 +1752,15 @@ async function loadOnboarding(){
     ]);
     if(!meetings||!meetings.length){document.getElementById("onboardingCard").style.display="none";return;}
 
-    const touchedThisWeek=new Set((recentActs||[]).map(a=>(a.agent_name||"").toLowerCase().trim()));
+    const normalize=s=>(s||"").toLowerCase().trim().replace(/\s+/g," ").replace(/s{2,}/g,"s");
+    const touchedThisWeek=new Set((recentActs||[]).map(a=>normalize(a.agent_name)));
+    const recentActMap={};
+    (recentActs||[]).forEach(a=>{const k=normalize(a.agent_name);if(!recentActMap[k])recentActMap[k]=a;});
 
     const agentMap={};
     meetings.forEach(m=>{
       const n=m.agent_name;
-      const key=(n||"").toLowerCase().trim().replace(/\s+/g," ").replace(/s{2,}/g,"s");
+      const key=normalize(n);
       if(!agentMap[key]||m.act_date<agentMap[key].date)agentMap[key]={name:n,date:m.act_date};
     });
 
@@ -1801,7 +1804,7 @@ async function loadOnboarding(){
       else{dueLabel="Due "+nextMon.toLocaleDateString("en-US",{month:"short",day:"numeric"});dueColor="var(--text-3)";}
 
       const safeAgent=name.replace(/'/g,"\'");
-      const doneAct=isDone?(recentActs||[]).find(a=>(a.agent_name||"").toLowerCase().trim().replace(/\s+/g," ").replace(/s{2,}/g,"s")===key):null;
+      const doneAct=isDone?recentActMap[key]:null;
       html+='<div style="display:flex;align-items:flex-start;justify-content:space-between;padding:11px 0;border-bottom:1px solid var(--border-light);gap:12px;opacity:'+(isDone?".6":"1")+'">'
         +'<div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:600;color:var(--text-1)">'+properCase(name)
         +' <span style="display:inline-block;padding:2px 8px;border-radius:20px;font-size:10px;font-weight:700;background:'+bg+';color:'+color+'">Week '+weekNum+' of 5</span></div>'
@@ -1811,7 +1814,7 @@ async function loadOnboarding(){
         +'</div><div style="text-align:right;flex-shrink:0">'
         +'<div style="font-size:11px;font-weight:600;color:'+dueColor+';margin-bottom:6px">'+dueLabel+'</div>'
         +(!isDone?'<button onclick="document.getElementById(\'agentInput\').value=\''+safeAgent+'\';document.getElementById(\'activityType\').value=\'Active Agent Talk-to\';switchTab(\'log\')" style="padding:5px 12px;background:var(--brand);color:#fff;border:none;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit">Log check-in</button>'
-        :'<button onclick="(function(){switchTab(\'history\');var tries=0;var interval=setInterval(function(){var inp=document.getElementById(\'historySearch\');if(inp||tries>10){clearInterval(interval);if(inp){inp.value=\''+safeAgent+'\';searchHistory(\''+safeAgent+'\');}};tries++;},150);})()" style="padding:5px 12px;background:var(--surface-2);color:var(--brand);border:1px solid var(--brand);border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit">View history</button>')
+        :'<button onclick="switchTab(\'history\');document.getElementById(\'historySearch\').value=\''+safeAgent+'\';doSearchHistory(\''+safeAgent+'\')" style="padding:5px 12px;background:var(--surface-2);color:var(--brand);border:1px solid var(--brand);border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit">View history</button>')
         +'</div></div>';
     });
 
