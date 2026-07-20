@@ -1899,8 +1899,9 @@ async function loadWeek(){
 
   try{
     const recent=await sbFetch("amanda_activities?select=agent_name,act_type,act_date&order=act_date.desc&limit=5");
-    document.getElementById("weekRecent").innerHTML=recent.length?recent.map(r=>
-      '<div class="feed-item"><div class="feed-top"><span class="feed-agent">'+properCase(r.agent_name)+'</span><span class="feed-date">'+fmtDate(r.act_date)+'</span></div><span class="feed-badge '+( r.act_type===CTC_TYPE?"ctc":"rm")+'">'+badgeEmoji(r.act_type)+'</span></div>'
+    const recentEl=document.getElementById("weekRecent");
+    if(recentEl)recentEl.innerHTML=recent.length?recent.map(r=>
+      '<div class="feed-item"><div class="feed-top"><span class="feed-agent">'+properCase(r.agent_name)+'</span><span class="feed-date">'+fmtDate(r.act_date)+'</span></div><span class="feed-badge '+(r.act_type===CTC_TYPE?"ctc":"rm")+'">'+badgeEmoji(r.act_type)+'</span></div>'
     ).join(""):'<div class="no-data" style="padding:16px">Nothing logged yet.</div>';
   }catch(e){console.error(e);}
 
@@ -2225,10 +2226,10 @@ async function loadBirthdayAlerts(){
       if(daysUntil<=14)upcoming.push({name:a.agent_name,birthday:a.birthday,days:daysUntil});
     });
     upcoming.sort((a,b)=>a.days-b.days);
-    const card=document.getElementById("bdayAlertCard");
-    if(!upcoming.length){card.style.display="none";return;}
-    card.style.display="block";
-    document.getElementById("bdayAlertList").innerHTML=upcoming.map(u=>{
+    const listEl=document.getElementById("bdayAlertList");
+    if(!listEl)return;
+    if(!upcoming.length){listEl.innerHTML="";return;}
+    listEl.innerHTML=upcoming.map(u=>{
       const urgency=u.days===0?"🎂 TODAY!":u.days<=3?"in "+u.days+"d ⚡":"in "+u.days+"d";
       const color=u.days<=3?"#880E4F":"#6A1B9A";
       return'<div class="bday-alert-item"><span style="font-weight:500">'+u.name+'</span><span style="color:'+color+';font-weight:600;font-size:12px">🍰 '+u.birthday+' — '+urgency+'</span></div>';
