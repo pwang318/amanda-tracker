@@ -1738,20 +1738,25 @@ function renderPeriodScorecard(){
 
 async function loadOnboarding(){
   try{
-    // Get all new realtor meetings in last 35 days
     const cutoff=new Date();cutoff.setDate(cutoff.getDate()-35);
     const cutoffStr=localDateStr(cutoff);
-    const meetings=await sbFetch("amanda_activities?select=agent_name,act_date&act_type=eq.New Realtor Meeting&act_date=gte."+cutoffStr+"&order=act_date.desc");
+    const [meetings,weekCheckIns]=await Promise.all([
+      sbFetch("amanda_activities?select=agent_name,act_date&act_type=eq.New Realtor Meeting&act_date=gte."+cutoffStr+"&order=act_date.desc"),
+      sbFetch("amanda_activities?select=agent_name&act_type=eq.Active Agent Talk-to&act_date=gte."+week.start+"&act_date=lte."+week.end).catch(()=>[])
+    ]);
     if(!meetings||!meetings.length){
       document.getElementById("onboardingCard").style.display="none";
       return;
     }
-
-    // Dedupe by agent, keep earliest meeting date per agent
+    const checkedInThisWeek=new Set((weekCheckIns||[]).map(a=>(a.agent_name||"").trim().toLowerCase()));
+    // Dedupe by agent (case-insensitive), keep LATEST meeting date
     const agentMap={};
     meetings.forEach(m=>{
-      const n=m.agent_name;
-      if(!agentMap[n]||m.act_date<agentMap[n])agentMap[n]=m.act_date;
+      const key=(m.agent_name||"").trim().toLowerCase();
+      if(!key)return;
+      if(!agentMap[key]||m.act_date>agentMap[key].date){
+        agentMap[key]={name:m.agent_name,date:m.act_date};
+      }
     });
 
     const weekTasks=[
@@ -1771,7 +1776,9 @@ async function loadOnboarding(){
     let html="";
     let count=0;
 
-    Object.entries(agentMap).forEach(([name,metDate])=>{
+    Object.entries(agentMap).forEach(([key,agent])=>{
+      const name=agent.name;
+      const metDate=agent.date;
       const met=new Date(metDate+"T12:00:00");
       const daysSince=Math.floor((today2-met)/86400000);
       const weekNum=Math.floor(daysSince/7)+1;
@@ -1786,8 +1793,10 @@ async function loadOnboarding(){
       const checkInDate=new Date(met);checkInDate.setDate(met.getDate()+(weekNum*7));
       checkInDate.setHours(0,0,0,0);
       const daysUntil=Math.floor((checkInDate-today2)/86400000);
-      const isDue=daysUntil<=0;
-      const isSoon=daysUntil<=3;
+      const alreadyDone=checkedInThisWeek.has((name||"").trim().toLowerCase());
+      const isDue=daysUntil<=0&&!alreadyDone;
+      const isSoon=daysUntil<=3&&!alreadyDone;
+      const isDone=alreadyDone;
 
       const safeAgent=name.replace(/'/g,"\\'");
       html+='<div style="display:flex;align-items:flex-start;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border-light)">'
@@ -1796,7 +1805,7 @@ async function loadOnboarding(){
         +'<div style="font-size:11px;color:var(--text-3);margin-top:2px">Met '+fmtDate(metDate)+'</div>'
         +'<div style="font-size:12px;color:var(--text-2);margin-top:3px;font-style:italic">'+task+'</div></div>'
         +'<div style="text-align:right;flex-shrink:0;margin-left:12px">'
-        +'<div style="font-size:11px;font-weight:600;color:'+(isDue?'var(--danger)':'var(--success)')+';margin-bottom:6px">'+(isDue?'Due now':isSoon?'Due soon':'This week')+'</div>'
+        +'<div style="font-size:11px;font-weight:600;color:'+(isDone?'var(--success)':isDue?'var(--danger)':isSoon?'var(--amber)':'var(--text-3)')+';margin-bottom:6px">'+(isDone?'Done this week':isDue?'Due now':isSoon?'Due soon':'This week')+'</div>'
         +'<button onclick="document.getElementById(\'agentInput\').value=\''+safeAgent+'\';document.getElementById(\'activityType\').value=\'Active Agent Talk-to\';switchTab(\'log\')" '
         +'style="padding:5px 12px;background:var(--brand);color:#fff;border:none;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit">Log check-in</button>'
         +'</div></div>';
