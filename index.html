@@ -8,32 +8,33 @@
 <style>
 /* ── DESIGN TOKENS ─────────────────────────────────────────────── */
 :root{
-  --bg:#F6F5FB;
-  --surface:#FFFFFF;
-  --surface-2:#F0EFF8;
-  --border:#E5E3F0;
-  --border-light:#EEECF8;
-  --brand:#5B4FCF;
-  --brand-dark:#3D3399;
-  --brand-light:#EAE8FB;
-  --brand-mid:#7B72DB;
-  --text-1:#18182A;
-  --text-2:#52527A;
-  --text-3:#9898B8;
-  --text-4:#BBBBD4;
-  --success:#1A9E75;
-  --success-bg:#E6F7F2;
-  --warning:#D97706;
-  --warning-bg:#FEF3C7;
-  --danger:#C0392B;
-  --danger-bg:#FEF0EE;
-  --rose:#E91E8C;
+  --bg:#F5F2EC;
+  --surface:#FDFCF9;
+  --surface-2:#EDE9E0;
+  --border:#D9D3C7;
+  --border-light:#E8E4DA;
+  --brand:#6B8F71;
+  --brand-dark:#4A6B50;
+  --brand-light:#E8F0E9;
+  --brand-mid:#8AAD90;
+  --text-1:#2C2C28;
+  --text-2:#5C5A52;
+  --text-3:#9C9A90;
+  --text-4:#C4C2B8;
+  --success:#5A8A5E;
+  --success-bg:#EBF3EC;
+  --warning:#B87333;
+  --warning-bg:#F7EDE0;
+  --danger:#A85450;
+  --danger-bg:#F5EAEA;
+  --rose:#C4748A;
+  --accent:#6B8F71;
   --radius-sm:8px;
   --radius:12px;
   --radius-lg:16px;
-  --shadow-sm:0 1px 4px rgba(60,50,160,.06);
-  --shadow:0 2px 12px rgba(60,50,160,.09);
-  --shadow-lg:0 8px 32px rgba(60,50,160,.13);
+  --shadow-sm:0 1px 4px rgba(60,70,50,.06);
+  --shadow:0 2px 12px rgba(60,70,50,.09);
+  --shadow-lg:0 8px 32px rgba(60,70,50,.13);
 }
 
 /* ── RESET ─────────────────────────────────────────────────────── */
@@ -41,7 +42,7 @@
 body{font-family:-apple-system,BlinkMacSystemFont,'Inter','Segoe UI',sans-serif;background:var(--bg);color:var(--text-1);min-height:100vh;-webkit-font-smoothing:antialiased}
 
 /* ── HEADER ────────────────────────────────────────────────────── */
-.header{background:linear-gradient(135deg,#1E1654 0%,#2D2480 100%);padding:14px 24px;display:flex;justify-content:space-between;align-items:center;box-shadow:0 2px 12px rgba(30,22,84,.3)}
+.header{background:linear-gradient(135deg,#3D5442 0%,#5A7A60 100%);padding:14px 24px;display:flex;justify-content:space-between;align-items:center;box-shadow:0 2px 12px rgba(40,60,40,.25)}
 .brand-wrap{display:flex;align-items:center;gap:10px}
 .brand-chip{background:rgba(255,255,255,.18);color:#fff;font-size:11px;font-weight:600;padding:4px 12px;border-radius:20px;letter-spacing:.8px;backdrop-filter:blur(4px)}
 .brand-sub{color:rgba(255,255,255,.4);font-size:12px;letter-spacing:.2px}
@@ -113,6 +114,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Inter','Segoe UI',sans-serif;
 .feed-date{font-size:11px;color:var(--text-4)}
 .feed-badge{display:inline-block;font-size:11px;padding:3px 10px;border-radius:20px;font-weight:600;letter-spacing:.1px}
 .feed-badge.rm{background:var(--brand-light);color:var(--brand-dark)}
+.feed-badge.lp{background:#E8EAF6;color:#3949AB;}
 .feed-badge.ctc{background:#E2F7F0;color:#0D6E50}
 .feed-badge.lp{background:#E8F2FE;color:#1558C0}
 .feed-outcome{font-size:11px;color:var(--text-3);margin-top:3px}
@@ -238,7 +240,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Inter','Segoe UI',sans-serif;
 .btn-sm.danger:hover{background:var(--danger-bg)}
 
 /* ── TOAST ─────────────────────────────────────────────────────── */
-.toast{position:fixed;bottom:28px;left:50%;transform:translateX(-50%) translateY(8px);background:#1E1654;color:#fff;padding:11px 22px;border-radius:var(--radius);font-size:13px;z-index:999;opacity:0;transition:all .3s cubic-bezier(.4,0,.2,1);pointer-events:none;max-width:420px;box-shadow:var(--shadow-lg);font-weight:500}
+.toast{position:fixed;bottom:28px;left:50%;transform:translateX(-50%) translateY(8px);background:#3D5442;color:#fff;padding:11px 22px;border-radius:var(--radius);font-size:13px;z-index:999;opacity:0;transition:all .3s cubic-bezier(.4,0,.2,1);pointer-events:none;max-width:420px;box-shadow:var(--shadow-lg);font-weight:500}
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 .toast.success{background:#0A6B4C}
 .toast.error{background:#8B1F1F}
@@ -351,6 +353,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Inter','Segoe UI',sans-serif;
   <div class="tab" onclick="switchTab('pipeline')">Outreach</div>
   <div class="tab" onclick="switchTab('reconnect')">🔁 Reconnect</div>
   <div class="tab" onclick="switchTab('feed')">Activity Feed</div>
+  <div class="tab" onclick="switchTab('history')">Agent History</div>
   <div class="tab" onclick="switchTab('calendar')">📅 Calendar</div>
   <div class="tab" onclick="switchTab('contacts')">Contacts</div>
 </div>
@@ -570,9 +573,14 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Inter','Segoe UI',sans-serif;
 <div id="view-feed" class="view">
   <div class="card">
     <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:16px">
-      <input type="text" id="feedSearch" placeholder="Search agent name or notes..." oninput="applyFeedFilters()" style="padding:9px 12px;border:0.5px solid #d8d6e8;border-radius:8px;font-size:13px;font-family:inherit;color:#1a1a2e;outline:none;width:100%">
+      <div class="period-toggle" style="margin-bottom:0">
+        <button class="ptoggle active" id="fsrc-both" onclick="setFeedSource('both')">Both</button>
+        <button class="ptoggle" id="fsrc-amanda" onclick="setFeedSource('amanda')">Amanda only</button>
+        <button class="ptoggle" id="fsrc-lp" onclick="setFeedSource('lp')">LP only</button>
+      </div>
+      <input type="text" id="feedSearch" placeholder="Search agent name or notes..." oninput="applyFeedFilters()" style="padding:9px 12px;border:0.5px solid #D9D3C7;border-radius:8px;font-size:13px;font-family:inherit;color:#1a1a2e;outline:none;width:100%">
       <div style="display:flex;gap:10px;flex-wrap:wrap">
-        <select id="feedTypeFilter" onchange="applyFeedFilters()" style="flex:1;padding:8px 11px;border:0.5px solid #d8d6e8;border-radius:8px;font-size:12px;font-family:inherit;color:#555;background:#fff">
+        <select id="feedTypeFilter" onchange="applyFeedFilters()" style="flex:1;padding:8px 11px;border:0.5px solid #D9D3C7;border-radius:8px;font-size:12px;font-family:inherit;color:#555;background:#fff">
           <option value="all">All types</option>
           <option>Cold Calls</option><option>New Realtor Meeting</option><option>New Agent Follow-up</option><option>Break Breads</option>
           <option>Active Agent Check-in</option><option>CTC Call</option><option>Realtor Buddy Referral Ask</option>
@@ -580,19 +588,19 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Inter','Segoe UI',sans-serif;
           <option>Agent Appreciation</option><option>Birthday Outreach</option>
           <option>Co-Marketing Discussion</option>
         </select>
-        <select id="feedPeriodFilter" onchange="applyFeedFilters()" style="flex:1;padding:8px 11px;border:0.5px solid #d8d6e8;border-radius:8px;font-size:12px;font-family:inherit;color:#555;background:#fff">
+        <select id="feedPeriodFilter" onchange="applyFeedFilters()" style="flex:1;padding:8px 11px;border:0.5px solid #D9D3C7;border-radius:8px;font-size:12px;font-family:inherit;color:#555;background:#fff">
           <option value="all">All time</option>
           <option value="week">This week</option>
           <option value="month">This month</option>
         </select>
-        <select id="feedOutcomeFilter" onchange="applyFeedFilters()" style="flex:1;padding:8px 11px;border:0.5px solid #d8d6e8;border-radius:8px;font-size:12px;font-family:inherit;color:#555;background:#fff">
+        <select id="feedOutcomeFilter" onchange="applyFeedFilters()" style="flex:1;padding:8px 11px;border:0.5px solid #D9D3C7;border-radius:8px;font-size:12px;font-family:inherit;color:#555;background:#fff">
           <option value="all">All outcomes</option>
           <option value="Positive">Positive</option>
           <option value="Meeting Scheduled">Meeting Scheduled</option>
           <option value="Requires follow-up">Requires follow-up</option>
           <option value="Remove / No Further Contact">Remove / No Further Contact</option>
         </select>
-        <button onclick="exportToCSV()" style="padding:8px 14px;background:#534AB7;color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:500;cursor:pointer;font-family:inherit;white-space:nowrap">⬇️ Export CSV</button>
+        <button onclick="exportToCSV()" style="padding:8px 14px;background:#6B8F71;color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:500;cursor:pointer;font-family:inherit;white-space:nowrap">⬇️ Export CSV</button>
       </div>
     </div>
     <div id="feedList"><div class="no-data">Loading...</div></div>
@@ -632,7 +640,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Inter','Segoe UI',sans-serif;
         <div class="card-title" style="margin-bottom:2px">🔁 Reconnect List</div>
         <div style="font-size:11px;color:#aaa" id="rcUploadMeta">Loading...</div>
       </div>
-      <button onclick="loadReconnect()" style="padding:6px 12px;background:#f0eef8;color:#534AB7;border:0.5px solid #d8d6e8;border-radius:8px;font-size:12px;font-weight:500;cursor:pointer;font-family:inherit">↻ Refresh</button>
+      <button onclick="loadReconnect()" style="padding:6px 12px;background:#EDE9E0;color:#6B8F71;border:0.5px solid #D9D3C7;border-radius:8px;font-size:12px;font-weight:500;cursor:pointer;font-family:inherit">↻ Refresh</button>
     </div>
     <div class="rc-summary" id="rcSummary" style="display:none">
       <div class="rc-stat"><div class="rc-stat-num" id="rc-total">0</div><div class="rc-stat-label">Total agents</div></div>
@@ -681,7 +689,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Inter','Segoe UI',sans-serif;
   <div class="card">
     <div class="field" style="margin-bottom:14px">
       <label>Search agent</label>
-      <input type="text" id="historySearch" placeholder="Type agent name..." oninput="searchHistory(this.value)" style="border:0.5px solid #d8d6e8;border-radius:8px;padding:9px 11px;font-size:13px;font-family:inherit;color:#1a1a2e;width:100%;outline:none">
+      <input type="text" id="historySearch" placeholder="Type agent name..." oninput="searchHistory(this.value)" style="border:0.5px solid #D9D3C7;border-radius:8px;padding:9px 11px;font-size:13px;font-family:inherit;color:#1a1a2e;width:100%;outline:none">
     </div>
     <div id="historyResult"><div class="no-data">Search an agent to see their full contact history.</div></div>
   </div>
@@ -716,9 +724,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Inter','Segoe UI',sans-serif;
   </div>
   <div class="card" style="padding:16px 18px">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:10px">
-      <input type="text" id="pipelineSearch" placeholder="Search by name or brokerage..." oninput="filterPipeline()" style="flex:1;min-width:160px;padding:8px 11px;border:0.5px solid #d8d6e8;border-radius:8px;font-size:12px;font-family:inherit;color:#1a1a2e;background:#fff;outline:none">
+      <input type="text" id="pipelineSearch" placeholder="Search by name or brokerage..." oninput="filterPipeline()" style="flex:1;min-width:160px;padding:8px 11px;border:0.5px solid #D9D3C7;border-radius:8px;font-size:12px;font-family:inherit;color:#1a1a2e;background:#fff;outline:none">
       <div style="display:flex;gap:8px;flex-wrap:wrap">
-        <select id="pipelineFilter" onchange="filterPipeline()" style="padding:7px 11px;border:0.5px solid #d8d6e8;border-radius:8px;font-size:12px;font-family:inherit;color:#555;background:#fff">
+        <select id="pipelineFilter" onchange="filterPipeline()" style="padding:7px 11px;border:0.5px solid #D9D3C7;border-radius:8px;font-size:12px;font-family:inherit;color:#555;background:#fff">
           <option value="all">All statuses</option>
           <option value="Requires follow-up">Requires Follow-up</option>
           <option value="DNC">Do Not Contact</option>
@@ -749,7 +757,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Inter','Segoe UI',sans-serif;
     </div>
     <div id="calGrid" style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px"></div>
     <div id="calDayDetail" style="display:none;margin-top:12px;background:#f8f7fc;border:0.5px solid #AFA9EC;border-radius:10px;padding:14px">
-      <div style="font-size:12px;font-weight:500;color:#534AB7;margin-bottom:10px" id="calDayTitle"></div>
+      <div style="font-size:12px;font-weight:500;color:#6B8F71;margin-bottom:10px" id="calDayTitle"></div>
       <div id="calDayItems"></div>
     </div>
   </div>
@@ -855,10 +863,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Inter','Segoe UI',sans-serif;
       <div>
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
           <span style="font-size:12px;font-weight:500;color:#666">Requires Follow-up</span>
-          <span style="font-size:13px;font-weight:600;color:#534AB7" id="funnel-rfu">0</span>
+          <span style="font-size:13px;font-weight:600;color:#6B8F71" id="funnel-rfu">0</span>
         </div>
-        <div style="background:#f0eef8;border-radius:20px;height:8px;overflow:hidden">
-          <div style="background:#534AB7;height:8px;border-radius:20px;width:45%;transition:width .5s" id="funnel-rfu-bar"></div>
+        <div style="background:#EDE9E0;border-radius:20px;height:8px;overflow:hidden">
+          <div style="background:#6B8F71;height:8px;border-radius:20px;width:45%;transition:width .5s" id="funnel-rfu-bar"></div>
         </div>
       </div>
       <div>
@@ -866,7 +874,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Inter','Segoe UI',sans-serif;
           <span style="font-size:12px;font-weight:500;color:#666">Already w/ NFM</span>
           <span style="font-size:13px;font-weight:600;color:#2E7D32" id="funnel-nfm">0</span>
         </div>
-        <div style="background:#f0eef8;border-radius:20px;height:8px;overflow:hidden">
+        <div style="background:#EDE9E0;border-radius:20px;height:8px;overflow:hidden">
           <div style="background:#2E7D32;height:8px;border-radius:20px;width:50%;transition:width .5s" id="funnel-nfm-bar"></div>
         </div>
       </div>
@@ -875,7 +883,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Inter','Segoe UI',sans-serif;
           <span style="font-size:12px;font-weight:500;color:#666">Do Not Contact</span>
           <span style="font-size:13px;font-weight:600;color:#A32D2D" id="funnel-dnc">0</span>
         </div>
-        <div style="background:#f0eef8;border-radius:20px;height:8px;overflow:hidden">
+        <div style="background:#EDE9E0;border-radius:20px;height:8px;overflow:hidden">
           <div style="background:#A32D2D;height:8px;border-radius:20px;width:5%;transition:width .5s" id="funnel-dnc-bar"></div>
         </div>
       </div>
@@ -887,14 +895,14 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Inter','Segoe UI',sans-serif;
   <div class="card">
     <div class="card-title">🌐 Network Activity <span class="card-sub">All RM + LP activities unified</span></div>
     <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:16px">
-      <input type="text" id="networkSearch" placeholder="Search agent name, activity type, or notes..." oninput="applyNetworkFilters()" style="padding:9px 12px;border:0.5px solid #d8d6e8;border-radius:8px;font-size:13px;font-family:inherit;color:#1a1a2e;outline:none;width:100%">
+      <input type="text" id="networkSearch" placeholder="Search agent name, activity type, or notes..." oninput="applyNetworkFilters()" style="padding:9px 12px;border:0.5px solid #D9D3C7;border-radius:8px;font-size:13px;font-family:inherit;color:#1a1a2e;outline:none;width:100%">
       <div style="display:flex;gap:10px;flex-wrap:wrap">
-        <select id="networkSourceFilter" onchange="applyNetworkFilters()" style="flex:1;padding:8px 11px;border:0.5px solid #d8d6e8;border-radius:8px;font-size:12px;font-family:inherit;color:#555;background:#fff">
+        <select id="networkSourceFilter" onchange="applyNetworkFilters()" style="flex:1;padding:8px 11px;border:0.5px solid #D9D3C7;border-radius:8px;font-size:12px;font-family:inherit;color:#555;background:#fff">
           <option value="all">All sources</option>
           <option value="RM">Amanda Only</option>
           <option value="LP">LP Only</option>
         </select>
-        <select id="networkPeriodFilter" onchange="applyNetworkFilters()" style="flex:1;padding:8px 11px;border:0.5px solid #d8d6e8;border-radius:8px;font-size:12px;font-family:inherit;color:#555;background:#fff">
+        <select id="networkPeriodFilter" onchange="applyNetworkFilters()" style="flex:1;padding:8px 11px;border:0.5px solid #D9D3C7;border-radius:8px;font-size:12px;font-family:inherit;color:#555;background:#fff">
           <option value="all">All time</option>
           <option value="week">This week</option>
           <option value="month">This month</option>
@@ -908,7 +916,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Inter','Segoe UI',sans-serif;
     <div class="card-title">Network Stats</div>
     <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px">
       <div style="text-align:center;padding:12px;background:#f5f4f8;border-radius:8px">
-        <div style="font-size:24px;font-weight:500;color:#534AB7" id="networkTotalRm">—</div>
+        <div style="font-size:24px;font-weight:500;color:#6B8F71" id="networkTotalRm">—</div>
         <div style="font-size:10px;color:#aaa;margin-top:3px">Amanda activities</div>
       </div>
       <div style="text-align:center;padding:12px;background:#f5f4f8;border-radius:8px">
@@ -934,8 +942,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Inter','Segoe UI',sans-serif;
       <button onclick="openAddAgentModal()" style="padding:8px 14px;background:var(--brand);color:#fff;border:none;border-radius:var(--radius-sm);font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap">+ Add agent</button>
     </div>
     <div style="display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap">
-      <input type="text" id="contactsSearch" placeholder="Search by name, phone, email or birthday..." oninput="filterContacts()" style="flex:1;min-width:180px;padding:9px 11px;border:0.5px solid #d8d6e8;border-radius:8px;font-size:13px;font-family:inherit;color:#1a1a2e;outline:none">
-      <select id="contactsFilter" onchange="filterContacts()" style="padding:8px 11px;border:0.5px solid #d8d6e8;border-radius:8px;font-size:12px;font-family:inherit;color:#555;background:#fff">
+      <input type="text" id="contactsSearch" placeholder="Search by name, phone, email or birthday..." oninput="filterContacts()" style="flex:1;min-width:180px;padding:9px 11px;border:0.5px solid #D9D3C7;border-radius:8px;font-size:13px;font-family:inherit;color:#1a1a2e;outline:none">
+      <select id="contactsFilter" onchange="filterContacts()" style="padding:8px 11px;border:0.5px solid #D9D3C7;border-radius:8px;font-size:12px;font-family:inherit;color:#555;background:#fff">
         <option value="all">All agents</option>
         <option value="tier-A">🥇 A-tier</option>
         <option value="tier-B">🥈 B-tier</option>
@@ -1530,8 +1538,8 @@ async function loadQuiet(){
 }
 
 function switchTab(name){
-  const names=["week","log","followups","feed","network","health","reconnect","history","pipeline","calendar","daniel","contacts"];
-  document.querySelectorAll(".tab").forEach((t,i)=>t.classList.toggle("active",names[i]===name));
+  const tabOrder=["week","log","pipeline","reconnect","feed","history","calendar","contacts"];
+  document.querySelectorAll(".tab").forEach((t,i)=>t.classList.toggle("active",tabOrder[i]===name));
   document.querySelectorAll(".view").forEach(v=>v.classList.remove("active"));
   document.getElementById("view-"+name).classList.add("active");
   if(name==="pipeline")loadPipeline();
@@ -1540,6 +1548,8 @@ function switchTab(name){
   if(name==="network")loadNetwork();
   if(name==="health")loadHealth();
   if(name==="reconnect")loadReconnect();
+  if(name==="feed")loadFeed();
+  if(name==="history")loadHistory();
 }
 
 let periodData={mtd:[],ytd:[]},currentPeriod="mtd";
@@ -1770,7 +1780,7 @@ async function loadWeek(){
     if(ctcEl){
       if(needsCtc.length){
         ctcEl.innerHTML='<div class="card-title" style="margin-bottom:10px">⚡ CTC Calls Needed <span class="card-sub">closed in last 14d, not yet thanked</span></div>'+
-          needsCtc.map(c=>'<div class="fu-item"><div class="fu-dot" style="background:#534AB7"></div><div class="fu-body"><div class="fu-name">'+c.agent_name+'</div><div class="fu-meta" style="color:#534AB7">Closed '+fmtDate(c.call_date)+'</div></div><button class="btn-sm" style="background:#534AB7;color:#fff;border:none;border-radius:6px;padding:4px 10px;font-size:11px;cursor:pointer;font-family:inherit" onclick="document.getElementById(\'agentInput\').value=\''+c.agent_name.replace(/'/g,"\\'")+'\';document.getElementById(\'activityType\').value=\'Closed Deal Thank You\';switchTab(\'log\')">Log CTC</button></div>').join("");
+          needsCtc.map(c=>'<div class="fu-item"><div class="fu-dot" style="background:#6B8F71"></div><div class="fu-body"><div class="fu-name">'+c.agent_name+'</div><div class="fu-meta" style="color:#6B8F71">Closed '+fmtDate(c.call_date)+'</div></div><button class="btn-sm" style="background:#6B8F71;color:#fff;border:none;border-radius:6px;padding:4px 10px;font-size:11px;cursor:pointer;font-family:inherit" onclick="document.getElementById(\'agentInput\').value=\''+c.agent_name.replace(/'/g,"\\'")+'\';document.getElementById(\'activityType\').value=\'Closed Deal Thank You\';switchTab(\'log\')">Log CTC</button></div>').join("");
         ctcEl.style.display="block";
       }else{
         ctcEl.style.display="none";
@@ -1799,7 +1809,7 @@ async function initAutocomplete(){
     let html=agentMatches.map(n=>'<div class="ac-item" onclick="selectAgent(\''+ n.replace(/'/g,"\\'") +'\')">'+n+'</div>').join("");
     if(prospectMatches.length){
       html+='<div style="font-size:10px;color:#9C27B0;font-weight:600;padding:6px 12px 2px;text-transform:uppercase;letter-spacing:.5px">Prospects</div>';
-      html+=prospectMatches.map(n=>'<div class="ac-item" onclick="selectAgent(\''+ n.replace(/'/g,"\\'") +'\')" style="color:#534AB7">🌿 '+n+'</div>').join("");
+      html+=prospectMatches.map(n=>'<div class="ac-item" onclick="selectAgent(\''+ n.replace(/'/g,"\\'") +'\')" style="color:#6B8F71">🌿 '+n+'</div>').join("");
     }
     list.innerHTML=html;
     list.classList.add("open");
@@ -1951,23 +1961,23 @@ async function loadFollowups(){
       }else if(isToday){
         dotC="#EF9F27";bgC="#FFF8E1";label="Today";
       }else{
-        dotC="#534AB7";bgC="#EEEDFE";label="In "+days+"d";
+        dotC="#6B8F71";bgC="#EBF3EC";label="In "+days+"d";
       }
       
-      return'<div class="fu-item" id="fu-'+f.id+'" style="background:'+bgC+';padding:12px;border-radius:8px;border:0.5px solid '+(bgC==="#FCEBEB"?"#f7c1c1":bgC==="#FFF3E0"?"#FFE69C":"#f0eef8")+'">'+
+      return'<div class="fu-item" id="fu-'+f.id+'" style="background:'+bgC+';padding:12px;border-radius:8px;border:0.5px solid '+(bgC==="#FCEBEB"?"#f7c1c1":bgC==="#FFF3E0"?"#FFE69C":"#EDE9E0")+'">'+
       '<div class="fu-dot" style="background:'+dotC+'"></div>'+
       '<div class="fu-body">'+
         '<div class="fu-name">'+f.agent_name+'</div>'+
         '<div class="fu-meta">'+badgeEmoji(f.act_type)+(f.notes?" · "+f.notes.substring(0,45):"")+'</div>'+
-        '<div id="fu-edit-'+f.id+'" class="fu-edit-area"><input type="date" id="fu-date-'+f.id+'" value="'+f.follow_up_date+'" style="border:0.5px solid #d8d6e8;border-radius:6px;padding:5px 9px;font-size:12px;margin-right:6px;font-family:inherit"><button class="btn-sm" onclick="saveFollowupDate('+f.id+')">Save</button><button class="btn-sm" onclick="document.getElementById('+"'fu-edit-"+f.id+"'"+').style.display=\'none\'" style="margin-left:4px">Cancel</button></div>'+
+        '<div id="fu-edit-'+f.id+'" class="fu-edit-area"><input type="date" id="fu-date-'+f.id+'" value="'+f.follow_up_date+'" style="border:0.5px solid #D9D3C7;border-radius:6px;padding:5px 9px;font-size:12px;margin-right:6px;font-family:inherit"><button class="btn-sm" onclick="saveFollowupDate('+f.id+')">Save</button><button class="btn-sm" onclick="document.getElementById('+"'fu-edit-"+f.id+"'"+').style.display=\'none\'" style="margin-left:4px">Cancel</button></div>'+
         '<div id="fu-log-'+f.id+'" class="fu-inline-log">'+
-          '<div style="font-size:11px;font-weight:600;color:#534AB7;margin-bottom:8px">Log outcome for '+f.agent_name+'</div>'+
+          '<div style="font-size:11px;font-weight:600;color:#6B8F71;margin-bottom:8px">Log outcome for '+f.agent_name+'</div>'+
           '<select id="fu-log-type-'+f.id+'">'+ACT_TYPE_OPTIONS+'</select>'+
           '<div class="inline-row"><select id="fu-log-outcome-'+f.id+'"><option value="">Outcome...</option><option>Positive</option><option>Meeting Scheduled</option><option>Requires follow-up</option><option>Remove / No Further Contact</option></select>'+
           '<input type="date" id="fu-log-newfu-'+f.id+'" placeholder="New follow-up date (if needed)"></div>'+
           '<textarea id="fu-log-notes-'+f.id+'" placeholder="Notes..." rows="2"></textarea>'+
           '<div style="display:flex;gap:8px">'+
-          '<button class="btn-sm" style="background:#534AB7;color:#fff;border:none;border-radius:6px;padding:6px 12px;cursor:pointer;font-family:inherit;font-size:12px" onclick="saveInlineLog('+f.id+',\''+f.agent_name.replace(/'/g,"\\'")+'\',\''+f.act_date+'\')">Save & clear follow-up</button>'+
+          '<button class="btn-sm" style="background:#6B8F71;color:#fff;border:none;border-radius:6px;padding:6px 12px;cursor:pointer;font-family:inherit;font-size:12px" onclick="saveInlineLog('+f.id+',\''+f.agent_name.replace(/'/g,"\\'")+'\',\''+f.act_date+'\')">Save & clear follow-up</button>'+
           '<button class="btn-sm" onclick="document.getElementById(\'fu-log-'+f.id+'\').classList.remove(\'show\')" style="font-size:11px">Cancel</button>'+
           '</div>'+
         '</div>'+
@@ -1982,7 +1992,7 @@ async function loadFollowups(){
       '</div>'+
       '<div style="display:flex;flex-direction:column;align-items:flex-end;gap:5px">'+
         '<div class="fu-date" style="color:'+dotC+';font-weight:600">'+label+'</div>'+
-        '<button class="btn-sm" style="font-size:10px;padding:4px 9px;background:#534AB7;color:#fff;border:none;border-radius:6px;cursor:pointer;font-family:inherit" onclick="toggleFuInlineLog('+f.id+')">Log outcome</button>'+
+        '<button class="btn-sm" style="font-size:10px;padding:4px 9px;background:#6B8F71;color:#fff;border:none;border-radius:6px;cursor:pointer;font-family:inherit" onclick="toggleFuInlineLog('+f.id+')">Log outcome</button>'+
         '<button class="btn-sm" style="font-size:10px;padding:4px 9px;background:#2E7D32;color:#fff;border:none;border-radius:6px;cursor:pointer;font-family:inherit" onclick="toggleFuHandled('+f.id+')">Mark as handled</button>'+
         '<button class="btn-sm" onclick="toggleFuEdit('+f.id+')" style="font-size:10px;padding:3px 7px">Edit date</button>'+
       '</div>'+
@@ -2294,6 +2304,15 @@ document.addEventListener("click",function(e){
     if(l)l.classList.remove("open");
   }
 });
+let feedSource='both';
+function setFeedSource(src){
+  feedSource=src;
+  ['both','amanda','lp'].forEach(s=>{
+    document.getElementById('fsrc-'+s)?.classList.toggle('active',s===src);
+  });
+  applyFeedFilters();
+}
+
 function quickLogAutoComplete(q){
   const list=document.getElementById("quickLogAcList");
   if(!q||q.length<2){list.classList.remove("open");return;}
@@ -2363,7 +2382,7 @@ async function loadReconnect(){
       meta.textContent="No agents loaded yet — list will appear after Power BI sync";
       document.getElementById("rcSummary").style.display="none";
       document.getElementById("rcFiltersCard").style.display="none";
-      document.getElementById("rcList").innerHTML='<div class="no-data" style="padding:24px;text-align:center"><div style="font-size:32px;margin-bottom:8px">🔁</div><div style="font-weight:500;color:#534AB7;margin-bottom:4px">Reconnect list is empty</div><div style="font-size:12px;color:#aaa">Agents who have gone quiet will appear here once the list is synced.</div></div>';
+      document.getElementById("rcList").innerHTML='<div class="no-data" style="padding:24px;text-align:center"><div style="font-size:32px;margin-bottom:8px">🔁</div><div style="font-weight:500;color:#6B8F71;margin-bottom:4px">Reconnect list is empty</div><div style="font-size:12px;color:#aaa">Agents who have gone quiet will appear here once the list is synced.</div></div>';
       return;
     }
 
@@ -2484,12 +2503,12 @@ function renderRcGroup(list,groupStatus){
     const lpKey=(r.agent_name||"").trim().toLowerCase();
     const lpTouch=rcLpLastTouch[lpKey];
     const lpTouchStr=lpTouch
-      ?'<span style="color:'+(lpTouch.days<=7?"#2E7D32":lpTouch.days<=30?"#534AB7":"#aaa")+'">LP ('+lpTouch.lp+'): '+lpTouch.days+'d ago</span>'
+      ?'<span style="color:'+(lpTouch.days<=7?"#2E7D32":lpTouch.days<=30?"#6B8F71":"#aaa")+'">LP ('+lpTouch.lp+'): '+lpTouch.days+'d ago</span>'
       :'<span style="color:#ddd">LP: no calls logged</span>';
 
     let actions="";
     if(groupStatus!=="removed"){
-      actions+='<button class="btn-sm" style="background:#534AB7;color:#fff;border:none;border-radius:6px;padding:5px 10px;font-size:11px;cursor:pointer;font-family:inherit" onclick="rcToggleLog('+rid+')">Log outreach</button>';
+      actions+='<button class="btn-sm" style="background:#6B8F71;color:#fff;border:none;border-radius:6px;padding:5px 10px;font-size:11px;cursor:pointer;font-family:inherit" onclick="rcToggleLog('+rid+')">Log outreach</button>';
       if(groupStatus!=="contacted"){
         actions+='<button class="btn-sm" style="background:#2E7D32;color:#fff;border:none;border-radius:6px;padding:5px 10px;font-size:11px;cursor:pointer;font-family:inherit" onclick="rcMarkContacted('+rid+')" >Mark contacted</button>';
       }else{
@@ -2516,7 +2535,7 @@ function renderRcGroup(list,groupStatus){
       '</div>'+
       // Inline log form
       '<div id="rc-log-'+rid+'" class="rc-inline-form">'+
-        '<div style="font-size:11px;font-weight:600;color:#534AB7;margin-bottom:8px">Log outreach — '+r.agent_name+'</div>'+
+        '<div style="font-size:11px;font-weight:600;color:#6B8F71;margin-bottom:8px">Log outreach — '+r.agent_name+'</div>'+
         '<select id="rc-log-type-'+rid+'">'+ACT_TYPE_OPTIONS+'</select>'+
         '<div class="rc-inline-row">'+
           '<select id="rc-log-outcome-'+rid+'"><option value="">Outcome...</option><option>Positive</option><option>Meeting Scheduled</option><option>Requires follow-up</option><option>Remove / No Further Contact</option></select>'+
@@ -2524,7 +2543,7 @@ function renderRcGroup(list,groupStatus){
         '</div>'+
         '<textarea id="rc-log-notes-'+rid+'" placeholder="Notes..." rows="2"></textarea>'+
         '<div style="display:flex;gap:8px">'+
-          '<button class="btn-sm" style="background:#534AB7;color:#fff;border:none;border-radius:6px;padding:6px 12px;cursor:pointer;font-family:inherit;font-size:12px" onclick="rcSaveLog('+rid+',\''+r.agent_name.replace(/'/g,"\\'")+'\')">Save & mark contacted</button>'+
+          '<button class="btn-sm" style="background:#6B8F71;color:#fff;border:none;border-radius:6px;padding:6px 12px;cursor:pointer;font-family:inherit;font-size:12px" onclick="rcSaveLog('+rid+',\''+r.agent_name.replace(/'/g,"\\'")+'\')">Save & mark contacted</button>'+
           '<button class="btn-sm" onclick="rcToggleLog('+rid+')" style="font-size:11px">Cancel</button>'+
         '</div>'+
       '</div>'+
@@ -2713,7 +2732,16 @@ async function rcUploadToSupabase(agents){
 
 let allFeedData=[];
 async function loadFeed(){
-  try{allFeedData=await sbFetch("amanda_activities?select=*&order=act_date.desc&limit=200");renderFeed(allFeedData);}
+  try{
+    const[rmActs,lpActs]=await Promise.all([
+      sbFetch("amanda_activities?select=*&order=act_date.desc&limit=500"),
+      sbFetch("call_logs?select=agent_name,call_date,activity_type,outcome,note,lp&order=call_date.desc&limit=500").catch(()=>[])
+    ]);
+    const rm=(rmActs||[]).map(a=>({...a,_source:'amanda',_date:a.act_date,_type:a.act_type,_note:a.notes,_outcome:a.outcome,_agent:a.agent_name,_lp:null}));
+    const lp=(lpActs||[]).map(c=>({...c,_source:'lp',_date:c.call_date,_type:c.activity_type||'LP Call',_note:c.note,_outcome:c.outcome,_agent:c.agent_name,_lp:c.lp}));
+    allFeedData=[...rm,...lp].sort((a,b)=>(b._date||'').localeCompare(a._date||''));
+    applyFeedFilters();
+  }
   catch(e){document.getElementById("feedList").innerHTML='<div class="no-data">Unable to load feed.</div>';}
 }
 
@@ -2856,17 +2884,6 @@ async function loadHealth(){
   }
 }
 
-function renderFeed(data){
-  if(!data.length){document.getElementById("feedList").innerHTML='<div class="no-data">No activity logged yet</div>';return;}
-  document.getElementById("feedList").innerHTML=data.map(a=>
-    '<div class="feed-item"><div class="feed-top"><span class="feed-agent">'+a.agent_name+'</span><div class="feed-right"><span class="feed-date">'+fmtDate(a.act_date)+'</span><button class="btn-sm" onclick="openEditModal('+a.id+')" style="font-size:10px;padding:3px 8px">Edit</button><button class="btn-sm danger" onclick="openConfirm('+a.id+',\''+( a.agent_name||"").replace(/'/g,"\\'") +'\',\''+( a.act_type||"").replace(/'/g,"\\'") +'\')">Delete</button></div></div><span class="feed-badge '+( a.act_type===CTC_TYPE?"ctc":"rm")+'">'+badgeEmoji(a.act_type)+'</span>'+
-    (a.outcome?'<div class="feed-outcome">'+a.outcome+'</div>':"")+
-    (a.follow_up_date?'<div class="feed-fu">Follow-up: '+fmtDate(a.follow_up_date)+'</div>':"")+
-    (a.notes?'<div class="feed-notes">"'+a.notes+'"</div>':"")+(a.edited_at?'<div class="feed-edited">✏️ Last edited: '+fmtDateTime(a.edited_at)+'</div>':"")+
-    '</div>'
-  ).join("");
-}
-
 function applyFeedFilters(){
   const q=(document.getElementById("feedSearch")?.value||"").toLowerCase();
   const type=document.getElementById("feedTypeFilter")?.value||"all";
@@ -2874,12 +2891,39 @@ function applyFeedFilters(){
   const outcome=document.getElementById("feedOutcomeFilter")?.value||"all";
   const weekStart=week.start,monthStart=today().substring(0,7)+"-01";
   let data=allFeedData;
-  if(q)data=data.filter(a=>(a.agent_name||"").toLowerCase().includes(q)||(a.notes||"").toLowerCase().includes(q));
-  if(type!=="all")data=data.filter(a=>a.act_type===type);
-  if(period==="week")data=data.filter(a=>a.act_date>=weekStart);
-  if(period==="month")data=data.filter(a=>a.act_date>=monthStart);
-  if(outcome!=="all")data=data.filter(a=>a.outcome===outcome);
+  // Source filter
+  if(feedSource==='amanda') data=data.filter(a=>a._source==='amanda');
+  else if(feedSource==='lp') data=data.filter(a=>a._source==='lp');
+  if(q) data=data.filter(a=>(a._agent||"").toLowerCase().includes(q)||(a._note||"").toLowerCase().includes(q));
+  if(type!=="all") data=data.filter(a=>a._type===type);
+  if(period==="week") data=data.filter(a=>(a._date||"")>=weekStart);
+  if(period==="month") data=data.filter(a=>(a._date||"")>=monthStart);
+  if(outcome!=="all") data=data.filter(a=>a._outcome===outcome);
   renderFeed(data);
+}
+
+function renderFeed(data){
+  if(!data||!data.length){document.getElementById("feedList").innerHTML='<div class="no-data">No activity found.</div>';return;}
+  document.getElementById("feedList").innerHTML=data.map(a=>{
+    const isLP=a._source==='lp';
+    const agentName=a._agent||"";
+    const safeAgent=agentName.replace(/'/g,"\\'");
+    const safeType=(a._type||"").replace(/'/g,"\\'");
+    return'<div class="feed-item">'
+      +'<div class="feed-top"><span class="feed-agent">'+agentName+'</span>'
+      +'<div class="feed-right"><span class="feed-date">'+fmtDate(a._date)+'</span>'
+      +(isLP
+        ?'<span style="font-size:10px;padding:2px 8px;background:#E8EAF6;color:#3949AB;border-radius:20px;font-weight:600">LP: '+(a._lp||"LP")+'</span>'
+        :'<button class="btn-sm" onclick="openEditModal('+a.id+')" style="font-size:10px;padding:3px 8px">Edit</button><button class="btn-sm danger" onclick="openConfirm('+a.id+',\''+safeAgent+'\',\''+safeType+'\')">Delete</button>'
+      )
+      +'</div></div>'
+      +'<span class="feed-badge '+(isLP?"lp":a._type===CTC_TYPE?"ctc":"rm")+'">'+badgeEmoji(a._type)+'</span>'
+      +(a._outcome?'<div class="feed-outcome">'+a._outcome+'</div>':"")
+      +(a.follow_up_date?'<div class="feed-fu">Follow-up: '+fmtDate(a.follow_up_date)+'</div>':"")
+      +(a._note?'<div class="feed-notes">"'+a._note+'"</div>':"")
+      +(a.edited_at?'<div class="feed-edited">Last edited: '+fmtDateTime(a.edited_at)+'</div>':"")
+      +'</div>';
+  }).join("");
 }
 
 let editingActivityId=null;
@@ -2974,9 +3018,9 @@ async function doSearchHistory(name){
         touchInfo='<div style="color:'+color+';font-size:11px;margin-top:6px">📍 Last touch: '+source+' '+days+'d ago</div>';
       }
       
-      html+='<div style="background:#EEEDFE;border:0.5px solid #AFA9EC;border-radius:10px;padding:16px;margin-bottom:14px"><div style="font-size:16px;font-weight:500;color:#26215C;margin-bottom:10px">🌸 '+p.agent_name+'</div><div style="display:flex;flex-direction:column;gap:8px;font-size:12px">'+
-      (p.email?'<div>✉️ Email <span style="font-weight:500;color:#26215C">'+p.email+'</span></div>':"")+
-      (p.phone?'<div>☎️ Phone <span style="font-weight:500;color:#26215C">'+p.phone+'</span></div>':"")+
+      html+='<div style="background:#EBF3EC;border:0.5px solid #AFA9EC;border-radius:10px;padding:16px;margin-bottom:14px"><div style="font-size:16px;font-weight:500;color:#3D5442;margin-bottom:10px">🌸 '+p.agent_name+'</div><div style="display:flex;flex-direction:column;gap:8px;font-size:12px">'+
+      (p.email?'<div>✉️ Email <span style="font-weight:500;color:#3D5442">'+p.email+'</span></div>':"")+
+      (p.phone?'<div>☎️ Phone <span style="font-weight:500;color:#3D5442">'+p.phone+'</span></div>':"")+
       bdayInfo+
       touchInfo+
       '</div></div>';
@@ -3243,7 +3287,7 @@ async function renderDanielCoverage(){
         +'<span style="font-size:13px;font-weight:500;color:#1a1a2e">'+n.name+'</span>'
         +'<div style="display:flex;gap:6px;align-items:center">'
         +'<span style="font-size:10px;color:#9A6A12;font-weight:500">'+n.days+'d silent</span>'
-        +'<button onclick="document.getElementById(\'agentInput\').value=\''+n.name.replace(/'/g,"\\'")+'\';switchTab(\'log\')" style="font-size:10px;padding:3px 9px;background:#534AB7;color:#fff;border:none;border-radius:6px;cursor:pointer;font-family:inherit">Log outreach</button>'
+        +'<button onclick="document.getElementById(\'agentInput\').value=\''+n.name.replace(/'/g,"\\'")+'\';switchTab(\'log\')" style="font-size:10px;padding:3px 9px;background:#6B8F71;color:#fff;border:none;border-radius:6px;cursor:pointer;font-family:inherit">Log outreach</button>'
         +'</div></div>'
       ).join("");
     }
@@ -3488,7 +3532,7 @@ function renderCalendar(){
     const isToday=dateStr===todayStr,isSelected=selectedCalDay===dateStr;
     const events=byDate[dateStr]||[];
     const bdayNames=calBirthdays[dateStr]||[];
-    html+='<div class="cal-day'+( isToday?" today":"")+'" style="'+( isSelected?"background:#EEEDFE;border-color:#AFA9EC;":"")+'" onclick="selectCalDay(\''+ dateStr +'\')">';
+    html+='<div class="cal-day'+( isToday?" today":"")+'" style="'+( isSelected?"background:#EBF3EC;border-color:#AFA9EC;":"")+'" onclick="selectCalDay(\''+ dateStr +'\')">';
     html+='<div class="cal-num">'+d+(bdayNames.length?' <span style="font-size:9px">🍰</span>':'')+'</div>';
     bdayNames.slice(0,1).forEach(n=>{html+='<div class="cal-event" style="background:#FCE4EC;color:#880E4F;border-radius:4px;font-size:9px;padding:1px 4px;margin-bottom:1px">🍰 '+n+'</div>';});
     events.slice(0,bdayNames.length?1:2).forEach(e=>{const cls=e.calType==="followup"?"followup":calEventClass(e.act_type);const emoji=e.calType==="followup"?"🍕":calEventEmoji(e.act_type);html+='<div class="cal-event '+cls+'">'+emoji+" "+e.agent_name+'</div>';});
@@ -3514,8 +3558,8 @@ function showCalDayDetail(dateStr){
   document.getElementById("calDayTitle").textContent=label+(isToday?" — Today":isPast?"":" — Upcoming");
   document.getElementById("calDayItems").innerHTML=events.map(e=>{
     const isFollowup=e.calType==="followup",cls=isFollowup?"followup":calEventClass(e.act_type);
-    const dotColors={meeting:"#534AB7",followup:"#B85B00",ctc:"#0F6E56",other:"#534AB7"};
-    const dotColor=dotColors[cls]||"#534AB7";const emoji=isFollowup?"🍕":calEventEmoji(e.act_type);
+    const dotColors={meeting:"#6B8F71",followup:"#B85B00",ctc:"#0F6E56",other:"#6B8F71"};
+    const dotColor=dotColors[cls]||"#6B8F71";const emoji=isFollowup?"🍕":calEventEmoji(e.act_type);
     return'<div class="cal-day-item"><div class="cal-day-dot" style="background:'+dotColor+'"></div><div style="flex:1"><div style="font-size:12px;font-weight:500;color:#1a1a2e">'+e.agent_name+'</div><div style="font-size:11px;color:#aaa">'+emoji+" "+(isFollowup?"Follow-up — "+e.act_type:e.act_type)+(e.outcome?" · "+e.outcome:"")+'</div>'+( e.notes?'<div style="font-size:11px;color:#777;font-style:italic;margin-top:2px">"'+e.notes.substring(0,80)+'"</div>':"")+'</div></div>';
   }).join("");
   detail.style.display="block";
