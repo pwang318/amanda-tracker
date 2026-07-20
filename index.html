@@ -1878,7 +1878,7 @@ async function loadWeek(){
     const todayStr=today();
     const[fus,overdue]=await Promise.all([
       sbFetch("amanda_activities?select=agent_name,act_type,follow_up_date&follow_up_date=gte."+todayStr+"&follow_up_date=lte."+week.end+"&order=follow_up_date.asc&limit=8"),
-      sbFetch("amanda_activities?select=id,agent_name,act_type,follow_up_date&follow_up_date=lt."+todayStr+"&follow_up_date=not.is.null&act_type=neq.Cold Calls&order=follow_up_date.desc&limit=4")
+      sbFetch("amanda_activities?select=id,agent_name,act_type,follow_up_date&follow_up_date=lt."+todayStr+"&follow_up_date=not.is.null&order=follow_up_date.desc&limit=4")
     ]);
     const all=[...overdue,...fus];
     document.getElementById("weekFollowups").innerHTML=all.length?all.map(f=>{
@@ -1891,7 +1891,7 @@ async function loadWeek(){
         +'<div class="fu-meta">'+badgeEmoji(f.act_type)+'</div></div>'
         +'<div style="display:flex;align-items:center;gap:6px;flex-shrink:0">'
         +'<span class="fu-date" style="color:'+c+'">'+(isOvr?"Overdue":fmtDate(f.follow_up_date))+'</span>'
-        +'<button onclick="sbFetch(\'amanda_activities?id=eq.'+f.id+'\',{method:\'PATCH\',prefer:\'return=minimal\',body:JSON.stringify({follow_up_date:null})});document.getElementById(\'agentInput\').value=\''+safeAgent+'\';document.getElementById(\'activityNotes\').value=\'Following up on '+safeAgent+'\';switchTab(\'log\')" '
+        +'<button onclick="sbFetch(\'amanda_activities?id=eq.'+f.id+'\',{method:\'PATCH\',prefer:\'return=minimal\',body:JSON.stringify({follow_up_date:null})});document.getElementById(\'agentInput\').value=\''+safeAgent+'\';switchTab(\'log\')" '
         +'style="font-size:10px;padding:3px 9px;background:var(--brand);color:#fff;border:none;border-radius:6px;cursor:pointer;font-family:inherit;font-weight:600">Log</button>'
         +'</div></div>';
     }).join(""):'<div class="no-data" style="padding:16px">No follow-ups due</div>';
@@ -2038,6 +2038,8 @@ async function logActivity(){
   btn.disabled=true;btn.textContent="Saving...";
   
   try{
+    // Clear existing follow-up dates for this agent before saving new activity
+    await sbFetch("amanda_activities?agent_name=eq."+encodeURIComponent(agentName)+"&follow_up_date=not.is.null",{method:"PATCH",prefer:"return=minimal",body:JSON.stringify({follow_up_date:null})}).catch(()=>{});
     const inserted=await sbFetch("amanda_activities",{method:"POST",body:JSON.stringify({agent_name:agentName,act_type:activityType,act_date:date,outcome,follow_up_date:followupDate,notes:finalNotes})});
     
     document.getElementById("agentInput").value="";
@@ -2082,7 +2084,7 @@ async function logActivity(){
 
 async function loadFollowups(){
   try{
-    const all=await sbFetch("amanda_activities?select=id,agent_name,act_type,follow_up_date,notes&follow_up_date=not.is.null&act_type=neq.Cold Calls&order=follow_up_date.asc&limit=100");
+    const all=await sbFetch("amanda_activities?select=id,agent_name,act_type,follow_up_date,notes&follow_up_date=not.is.null&order=follow_up_date.asc&limit=100");
     const todayStr=today();
     const sorted=[...all.filter(f=>f.follow_up_date<todayStr),...all.filter(f=>f.follow_up_date>=todayStr)];
     if(!sorted.length){document.getElementById("followupsList").innerHTML='<div class="no-data">No upcoming follow-ups</div>';return;}
@@ -2383,9 +2385,11 @@ async function ccSave(){
   const btn = document.querySelector('[onclick="ccSave()"]');
   if(btn){btn.disabled=true;btn.textContent="Saving...";}
   try{
+    // Clear existing follow-up dates for this agent
+    await sbFetch("amanda_activities?agent_name=eq."+encodeURIComponent(name)+"&follow_up_date=not.is.null",{method:"PATCH",prefer:"return=minimal",body:JSON.stringify({follow_up_date:null})}).catch(()=>{});
     // 1. Log the cold call activity
     await sbFetch("amanda_activities",{method:"POST",prefer:"return=minimal",body:JSON.stringify({
-      agent_name:name, act_type:"Cold Calls", act_date:today(), outcome, notes:null
+      agent_name:name, act_type:"Cold Calls", act_date:today(), outcome, notes:null, follow_up_date:outcome==="Requires follow-up"?new Date(Date.now()+3*86400000).toISOString().split("T")[0]:null
     })});
 
     // 2. Check if already in prospects or agents
@@ -3350,7 +3354,7 @@ async function loadDaniel(){
     const todayStr=today();
     const[fus,overdue]=await Promise.all([
       sbFetch("amanda_activities?select=agent_name,act_type,follow_up_date&follow_up_date=gte."+todayStr+"&follow_up_date=lte."+week.end+"&order=follow_up_date.asc&limit=8"),
-      sbFetch("amanda_activities?select=id,agent_name,act_type,follow_up_date&follow_up_date=lt."+todayStr+"&follow_up_date=not.is.null&act_type=neq.Cold Calls&order=follow_up_date.desc&limit=4")
+      sbFetch("amanda_activities?select=id,agent_name,act_type,follow_up_date&follow_up_date=lt."+todayStr+"&follow_up_date=not.is.null&order=follow_up_date.desc&limit=4")
     ]);
     const all=[...overdue,...fus];
     document.getElementById("danielFollowups").innerHTML=all.length?all.map(f=>{
