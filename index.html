@@ -1736,20 +1736,21 @@ function renderPeriodScorecard(){
 
 async function loadOnboarding(){
   try{
-    // Get all new realtor meetings in last 35 days
     const cutoff=new Date();cutoff.setDate(cutoff.getDate()-35);
     const cutoffStr=localDateStr(cutoff);
-    const meetings=await sbFetch("amanda_activities?select=agent_name,act_date&act_type=eq.New Realtor Meeting&act_date=gte."+cutoffStr+"&order=act_date.desc");
-    if(!meetings||!meetings.length){
-      document.getElementById("onboardingCard").style.display="none";
-      return;
-    }
+    const sevenDaysAgo=new Date();sevenDaysAgo.setDate(sevenDaysAgo.getDate()-7);
+    const [meetings,recentActs]=await Promise.all([
+      sbFetch("amanda_activities?select=agent_name,act_date&act_type=eq.New Realtor Meeting&act_date=gte."+cutoffStr+"&order=act_date.desc"),
+      sbFetch("amanda_activities?select=agent_name,act_date&act_date=gte."+localDateStr(sevenDaysAgo)+"&order=act_date.desc")
+    ]);
+    if(!meetings||!meetings.length){document.getElementById("onboardingCard").style.display="none";return;}
 
-    // Dedupe by agent, keep earliest meeting date per agent
+    const touchedThisWeek=new Set((recentActs||[]).map(a=>(a.agent_name||"").toLowerCase().trim()));
+
     const agentMap={};
     meetings.forEach(m=>{
-      const n=m.agent_name;
-      if(!agentMap[n]||m.act_date<agentMap[n])agentMap[n]=m.act_date;
+      const n=m.agent_name;const key=(n||"").toLowerCase().trim();
+      if(!agentMap[key]||m.act_date<agentMap[key].date)agentMap[key]={name:n,date:m.act_date};
     });
 
     const weekTasks=[
@@ -1759,57 +1760,55 @@ async function loadOnboarding(){
       "Go deeper — ask what is working for them, what they are hearing from buyers, and show genuine interest in their business.",
       "Natural ask — you have been consistently in touch and built real rapport. Ask if they have anyone coming up you can help with."
     ];
-
     const weekColors=["#4A6B50","#2E6DA4","#B87333","#7B52A8","#A85450"];
     const weekBgs=["#EBF3EC","#E8F0F7","#FFF3E0","#F3E8FF","#FFE8E8"];
-
     const today2=new Date();today2.setHours(0,0,0,0);
     const nextMon=nextMonday();
 
-    let html="";
-    let count=0;
+    let html="",count=0,outstanding=0;
 
-    Object.entries(agentMap).forEach(([name,metDate])=>{
+    Object.entries(agentMap).forEach(([key,entry])=>{
+      const name=entry.name,metDate=entry.date;
       const met=new Date(metDate+"T12:00:00");
       const daysSince=Math.floor((today2-met)/86400000);
       const weekNum=Math.floor(daysSince/7)+1;
       if(weekNum<1||weekNum>5)return;
-
       count++;
+
+      const isDone=touchedThisWeek.has(key);
+      if(!isDone)outstanding++;
+
       const task=weekTasks[weekNum-1];
       const color=weekColors[weekNum-1];
       const bg=weekBgs[weekNum-1];
 
-      // Is check-in due this Monday?
-      const checkInDate=new Date(met);checkInDate.setDate(met.getDate()+(weekNum*7));
-      checkInDate.setHours(0,0,0,0);
+      const checkInDate=new Date(met);checkInDate.setDate(met.getDate()+(weekNum*7));checkInDate.setHours(0,0,0,0);
       const daysUntil=Math.floor((checkInDate-today2)/86400000);
-      const isDue=daysUntil<=0;
-      const isSoon=daysUntil<=3;
+      const isOverdue=daysUntil<0,isDueSoon=daysUntil<=3;
 
-      const safeAgent=name.replace(/'/g,"\\'");
-      html+='<div style="display:flex;align-items:flex-start;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border-light)">'
-        +'<div><div style="font-size:13px;font-weight:600;color:var(--text-1)">'
-        +name+' <span style="display:inline-block;padding:2px 8px;border-radius:20px;font-size:10px;font-weight:700;background:'+bg+';color:'+color+'">Week '+weekNum+' of 5</span></div>'
+      let dueLabel,dueColor;
+      if(isDone){dueLabel="✓ Done this week";dueColor="var(--success)";}
+      else if(isOverdue){dueLabel="Overdue";dueColor="var(--danger)";}
+      else if(isDueSoon){dueLabel="Due soon";dueColor="var(--warning)";}
+      else{dueLabel="Due "+nextMon.toLocaleDateString("en-US",{month:"short",day:"numeric"});dueColor="var(--text-3)";}
+
+      const safeAgent=name.replace(/'/g,"\'");
+      html+='<div style="display:flex;align-items:flex-start;justify-content:space-between;padding:11px 0;border-bottom:1px solid var(--border-light);gap:12px;opacity:'+(isDone?".6":"1")+'">'
+        +'<div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:600;color:var(--text-1)">'+name
+        +' <span style="display:inline-block;padding:2px 8px;border-radius:20px;font-size:10px;font-weight:700;background:'+bg+';color:'+color+'">Week '+weekNum+' of 5</span></div>'
         +'<div style="font-size:11px;color:var(--text-3);margin-top:2px">Met '+fmtDate(metDate)+'</div>'
-        +'<div style="font-size:12px;color:var(--text-2);margin-top:3px;font-style:italic">'+task+'</div></div>'
-        +'<div style="text-align:right;flex-shrink:0;margin-left:12px">'
-        +'<div style="font-size:11px;font-weight:600;color:'+(isDue?'var(--danger)':'var(--success)')+';margin-bottom:6px">'+(isDue?'Due now':isSoon?'Due soon':'This week')+'</div>'
-        +'<button onclick="document.getElementById(\'agentInput\').value=\''+safeAgent+'\';document.getElementById(\'activityType\').value=\'Active Agent Talk-to\';switchTab(\'log\')" '
-        +'style="padding:5px 12px;background:var(--brand);color:#fff;border:none;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit">Log check-in</button>'
+        +(!isDone?'<div style="font-size:12px;color:var(--text-2);margin-top:4px;font-style:italic;line-height:1.4">'+task+'</div>':"")
+        +'</div><div style="text-align:right;flex-shrink:0">'
+        +'<div style="font-size:11px;font-weight:600;color:'+dueColor+';margin-bottom:6px">'+dueLabel+'</div>'
+        +(!isDone?'<button onclick="document.getElementById(\'agentInput\').value=\''+safeAgent+'\';document.getElementById(\'activityType\').value=\'Active Agent Talk-to\';switchTab(\'log\')" style="padding:5px 12px;background:var(--brand);color:#fff;border:none;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit">Log check-in</button>'
+        :'<span style="font-size:11px;color:var(--success)">✓ Checked in</span>')
         +'</div></div>';
     });
 
-    if(!count){
-      document.getElementById("onboardingCard").style.display="none";
-      return;
-    }
-
+    if(!count){document.getElementById("onboardingCard").style.display="none";return;}
     document.getElementById("onboardingCard").style.display="block";
-    document.getElementById("onboardingSub").textContent=count+" agent"+(count!==1?"s":"")+" this cycle";
-
-
-    document.getElementById("onboardingList").innerHTML=html;
+    document.getElementById("onboardingSub").textContent=count+" agent"+(count!==1?"s":"")+" this cycle"+(outstanding>0?" · "+outstanding+" outstanding":" · all done ✓");
+    document.getElementById("onboardingList").innerHTML=html||'<div class="no-data">All caught up!</div>';
   }catch(e){console.error("Onboarding error:",e);}
 }
 
