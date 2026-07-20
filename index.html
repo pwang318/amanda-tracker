@@ -1137,6 +1137,14 @@ function toast(msg,type="success"){
   setTimeout(()=>el.className="toast",3200);
 }
 
+function toTitleCase(str){
+  if(!str)return str;
+  // Only convert if string is all caps (Power BI export format)
+  if(str===str.toUpperCase()){
+    return str.toLowerCase().replace(/\b\w/g,function(c){return c.toUpperCase();});
+  }
+  return str;
+}
 function fmtDate(d){
   if(!d)return"—";
   return new Date(d+"T12:00:00").toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"});
@@ -1801,7 +1809,7 @@ async function loadOnboarding(){
       const safeAgent=name.replace(/'/g,"\\'");
       html+='<div style="display:flex;align-items:flex-start;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border-light)">'
         +'<div><div style="font-size:13px;font-weight:600;color:var(--text-1)">'
-        +name+' <span style="display:inline-block;padding:2px 8px;border-radius:20px;font-size:10px;font-weight:700;background:'+bg+';color:'+color+'">Week '+weekNum+' of 5</span></div>'
+        +toTitleCase(name)+' <span style="display:inline-block;padding:2px 8px;border-radius:20px;font-size:10px;font-weight:700;background:'+bg+';color:'+color+'">Week '+weekNum+' of 5</span></div>'
         +'<div style="font-size:11px;color:var(--text-3);margin-top:2px">Met '+fmtDate(metDate)+'</div>'
         +'<div style="font-size:12px;color:var(--text-2);margin-top:3px;font-style:italic">'+task+'</div></div>'
         +'<div style="text-align:right;flex-shrink:0;margin-left:12px">'
