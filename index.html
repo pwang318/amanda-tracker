@@ -1140,6 +1140,13 @@ function properCase(str){
   if(!str)return"";
   return str.toLowerCase().replace(/\b\w/g,c=>c.toUpperCase());
 }
+function escHtml(s){
+  return(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+}
+function toggleDetail(id){
+  const el=document.getElementById(id);
+  if(el)el.style.display=el.style.display==="none"?"block":"none";
+}
 
 function cntTalkTo(acts){return(acts||[]).filter(function(a){return TALKTO_TYPES.indexOf((a.act_type||"").trim())>=0;}).length;}
 const ACT_TYPE_OPTIONS='<optgroup label="New Relationships"><option>Cold Calls</option><option>New Realtor Meeting</option></optgroup><optgroup label="Relationship Deepening"><option>New Agent Follow-up</option><option>Break Breads</option><option>Market Update</option><option>Sent Referral</option><option>Co-hosted Event</option><option>Realtor Buddy Referral Ask</option></optgroup><optgroup label="Retention and Referrals"><option>Agent Talk-to</option><option>CTC Call</option><option>Birthday Outreach</option><option>Holiday Outreach</option><option>Agent Appreciation</option><option>Co-Marketing Discussion</option></optgroup><optgroup label="Special Programs"><option>Business Planning Session</option><option>Co-Marketing Discussion</option><option>Team Presentation</option><option>Recruiting Conversation</option></optgroup>';
@@ -3601,11 +3608,22 @@ async function loadDanielAccountability(){
         nmEl.innerHTML='<div class="no-data" style="padding:16px">No missing or incomplete notes right now</div>';
       }else{
         const shown=violations.slice(0,15);
-        let html='<div style="font-size:11px;color:var(--text-3);margin-bottom:8px">'+violations.length+' total</div>';
-        html+=shown.map(a=>'<div style="padding:7px 0;border-bottom:1px solid var(--border-light);display:flex;justify-content:space-between;align-items:center;font-size:12px">'
-          +'<span><strong>'+properCase(a.agent_name)+'</strong> · '+badgeEmoji(a.act_type)+'</span>'
-          +'<span style="color:var(--text-3)">'+fmtDate(a.act_date)+'</span>'
-          +'</div>').join("");
+        let html='<div style="font-size:11px;color:var(--text-3);margin-bottom:8px">'+violations.length+' total — click a row to see the full note</div>';
+        html+=shown.map((a,i)=>{
+          const detailId="nm-detail-"+i;
+          const noteText=a.notes?escHtml(stripMethodTag(a.notes)):"(no note entered)";
+          return'<div style="border-bottom:1px solid var(--border-light)">'
+            +'<div style="padding:7px 0;display:flex;justify-content:space-between;align-items:center;font-size:12px;cursor:pointer" onclick="toggleDetail(\''+detailId+'\')">'
+            +'<span><strong>'+properCase(a.agent_name)+'</strong> · '+badgeEmoji(a.act_type)+'</span>'
+            +'<span style="color:var(--text-3)">'+fmtDate(a.act_date)+'</span>'
+            +'</div>'
+            +'<div id="'+detailId+'" style="display:none;padding:0 0 10px;font-size:11px;color:var(--text-2)">'
+            +'<div>Outcome: '+(a.outcome?escHtml(a.outcome):"—")+'</div>'
+            +'<div style="margin-top:3px;font-style:italic">"'+noteText+'"</div>'
+            +(a.follow_up_date?'<div style="margin-top:3px">Follow-up: '+fmtDate(a.follow_up_date)+'</div>':"")
+            +'</div>'
+            +'</div>';
+        }).join("");
         if(violations.length>shown.length)html+='<div style="font-size:11px;color:var(--text-4);margin-top:8px">+'+(violations.length-shown.length)+' more — see Activity Feed</div>';
         nmEl.innerHTML=html;
       }
@@ -3626,15 +3644,19 @@ async function loadDanielAccountability(){
       if(!suspiciousRepeats.length){
         cpEl.innerHTML='<div class="no-data" style="padding:16px">No repeated copy-paste-looking notes found</div>';
       }else{
-        cpEl.innerHTML=suspiciousRepeats.slice(0,10).map(([key,rows])=>{
+        cpEl.innerHTML=suspiciousRepeats.slice(0,10).map(([key,rows],gi)=>{
           const[date]=key.split("||");
-          const agents2=rows.map(r=>properCase(r.agent_name)).join(", ");
-          return'<div style="padding:10px 0;border-bottom:1px solid var(--border-light)">'
+          const detailId="cp-detail-"+gi;
+          const agentRows=rows.map(r=>'<div style="display:flex;justify-content:space-between;padding:2px 0"><span>'+properCase(r.agent_name)+'</span><span style="color:var(--text-3)">'+(r.outcome?escHtml(r.outcome):"—")+'</span></div>').join("");
+          return'<div style="border-bottom:1px solid var(--border-light)">'
+            +'<div style="padding:10px 0;cursor:pointer" onclick="toggleDetail(\''+detailId+'\')">'
             +'<div style="display:flex;justify-content:space-between;align-items:center">'
-            +'<span style="font-size:12px;color:var(--text-1)">"'+stripMethodTag(rows[0].notes)+'"</span>'
+            +'<span style="font-size:12px;color:var(--text-1)">"'+escHtml(stripMethodTag(rows[0].notes))+'"</span>'
             +'<span style="font-size:10px;font-weight:700;color:var(--danger)">'+rows.length+'x on '+fmtDate(date)+'</span>'
             +'</div>'
-            +'<div style="font-size:11px;color:var(--text-3);margin-top:3px">Used for: '+agents2+'</div>'
+            +'<div style="font-size:11px;color:var(--text-3);margin-top:3px">Tap to see which agents · '+rows.length+' entries</div>'
+            +'</div>'
+            +'<div id="'+detailId+'" style="display:none;padding:0 0 10px;font-size:11px;color:var(--text-2)">'+agentRows+'</div>'
             +'</div>';
         }).join("");
       }
@@ -3746,10 +3768,11 @@ async function loadDaniel(){
 
     // ── GROWTH METRICS ────────────────────────────────────────────
     try{
-    const growthMetricRow=(label,daily,wtd,mtd,ytd,goal,goalPeriod)=>{
+    const growthMetricRow=(label,daily,wtd,mtd,ytd,goal,goalPeriod,actType)=>{
       const pct=goal?Math.min(100,Math.round((mtd/goal)*100)):null;
       const pctBadge=pct!==null?'<span style="font-size:10px;padding:2px 7px;border-radius:20px;font-weight:600;background:'+(pct>=100?"var(--success-bg)":pct>=60?"var(--brand-light)":"var(--danger-bg)")+';color:'+(pct>=100?"var(--success)":pct>=60?"var(--brand)":"var(--danger)")+'">'+pct+'%</span>':"";
-      return'<div style="display:grid;grid-template-columns:1.6fr 60px 60px 70px 70px 80px;gap:10px;align-items:center;padding:9px 0;border-bottom:1px solid var(--border-light);font-size:13px">'
+      const clickAttr=actType?' onclick="jumpToFeedType(\''+actType.replace(/'/g,"\\'")+'\')" style="cursor:pointer"':"";
+      return'<div'+clickAttr+' style="display:grid;grid-template-columns:1.6fr 60px 60px 70px 70px 80px;gap:10px;align-items:center;padding:9px 0;border-bottom:1px solid var(--border-light);font-size:13px'+(actType?';cursor:pointer':'')+'">'
         +'<span style="font-weight:500;color:var(--text-1)">'+label+'</span>'
         +'<span style="text-align:center;color:var(--text-3)">'+daily+'</span>'
         +'<span style="text-align:center;color:var(--text-2)">'+wtd+'</span>'
@@ -3768,9 +3791,9 @@ async function loadDaniel(){
       +'</div>';
 
     document.getElementById("danielGrowthGrid").innerHTML=gridHeader
-      +growthMetricRow("New realtor meetings",c(dailyActs,"New Realtor Meeting"),c(weekActs,"New Realtor Meeting"),mtdMeetings,c(ytdActs,"New Realtor Meeting"),20,"MTD")
-      +growthMetricRow("Cold calls",c(dailyActs,"Cold Calls"),c(weekActs,"Cold Calls"),c(mtdActs,"Cold Calls"),c(ytdActs,"Cold Calls"),500,"MTD")
-      +growthMetricRow("Realtor buddy asks",c(dailyActs,"Realtor Buddy Referral Ask"),c(weekActs,"Realtor Buddy Referral Ask"),c(mtdActs,"Realtor Buddy Referral Ask"),c(ytdActs,"Realtor Buddy Referral Ask"),12,"MTD")
+      +growthMetricRow("New realtor meetings",c(dailyActs,"New Realtor Meeting"),c(weekActs,"New Realtor Meeting"),mtdMeetings,c(ytdActs,"New Realtor Meeting"),20,"MTD","New Realtor Meeting")
+      +growthMetricRow("Cold calls",c(dailyActs,"Cold Calls"),c(weekActs,"Cold Calls"),c(mtdActs,"Cold Calls"),c(ytdActs,"Cold Calls"),500,"MTD","Cold Calls")
+      +growthMetricRow("Realtor buddy asks",c(dailyActs,"Realtor Buddy Referral Ask"),c(weekActs,"Realtor Buddy Referral Ask"),c(mtdActs,"Realtor Buddy Referral Ask"),c(ytdActs,"Realtor Buddy Referral Ask"),12,"MTD","Realtor Buddy Referral Ask")
       +'<div style="margin-top:10px;padding:10px 12px;background:var(--surface-2);border-radius:var(--radius-sm);font-size:12px;color:var(--text-2)">'
       +'On pace for <strong style="color:'+meetingColor+'">'+projectedMeetings+'</strong> new meetings this month '
       +'<span style="color:var(--text-4)">(goal: 20 · 80% pass = 16)</span>'
@@ -3779,8 +3802,9 @@ async function loadDaniel(){
 
     // ── RETENTION METRICS ─────────────────────────────────────────
     try{
-    const retentionRow=(label,daily,wtd,mtd,ytd,note)=>{
-      return'<div style="display:grid;grid-template-columns:1.6fr 60px 60px 70px 70px 80px;gap:10px;align-items:center;padding:9px 0;border-bottom:1px solid var(--border-light);font-size:13px">'
+    const retentionRow=(label,daily,wtd,mtd,ytd,note,actType)=>{
+      const clickAttr=actType?' onclick="jumpToFeedType(\''+actType.replace(/'/g,"\\'")+'\')" style="cursor:pointer"':"";
+      return'<div'+clickAttr+' style="display:grid;grid-template-columns:1.6fr 60px 60px 70px 70px 80px;gap:10px;align-items:center;padding:9px 0;border-bottom:1px solid var(--border-light);font-size:13px'+(actType?';cursor:pointer':'')+'">'
         +'<div><span style="font-weight:500;color:var(--text-1)">'+label+'</span>'+(note?'<div style="font-size:10px;color:var(--text-4);margin-top:1px">'+note+'</div>':'')+'</div>'
         +'<span style="text-align:center;color:var(--text-3)">'+daily+'</span>'
         +'<span style="text-align:center;color:var(--text-2)">'+wtd+'</span>'
@@ -3799,9 +3823,9 @@ async function loadDaniel(){
       +retentionRow("Unique agents touched",uniqDaily,uniqWtd,uniqMtd,uniqYtd,"")
       +(aTierTotal?retentionRow("A-tier agents touched",aTierTouched(dailyActs),aTierTouched(weekActs),aTierMtd+" of "+aTierTotal,aTierTouched(ytdActs),"highest-value agents"):"")
       +retentionRow("Active Agent Talk-to's",cntTalkTo(dailyActs),cntTalkTo(weekActs),cntTalkTo(mtdActs)+" / 400",cntTalkTo(ytdActs),"all meaningful touches with existing agents")
-      +retentionRow("Break breads",c(dailyActs,"Break Breads"),c(weekActs,"Break Breads"),c(mtdActs,"Break Breads")+" / 20",c(ytdActs,"Break Breads"),"")
-      +retentionRow("CTC calls",c(dailyActs,CTC_TYPE),c(weekActs,CTC_TYPE),c(mtdActs,CTC_TYPE),c(ytdActs,CTC_TYPE),"post-close thank you")
-      +retentionRow("Referrals sent to agents",c(dailyActs,"Sent Referral"),c(weekActs,"Sent Referral"),c(mtdActs,"Sent Referral"),c(ytdActs,"Sent Referral"),"value delivered")
+      +retentionRow("Break breads",c(dailyActs,"Break Breads"),c(weekActs,"Break Breads"),c(mtdActs,"Break Breads")+" / 20",c(ytdActs,"Break Breads"),"","Break Breads")
+      +retentionRow("CTC calls",c(dailyActs,CTC_TYPE),c(weekActs,CTC_TYPE),c(mtdActs,CTC_TYPE),c(ytdActs,CTC_TYPE),"post-close thank you",CTC_TYPE)
+      +retentionRow("Referrals sent to agents",c(dailyActs,"Sent Referral"),c(weekActs,"Sent Referral"),c(mtdActs,"Sent Referral"),c(ytdActs,"Sent Referral"),"value delivered","Sent Referral")
       +retentionRow("Reconnect contacts",0,0,rcContacted.length,"—","agents brought back")
       +'<div style="margin-top:10px;padding:10px 12px;background:'+(atRiskCount>20?"var(--danger-bg)":"var(--success-bg)")+';border-radius:var(--radius-sm);font-size:12px;color:var(--text-2)">'
       +'<strong style="color:'+(atRiskCount>20?"var(--danger)":"var(--success)")+'">'+atRiskCount+'</strong> agents at risk of going cold (60+ days no touch)'
