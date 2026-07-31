@@ -416,6 +416,11 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI'
           <option value="Holiday Outreach">Holiday outreach</option>
           <option value="Agent Appreciation">Appreciation</option>
         </select>
+        <select id="quickLogContactMethod" style="border:1px solid var(--border);border-radius:var(--radius-sm);padding:9px 11px;font-size:12px;font-family:inherit;color:var(--text-1);outline:none;background:var(--surface)">
+          <option value="Call">☎️ Call</option>
+          <option value="Text">📱 Text</option>
+          <option value="Email">✉️ Email</option>
+        </select>
         <select id="quickLogOutcome" style="border:1px solid var(--border);border-radius:var(--radius-sm);padding:9px 11px;font-size:12px;font-family:inherit;color:var(--text-1);outline:none;background:var(--surface)">
           <option value="Positive">Positive</option>
           <option value="No answer">No answer</option>
@@ -423,6 +428,12 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI'
           <option value="Left voicemail">Left voicemail</option>
         </select>
         <button onclick="quickLogSave()" style="padding:9px 18px;background:var(--brand);color:#fff;border:none;border-radius:var(--radius-sm);font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap">Log it</button>
+      </div>
+      <div style="margin-top:8px">
+        <textarea id="quickLogNotes" placeholder="Notes — what did you talk about? (min 10 words)" rows="2"
+          style="width:100%;border:1px solid var(--border);border-radius:var(--radius-sm);padding:9px 12px;font-size:13px;font-family:inherit;color:var(--text-1);outline:none;resize:vertical;box-sizing:border-box"></textarea>
+        <div id="quickLogWordCount" style="font-size:10px;color:var(--text-4);margin-top:3px"></div>
+        <div id="quickLogDoubleDialWarn" style="display:none;font-size:11px;color:var(--warning);margin-top:4px;font-weight:600"></div>
       </div>
     </div>
     <div id="ql-coldcall-form" style="display:none">
@@ -436,6 +447,10 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI'
         </div>
         <input type="text" id="ccPhone" placeholder="Phone (optional)"
           style="flex:1;min-width:120px;border:1px solid var(--border);border-radius:var(--radius-sm);padding:9px 12px;font-size:13px;font-family:inherit;color:var(--text-1);outline:none">
+        <select id="ccContactMethod" style="border:1px solid var(--border);border-radius:var(--radius-sm);padding:9px 11px;font-size:12px;font-family:inherit;color:var(--text-1);outline:none;background:var(--surface)">
+          <option value="Call">☎️ Call</option>
+          <option value="Text">📱 Text</option>
+        </select>
         <select id="ccOutcome" style="border:1px solid var(--border);border-radius:var(--radius-sm);padding:9px 11px;font-size:12px;font-family:inherit;color:var(--text-1);outline:none;background:var(--surface)">
           <option value="Left voicemail">Left voicemail</option>
           <option value="No answer">No answer</option>
@@ -445,6 +460,12 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI'
           <option value="Remove / No Further Contact">Remove — not interested</option>
         </select>
         <button onclick="ccSave()" style="padding:9px 18px;background:var(--brand);color:#fff;border:none;border-radius:var(--radius-sm);font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap">Log call</button>
+      </div>
+      <div style="margin-top:8px">
+        <textarea id="ccNotes" placeholder="Note required — e.g. left VM, texted after, 2nd attempt today..." rows="2"
+          style="width:100%;border:1px solid var(--border);border-radius:var(--radius-sm);padding:9px 12px;font-size:13px;font-family:inherit;color:var(--text-1);outline:none;resize:vertical;box-sizing:border-box"></textarea>
+        <div id="ccWordCount" style="font-size:10px;color:var(--text-4);margin-top:3px"></div>
+        <div id="ccDoubleDialWarn" style="display:none;font-size:11px;color:var(--warning);margin-top:4px;font-weight:600"></div>
       </div>
       <div style="font-size:11px;color:var(--text-3);margin-top:8px">Logs the cold call + adds to pipeline automatically if not already there</div>
     </div>
@@ -491,6 +512,7 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI'
     <div id="logNormalFields">
       <div class="card-title">Log an activity</div>
       <div id="dedupWarn" class="dedup-warn"></div>
+      <div id="doubleDialWarn" class="dedup-warn" style="background:var(--warning-bg);color:#92400E"></div>
       <div class="form-row">
         <div class="field">
           <label>Agent name</label>
@@ -553,8 +575,21 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI'
           <input type="date" id="followupDate">
         </div>
       </div>
+      <div class="form-row three">
+        <div class="field">
+          <label>Contact method</label>
+          <select id="activityContactMethod">
+            <option value="Call">☎️ Call</option>
+            <option value="Text">📱 Text</option>
+            <option value="Email">✉️ Email</option>
+            <option value="In Person">🤝 In person</option>
+          </select>
+        </div>
+      </div>
       <div class="form-row one">
-        <div class="field"><label>Notes</label><textarea id="activityNotes" placeholder="Details, referrals mentioned, next steps..."></textarea></div>
+        <div class="field"><label>Notes <span id="notesReqHint" style="font-size:10px;color:var(--text-4);font-weight:400;text-transform:none;letter-spacing:0"></span></label><textarea id="activityNotes" placeholder="Details, referrals mentioned, next steps..."></textarea>
+        <div id="activityWordCount" style="font-size:10px;color:var(--text-4);margin-top:3px"></div>
+        </div>
       </div>
     </div>
 
@@ -843,7 +878,7 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI'
 <div id="view-health" class="view">
   <div class="card">
     <div class="card-title">Data Health Check</div>
-    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px">
+    <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:20px">
       <div style="text-align:center;padding:16px;background:#FCEBEB;border:0.5px solid #f7c1c1;border-radius:10px;cursor:pointer" onclick="switchTab('feed');applyFeedFilters()">
         <div style="font-size:28px;font-weight:600;color:#A32D2D" id="hc-no-outcome">0</div>
         <div style="font-size:11px;color:#888;margin-top:6px">Activities<br>No Outcome</div>
@@ -856,11 +891,30 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI'
         <div style="font-size:28px;font-weight:600;color:#7B1FA2" id="hc-missing-contact">0</div>
         <div style="font-size:11px;color:#888;margin-top:6px">Agents Missing<br>Phone/Email</div>
       </div>
+      <div style="text-align:center;padding:16px;background:#FFF3E0;border:0.5px solid #FFE69C;border-radius:10px;cursor:pointer" onclick="switchTab('feed');applyFeedFilters()">
+        <div style="font-size:28px;font-weight:600;color:#B85B00" id="hc-notes-weak">0</div>
+        <div style="font-size:11px;color:#888;margin-top:6px">Notes<br>Missing/Weak</div>
+      </div>
       <div style="text-align:center;padding:16px;background:#E8F5E9;border:0.5px solid #81C784;border-radius:10px">
         <div style="font-size:28px;font-weight:600;color:#2E7D32" id="hc-good">✓</div>
         <div style="font-size:11px;color:#888;margin-top:6px">Data Quality<br>Score</div>
       </div>
     </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">📞 Repeat Contacts Today <span class="card-sub">double-dial / voicemail watch</span></div>
+    <div id="doubleDialWatch"><div class="no-data">Loading...</div></div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">🔁 Copy-Paste Note Watch <span class="card-sub">same note used repeatedly same day</span></div>
+    <div id="copyPasteWatch"><div class="no-data">Loading...</div></div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">⏱️ Batch-Logging Watch <span class="card-sub">5+ activities saved within 10 minutes — likely logged after the fact, not in real time</span></div>
+    <div id="batchLogWatch"><div class="no-data">Loading...</div></div>
   </div>
 
   <div class="card">
@@ -1031,6 +1085,35 @@ const GOAL_THRESHOLD=0.8; // 80% = passing
 const CTC_TYPE="CTC Call";
 // All activity types that count toward the Active Agent Talk-to goal
 const TALKTO_TYPES=["Agent Talk-to","Active Agent Talk-to","Active Agent Check-in","CTC Call","Birthday Outreach","Holiday Outreach","Agent Appreciation","Market Update","Market Update Call","Sent Market Report","Sent Referral","Co-Marketing Discussion","New Agent Follow-up","Closed Deal Thank You"];
+// Activity types that require a minimum 10-word note
+const NOTES_REQUIRED_TYPES=["Active Agent Talk-to","CTC Call","Birthday Outreach","Active Agent Check-in"];
+// Cold Calls: a note is always required, but no word-count minimum — just needs to say
+// something (left VM / texted / double-dialed / etc), not hit a length bar.
+const NOTES_MANDATORY_NO_MIN=["Cold Calls"];
+const MIN_NOTE_WORDS=10;
+// Strip the ☎️/📱/✉️/🤝 contact-method tag before counting words, so the tag itself
+// doesn't count toward the word minimum.
+function stripMethodTag(notes){
+  return(notes||"").replace(/^[☎📱✉🤝️\s]+/,"").trim();
+}
+// True if a logged activity's notes clear the bar for its type. Types not in either
+// list have no bar and always pass.
+function noteMeetsBar(actType,notes){
+  const clean=stripMethodTag(notes);
+  if(NOTES_REQUIRED_TYPES.indexOf(actType)>=0)return countWords(clean)>=MIN_NOTE_WORDS;
+  if(NOTES_MANDATORY_NO_MIN.indexOf(actType)>=0)return countWords(clean)>=1;
+  return true;
+}
+// % of notes-required activities in a set that actually clear their bar.
+function notesComplianceStats(acts){
+  const relevant=(acts||[]).filter(a=>NOTES_REQUIRED_TYPES.indexOf(a.act_type)>=0||NOTES_MANDATORY_NO_MIN.indexOf(a.act_type)>=0);
+  const passing=relevant.filter(a=>noteMeetsBar(a.act_type,a.notes));
+  return{total:relevant.length,passing:passing.length,pct:relevant.length?Math.round(passing.length/relevant.length*100):100};
+}
+function countWords(str){
+  if(!str)return 0;
+  return str.trim().split(/\s+/).filter(Boolean).length;
+}
 function properCase(str){
   if(!str)return"";
   return str.toLowerCase().replace(/\b\w/g,c=>c.toUpperCase());
@@ -1307,6 +1390,7 @@ document.getElementById("activityType").addEventListener("change",function(){
   const outcome=document.getElementById("activityOutcome").value;
   if(outcome==="Requires follow-up")autoSetFollowUp();
   toggleIntakeBlock();
+  updateNotesRequirementHint();
 });
 
 document.getElementById("activityOutcome").addEventListener("change",function(){
@@ -1315,6 +1399,83 @@ document.getElementById("activityOutcome").addEventListener("change",function(){
     row.classList.add("show");
     autoSetFollowUp();
   }else{row.classList.remove("show");document.getElementById("followupDate").value="";}
+});
+
+// ── NOTES WORD-COUNT REQUIREMENT (min 10 words for talk-to / cold call / CTC / birthday) ──
+function updateNotesRequirementHint(){
+  const type=document.getElementById("activityType").value;
+  const hint=document.getElementById("notesReqHint");
+  if(!hint)return;
+  if(NOTES_REQUIRED_TYPES.indexOf(type)>=0){
+    hint.textContent="— minimum "+MIN_NOTE_WORDS+" words required";
+  }else if(NOTES_MANDATORY_NO_MIN.indexOf(type)>=0){
+    hint.textContent="— a note is required (e.g. left VM, texted, double-dial) — any length";
+  }else{
+    hint.textContent="";
+  }
+  updateNotesWordCount();
+}
+function updateNotesWordCount(){
+  const type=document.getElementById("activityType").value;
+  const notes=document.getElementById("activityNotes").value;
+  const n=countWords(notes);
+  const el=document.getElementById("activityWordCount");
+  if(!el)return;
+  if(NOTES_REQUIRED_TYPES.indexOf(type)>=0){
+    el.textContent=n+" / "+MIN_NOTE_WORDS+" words";
+    el.style.color=n>=MIN_NOTE_WORDS?"var(--success)":"var(--warning)";
+  }else if(NOTES_MANDATORY_NO_MIN.indexOf(type)>=0){
+    el.textContent=n>0?"✓ note added":"note required before saving";
+    el.style.color=n>0?"var(--success)":"var(--warning)";
+  }else{
+    el.textContent=n+" words";
+    el.style.color="var(--text-4)";
+  }
+}
+document.getElementById("activityNotes").addEventListener("input",updateNotesWordCount);
+document.getElementById("quickLogNotes").addEventListener("input",function(){
+  const n=countWords(this.value);
+  const el=document.getElementById("quickLogWordCount");
+  el.textContent=n+" / "+MIN_NOTE_WORDS+" words";
+  el.style.color=n>=MIN_NOTE_WORDS?"var(--success)":"var(--warning)";
+});
+document.getElementById("ccNotes").addEventListener("input",function(){
+  const n=countWords(this.value);
+  const el=document.getElementById("ccWordCount");
+  el.textContent=n>0?"✓ note added":"note required before saving";
+  el.style.color=n>0?"var(--success)":"var(--warning)";
+});
+
+// ── DOUBLE-DIAL DETECTION ──────────────────────────────────────────────────────
+// Looks at today's already-logged activities for this agent and warns if this
+// would be another contact attempt on top of an existing voicemail / no-answer.
+const VM_OUTCOMES=["Left voicemail","No answer"];
+async function checkDoubleDial(agentName,warnElId){
+  const warnEl=document.getElementById(warnElId);
+  if(!warnEl)return;
+  const name=(agentName||"").trim();
+  if(!name){warnEl.style.display="none";return;}
+  try{
+    const rows=await sbFetch("amanda_activities?agent_name=eq."+encodeURIComponent(name)+"&act_date=eq."+today()+"&select=act_type,outcome,notes&order=id.desc&limit=10");
+    if(!rows.length){warnEl.style.display="none";return;}
+    const vmCount=rows.filter(r=>VM_OUTCOMES.indexOf(r.outcome)>=0).length;
+    const hasTextFollowup=rows.some(r=>/📱/.test(r.notes||""));
+    if(rows.length>=1){
+      let msg="⚠️ "+name+" already has "+rows.length+" contact attempt"+(rows.length!==1?"s":"")+" logged today";
+      if(vmCount>0)msg+=" ("+vmCount+" voicemail/no-answer)";
+      if(vmCount>0&&!hasTextFollowup)msg+=" — consider following up by text instead of calling again.";
+      warnEl.textContent=msg;
+      warnEl.style.display="block";
+    }else{
+      warnEl.style.display="none";
+    }
+  }catch(e){warnEl.style.display="none";}
+}
+let ddTimer=null;
+document.getElementById("agentInput").addEventListener("input",function(){
+  clearTimeout(ddTimer);
+  const val=this.value;
+  ddTimer=setTimeout(()=>checkDoubleDial(val,"doubleDialWarn"),500);
 });
 
 // Connection test with actual write validation
@@ -1375,6 +1536,7 @@ async function init(){
   testConnection();
   loadWeek();loadFollowups();loadFeed();loadDaniel();initAutocomplete();loadQuiet();loadFlagged();loadOnboarding();
   checkOpenIntake();
+  updateNotesRequirementHint();
   document.getElementById("agentInput").addEventListener("input",checkDedupOnInput);
 }
 
@@ -1957,7 +2119,7 @@ async function initAutocomplete(){
   });
   document.addEventListener("click",e=>{if(!e.target.closest(".ac-wrap"))list.classList.remove("open");});
 }
-function selectAgent(name){document.getElementById("agentInput").value=name;document.getElementById("acList").classList.remove("open");}
+function selectAgent(name){document.getElementById("agentInput").value=name;document.getElementById("acList").classList.remove("open");checkDoubleDial(name,"doubleDialWarn");}
 
 async function logActivity(){
   // GUARD: cannot log anything new while a checklist is open — this is the whole point
@@ -1972,7 +2134,8 @@ async function logActivity(){
   const date=document.getElementById("activityDate").value;
   const outcome=document.getElementById("activityOutcome").value;
   const followupDate=document.getElementById("followupDate").value||null;
-  const notes=document.getElementById("activityNotes").value.trim()||null;
+  const contactMethod=document.getElementById("activityContactMethod")?document.getElementById("activityContactMethod").value:"Call";
+  let notes=document.getElementById("activityNotes").value.trim()||null;
   
   clearLogErrorBanner();
   
@@ -2000,18 +2163,21 @@ async function logActivity(){
     return;
   }
   
-  // VALIDATION: Notes required for CTC calls (min 15 chars)
-  if(activityType==="CTC Call"&&(!notes||notes.length<15)){
-    toast("CTC calls need detailed notes (minimum 15 characters).","error");
+  // VALIDATION: Notes required (min 10 words) for talk-to / cold call / CTC / birthday / check-in
+  if(NOTES_REQUIRED_TYPES.indexOf(activityType)>=0&&countWords(notes)<MIN_NOTE_WORDS){
+    toast(activityType+" needs detailed notes — minimum "+MIN_NOTE_WORDS+" words.","error");
+    return;
+  }
+  if(NOTES_MANDATORY_NO_MIN.indexOf(activityType)>=0&&countWords(notes)<1){
+    toast(activityType+" needs a note before saving — e.g. left VM, texted, double-dialed.","error");
     return;
   }
   
-  // VALIDATION: Notes required for Birthday/Deal Thank You
-  if((activityType==="Birthday Outreach"||activityType==="CTC Call")&&(!notes||notes.length<10)){
-    toast(activityType+" needs notes (minimum 10 characters).","error");
-    return;
-  }
-  
+  // Tag notes with contact method so double-dial / text-followup detection can read it later
+  const methodEmoji={Call:"☎️",Text:"📱",Email:"✉️","In Person":"🤝"}[contactMethod]||"☎️";
+  if(notes)notes=methodEmoji+" "+notes;
+  else if(contactMethod!=="Call")notes=methodEmoji;
+
   // New Realtor Meeting: ALWAYS save same-day, no matter what — tag as pending or complete
   // based on the checklist right now. If pending, the app locks until it's finished.
   const isNewRealtorMeeting=activityType==="New Realtor Meeting";
@@ -2049,6 +2215,8 @@ async function logActivity(){
     document.getElementById("followupDate").value="";
     document.getElementById("activityNotes").value="";
     document.getElementById("followupRow").classList.remove("show");
+    document.getElementById("doubleDialWarn").style.display="none";
+    updateNotesRequirementHint();
     
     if(isNewRealtorMeeting&&!intakeComplete){
       const row=inserted&&inserted[0]?inserted[0]:null;
@@ -2177,8 +2345,8 @@ async function saveInlineLog(id,agentName,origDate){
   const notes=document.getElementById("fu-log-notes-"+id).value.trim()||null;
   if(!outcome){toast("Select an outcome first.","error");return;}
   if(outcome==="Requires follow-up"&&!newFu){toast("Set a new follow-up date.","error");return;}
-  if(actType==="CTC Call"&&(!notes||notes.length<15)){toast("CTC calls need detailed notes (minimum 15 characters).","error");return;}
-  if((actType==="Birthday Outreach"||actType==="CTC Call")&&(!notes||notes.length<10)){toast(actType+" needs notes (minimum 10 characters).","error");return;}
+  if(NOTES_REQUIRED_TYPES.indexOf(actType)>=0&&countWords(notes)<MIN_NOTE_WORDS){toast(actType+" needs detailed notes — minimum "+MIN_NOTE_WORDS+" words.","error");return;}
+  if(NOTES_MANDATORY_NO_MIN.indexOf(actType)>=0&&countWords(notes)<1){toast(actType+" needs a note before saving.","error");return;}
   try{
     await Promise.all([
       sbFetch("amanda_activities",{method:"POST",body:JSON.stringify({agent_name:agentName,act_type:actType,act_date:today(),outcome,follow_up_date:newFu,notes})}),
@@ -2372,7 +2540,7 @@ function ccAutoComplete(q){
   const all = [...(allAgentNames||[]), ...(prospectNames||[])];
   const matches = [...new Set(all)].filter(n=>n.toLowerCase().includes(q.toLowerCase())).slice(0,6);
   if(!matches.length){list.classList.remove('open');return;}
-  list.innerHTML = matches.map(n=>'<div class="ac-item" onclick="document.getElementById(\'ccName\').value=\''+n.replace(/'/g,"\\'")+'\';document.getElementById(\'ccAcList\').classList.remove(\'open\')">'+n+'</div>').join('');
+  list.innerHTML = matches.map(n=>'<div class="ac-item" onclick="document.getElementById(\'ccName\').value=\''+n.replace(/'/g,"\\'")+'\';document.getElementById(\'ccAcList\').classList.remove(\'open\');checkDoubleDial(\''+n.replace(/'/g,"\\'")+'\',\'ccDoubleDialWarn\')">'+n+'</div>').join('');
   list.classList.add('open');
 }
 
@@ -2381,7 +2549,12 @@ async function ccSave(){
   const name = (document.getElementById('ccName').value||'').trim();
   const phone = (document.getElementById('ccPhone').value||'').trim()||null;
   const outcome = document.getElementById('ccOutcome').value;
+  const contactMethod = document.getElementById('ccContactMethod')?document.getElementById('ccContactMethod').value:"Call";
+  let notes = (document.getElementById('ccNotes')?document.getElementById('ccNotes').value:"").trim()||null;
   if(!name){toast("Enter an agent name.","error");document.getElementById('ccName').focus();return;}
+  if(countWords(notes)<1){toast("Add a note before saving — e.g. left VM, texted, double-dialed.","error");return;}
+  const methodEmoji={Call:"☎️",Text:"📱"}[contactMethod]||"☎️";
+  notes=methodEmoji+" "+notes;
   const btn = document.querySelector('[onclick="ccSave()"]');
   if(btn){btn.disabled=true;btn.textContent="Saving...";}
   try{
@@ -2389,7 +2562,7 @@ async function ccSave(){
     await sbFetch("amanda_activities?agent_name=eq."+encodeURIComponent(name)+"&follow_up_date=not.is.null",{method:"PATCH",prefer:"return=minimal",body:JSON.stringify({follow_up_date:null})}).catch(()=>{});
     // 1. Log the cold call activity
     await sbFetch("amanda_activities",{method:"POST",prefer:"return=minimal",body:JSON.stringify({
-      agent_name:name, act_type:"Cold Calls", act_date:today(), outcome, notes:null, follow_up_date:outcome==="Requires follow-up"?new Date(Date.now()+3*86400000).toISOString().split("T")[0]:null
+      agent_name:name, act_type:"Cold Calls", act_date:today(), outcome, notes, follow_up_date:outcome==="Requires follow-up"?new Date(Date.now()+3*86400000).toISOString().split("T")[0]:null
     })});
 
     // 2. Check if already in prospects or agents
@@ -2433,6 +2606,9 @@ async function ccSave(){
     }
     document.getElementById('ccName').value='';
     document.getElementById('ccPhone').value='';
+    if(document.getElementById('ccNotes'))document.getElementById('ccNotes').value='';
+    if(document.getElementById('ccWordCount'))document.getElementById('ccWordCount').textContent='';
+    if(document.getElementById('ccDoubleDialWarn'))document.getElementById('ccDoubleDialWarn').style.display='none';
     document.getElementById('ccAcList').classList.remove('open');
     setTimeout(()=>{if(msg)msg.style.display='none';},3000);
     loadWeek();
@@ -2449,6 +2625,11 @@ document.addEventListener("click",function(e){
     if(l)l.classList.remove("open");
   }
 });
+document.getElementById("ccName").addEventListener("input",function(){
+  clearTimeout(ddTimer);
+  const val=this.value;
+  ddTimer=setTimeout(()=>checkDoubleDial(val,"ccDoubleDialWarn"),500);
+});
 let feedSource='both';
 function setFeedSource(src){
   feedSource=src;
@@ -2463,7 +2644,7 @@ function quickLogAutoComplete(q){
   if(!q||q.length<2){list.classList.remove("open");return;}
   const matches=(allAgentNames||[]).filter(n=>n.toLowerCase().includes(q.toLowerCase())).slice(0,6);
   if(!matches.length){list.classList.remove("open");return;}
-  list.innerHTML=matches.map(n=>'<div class="ac-item" onclick="document.getElementById(\'quickLogAgent\').value=\''+n.replace(/'/g,"\\'")+'\';document.getElementById(\'quickLogAcList\').classList.remove(\'open\')">'+n+'</div>').join("");
+  list.innerHTML=matches.map(n=>'<div class="ac-item" onclick="document.getElementById(\'quickLogAgent\').value=\''+n.replace(/'/g,"\\'")+'\';document.getElementById(\'quickLogAcList\').classList.remove(\'open\');checkDoubleDial(\''+n.replace(/'/g,"\\'")+'\',\'quickLogDoubleDialWarn\')">'+n+'</div>').join("");
   list.classList.add("open");
 }
 async function quickLogSave(){
@@ -2471,15 +2652,23 @@ async function quickLogSave(){
   const agentName=(document.getElementById("quickLogAgent").value||"").trim();
   const actType=document.getElementById("quickLogType").value;
   const outcome=document.getElementById("quickLogOutcome").value;
+  const contactMethod=document.getElementById("quickLogContactMethod")?document.getElementById("quickLogContactMethod").value:"Call";
+  let notes=(document.getElementById("quickLogNotes")?document.getElementById("quickLogNotes").value:"").trim()||null;
   if(!agentName){toast("Enter an agent name.","error");document.getElementById("quickLogAgent").focus();return;}
+  if(countWords(notes)<MIN_NOTE_WORDS){toast("Notes need at least "+MIN_NOTE_WORDS+" words.","error");return;}
+  const methodEmoji={Call:"☎️",Text:"📱",Email:"✉️"}[contactMethod]||"☎️";
+  notes=methodEmoji+" "+notes;
   const btn=document.querySelector('[onclick="quickLogSave()"]');
   if(btn){btn.disabled=true;btn.textContent="Saving...";}
   try{
-    await sbFetch("amanda_activities",{method:"POST",prefer:"return=minimal",body:JSON.stringify({agent_name:agentName,act_type:actType,act_date:today(),outcome,notes:null})});
+    await sbFetch("amanda_activities",{method:"POST",prefer:"return=minimal",body:JSON.stringify({agent_name:agentName,act_type:actType,act_date:today(),outcome,notes})});
     const msg=document.getElementById("quickLogMsg");
     msg.style.display="block";
     msg.textContent="✓ "+agentName+" — "+actType+" logged";
     document.getElementById("quickLogAgent").value="";
+    if(document.getElementById("quickLogNotes"))document.getElementById("quickLogNotes").value="";
+    if(document.getElementById("quickLogWordCount"))document.getElementById("quickLogWordCount").textContent="";
+    if(document.getElementById("quickLogDoubleDialWarn"))document.getElementById("quickLogDoubleDialWarn").style.display="none";
     document.getElementById("quickLogAcList").classList.remove("open");
     setTimeout(()=>{if(msg)msg.style.display="none";},3000);
     loadWeek();loadFeed();
@@ -2494,6 +2683,11 @@ document.addEventListener("click",function(e){
     const l=document.getElementById("quickLogAcList");
     if(l)l.classList.remove("open");
   }
+});
+document.getElementById("quickLogAgent").addEventListener("input",function(){
+  clearTimeout(ddTimer);
+  const val=this.value;
+  ddTimer=setTimeout(()=>checkDoubleDial(val,"quickLogDoubleDialWarn"),500);
 });
 
 // ── 🔁 RECONNECT TAB ─────────────────────────────────────────────────────────
@@ -2722,7 +2916,8 @@ async function rcSaveLog(id,agentName){
   const notes=document.getElementById("rc-log-notes-"+id).value.trim()||null;
   if(!outcome){toast("Select an outcome first.","error");return;}
   if(outcome==="Requires follow-up"&&!fu){toast("Set a follow-up date.","error");return;}
-  if(actType==="CTC Call"&&(!notes||notes.length<15)){toast("CTC calls need notes (min 15 chars).","error");return;}
+  if(NOTES_REQUIRED_TYPES.indexOf(actType)>=0&&countWords(notes)<MIN_NOTE_WORDS){toast(actType+" needs notes (min "+MIN_NOTE_WORDS+" words).","error");return;}
+  if(NOTES_MANDATORY_NO_MIN.indexOf(actType)>=0&&countWords(notes)<1){toast(actType+" needs a note before saving.","error");return;}
   try{
     await Promise.all([
       sbFetch("amanda_activities",{method:"POST",body:JSON.stringify({agent_name:agentName,act_type:actType,act_date:today(),outcome,follow_up_date:fu,notes})}),
@@ -2966,8 +3161,121 @@ async function loadHealth(){
     const missingContact=agents.filter(a=>(!a.phone||!a.phone.trim())&&(!a.email||!a.email.trim()));
     const prospectsMissingContact=prospects.filter(p=>(!p.phone||!p.phone.trim())&&(!p.email||!p.email.trim())&&p.status==="Requires follow-up");
     const requiresFuNoDate=rmActs.filter(a=>a.outcome==="Requires follow-up"&&!a.follow_up_date);
-    const criticalNoNotes=rmActs.filter(a=>(a.act_type==="CTC Call"||a.act_type==="Birthday Outreach"||a.act_type==="CTC Call")&&(!a.notes||a.notes.length<10));
+    // Comprehensive, retroactive check — every activity type that has a notes bar
+    // (Talk-to/CTC/Birthday/Check-in at 10 words, Cold Calls at "must have something"),
+    // checked against ALL logged history, not just what's logged going forward.
+    const noteViolations=rmActs.filter(a=>!noteMeetsBar(a.act_type,a.notes));
     const untiered=agents.filter(a=>!a.tier);
+
+    // ── Copy-Paste Note Watch — same Cold Call note text reused 3+ times same day ──
+    const cpGroups={};
+    rmActs.filter(a=>a.act_type==="Cold Calls"&&a.notes).forEach(a=>{
+      const cleaned=stripMethodTag(a.notes).toLowerCase().trim();
+      if(!cleaned)return;
+      const key=a.act_date+"||"+cleaned;
+      if(!cpGroups[key])cpGroups[key]=[];
+      cpGroups[key].push(a);
+    });
+    const suspiciousRepeats=Object.entries(cpGroups).filter(([k,rows])=>rows.length>=3)
+      .sort((a,b)=>b[1].length-a[1].length);
+    const cpEl=document.getElementById("copyPasteWatch");
+    if(cpEl){
+      if(!suspiciousRepeats.length){
+        cpEl.innerHTML='<div class="no-data" style="padding:16px">No repeated copy-paste-looking notes found</div>';
+      }else{
+        cpEl.innerHTML=suspiciousRepeats.slice(0,10).map(([key,rows])=>{
+          const[date,noteText]=key.split("||");
+          const agents2=rows.map(r=>properCase(r.agent_name)).join(", ");
+          return'<div style="padding:10px 0;border-bottom:1px solid var(--border-light)">'
+            +'<div style="display:flex;justify-content:space-between;align-items:center">'
+            +'<span style="font-size:12px;color:var(--text-1)">"'+stripMethodTag(rows[0].notes)+'"</span>'
+            +'<span style="font-size:10px;font-weight:700;color:var(--danger)">'+rows.length+'x on '+fmtDate(date)+'</span>'
+            +'</div>'
+            +'<div style="font-size:11px;color:var(--text-3);margin-top:3px">Used for: '+agents2+'</div>'
+            +'</div>';
+        }).join("");
+      }
+    }
+
+    // ── Batch-Logging Watch — 5+ activities saved within a 10-minute window same day ──
+    // Uses edited_at as the save timestamp. If that column isn't populated for a given
+    // row (older data, or DB doesn't default it), that row is simply skipped.
+    const timedRows=rmActs.filter(a=>a.edited_at);
+    const byDay={};
+    timedRows.forEach(a=>{
+      const d=a.edited_at.split("T")[0];
+      if(!byDay[d])byDay[d]=[];
+      byDay[d].push({t:new Date(a.edited_at).getTime(),agent:a.agent_name});
+    });
+    const batchDays=[];
+    Object.entries(byDay).forEach(([d,entries])=>{
+      entries.sort((a,b)=>a.t-b.t);
+      let i=0;
+      while(i<entries.length){
+        let j=i;
+        while(j<entries.length&&entries[j].t-entries[i].t<=10*60*1000)j++;
+        const windowCount=j-i;
+        if(windowCount>=5){
+          batchDays.push({date:d,count:windowCount,agents:entries.slice(i,j).map(e=>e.agent)});
+          i=j;
+        }else{
+          i++;
+        }
+      }
+    });
+    const blEl=document.getElementById("batchLogWatch");
+    if(blEl){
+      if(!timedRows.length){
+        blEl.innerHTML='<div class="no-data" style="padding:16px">No timestamp data available to check</div>';
+      }else if(!batchDays.length){
+        blEl.innerHTML='<div class="no-data" style="padding:16px">No batch-logging windows detected</div>';
+      }else{
+        blEl.innerHTML=batchDays.map(b=>{
+          const uniqueAgents=[...new Set(b.agents)].length;
+          return'<div style="padding:10px 0;border-bottom:1px solid var(--border-light)">'
+            +'<div style="display:flex;justify-content:space-between;align-items:center">'
+            +'<span style="font-size:13px;font-weight:600;color:var(--text-1)">'+fmtDate(b.date)+'</span>'
+            +'<span style="font-size:10px;font-weight:700;color:var(--warning)">'+b.count+' activities in ≤10 min</span>'
+            +'</div>'
+            +'<div style="font-size:11px;color:var(--text-3);margin-top:3px">'+uniqueAgents+' agent'+(uniqueAgents!==1?"s":"")+' touched in that window</div>'
+            +'</div>';
+        }).join("");
+      }
+    }
+
+    // ── Repeat Contacts Today / Double-Dial Watch ──────────────────────────
+    const todayActs=rmActs.filter(a=>a.act_date===todayStr);
+    const byAgentToday={};
+    todayActs.forEach(a=>{
+      const n=(a.agent_name||"").trim();
+      if(!n)return;
+      if(!byAgentToday[n])byAgentToday[n]=[];
+      byAgentToday[n].push(a);
+    });
+    const repeatAgents=Object.entries(byAgentToday).filter(([n,rows])=>rows.length>=2);
+    const ddEl=document.getElementById("doubleDialWatch");
+    if(ddEl){
+      if(!repeatAgents.length){
+        ddEl.innerHTML='<div class="no-data" style="padding:16px">No repeat same-day contacts today</div>';
+      }else{
+        ddEl.innerHTML=repeatAgents.map(([n,rows])=>{
+          const vmCount=rows.filter(r=>VM_OUTCOMES.indexOf(r.outcome)>=0).length;
+          const hasText=rows.some(r=>/📱/.test(r.notes||""));
+          const seq=rows.map(r=>{
+            const method=/📱/.test(r.notes||"")?"📱 Text":/✉️/.test(r.notes||"")?"✉️ Email":"☎️ Call";
+            return method+" — "+(r.outcome||"no outcome");
+          }).join(" → ");
+          const flagColor=vmCount>=2&&!hasText?"var(--danger)":"var(--warning)";
+          return'<div style="padding:10px 0;border-bottom:1px solid var(--border-light)">'
+            +'<div style="display:flex;justify-content:space-between;align-items:center">'
+            +'<span style="font-weight:600;font-size:13px;color:var(--text-1)">'+properCase(n)+'</span>'
+            +'<span style="font-size:10px;font-weight:700;color:'+flagColor+'">'+rows.length+'x today'+(vmCount>=2&&!hasText?" · no text follow-up":"")+'</span>'
+            +'</div>'
+            +'<div style="font-size:11px;color:var(--text-3);margin-top:3px">'+seq+'</div>'
+            +'</div>';
+        }).join("");
+      }
+    }
     
     const totalActivities=rmActs.length||1;
     const healthyActivities=rmActs.filter(a=>a.outcome&&a.notes&&a.notes.length>5).length;
@@ -2976,10 +3284,11 @@ async function loadHealth(){
     document.getElementById("hc-no-outcome").textContent=noOutcome.length;
     document.getElementById("hc-overdue").textContent=overdueFus.length;
     document.getElementById("hc-missing-contact").textContent=missingContact.length;
+    document.getElementById("hc-notes-weak").textContent=noteViolations.length;
     document.getElementById("hc-good").textContent=healthScore+"%";
     
     let html="";
-    const issueCount=(openIntake?1:0)+noOutcome.length+overdueFus.length+missingContact.length+prospectsMissingContact.length+requiresFuNoDate.length+criticalNoNotes.length+(untiered.length>0?1:0);
+    const issueCount=(openIntake?1:0)+noOutcome.length+overdueFus.length+missingContact.length+prospectsMissingContact.length+requiresFuNoDate.length+noteViolations.length+suspiciousRepeats.length+batchDays.length+(untiered.length>0?1:0);
     
     if(issueCount===0){
       html='<div style="text-align:center;padding:28px;color:#2E7D32"><div style="font-size:40px;margin-bottom:8px">✓</div><div style="font-size:14px;font-weight:500">All systems healthy!</div></div>';
@@ -3001,8 +3310,14 @@ async function loadHealth(){
       if(requiresFuNoDate.length){
         html+='<div style="background:#FCEBEB;border:0.5px solid #f7c1c1;border-radius:8px;padding:12px;margin-bottom:10px"><div style="font-weight:500;color:#A32D2D;margin-bottom:6px">⚠️ '+requiresFuNoDate.length+' "Requires follow-up" without dates</div><div style="font-size:11px;color:#888">These follow-ups will get lost!</div></div>';
       }
-      if(criticalNoNotes.length){
-        html+='<div style="background:#FFF3E0;border:0.5px solid #FFE69C;border-radius:8px;padding:12px;margin-bottom:10px"><div style="font-weight:500;color:#B85B00;margin-bottom:6px">📝 '+criticalNoNotes.length+' CTC/Birthday/Thank You without notes</div><div style="font-size:11px;color:#888">Critical activities need detailed notes for context</div></div>';
+      if(noteViolations.length){
+        html+='<div style="background:#FFF3E0;border:0.5px solid #FFE69C;border-radius:8px;padding:12px;margin-bottom:10px;cursor:pointer" onclick="switchTab(\'feed\')"><div style="font-weight:500;color:#B85B00;margin-bottom:6px">📝 '+noteViolations.length+' activities missing/weak notes</div><div style="font-size:11px;color:#888">Talk-to\'s, CTC, Birthday & Check-ins need 10+ words; Cold Calls need at least a short note. Includes past entries, not just new ones.</div></div>';
+      }
+      if(suspiciousRepeats.length){
+        html+='<div style="background:#FCEBEB;border:0.5px solid #f7c1c1;border-radius:8px;padding:12px;margin-bottom:10px;cursor:pointer" onclick="switchTab(\'health\');document.getElementById(\'copyPasteWatch\').scrollIntoView({behavior:\'smooth\'})"><div style="font-weight:500;color:#A32D2D;margin-bottom:6px">🔁 '+suspiciousRepeats.length+' repeated/copy-paste-looking cold-call note'+(suspiciousRepeats.length!==1?"s":"")+'</div><div style="font-size:11px;color:#888">Same note text used 3+ times in one day — see Copy-Paste Note Watch above</div></div>';
+      }
+      if(batchDays.length){
+        html+='<div style="background:#FFF3E0;border:0.5px solid #FFE69C;border-radius:8px;padding:12px;margin-bottom:10px"><div style="font-weight:500;color:#B85B00;margin-bottom:6px">⏱️ '+batchDays.length+' day'+(batchDays.length!==1?"s":"")+' with batch-logging patterns</div><div style="font-size:11px;color:#888">5+ activities saved within 10 minutes — see Batch-Logging Watch above</div></div>';
       }
       if(untiered.length){
         html+='<div style="background:#EEF2FF;border:0.5px solid #C7D2FE;border-radius:8px;padding:12px;margin-bottom:10px;cursor:pointer" onclick="switchTab(\'contacts\')"><div style="font-weight:500;color:#3730A3;margin-bottom:6px">🏷️ '+untiered.length+' agents have no tier set (A/B/C)</div><div style="font-size:11px;color:#888">Tier your agents in Contacts so Daniel\'s View shows A-tier coverage → tap to go there</div></div>';
@@ -3208,10 +3523,10 @@ async function loadDaniel(){
     const prevEnd=prevMonthEnd.toISOString().split("T")[0];
 
     const[dailyActs,weekActs,mtdActs,ytdActs,prevActs,aTierAgents,rcContacted,allAgents,allActs]=await Promise.all([
-      sbFetch("amanda_activities?select=act_type,agent_name,act_date,outcome&act_date=eq."+todayStr),
+      sbFetch("amanda_activities?select=act_type,agent_name,act_date,outcome,notes&act_date=eq."+todayStr),
       sbFetch("amanda_activities?select=*&act_date=gte."+week.start+"&act_date=lte."+week.end+"&order=act_date.desc"),
-      sbFetch("amanda_activities?select=act_type,agent_name,act_date,outcome&act_date=gte."+monthStart),
-      sbFetch("amanda_activities?select=act_type,agent_name,act_date&act_date=gte."+yearStart),
+      sbFetch("amanda_activities?select=act_type,agent_name,act_date,outcome,notes&act_date=gte."+monthStart),
+      sbFetch("amanda_activities?select=act_type,agent_name,act_date,notes&act_date=gte."+yearStart),
       sbFetch("amanda_activities?select=act_type,agent_name&act_date=gte."+prevStart+"&act_date=lte."+prevEnd).catch(()=>[]),
       sbFetch("agent_profiles?select=agent_name,tier&tier=eq.A&limit=200").catch(()=>[]),
       sbFetch(RC_TABLE+"?select=agent_name&status=eq.contacted&limit=100").catch(()=>[]),
@@ -3308,7 +3623,19 @@ async function loadDaniel(){
       +retentionRow("Reconnect contacts",0,0,rcContacted.length,"—","agents brought back")
       +'<div style="margin-top:10px;padding:10px 12px;background:'+(atRiskCount>20?"var(--danger-bg)":"var(--success-bg)")+';border-radius:var(--radius-sm);font-size:12px;color:var(--text-2)">'
       +'<strong style="color:'+(atRiskCount>20?"var(--danger)":"var(--success)")+'">'+atRiskCount+'</strong> agents at risk of going cold (60+ days no touch)'
-      +'</div>';
+      +'</div>'
+      +(function(){
+        const compDaily=notesComplianceStats(dailyActs),compWtd=notesComplianceStats(weekActs),compMtd=notesComplianceStats(mtdActs),compYtd=notesComplianceStats(ytdActs);
+        const pctColor=p=>p>=90?"var(--success)":p>=70?"var(--warning)":"var(--danger)";
+        return'<div style="margin-top:10px;padding:10px 12px;background:var(--surface-2);border-radius:var(--radius-sm);font-size:12px;color:var(--text-2)">'
+          +'<div style="font-weight:600;color:var(--text-1);margin-bottom:6px">📝 Notes compliance <span style="font-weight:400;color:var(--text-4);font-size:10px">% of Talk-to/Cold Call/CTC/Birthday/Check-in activities with an adequate note</span></div>'
+          +'<div style="display:flex;gap:14px;flex-wrap:wrap">'
+          +'<span>Today: <strong style="color:'+pctColor(compDaily.pct)+'">'+compDaily.pct+'%</strong></span>'
+          +'<span>WTD: <strong style="color:'+pctColor(compWtd.pct)+'">'+compWtd.pct+'%</strong></span>'
+          +'<span>MTD: <strong style="color:'+pctColor(compMtd.pct)+'">'+compMtd.pct+'%</strong> <span style="color:var(--text-4)">('+compMtd.passing+'/'+compMtd.total+')</span></span>'
+          +'<span>YTD: <strong style="color:'+pctColor(compYtd.pct)+'">'+compYtd.pct+'%</strong></span>'
+          +'</div></div>';
+      })();
 
     renderDanielPeriod();
     renderDanielTable(weekActs);
@@ -3790,272 +4117,11 @@ init();
     // Check if any of these prospects already exist
     const check=await sbFetch("outreach_prospects?agent_name=eq.Shannon+Brewster&select=id&limit=1").catch(()=>[]);
     if(check&&check.length){localStorage.setItem(SEED_KEY,"1");return;} // already seeded
-    const prospects=[
-  {
-    "agent_name": "Shannon Brewster",
-    "phone": "(614)477-7247",
-    "email": "Sbrewster@cutlerhomes.com",
-    "brokerage": "Cutler Real Estate",
-    "city": "Delaware",
-    "status": "Requires follow-up",
-    "notes": "Rank #850 \u00b7 Cutler Real Estate \u00b7 18 units"
-  },
-  {
-    "agent_name": "Jill Lightfoot",
-    "phone": "(614)419-7703",
-    "email": "Jill.Lightfoot@e-merge.com",
-    "brokerage": "e-Merge Real Estate",
-    "city": "Columbus",
-    "status": "Requires follow-up",
-    "notes": "Rank #851 \u00b7 e-Merge Real Estate \u00b7 18 units"
-  },
-  {
-    "agent_name": "Dorinda Easdale",
-    "phone": "(614)579-7038",
-    "email": "dori.easdale@kingthompson.com",
-    "brokerage": "Coldwell Banker Realty",
-    "city": "Columbus",
-    "status": "Requires follow-up",
-    "notes": "Rank #852 \u00b7 Coldwell Banker Realty \u00b7 18 units"
-  },
-  {
-    "agent_name": "Nathan Jacob",
-    "phone": "(614)578-7809",
-    "email": "nathandjacob@yahoo.com",
-    "brokerage": "Valor Real Estate",
-    "city": "Sunbury",
-    "status": "Requires follow-up",
-    "notes": "Rank #853 \u00b7 Valor Real Estate \u00b7 18 units"
-  },
-  {
-    "agent_name": "Pamela Moore",
-    "phone": "(614)312-7221",
-    "email": "pam.moore@cbrealty.com",
-    "brokerage": "Coldwell Banker Realty",
-    "city": "Grove City",
-    "status": "Requires follow-up",
-    "notes": "Rank #854 \u00b7 Coldwell Banker Realty \u00b7 18 units"
-  },
-  {
-    "agent_name": "Corey Liepelt",
-    "phone": "(614)580-2501",
-    "email": "corey@homesweethomecolumbus.com",
-    "brokerage": "Century 21 Excellence Realty",
-    "city": "Worthington",
-    "status": "Requires follow-up",
-    "notes": "Rank #855 \u00b7 Century 21 Excellence Realty \u00b7 18 units"
-  },
-  {
-    "agent_name": "Stacy Niemantsverdriet",
-    "phone": "(614)506-0448",
-    "email": "stacyniemo@gmail.com",
-    "brokerage": "KW Classic Properties Realty",
-    "city": "Upper Arlington",
-    "status": "Requires follow-up",
-    "notes": "Rank #856 \u00b7 KW Classic Properties Realty \u00b7 18 units"
-  },
-  {
-    "agent_name": "Melissa Wright",
-    "phone": "(614)230-7468",
-    "email": "melissawright.reagent@gmail.com",
-    "brokerage": "Coldwell Banker Realty",
-    "city": "Gahanna",
-    "status": "Requires follow-up",
-    "notes": "Rank #857 \u00b7 Coldwell Banker Realty \u00b7 18 units"
-  },
-  {
-    "agent_name": "Tori Thomas",
-    "phone": "(937)869-8042",
-    "email": "torr.business@gmail.com",
-    "brokerage": "Fiv Realty Co Ohio LLC",
-    "city": "New Albany",
-    "status": "Requires follow-up",
-    "notes": "Rank #858 \u00b7 Fiv Realty Co Ohio LLC \u00b7 18 units"
-  },
-  {
-    "agent_name": "Jason Brewer",
-    "phone": "(440)796-2604",
-    "email": "Jason.Brewer@KingThompson.com",
-    "brokerage": "Coldwell Banker Realty",
-    "city": "Gahanna",
-    "status": "Requires follow-up",
-    "notes": "Rank #859 \u00b7 Coldwell Banker Realty \u00b7 18 units"
-  },
-  {
-    "agent_name": "Aaron Francis",
-    "phone": "(937)935-1172",
-    "email": "aaron@royerrealty.com",
-    "brokerage": "ROYER REALTY LLC",
-    "city": "Bellefontaine",
-    "status": "Requires follow-up",
-    "notes": "Rank #860 \u00b7 ROYER REALTY LLC \u00b7 18 units"
-  },
-  {
-    "agent_name": "Jodi St Clair",
-    "phone": "(740)683-0178",
-    "email": "jodistclair1@gmail.com",
-    "brokerage": "Home Station Realty",
-    "city": "Coshocton",
-    "status": "Requires follow-up",
-    "notes": "Rank #862 \u00b7 Home Station Realty \u00b7 18 units"
-  },
-  {
-    "agent_name": "Andrew Gelatt",
-    "phone": "(614)600-8420",
-    "email": "drew.gelatt@cbrealty.com",
-    "brokerage": "Coldwell Banker Realty",
-    "city": "Columbus",
-    "status": "Requires follow-up",
-    "notes": "Rank #863 \u00b7 Coldwell Banker Realty \u00b7 18 units"
-  },
-  {
-    "agent_name": "Alanna Frole",
-    "phone": "(614)571-7107",
-    "email": "Alanna.Frole@cbrealty.com",
-    "brokerage": "Coldwell Banker Realty",
-    "city": "Grove City",
-    "status": "Requires follow-up",
-    "notes": "Rank #864 \u00b7 Coldwell Banker Realty \u00b7 18 units"
-  },
-  {
-    "agent_name": "Scott Davison",
-    "phone": "(740)208-1223",
-    "email": "scott@dilussorealestate.com",
-    "brokerage": "Di Lusso Real Estate",
-    "city": "Columbus",
-    "status": "Requires follow-up",
-    "notes": "Rank #866 \u00b7 Di Lusso Real Estate \u00b7 18 units"
-  },
-  {
-    "agent_name": "Patrick West",
-    "phone": "(614)861-0394",
-    "email": "patrickwest@westregroup.com",
-    "brokerage": "Keller Williams Greater Cols",
-    "city": "Columbus",
-    "status": "Requires follow-up",
-    "notes": "Rank #1743 \u00b7 Keller Williams Greater Cols \u00b7 10 units"
-  },
-  {
-    "agent_name": "Robert Salmons",
-    "phone": "(888)216-6364",
-    "email": "rsohl@enterarealty.com",
-    "brokerage": "Entera Realty LLC",
-    "city": "Warren",
-    "status": "Requires follow-up",
-    "notes": "Rank #1744 \u00b7 Entera Realty LLC \u00b7 10 units"
-  },
-  {
-    "agent_name": "Amy Johnson",
-    "phone": "(614)218-7222",
-    "email": "amysellzohio@gmail.com",
-    "brokerage": "Signature Real Estate",
-    "city": "Columbus",
-    "status": "Requires follow-up",
-    "notes": "Rank #1745 \u00b7 Signature Real Estate \u00b7 10 units"
-  },
-  {
-    "agent_name": "Anne Nossaman",
-    "phone": "(614)499-7752",
-    "email": "annenossaman@gmail.com",
-    "brokerage": "Parker Realty Associates",
-    "city": "Dublin",
-    "status": "Requires follow-up",
-    "notes": "Rank #1747 \u00b7 Parker Realty Associates \u00b7 10 units"
-  },
-  {
-    "agent_name": "Scott Hill",
-    "phone": "(740)404-2658",
-    "email": "scotthill@midohio.twcbc.com",
-    "brokerage": "Hill Real Estate",
-    "city": "Somerset",
-    "status": "Requires follow-up",
-    "notes": "Rank #1748 \u00b7 Hill Real Estate \u00b7 10 units"
-  },
-  {
-    "agent_name": "Samantha Smith",
-    "phone": "(740)412-1445",
-    "email": "samantha.smith1@cbrealty.com",
-    "brokerage": "Coldwell Banker Realty",
-    "city": "Grove City",
-    "status": "Requires follow-up",
-    "notes": "Rank #1749 \u00b7 Coldwell Banker Realty \u00b7 10 units"
-  },
-  {
-    "agent_name": "Susan Sayre",
-    "phone": "(614)633-5578",
-    "email": "ssayre2000@gmail.com",
-    "brokerage": "Red 1 Realty",
-    "city": "Westerville",
-    "status": "Requires follow-up",
-    "notes": "Rank #1750 \u00b7 Red 1 Realty \u00b7 10 units"
-  },
-  {
-    "agent_name": "Raman Dhimal",
-    "phone": "(614)377-3430",
-    "email": "ramandhimal@howardhanna.com",
-    "brokerage": "Howard Hanna Real Estate Svcs",
-    "city": "Pickerington",
-    "status": "Requires follow-up",
-    "notes": "Rank #1751 \u00b7 Howard Hanna Real Estate Svcs \u00b7 10 units"
-  },
-  {
-    "agent_name": "Angelo Turner",
-    "phone": "(740)649-4160",
-    "email": "angelo.turner@eramartin.com",
-    "brokerage": "ERA Martin & Associates",
-    "city": "Circleville",
-    "status": "Requires follow-up",
-    "notes": "Rank #1752 \u00b7 ERA Martin & Associates \u00b7 10 units"
-  },
-  {
-    "agent_name": "Katie Baumgart",
-    "phone": "(260)515-8420",
-    "email": "katie.kurtz@e-merge.com",
-    "brokerage": "e-Merge Real Estate Champions",
-    "city": "Mt. Vernon",
-    "status": "Requires follow-up",
-    "notes": "Rank #1753 \u00b7 e-Merge Real Estate Champions \u00b7 10 units"
-  },
-  {
-    "agent_name": "Timothy Miller",
-    "phone": "(740)502-6786",
-    "email": "tim@kaufmanrealty.com",
-    "brokerage": "Kaufman Realty & Auctions",
-    "city": "Sugarcreek",
-    "status": "Requires follow-up",
-    "notes": "Rank #1754 \u00b7 Kaufman Realty & Auctions \u00b7 10 units"
-  },
-  {
-    "agent_name": "Sandra Binning",
-    "phone": "(614)832-2998",
-    "email": "Sandra.Binning@CBrealty.com",
-    "brokerage": "Coldwell Banker Realty",
-    "city": "Columbus",
-    "status": "Requires follow-up",
-    "notes": "Rank #1755 \u00b7 Coldwell Banker Realty \u00b7 10 units"
-  },
-  {
-    "agent_name": "Matthew Mitchell",
-    "phone": "(614)657-3939",
-    "email": "matt@mattmitchellhomes.com",
-    "brokerage": "Real of Ohio",
-    "city": "Dublin",
-    "status": "Requires follow-up",
-    "notes": "Rank #1756 \u00b7 Real of Ohio \u00b7 10 units"
-  },
-  {
-    "agent_name": "Theodore Nemeth",
-    "phone": "(614)507-0796",
-    "email": "ted@nemethrea.com",
-    "brokerage": "Real Estate Opportunity",
-    "city": "Upper Arlington",
-    "status": "Requires follow-up",
-    "notes": "Rank #1757 \u00b7 Real Estate Opportunity \u00b7 10 units"
-  }
-];
-    await sbFetch("outreach_prospects",{method:"POST",prefer:"return=minimal",body:JSON.stringify(prospects)});
+    const prospects=[];
+    if(prospects.length){
+      await sbFetch("outreach_prospects",{method:"POST",prefer:"return=minimal",body:JSON.stringify(prospects)});
+    }
     localStorage.setItem(SEED_KEY,"1");
-    console.log("✅ 29 prospects seeded into pipeline");
   }catch(e){console.warn("Prospect seed failed:",e);}
 })();
 </script>
