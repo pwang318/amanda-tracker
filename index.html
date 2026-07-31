@@ -359,6 +359,7 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI'
   <div class="tab" onclick="switchTab('history')">Agent History</div>
   <div class="tab" onclick="switchTab('calendar')">📅 Calendar</div>
   <div class="tab" onclick="switchTab('contacts')">Contacts</div>
+  <div class="tab" onclick="switchTab('daniel')">📊 Daniel's View</div>
 </div>
 
 <div id="globalLockBanner" style="display:none"></div>
@@ -837,6 +838,22 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI'
     <div id="danielRetentionGrid"></div>
   </div>
 
+  <!-- NOTES ACCOUNTABILITY -->
+  <div class="card">
+    <div class="card-title">📝 Missing / Incomplete Notes <span class="card-sub">Talk-to, CTC, Birthday, Check-in need 10+ words · Cold Calls need any note</span></div>
+    <div id="danielNotesMissing"><div class="no-data">Loading...</div></div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">🔁 Copy-Paste Note Watch <span class="card-sub">same cold-call note reused 3+ times same day</span></div>
+    <div id="danielCopyPaste"><div class="no-data">Loading...</div></div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">🚨 Needs Escalation <span class="card-sub">3+ unanswered attempts, 2+ channels, no response in 10 days</span></div>
+    <div id="danielEscalation"><div class="no-data">Loading...</div></div>
+  </div>
+
   <!-- ACTIVITY METRICS -->
   <div class="card">
     <div class="card-title" style="margin-bottom:4px">Activity</div>
@@ -893,13 +910,18 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI'
       </div>
       <div style="text-align:center;padding:16px;background:#FFF3E0;border:0.5px solid #FFE69C;border-radius:10px;cursor:pointer" onclick="switchTab('feed');applyFeedFilters()">
         <div style="font-size:28px;font-weight:600;color:#B85B00" id="hc-notes-weak">0</div>
-        <div style="font-size:11px;color:#888;margin-top:6px">Notes<br>Missing/Weak</div>
+        <div style="font-size:11px;color:#888;margin-top:6px">Notes<br>Missing/Incomplete</div>
       </div>
       <div style="text-align:center;padding:16px;background:#E8F5E9;border:0.5px solid #81C784;border-radius:10px">
         <div style="font-size:28px;font-weight:600;color:#2E7D32" id="hc-good">✓</div>
         <div style="font-size:11px;color:#888;margin-top:6px">Data Quality<br>Score</div>
       </div>
     </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">🚨 Needs Escalation <span class="card-sub">3+ unanswered attempts, 2+ channels, no response in 10 days</span></div>
+    <div id="escalationWatch"><div class="no-data">Loading...</div></div>
   </div>
 
   <div class="card">
@@ -1450,6 +1472,17 @@ document.getElementById("ccNotes").addEventListener("input",function(){
 // Looks at today's already-logged activities for this agent and warns if this
 // would be another contact attempt on top of an existing voicemail / no-answer.
 const VM_OUTCOMES=["Left voicemail","No answer"];
+// Escalation rule: 3+ unanswered attempts, across 2+ different contact methods,
+// within a 10-day window, with no positive contact in that window = flag for
+// escalation to a manager/teammate rather than another call from Amanda.
+const ESCALATION_MIN_ATTEMPTS=3;
+const ESCALATION_WINDOW_DAYS=10;
+function noteChannel(notes){
+  if(/📱/.test(notes||""))return"Text";
+  if(/✉️/.test(notes||""))return"Email";
+  if(/🤝/.test(notes||""))return"In Person";
+  return"Call";
+}
 async function checkDoubleDial(agentName,warnElId){
   const warnEl=document.getElementById(warnElId);
   if(!warnEl)return;
@@ -1757,7 +1790,7 @@ async function loadQuiet(){
 }
 
 function switchTab(name){
-  const tabOrder=["week","log","pipeline","reconnect","feed","history","calendar","contacts"];
+  const tabOrder=["week","log","pipeline","reconnect","feed","history","calendar","contacts","daniel"];
   document.querySelectorAll(".tab").forEach((t,i)=>t.classList.toggle("active",tabOrder[i]===name));
   document.querySelectorAll(".view").forEach(v=>v.classList.remove("active"));
   document.getElementById("view-"+name).classList.add("active");
@@ -1768,6 +1801,7 @@ function switchTab(name){
   if(name==="health")loadHealth();
   if(name==="reconnect")loadReconnect();
   if(name==="feed")loadFeed();
+  if(name==="daniel")loadDaniel();
 }
 
 let periodData={mtd:[],ytd:[]},currentPeriod="mtd";
@@ -3156,6 +3190,47 @@ async function loadHealth(){
     ]);
     
     const noOutcome=rmActs.filter(a=>!a.outcome);
+
+    // ── Needs Escalation Watch ──────────────────────────────────────────
+    const escCutoff=new Date();escCutoff.setDate(escCutoff.getDate()-ESCALATION_WINDOW_DAYS);
+    const escCutoffStr=localDateStr(escCutoff);
+    const recentActs=rmActs.filter(a=>a.act_date>=escCutoffStr).sort((a,b)=>(a.act_date||"").localeCompare(b.act_date||""));
+    const byAgentRecent={};
+    recentActs.forEach(a=>{
+      const n=(a.agent_name||"").trim();
+      if(!n)return;
+      if(!byAgentRecent[n])byAgentRecent[n]=[];
+      byAgentRecent[n].push(a);
+    });
+    const escalations=[];
+    Object.entries(byAgentRecent).forEach(([n,list])=>{
+      const gotThrough=list.some(a=>a.outcome==="Positive"||a.outcome==="Meeting Scheduled");
+      if(gotThrough)return;
+      const unanswered=list.filter(a=>VM_OUTCOMES.indexOf(a.outcome)>=0);
+      const uniqueDays=[...new Set(unanswered.map(a=>a.act_date))];
+      const channelsUsed=[...new Set(unanswered.map(a=>noteChannel(a.notes)))];
+      if(uniqueDays.length>=ESCALATION_MIN_ATTEMPTS&&channelsUsed.length>=2){
+        escalations.push({name:n,attempts:uniqueDays.length,channels:channelsUsed,lastDate:unanswered[unanswered.length-1].act_date});
+      }
+    });
+    const escEl=document.getElementById("escalationWatch");
+    if(escEl){
+      if(!escalations.length){
+        escEl.innerHTML='<div class="no-data" style="padding:16px">No agents currently meet the escalation threshold</div>';
+      }else{
+        escEl.innerHTML=escalations.map(e=>{
+          const safeAgent=e.name.replace(/'/g,"\\'");
+          return'<div style="padding:10px 0;border-bottom:1px solid var(--border-light)">'
+            +'<div style="display:flex;justify-content:space-between;align-items:center">'
+            +'<span style="font-weight:600;font-size:13px;color:var(--text-1)">'+properCase(e.name)+'</span>'
+            +'<span style="font-size:10px;font-weight:700;color:var(--danger)">'+e.attempts+' unanswered attempts</span>'
+            +'</div>'
+            +'<div style="font-size:11px;color:var(--text-3);margin-top:3px">Tried via '+e.channels.join(", ")+' · last attempt '+fmtDate(e.lastDate)+' · no response in '+ESCALATION_WINDOW_DAYS+' days</div>'
+            +'<button class="btn-sm" style="margin-top:6px;font-size:10px;padding:4px 10px" data-agent="'+properCase(e.name).replace(/"/g,"&quot;")+'" onclick="var n=this.getAttribute(\'data-agent\');switchTab(\'history\');document.getElementById(\'historySearch\').value=n;setTimeout(()=>doSearchHistory(n),150)">View history</button>'
+            +'</div>';
+        }).join("");
+      }
+    }
     const todayStr=today();
     const overdueFus=rmActs.filter(a=>a.follow_up_date&&a.follow_up_date<todayStr);
     const missingContact=agents.filter(a=>(!a.phone||!a.phone.trim())&&(!a.email||!a.email.trim()));
@@ -3288,13 +3363,16 @@ async function loadHealth(){
     document.getElementById("hc-good").textContent=healthScore+"%";
     
     let html="";
-    const issueCount=(openIntake?1:0)+noOutcome.length+overdueFus.length+missingContact.length+prospectsMissingContact.length+requiresFuNoDate.length+noteViolations.length+suspiciousRepeats.length+batchDays.length+(untiered.length>0?1:0);
+    const issueCount=(openIntake?1:0)+noOutcome.length+overdueFus.length+missingContact.length+prospectsMissingContact.length+requiresFuNoDate.length+noteViolations.length+suspiciousRepeats.length+batchDays.length+escalations.length+(untiered.length>0?1:0);
     
     if(issueCount===0){
       html='<div style="text-align:center;padding:28px;color:#2E7D32"><div style="font-size:40px;margin-bottom:8px">✓</div><div style="font-size:14px;font-weight:500">All systems healthy!</div></div>';
     }else{
       if(openIntake){
         html+='<div style="background:#FCEBEB;border:1px solid #f7c1c1;border-radius:8px;padding:12px;margin-bottom:10px;cursor:pointer" onclick="switchTab(\'log\')"><div style="font-weight:600;color:#A32D2D;margin-bottom:6px">🔒 Open intake checklist — '+openIntake.agent_name+'</div><div style="font-size:11px;color:#888">Met '+fmtDate(openIntake.act_date)+'. Logging is locked app-wide until this is finished. Tap to resume.</div></div>';
+      }
+      if(escalations.length){
+        html+='<div style="background:#FCEBEB;border:1px solid #f7c1c1;border-radius:8px;padding:12px;margin-bottom:10px;cursor:pointer" onclick="switchTab(\'health\');document.getElementById(\'escalationWatch\').scrollIntoView({behavior:\'smooth\'})"><div style="font-weight:600;color:#A32D2D;margin-bottom:6px">🚨 '+escalations.length+' agent'+(escalations.length!==1?"s":"")+' need escalation</div><div style="font-size:11px;color:#888">3+ unanswered attempts across 2+ channels, no response in '+ESCALATION_WINDOW_DAYS+' days — see Needs Escalation above</div></div>';
       }
       if(noOutcome.length){
         html+='<div style="background:#FCEBEB;border:0.5px solid #f7c1c1;border-radius:8px;padding:12px;margin-bottom:10px"><div style="font-weight:500;color:#A32D2D;margin-bottom:6px">🔴 '+noOutcome.length+' activities missing outcomes</div><div style="font-size:11px;color:#888">Set outcomes for: '+noOutcome.slice(0,3).map(a=>a.agent_name).join(", ")+(noOutcome.length>3?"...":"")+'</div></div>';
@@ -3311,7 +3389,7 @@ async function loadHealth(){
         html+='<div style="background:#FCEBEB;border:0.5px solid #f7c1c1;border-radius:8px;padding:12px;margin-bottom:10px"><div style="font-weight:500;color:#A32D2D;margin-bottom:6px">⚠️ '+requiresFuNoDate.length+' "Requires follow-up" without dates</div><div style="font-size:11px;color:#888">These follow-ups will get lost!</div></div>';
       }
       if(noteViolations.length){
-        html+='<div style="background:#FFF3E0;border:0.5px solid #FFE69C;border-radius:8px;padding:12px;margin-bottom:10px;cursor:pointer" onclick="switchTab(\'feed\')"><div style="font-weight:500;color:#B85B00;margin-bottom:6px">📝 '+noteViolations.length+' activities missing/weak notes</div><div style="font-size:11px;color:#888">Talk-to\'s, CTC, Birthday & Check-ins need 10+ words; Cold Calls need at least a short note. Includes past entries, not just new ones.</div></div>';
+        html+='<div style="background:#FFF3E0;border:0.5px solid #FFE69C;border-radius:8px;padding:12px;margin-bottom:10px;cursor:pointer" onclick="switchTab(\'feed\')"><div style="font-weight:500;color:#B85B00;margin-bottom:6px">📝 '+noteViolations.length+' activities missing/incomplete notes</div><div style="font-size:11px;color:#888">Talk-to\'s, CTC, Birthday & Check-ins need 10+ words; Cold Calls need at least a short note. Includes past entries, not just new ones.</div></div>';
       }
       if(suspiciousRepeats.length){
         html+='<div style="background:#FCEBEB;border:0.5px solid #f7c1c1;border-radius:8px;padding:12px;margin-bottom:10px;cursor:pointer" onclick="switchTab(\'health\');document.getElementById(\'copyPasteWatch\').scrollIntoView({behavior:\'smooth\'})"><div style="font-weight:500;color:#A32D2D;margin-bottom:6px">🔁 '+suspiciousRepeats.length+' repeated/copy-paste-looking cold-call note'+(suspiciousRepeats.length!==1?"s":"")+'</div><div style="font-size:11px;color:#888">Same note text used 3+ times in one day — see Copy-Paste Note Watch above</div></div>';
@@ -3511,7 +3589,104 @@ async function doSearchHistory(name){
 
 let danielPeriodData={week:[],mtd:[],ytd:[]},currentDanielPeriod="week";
 
+async function loadDanielAccountability(){
+  try{
+    const rmActs=await sbFetch("amanda_activities?select=*&limit=1000");
+
+    // ── Missing / incomplete notes — itemized, most recent first, capped ──────
+    const violations=rmActs.filter(a=>!noteMeetsBar(a.act_type,a.notes)).sort((a,b)=>(b.act_date||"").localeCompare(a.act_date||""));
+    const nmEl=document.getElementById("danielNotesMissing");
+    if(nmEl){
+      if(!violations.length){
+        nmEl.innerHTML='<div class="no-data" style="padding:16px">No missing or incomplete notes right now</div>';
+      }else{
+        const shown=violations.slice(0,15);
+        let html='<div style="font-size:11px;color:var(--text-3);margin-bottom:8px">'+violations.length+' total</div>';
+        html+=shown.map(a=>'<div style="padding:7px 0;border-bottom:1px solid var(--border-light);display:flex;justify-content:space-between;align-items:center;font-size:12px">'
+          +'<span><strong>'+properCase(a.agent_name)+'</strong> · '+badgeEmoji(a.act_type)+'</span>'
+          +'<span style="color:var(--text-3)">'+fmtDate(a.act_date)+'</span>'
+          +'</div>').join("");
+        if(violations.length>shown.length)html+='<div style="font-size:11px;color:var(--text-4);margin-top:8px">+'+(violations.length-shown.length)+' more — see Activity Feed</div>';
+        nmEl.innerHTML=html;
+      }
+    }
+
+    // ── Copy-paste note watch ────────────────────────────────────────────
+    const cpGroups={};
+    rmActs.filter(a=>a.act_type==="Cold Calls"&&a.notes).forEach(a=>{
+      const cleaned=stripMethodTag(a.notes).toLowerCase().trim();
+      if(!cleaned)return;
+      const key=a.act_date+"||"+cleaned;
+      if(!cpGroups[key])cpGroups[key]=[];
+      cpGroups[key].push(a);
+    });
+    const suspiciousRepeats=Object.entries(cpGroups).filter(([k,rows])=>rows.length>=3).sort((a,b)=>b[1].length-a[1].length);
+    const cpEl=document.getElementById("danielCopyPaste");
+    if(cpEl){
+      if(!suspiciousRepeats.length){
+        cpEl.innerHTML='<div class="no-data" style="padding:16px">No repeated copy-paste-looking notes found</div>';
+      }else{
+        cpEl.innerHTML=suspiciousRepeats.slice(0,10).map(([key,rows])=>{
+          const[date]=key.split("||");
+          const agents2=rows.map(r=>properCase(r.agent_name)).join(", ");
+          return'<div style="padding:10px 0;border-bottom:1px solid var(--border-light)">'
+            +'<div style="display:flex;justify-content:space-between;align-items:center">'
+            +'<span style="font-size:12px;color:var(--text-1)">"'+stripMethodTag(rows[0].notes)+'"</span>'
+            +'<span style="font-size:10px;font-weight:700;color:var(--danger)">'+rows.length+'x on '+fmtDate(date)+'</span>'
+            +'</div>'
+            +'<div style="font-size:11px;color:var(--text-3);margin-top:3px">Used for: '+agents2+'</div>'
+            +'</div>';
+        }).join("");
+      }
+    }
+
+    // ── Needs escalation ──────────────────────────────────────────────────
+    const escCutoff=new Date();escCutoff.setDate(escCutoff.getDate()-ESCALATION_WINDOW_DAYS);
+    const escCutoffStr=localDateStr(escCutoff);
+    const recentActs=rmActs.filter(a=>a.act_date>=escCutoffStr).sort((a,b)=>(a.act_date||"").localeCompare(b.act_date||""));
+    const byAgentRecent={};
+    recentActs.forEach(a=>{
+      const n=(a.agent_name||"").trim();
+      if(!n)return;
+      if(!byAgentRecent[n])byAgentRecent[n]=[];
+      byAgentRecent[n].push(a);
+    });
+    const escalations=[];
+    Object.entries(byAgentRecent).forEach(([n,list])=>{
+      const gotThrough=list.some(a=>a.outcome==="Positive"||a.outcome==="Meeting Scheduled");
+      if(gotThrough)return;
+      const unanswered=list.filter(a=>VM_OUTCOMES.indexOf(a.outcome)>=0);
+      const uniqueDays=[...new Set(unanswered.map(a=>a.act_date))];
+      const channelsUsed=[...new Set(unanswered.map(a=>noteChannel(a.notes)))];
+      if(uniqueDays.length>=ESCALATION_MIN_ATTEMPTS&&channelsUsed.length>=2){
+        escalations.push({name:n,attempts:uniqueDays.length,channels:channelsUsed,lastDate:unanswered[unanswered.length-1].act_date});
+      }
+    });
+    const escEl=document.getElementById("danielEscalation");
+    if(escEl){
+      if(!escalations.length){
+        escEl.innerHTML='<div class="no-data" style="padding:16px">No agents currently meet the escalation threshold</div>';
+      }else{
+        escEl.innerHTML=escalations.map(e=>{
+          const safeAgent=e.name.replace(/'/g,"\\'");
+          return'<div style="padding:10px 0;border-bottom:1px solid var(--border-light)">'
+            +'<div style="display:flex;justify-content:space-between;align-items:center">'
+            +'<span style="font-weight:600;font-size:13px;color:var(--text-1)">'+properCase(e.name)+'</span>'
+            +'<span style="font-size:10px;font-weight:700;color:var(--danger)">'+e.attempts+' unanswered attempts</span>'
+            +'</div>'
+            +'<div style="font-size:11px;color:var(--text-3);margin-top:3px">Tried via '+e.channels.join(", ")+' · last attempt '+fmtDate(e.lastDate)+' · no response in '+ESCALATION_WINDOW_DAYS+' days</div>'
+            +'<button class="btn-sm" style="margin-top:6px;font-size:10px;padding:4px 10px" data-agent="'+properCase(e.name).replace(/"/g,"&quot;")+'" onclick="var n=this.getAttribute(\'data-agent\');switchTab(\'history\');document.getElementById(\'historySearch\').value=n;setTimeout(()=>doSearchHistory(n),150)">View history</button>'
+            +'</div>';
+        }).join("");
+      }
+    }
+  }catch(e){
+    console.error("loadDanielAccountability error:",e);
+  }
+}
+
 async function loadDaniel(){
+  loadDanielAccountability();
   try{
     const now=new Date();
     const todayStr=today();
