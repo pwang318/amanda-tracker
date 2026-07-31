@@ -3710,6 +3710,10 @@ async function loadDaniel(){
     ]);
 
     danielPeriodData={daily:dailyActs,week:weekActs,mtd:mtdActs,ytd:ytdActs};
+    // Render the period-dependent UI (Today/WTD/MTD/YTD goals + table) immediately,
+    // before any of the sections below that could throw — this guarantees the period
+    // toggle buttons always have real data to show, even if a later section fails.
+    try{ renderDanielPeriod(); renderDanielTable(weekActs); }catch(e){ console.error("renderDanielPeriod/Table error:",e); }
 
     // ── Helper: count by type ─────────────────────────────────────
     const c=(acts,type)=>acts.filter(a=>a.act_type===type).length;
@@ -3741,6 +3745,7 @@ async function loadDaniel(){
     const meetingColor=meetingPct>=100?"var(--success)":meetingPct>=60?"var(--brand)":"var(--danger)";
 
     // ── GROWTH METRICS ────────────────────────────────────────────
+    try{
     const growthMetricRow=(label,daily,wtd,mtd,ytd,goal,goalPeriod)=>{
       const pct=goal?Math.min(100,Math.round((mtd/goal)*100)):null;
       const pctBadge=pct!==null?'<span style="font-size:10px;padding:2px 7px;border-radius:20px;font-weight:600;background:'+(pct>=100?"var(--success-bg)":pct>=60?"var(--brand-light)":"var(--danger-bg)")+';color:'+(pct>=100?"var(--success)":pct>=60?"var(--brand)":"var(--danger)")+'">'+pct+'%</span>':"";
@@ -3770,8 +3775,10 @@ async function loadDaniel(){
       +'On pace for <strong style="color:'+meetingColor+'">'+projectedMeetings+'</strong> new meetings this month '
       +'<span style="color:var(--text-4)">(goal: 20 · 80% pass = 16)</span>'
       +'</div>';
+    }catch(e){ console.error("Growth grid render error:",e); }
 
     // ── RETENTION METRICS ─────────────────────────────────────────
+    try{
     const retentionRow=(label,daily,wtd,mtd,ytd,note)=>{
       return'<div style="display:grid;grid-template-columns:1.6fr 60px 60px 70px 70px 80px;gap:10px;align-items:center;padding:9px 0;border-bottom:1px solid var(--border-light);font-size:13px">'
         +'<div><span style="font-weight:500;color:var(--text-1)">'+label+'</span>'+(note?'<div style="font-size:10px;color:var(--text-4);margin-top:1px">'+note+'</div>':'')+'</div>'
@@ -3811,11 +3818,10 @@ async function loadDaniel(){
           +'<span>YTD: <strong style="color:'+pctColor(compYtd.pct)+'">'+compYtd.pct+'%</strong></span>'
           +'</div></div>';
       })();
-
-    renderDanielPeriod();
-    renderDanielTable(weekActs);
+    }catch(e){ console.error("Retention grid render error:",e); }
 
     // ── TRENDS: Month-over-month ─────────────────────────────────
+    try{
     const prevMonthName=prevMonthStart.toLocaleString("en-US",{month:"long"});
     const thisMonthName=now.toLocaleString("en-US",{month:"long"});
     const momCard=document.getElementById("danielMomCard");
@@ -3849,7 +3855,8 @@ async function loadDaniel(){
         +trendRow("CTC calls",c(prevActs,CTC_TYPE),c(mtdActs,CTC_TYPE),null);
       momCard.style.display="block";
     }
-  }catch(e){console.error("loadDaniel error:",e);}
+    }catch(e){ console.error("Trends render error:",e); }
+  }catch(e){console.error("loadDaniel outer error:",e);}
 
   // ── FOLLOW-UPS ───────────────────────────────────────────────────
   try{
