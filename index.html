@@ -2145,6 +2145,7 @@ async function initAutocomplete(){
     ]);
     agentNames=agents.map(a=>a.agent_name);
     prospectNames=prospects.map(p=>p.agent_name).filter(n=>n);
+    allAgentNames=agentNames; // keep Quick Log (Snapshot tab) in sync without waiting on the Contacts tab
   }catch(e){console.error("Autocomplete init error:",e);}
   const input=document.getElementById("agentInput"),list=document.getElementById("acList");
   input.addEventListener("input",()=>{
@@ -2682,7 +2683,7 @@ function setFeedSource(src){
 
 function quickLogAutoComplete(q){
   const list=document.getElementById("quickLogAcList");
-  if(!q||q.length<2){list.classList.remove("open");return;}
+  if(!q){list.classList.remove("open");return;}
   const matches=(allAgentNames||[]).filter(n=>n.toLowerCase().includes(q.toLowerCase())).slice(0,6);
   if(!matches.length){list.classList.remove("open");return;}
   list.innerHTML=matches.map(n=>'<div class="ac-item" onclick="document.getElementById(\'quickLogAgent\').value=\''+n.replace(/'/g,"\\'")+'\';document.getElementById(\'quickLogAcList\').classList.remove(\'open\');checkDoubleDial(\''+n.replace(/'/g,"\\'")+'\',\'quickLogDoubleDialWarn\')">'+n+'</div>').join("");
