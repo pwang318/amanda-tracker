@@ -484,7 +484,7 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI'
       <div><span class="card-title">Gifting Campaign Follow-Up</span> <span class="card-sub" id="onboardingSub"></span></div>
     </div>
     <div style="background:var(--surface-2);border-radius:var(--radius-sm);padding:9px 12px;margin-bottom:12px;font-size:12px;line-height:1.4;color:var(--text-2)">
-      📌 <strong>Every agent in the gifting campaign needs a call once a week</strong> for their first 4 weeks after the meeting. This isn't optional; it's how the relationship actually takes hold early on.
+      📌 <strong>Every agent in the gifting campaign needs a call once a week</strong> for their first 4 weeks after the meeting. This is one of the most important parts of the role: it's how the relationship actually takes hold early on.
     </div>
     <div id="onboardingList"></div>
   </div>
@@ -1123,7 +1123,7 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI'
     <table style="width:100%;border-collapse:collapse;font-size:12.5px;margin-bottom:16px">
       <tr><td style="padding:5px 8px 5px 0;font-weight:600;white-space:nowrap;vertical-align:top">🌻 New Agent Follow-up <span style="color:var(--brand);font-weight:400">✓ counts as Talk-to</span></td><td style="padding:5px 0;color:var(--text-2)">Checking in and helping a newly met agent get set up on HomeBot, ListReports, and Total Expert, moving them toward that first lead.</td></tr>
       <tr><td style="padding:5px 8px 5px 0;font-weight:600;white-space:nowrap;vertical-align:top">✅ Onboarding checklist</td><td style="padding:5px 0;color:var(--text-2)">The 6 quick tasks (Retained Report, Sa Team email, HomeBot, ListReports, Total Expert, group text). Complete these the same day as the meeting.</td></tr>
-      <tr><td style="padding:5px 8px 5px 0;font-weight:600;white-space:nowrap;vertical-align:top">🎁 Gifting campaign</td><td style="padding:5px 0;color:var(--text-2)">Every agent in this program needs a call once a week for their first 4 weeks. Not optional. Tracked on Snapshot, which follows the Ascend 4-Week Conversion Playbook: break the ice, a value touch, an opportunity call, then accountability follow-up.</td></tr>
+      <tr><td style="padding:5px 8px 5px 0;font-weight:600;white-space:nowrap;vertical-align:top">🎁 Gifting campaign</td><td style="padding:5px 0;color:var(--text-2)">Every agent in this program needs a call once a week for their first 4 weeks. This is one of the most important parts of the role. Tracked on Snapshot, which follows the Ascend 4-Week Conversion Playbook: break the ice, a value touch, an opportunity call, then accountability follow-up.</td></tr>
     </table>
 
     <div style="font-size:12px;font-weight:700;color:var(--brand);text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px">3 · If They Go Quiet: Reconnect 🔁</div>
@@ -2062,9 +2062,10 @@ async function loadOnboarding(){
     if(!meetings||!meetings.length){document.getElementById("onboardingCard").style.display="none";return;}
 
     const normalize=s=>(s||"").toLowerCase().trim().replace(/\s+/g," ").replace(/s{2,}/g,"s");
-    const touchedThisWeek=new Set((recentActs||[]).map(a=>normalize(a.agent_name)));
+    const qualifyingActs=(recentActs||[]).filter(a=>TALKTO_TYPES.indexOf(a.act_type)>=0&&countWords(a.notes)>=MIN_NOTE_WORDS);
+    const touchedThisWeek=new Set(qualifyingActs.map(a=>normalize(a.agent_name)));
     const recentActMap={};
-    (recentActs||[]).forEach(a=>{const k=normalize(a.agent_name);if(!recentActMap[k])recentActMap[k]=a;});
+    qualifyingActs.forEach(a=>{const k=normalize(a.agent_name);if(!recentActMap[k])recentActMap[k]=a;});
 
     const agentMap={};
     meetings.forEach(m=>{
@@ -2108,17 +2109,25 @@ async function loadOnboarding(){
       let dueLabel,dueColor;
       if(isDone){dueLabel="✓ Done this week";dueColor="var(--success)";}
       else if(isOverdue){dueLabel="Overdue";dueColor="var(--danger)";}
-      else if(isDueSoon){dueLabel="Due soon";dueColor="var(--warning)";}
-      else{dueLabel="Due "+nextMon.toLocaleDateString("en-US",{month:"short",day:"numeric"});dueColor="var(--text-3)";}
+      else if(isDueSoon){dueLabel="Due soon";dueColor="var(--danger)";}
+      else{dueLabel="Due "+nextMon.toLocaleDateString("en-US",{month:"short",day:"numeric"});dueColor="var(--danger)";}
 
       const safeAgent=name.replace(/'/g,"\'");
       const doneAct=isDone?recentActMap[key]:null;
+      const noteId="gift-note-"+key.replace(/[^a-z0-9]/g,"");
+      const btnId="gift-notebtn-"+key.replace(/[^a-z0-9]/g,"");
+      const fullNote=doneAct&&doneAct.notes?doneAct.notes:"";
+      const isLongNote=fullNote.length>80;
+      const shortNote=isLongNote?fullNote.substring(0,80)+"...":fullNote;
       html+='<div style="display:flex;align-items:flex-start;justify-content:space-between;padding:11px 0;border-bottom:1px solid var(--border-light);gap:12px;opacity:'+(isDone?".6":"1")+'">'
         +'<div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:600;color:var(--text-1)">'+properCase(name)
         +' <span style="display:inline-block;padding:2px 8px;border-radius:20px;font-size:10px;font-weight:700;background:'+bg+';color:'+color+'">Week '+weekNum+' of 4</span></div>'
         +'<div style="font-size:11px;color:var(--text-3);margin-top:2px">Met '+fmtDate(metDate)+'</div>'
         +(!isDone?'<div style="font-size:12px;color:var(--text-2);margin-top:4px;font-style:italic;line-height:1.4">'+task+'</div>':"")
-        +(isDone&&doneAct?'<div style="font-size:11px;color:var(--text-3);margin-top:4px">'+fmtDate(doneAct.act_date)+' · '+(doneAct.act_type||'')+(doneAct.notes?' — <em style="color:var(--text-2)">"'+(doneAct.notes.length>80?doneAct.notes.substring(0,80)+'...':doneAct.notes)+'"</em>':'')+'</div>':"")
+        +(isDone&&doneAct?'<div style="font-size:11px;color:var(--text-3);margin-top:4px">'+fmtDate(doneAct.act_date)+' · '+(doneAct.act_type||'')
+          +(fullNote?' — <em style="color:var(--text-2)" id="'+noteId+'">"'+shortNote+'"</em>'
+            +(isLongNote?'<span id="'+btnId+'" onclick="toggleFlagNote(\''+noteId+'\',\''+btnId+'\',\''+fullNote.replace(/'/g,"\\'").replace(/\n/g," ")+'\',\''+shortNote.replace(/'/g,"\\'")+'\',\'1\')" style="color:var(--brand);cursor:pointer;font-size:10px;margin-left:5px;font-weight:600">See more</span>':'')
+          :' — <span style="color:var(--danger)">no note on this entry</span>')+'</div>':"")
         +'</div><div style="text-align:right;flex-shrink:0">'
         +'<div style="font-size:11px;font-weight:600;color:'+dueColor+';margin-bottom:6px">'+dueLabel+'</div>'
         +(!isDone?'<button onclick="document.getElementById(\'agentInput\').value=\''+safeAgent+'\';document.getElementById(\'activityType\').value=\'Active Agent Talk-to\';switchTab(\'log\')" style="padding:5px 12px;background:var(--brand);color:#fff;border:none;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit">Log check-in</button>'
