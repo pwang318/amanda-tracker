@@ -2337,8 +2337,8 @@ async function loadFollowups(){
           '</div>'+
         '</div>'+
         '<div id="fu-handled-'+f.id+'" class="fu-inline-log">'+
-          '<div style="font-size:11px;font-weight:600;color:#2E7D32;margin-bottom:8px">Mark as handled — add a note (optional)</div>'+
-          '<textarea id="fu-handled-notes-'+f.id+'" placeholder="e.g. Called, going to re-engage in 60 days..." rows="2"></textarea>'+
+          '<div style="font-size:11px;font-weight:600;color:#2E7D32;margin-bottom:8px">Mark as handled — note required (min '+MIN_NOTE_WORDS+' words)</div>'+
+          '<textarea id="fu-handled-notes-'+f.id+'" placeholder="What happened — e.g. Called, discussed X, going to re-engage in 60 days because..." rows="2"></textarea>'+
           '<div style="display:flex;gap:8px">'+
           '<button class="btn-sm" style="background:#2E7D32;color:#fff;border:none;border-radius:6px;padding:6px 12px;cursor:pointer;font-family:inherit;font-size:12px" onclick="confirmMarkHandled('+f.id+',\''+f.agent_name.replace(/'/g,"\\'")+'\')">Confirm handled</button>'+
           '<button class="btn-sm" onclick="document.getElementById(\'fu-handled-'+f.id+'\').classList.remove(\'show\')" style="font-size:11px">Cancel</button>'+
@@ -2404,21 +2404,18 @@ async function saveInlineLog(id,agentName,origDate){
 // ── FEATURE 5: Mark as handled with optional note ─────────────────────────────
 async function confirmMarkHandled(id,agentName){
   const note=document.getElementById("fu-handled-notes-"+id).value.trim()||null;
+  if(countWords(note)<MIN_NOTE_WORDS){toast("Add a note before clearing this — minimum "+MIN_NOTE_WORDS+" words.","error");return;}
   try{
-    const patchPayload={follow_up_date:null,edited_at:new Date().toISOString()};
-    if(note){patchPayload.notes=note;}
+    const patchPayload={follow_up_date:null,edited_at:new Date().toISOString(),notes:note};
     await sbFetch("amanda_activities?id=eq."+id,{method:"PATCH",prefer:"return=minimal",body:JSON.stringify(patchPayload)});
     toast(agentName+" marked as handled ✓","success");
     loadFollowups();loadWeek();loadFeed();loadHealth();
   }catch(e){toast("Failed: "+e.message,"error");}
 }
-// Keep old markFollowupHandled as direct no-note path (for Health Check clickthrough if ever needed)
+// Old no-note path — now blocked. Kept only so nothing breaks if it's still referenced somewhere;
+// wire "Mark as handled" buttons to confirmMarkHandled instead, which enforces the note requirement.
 async function markFollowupHandled(id,agentName){
-  try{
-    await sbFetch("amanda_activities?id=eq."+id,{method:"PATCH",prefer:"return=minimal",body:JSON.stringify({follow_up_date:null,edited_at:new Date().toISOString()})});
-    toast(agentName+" marked as handled ✓","success");
-    loadFollowups();loadWeek();loadFeed();loadHealth();
-  }catch(e){toast("Failed: "+e.message,"error");}
+  toast("A note is required to mark this handled — use the Mark as handled panel.","error");
 }
 
 // ── FEATURE 4: Birthday alerts on My Week ────────────────────────────────────
