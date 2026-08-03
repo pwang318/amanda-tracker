@@ -565,6 +565,8 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI'
             <option value="">Select outcome...</option>
             <option>Positive</option>
             <option>Meeting Scheduled</option>
+            <option>No answer</option>
+            <option>Left voicemail</option>
             <option>Requires follow-up</option>
             <option>Needs Escalation</option>
             <option>Remove / No Further Contact</option>
@@ -820,16 +822,29 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI'
     </div>
     <div style="display:flex;gap:8px">
       <button onclick="exportToCSV()" style="padding:8px 16px;background:var(--surface-2);color:var(--text-1);border:1px solid var(--border);border-radius:var(--radius-sm);font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap">⬇️ Export CSV</button>
+      <button onclick="generateDailyCheckin()" style="padding:8px 16px;background:var(--surface-2);color:var(--text-1);border:1px solid var(--border);border-radius:var(--radius-sm);font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap">📋 Copy daily check-in</button>
       <button onclick="generateWeeklySummary()" style="padding:8px 16px;background:var(--brand);color:#fff;border:none;border-radius:var(--radius-sm);font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap">Copy summary</button>
     </div>
   </div>
   <pre id="danielSummaryOut" style="display:none;background:var(--surface-2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:14px;font-size:11px;font-family:monospace;white-space:pre-wrap;margin-bottom:14px;color:var(--text-1);line-height:1.6"></pre>
+
+  <!-- ACQUISITION FUNNEL -->
+  <div class="card">
+    <div class="card-title">🎯 Realtor Acquisition Funnel <span class="card-sub">Cold Calls → Meeting Scheduled → Meeting Held → Still Retained, last 90 days</span></div>
+    <div id="danielFunnel"><div class="no-data">Loading...</div></div>
+  </div>
 
   <!-- GROWTH METRICS -->
   <div class="card">
     <div class="card-title" style="margin-bottom:4px">Growth</div>
     <div style="font-size:11px;color:var(--text-3);margin-bottom:16px">New agents added and meetings held</div>
     <div id="danielGrowthGrid"></div>
+  </div>
+
+  <!-- COLD CALL CONNECT RATE -->
+  <div class="card">
+    <div class="card-title">📶 Cold Call Connect Rate <span class="card-sub">% of dials that reach a live conversation, MTD</span></div>
+    <div id="danielConnectRate"><div class="no-data">Loading...</div></div>
   </div>
 
   <!-- RETENTION METRICS -->
@@ -847,7 +862,7 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI'
 
   <!-- NOTES ACCOUNTABILITY -->
   <div class="card">
-    <div class="card-title">📝 Missing / Incomplete Notes <span class="card-sub">Talk-to, CTC, Birthday, Check-in need 10+ words · Cold Calls need any note</span></div>
+    <div class="card-title">📝 Missing / Incomplete Notes <span class="card-sub">Talk-to, CTC, Birthday, Check-in need 10+ words · Cold Calls excluded for now (old backlog)</span></div>
     <div id="danielNotesMissing"><div class="no-data">Loading...</div></div>
   </div>
 
@@ -2168,6 +2183,16 @@ async function loadWeek(){
       html+=renderGoalBar(g.label,count,g.weekly,(count/g.weekly)*100,g.type);
     });
     html+=renderCtcRow(weekActs.filter(a=>a.act_type===CTC_TYPE).length,"this week");
+    try{
+      const coldCallsWk=weekActs.filter(a=>a.act_type==="Cold Calls");
+      const withOutcomeWk=coldCallsWk.filter(a=>a.outcome);
+      const connectsWk=withOutcomeWk.filter(a=>["No answer","Left voicemail"].indexOf(a.outcome)<0);
+      if(withOutcomeWk.length>0){
+        const cpct=Math.round((connectsWk.length/withOutcomeWk.length)*100);
+        const ccolor=cpct>=25?"#1F6B45":cpct>=10?"#9A6A12":"#9B3B3B";
+        html+='<div style="margin-top:10px;padding:8px 10px;background:var(--surface-2,#f7f5f0);border-radius:8px;font-size:11px;color:#666">📶 Cold call connect rate this week: <strong style="color:'+ccolor+'">'+cpct+'%</strong> ('+connectsWk.length+' of '+withOutcomeWk.length+' dials reached a live conversation)</div>';
+      }
+    }catch(e){}
     document.getElementById("weekGoalBars").innerHTML=html;
     renderPeriodScorecard();
     loadBirthdayAlerts();
@@ -2677,6 +2702,63 @@ async function generateWeeklySummary(){
       toast("Summary ready below — select all and copy","success");
     });
   }catch(e){toast("Summary failed: "+e.message,"error");}
+}
+
+async function generateDailyCheckin(){
+  try{
+    const now=new Date();
+    const monthStart=now.getFullYear()+"-"+String(now.getMonth()+1).padStart(2,"0")+"-01";
+    const todayStr=today();
+    const cutoff30=new Date();cutoff30.setDate(cutoff30.getDate()-30);
+    const[dayActs,mtdActsCk,escToday,flaggedOpen,rcDue]=await Promise.all([
+      sbFetch("amanda_activities?select=act_type,agent_name,outcome,notes&act_date=eq."+todayStr),
+      sbFetch("amanda_activities?select=act_type&act_date=gte."+monthStart),
+      sbFetch("amanda_activities?select=agent_name,act_type,notes&outcome=eq.Needs Escalation&act_date=eq."+todayStr).catch(()=>[]),
+      sbFetch("call_logs?select=agent_name,lp,note&flag_rm=eq.true&limit=20").catch(()=>[]),
+      sbFetch("amanda_activities?select=agent_name,act_date&act_type=eq.New Realtor Meeting&act_date=gte."+localDateStr(cutoff30)+"&order=act_date.desc").catch(()=>[])
+    ]);
+    const cCounts={};
+    dayActs.forEach(a=>{cCounts[a.act_type]=(cCounts[a.act_type]||0)+1;});
+    const talkToToday=cntTalkTo(dayActs);
+    const coldCallsToday=dayActs.filter(a=>a.act_type==="Cold Calls");
+    const connectsToday=coldCallsToday.filter(a=>a.outcome&&["No answer","Left voicemail"].indexOf(a.outcome)<0);
+    const connectPctToday=coldCallsToday.filter(a=>a.outcome).length?Math.round((connectsToday.length/coldCallsToday.filter(a=>a.outcome).length)*100):null;
+
+    const lines=[
+      "📋 Daily Check-in — "+new Date().toLocaleDateString("en-US",{weekday:"long",month:"long",day:"numeric",year:"numeric"}),
+      "══════════════════════════════════",
+      "",
+      "TODAY'S NUMBERS",
+      "   Cold Calls: "+coldCallsToday.length+" / 25"+(connectPctToday!==null?" ("+connectPctToday+"% connected)":""),
+      "   Talk-to's: "+talkToToday+" / 20",
+      "   New Realtor Meeting: "+(cCounts["New Realtor Meeting"]||0)+" / 1",
+      "   Break Breads: "+(cCounts["Break Breads"]||0)+" / 1",
+      "   Buddy Asks: "+(cCounts["Realtor Buddy Referral Ask"]||0)+" / 1",
+      "",
+      "WIN",
+      "   [fill in — one thing that went well today]",
+      "",
+      "FLAGGED",
+      ...(escToday.length?escToday.map(f=>"   ⚠️ "+f.agent_name+" ("+f.act_type+"): "+(f.notes||"")):["   None logged today"]),
+      ...(flaggedOpen.length?["   🚩 "+flaggedOpen.length+" open LP flag"+(flaggedOpen.length!==1?"s":"")+" awaiting response"]:[]),
+      "",
+      "GIFTING CAMPAIGN",
+      "   "+(rcDue.length?rcDue.length+" agent(s) currently in their first 4 weeks — check Snapshot for who's due":"No agents currently in the 4-week window"),
+      "",
+      "TOMORROW'S FOCUS",
+      "   [fill in — one priority, not five]",
+      "",
+      "Generated "+new Date().toLocaleTimeString("en-US",{hour:"numeric",minute:"2-digit"})
+    ];
+    const summary=lines.join("\n");
+    navigator.clipboard.writeText(summary).then(()=>{
+      toast("Daily check-in copied — paste into email ✓","success");
+    }).catch(()=>{
+      const el=document.getElementById("danielSummaryOut");
+      if(el){el.style.display="block";el.textContent=summary;}
+      toast("Check-in ready below — select all and copy","success");
+    });
+  }catch(e){toast("Daily check-in failed: "+e.message,"error");}
 }
 
 
@@ -3743,7 +3825,7 @@ async function loadDanielAccountability(){
     const rmActs=await sbFetch("amanda_activities?select=*&limit=1000");
 
     // ── Missing / incomplete notes — itemized, most recent first, capped ──────
-    const violations=rmActs.filter(a=>!noteMeetsBar(a.act_type,a.notes)).sort((a,b)=>(b.act_date||"").localeCompare(a.act_date||""));
+    const violations=rmActs.filter(a=>a.act_type!=="Cold Calls"&&!noteMeetsBar(a.act_type,a.notes)).sort((a,b)=>(b.act_date||"").localeCompare(a.act_date||""));
     const nmEl=document.getElementById("danielNotesMissing");
     if(nmEl){
       if(!violations.length){
@@ -3869,8 +3951,10 @@ async function loadDaniel(){
 
     const escFlagCutoff=new Date();escFlagCutoff.setDate(escFlagCutoff.getDate()-30);
     const escFlagCutoffStr=localDateStr(escFlagCutoff);
+    const funnelCutoff=new Date();funnelCutoff.setDate(funnelCutoff.getDate()-90);
+    const funnelCutoffStr=localDateStr(funnelCutoff);
 
-    const[dailyActs,weekActs,mtdActs,ytdActs,prevActs,aTierAgents,rcContacted,allAgents,allActs,feedbackFlags,closesMtd,flagResponses]=await Promise.all([
+    const[dailyActs,weekActs,mtdActs,ytdActs,prevActs,aTierAgents,rcContacted,allAgents,allActs,feedbackFlags,closesMtd,flagResponses,rcAllAgents,funnelCohortActs]=await Promise.all([
       sbFetch("amanda_activities?select=act_type,agent_name,act_date,outcome,notes&act_date=eq."+todayStr),
       sbFetch("amanda_activities?select=*&act_date=gte."+week.start+"&act_date=lte."+week.end+"&order=act_date.desc"),
       sbFetch("amanda_activities?select=act_type,agent_name,act_date,outcome,notes&act_date=gte."+monthStart),
@@ -3882,7 +3966,9 @@ async function loadDaniel(){
       sbFetch("amanda_activities?select=agent_name,act_date&order=act_date.desc&limit=2000").catch(()=>[]),
       sbFetch("amanda_activities?select=agent_name,act_type,act_date,notes&outcome=eq.Needs Escalation&act_date=gte."+escFlagCutoffStr+"&order=act_date.desc&limit=50").catch(()=>[]),
       sbFetch("call_logs?select=agent_name,call_date,outcome&outcome=ilike.*close*&call_date=gte."+monthStart+"&limit=500").catch(()=>[]),
-      sbFetch("call_logs?select=call_date,rm_note_at&rm_note_at=not.is.null&call_date=gte."+escFlagCutoffStr+"&limit=200").catch(()=>[])
+      sbFetch("call_logs?select=call_date,rm_note_at&rm_note_at=not.is.null&call_date=gte."+escFlagCutoffStr+"&limit=200").catch(()=>[]),
+      sbFetch(RC_TABLE+"?select=agent_name,status&status=neq.removed&limit=1000").catch(()=>[]),
+      sbFetch("amanda_activities?select=act_type,agent_name,act_date,outcome&act_date=gte."+funnelCutoffStr+"&act_type=in.(\"Cold Calls\",\"New Realtor Meeting\")&limit=3000").catch(()=>[])
     ]);
 
     danielPeriodData={daily:dailyActs,week:weekActs,mtd:mtdActs,ytd:ytdActs};
@@ -3894,6 +3980,57 @@ async function loadDaniel(){
     // ── Helper: count by type ─────────────────────────────────────
     const c=(acts,type)=>acts.filter(a=>a.act_type===type).length;
     const uniq=(acts)=>new Set(acts.map(a=>(a.agent_name||"").toLowerCase().trim()).filter(Boolean)).size;
+
+    // ── ACQUISITION FUNNEL: Cold Calls → Meeting Scheduled → Meeting Held → Retained (last 90 days) ──
+    try{
+      const normalizeF=s=>(s||"").toLowerCase().trim();
+      const coldCallsF=(funnelCohortActs||[]).filter(a=>a.act_type==="Cold Calls");
+      const meetingsScheduled=coldCallsF.filter(a=>a.outcome==="Meeting Scheduled");
+      const meetingsHeld=(funnelCohortActs||[]).filter(a=>a.act_type==="New Realtor Meeting");
+      const churnedNames=new Set((rcAllAgents||[]).map(a=>normalizeF(a.agent_name)).filter(Boolean));
+      const heldNames=new Set(meetingsHeld.map(a=>normalizeF(a.agent_name)).filter(Boolean));
+      const retainedCount=[...heldNames].filter(n=>!churnedNames.has(n)).length;
+      const totalDials=coldCallsF.length;
+      const stages=[
+        {label:"Cold Calls",count:totalDials,pct:100},
+        {label:"Meeting Scheduled",count:meetingsScheduled.length,pct:totalDials?Math.round(meetingsScheduled.length/totalDials*100):0},
+        {label:"Meeting Held",count:meetingsHeld.length,pct:totalDials?Math.round(meetingsHeld.length/totalDials*100):0},
+        {label:"Still Retained",count:retainedCount,pct:totalDials?Math.round(retainedCount/totalDials*100):0}
+      ];
+      let funnelHtml='<div style="font-size:11px;color:var(--text-3);margin-bottom:10px">Last 90 days — long enough for a new relationship to have actually succeeded or fallen off</div>';
+      funnelHtml+='<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px">';
+      stages.forEach((s,i)=>{
+        const barColor=i===0?"#8899AA":i===1?"#5B8DB8":i===2?"#4A9B6E":"#2E7D32";
+        funnelHtml+='<div style="flex:1;min-width:110px;text-align:center;background:var(--surface-2);border-radius:8px;padding:12px 8px">'
+          +'<div style="font-size:22px;font-weight:700;color:'+barColor+'">'+s.count+'</div>'
+          +'<div style="font-size:10px;color:var(--text-3);margin-top:2px;text-transform:uppercase;letter-spacing:.3px">'+s.label+'</div>'
+          +(i>0?'<div style="font-size:10px;color:var(--text-3);margin-top:2px">'+s.pct+'% of dials</div>':'')
+          +'</div>';
+        if(i<stages.length-1)funnelHtml+='<div style="display:flex;align-items:center;color:var(--text-3);font-size:16px">&rarr;</div>';
+      });
+      funnelHtml+='</div>';
+      funnelHtml+='<div style="font-size:11px;color:var(--text-3)">"Still Retained" = agents from a held meeting who have NOT fallen onto the Reconnect list (i.e. still sending business). This is the number that matters most; a meeting that doesn\'t turn into a lasting relationship isn\'t really a win yet. Note: this isn\'t a strict cohort match (a meeting this window may have come from a dial before it), so read it as a directional funnel, not exact attribution.</div>';
+      document.getElementById("danielFunnel").innerHTML=funnelHtml;
+    }catch(e){console.error("Funnel error:",e);document.getElementById("danielFunnel").innerHTML='<div class="no-data">Unable to load.</div>';}
+
+    // ── COLD CALL CONNECT RATE: % of dials that reach a live conversation ──
+    try{
+      const coldCallsMtd=mtdActs.filter(a=>a.act_type==="Cold Calls");
+      const nonConnectOutcomes=["No answer","Left voicemail"];
+      const withOutcome=coldCallsMtd.filter(a=>a.outcome);
+      const connects=withOutcome.filter(a=>nonConnectOutcomes.indexOf(a.outcome)<0);
+      const noOutcomeLogged=coldCallsMtd.length-withOutcome.length;
+      const connectPct=withOutcome.length?Math.round((connects.length/withOutcome.length)*100):0;
+      const crColor=connectPct>=25?"var(--success)":connectPct>=10?"var(--warning)":"var(--danger)";
+      document.getElementById("danielConnectRate").innerHTML=
+        '<div style="display:flex;gap:24px;flex-wrap:wrap;margin-bottom:8px">'
+        +'<div><div style="font-size:24px;font-weight:700;color:'+crColor+'">'+connectPct+'%</div><div style="font-size:11px;color:var(--text-3)">connect rate</div></div>'
+        +'<div><div style="font-size:24px;font-weight:700;color:var(--text-1)">'+connects.length+'</div><div style="font-size:11px;color:var(--text-3)">live conversations MTD</div></div>'
+        +'<div><div style="font-size:24px;font-weight:700;color:var(--text-1)">'+coldCallsMtd.length+'</div><div style="font-size:11px;color:var(--text-3)">total dials MTD</div></div>'
+        +'</div>'
+        +(noOutcomeLogged>0?'<div style="font-size:11px;color:var(--text-3)">'+noOutcomeLogged+' call'+(noOutcomeLogged!==1?"s":"")+' logged with no outcome selected — excluded from this rate.</div>':'')
+        +'<div style="font-size:11px;color:var(--text-3);margin-top:4px">A low rate is normal for cold outreach — most dials won\'t connect. If it stays under 10-15%, it\'s usually a list-quality issue (stale numbers, already-contacted agents), not a sign she should be calling less.</div>';
+    }catch(e){console.error("Connect rate error:",e);document.getElementById("danielConnectRate").innerHTML='<div class="no-data">Unable to load.</div>';}
 
     // ── PRODUCTION SIGNAL: agents touched this month vs agents who closed ──
     try{
