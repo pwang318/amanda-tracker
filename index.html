@@ -10,34 +10,34 @@
 <style>
 /* ── DESIGN TOKENS ─────────────────────────────────────────────── */
 :root{
-  --bg:#F5F2EC;
-  --surface:#FDFCF9;
-  --surface-2:#EDE9E0;
-  --border:#D9D3C7;
-  --border-light:#E8E4DA;
-  --brand:#6B8F71;
-  --brand-dark:#4A6B50;
-  --brand-light:#E8F0E9;
-  --brand-mid:#8AAD90;
-  --text-1:#2C2C28;
-  --text-2:#5C5A52;
-  --text-3:#9C9A90;
-  --text-4:#C4C2B8;
-  --success:#5A8A5E;
-  --success-bg:#EBF3EC;
-  --warning:#B87333;
-  --warning-bg:#F7EDE0;
+  --bg:#FFFBF5;
+  --surface:#FFFFFF;
+  --surface-2:#FEF3C7;
+  --border:#FDE68A;
+  --border-light:#FEF0C0;
+  --brand:#D97706;
+  --brand-dark:#92400E;
+  --brand-light:#FEF3C7;
+  --brand-mid:#F59E0B;
+  --text-1:#2C2010;
+  --text-2:#5C4A2A;
+  --text-3:#9C8060;
+  --text-4:#C4A882;
+  --success:#16A34A;
+  --success-bg:#DCFCE7;
+  --warning:#B45309;
+  --warning-bg:#FEF3C7;
   --danger:#A85450;
   --danger-bg:#F5EAEA;
   --border-danger:#D9B5B3;
   --rose:#C4748A;
-  --accent:#6B8F71;
+  --accent:#D97706;
   --radius-sm:8px;
   --radius:12px;
   --radius-lg:16px;
-  --shadow-sm:0 1px 4px rgba(60,70,50,.06);
-  --shadow:0 2px 12px rgba(60,70,50,.09);
-  --shadow-lg:0 8px 32px rgba(60,70,50,.13);
+  --shadow-sm:0 1px 4px rgba(120,80,20,.06);
+  --shadow:0 2px 12px rgba(120,80,20,.09);
+  --shadow-lg:0 8px 32px rgba(120,80,20,.13);
 }
 
 /* ── RESET ─────────────────────────────────────────────────────── */
@@ -45,7 +45,7 @@
 body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--text-1);min-height:100vh;-webkit-font-smoothing:antialiased}
 
 /* ── HEADER ────────────────────────────────────────────────────── */
-.header{background:linear-gradient(135deg,#3D5442 0%,#5A7A60 100%);padding:14px 24px;display:flex;justify-content:space-between;align-items:center;box-shadow:0 2px 12px rgba(40,60,40,.25)}
+.header{background:linear-gradient(135deg,#92400E 0%,#D97706 100%);padding:14px 24px;display:flex;justify-content:space-between;align-items:center;box-shadow:0 2px 12px rgba(120,60,10,.25)}
 .brand-wrap{display:flex;align-items:center;gap:10px}
 .brand-chip{background:rgba(255,255,255,.18);color:#fff;font-size:11px;font-weight:600;padding:4px 12px;border-radius:20px;letter-spacing:.8px;backdrop-filter:blur(4px)}
 .brand-sub{color:rgba(255,255,255,.4);font-size:12px;letter-spacing:.2px}
@@ -243,7 +243,7 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI'
 .btn-sm.danger:hover{background:var(--danger-bg)}
 
 /* ── TOAST ─────────────────────────────────────────────────────── */
-.toast{position:fixed;bottom:28px;left:50%;transform:translateX(-50%) translateY(8px);background:#3D5442;color:#fff;padding:11px 22px;border-radius:var(--radius);font-size:13px;z-index:999;opacity:0;transition:all .3s cubic-bezier(.4,0,.2,1);pointer-events:none;max-width:420px;box-shadow:var(--shadow-lg);font-weight:500}
+.toast{position:fixed;bottom:28px;left:50%;transform:translateX(-50%) translateY(8px);background:#92400E;color:#fff;padding:11px 22px;border-radius:var(--radius);font-size:13px;z-index:999;opacity:0;transition:all .3s cubic-bezier(.4,0,.2,1);pointer-events:none;max-width:420px;box-shadow:var(--shadow-lg);font-weight:500}
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 .toast.success{background:#0A6B4C}
 .toast.error{background:#8B1F1F}
@@ -359,15 +359,15 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI'
   <div class="tab" onclick="switchTab('history')">Agent History</div>
   <div class="tab" onclick="switchTab('calendar')">Calendar</div>
   <div class="tab" onclick="switchTab('contacts')">Contacts</div>
-  <div class="tab" onclick="switchTab('daniel')">Daniel's View</div>
+  <div class="tab" onclick="switchTab('daniel')">Management View</div>
 </div>
 
 <div id="globalLockBanner" style="display:none"></div>
 
 <div id="view-week" class="view active">
   <!-- START HERE -->
-  <div class="card" style="background:linear-gradient(135deg,#F5F0E6,#EFE9DA);border:1px solid #E0D5C0">
-    <div class="card-title">Start Here</div>
+  <div class="card" style="background:linear-gradient(135deg,#FEF3C7,#FDE68A);border:1px solid #FCD34D">
+    <div class="card-title" style="font-size:15px">Start Here</div>
     <div id="startHereCard"><div class="no-data">Loading...</div></div>
   </div>
 
@@ -424,9 +424,10 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI'
         <select id="quickLogType" style="border:1px solid var(--border);border-radius:var(--radius-sm);padding:9px 11px;font-size:12px;font-family:inherit;color:var(--text-1);outline:none;background:var(--surface)">
           <option value="Agent Talk-to">Talk-to (text/call)</option>
           <option value="Reconnect Outreach">Reconnect outreach</option>
-          <option value="Birthday Outreach">Birthday outreach</option>
           <option value="CTC Call">CTC call</option>
-          
+          <option value="Under Contract Call">Under contract call</option>
+          <option value="Break Breads">Break bread</option>
+          <option value="Birthday Outreach">Birthday outreach</option>
           <option value="Market Update">Market update</option>
           <option value="Holiday Outreach">Holiday outreach</option>
           <option value="Agent Appreciation">Appreciation</option>
@@ -435,13 +436,14 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI'
           <option value="Call">Call</option>
           <option value="Text">Text</option>
           <option value="Email">Email</option>
+          <option value="In Person">In person</option>
         </select>
         <select id="quickLogOutcome" style="border:1px solid var(--border);border-radius:var(--radius-sm);padding:9px 11px;font-size:12px;font-family:inherit;color:var(--text-1);outline:none;background:var(--surface)">
           <option value="">Select outcome...</option>
           <option value="Positive">Positive</option>
           <option value="No answer">No answer</option>
           <option value="Requires follow-up">Requires follow-up</option>
-          <option value="Needs Escalation">Needs Escalation</option>
+          <option value="Needs manager attention">Needs manager attention</option>
           <option value="Left voicemail">Left voicemail</option>
         </select>
         <button onclick="quickLogSave()" style="padding:9px 18px;background:var(--brand);color:#fff;border:none;border-radius:var(--radius-sm);font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap">Log it</button>
@@ -474,6 +476,7 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI'
           <option value="Positive">Talked — Positive</option>
           <option value="Meeting Scheduled">Meeting scheduled!</option>
           <option value="Requires follow-up">Requires follow-up</option>
+          <option value="Needs manager attention">Needs manager attention</option>
           <option value="Remove / No Further Contact">Remove — not interested</option>
         </select>
         <button onclick="ccSave()" style="padding:9px 18px;background:var(--brand);color:#fff;border:none;border-radius:var(--radius-sm);font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap">Log call</button>
@@ -495,7 +498,7 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI'
       <div><span class="card-title">Gifting Campaign Follow-Up</span> <span class="card-sub" id="onboardingSub"></span></div>
     </div>
     <div style="background:var(--surface-2);border-radius:var(--radius-sm);padding:9px 12px;margin-bottom:12px;font-size:12px;line-height:1.4;color:var(--text-2)">
-      <strong>Every agent in the gifting campaign needs a call once a week</strong> for their first 4 weeks after the meeting. This is one of the most important parts of the role: it's how the relationship actually takes hold early on.
+      <strong>Every agent in the gifting campaign needs a call once a week</strong> for their first 4 weeks after the meeting. Use the week-by-week scripts in the Scripts guide.
     </div>
     <div id="onboardingList"></div>
   </div>
@@ -506,7 +509,7 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI'
       <div><span class="card-title">Break Bread Due List</span> <span class="card-sub" id="breadSub"></span></div>
     </div>
     <div style="background:var(--surface-2);border-radius:var(--radius-sm);padding:9px 12px;margin-bottom:12px;font-size:12px;line-height:1.4;color:var(--text-2)">
-      This combines your Break Bread logs with anything the LPs have logged too, so it's one real answer for who's actually due. A useful way to decide who's next.
+      This combines your Break Bread logs with anything the LPs have logged, so it is one accurate picture. Sorted by who needs it most — start at the top.
     </div>
     <div id="breadDueList"><div class="no-data">Loading...</div></div>
   </div>
@@ -525,7 +528,7 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI'
       <div id="weekFlagged"></div>
     </div>
     <div class="card">
-      <div class="card-title" style="margin-bottom:12px">At Risk — Need a Touch <span class="card-sub" id="quietSub"></span></div>
+      <div class="card-title" style="margin-bottom:12px">At Risk — Need a Touch <span class="card-sub">retained agents not touched in 21+ days</span></div>
       <div id="weekQuiet"><div class="no-data" style="padding:16px">Loading...</div></div>
     </div>
   </div>
@@ -535,7 +538,7 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI'
   <div id="logErrorBanner"></div>
 
   <div id="logLockedCard" class="log-locked-card" style="display:none">
-    <div class="log-locked-title">One more thing to wrap up</div>
+    <div class="log-locked-title">New Realtor Meeting logged</div>
     <div class="log-locked-sub" id="logLockedSub"></div>
   </div>
 
@@ -591,7 +594,7 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI'
             <option>No answer</option>
             <option>Left voicemail</option>
             <option>Requires follow-up</option>
-            <option>Needs Escalation</option>
+            <option>Needs manager attention</option>
             <option>Remove / No Further Contact</option>
           </select>
         </div>
@@ -651,26 +654,26 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI'
       </div>
       <input type="text" id="feedSearch" placeholder="Search agent name or notes..." oninput="applyFeedFilters()" style="padding:9px 12px;border:0.5px solid #D9D3C7;border-radius:8px;font-size:13px;font-family:inherit;color:#1a1a2e;outline:none;width:100%">
       <div style="display:flex;gap:10px;flex-wrap:wrap">
-        <select id="feedTypeFilter" onchange="applyFeedFilters()" style="flex:1;padding:8px 11px;border:0.5px solid #D9D3C7;border-radius:8px;font-size:12px;font-family:inherit;color:#555;background:#fff">
+        <select id="feedTypeFilter" onchange="applyFeedFilters()" style="flex:1;padding:8px 11px;border:0.5px solid var(--border);border-radius:8px;font-size:12px;font-family:inherit;color:var(--text-2);background:var(--surface);">
           <option value="all">All types</option>
           <option>Cold Calls</option><option>New Realtor Meeting</option><option>New Agent Follow-up</option><option>Break Breads</option>
           <option>CTC Call</option><option>Under Contract Call</option><option>Realtor Buddy Referral Ask</option>
           <option>Market Update</option>
           <option>Agent Appreciation</option><option>Birthday Outreach</option>
         </select>
-        <select id="feedPeriodFilter" onchange="applyFeedFilters()" style="flex:1;padding:8px 11px;border:0.5px solid #D9D3C7;border-radius:8px;font-size:12px;font-family:inherit;color:#555;background:#fff">
+        <select id="feedPeriodFilter" onchange="applyFeedFilters()" style="flex:1;padding:8px 11px;border:0.5px solid var(--border);border-radius:8px;font-size:12px;font-family:inherit;color:var(--text-2);background:var(--surface);">
           <option value="all">All time</option>
           <option value="week">This week</option>
           <option value="month">This month</option>
         </select>
-        <select id="feedOutcomeFilter" onchange="applyFeedFilters()" style="flex:1;padding:8px 11px;border:0.5px solid #D9D3C7;border-radius:8px;font-size:12px;font-family:inherit;color:#555;background:#fff">
+        <select id="feedOutcomeFilter" onchange="applyFeedFilters()" style="flex:1;padding:8px 11px;border:0.5px solid var(--border);border-radius:8px;font-size:12px;font-family:inherit;color:var(--text-2);background:var(--surface);">
           <option value="all">All outcomes</option>
           <option value="Positive">Positive</option>
           <option value="Meeting Scheduled">Meeting Scheduled</option>
           <option value="Requires follow-up">Requires follow-up</option>
           <option value="Remove / No Further Contact">Remove / No Further Contact</option>
         </select>
-        <button onclick="exportToCSV()" style="padding:8px 14px;background:#6B8F71;color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:500;cursor:pointer;font-family:inherit;white-space:nowrap">⬇️ Export CSV</button>
+        <button onclick="exportToCSV()" style="padding:8px 14px;background:#D97706;color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:500;cursor:pointer;font-family:inherit;white-space:nowrap">Export CSV</button>
       </div>
     </div>
     <div id="feedList"><div class="no-data">Loading...</div></div>
@@ -681,7 +684,7 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI'
   <div class="modal-box">
     <div class="modal-header"><span class="modal-title">Edit activity</span><button class="modal-close" onclick="closeEditModal()">x</button></div>
     <div class="modal-sub" id="editModalAgent"></div>
-    <div class="field" style="margin-bottom:12px"><label>Outcome</label><select id="editOutcome"><option value="">Select outcome...</option><option>Positive</option><option>Meeting Scheduled</option><option>Requires follow-up</option><option>Remove / No Further Contact</option></select></div>
+    <div class="field" style="margin-bottom:12px"><label>Outcome</label><select id="editOutcome"><option value="">Select outcome...</option><option>Positive</option><option>Meeting Scheduled</option><option>Requires follow-up</option><option>Needs manager attention</option><option>Remove / No Further Contact</option></select></div>
     <div class="field" style="margin-bottom:12px"><label>Follow-up date</label><input type="date" id="editFollowupDate"></div>
     <div class="field" style="margin-bottom:18px"><label>Notes</label><textarea id="editNotes" placeholder="Update notes..."></textarea></div>
     <div style="display:flex;gap:10px">
@@ -710,12 +713,12 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI'
         <div class="card-title" style="margin-bottom:2px">Reconnect List</div>
         <div style="font-size:11px;color:#aaa" id="rcUploadMeta">Loading...</div>
       </div>
-      <button onclick="loadReconnect()" style="padding:6px 12px;background:#EDE9E0;color:#6B8F71;border:0.5px solid #D9D3C7;border-radius:8px;font-size:12px;font-weight:500;cursor:pointer;font-family:inherit">↻ Refresh</button>
+      <button onclick="loadReconnect()" style="padding:6px 12px;background:#FEF3C7;color:#D97706;border:0.5px solid #D9D3C7;border-radius:8px;font-size:12px;font-weight:500;cursor:pointer;font-family:inherit">↻ Refresh</button>
     </div>
     <div class="rc-summary" id="rcSummary" style="display:none">
       <div class="rc-stat"><div class="rc-stat-num" id="rc-total">0</div><div class="rc-stat-label">Total agents</div></div>
       <div class="rc-stat"><div class="rc-stat-num" id="rc-urgent" style="color:#A32D2D">0</div><div class="rc-stat-label">A/B tier priority</div></div>
-      <div class="rc-stat"><div class="rc-stat-num" id="rc-contacted" style="color:#2E7D32">0</div><div class="rc-stat-label">Contacted this cycle</div></div>
+      <div class="rc-stat"><div class="rc-stat-num" id="rc-contacted" style="color:#92400E">0</div><div class="rc-stat-label">Contacted this cycle</div></div>
       <div class="rc-stat"><div class="rc-stat-num" id="rc-removed" style="color:#999">0</div><div class="rc-stat-label">Removed / no engage</div></div>
     </div>
   </div>
@@ -732,9 +735,9 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI'
       </select>
       <select id="rcUrgencyFilter" onchange="renderReconnect()">
         <option value="all">All urgency</option>
-        <option value="hot">90-120 days (just fell off)</option>
-        <option value="warm">121-180 days (cooling)</option>
-        <option value="cold">180+ days (cold)</option>
+        <option value="hot">90-120 days — highest priority</option>
+        <option value="warm">121-180 days — still reachable</option>
+        <option value="cold">180+ days — long gone</option>
       </select>
       <select id="rcStatusFilter" onchange="renderReconnect()">
         <option value="active">Active only</option>
@@ -766,6 +769,10 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI'
 </div>
 
 <div id="view-pipeline" class="view">
+  <div class="card" style="padding:14px 18px;margin-bottom:0">
+    <div style="font-size:13px;font-weight:600;color:var(--text-1);margin-bottom:6px">How the call list works</div>
+    <div style="font-size:12.5px;color:var(--text-2);line-height:1.6">Admin sends a call list checked against the active agent search. Add those names here as prospects. Once they agree to a meeting and you log a New Realtor Meeting, they move into your agent contacts. No duplicates — the tracker checks new names against your existing contacts and Reconnect list before saving.</div>
+  </div>
   <div class="pipe-stats">
     <div class="ps-card"><div class="ps-num" id="ps-total">—</div><div class="ps-label">Active prospects</div></div>
     <div class="ps-card"><div class="ps-num" id="ps-due">—</div><div class="ps-label">Follow-ups due</div></div>
@@ -794,9 +801,9 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI'
   </div>
   <div class="card" style="padding:16px 18px">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:10px">
-      <input type="text" id="pipelineSearch" placeholder="Search by name or brokerage..." oninput="filterPipeline()" style="flex:1;min-width:160px;padding:8px 11px;border:0.5px solid #D9D3C7;border-radius:8px;font-size:12px;font-family:inherit;color:#1a1a2e;background:#fff;outline:none">
+      <input type="text" id="pipelineSearch" placeholder="Search by name or brokerage..." oninput="filterPipeline()" style="flex:1;min-width:160px;padding:8px 11px;border:0.5px solid var(--border);border-radius:8px;font-size:12px;font-family:inherit;color:var(--text-1);background:var(--surface);outline:none">
       <div style="display:flex;gap:8px;flex-wrap:wrap">
-        <select id="pipelineFilter" onchange="filterPipeline()" style="padding:7px 11px;border:0.5px solid #D9D3C7;border-radius:8px;font-size:12px;font-family:inherit;color:#555;background:#fff">
+        <select id="pipelineFilter" onchange="filterPipeline()" style="padding:7px 11px;border:0.5px solid var(--border);border-radius:8px;font-size:12px;font-family:inherit;color:var(--text-2);background:var(--surface);">
           <option value="all">All statuses</option>
           <option value="Requires follow-up">Requires Follow-up</option>
           <option value="DNC">Do Not Contact</option>
@@ -827,7 +834,7 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI'
     </div>
     <div id="calGrid" style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px"></div>
     <div id="calDayDetail" style="display:none;margin-top:12px;background:#f8f7fc;border:0.5px solid #AFA9EC;border-radius:10px;padding:14px">
-      <div style="font-size:12px;font-weight:500;color:#6B8F71;margin-bottom:10px" id="calDayTitle"></div>
+      <div style="font-size:12px;font-weight:500;color:#D97706;margin-bottom:10px" id="calDayTitle"></div>
       <div id="calDayItems"></div>
     </div>
   </div>
@@ -844,8 +851,8 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI'
       <button class="ptoggle" id="dbtn-ytd" onclick="showDanielPeriod('ytd')">Year to date</button>
     </div>
     <div style="display:flex;gap:8px">
-      <button onclick="exportToCSV()" style="padding:8px 16px;background:var(--surface-2);color:var(--text-1);border:1px solid var(--border);border-radius:var(--radius-sm);font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap">⬇️ Export CSV</button>
-      <button onclick="generateDailyCheckin()" style="padding:8px 16px;background:var(--surface-2);color:var(--text-1);border:1px solid var(--border);border-radius:var(--radius-sm);font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap">📋 Copy daily check-in</button>
+      <button onclick="exportToCSV()" style="padding:8px 16px;background:var(--surface-2);color:var(--text-1);border:1px solid var(--border);border-radius:var(--radius-sm);font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap">Export CSV</button>
+      <button onclick="generateDailyCheckin()" style="padding:8px 16px;background:var(--surface-2);color:var(--text-1);border:1px solid var(--border);border-radius:var(--radius-sm);font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap">Copy daily check-in</button>
       <button onclick="generateWeeklySummary()" style="padding:8px 16px;background:var(--brand);color:#fff;border:none;border-radius:var(--radius-sm);font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap">Copy summary</button>
     </div>
   </div>
@@ -864,16 +871,19 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI'
     <div id="danielGrowthGrid"></div>
   </div>
 
-  <!-- COLD CALL CONNECT RATE -->
+  <!-- CONNECT RATES -->
   <div class="card">
-    <div class="card-title">Cold Call Connect Rate <span class="card-sub">% of dials that reach a live conversation, MTD</span></div>
-    <div id="danielConnectRate"><div class="no-data">Loading...</div></div>
-  </div>
-
-  <!-- TALK-TO CONNECT RATE -->
-  <div class="card">
-    <div class="card-title">Talk-to Connect Rate <span class="card-sub">quality lens only — the 20/day goal still counts every attempted touch, MTD</span></div>
-    <div id="danielTalkToConnectRate"><div class="no-data">Loading...</div></div>
+    <div class="card-title">Connect Rates <span class="card-sub">MTD — % of attempts that reached a real conversation</span></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+      <div>
+        <div style="font-size:11px;font-weight:700;color:var(--text-3);text-transform:uppercase;letter-spacing:.04em;margin-bottom:8px">Cold Calls</div>
+        <div id="danielConnectRate"><div class="no-data">Loading...</div></div>
+      </div>
+      <div>
+        <div style="font-size:11px;font-weight:700;color:var(--text-3);text-transform:uppercase;letter-spacing:.04em;margin-bottom:8px">Talk-to's</div>
+        <div id="danielTalkToConnectRate"><div class="no-data">Loading...</div></div>
+      </div>
+    </div>
   </div>
 
   <!-- RETENTION METRICS -->
@@ -883,15 +893,27 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI'
     <div id="danielRetentionGrid"></div>
   </div>
 
+  <!-- RECONNECT PROGRESS -->
+  <div class="card">
+    <div class="card-title">Reconnect Progress <span class="card-sub">how the list is moving, MTD</span></div>
+    <div id="danielReconnectProgress"><div class="no-data">Loading...</div></div>
+  </div>
+
   <!-- PRODUCTION SIGNAL: closes the loop between activity and results -->
   <div class="card">
     <div class="card-title">Production Signal <span class="card-sub">agents touched this month vs agents who closed</span></div>
     <div id="danielProductionSignal"><div class="no-data">Loading...</div></div>
   </div>
 
+  <!-- NEEDS MANAGER ATTENTION — priority flags from Amanda -->
+  <div class="card" style="border:1.5px solid #FCD34D">
+    <div class="card-title" style="color:var(--brand-dark)">Needs Your Attention <span class="card-sub">flagged by Amanda as needing manager input — review these first</span></div>
+    <div id="danielManagerFlags"><div class="no-data">Loading...</div></div>
+  </div>
+
   <!-- NOTES ACCOUNTABILITY -->
   <div class="card">
-    <div class="card-title">Missing / Incomplete Notes <span class="card-sub">Talk-to, CTC, Birthday, Break Breads need 10+ words · Cold Calls excluded for now (old backlog)</span></div>
+    <div class="card-title">Missing / Incomplete Notes <span class="card-sub">Talk-to, CTC, Birthday, Break Breads need 10+ words · Cold Calls need any note · Effective Aug 4, 2026</span></div>
     <div id="danielNotesMissing"><div class="no-data">Loading...</div></div>
   </div>
 
@@ -901,19 +923,19 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI'
   </div>
 
   <div class="card">
-    <div class="card-title">Needs Escalation <span class="card-sub">3+ unanswered attempts, 2+ channels, no response in 10 days</span></div>
+    <div class="card-title">Agent Escalations <span class="card-sub">3+ unanswered attempts across 2+ channels, no response in 10 days</span></div>
     <div id="danielEscalation"><div class="no-data">Loading...</div></div>
   </div>
 
   <!-- FEEDBACK ESCALATIONS: from CTC calls, closing issues, poor feedback etc -->
   <div class="card">
-    <div class="card-title">Needs Leadership Attention <span class="card-sub">flagged during a touch: closing issues, poor feedback, etc, last 30 days</span></div>
+    <div class="card-title">Closing and Feedback Flags <span class="card-sub">flagged during a CTC or touch — closing issues, poor feedback, last 30 days</span></div>
     <div id="danielFeedbackFlags"><div class="no-data">Loading...</div></div>
   </div>
 
   <!-- RESPONSE TIME to LP flags -->
   <div class="card">
-    <div class="card-title">Response Time to LP Flags <span class="card-sub">how fast flagged items get a reply, last 30 days</span></div>
+    <div class="card-title">LP Flag Response Time <span class="card-sub">how quickly flagged items get a follow-up, last 30 days</span></div>
     <div id="danielResponseTime"><div class="no-data">Loading...</div></div>
   </div>
 
@@ -976,14 +998,14 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI'
         <div style="font-size:11px;color:#888;margin-top:6px">Notes<br>Missing/Incomplete</div>
       </div>
       <div style="text-align:center;padding:16px;background:#E8F5E9;border:0.5px solid #81C784;border-radius:10px">
-        <div style="font-size:28px;font-weight:600;color:#2E7D32" id="hc-good">Done</div>
+        <div style="font-size:28px;font-weight:600;color:#92400E" id="hc-good">Done</div>
         <div style="font-size:11px;color:#888;margin-top:6px">Data Quality<br>Score</div>
       </div>
     </div>
   </div>
 
   <div class="card">
-    <div class="card-title">Needs Escalation <span class="card-sub">3+ unanswered attempts, 2+ channels, no response in 10 days</span></div>
+    <div class="card-title">Agent Escalations <span class="card-sub">3+ unanswered attempts, 2+ channels, no response in 10 days</span></div>
     <div id="escalationWatch"><div class="no-data">Loading...</div></div>
   </div>
 
@@ -998,7 +1020,7 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI'
   </div>
 
   <div class="card">
-    <div class="card-title">⏱️ Batch-Logging Watch <span class="card-sub">5+ activities saved within 10 minutes — likely logged after the fact, not in real time</span></div>
+    <div class="card-title">Batch-Logging Watch <span class="card-sub">5+ activities saved within 10 minutes — likely logged after the fact, not in real time</span></div>
     <div id="batchLogWatch"><div class="no-data">Loading...</div></div>
   </div>
 
@@ -1013,19 +1035,19 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI'
       <div>
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
           <span style="font-size:12px;font-weight:500;color:#666">Requires Follow-up</span>
-          <span style="font-size:13px;font-weight:600;color:#6B8F71" id="funnel-rfu">0</span>
+          <span style="font-size:13px;font-weight:600;color:#D97706" id="funnel-rfu">0</span>
         </div>
-        <div style="background:#EDE9E0;border-radius:20px;height:8px;overflow:hidden">
-          <div style="background:#6B8F71;height:8px;border-radius:20px;width:45%;transition:width .5s" id="funnel-rfu-bar"></div>
+        <div style="background:#FEF3C7;border-radius:20px;height:8px;overflow:hidden">
+          <div style="background:#D97706;height:8px;border-radius:20px;width:45%;transition:width .5s" id="funnel-rfu-bar"></div>
         </div>
       </div>
       <div>
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
           <span style="font-size:12px;font-weight:500;color:#666">Already w/ NFM</span>
-          <span style="font-size:13px;font-weight:600;color:#2E7D32" id="funnel-nfm">0</span>
+          <span style="font-size:13px;font-weight:600;color:#92400E" id="funnel-nfm">0</span>
         </div>
-        <div style="background:#EDE9E0;border-radius:20px;height:8px;overflow:hidden">
-          <div style="background:#2E7D32;height:8px;border-radius:20px;width:50%;transition:width .5s" id="funnel-nfm-bar"></div>
+        <div style="background:#FEF3C7;border-radius:20px;height:8px;overflow:hidden">
+          <div style="background:#92400E;height:8px;border-radius:20px;width:50%;transition:width .5s" id="funnel-nfm-bar"></div>
         </div>
       </div>
       <div>
@@ -1033,7 +1055,7 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI'
           <span style="font-size:12px;font-weight:500;color:#666">Do Not Contact</span>
           <span style="font-size:13px;font-weight:600;color:#A32D2D" id="funnel-dnc">0</span>
         </div>
-        <div style="background:#EDE9E0;border-radius:20px;height:8px;overflow:hidden">
+        <div style="background:#FEF3C7;border-radius:20px;height:8px;overflow:hidden">
           <div style="background:#A32D2D;height:8px;border-radius:20px;width:5%;transition:width .5s" id="funnel-dnc-bar"></div>
         </div>
       </div>
@@ -1047,12 +1069,12 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI'
     <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:16px">
       <input type="text" id="networkSearch" placeholder="Search agent name, activity type, or notes..." oninput="applyNetworkFilters()" style="padding:9px 12px;border:0.5px solid #D9D3C7;border-radius:8px;font-size:13px;font-family:inherit;color:#1a1a2e;outline:none;width:100%">
       <div style="display:flex;gap:10px;flex-wrap:wrap">
-        <select id="networkSourceFilter" onchange="applyNetworkFilters()" style="flex:1;padding:8px 11px;border:0.5px solid #D9D3C7;border-radius:8px;font-size:12px;font-family:inherit;color:#555;background:#fff">
+        <select id="networkSourceFilter" onchange="applyNetworkFilters()" style="flex:1;padding:8px 11px;border:0.5px solid var(--border);border-radius:8px;font-size:12px;font-family:inherit;color:var(--text-2);background:var(--surface);">
           <option value="all">All sources</option>
           <option value="RM">Amanda Only</option>
           <option value="LP">LP Only</option>
         </select>
-        <select id="networkPeriodFilter" onchange="applyNetworkFilters()" style="flex:1;padding:8px 11px;border:0.5px solid #D9D3C7;border-radius:8px;font-size:12px;font-family:inherit;color:#555;background:#fff">
+        <select id="networkPeriodFilter" onchange="applyNetworkFilters()" style="flex:1;padding:8px 11px;border:0.5px solid var(--border);border-radius:8px;font-size:12px;font-family:inherit;color:var(--text-2);background:var(--surface);">
           <option value="all">All time</option>
           <option value="week">This week</option>
           <option value="month">This month</option>
@@ -1066,7 +1088,7 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI'
     <div class="card-title">Network Stats</div>
     <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px">
       <div style="text-align:center;padding:12px;background:#f5f4f8;border-radius:8px">
-        <div style="font-size:24px;font-weight:500;color:#6B8F71" id="networkTotalRm">—</div>
+        <div style="font-size:24px;font-weight:500;color:#D97706" id="networkTotalRm">—</div>
         <div style="font-size:10px;color:#aaa;margin-top:3px">Amanda activities</div>
       </div>
       <div style="text-align:center;padding:12px;background:#f5f4f8;border-radius:8px">
@@ -1074,7 +1096,7 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI'
         <div style="font-size:10px;color:#aaa;margin-top:3px">LP activities</div>
       </div>
       <div style="text-align:center;padding:12px;background:#f5f4f8;border-radius:8px">
-        <div style="font-size:24px;font-weight:500;color:#639922" id="networkTotalAgents">—</div>
+        <div style="font-size:24px;font-weight:500;color:#D97706" id="networkTotalAgents">—</div>
         <div style="font-size:10px;color:#aaa;margin-top:3px">Agents touched</div>
       </div>
       <div style="text-align:center;padding:12px;background:#f5f4f8;border-radius:8px">
@@ -1093,7 +1115,7 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI'
     </div>
     <div style="display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap">
       <input type="text" id="contactsSearch" placeholder="Search by name, phone, email or birthday..." oninput="filterContacts()" style="flex:1;min-width:180px;padding:9px 11px;border:0.5px solid #D9D3C7;border-radius:8px;font-size:13px;font-family:inherit;color:#1a1a2e;outline:none">
-      <select id="contactsFilter" onchange="filterContacts()" style="padding:8px 11px;border:0.5px solid #D9D3C7;border-radius:8px;font-size:12px;font-family:inherit;color:#555;background:#fff">
+      <select id="contactsFilter" onchange="filterContacts()" style="padding:8px 11px;border:0.5px solid var(--border);border-radius:8px;font-size:12px;font-family:inherit;color:var(--text-2);background:var(--surface);">
         <option value="all">All agents</option>
         <option value="tier-A">A-tier</option>
         <option value="tier-B">B-tier</option>
@@ -1112,13 +1134,13 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI'
 <div class="modal-overlay" id="addAgentModal">
   <div class="modal-box">
     <div class="modal-header"><span class="modal-title">Add new agent</span><button class="modal-close" onclick="closeAddAgentModal()">×</button></div>
-    <div class="modal-sub">Add an agent to your contacts directory</div>
+    <div class="modal-sub" style="margin-bottom:12px">Add an agent to your contacts directory. A lot of birthday and address data is missing — try to collect this during calls and fill it in here.</div>
     <div class="field" style="margin-bottom:12px"><label>Agent name *</label><input type="text" id="addAgentName" placeholder="Full name"></div>
     <div class="field" style="margin-bottom:12px"><label>Phone</label><input type="text" id="addAgentPhone" placeholder="Phone number"></div>
     <div class="field" style="margin-bottom:12px"><label>Email</label><input type="email" id="addAgentEmail" placeholder="Email address"></div>
     <div class="field" style="margin-bottom:12px"><label>Brokerage</label><input type="text" id="addAgentBrokerage" placeholder="Brokerage name"></div>
     <div class="field" style="margin-bottom:12px"><label>Birthday</label><input type="text" id="addAgentBirthday" placeholder="e.g. Mar 14"></div>
-    <div class="field" style="margin-bottom:18px"><label>Tier</label><select id="addAgentTier"><option value="">No tier set</option><option value="A">🥇 A-Tier</option><option value="B">🥈 B-Tier</option><option value="C">🥉 C-Tier</option></select></div>
+    <div class="field" style="margin-bottom:18px"><label>Tier</label><select id="addAgentTier"><option value="">No tier set</option><option value="A">A-Tier</option><option value="B">B-Tier</option><option value="C">C-Tier</option></select></div>
     <div style="display:flex;gap:10px">
       <button class="btn-primary" onclick="saveNewAgent()">Add agent</button>
       <button class="btn-sm" onclick="closeAddAgentModal()">Cancel</button>
@@ -1134,7 +1156,7 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI'
     <div class="field" style="margin-bottom:12px"><label>Email</label><input type="email" id="contactEmail" placeholder="Email address"></div>
     <div class="field" style="margin-bottom:12px"><label>Home Address</label><input type="text" id="contactBrokerage" placeholder="Home address"></div>
     <div class="field" style="margin-bottom:12px"><label>Birthday</label><input type="text" id="contactBirthday" placeholder="e.g. Mar 14"></div>
-    <div class="field" style="margin-bottom:18px"><label>Tier</label><select id="contactTier"><option value="">No tier set</option><option value="A">🥇 A-Tier (Top producer, active partner)</option><option value="B">🥈 B-Tier (Mid-tier, building relationship)</option><option value="C">🥉 C-Tier (New or low-volume)</option></select></div>
+    <div class="field" style="margin-bottom:18px"><label>Tier</label><select id="contactTier"><option value="">No tier set</option><option value="A">A-Tier (Top producer, active partner)</option><option value="B">B-Tier (Mid-tier, building relationship)</option><option value="C">C-Tier (New or low-volume)</option></select></div>
     <div style="display:flex;gap:10px;justify-content:space-between">
       <div style="display:flex;gap:10px">
         <button class="btn-primary" onclick="saveContactModal()">Save changes</button>
@@ -1176,13 +1198,13 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI'
     <div style="font-size:12.5px;color:var(--text-2);margin-bottom:16px">If an agent hasn't sent us a lead in 90 days, they fall off and land on the <strong>Reconnect list</strong> (its own tab). That's a flag that it's time to work on earning a lead from them again. Re-engaging someone from that list is <strong>not a Cold Call</strong>: the relationship already exists, you're just picking it back up. Log it as <strong>Reconnect Outreach</strong>, not Active Agent Talk-to, since technically they're not active until they send a lead again. It still counts toward your Talk-to goal.</div>
 
     <div style="font-size:12px;font-weight:700;color:var(--brand);text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px">4 · Staying in Touch 💛</div>
-    <div style="font-size:12.5px;color:var(--text-2);margin-bottom:6px">Everything marked <span style="color:var(--brand);font-weight:600">counts as Talk-to</span> feeds into your weekly Talk-to goal (100/week). Log it once and it does double duty. Whatever the reason for the touch, use it to get real feedback on how the relationship is going, every touch is an opportunity.</div>
+    <div style="font-size:12.5px;color:var(--text-2);margin-bottom:6px">Everything marked <span style="color:var(--brand);font-weight:600">counts as Talk-to</span> feeds into your weekly Talk-to goal (100/week). Log it once and it does double duty. Whatever the reason for the touch, use it to get real feedback on how the relationship is going. Every touch is an opportunity.</div>
     <table style="width:100%;border-collapse:collapse;font-size:12.5px;margin-bottom:16px">
       <tr><td style="padding:5px 8px 5px 0;font-weight:600;white-space:nowrap;vertical-align:top">Active Agent Talk-to <span style="color:var(--brand);font-weight:400">counts as Talk-to</span></td><td style="padding:5px 0;color:var(--text-2)">A proactive check-in with an agent who's currently active and sending business.</td></tr>
       <tr><td style="padding:5px 8px 5px 0;font-weight:600;white-space:nowrap;vertical-align:top">Reconnect Outreach <span style="color:var(--brand);font-weight:400">counts as Talk-to</span></td><td style="padding:5px 0;color:var(--text-2)">The right type for re-engaging someone from the Reconnect list. It's not a Cold Call since you already know them, but "Active Agent Talk-to" isn't accurate either since they haven't sent a lead in 90+ days.</td></tr>
       <tr><td style="padding:5px 8px 5px 0;font-weight:600;white-space:nowrap;vertical-align:top">CTC Call <span style="color:var(--brand);font-weight:400">counts as Talk-to</span></td><td style="padding:5px 0;color:var(--text-2)">Process: call the agent, leave a voicemail if no answer, then follow up with a text. Script is in 📜 Scripts. Get feedback from <strong>both</strong> the buyer's agent and the listing agent. Share that feedback on WhatsApp with the team in real-time, proactively, the way Daniel does, proactively. Check Encompass for the CTC milestone  Always ask the listing agent for a meeting if they don't already work with us; a closing is a natural door-opener. If there's a closing issue or poor feedback, set the outcome to "Needs Escalation" so it surfaces for the team.</td></tr>
       <tr><td style="padding:5px 8px 5px 0;font-weight:600;white-space:nowrap;vertical-align:top">Under Contract Call <span style="color:var(--brand);font-weight:400">counts as Talk-to, note required</span></td><td style="padding:5px 0;color:var(--text-2)">First call to the listing agent as soon as a deal you're the buyer's lender on goes under contract. Script is in 📜 Scripts.</td></tr>
-      <tr><td style="padding:5px 8px 5px 0;font-weight:600;white-space:nowrap;vertical-align:top">Birthday / Holiday Outreach <span style="color:var(--brand);font-weight:400">counts as Talk-to</span></td><td style="padding:5px 0;color:var(--text-2)">A personal touch: happy birthday, happy holidays.</td></tr>
+      <tr><td style="padding:5px 8px 5px 0;font-weight:600;white-space:nowrap;vertical-align:top">Birthday / Holiday Outreach <span style="color:var(--brand);font-weight:400">counts as Talk-to</span></td><td style="padding:5px 0;color:var(--text-2)">A personal touch: wish the agent a happy birthday or happy holidays. When the Calendar tab shows a birthday alert, send a text, give a quick call, or both. If the agent is a top producer, let the team know so they can wish them well too. When you are on a call with any agent, check if their birthday is on file — a lot of data is missing. If you do not have it, ask and add it to their contact so you never miss it.</td></tr>
       <tr><td style="padding:5px 8px 5px 0;font-weight:600;white-space:nowrap;vertical-align:top">Agent Appreciation <span style="color:var(--brand);font-weight:400">counts as Talk-to</span></td><td style="padding:5px 0;color:var(--text-2)">Recognizing a top producer or celebrating a milestone.</td></tr>
       <tr><td style="padding:5px 8px 5px 0;font-weight:600;white-space:nowrap;vertical-align:top">Market Update <span style="color:var(--brand);font-weight:400">counts as Talk-to</span></td><td style="padding:5px 0;color:var(--text-2)">Sharing what's happening in the market: inventory, days on market, buyer demand, listing trends. This isn't financing or rates; that stays with the LP team.</td></tr>
       <tr><td style="padding:5px 8px 5px 0;font-weight:600;white-space:nowrap;vertical-align:top">Break Breads <span style="color:var(--brand);font-weight:400">note required, 10+ words</span></td><td style="padding:5px 0;color:var(--text-2)">More than a meal: sitting down with the agent to get real feedback and confirm the relationship is genuinely solid. Its own goal (5/week), separate from Talk-to's. To figure out who's due, check the Break Bread Due List on Snapshot (or the Face Time Tracker on the LP tracker), it shows last touch date per agent across both you and the LPs. Consider bringing the assigned LP along when it makes sense.</td></tr>
@@ -1199,7 +1221,7 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI'
 <div class="modal-overlay" id="coachingPlaybookModal">
   <div class="modal-box" style="max-width:660px;max-height:85vh;overflow-y:auto">
     <div class="modal-header"><span class="modal-title">Agent Strategy</span><button class="modal-close" onclick="closeCoachingPlaybookModal()">×</button></div>
-    <div class="modal-sub" style="margin-bottom:18px">From Ascend Coaching. Use these as talking points and frameworks during actual conversations with agents, </div>
+    <div class="modal-sub" style="margin-bottom:18px">From Ascend Coaching. Talking points and frameworks for actual agent conversations.</div>
 
     <div style="font-size:12px;font-weight:700;color:var(--brand);text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px">The How to Refer System</div>
     <div style="font-size:12.5px;color:var(--text-2);margin-bottom:8px">Don't just ask for leads. Install the referral language. The agent needs the exact text, email path, and buyer expectations, not a vague ask.</div>
@@ -1213,7 +1235,7 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI'
     <div style="font-size:12px;font-weight:700;color:var(--brand);text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px">Coach Agents to Refer Earlier</div>
     <div style="font-size:12.5px;color:var(--text-2);margin-bottom:8px">Earlier introductions create more control and more conversion. Don't wait until the buyer is ready to tour homes.</div>
     <div style="display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap">
-      <div style="flex:1;min-width:200px;background:#EBF3EC;border:1px solid #A8D5B0;border-radius:var(--radius-sm);padding:10px 12px;font-size:12.5px;color:var(--text-2)"><strong style="color:#2E6B3E">Early</strong> = plan + education + excitement + lender preference</div>
+      <div style="flex:1;min-width:200px;background:#FEF3C7;border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 12px;font-size:12.5px;color:var(--text-2)"><strong style="color:var(--brand-dark)">Early</strong> = plan + education + excitement + lender preference</div>
       <div style="flex:1;min-width:200px;background:#FDEBEB;border:1px solid #F0AFAF;border-radius:var(--radius-sm);padding:10px 12px;font-size:12.5px;color:var(--text-2)"><strong style="color:#A32D2D">Late</strong> = rate comparison + urgency + weaker influence</div>
     </div>
 
@@ -1234,7 +1256,7 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI'
     <div style="font-size:12.5px;color:var(--text-2);margin-bottom:8px">Deep relationships reduce partner turnover. Business relationships are replaceable; personal loyalty is harder to displace.</div>
     <div style="display:flex;gap:10px;margin-bottom:8px;flex-wrap:wrap">
       <div style="flex:1;min-width:200px;background:#FDEBEB;border:1px solid #F0AFAF;border-radius:var(--radius-sm);padding:10px 12px;font-size:12.5px;color:var(--text-2)"><strong style="color:#A32D2D">Transactional lender:</strong> calls only when there's a deal, sends generic marketing, asks for leads, disappears after closing.</div>
-      <div style="flex:1;min-width:200px;background:#EBF3EC;border:1px solid #A8D5B0;border-radius:var(--radius-sm);padding:10px 12px;font-size:12.5px;color:var(--text-2)"><strong style="color:#2E6B3E">Relationship builder:</strong> builds a personal cadence, creates value, helps the agent hit goals, puts the agent first.</div>
+      <div style="flex:1;min-width:200px;background:#FEF3C7;border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 12px;font-size:12.5px;color:var(--text-2)"><strong style="color:var(--brand-dark)">Relationship builder:</strong> builds a personal cadence, creates value, helps the agent hit goals, puts the agent first.</div>
     </div>
     <div style="font-size:12.5px;color:var(--text-2);margin-bottom:14px">Relationship actions: relevant humor, family milestones, events with partners, agent introductions.</div>
 
@@ -1250,7 +1272,7 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI'
     <div style="font-size:12px;font-weight:700;color:var(--brand);text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px">Under Contract Call (Listing Agent)</div>
     <div style="font-size:12.5px;color:var(--text-2);margin-bottom:8px">Call the listing agent as soon as a deal you're the buyer's lender on goes under contract. Set the tone early, this is your first real touchpoint with them on this file.</div>
     <div style="background:#1E2B3A;color:#fff;border-radius:var(--radius-sm);padding:10px 12px;margin-bottom:8px;font-size:12.5px;font-style:italic">
-      "Hey [Agent Name], this is Amanda from the Daniel Sa Team at NFM Lending. I'm calling about your listing at [Property Address], which has just gone into contract. I'm the lender representing the buyer. First, I have a couple of questions about the transaction, I want to make sure we have a smooth process. Does that sound good? Congratulations again on the sale, I can't wait for us to have a smooth closing."
+      "Hey [Agent Name], this is Amanda from the Daniel Sa Team at NFM Lending. I'm calling about your listing at [Property Address], which has just gone into contract. I'm the lender representing the buyer. First, I have a couple of questions about the transaction, I want to make sure we have a smooth process. Does that sound good? Congratulations again on the sale."
     </div>
     <div style="font-size:12.5px;color:var(--text-2);margin-bottom:4px">Questions to cover:</div>
     <ul style="font-size:12.5px;color:var(--text-2);margin:0 0 8px;padding-left:18px;line-height:1.6">
@@ -1271,20 +1293,20 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI'
     <div style="background:var(--surface-2);border-radius:var(--radius-sm);padding:9px 12px;font-size:12.5px;color:var(--text-2);margin-bottom:16px">After the call, send a follow-up text with your contact info. Log this as an Under Contract Call — it counts as a Talk-to.</div>
 
     <div style="font-size:12px;font-weight:700;color:var(--brand);text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px">Under Contract Call (Buyer's Agent)</div>
-    <div style="font-size:12.5px;color:var(--text-2);margin-bottom:8px">Call the buyer's agent once the file goes under contract. They sent you the deal — this call sets the tone for how you'll work together throughout.</div>
+    <div style="font-size:12.5px;color:var(--text-2);margin-bottom:8px">Call the buyer's agent once the file goes under contract. This call sets the tone for how you will work together throughout.</div>
     <div style="background:#1E2B3A;color:#fff;border-radius:var(--radius-sm);padding:10px 12px;margin-bottom:8px;font-size:12.5px;font-style:italic">
-      "Hey [Agent Name], this is Amanda from the Daniel Sa Team at NFM Lending. I'm calling about [Buyer Name]'s contract on [Property Address] — congratulations to you and your buyers for going into contract! I'm going to be your point of contact throughout this process and I want to make sure everything goes smoothly."
+      "Hey [Agent Name], this is Amanda from the Daniel Sa Team at NFM Lending. I'm calling about [Buyer Name]'s contract on [Property Address] — congratulations to you and your buyers for going into contract! I wanted to reach out personally and introduce myself. [LP Name] will be your main point of contact throughout the transaction and our team is here to support you every step of the way."
     </div>
     <div style="font-size:12.5px;color:var(--text-2);margin-bottom:4px">Questions to cover:</div>
     <ul style="font-size:12.5px;color:var(--text-2);margin:0 0 8px;padding-left:18px;line-height:1.6">
       <li>Are there any concerns or anything we should know going in?</li>
       <li>What's the best way to keep you updated throughout the process — text, email, calls?</li>
-      <li>Regarding the closing date — we want to make sure we stick with the contracted date. We do not move up closing dates; however, once we're clear to close, if all parties are in agreement we can revisit at that point.</li>
+      <li>Regarding the closing date — we want to make sure we stick with the contracted date. We do not move up closing dates. Once we are clear to close, if all parties are in agreement we can revisit at that point.</li>
     </ul>
     <div style="background:#1E2B3A;color:#fff;border-radius:var(--radius-sm);padding:10px 12px;margin-bottom:8px;font-size:12.5px;font-style:italic">
-      "Our team is available nights and weekends, so I'm going to send you a quick text with my contact info. Please reach out anytime — I want this to be as easy as possible for you."
+      "Our team is available nights and weekends, so I'm going to send you a quick text with my contact info. Please reach out anytime. We are going to take good care of your buyer."
     </div>
-    <div style="font-size:12.5px;color:var(--text-2);margin-bottom:8px">If they don't already work with us regularly, close for a meeting before ending the call: <em style="color:#fff;background:#1E2B3A;padding:2px 6px;border-radius:4px;font-style:normal">"I'd love to sit down sometime and show you what we can do — even just 15 minutes to see if we'd be a great fit to work together."</em></div>
+    <div style="font-size:12.5px;color:var(--text-2);margin-bottom:8px">If they don't already work with us regularly, close for a meeting before ending the call: <em style="color:#fff;background:#1E2B3A;padding:2px 6px;border-radius:4px;font-style:normal">"I'd love to sit down sometime, even just 15 minutes, to see if it makes sense to work together."</em></div>
     <div style="background:var(--surface-2);border-radius:var(--radius-sm);padding:9px 12px;font-size:12.5px;color:var(--text-2);margin-bottom:16px">After the call, send a follow-up text with your contact info. Log this as an Under Contract Call — it counts as a Talk-to.</div>
 
     <div style="font-size:12px;font-weight:700;color:var(--brand);text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px">CTC Call</div>
@@ -1294,7 +1316,7 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI'
     </div>
     <div style="font-size:12.5px;color:var(--text-2);margin-bottom:8px">If it's the listing agent and they don't already work with us, bridge straight into the meeting ask before ending the call:</div>
     <div style="background:#1E2B3A;color:#fff;border-radius:var(--radius-sm);padding:10px 12px;margin-bottom:16px;font-size:12.5px;font-style:italic">
-      "I'd love to actually sit down and meet sometime, even just 15 minutes, to see if we'd be a great fit to work together."
+      "I'd love to actually sit down and meet sometime, even just 15 minutes, to see if it makes sense to work together."
     </div>
 
     <div style="font-size:12px;font-weight:700;color:var(--brand);text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px">Cold Call — Opening Script</div>
@@ -1311,7 +1333,7 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI'
     <table style="width:100%;border-collapse:collapse;font-size:12.5px;margin-bottom:16px">
       <tr style="border-bottom:1px solid var(--border-light)"><td style="padding:8px 10px 8px 0;font-weight:600;vertical-align:top;white-space:nowrap">What's the meeting about?</td><td style="padding:8px 0;color:var(--text-2)">"We'd love to learn more about the clients and areas you serve, what you're currently focused on growing, and where additional lending support may be helpful. We can also share some of the financing strategies and listing resources we provide to our agent partners."</td></tr>
       <tr style="border-bottom:1px solid var(--border-light)"><td style="padding:8px 10px 8px 0;font-weight:600;vertical-align:top;white-space:nowrap">Already have a lender</td><td style="padding:8px 0;color:var(--text-2)">"That's completely understandable, and we're not asking you to replace a relationship that's working well. We'd simply love the opportunity to introduce ourselves and become an additional resource when you need a second opinion, have a challenging scenario, or need extra support. Would you still be open to a 20-minute meeting?"</td></tr>
-      <tr style="border-bottom:1px solid var(--border-light)"><td style="padding:8px 10px 8px 0;font-weight:600;vertical-align:top;white-space:nowrap">Send me some info</td><td style="padding:8px 0;color:var(--text-2)">"Absolutely — I want to make sure I send something relevant. Would buyer financing options, listing-specific payment strategies, or solutions for more challenging scenarios be most helpful? I'll send that over today. Would it be okay if I follow up with you on [day]?"</td></tr>
+      <tr style="border-bottom:1px solid var(--border-light)"><td style="padding:8px 10px 8px 0;font-weight:600;vertical-align:top;white-space:nowrap">Send me some info</td><td style="padding:8px 0;color:var(--text-2)">"Absolutely. I want to make sure I send something relevant. Would buyer financing options, listing-specific payment strategies, or solutions for more challenging scenarios be most helpful? I'll send that over today. Would it be okay if I follow up with you on [day]?"</td></tr>
       <tr style="border-bottom:1px solid var(--border-light)"><td style="padding:8px 10px 8px 0;font-weight:600;vertical-align:top;white-space:nowrap">I'm busy right now</td><td style="padding:8px 0;color:var(--text-2)">"No problem at all, I completely understand. Would there be a better time for me to call you back, or would it be easier if I sent you a quick text?"</td></tr>
       <tr><td style="padding:8px 10px 8px 0;font-weight:600;vertical-align:top;white-space:nowrap">Not interested</td><td style="padding:8px 0;color:var(--text-2)">"I completely understand. Thank you for taking my call. I'll send you my contact information in case you ever need an additional lending resource or a second opinion on a scenario."</td></tr>
     </table>
@@ -1323,7 +1345,55 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI'
     </div>
 
     <div style="background:var(--surface-2);border-radius:var(--radius-sm);padding:10px 12px;font-size:12.5px;color:var(--text-2);margin-bottom:16px">
-      <strong style="color:var(--text-1)">Practice note from leadership:</strong> These scripts — along with objection handling and value proposition scenarios — are available in Join Ascend. Please practice for 10 minutes before starting calls each day and share your feedback on how it's going.
+      <strong style="color:var(--text-1)">Practice note from leadership:</strong> These scripts — along with objection handling and value proposition scenarios — are available in Join Ascend. You have login access. Please practice for 10 minutes before starting calls each day and share your feedback on how it's going.
+    </div>
+
+    <div style="background:var(--surface-2);border-radius:var(--radius-sm);padding:10px 12px;font-size:12.5px;color:var(--text-2);margin-bottom:16px">
+      <strong style="color:var(--text-1)">Gifting Campaign Scripts (4-Week Cadence)</strong><br>Always try a call first. If no answer, follow up with a text.
+    </div>
+
+    <div style="font-size:12px;font-weight:700;color:var(--brand);text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px">Week 1: Break the Ice</div>
+    <div style="font-size:12.5px;color:var(--text-2);margin-bottom:6px">Call:</div>
+    <div style="background:#1E2B3A;color:#fff;border-radius:var(--radius-sm);padding:10px 12px;margin-bottom:8px;font-size:12.5px;font-style:italic">
+      "Hey [Agent Name], this is Amanda with the Daniel Sa Team at NFM Lending. I wanted to follow up after our meeting. It was great connecting with you and I'm excited to work together. How has your week been going?"
+    </div>
+    <div style="font-size:12.5px;color:var(--text-2);margin-bottom:6px">Text if no answer:</div>
+    <div style="background:#1E2B3A;color:#fff;border-radius:var(--radius-sm);padding:10px 12px;margin-bottom:16px;font-size:12.5px;font-style:italic">
+      "Hey [Agent Name], this is Amanda with the Daniel Sa Team at NFM. Great meeting with you. Looking forward to working together. Here to support you and your buyers."
+    </div>
+
+    <div style="font-size:12px;font-weight:700;color:var(--brand);text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px">Week 2: Value Touch</div>
+    <div style="font-size:12.5px;color:var(--text-2);margin-bottom:6px">Call:</div>
+    <div style="background:#1E2B3A;color:#fff;border-radius:var(--radius-sm);padding:10px 12px;margin-bottom:8px;font-size:12.5px;font-style:italic">
+      "Hey [Agent Name], it's Amanda with the Daniel Sa Team at NFM. I've been thinking about your business and wanted to share something I think will be useful for you. [share resource or market update]. Would you have a few minutes this week to connect?"
+    </div>
+    <div style="font-size:12.5px;color:var(--text-2);margin-bottom:6px">Text if no answer:</div>
+    <div style="background:#1E2B3A;color:#fff;border-radius:var(--radius-sm);padding:10px 12px;margin-bottom:16px;font-size:12.5px;font-style:italic">
+      "Hey [Agent Name], it's Amanda with NFM. I have something I think will be useful for you. [resource]. Let's connect this week!"
+    </div>
+
+    <div style="font-size:12px;font-weight:700;color:var(--brand);text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px">Week 3: Opportunity Call</div>
+    <div style="font-size:12.5px;color:var(--text-2);margin-bottom:6px">Call:</div>
+    <div style="background:#1E2B3A;color:#fff;border-radius:var(--radius-sm);padding:10px 12px;margin-bottom:8px;font-size:12.5px;font-style:italic">
+      "Hey [Agent Name], it's Amanda with the Daniel Sa Team at NFM. I've really enjoyed getting to know you. Do you have any buyers right now we can help with? We would love to earn your business."
+    </div>
+    <div style="font-size:12.5px;color:var(--text-2);margin-bottom:6px">Text if no answer:</div>
+    <div style="background:#1E2B3A;color:#fff;border-radius:var(--radius-sm);padding:10px 12px;margin-bottom:16px;font-size:12.5px;font-style:italic">
+      "Hey [Agent Name], it's Amanda with NFM. Do you have any buyers we can help with right now? We would love to earn your business."
+    </div>
+
+    <div style="font-size:12px;font-weight:700;color:var(--brand);text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px">Week 4: Accountability Follow-Up</div>
+    <div style="font-size:12.5px;color:var(--text-2);margin-bottom:6px">Call:</div>
+    <div style="background:#1E2B3A;color:#fff;border-radius:var(--radius-sm);padding:10px 12px;margin-bottom:8px;font-size:12.5px;font-style:italic">
+      "Hey [Agent Name], it's Amanda with the Daniel Sa Team at NFM. Wanted to connect and see how your business is going. Do you have any buyers or listings we can support? We are committed to being your go-to team and we are here whenever you need us."
+    </div>
+    <div style="font-size:12.5px;color:var(--text-2);margin-bottom:6px">Text if no answer:</div>
+    <div style="background:#1E2B3A;color:#fff;border-radius:var(--radius-sm);padding:10px 12px;margin-bottom:16px;font-size:12.5px;font-style:italic">
+      "Hey [Agent Name], it's Amanda with NFM. Do you have any buyers or listings we can support right now? We are here whenever you need us."
+    </div>
+
+    <div style="background:var(--surface-2);border-radius:var(--radius-sm);padding:10px 12px;font-size:12.5px;color:var(--text-2);margin-bottom:16px">
+      <strong style="color:var(--text-1)">Note:</strong> Replace [resource or market update] in Week 2 with something specific to that agent. The more relevant it is to their market or situation, the better it lands.
     </div>
 
     <button class="btn-sm" onclick="closeScriptsModal()" style="margin-top:8px">Close</button>
@@ -1338,10 +1408,11 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI'
       <div style="font-size:13px;font-weight:600;color:var(--text-1);margin-bottom:4px">Relationship Manager — Daniel Sa Team, NFM Lending</div>
       <div style="font-size:12.5px;color:var(--text-2);line-height:1.5">Responsible for growing the team's active agent count and keeping those relationships producing. An active agent is one who has sent us a lead — agents who haven't sent a lead within 90 days fall off the active list and move to the Reconnect queue. Two core responsibilities: bring in new agents through cold calling, outreach, and meetings; and retain the agents we have through consistent, value-driven contact, feedback, and follow-through so they keep referring their clients.</div>
     </div>
-    <div class="modal-sub" style="margin-bottom:12px">Default structure for the day. Shifts around actual agent meetings and call-backs — if an agent reaches out outside a planned block, take it, log it, and pick up the block afterward.</div>
+    <div style="background:var(--surface-2);border-radius:var(--radius-sm);padding:10px 14px;margin-bottom:14px;font-size:12.5px;color:var(--text-2)"><strong style="color:var(--text-1)">Working from home:</strong> The expectation is that you are actively working your full hours, on Teams, and responsive. If something comes up and you are not able to work, please take PTO or come into the office. WFH is a privilege and the standard is the same as being in office.</div>
+    <div class="modal-sub" style="margin-bottom:12px">Default structure for the day. Shifts around actual agent meetings and call-backs. If an agent reaches out outside a planned block, take it, log it, and pick up the block afterward.</div>
     <table style="width:100%;border-collapse:collapse;font-size:12.5px;margin-bottom:16px">
-      <tr><td style="padding:5px 8px 5px 0;font-weight:600;white-space:nowrap;vertical-align:top">9:00 AM</td><td style="padding:5px 0;color:var(--text-2)">Start of shift (hours are 9–5). If running late, let your manager know.</td></tr>
-      <tr><td style="padding:5px 8px 5px 0;font-weight:600;white-space:nowrap;vertical-align:top">9:15 AM</td><td style="padding:5px 0;color:var(--text-2)">In office, on Teams, focused, notes ready.</td></tr>
+      <tr style="border-bottom:1px solid var(--border-light)"><td style="padding:5px 8px 5px 0;font-weight:600;white-space:nowrap;vertical-align:top">9:00 AM</td><td style="padding:5px 0;color:var(--text-2)">Start of shift. Hours are 9 to 5. If running late, let your manager know.</td></tr>
+      <tr style="border-bottom:1px solid var(--border-light)"><td style="padding:5px 8px 5px 0;font-weight:600;white-space:nowrap;vertical-align:top">9:15 AM</td><td style="padding:5px 0;color:var(--text-2)">In office, on Teams, focused, notes ready.</td></tr>
       <tr><td style="padding:5px 8px 5px 0;font-weight:600;white-space:nowrap;vertical-align:top">10:00–10:30 AM</td><td style="padding:5px 0;color:var(--text-2)">Cold call block 1 (~12–13 calls). Two shorter blocks keeps quality up over one long sitting.</td></tr>
       <tr><td style="padding:5px 8px 5px 0;font-weight:600;white-space:nowrap;vertical-align:top">Tue 10:30</td><td style="padding:5px 0;color:var(--text-2)">Pipeline call.</td></tr>
       <tr><td style="padding:5px 8px 5px 0;font-weight:600;white-space:nowrap;vertical-align:top">Mon 11:15–12:00</td><td style="padding:5px 0;color:var(--text-2)">Mandatory sales call.</td></tr>
@@ -1350,7 +1421,7 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI'
       <tr><td style="padding:5px 8px 5px 0;font-weight:600;white-space:nowrap;vertical-align:top">Tue 1:00</td><td style="padding:5px 0;color:var(--text-2)">Level 10 training.</td></tr>
       <tr><td style="padding:5px 8px 5px 0;font-weight:600;white-space:nowrap;vertical-align:top">Mon 2:30–3:30</td><td style="padding:5px 0;color:var(--text-2)">Skillset.</td></tr>
       <tr style="border-bottom:1px solid var(--border-light)"><td style="padding:5px 8px 5px 0;font-weight:600;white-space:nowrap;vertical-align:top">Before calls, daily</td><td style="padding:5px 0;color:var(--text-2)">10 minutes of Ascend scripting practice before starting cold calls. Share feedback on how it is going.</td></tr>
-      <tr style="border-bottom:1px solid var(--border-light)"><td style="padding:5px 8px 5px 0;font-weight:600;white-space:nowrap;vertical-align:top">4:00–4:30, daily</td><td style="padding:5px 0;color:var(--text-2)">Training. Twice a week this is a 1:1 with your manager; the other days, self-directed practice.</td></tr>
+      <tr style="border-bottom:1px solid var(--border-light)"><td style="padding:5px 8px 5px 0;font-weight:600;white-space:nowrap;vertical-align:top">4:00–4:30, weekly</td><td style="padding:5px 0;color:var(--text-2)">30-minute 1:1 with your manager once a week. Review the week, cover any questions, work through anything that needs attention. Other days, use this time for self-directed practice or follow-ups.</td></tr>
       <tr><td style="padding:5px 8px 5px 0;font-weight:600;white-space:nowrap;vertical-align:top">4:45 PM, daily</td><td style="padding:5px 0;color:var(--text-2)">5-minute check-in with your manager, in person or on Teams. Go over the day, make sure we are on track, cover any questions or agent feedback. Followed by a brief email recap.</td></tr>
     </table>
     <button class="btn-sm" onclick="closeScheduleModal()" style="margin-top:8px">Close</button>
@@ -1411,7 +1482,7 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI'
       <tr style="border-bottom:1px solid var(--border-light)"><td style="padding:6px 10px 6px 0;font-weight:600;white-space:nowrap;vertical-align:top">All Regs</td><td style="padding:6px 0;color:var(--text-2)">NFM's underwriting guidelines. A solid resource when you want to understand what's possible for a buyer before the conversation goes further.</td></tr>
       <tr style="border-bottom:1px solid var(--border-light)"><td style="padding:6px 10px 6px 0;font-weight:600;white-space:nowrap;vertical-align:top">Encompass</td><td style="padding:6px 0;color:var(--text-2)">File status, milestones, conditions, closing dates. Have it open before agent calls. See the Encompass Cheat Guide for where to find specific things.</td></tr>
       <tr style="border-bottom:1px solid var(--border-light)"><td style="padding:6px 10px 6px 0;font-weight:600;white-space:nowrap;vertical-align:top">Team inbox</td><td style="padding:6px 0;color:var(--text-2)">Have it open and searchable before calls. If an agent asks about something specific on a file, you can pull the relevant email thread in real time in real time.</td></tr>
-      <tr><td style="padding:6px 10px 6px 0;font-weight:600;white-space:nowrap;vertical-align:top">Velocify</td><td style="padding:6px 0;color:var(--text-2)">Lead and contact tracking. Useful for reviewing what's in the pipeline ahead of calls.</td></tr>
+      <tr><td style="padding:6px 10px 6px 0;font-weight:600;white-space:nowrap;vertical-align:top">Velocify</td><td style="padding:6px 0;color:var(--text-2)">CRM where leads are added and tracked. When an agent refers a buyer, this is where the lead lives. Have it open so you can see what's been referred and by whom.</td></tr>
     </table>
 
     <div style="background:var(--surface-2);border-radius:var(--radius-sm);padding:10px 12px;font-size:12.5px;color:var(--text-2)">The more familiar these tools become, the more confident you'll sound in the field. When you do need to bring something to the team, coming in with what you already found makes the conversation faster and makes the conversation more productive for everyone.</div>
@@ -1658,7 +1729,7 @@ function updateIntakeProgress(skipPersist){
   const prog=document.getElementById("intakeProgress");
   if(done===6){
     prog.textContent="✓ All 6 complete — ready to save";
-    prog.style.color="#2E7D32";
+    prog.style.color="#92400E";
   }else{
     prog.textContent=done+" of 6 complete";
     prog.style.color="#B85B00";
@@ -1705,7 +1776,7 @@ function applyLockState(){
     banner.style.display="flex";
     banner.innerHTML='<span>🔒 Open checklist: <strong>'+openIntake.agent_name+'</strong> — met '+fmtDate(openIntake.act_date)+'.</span><button class="lock-resume-btn" onclick="switchTab(\'log\')">Resume checklist</button>';
     lockedCard.style.display="block";
-    document.getElementById("logLockedSub").textContent=openIntake.agent_name+" — meeting logged "+fmtDate(openIntake.act_date)+". A few steps left below.";
+    document.getElementById("logLockedSub").textContent="Great job logging your meeting with "+properCase(openIntake.agent_name)+"! Before you log anything else, there are a few quick onboarding steps below. These make sure they get set up correctly and nothing falls through the cracks.";
     normalFields.style.display="none";
     setIntakeStates(openIntake.states);
     document.getElementById("intakeBlock").classList.add("show");
@@ -1926,11 +1997,11 @@ async function loadStartHere(){
     const cutoff60=new Date();cutoff60.setDate(cutoff60.getDate()-60);
     const[dayActs,escOpen,rcHot,coldCalls60,talkTos60,rcAllNames,breadProfiles,myBreads,lpBreads,fuToday]=await Promise.all([
       sbFetch("amanda_activities?select=act_type&act_date=eq."+todayStr).catch(()=>[]),
-      sbFetch("amanda_activities?select=agent_name&outcome=eq.Needs Escalation&act_date=gte."+localDateStr(cutoff7)).catch(()=>[]),
+      sbFetch("amanda_activities?select=agent_name&outcome=eq.Needs manager attention&act_date=gte."+localDateStr(cutoff7)).catch(()=>[]),
       sbFetch(RC_TABLE+"?select=agent_name,status&status=in.(hot,urgent)&limit=100").catch(()=>[]),
       sbFetch("amanda_activities?select=agent_name,outcome&act_type=eq.Cold Calls&act_date=gte."+localDateStr(cutoff60)+"&limit=1000").catch(()=>[]),
       sbFetch("amanda_activities?select=agent_name,act_type&act_date=gte."+localDateStr(cutoff60)+"&limit=2000").catch(()=>[]),
-      sbFetch(RC_TABLE+"?select=agent_name&status=neq.removed&limit=1000").catch(()=>[]),
+      sbFetch(RC_TABLE+"?select=agent_name,status&limit=1000").catch(()=>[]),
       sbFetch("agent_profiles?select=agent_name,tier&limit=500").catch(()=>[]),
       sbFetch("amanda_activities?select=agent_name,act_date&act_type=eq.Break Breads&order=act_date.desc&limit=2000").catch(()=>[]),
       sbFetch("break_breads?select=agent_name,date&order=date.desc&limit=2000").catch(()=>[]),
@@ -1953,7 +2024,8 @@ async function loadStartHere(){
 
     // Repeat Talk-to's with no traction: 3+ talk-to type touches, but agent is still on the Reconnect list
     // (no lead in 90+ days despite repeated contact) — a real signal without depending on Encompass data.
-    const reconnectNames=new Set((rcAllNames||[]).map(a=>normalize(a.agent_name)).filter(Boolean));
+    const reconnectNames=new Set((rcAllNames||[]).filter(a=>a.status!=="removed").map(a=>normalize(a.agent_name)).filter(Boolean));
+    const rcActiveCount=(rcAllNames||[]).filter(a=>a.status!=="removed").length;
     const ttByAgent={};
     talkTos60.forEach(a=>{
       if(TALKTO_TYPES.indexOf(a.act_type)<0)return;
@@ -1983,13 +2055,13 @@ async function loadStartHere(){
 
     const steps=[
       {icon:"🚩",label:"Escalations",urgent:escOpen.length>0,
-        text:escOpen.length?escOpen.length+" open escalation"+(escOpen.length!==1?"s":"")+" — check Daniel's View and follow up":"None right now"},
+        text:escOpen.length?escOpen.length+" open escalation"+(escOpen.length!==1?"s":"")+" — check Management View and follow up":"None right now"},
       {icon:"⚡",label:"CTC Calls",urgent:false,
         text:"Call, VM if no answer, then text. Use the CTC script. Get feedback from both the buyer's agent and listing agent, close for a meeting with the listing agent if they don't work with us yet. Share feedback on WhatsApp with the team in real-time. Check Encompass for the milestone."},
-      {icon:"🔁",label:"Reconnect",urgent:rcAllNames.length>0,
-        text:(rcAllNames.length||0)+" agent"+(rcAllNames.length!==1?"s":"")+" on the Reconnect list"+(rcHot.length>0?" ("+rcHot.length+" marked hot/urgent — prioritize those first)":"")+" — see the Reconnect tab to work through them."},
+      {icon:"🔁",label:"Reconnect",urgent:rcActiveCount>0,
+        text:rcActiveCount+" agent"+(rcActiveCount!==1?"s":"")+" on the Reconnect list. Aim for at least 5 today"+(rcHot.length>0?" — start with the "+rcHot.length+" marked hot/urgent":"")+". Log as Reconnect Outreach — counts toward your Talk-to goal. See the Reconnect tab."},
       {icon:"📞",label:"Talk-to's",urgent:false,
-        text:talkToToday+"/"+talkToGoal+" today. A quick text counts, a short call counts, it doesn't need to be a long conversation. What matters most: getting feedback, providing value, and noting what you actually talked about. This keeps you on an agent's radar, separate from whatever an LP is doing on a specific file."},
+        text:talkToToday+"/"+talkToGoal+" today. Any real touch counts — a call, a text, a check-in. What matters is that you are present, getting feedback, and noting what you talked about."},
       {icon:"🤝",label:"Break Breads",urgent:breadOverdue>10,
         text:breadOverdue+" agent"+(breadOverdue!==1?"s":"")+" due or overdue for a Break Bread — see the Break Bread Due List below for who's actually next in line."},
       {icon:"🏹",label:"Cold Calls",urgent:false,
@@ -2108,7 +2180,7 @@ async function loadFlagged(){
         // Amanda's existing reply if any
         +(hasReply
           ?'<div style="background:#E8F5E9;border:1px solid #81C784;border-radius:6px;padding:8px 10px;margin-bottom:10px;font-size:12px;color:#1B5E20">'
-            +'<div style="font-size:10px;font-weight:700;color:#2E7D32;margin-bottom:3px">Your response · '+fmtDate(f.rm_note_at)+'</div>'
+            +'<div style="font-size:10px;font-weight:700;color:#92400E;margin-bottom:3px">Your response · '+fmtDate(f.rm_note_at)+'</div>'
             +f.rm_note
           +'</div>'
           :"")
@@ -2197,8 +2269,8 @@ async function loadQuiet(){
       return{name,daysRM,daysLP,retained,threshold};
     }).filter(Boolean);
 
-    // At Risk = no Amanda touch beyond threshold (21 days for retained, 60 for others)
-    const quiet=rows.filter(r=>r.daysRM===null||r.daysRM>=r.threshold).sort((a,b)=>{
+    // At Risk = retained agents not touched in 21+ days only
+    const quiet=rows.filter(r=>r.retained&&(r.daysRM===null||r.daysRM>=21)).sort((a,b)=>{
       // Retained agents first, then by days
       if(a.retained&&!b.retained)return-1;
       if(!a.retained&&b.retained)return 1;
@@ -2251,8 +2323,8 @@ function switchTab(name){
   if(name==="pipeline")loadPipeline();
   if(name==="calendar")loadCalendar();
   if(name==="contacts")loadContacts();
-  if(name==="network")loadNetwork();
-  if(name==="health")loadHealth();
+  
+  
   if(name==="reconnect")loadReconnect();
   if(name==="feed")loadFeed();
   if(name==="daniel")loadDaniel();
@@ -2333,7 +2405,7 @@ function showPeriod(p){
   renderPeriodScorecard();
 }
 
-function goalColor(pct){return pct>=100?"#639922":pct>=60?"#EF9F27":"#E24B4A";}
+function goalColor(pct){return pct>=100?"#D97706":pct>=60?"#EF9F27":"#E24B4A";}
 
 function renderGoalBar(label,actual,target,pct,actType){
   const isGreen=pct>=100,isPass=pct>=80,c=pct>=100?"var(--success)":pct>=80?"var(--brand)":pct>=50?"var(--warning)":"var(--danger)";
@@ -2480,7 +2552,7 @@ async function loadOnboarding(){
       "Opportunity call: share a saved-deal story or tell them about our portfolio programs. Ask if they have any clients pre-approved below their target price.",
       "Accountability follow-up: review the commitment they made. If you haven't received an opportunity yet, ask for one directly."
     ];
-    const weekColors=["#4A6B50","#2E6DA4","#B87333","#7B52A8"];
+    const weekColors=["#92400E","#2E6DA4","#B87333","#7B52A8"];
     const weekBgs=["#EBF3EC","#E8F0F7","#FFF3E0","#F3E8FF"];
     const today2=new Date();today2.setHours(0,0,0,0);
     const nextMon=nextMonday();
@@ -2578,7 +2650,7 @@ async function loadWeek(){
         const ccolor=cpct>=25?"#1F6B45":cpct>=10?"#9A6A12":"#9B3B3B";
         html+='<div style="margin-top:10px;font-size:10.5px;color:#999">These are here for you to see your own pace, same view leadership has, nothing extra tracked behind the scenes.</div>';
         statsIntroAdded=true;
-        html+='<div style="margin-top:6px;padding:8px 10px;background:var(--surface-2,#f7f5f0);border-radius:8px;font-size:11px;color:#666">📶 Cold call connect rate this week: <strong style="color:'+ccolor+'">'+cpct+'%</strong> ('+connectsWk.length+' of '+withOutcomeWk.length+' dials reached a live conversation)</div>';
+        html+='<div style="margin-top:6px;padding:8px 10px;background:var(--surface-2,#FEF3C7);border-radius:8px;font-size:11px;color:#666">📶 Cold call connect rate this week: <strong style="color:'+ccolor+'">'+cpct+'%</strong> ('+connectsWk.length+' of '+withOutcomeWk.length+' dials reached a live conversation)</div>';
       }
       const talkTosWk=weekActs.filter(a=>TALKTO_TYPES.indexOf(a.act_type)>=0);
       const withOutcomeTtWk=talkTosWk.filter(a=>a.outcome);
@@ -2587,7 +2659,7 @@ async function loadWeek(){
         if(!statsIntroAdded)html+='<div style="margin-top:10px;font-size:10.5px;color:#999">These are here for you to see your own pace, same view leadership has, nothing extra tracked behind the scenes.</div>';
         const tcpct=Math.round((connectsTtWk.length/withOutcomeTtWk.length)*100);
         const tccolor=tcpct>=50?"#1F6B45":tcpct>=25?"#9A6A12":"#9B3B3B";
-        html+='<div style="margin-top:6px;padding:8px 10px;background:var(--surface-2,#f7f5f0);border-radius:8px;font-size:11px;color:#666">💬 Talk-to connect rate this week: <strong style="color:'+tccolor+'">'+tcpct+'%</strong> ('+connectsTtWk.length+' of '+withOutcomeTtWk.length+' touches were real engagement, not a voicemail/no-answer). Your 20/day goal still counts every attempted touch.</div>';
+        html+='<div style="margin-top:6px;padding:8px 10px;background:var(--surface-2,#FEF3C7);border-radius:8px;font-size:11px;color:#666">💬 Talk-to connect rate this week: <strong style="color:'+tccolor+'">'+tcpct+'%</strong> ('+connectsTtWk.length+' of '+withOutcomeTtWk.length+' touches were real engagement, not a voicemail/no-answer). Your 20/day goal still counts every attempted touch.</div>';
       }
     }catch(e){}
     document.getElementById("weekGoalBars").innerHTML=html;
@@ -2661,7 +2733,7 @@ async function loadWeek(){
     if(ctcEl){
       if(needsCtc.length){
         ctcEl.innerHTML='<div class="card-title" style="margin-bottom:10px">CTC Calls Needed <span class="card-sub">closed in last 14d, not yet thanked</span></div>'+
-          needsCtc.map(c=>'<div class="fu-item"><div class="fu-dot" style="background:#6B8F71"></div><div class="fu-body"><div class="fu-name">'+c.agent_name+'</div><div class="fu-meta" style="color:#6B8F71">Closed '+fmtDate(c.call_date)+'</div></div><button class="btn-sm" style="background:#6B8F71;color:#fff;border:none;border-radius:6px;padding:4px 10px;font-size:11px;cursor:pointer;font-family:inherit" onclick="document.getElementById(\'agentInput\').value=\''+c.agent_name.replace(/'/g,"\\'")+'\';document.getElementById(\'activityType\').value=\'CTC Call\';switchTab(\'log\')">Log CTC</button></div>').join("");
+          needsCtc.map(c=>'<div class="fu-item"><div class="fu-dot" style="background:#D97706"></div><div class="fu-body"><div class="fu-name">'+c.agent_name+'</div><div class="fu-meta" style="color:#D97706">Closed '+fmtDate(c.call_date)+'</div></div><button class="btn-sm" style="background:#D97706;color:#fff;border:none;border-radius:6px;padding:4px 10px;font-size:11px;cursor:pointer;font-family:inherit" onclick="document.getElementById(\'agentInput\').value=\''+c.agent_name.replace(/'/g,"\\'")+'\';document.getElementById(\'activityType\').value=\'CTC Call\';switchTab(\'log\')">Log CTC</button></div>').join("");
         ctcEl.style.display="block";
       }else{
         ctcEl.style.display="none";
@@ -2691,7 +2763,7 @@ async function initAutocomplete(){
     let html=agentMatches.map(n=>'<div class="ac-item" onclick="selectAgent(\''+ n.replace(/'/g,"\\'") +'\')">'+n+'</div>').join("");
     if(prospectMatches.length){
       html+='<div style="font-size:10px;color:#9C27B0;font-weight:600;padding:6px 12px 2px;text-transform:uppercase;letter-spacing:.5px">Prospects</div>';
-      html+=prospectMatches.map(n=>'<div class="ac-item" onclick="selectAgent(\''+ n.replace(/'/g,"\\'") +'\')" style="color:#6B8F71">🌿 '+n+'</div>').join("");
+      html+=prospectMatches.map(n=>'<div class="ac-item" onclick="selectAgent(\''+ n.replace(/'/g,"\\'") +'\')" style="color:#D97706">🌿 '+n+'</div>').join("");
     }
     list.innerHTML=html;
     list.classList.add("open");
@@ -2857,7 +2929,7 @@ async function loadFollowups(){
       }else if(isToday){
         dotC="#EF9F27";bgC="#FFF8E1";label="Today";
       }else{
-        dotC="#6B8F71";bgC="#EBF3EC";label="In "+days+"d";
+        dotC="#D97706";bgC="#EBF3EC";label="In "+days+"d";
       }
       
       return'<div class="fu-item" id="fu-'+f.id+'" style="background:'+bgC+';padding:12px;border-radius:8px;border:0.5px solid '+(bgC==="#FCEBEB"?"#f7c1c1":bgC==="#FFF3E0"?"#FFE69C":"#EDE9E0")+'">'+
@@ -2867,29 +2939,29 @@ async function loadFollowups(){
         '<div class="fu-meta">'+badgeEmoji(f.act_type)+(f.notes?" · "+f.notes.substring(0,45):"")+'</div>'+
         '<div id="fu-edit-'+f.id+'" class="fu-edit-area"><input type="date" id="fu-date-'+f.id+'" value="'+f.follow_up_date+'" style="border:0.5px solid #D9D3C7;border-radius:6px;padding:5px 9px;font-size:12px;margin-right:6px;font-family:inherit"><button class="btn-sm" onclick="saveFollowupDate('+f.id+')">Save</button><button class="btn-sm" onclick="document.getElementById('+"'fu-edit-"+f.id+"'"+').style.display=\'none\'" style="margin-left:4px">Cancel</button></div>'+
         '<div id="fu-log-'+f.id+'" class="fu-inline-log">'+
-          '<div style="font-size:11px;font-weight:600;color:#6B8F71;margin-bottom:8px">Log outcome for '+f.agent_name+'</div>'+
+          '<div style="font-size:11px;font-weight:600;color:#D97706;margin-bottom:8px">Log outcome for '+f.agent_name+'</div>'+
           '<select id="fu-log-type-'+f.id+'">'+ACT_TYPE_OPTIONS+'</select>'+
           '<div class="inline-row"><select id="fu-log-outcome-'+f.id+'"><option value="">Outcome...</option><option>Positive</option><option>Meeting Scheduled</option><option>Requires follow-up</option><option>Remove / No Further Contact</option></select>'+
           '<input type="date" id="fu-log-newfu-'+f.id+'" placeholder="New follow-up date (if needed)"></div>'+
           '<textarea id="fu-log-notes-'+f.id+'" placeholder="Notes..." rows="2"></textarea>'+
           '<div style="display:flex;gap:8px">'+
-          '<button class="btn-sm" style="background:#6B8F71;color:#fff;border:none;border-radius:6px;padding:6px 12px;cursor:pointer;font-family:inherit;font-size:12px" onclick="saveInlineLog('+f.id+',\''+f.agent_name.replace(/'/g,"\\'")+'\',\''+f.act_date+'\')">Save & clear follow-up</button>'+
+          '<button class="btn-sm" style="background:#D97706;color:#fff;border:none;border-radius:6px;padding:6px 12px;cursor:pointer;font-family:inherit;font-size:12px" onclick="saveInlineLog('+f.id+',\''+f.agent_name.replace(/'/g,"\\'")+'\',\''+f.act_date+'\')">Save & clear follow-up</button>'+
           '<button class="btn-sm" onclick="document.getElementById(\'fu-log-'+f.id+'\').classList.remove(\'show\')" style="font-size:11px">Cancel</button>'+
           '</div>'+
         '</div>'+
         '<div id="fu-handled-'+f.id+'" class="fu-inline-log">'+
-          '<div style="font-size:11px;font-weight:600;color:#2E7D32;margin-bottom:8px">Mark as handled — note required (min '+MIN_NOTE_WORDS+' words)</div>'+
+          '<div style="font-size:11px;font-weight:600;color:#92400E;margin-bottom:8px">Mark as handled — note required (min '+MIN_NOTE_WORDS+' words)</div>'+
           '<textarea id="fu-handled-notes-'+f.id+'" placeholder="What happened — e.g. Called, discussed X, going to re-engage in 60 days because..." rows="2"></textarea>'+
           '<div style="display:flex;gap:8px">'+
-          '<button class="btn-sm" style="background:#2E7D32;color:#fff;border:none;border-radius:6px;padding:6px 12px;cursor:pointer;font-family:inherit;font-size:12px" onclick="confirmMarkHandled('+f.id+',\''+f.agent_name.replace(/'/g,"\\'")+'\')">Confirm handled</button>'+
+          '<button class="btn-sm" style="background:#92400E;color:#fff;border:none;border-radius:6px;padding:6px 12px;cursor:pointer;font-family:inherit;font-size:12px" onclick="confirmMarkHandled('+f.id+',\''+f.agent_name.replace(/'/g,"\\'")+'\')">Confirm handled</button>'+
           '<button class="btn-sm" onclick="document.getElementById(\'fu-handled-'+f.id+'\').classList.remove(\'show\')" style="font-size:11px">Cancel</button>'+
           '</div>'+
         '</div>'+
       '</div>'+
       '<div style="display:flex;flex-direction:column;align-items:flex-end;gap:5px">'+
         '<div class="fu-date" style="color:'+dotC+';font-weight:600">'+label+'</div>'+
-        '<button class="btn-sm" style="font-size:10px;padding:4px 9px;background:#6B8F71;color:#fff;border:none;border-radius:6px;cursor:pointer;font-family:inherit" onclick="toggleFuInlineLog('+f.id+')">Log outcome</button>'+
-        '<button class="btn-sm" style="font-size:10px;padding:4px 9px;background:#2E7D32;color:#fff;border:none;border-radius:6px;cursor:pointer;font-family:inherit" onclick="toggleFuHandled('+f.id+')">Mark as handled</button>'+
+        '<button class="btn-sm" style="font-size:10px;padding:4px 9px;background:#D97706;color:#fff;border:none;border-radius:6px;cursor:pointer;font-family:inherit" onclick="toggleFuInlineLog('+f.id+')">Log outcome</button>'+
+        '<button class="btn-sm" style="font-size:10px;padding:4px 9px;background:#92400E;color:#fff;border:none;border-radius:6px;cursor:pointer;font-family:inherit" onclick="toggleFuHandled('+f.id+')">Mark as handled</button>'+
         '<button class="btn-sm" onclick="toggleFuEdit('+f.id+')" style="font-size:10px;padding:3px 7px">Edit date</button>'+
       '</div>'+
       '</div>';
@@ -3110,7 +3182,7 @@ async function generateDailyCheckin(){
     const[dayActs,mtdActsCk,escToday,flaggedOpen,rcDue]=await Promise.all([
       sbFetch("amanda_activities?select=act_type,agent_name,outcome,notes&act_date=eq."+todayStr),
       sbFetch("amanda_activities?select=act_type&act_date=gte."+monthStart),
-      sbFetch("amanda_activities?select=agent_name,act_type,notes&outcome=eq.Needs Escalation&act_date=eq."+todayStr).catch(()=>[]),
+      sbFetch("amanda_activities?select=agent_name,act_type,notes&outcome=eq.Needs manager attention&act_date=eq."+todayStr).catch(()=>[]),
       sbFetch("call_logs?select=agent_name,lp,note&flag_rm=eq.true&limit=20").catch(()=>[]),
       sbFetch("amanda_activities?select=agent_name,act_date&act_type=eq.New Realtor Meeting&act_date=gte."+localDateStr(cutoff30)+"&order=act_date.desc").catch(()=>[])
     ]);
@@ -3359,7 +3431,7 @@ async function loadReconnect(){
       meta.textContent="No agents loaded yet — list will appear after Power BI sync";
       document.getElementById("rcSummary").style.display="none";
       document.getElementById("rcFiltersCard").style.display="none";
-      document.getElementById("rcList").innerHTML='<div class="no-data" style="padding:24px;text-align:center"><div style="font-size:32px;margin-bottom:8px">🔁</div><div style="font-weight:500;color:#6B8F71;margin-bottom:4px">Reconnect list is empty</div><div style="font-size:12px;color:#aaa">Agents who have gone quiet will appear here once the list is synced.</div></div>';
+      document.getElementById("rcList").innerHTML='<div class="no-data" style="padding:24px;text-align:center"><div style="font-size:32px;margin-bottom:8px">🔁</div><div style="font-weight:500;color:#D97706;margin-bottom:4px">Reconnect list is empty</div><div style="font-size:12px;color:#aaa">Agents who have gone quiet will appear here once the list is synced.</div></div>';
       return;
     }
 
@@ -3442,7 +3514,7 @@ function renderReconnect(){
     html+=renderRcGroup(active,"active");
   }
   if(contacted.length&&(status==="all"||status==="contacted")){
-    html+='<div class="rc-section-header" style="color:#2E7D32;border-color:#81C784;margin-top:16px">Contacted this cycle ('+contacted.length+')</div>';
+    html+='<div class="rc-section-header" style="color:#92400E;border-color:#FDE68A;margin-top:16px">Contacted this cycle ('+contacted.length+')</div>';
     html+=renderRcGroup(contacted,"contacted");
   }
   if(removed.length&&(status==="all"||status==="removed")){
@@ -3481,14 +3553,14 @@ function renderRcGroup(list,groupStatus){
     const lpKey=(r.agent_name||"").trim().toLowerCase();
     const lpTouch=rcLpLastTouch[lpKey];
     const lpTouchStr=lpTouch
-      ?'<span style="color:'+(lpTouch.days<=7?"#2E7D32":lpTouch.days<=30?"#6B8F71":"#aaa")+'">LP ('+lpTouch.lp+'): '+lpTouch.days+'d ago</span>'
+      ?'<span style="color:'+(lpTouch.days<=7?"#92400E":lpTouch.days<=30?"#D97706":"#aaa")+'">LP ('+lpTouch.lp+'): '+lpTouch.days+'d ago</span>'
       :'<span style="color:#ddd">LP: no calls logged</span>';
 
     let actions="";
     if(groupStatus!=="removed"){
-      actions+='<button class="btn-sm" style="background:#6B8F71;color:#fff;border:none;border-radius:6px;padding:5px 10px;font-size:11px;cursor:pointer;font-family:inherit" onclick="rcToggleLog('+rid+')">Log outreach</button>';
+      actions+='<button class="btn-sm" style="background:#D97706;color:#fff;border:none;border-radius:6px;padding:5px 10px;font-size:11px;cursor:pointer;font-family:inherit" onclick="rcToggleLog('+rid+')">Log outreach</button>';
       if(groupStatus!=="contacted"){
-        actions+='<button class="btn-sm" style="background:#2E7D32;color:#fff;border:none;border-radius:6px;padding:5px 10px;font-size:11px;cursor:pointer;font-family:inherit" onclick="rcMarkContacted('+rid+')" >Mark contacted</button>';
+        actions+='<button class="btn-sm" style="background:#92400E;color:#fff;border:none;border-radius:6px;padding:5px 10px;font-size:11px;cursor:pointer;font-family:inherit" onclick="rcMarkContacted('+rid+')" >Mark contacted</button>';
       }else{
         actions+='<button class="btn-sm" onclick="rcMarkActive('+rid+')" style="font-size:11px;padding:4px 8px">Undo</button>';
       }
@@ -3513,15 +3585,15 @@ function renderRcGroup(list,groupStatus){
       '</div>'+
       // Inline log form
       '<div id="rc-log-'+rid+'" class="rc-inline-form">'+
-        '<div style="font-size:11px;font-weight:600;color:#6B8F71;margin-bottom:8px">Log outreach — '+r.agent_name+'</div>'+
+        '<div style="font-size:11px;font-weight:600;color:#D97706;margin-bottom:8px">Log outreach — '+r.agent_name+'</div>'+
         '<select id="rc-log-type-'+rid+'">'+ACT_TYPE_OPTIONS+'</select>'+
         '<div class="rc-inline-row">'+
-          '<select id="rc-log-outcome-'+rid+'"><option value="">Outcome...</option><option>Positive</option><option>Meeting Scheduled</option><option>Requires follow-up</option><option>Needs Escalation</option><option>Remove / No Further Contact</option></select>'+
+          '<select id="rc-log-outcome-'+rid+'"><option value="">Outcome...</option><option>Positive</option><option>Meeting Scheduled</option><option>Requires follow-up</option><option>Remove / No Further Contact</option></select>'+
           '<input type="date" id="rc-log-fu-'+rid+'" placeholder="Follow-up date (if needed)">'+
         '</div>'+
         '<textarea id="rc-log-notes-'+rid+'" placeholder="Notes..." rows="2"></textarea>'+
         '<div style="display:flex;gap:8px">'+
-          '<button class="btn-sm" style="background:#6B8F71;color:#fff;border:none;border-radius:6px;padding:6px 12px;cursor:pointer;font-family:inherit;font-size:12px" onclick="rcSaveLog('+rid+',\''+r.agent_name.replace(/'/g,"\\'")+'\')">Save & mark contacted</button>'+
+          '<button class="btn-sm" style="background:#D97706;color:#fff;border:none;border-radius:6px;padding:6px 12px;cursor:pointer;font-family:inherit;font-size:12px" onclick="rcSaveLog('+rid+',\''+r.agent_name.replace(/'/g,"\\'")+'\')">Save & mark contacted</button>'+
           '<button class="btn-sm" onclick="rcToggleLog('+rid+')" style="font-size:11px">Cancel</button>'+
         '</div>'+
       '</div>'+
@@ -3972,13 +4044,13 @@ async function loadHealth(){
     const issueCount=(openIntake?1:0)+noOutcome.length+overdueFus.length+missingContact.length+prospectsMissingContact.length+requiresFuNoDate.length+noteViolations.length+suspiciousRepeats.length+batchDays.length+escalations.length+(untiered.length>0?1:0);
     
     if(issueCount===0){
-      html='<div style="text-align:center;padding:28px;color:#2E7D32"><div style="font-size:40px;margin-bottom:8px">Done</div><div style="font-size:14px;font-weight:500">All systems healthy!</div></div>';
+      html='<div style="text-align:center;padding:28px;color:#92400E"><div style="font-size:40px;margin-bottom:8px">Done</div><div style="font-size:14px;font-weight:500">All systems healthy!</div></div>';
     }else{
       if(openIntake){
         html+='<div style="background:#FCEBEB;border:1px solid #f7c1c1;border-radius:8px;padding:12px;margin-bottom:10px;cursor:pointer" onclick="switchTab(\'log\')"><div style="font-weight:600;color:#A32D2D;margin-bottom:6px">🔒 Open intake checklist — '+openIntake.agent_name+'</div><div style="font-size:11px;color:#888">Met '+fmtDate(openIntake.act_date)+'. Logging is locked app-wide until this is finished. Tap to resume.</div></div>';
       }
       if(escalations.length){
-        html+='<div style="background:#FCEBEB;border:1px solid #f7c1c1;border-radius:8px;padding:12px;margin-bottom:10px;cursor:pointer" onclick="switchTab(\'health\');document.getElementById(\'escalationWatch\').scrollIntoView({behavior:\'smooth\'})"><div style="font-weight:600;color:#A32D2D;margin-bottom:6px">🚨 '+escalations.length+' agent'+(escalations.length!==1?"s":"")+' need escalation</div><div style="font-size:11px;color:#888">3+ unanswered attempts across 2+ channels, no response in '+ESCALATION_WINDOW_DAYS+' days — see Needs Escalation above</div></div>';
+        html+='<div style="background:#FCEBEB;border:1px solid #f7c1c1;border-radius:8px;padding:12px;margin-bottom:10px;cursor:pointer" onclick="switchTab(\'daniel\');setTimeout(()=>{document.getElementById(\'danielEscalation\').scrollIntoView({behavior:\'smooth\'})},300)"><div style="font-weight:600;color:#A32D2D;margin-bottom:6px">🚨 '+escalations.length+' agent'+(escalations.length!==1?"s":"")+' need escalation</div><div style="font-size:11px;color:#888">3+ unanswered attempts across 2+ channels, no response in '+ESCALATION_WINDOW_DAYS+' days — see Needs Escalation above</div></div>';
       }
       if(noOutcome.length){
         html+='<div style="background:#FCEBEB;border:0.5px solid #f7c1c1;border-radius:8px;padding:12px;margin-bottom:10px"><div style="font-weight:500;color:#A32D2D;margin-bottom:6px">🔴 '+noOutcome.length+' activities missing outcomes</div><div style="font-size:11px;color:#888">Set outcomes for: '+noOutcome.slice(0,3).map(a=>a.agent_name).join(", ")+(noOutcome.length>3?"...":"")+'</div></div>';
@@ -3998,7 +4070,7 @@ async function loadHealth(){
         html+='<div style="background:#FFF3E0;border:0.5px solid #FFE69C;border-radius:8px;padding:12px;margin-bottom:10px;cursor:pointer" onclick="switchTab(\'feed\')"><div style="font-weight:500;color:#B85B00;margin-bottom:6px">'+noteViolations.length+' activities missing/incomplete notes</div><div style="font-size:11px;color:#888">Talk-to\'s, CTC, Birthday & Check-ins need 10+ words; Cold Calls need at least a short note. Includes historical entries.</div></div>';
       }
       if(suspiciousRepeats.length){
-        html+='<div style="background:#FCEBEB;border:0.5px solid #f7c1c1;border-radius:8px;padding:12px;margin-bottom:10px;cursor:pointer" onclick="switchTab(\'health\');document.getElementById(\'copyPasteWatch\').scrollIntoView({behavior:\'smooth\'})"><div style="font-weight:500;color:#A32D2D;margin-bottom:6px">🔁 '+suspiciousRepeats.length+' repeated/copy-paste-looking cold-call note'+(suspiciousRepeats.length!==1?"s":"")+'</div><div style="font-size:11px;color:#888">Same note text used 3+ times in one day — see Copy-Paste Note Watch above</div></div>';
+        html+='<div style="background:#FCEBEB;border:0.5px solid #f7c1c1;border-radius:8px;padding:12px;margin-bottom:10px;cursor:pointer" onclick="switchTab(\'daniel\');setTimeout(()=>{document.getElementById(\'danielCopyPaste\').scrollIntoView({behavior:\'smooth\'})},300)"><div style="font-weight:500;color:#A32D2D;margin-bottom:6px">🔁 '+suspiciousRepeats.length+' repeated/copy-paste-looking cold-call note'+(suspiciousRepeats.length!==1?"s":"")+'</div><div style="font-size:11px;color:#888">Same note text used 3+ times in one day — see Copy-Paste Note Watch above</div></div>';
       }
       if(batchDays.length){
         html+='<div style="background:#FFF3E0;border:0.5px solid #FFE69C;border-radius:8px;padding:12px;margin-bottom:10px"><div style="font-weight:500;color:#B85B00;margin-bottom:6px">⏱️ '+batchDays.length+' day'+(batchDays.length!==1?"s":"")+' with batch-logging patterns</div><div style="font-size:11px;color:#888">5+ activities saved within 10 minutes — see Batch-Logging Watch above</div></div>';
@@ -4188,14 +4260,14 @@ async function doSearchHistory(name){
         const isRM=lastTouch.act_date!==undefined;
         const lastDate=isRM?lastTouch.act_date:lastTouch.call_date;
         const days=Math.round((new Date()-new Date(lastDate+"T12:00:00"))/86400000);
-        const color=days>60?"#A32D2D":days>30?"#E24B4A":"#2E7D32";
+        const color=days>60?"#A32D2D":days>30?"#E24B4A":"#92400E";
         const source=isRM?"Amanda":"LP";
         touchInfo='<div style="color:'+color+';font-size:11px;margin-top:6px">Last touch: '+source+' '+days+'d ago</div>';
       }
       
-      html+='<div style="background:#EBF3EC;border:0.5px solid #AFA9EC;border-radius:10px;padding:16px;margin-bottom:14px"><div style="font-size:16px;font-weight:500;color:#3D5442;margin-bottom:10px">🌸 '+p.agent_name+'</div><div style="display:flex;flex-direction:column;gap:8px;font-size:12px">'+
-      (p.email?'<div>Email <span style="font-weight:500;color:#3D5442">'+p.email+'</span></div>':"")+
-      (p.phone?'<div>Phone <span style="font-weight:500;color:#3D5442">'+p.phone+'</span></div>':"")+
+      html+='<div style="background:#FEF3C7;border:0.5px solid #FDE68A;border-radius:10px;padding:16px;margin-bottom:14px"><div style="font-size:16px;font-weight:500;color:#92400E;margin-bottom:10px">🌸 '+p.agent_name+'</div><div style="display:flex;flex-direction:column;gap:8px;font-size:12px">'+
+      (p.email?'<div>Email <span style="font-weight:500;color:#92400E">'+p.email+'</span></div>':"")+
+      (p.phone?'<div>Phone <span style="font-weight:500;color:#92400E">'+p.phone+'</span></div>':"")+
       bdayInfo+
       touchInfo+
       '</div></div>';
@@ -4230,8 +4302,28 @@ async function loadDanielAccountability(){
   try{
     const rmActs=await sbFetch("amanda_activities?select=*&limit=1000");
 
-    // ── Missing / incomplete notes — itemized, most recent first, capped ──────
-    const violations=rmActs.filter(a=>a.act_type!=="Cold Calls"&&!noteMeetsBar(a.act_type,a.notes)).sort((a,b)=>(b.act_date||"").localeCompare(a.act_date||""));
+    // ── Needs Manager Attention — flagged by Amanda ──────────────────────────
+    const managerFlags=(rmActs||[]).filter(a=>a.outcome==="Needs manager attention").sort((a,b)=>(b.act_date||"").localeCompare(a.act_date||"")).slice(0,20);
+    const mfEl=document.getElementById("danielManagerFlags");
+    if(mfEl){
+      if(!managerFlags.length){
+        mfEl.innerHTML='<div class="no-data" style="padding:16px">Nothing flagged right now</div>';
+      }else{
+        mfEl.innerHTML=managerFlags.map(a=>{
+          const safeAgent=properCase(a.agent_name);
+          return'<div style="padding:10px 0;border-bottom:1px solid var(--border-light)">'
+            +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:3px">'
+            +'<span style="font-weight:600;font-size:13px;color:var(--text-1)">'+safeAgent+'</span>'
+            +'<span style="font-size:10px;font-weight:700;background:#FEF3C7;color:var(--brand-dark);padding:2px 8px;border-radius:20px;border:1px solid var(--border)">'+fmtDate(a.act_date)+'</span>'
+            +'</div>'
+            +'<div style="font-size:11px;color:var(--text-3);margin-bottom:4px">'+a.act_type+(a.contact_method?" · "+a.contact_method:"")+'</div>'
+            +(a.notes?'<div style="font-size:12px;color:var(--text-2);background:var(--surface-2);border-radius:6px;padding:6px 10px">'+escHtml(a.notes)+'</div>':'<div style="font-size:12px;color:var(--text-4);font-style:italic">No note added</div>')
+            +'<button class="btn-sm" style="margin-top:6px;font-size:10px;padding:4px 10px" onclick="var n=\''+safeAgent.replace(/'/g,"\\'")+'\'+(\'(resolved)\');sbFetch(\'amanda_activities?id=eq.'+a.id+'\',{method:\'PATCH\',body:JSON.stringify({outcome:\'Requires follow-up\'})}).then(()=>loadDanielAccountability())">Mark resolved</button>'
+            +'</div>';
+        }).join("");
+      }
+    }
+    const notesCutoff="2026-08-04";const violations=rmActs.filter(a=>a.act_date>=notesCutoff&&!noteMeetsBar(a.act_type,a.notes)).sort((a,b)=>(b.act_date||"").localeCompare(a.act_date||""));
     const nmEl=document.getElementById("danielNotesMissing");
     if(nmEl){
       if(!violations.length){
@@ -4370,7 +4462,7 @@ async function loadDaniel(){
       sbFetch(RC_TABLE+"?select=agent_name&status=eq.contacted&limit=100").catch(()=>[]),
       sbFetch("agent_profiles?select=agent_name&limit=500").catch(()=>[]),
       sbFetch("amanda_activities?select=agent_name,act_date&order=act_date.desc&limit=2000").catch(()=>[]),
-      sbFetch("amanda_activities?select=agent_name,act_type,act_date,notes&outcome=eq.Needs Escalation&act_date=gte."+escFlagCutoffStr+"&order=act_date.desc&limit=50").catch(()=>[]),
+      sbFetch("amanda_activities?select=agent_name,act_type,act_date,notes&outcome=eq.Needs manager attention&act_date=gte."+escFlagCutoffStr+"&order=act_date.desc&limit=50").catch(()=>[]),
       sbFetch("call_logs?select=agent_name,call_date,outcome&outcome=ilike.*close*&call_date=gte."+monthStart+"&limit=500").catch(()=>[]),
       sbFetch("call_logs?select=call_date,rm_note_at&rm_note_at=not.is.null&call_date=gte."+escFlagCutoffStr+"&limit=200").catch(()=>[]),
       sbFetch(RC_TABLE+"?select=agent_name,status&status=neq.removed&limit=1000").catch(()=>[]),
@@ -4387,26 +4479,30 @@ async function loadDaniel(){
     const c=(acts,type)=>acts.filter(a=>a.act_type===type).length;
     const uniq=(acts)=>new Set(acts.map(a=>(a.agent_name||"").toLowerCase().trim()).filter(Boolean)).size;
 
-    // ── ACQUISITION FUNNEL: Cold Calls → Meeting Scheduled → Meeting Held → Retained (last 90 days) ──
+    // ── ACQUISITION FUNNEL: true cohort — Cold Calls → Scheduled → Held → Retained (last 90 days) ──
     try{
       const normalizeF=s=>(s||"").toLowerCase().trim();
       const coldCallsF=(funnelCohortActs||[]).filter(a=>a.act_type==="Cold Calls");
-      const meetingsScheduled=coldCallsF.filter(a=>a.outcome==="Meeting Scheduled");
-      const meetingsHeld=(funnelCohortActs||[]).filter(a=>a.act_type==="New Realtor Meeting");
-      const churnedNames=new Set((rcAllAgents||[]).map(a=>normalizeF(a.agent_name)).filter(Boolean));
-      const heldNames=new Set(meetingsHeld.map(a=>normalizeF(a.agent_name)).filter(Boolean));
-      const retainedCount=[...heldNames].filter(n=>!churnedNames.has(n)).length;
       const totalDials=coldCallsF.length;
+      // Agents who got a "Meeting Scheduled" outcome on a cold call in this window
+      const scheduledNames=new Set(coldCallsF.filter(a=>a.outcome==="Meeting Scheduled").map(a=>normalizeF(a.agent_name)).filter(Boolean));
+      // Of those, who also has a New Realtor Meeting logged in the same window
+      const meetingsHeldAll=(funnelCohortActs||[]).filter(a=>a.act_type==="New Realtor Meeting");
+      const heldFromScheduled=meetingsHeldAll.filter(a=>scheduledNames.has(normalizeF(a.agent_name)));
+      const heldNames=new Set(heldFromScheduled.map(a=>normalizeF(a.agent_name)).filter(Boolean));
+      // Of those held, who is NOT on the reconnect list (still retained)
+      const churnedNames=new Set((rcAllAgents||[]).map(a=>normalizeF(a.agent_name)).filter(Boolean));
+      const retainedCount=[...heldNames].filter(n=>!churnedNames.has(n)).length;
       const stages=[
         {label:"Cold Calls",count:totalDials,pct:100},
-        {label:"Meeting Scheduled",count:meetingsScheduled.length,pct:totalDials?Math.round(meetingsScheduled.length/totalDials*100):0},
-        {label:"Meeting Held",count:meetingsHeld.length,pct:totalDials?Math.round(meetingsHeld.length/totalDials*100):0},
+        {label:"Meeting Scheduled",count:scheduledNames.size,pct:totalDials?Math.round(scheduledNames.size/totalDials*100):0},
+        {label:"Meeting Held",count:heldNames.size,pct:totalDials?Math.round(heldNames.size/totalDials*100):0},
         {label:"Still Retained",count:retainedCount,pct:totalDials?Math.round(retainedCount/totalDials*100):0}
       ];
       let funnelHtml='<div style="font-size:11px;color:var(--text-3);margin-bottom:10px">Last 90 days — long enough for a new relationship to have actually succeeded or fallen off</div>';
       funnelHtml+='<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px">';
       stages.forEach((s,i)=>{
-        const barColor=i===0?"#8899AA":i===1?"#5B8DB8":i===2?"#4A9B6E":"#2E7D32";
+        const barColor=i===0?"#8899AA":i===1?"#5B8DB8":i===2?"#16A34A":"#92400E";
         funnelHtml+='<div style="flex:1;min-width:110px;text-align:center;background:var(--surface-2);border-radius:8px;padding:12px 8px">'
           +'<div style="font-size:22px;font-weight:700;color:'+barColor+'">'+s.count+'</div>'
           +'<div style="font-size:10px;color:var(--text-3);margin-top:2px;text-transform:uppercase;letter-spacing:.3px">'+s.label+'</div>'
@@ -4415,7 +4511,7 @@ async function loadDaniel(){
         if(i<stages.length-1)funnelHtml+='<div style="display:flex;align-items:center;color:var(--text-3);font-size:16px">&rarr;</div>';
       });
       funnelHtml+='</div>';
-      funnelHtml+='<div style="font-size:11px;color:var(--text-3)">"Still Retained" = agents from a held meeting who have NOT fallen onto the Reconnect list (i.e. still sending business). This is the number that matters most; a meeting that doesn\'t turn into a lasting relationship isn\'t really a win yet. Note: this isn\'t a strict cohort match (a meeting this window may have come from a dial before it), so read it as a directional funnel, not exact attribution.</div>';
+      funnelHtml+='<div style="font-size:11px;color:var(--text-3)">"Still Retained" = agents from a cold call that became a meeting that became an active partner still sending business. Each stage only counts agents from the stage before it, so the numbers tell a true conversion story.</div>';
       document.getElementById("danielFunnel").innerHTML=funnelHtml;
     }catch(e){console.error("Funnel error:",e);document.getElementById("danielFunnel").innerHTML='<div class="no-data">Unable to load.</div>';}
 
@@ -4456,6 +4552,31 @@ async function loadDaniel(){
         +(noOutcomeTt>0?'<div style="font-size:11px;color:var(--text-3)">'+noOutcomeTt+' touch'+(noOutcomeTt!==1?"es":"")+' logged with no outcome selected — excluded from this rate.</div>':'')
         +'<div style="font-size:11px;color:var(--text-3);margin-top:4px">This does not change the daily 20/day goal — every attempted touch (text, call, voicemail) still counts toward that. This is purely a quality signal on top, to see how much of the volume is turning into real back-and-forth.</div>';
     }catch(e){console.error("Talk-to connect rate error:",e);document.getElementById("danielTalkToConnectRate").innerHTML='<div class="no-data">Unable to load.</div>';}
+
+    // ── RECONNECT PROGRESS: list size, contacted MTD, daily pace ──
+    try{
+      const rcEl=document.getElementById("danielReconnectProgress");
+      const allRc=await sbFetch(RC_TABLE+"?select=agent_name,status,contacted_at&limit=1000").catch(()=>[]);
+      const totalOnList=(allRc||[]).filter(a=>a.status!=="removed").length;
+      const contactedMtd=(allRc||[]).filter(a=>{
+        if(!a.contacted_at)return false;
+        const d=a.contacted_at.slice(0,10);
+        return d>=monthStart;
+      }).length;
+      const workdaysInMonth=22;
+      const dailyGoal=5;
+      const monthlyGoal=dailyGoal*workdaysInMonth;
+      const pct=monthlyGoal?Math.min(Math.round((contactedMtd/monthlyGoal)*100),100):0;
+      const pctColor=pct>=80?"var(--success)":pct>=40?"var(--warning)":"var(--danger)";
+      if(rcEl){
+        rcEl.innerHTML='<div style="display:flex;gap:24px;flex-wrap:wrap;margin-bottom:8px">'
+          +'<div><div style="font-size:24px;font-weight:700;color:var(--text-1)">'+totalOnList+'</div><div style="font-size:11px;color:var(--text-3)">total on list</div></div>'
+          +'<div><div style="font-size:24px;font-weight:700;color:'+pctColor+'">'+contactedMtd+'</div><div style="font-size:11px;color:var(--text-3)">contacted MTD</div></div>'
+          +'<div><div style="font-size:24px;font-weight:700;color:'+pctColor+'">'+pct+'%</div><div style="font-size:11px;color:var(--text-3)">of monthly pace</div></div>'
+          +'</div>'
+          +'<div style="font-size:11px;color:var(--text-3)">Goal is 5 per day. At that pace, the full list cycles through in about '+(totalOnList?Math.ceil(totalOnList/dailyGoal)+' working days':'—')+'. '+(totalOnList>contactedMtd?(totalOnList-contactedMtd)+' agents not yet contacted this month.':'All agents touched this month.')+'</div>';
+      }
+    }catch(e){console.error("Reconnect progress error:",e);const el=document.getElementById("danielReconnectProgress");if(el)el.innerHTML='<div class="no-data">Unable to load.</div>';}
 
     // ── PRODUCTION SIGNAL: agents touched this month vs agents who closed ──
     try{
@@ -4733,17 +4854,17 @@ async function renderDanielCoverage(){
       covHtml+=notCovered.map(n=>'<div style="display:flex;align-items:center;justify-content:space-between;padding:7px 0;border-bottom:0.5px solid #f5f5f8">'
         +'<span style="font-size:13px;font-weight:500;color:#1a1a2e">'+n.name+'</span>'
         +'<div style="display:flex;gap:6px;align-items:center">'
-        +'<span style="font-size:10px;color:#9A6A12;font-weight:500">'+n.days+'d silent</span>'
-        +'<button onclick="document.getElementById(\'agentInput\').value=\''+n.name.replace(/'/g,"\\'")+'\';switchTab(\'log\')" style="font-size:10px;padding:3px 9px;background:#6B8F71;color:#fff;border:none;border-radius:6px;cursor:pointer;font-family:inherit">Log outreach</button>'
+        +'<span style="font-size:10px;color:#D97706;font-weight:500">'+n.days+'d silent</span>'
+        +'<button onclick="document.getElementById(\'agentInput\').value=\''+n.name.replace(/'/g,"\\'")+'\';switchTab(\'log\')" style="font-size:10px;padding:3px 9px;background:#D97706;color:#fff;border:none;border-radius:6px;cursor:pointer;font-family:inherit">Log outreach</button>'
         +'</div></div>'
       ).join("");
     }
 
     if(covered.length){
-      covHtml+='<div style="font-size:11px;font-weight:600;color:#1F6B45;margin-top:12px;margin-bottom:6px">Touched this week ('+covered.length+')</div>';
+      covHtml+='<div style="font-size:11px;font-weight:600;color:#16A34A;margin-top:12px;margin-bottom:6px">Touched this week ('+covered.length+')</div>';
       covHtml+=covered.map(n=>'<div style="display:flex;align-items:center;justify-content:space-between;padding:5px 0;border-bottom:0.5px solid #f5f5f8">'
         +'<span style="font-size:12px;color:#555">'+n.name+'</span>'
-        +'<span style="font-size:10px;color:#1F6B45;font-weight:500">✓ Covered</span>'
+        +'<span style="font-size:10px;color:#16A34A;font-weight:500">✓ Covered</span>'
         +'</div>'
       ).join("");
     }
@@ -4979,7 +5100,7 @@ function renderCalendar(){
     const isToday=dateStr===todayStr,isSelected=selectedCalDay===dateStr;
     const events=byDate[dateStr]||[];
     const bdayNames=calBirthdays[dateStr]||[];
-    html+='<div class="cal-day'+( isToday?" today":"")+'" style="'+( isSelected?"background:#EBF3EC;border-color:#AFA9EC;":"")+'" onclick="selectCalDay(\''+ dateStr +'\')">';
+    html+='<div class="cal-day'+( isToday?" today":"")+'" style="'+( isSelected?"background:#FEF3C7;border-color:#AFA9EC;":"")+'" onclick="selectCalDay(\''+ dateStr +'\')">';
     html+='<div class="cal-num">'+d+(bdayNames.length?'':'')+'</div>';
     bdayNames.slice(0,1).forEach(n=>{html+='<div class="cal-event" style="background:#FCE4EC;color:#880E4F;border-radius:4px;font-size:9px;padding:1px 4px;margin-bottom:1px">'+n+'</div>';});
     events.slice(0,bdayNames.length?1:2).forEach(e=>{const cls=e.calType==="followup"?"followup":calEventClass(e.act_type);const emoji=e.calType==="followup"?"🍕":calEventEmoji(e.act_type);html+='<div class="cal-event '+cls+'">'+emoji+" "+e.agent_name+'</div>';});
@@ -5005,8 +5126,8 @@ function showCalDayDetail(dateStr){
   document.getElementById("calDayTitle").textContent=label+(isToday?" — Today":isPast?"":" — Upcoming");
   document.getElementById("calDayItems").innerHTML=events.map(e=>{
     const isFollowup=e.calType==="followup",cls=isFollowup?"followup":calEventClass(e.act_type);
-    const dotColors={meeting:"#6B8F71",followup:"#B85B00",ctc:"#0F6E56",other:"#6B8F71"};
-    const dotColor=dotColors[cls]||"#6B8F71";const emoji=isFollowup?"🍕":calEventEmoji(e.act_type);
+    const dotColors={meeting:"#D97706",followup:"#B85B00",ctc:"#0F6E56",other:"#D97706"};
+    const dotColor=dotColors[cls]||"#D97706";const emoji=isFollowup?"🍕":calEventEmoji(e.act_type);
     return'<div class="cal-day-item"><div class="cal-day-dot" style="background:'+dotColor+'"></div><div style="flex:1"><div style="font-size:12px;font-weight:500;color:#1a1a2e">'+e.agent_name+'</div><div style="font-size:11px;color:#aaa">'+emoji+" "+(isFollowup?"Follow-up — "+e.act_type:e.act_type)+(e.outcome?" · "+e.outcome:"")+'</div>'+( e.notes?'<div style="font-size:11px;color:#777;font-style:italic;margin-top:2px">"'+e.notes.substring(0,80)+'"</div>':"")+'</div></div>';
   }).join("");
   detail.style.display="block";
