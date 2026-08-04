@@ -1156,7 +1156,14 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI'
     <div class="field" style="margin-bottom:12px"><label>Email</label><input type="email" id="contactEmail" placeholder="Email address"></div>
     <div class="field" style="margin-bottom:12px"><label>Home Address</label><input type="text" id="contactBrokerage" placeholder="Home address"></div>
     <div class="field" style="margin-bottom:12px"><label>Birthday</label><input type="text" id="contactBirthday" placeholder="e.g. Mar 14"></div>
-    <div class="field" style="margin-bottom:18px"><label>Tier</label><select id="contactTier"><option value="">No tier set</option><option value="A">A-Tier (Top producer, active partner)</option><option value="B">B-Tier (Mid-tier, building relationship)</option><option value="C">C-Tier (New or low-volume)</option></select></div>
+    <div class="field" style="margin-bottom:12px"><label>Tier</label><select id="contactTier"><option value="">No tier set</option><option value="A">A-Tier (Top producer, active partner)</option><option value="B">B-Tier (Mid-tier, building relationship)</option><option value="C">C-Tier (New or low-volume)</option></select></div>
+    <div style="margin-bottom:18px;padding:10px 12px;background:var(--surface-2);border-radius:8px;border:0.5px solid var(--border)">
+      <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:13px;font-weight:500;color:var(--text-1)">
+        <input type="checkbox" id="contactDNC" style="width:16px;height:16px;cursor:pointer">
+        Do Not Contact
+      </label>
+      <div style="font-size:11px;color:var(--text-3);margin-top:4px;margin-left:26px">Removes from Break Bread Due List and At Risk. Activity history is kept.</div>
+    </div>
     <div style="display:flex;gap:10px;justify-content:space-between">
       <div style="display:flex;gap:10px">
         <button class="btn-primary" onclick="saveContactModal()">Save changes</button>
@@ -2247,7 +2254,7 @@ async function resolveFlag(id){
 async function loadQuiet(){
   try{
     const[allAgents,allActs,lpCalls]=await Promise.all([
-      sbFetch("agent_profiles?select=agent_name,retained&order=agent_name.asc&limit=500"),
+      sbFetch("agent_profiles?select=agent_name,retained,do_not_contact&order=agent_name.asc&limit=500"),
       sbFetch("amanda_activities?select=agent_name,act_date&order=act_date.desc&limit=2000"),
       sbFetch("call_logs?select=agent_name,call_date&order=call_date.desc&limit=2000").catch(()=>[])
     ]);
@@ -2258,7 +2265,7 @@ async function loadQuiet(){
     lpCalls.forEach(c=>{const n=(c.agent_name||"").trim();if(n&&!lastSeenLP[n])lastSeenLP[n]=c.call_date;});
 
     const now=new Date();
-    const rows=allAgents.map(a=>{
+    const rows=allAgents.filter(a=>!a.do_not_contact).map(a=>{
       const name=(a.agent_name||"").trim();if(!name)return null;
       const lastRM=lastSeenRM[name];
       const lastLP=lastSeenLP[name];
@@ -2469,7 +2476,7 @@ async function loadBreakBreadDue(){
   if(!el)return;
   try{
     const[profiles,myBreads,lpBreads]=await Promise.all([
-      sbFetch("agent_profiles?select=agent_name,tier&limit=500").catch(()=>[]),
+      sbFetch("agent_profiles?select=agent_name,tier,do_not_contact&limit=500").catch(()=>[]),
       sbFetch("amanda_activities?select=agent_name,act_date&act_type=eq.Break Breads&order=act_date.desc&limit=2000").catch(()=>[]),
       sbFetch("break_breads?select=agent_name,date,logged_by&order=date.desc&limit=2000").catch(()=>[])
     ]);
@@ -2484,7 +2491,7 @@ async function loadBreakBreadDue(){
       if(!lastTouch[n]||b.date>lastTouch[n].date)lastTouch[n]={date:b.date,by:b.logged_by||"LP"};
     });
     const today0=new Date();today0.setHours(0,0,0,0);
-    const rows=profiles.map(p=>{
+    const rows=profiles.filter(p=>!p.do_not_contact).map(p=>{
       const n=normalize(p.agent_name);
       const tier=p.tier||"C";
       const touch=lastTouch[n];
@@ -2742,16 +2749,17 @@ async function loadWeek(){
   }catch(e){console.warn("CTC trigger:",e);}
 }
 
-let agentNames=[],prospectNames=[];
+let agentNames=[],prospectNames=[],allAgentNames=[],dncAgentNames=new Set();
 async function initAutocomplete(){
   try{
     const[agents,prospects]=await Promise.all([
-      sbFetch("agent_profiles?select=agent_name&order=agent_name.asc"),
+      sbFetch("agent_profiles?select=agent_name,do_not_contact&order=agent_name.asc"),
       sbFetch("outreach_prospects?select=agent_name&order=agent_name.asc")
     ]);
     agentNames=agents.map(a=>a.agent_name);
+    dncAgentNames=new Set(agents.filter(a=>a.do_not_contact).map(a=>a.agent_name));
     prospectNames=prospects.map(p=>p.agent_name).filter(n=>n);
-    allAgentNames=agentNames; // keep Quick Log (Snapshot tab) in sync without waiting on the Contacts tab
+    allAgentNames=agentNames;
   }catch(e){console.error("Autocomplete init error:",e);}
   const input=document.getElementById("agentInput"),list=document.getElementById("acList");
   input.addEventListener("input",()=>{
@@ -2760,10 +2768,13 @@ async function initAutocomplete(){
     const agentMatches=agentNames.filter(n=>n.toLowerCase().includes(val)).slice(0,5);
     const prospectMatches=prospectNames.filter(n=>n.toLowerCase().includes(val)&&!agentNames.includes(n)).slice(0,4);
     if(!agentMatches.length&&!prospectMatches.length){list.classList.remove("open");return;}
-    let html=agentMatches.map(n=>'<div class="ac-item" onclick="selectAgent(\''+ n.replace(/'/g,"\\'") +'\')">'+n+'</div>').join("");
+    let html=agentMatches.map(n=>{
+      const isDnc=dncAgentNames&&dncAgentNames.has(n);
+      return'<div class="ac-item" onclick="selectAgent(\''+ n.replace(/'/g,"\\'") +'\')" style="'+(isDnc?"opacity:.5":"")+'">'+n+(isDnc?' <span style="font-size:10px;color:var(--danger);font-weight:600;margin-left:4px">DNC</span>':"")+'</div>';
+    }).join("");
     if(prospectMatches.length){
       html+='<div style="font-size:10px;color:#9C27B0;font-weight:600;padding:6px 12px 2px;text-transform:uppercase;letter-spacing:.5px">Prospects</div>';
-      html+=prospectMatches.map(n=>'<div class="ac-item" onclick="selectAgent(\''+ n.replace(/'/g,"\\'") +'\')" style="color:#D97706">🌿 '+n+'</div>').join("");
+      html+=prospectMatches.map(n=>'<div class="ac-item" onclick="selectAgent(\''+ n.replace(/'/g,"\\'") +'\')" style="color:#D97706">'+n+'</div>').join("");
     }
     list.innerHTML=html;
     list.classList.add("open");
@@ -4144,9 +4155,9 @@ function renderFeed(data){
 }
 
 let editingActivityId=null;
-async function saveNoteFix(id,rowIdx,actType){
-  const ta=document.getElementById("nm-edit-"+rowIdx);
-  const msgEl=document.getElementById("nm-edit-"+rowIdx+"-msg");
+async function saveNoteFix(id,editId,actType){
+  const ta=document.getElementById(editId);
+  const msgEl=document.getElementById(editId+"-msg");
   if(!ta)return;
   const newNote=ta.value.trim();
   if(!noteMeetsBar(actType,newNote)){
@@ -4216,7 +4227,7 @@ async function confirmDelete(){
       toast("Prospect deleted","success");closeConfirm();loadPipeline();
     } else {
       await sbFetch("amanda_activities?id=eq."+deletingId,{method:"DELETE",prefer:"return=minimal"});
-      toast("Deleted 🗑️","success");closeConfirm();loadFeed();loadFollowups();loadWeek();loadDaniel();
+      toast("Deleted","success");closeConfirm();loadFeed();loadFollowups();loadWeek();loadDaniel();const hv=document.getElementById("historySearch");if(hv&&hv.value.trim().length>=2)doSearchHistory(hv.value.trim());
     }
   }catch(e){toast("Delete failed: "+e.message,"error");closeConfirm();}
 }
@@ -4333,31 +4344,44 @@ async function loadDanielAccountability(){
       if(!violations.length){
         nmEl.innerHTML='<div class="no-data" style="padding:16px">No missing or incomplete notes right now</div>';
       }else{
-        const shown=violations.slice(0,50);
-        let html='<div style="font-size:11px;color:var(--text-3);margin-bottom:8px">'+violations.length+' total — click a row to open it and add or fix the note</div>';
-        html+=shown.map((a,i)=>{
-          const detailId="nm-detail-"+i;
-          const editId="nm-edit-"+i;
-          const noteText=a.notes?escHtml(stripMethodTag(a.notes)):"(no note entered)";
-          return'<div style="border-bottom:1px solid var(--border-light);padding:10px 0">'
-            +'<div style="display:flex;justify-content:space-between;align-items:center;font-size:12px;margin-bottom:6px">'
-            +'<span><strong>'+properCase(a.agent_name)+'</strong> · '+escHtml(a.act_type)+'</span>'
-            +'<span style="color:var(--text-3)">'+fmtDate(a.act_date)+'</span>'
+        // Group by agent
+        const byAgent={};
+        violations.forEach((a,i)=>{
+          const key=properCase(a.agent_name);
+          if(!byAgent[key])byAgent[key]=[];
+          byAgent[key].push({...a,_idx:i});
+        });
+        const agentKeys=Object.keys(byAgent).sort((a,b)=>byAgent[b].length-byAgent[a].length);
+        let html='<div style="font-size:11px;color:var(--text-3);margin-bottom:12px">'+violations.length+' total across '+agentKeys.length+' agents — click an agent to expand</div>';
+        agentKeys.forEach((agentName,gi)=>{
+          const entries=byAgent[agentName];
+          const groupId="nm-group-"+gi;
+          html+='<div style="border:1px solid var(--border);border-radius:8px;margin-bottom:8px;overflow:hidden">'
+            +'<div onclick="var el=document.getElementById(\''+groupId+'\');el.style.display=el.style.display===\'none\'?\'block\':\'none\'" style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px;cursor:pointer;background:var(--surface-2)">'
+            +'<span style="font-weight:600;font-size:13px;color:var(--text-1)">'+agentName+'</span>'
+            +'<span style="font-size:11px;color:var(--danger);font-weight:600">'+entries.length+' missing</span>'
             +'</div>'
-            +'<div style="font-size:11px;color:var(--text-2);margin-bottom:6px">'
-            +'Outcome: '+(a.outcome?escHtml(a.outcome):"—")
-            +'<span style="font-style:italic;margin-left:8px">"'+noteText+'"</span>'
-            +'</div>'
-            +'<textarea id="'+editId+'" placeholder="Add or fix the note here (min '+MIN_NOTE_WORDS+' words)..." style="width:100%;min-height:56px;padding:7px 9px;border:1px solid var(--border);border-radius:6px;font-size:12px;font-family:inherit;resize:vertical;box-sizing:border-box">'+(a.notes?escHtml(stripMethodTag(a.notes)):"")+'</textarea>'
-            +'<div style="display:flex;gap:8px;align-items:center;margin-top:6px">'
-            +'<button onclick="saveNoteFix(\''+a.id+'\',\''+i+'\',\''+a.act_type.replace(/'/g,"\\'")+'\')" style="padding:5px 12px;background:var(--brand);color:#fff;border:none;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit">Save note</button>'
-            +'<button onclick="document.getElementById(\''+editId+'\').value=\'\'" style="padding:5px 12px;background:var(--surface-2);color:var(--text-2);border:1px solid var(--border);border-radius:6px;font-size:11px;cursor:pointer;font-family:inherit">Clear</button>'
-            +'<button onclick="openConfirm(\''+a.id+'\',\''+a.agent_name.replace(/'/g,"\\'")+'\',\''+a.act_type.replace(/'/g,"\\'")+'\''+')" style="padding:5px 12px;background:#FCEBEB;color:#A32D2D;border:1px solid #F0AFAF;border-radius:6px;font-size:11px;cursor:pointer;font-family:inherit">Delete</button>'
-            +'<span id="'+editId+'-msg" style="font-size:11px"></span>'
-            +'</div>'
-            +'</div>';
-        }).join("");
-        if(violations.length>shown.length)html+='<div style="font-size:11px;color:var(--text-4);margin-top:8px">+'+(violations.length-shown.length)+' more — see Activity Feed</div>';
+            +'<div id="'+groupId+'" style="display:none;padding:10px 14px">';
+          entries.forEach((a,ei)=>{
+            const editId="nm-edit-"+gi+"-"+ei;
+            const noteText=a.notes?escHtml(stripMethodTag(a.notes)):"(no note entered)";
+            html+='<div style="border-bottom:1px solid var(--border-light);padding:10px 0">'
+              +'<div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px">'
+              +'<span style="color:var(--text-2)">'+escHtml(a.act_type)+(a.outcome?' · '+escHtml(a.outcome):'')+'</span>'
+              +'<span style="color:var(--text-3)">'+fmtDate(a.act_date)+'</span>'
+              +'</div>'
+              +'<div style="font-size:11px;color:var(--text-3);font-style:italic;margin-bottom:8px">"'+noteText+'"</div>'
+              +'<textarea id="'+editId+'" placeholder="Add or fix the note here (min '+MIN_NOTE_WORDS+' words)..." style="width:100%;min-height:50px;padding:7px 9px;border:1px solid var(--border);border-radius:6px;font-size:12px;font-family:inherit;resize:vertical;box-sizing:border-box">'+(a.notes?escHtml(stripMethodTag(a.notes)):"")+'</textarea>'
+              +'<div style="display:flex;gap:8px;align-items:center;margin-top:6px">'
+              +'<button onclick="saveNoteFix(\''+a.id+'\',\''+editId+'\',\''+a.act_type.replace(/'/g,"\\'")+'\''+')" style="padding:4px 10px;background:var(--brand);color:#fff;border:none;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit">Save</button>'
+              +'<button onclick="document.getElementById(\''+editId+'\').value=\'\'" style="padding:4px 10px;background:var(--surface-2);color:var(--text-2);border:1px solid var(--border);border-radius:6px;font-size:11px;cursor:pointer;font-family:inherit">Clear</button>'
+              +'<button onclick="openConfirm('+a.id+',\''+agentName.replace(/'/g,"\\'")+'\',\''+a.act_type.replace(/'/g,"\\'")+'\''+')" style="padding:4px 10px;background:#FCEBEB;color:#A32D2D;border:1px solid #F0AFAF;border-radius:6px;font-size:11px;cursor:pointer;font-family:inherit">Delete</button>'
+              +'<span id="'+editId+'-msg" style="font-size:11px"></span>'
+              +'</div>'
+              +'</div>';
+          });
+          html+='</div></div>';
+        });
         nmEl.innerHTML=html;
       }
     }
@@ -5045,12 +5069,12 @@ function openContactModal(name,phone,email,brokerage,birthday){
 function closeContactModal(){document.getElementById("contactModal").classList.remove("open");editingContactName=null;}
 async function saveContactModal(){
   if(!editingContactName)return;
-  const payload={agent_name:editingContactName,phone:document.getElementById("contactPhone").value.trim()||null,email:document.getElementById("contactEmail").value.trim()||null,birthday:document.getElementById("contactBirthday").value.trim()||null,tier:document.getElementById("contactTier").value||null};
+  const payload={agent_name:editingContactName,phone:document.getElementById("contactPhone").value.trim()||null,email:document.getElementById("contactEmail").value.trim()||null,birthday:document.getElementById("contactBirthday").value.trim()||null,tier:document.getElementById("contactTier").value||null,do_not_contact:document.getElementById("contactDNC").checked};
   try{
     const existing=await sbFetch("agent_profiles?agent_name=eq."+encodeURIComponent(editingContactName)+"&limit=1").catch(()=>[]);
     if(existing&&existing.length>0){await sbFetch("agent_profiles?agent_name=eq."+encodeURIComponent(editingContactName),{method:"PATCH",prefer:"return=minimal",body:JSON.stringify(payload)});}
     else{await sbFetch("agent_profiles",{method:"POST",prefer:"return=minimal",body:JSON.stringify(payload)});}
-    toast("Contact updated 🌸","success");closeContactModal();if(window._contactSaveCallback){window._contactSaveCallback();window._contactSaveCallback=null;}
+    toast("Contact updated","success");closeContactModal();if(window._contactSaveCallback){window._contactSaveCallback();window._contactSaveCallback=null;}
     if(document.getElementById("historySearch").value.length>=2)doSearchHistory(document.getElementById("historySearch").value.trim());
   }catch(e){toast("Save failed: "+e.message,"error");}
 }
@@ -5058,7 +5082,7 @@ async function saveContactModal(){
 let calYear=new Date().getFullYear(),calMonth=new Date().getMonth(),calActivities=[],calBirthdays={},selectedCalDay=null;
 const MEETING_TYPES=["New Realtor Meeting","Break Breads","Co-hosted Event"];
 function calEventClass(type){if(type===CTC_TYPE)return"ctc";if(MEETING_TYPES.includes(type))return"meeting";return"other";}
-function calEventEmoji(type){if(type===CTC_TYPE)return"⚡";if(MEETING_TYPES.includes(type))return"🌸";return"🏹";}
+function calEventEmoji(type){return "";}
 function calNav(dir){calMonth+=dir;if(calMonth>11){calMonth=0;calYear++;}if(calMonth<0){calMonth=11;calYear--;}loadCalendar();}
 async function loadCalendar(){
   try{
@@ -5107,7 +5131,7 @@ function renderCalendar(){
     html+='<div class="cal-day'+( isToday?" today":"")+'" style="'+( isSelected?"background:#FEF3C7;border-color:#AFA9EC;":"")+'" onclick="selectCalDay(\''+ dateStr +'\')">';
     html+='<div class="cal-num">'+d+(bdayNames.length?'':'')+'</div>';
     bdayNames.slice(0,1).forEach(n=>{html+='<div class="cal-event" style="background:#FCE4EC;color:#880E4F;border-radius:4px;font-size:9px;padding:1px 4px;margin-bottom:1px">'+n+'</div>';});
-    events.slice(0,bdayNames.length?1:2).forEach(e=>{const cls=e.calType==="followup"?"followup":calEventClass(e.act_type);const emoji=e.calType==="followup"?"🍕":calEventEmoji(e.act_type);html+='<div class="cal-event '+cls+'">'+emoji+" "+e.agent_name+'</div>';});
+    events.slice(0,bdayNames.length?1:2).forEach(e=>{const cls=e.calType==="followup"?"followup":calEventClass(e.act_type);html+='<div class="cal-event '+cls+'">'+e.agent_name+'</div>';});
     const totalShown=bdayNames.slice(0,1).length+events.slice(0,bdayNames.length?1:2).length;
     const totalAll=bdayNames.length+events.length;
     if(totalAll>totalShown)html+='<div style="font-size:9px;color:#aaa;padding:1px 4px">+'+(totalAll-totalShown)+' more</div>';
@@ -5131,13 +5155,13 @@ function showCalDayDetail(dateStr){
   document.getElementById("calDayItems").innerHTML=events.map(e=>{
     const isFollowup=e.calType==="followup",cls=isFollowup?"followup":calEventClass(e.act_type);
     const dotColors={meeting:"#D97706",followup:"#B85B00",ctc:"#0F6E56",other:"#D97706"};
-    const dotColor=dotColors[cls]||"#D97706";const emoji=isFollowup?"🍕":calEventEmoji(e.act_type);
+    const dotColor=dotColors[cls]||"#D97706";
     return'<div class="cal-day-item"><div class="cal-day-dot" style="background:'+dotColor+'"></div><div style="flex:1"><div style="font-size:12px;font-weight:500;color:#1a1a2e">'+e.agent_name+'</div><div style="font-size:11px;color:#aaa">'+emoji+" "+(isFollowup?"Follow-up — "+e.act_type:e.act_type)+(e.outcome?" · "+e.outcome:"")+'</div>'+( e.notes?'<div style="font-size:11px;color:#777;font-style:italic;margin-top:2px">"'+e.notes.substring(0,80)+'"</div>':"")+'</div></div>';
   }).join("");
   detail.style.display="block";
 }
 
-let allContacts=[],allAgentNames=[];
+let allContacts=[];
 
 async function loadContacts(){
   const el=document.getElementById("contacts-list");
@@ -5202,6 +5226,7 @@ function openContactsEdit(nameOrEl){
   document.getElementById("contactBrokerage").value=c.brokerage||"";
   document.getElementById("contactBirthday").value=c.birthday||"";
   document.getElementById("contactTier").value=c.tier||"";
+  document.getElementById("contactDNC").checked=!!(c.do_not_contact);
   document.getElementById("contactModal").classList.add("open");
   window._contactSaveCallback=function(){loadContacts();};
 }
