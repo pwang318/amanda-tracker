@@ -2756,7 +2756,7 @@ async function loadQuiet(){
     lpCalls.forEach(c=>{const n=(c.agent_name||"").trim();if(n&&!lastSeenLP[n])lastSeenLP[n]=c.call_date;});
 
     const now=new Date();
-    const rows=allAgents.filter(a=>!a.do_not_contact).map(a=>{
+    const rows=allAgents.filter(a=>a.do_not_contact!==true).map(a=>{
       const name=(a.agent_name||"").trim();if(!name)return null;
       const lastRM=lastSeenRM[name];
       const lastLP=lastSeenLP[name];
@@ -2778,7 +2778,7 @@ async function loadQuiet(){
       return b.daysRM-a.daysRM;
     });
 
-    document.getElementById("quietSub").textContent=quiet.length?quiet.length+" agent"+(quiet.length!==1?"s":""):"";
+    const qSub=document.getElementById("quietSub");if(qSub)qSub.textContent=quiet.length?quiet.length+" agent"+(quiet.length!==1?"s":""):"";
 
     if(!quiet.length){
       document.getElementById("weekQuiet").innerHTML='<div class="no-data" style="padding:16px">Everyone\'s been touched recently</div>';
@@ -5053,10 +5053,20 @@ async function loadManagement(){
     ]);
 
     mgmtPeriodData={daily:dailyActs,week:weekActs,mtd:mtdActs,ytd:ytdActs};
-    // Render the period-dependent UI (Today/WTD/MTD/YTD goals + table) immediately,
-    // before any of the sections below that could throw — this guarantees the period
-    // toggle buttons always have real data to show, even if a later section fails.
-    try{ renderMgmtPeriod(); renderMgmtTable(mgmtPeriodData[currentMgmtPeriod]||weekActs); }catch(e){ console.error("renderMgmtPeriod/Table error:",e);document.getElementById("danielGoals").innerHTML='<div class="no-data" style="color:var(--danger)">Error loading activity: '+e.message+'</div>'; }
+    // Re-render whichever period is currently selected
+    try{
+      renderMgmtPeriod();
+      renderMgmtTable(mgmtPeriodData[currentMgmtPeriod]||weekActs);
+      // Update active button highlight
+      ["daily","week","mtd","ytd"].forEach(id=>{
+        const btn=document.getElementById("mgbtn-"+id);
+        if(btn)btn.classList.toggle("active",currentMgmtPeriod===id);
+      });
+    }catch(e){
+      console.error("renderMgmtPeriod/Table error:",e);
+      const dg=document.getElementById("danielGoals");
+      if(dg)dg.innerHTML='<div class="no-data" style="color:var(--danger)">Error: '+e.message+'</div>';
+    }
 
     // ── Helper: count by type ─────────────────────────────────────
     const c=(acts,type)=>acts.filter(a=>a.act_type===type).length;
@@ -5403,6 +5413,12 @@ function showMgmtPeriod(p){
   ["daily","week","mtd","ytd"].forEach(id=>{
     document.getElementById("mgbtn-"+id)?.classList.toggle("active",p===id);
   });
+  // If data not loaded yet, trigger a reload
+  const hasData=mgmtPeriodData&&(mgmtPeriodData[p]||[]).length>0;
+  if(!hasData){
+    loadManagement();
+    return;
+  }
   renderMgmtPeriod();
   renderMgmtTable(mgmtPeriodData[p]||[]);
   document.getElementById("view-daniel")?.scrollIntoView({behavior:"smooth",block:"start"});
