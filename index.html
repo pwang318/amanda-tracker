@@ -686,7 +686,7 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI'
     <div class="modal-sub" id="editModalAgent"></div>
     <div class="field" style="margin-bottom:12px"><label>Outcome</label><select id="editOutcome"><option value="">Select outcome...</option><option>Positive</option><option>Meeting Scheduled</option><option>Requires follow-up</option><option>Needs manager attention</option><option>Remove / No Further Contact</option></select></div>
     <div class="field" style="margin-bottom:12px"><label>Follow-up date</label><input type="date" id="editFollowupDate"></div>
-    <div class="field" style="margin-bottom:18px"><label>Notes</label><textarea id="editNotes" placeholder="Update notes..."></textarea></div>
+    <div class="field" style="margin-bottom:18px"><label>Notes</label><textarea id="editNotes" placeholder="Update notes..."></textarea><button type="button" onclick="document.getElementById('editNotes').value=''" style="margin-top:5px;padding:4px 10px;background:var(--surface-2);color:var(--text-2);border:1px solid var(--border);border-radius:6px;font-size:11px;cursor:pointer;font-family:inherit">Clear note</button></div>
     <div style="display:flex;gap:10px">
       <button class="btn-primary" onclick="saveEditModal()">Save changes</button>
       <button class="btn-sm" onclick="closeEditModal()">Cancel</button>
@@ -913,12 +913,12 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI'
 
   <!-- NOTES ACCOUNTABILITY -->
   <div class="card">
-    <div class="card-title">Missing / Incomplete Notes <span class="card-sub">Talk-to, CTC, Birthday, Break Breads need 10+ words · Cold Calls need any note · Effective Aug 4, 2026</span></div>
+    <div class="card-title">Missing / Incomplete Notes <span class="card-sub">Talk-to, CTC, Birthday, Break Breads — all history · Cold Calls need any note from Aug 4, 2026 only</span></div>
     <div id="danielNotesMissing"><div class="no-data">Loading...</div></div>
   </div>
 
   <div class="card">
-    <div class="card-title">Copy-Paste Note Watch <span class="card-sub">same cold-call note reused 3+ times same day</span></div>
+    <div class="card-title">Copy-Paste Note Watch <span class="card-sub">same cold-call note reused 3+ times same day · full history shown intentionally</span></div>
     <div id="danielCopyPaste"><div class="no-data">Loading...</div></div>
   </div>
 
@@ -1557,7 +1557,7 @@ function toggleDetail(id){
 
 function cntTalkTo(acts){return(acts||[]).filter(function(a){return TALKTO_TYPES.indexOf((a.act_type||"").trim())>=0;}).length;}
 const ACT_TYPE_OPTIONS='<optgroup label="New Relationships"><option>Cold Calls</option><option>New Realtor Meeting</option></optgroup><optgroup label="Relationship Deepening"><option>New Agent Follow-up</option><option>Break Breads</option><option>Market Update</option><option>Co-hosted Event</option><option>Realtor Buddy Referral Ask</option></optgroup><optgroup label="Retention and Referrals"><option>Agent Talk-to</option><option>Reconnect Outreach</option><option>CTC Call</option><option>Under Contract Call</option><option>Birthday Outreach</option><option>Holiday Outreach</option><option>Agent Appreciation</option></optgroup>';
-function badgeEmoji(type){return EMOJI[type]?EMOJI[type]+" "+type:type;}
+function badgeEmoji(type){return type||"";}
 
 const NEXT_CALL_DAYS={
   "Cold Calls":3,
@@ -3921,8 +3921,9 @@ async function loadHealth(){
     const untiered=agents.filter(a=>!a.tier);
 
     // ── Copy-Paste Note Watch — same Cold Call note text reused 3+ times same day ──
+    const CP_CUTOFF="2026-08-04";
     const cpGroups={};
-    rmActs.filter(a=>a.act_type==="Cold Calls"&&a.notes).forEach(a=>{
+    rmActs.filter(a=>a.act_type==="Cold Calls"&&a.notes&&a.act_date>=CP_CUTOFF).forEach(a=>{
       const cleaned=stripMethodTag(a.notes).toLowerCase().trim();
       if(!cleaned)return;
       const key=a.act_date+"||"+cleaned;
@@ -4323,7 +4324,10 @@ async function loadDanielAccountability(){
         }).join("");
       }
     }
-    const notesCutoff="2026-08-04";const violations=rmActs.filter(a=>a.act_date>=notesCutoff&&!noteMeetsBar(a.act_type,a.notes)).sort((a,b)=>(b.act_date||"").localeCompare(a.act_date||""));
+    const notesCutoff="2026-08-04";const violations=rmActs.filter(a=>{
+      if(a.act_type==="Cold Calls") return a.act_date>=notesCutoff&&!noteMeetsBar(a.act_type,a.notes);
+      return !noteMeetsBar(a.act_type,a.notes);
+    }).sort((a,b)=>(b.act_date||"").localeCompare(a.act_date||""));
     const nmEl=document.getElementById("danielNotesMissing");
     if(nmEl){
       if(!violations.length){
@@ -4346,8 +4350,12 @@ async function loadDanielAccountability(){
             +(a.follow_up_date?'<div style="margin-top:3px">Follow-up: '+fmtDate(a.follow_up_date)+'</div>':"")
             +'<div style="margin-top:8px">'
             +'<textarea id="'+editId+'" placeholder="Add or fix the note here (min '+MIN_NOTE_WORDS+' words)..." style="width:100%;min-height:56px;padding:7px 9px;border:1px solid var(--border);border-radius:6px;font-size:12px;font-family:inherit;resize:vertical">'+(a.notes?escHtml(stripMethodTag(a.notes)):"")+'</textarea>'
-            +'<button onclick="saveNoteFix(\''+a.id+'\',\''+i+'\',\''+a.act_type.replace(/'/g,"\\'")+'\')" style="margin-top:6px;padding:5px 12px;background:var(--brand);color:#fff;border:none;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit">Save note</button>'
-            +'<span id="'+editId+'-msg" style="margin-left:8px;font-size:11px"></span>'
+            +'<div style="display:flex;gap:8px;align-items:center;margin-top:6px">'
+            +'<button onclick="saveNoteFix(\''+a.id+'\',\''+i+'\',\''+a.act_type.replace(/'/g,"\\'")+'\')" style="padding:5px 12px;background:var(--brand);color:#fff;border:none;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit">Save note</button>'
+            +'<button onclick="document.getElementById(\''+editId+'\').value=\'\'" style="padding:5px 12px;background:var(--surface-2);color:var(--text-2);border:1px solid var(--border);border-radius:6px;font-size:11px;cursor:pointer;font-family:inherit">Clear</button>'
+            +'<button onclick="openConfirm(\''+a.id+'\',\''+a.agent_name.replace(/'/g,"\\'")+'\',\''+a.act_type.replace(/'/g,"\\'")+'\''+')" style="padding:5px 12px;background:#FCEBEB;color:#A32D2D;border:1px solid #F0AFAF;border-radius:6px;font-size:11px;cursor:pointer;font-family:inherit">Delete</button>'
+            +'<span id="'+editId+'-msg" style="font-size:11px"></span>'
+            +'</div>'
             +'</div>'
             +'</div>'
             +'</div>';
@@ -4358,8 +4366,9 @@ async function loadDanielAccountability(){
     }
 
     // ── Copy-paste note watch ────────────────────────────────────────────
+    const CP_CUTOFF2="2026-08-04";
     const cpGroups={};
-    rmActs.filter(a=>a.act_type==="Cold Calls"&&a.notes).forEach(a=>{
+    rmActs.filter(a=>a.act_type==="Cold Calls"&&a.notes&&a.act_date>=CP_CUTOFF2).forEach(a=>{
       const cleaned=stripMethodTag(a.notes).toLowerCase().trim();
       if(!cleaned)return;
       const key=a.act_date+"||"+cleaned;
