@@ -95,7 +95,7 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI'
 .ptoggle.active{background:var(--brand-light);border-color:var(--brand-mid);color:var(--brand-dark);font-weight:600}
 
 /* ── LAYOUT HELPERS ────────────────────────────────────────────── */
-.week-bottom{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.week-bottom{display:grid;grid-template-columns:1fr 1fr;gap:14px;align-items:start}
 .week-bottom .card{margin-bottom:0}
 
 /* ── FOLLOW-UPS ────────────────────────────────────────────────── */
@@ -762,7 +762,7 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI'
       </select>
       <input type="text" id="rcSearch" placeholder="Search name..." oninput="renderReconnect()">
     </div>
-    <div id="rcList" style="max-height:600px;overflow-y:auto"><div class="no-data">Upload a Power BI export to see your reconnect list.</div></div>
+    <div id="rcList" style="max-height:500px;overflow-y:auto;border-top:0.5px solid var(--border);margin-top:12px"><div class="no-data">Upload a Power BI export to see your reconnect list.</div></div>
   </div>
 </div>
 
@@ -976,10 +976,10 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI'
   <!-- ACTIVITY LOG -->
   <div class="card">
     <div class="card-title">Activity log</div>
-    <div style="overflow-x:auto">
+    <div style="overflow-x:auto;max-height:400px;overflow-y:auto">
       <table class="dtable">
         <thead><tr><th>Agent</th><th>Activity</th><th>Outcome</th><th>Date</th><th>Notes</th></tr></thead>
-        <tbody id="danielBody" style="max-height:400px;overflow-y:auto;display:block"><tr><td colspan="5" style="text-align:center;padding:20px;color:#bbb">Loading...</td></tr></tbody>
+        <tbody id="danielBody"><tr><td colspan="5" style="text-align:center;padding:20px;color:#bbb">Loading...</td></tr></tbody>
       </table>
     </div>
   </div>
@@ -4550,7 +4550,7 @@ async function loadDaniel(){
       sbFetch("amanda_activities?select=act_type,agent_name,act_date,outcome,notes&act_date=eq."+todayStr),
       sbFetch("amanda_activities?select=*&act_date=gte."+week.start+"&act_date=lte."+week.end+"&order=act_date.desc"),
       sbFetch("amanda_activities?select=act_type,agent_name,act_date,outcome,notes&act_date=gte."+monthStart),
-      sbFetch("amanda_activities?select=act_type,agent_name,act_date,notes&act_date=gte."+yearStart),
+      sbFetch("amanda_activities?select=act_type,agent_name,act_date,outcome,notes&act_date=gte."+yearStart),
       sbFetch("amanda_activities?select=act_type,agent_name&act_date=gte."+prevStart+"&act_date=lte."+prevEnd).catch(()=>[]),
       sbFetch("agent_profiles?select=agent_name,tier&tier=eq.A&limit=200").catch(()=>[]),
       sbFetch(RC_TABLE+"?select=agent_name&status=eq.contacted&limit=100").catch(()=>[]),
