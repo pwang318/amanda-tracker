@@ -4301,7 +4301,7 @@ let danielPeriodData={week:[],mtd:[],ytd:[]},currentDanielPeriod="week";
 
 async function loadDanielAccountability(){
   try{
-    const rmActs=await sbFetch("amanda_activities?select=*&limit=1000");
+    const rmActs=await sbFetch("amanda_activities?select=*&limit=5000");
 
     // ── Needs Manager Attention — flagged by Amanda ──────────────────────────
     const managerFlags=(rmActs||[]).filter(a=>a.outcome==="Needs manager attention").sort((a,b)=>(b.act_date||"").localeCompare(a.act_date||"")).slice(0,20);
@@ -4333,30 +4333,27 @@ async function loadDanielAccountability(){
       if(!violations.length){
         nmEl.innerHTML='<div class="no-data" style="padding:16px">No missing or incomplete notes right now</div>';
       }else{
-        const shown=violations.slice(0,15);
+        const shown=violations.slice(0,50);
         let html='<div style="font-size:11px;color:var(--text-3);margin-bottom:8px">'+violations.length+' total — click a row to open it and add or fix the note</div>';
         html+=shown.map((a,i)=>{
           const detailId="nm-detail-"+i;
           const editId="nm-edit-"+i;
           const noteText=a.notes?escHtml(stripMethodTag(a.notes)):"(no note entered)";
-          return'<div style="border-bottom:1px solid var(--border-light)">'
-            +'<div style="padding:7px 0;display:flex;justify-content:space-between;align-items:center;font-size:12px;cursor:pointer" onclick="toggleDetail(\''+detailId+'\')">'
-            +'<span><strong>'+properCase(a.agent_name)+'</strong> · '+badgeEmoji(a.act_type)+'</span>'
+          return'<div style="border-bottom:1px solid var(--border-light);padding:10px 0">'
+            +'<div style="display:flex;justify-content:space-between;align-items:center;font-size:12px;margin-bottom:6px">'
+            +'<span><strong>'+properCase(a.agent_name)+'</strong> · '+escHtml(a.act_type)+'</span>'
             +'<span style="color:var(--text-3)">'+fmtDate(a.act_date)+'</span>'
             +'</div>'
-            +'<div id="'+detailId+'" style="display:none;padding:0 0 10px;font-size:11px;color:var(--text-2)">'
-            +'<div>Outcome: '+(a.outcome?escHtml(a.outcome):"—")+'</div>'
-            +'<div style="margin-top:3px;font-style:italic">"'+noteText+'"</div>'
-            +(a.follow_up_date?'<div style="margin-top:3px">Follow-up: '+fmtDate(a.follow_up_date)+'</div>':"")
-            +'<div style="margin-top:8px">'
-            +'<textarea id="'+editId+'" placeholder="Add or fix the note here (min '+MIN_NOTE_WORDS+' words)..." style="width:100%;min-height:56px;padding:7px 9px;border:1px solid var(--border);border-radius:6px;font-size:12px;font-family:inherit;resize:vertical">'+(a.notes?escHtml(stripMethodTag(a.notes)):"")+'</textarea>'
+            +'<div style="font-size:11px;color:var(--text-2);margin-bottom:6px">'
+            +'Outcome: '+(a.outcome?escHtml(a.outcome):"—")
+            +'<span style="font-style:italic;margin-left:8px">"'+noteText+'"</span>'
+            +'</div>'
+            +'<textarea id="'+editId+'" placeholder="Add or fix the note here (min '+MIN_NOTE_WORDS+' words)..." style="width:100%;min-height:56px;padding:7px 9px;border:1px solid var(--border);border-radius:6px;font-size:12px;font-family:inherit;resize:vertical;box-sizing:border-box">'+(a.notes?escHtml(stripMethodTag(a.notes)):"")+'</textarea>'
             +'<div style="display:flex;gap:8px;align-items:center;margin-top:6px">'
             +'<button onclick="saveNoteFix(\''+a.id+'\',\''+i+'\',\''+a.act_type.replace(/'/g,"\\'")+'\')" style="padding:5px 12px;background:var(--brand);color:#fff;border:none;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit">Save note</button>'
             +'<button onclick="document.getElementById(\''+editId+'\').value=\'\'" style="padding:5px 12px;background:var(--surface-2);color:var(--text-2);border:1px solid var(--border);border-radius:6px;font-size:11px;cursor:pointer;font-family:inherit">Clear</button>'
             +'<button onclick="openConfirm(\''+a.id+'\',\''+a.agent_name.replace(/'/g,"\\'")+'\',\''+a.act_type.replace(/'/g,"\\'")+'\''+')" style="padding:5px 12px;background:#FCEBEB;color:#A32D2D;border:1px solid #F0AFAF;border-radius:6px;font-size:11px;cursor:pointer;font-family:inherit">Delete</button>'
             +'<span id="'+editId+'-msg" style="font-size:11px"></span>'
-            +'</div>'
-            +'</div>'
             +'</div>'
             +'</div>';
         }).join("");
