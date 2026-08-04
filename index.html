@@ -90,9 +90,9 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI'
 
 /* ── PERIOD TOGGLE ─────────────────────────────────────────────── */
 .period-toggle{display:flex;gap:6px;margin-bottom:18px;flex-wrap:wrap}
-.ptoggle{padding:6px 16px;border-radius:20px;font-size:12px;border:1px solid var(--border);background:transparent;color:var(--text-3);cursor:pointer;font-family:inherit;font-weight:500;transition:all .18s}
-.ptoggle:hover{color:var(--brand);border-color:var(--brand-mid)}
-.ptoggle.active{background:var(--brand-light);border-color:var(--brand-mid);color:var(--brand-dark);font-weight:600}
+.ptoggle{padding:8px 20px;border-radius:20px;font-size:13px;border:1.5px solid var(--border);background:transparent;color:var(--text-2);cursor:pointer;font-family:inherit;font-weight:500;transition:all .18s}
+.ptoggle:hover{color:var(--brand);border-color:var(--brand)}
+.ptoggle.active{background:var(--brand);border-color:var(--brand);color:#fff;font-weight:600;box-shadow:0 2px 8px rgba(80,40,160,.25)}
 
 /* ── LAYOUT HELPERS ────────────────────────────────────────────── */
 .week-bottom{display:grid;grid-template-columns:1fr 1fr;gap:14px;align-items:start}
@@ -398,6 +398,15 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI'
     <div id="snapshotStats" style="display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:16px"></div>
     <div id="weekGoalBars" style="display:none"></div>
     <div id="periodScorecard" style="display:none"></div>
+  </div>
+
+  <!-- PERSONAL SCOREBOARD -->
+  <div class="card" id="personalScorecard">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+      <div class="card-title" style="margin-bottom:0">Your wins this month</div>
+      <div style="font-size:11px;color:var(--text-3)" id="personalScorecardSub"></div>
+    </div>
+    <div id="personalScorecardGrid" style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px"></div>
   </div>
 
   <!-- Quick Log -->
@@ -731,6 +740,12 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI'
     </div>
   </div>
 
+  <!-- Outreach tip -->
+  <div class="card" style="background:var(--surface-2);padding:10px 16px;margin-bottom:0">
+    <div style="font-size:12.5px;color:var(--text-2);margin-bottom:6px">Before you dial — pull up <button onclick="openScriptsModal()" style="background:none;border:none;color:var(--brand);font-weight:600;cursor:pointer;font-family:inherit;font-size:12.5px;padding:0">Scripts</button> for the cold call opener and objection responses. Goal is a 20-minute meeting.</div>
+    <div style="font-size:11.5px;color:var(--text-3);margin-bottom:4px">Work top to bottom. Add prospects from your admin call list, then dial in order. Mark DNC or Remove anyone not worth calling again so the list stays clean.</div>
+    <div style="font-size:11.5px;color:var(--brand);font-weight:600">Before each call: look them up on RETR. A recent sale mention turns a cold call into a warm one.</div>
+  </div>
   <!-- Filters -->
   <div class="card" id="rcFiltersCard" style="display:none">
     <div class="rc-filters">
@@ -754,7 +769,7 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI'
         <option value="all">Show all</option>
       </select>
       <select id="rcSortBy" onchange="renderReconnect()">
-        <option value="grade">Sort: Grade then days</option>
+        <option value="grade">Priority: A-tier first, then days silent</option>
         <option value="days_desc">Sort: Days (longest first)</option>
         <option value="days_asc">Sort: Days (newest first)</option>
         <option value="closes">Sort: Closes past year</option>
@@ -851,12 +866,12 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI'
 <div id="view-daniel" class="view">
 
   <!-- TOP: Period selector + Copy summary -->
-  <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:16px">
+  <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:16px;position:sticky;top:0;z-index:50;background:var(--bg);padding:12px 0 8px">
     <div class="period-toggle" style="margin-bottom:0;display:flex;flex-wrap:wrap;gap:6px">
-      <button class="ptoggle" id="dbtn-daily" onclick="showDanielPeriod('daily')" style="padding:8px 16px;font-size:12px">Today</button>
-      <button class="ptoggle active" id="dbtn-week" onclick="showDanielPeriod('week')" style="padding:8px 16px;font-size:12px">This week</button>
-      <button class="ptoggle" id="dbtn-mtd" onclick="showDanielPeriod('mtd')" style="padding:8px 16px;font-size:12px">Month to date</button>
-      <button class="ptoggle" id="dbtn-ytd" onclick="showDanielPeriod('ytd')" style="padding:8px 16px;font-size:12px">Year to date</button>
+      <button class="ptoggle" id="mgbtn-daily" onclick="showMgmtPeriod('daily')" style="padding:8px 16px;font-size:12px">Today</button>
+      <button class="ptoggle active" id="mgbtn-week" onclick="showMgmtPeriod('week')" style="padding:8px 16px;font-size:12px">This week</button>
+      <button class="ptoggle" id="mgbtn-mtd" onclick="showMgmtPeriod('mtd')" style="padding:8px 16px;font-size:12px">Month to date</button>
+      <button class="ptoggle" id="mgbtn-ytd" onclick="showMgmtPeriod('ytd')" style="padding:8px 16px;font-size:12px">Year to date</button>
     </div>
     <div style="display:flex;gap:8px;flex-wrap:wrap">
       <button onclick="exportToCSV()" style="padding:8px 16px;background:var(--surface-2);color:var(--text-1);border:1px solid var(--border);border-radius:var(--radius-sm);font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap">Export CSV</button>
@@ -925,24 +940,24 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI'
     <div id="danielNotesMissing" style="max-height:400px;overflow-y:auto"><div class="no-data">Loading...</div></div>
   </div>
 
-  <div class="card">
+  <div id="danielCopyPasteCard" class="card" style="display:none">
     <div class="card-title">Copy-Paste Note Watch <span class="card-sub">same cold-call note reused 3+ times same day · full history shown intentionally</span></div>
     <div id="danielCopyPaste" style="max-height:300px;overflow-y:auto"><div class="no-data">Loading...</div></div>
   </div>
 
-  <div class="card">
+  <div id="danielEscalationCard" class="card" style="display:none">
     <div class="card-title">Agent Escalations <span class="card-sub">3+ unanswered attempts across 2+ channels, no response in 10 days</span></div>
     <div id="danielEscalation" style="max-height:300px;overflow-y:auto"><div class="no-data">Loading...</div></div>
   </div>
 
   <!-- FEEDBACK ESCALATIONS: from CTC calls, closing issues, poor feedback etc -->
-  <div class="card">
+  <div id="danielFeedbackCard" class="card" style="display:none">
     <div class="card-title">Closing and Feedback Flags <span class="card-sub">flagged during a CTC or touch — closing issues, poor feedback, last 30 days</span></div>
     <div id="danielFeedbackFlags" style="max-height:300px;overflow-y:auto"><div class="no-data">Loading...</div></div>
   </div>
 
   <!-- RESPONSE TIME to LP flags -->
-  <div class="card">
+  <div id="danielResponseCard" class="card" style="display:none">
     <div class="card-title">LP Flag Response Time <span class="card-sub">how quickly flagged items get a follow-up, last 30 days</span></div>
     <div id="danielResponseTime"><div class="no-data">Loading...</div></div>
   </div>
@@ -1217,8 +1232,8 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI'
     <table style="width:100%;border-collapse:collapse;font-size:12.5px;margin-bottom:16px">
       <tr><td style="padding:5px 8px 5px 0;font-weight:600;white-space:nowrap;vertical-align:top">Active Agent Talk-to <span style="color:var(--brand);font-weight:400">counts as Talk-to</span></td><td style="padding:5px 0;color:var(--text-2)">A proactive check-in with an agent who's currently active and sending business.</td></tr>
       <tr><td style="padding:5px 8px 5px 0;font-weight:600;white-space:nowrap;vertical-align:top">Reconnect Outreach <span style="color:var(--brand);font-weight:400">counts as Talk-to</span></td><td style="padding:5px 0;color:var(--text-2)">The right type for re-engaging someone from the Reconnect list. It's not a Cold Call since you already know them, but "Active Agent Talk-to" isn't accurate either since they haven't sent a lead in 90+ days.</td></tr>
-      <tr><td style="padding:5px 8px 5px 0;font-weight:600;white-space:nowrap;vertical-align:top">CTC Call <span style="color:var(--brand);font-weight:400">counts as Talk-to</span></td><td style="padding:5px 0;color:var(--text-2)">Process: call the agent, leave a voicemail if no answer, then follow up with a text. Script is in 📜 Scripts. Get feedback from <strong>both</strong> the buyer's agent and the listing agent. Share that feedback on WhatsApp with the team in real-time, proactively, the way Daniel does, proactively. Check Encompass for the CTC milestone  Always ask the listing agent for a meeting if they don't already work with us; a closing is a natural door-opener. If there's a closing issue or poor feedback, set the outcome to "Needs Escalation" so it surfaces for the team.</td></tr>
-      <tr><td style="padding:5px 8px 5px 0;font-weight:600;white-space:nowrap;vertical-align:top">Under Contract Call <span style="color:var(--brand);font-weight:400">counts as Talk-to, note required</span></td><td style="padding:5px 0;color:var(--text-2)">First call to the listing agent as soon as a deal you're the buyer's lender on goes under contract. Script is in 📜 Scripts.</td></tr>
+      <tr><td style="padding:5px 8px 5px 0;font-weight:600;white-space:nowrap;vertical-align:top">CTC Call <span style="color:var(--brand);font-weight:400">counts as Talk-to</span></td><td style="padding:5px 0;color:var(--text-2)">Process: call the agent, leave a voicemail if no answer, then follow up with a text. Script is in Scripts. Get feedback from <strong>both</strong> the buyer's agent and the listing agent. Share that feedback on WhatsApp with the team in real-time, proactively, the way Daniel does, proactively. Check Encompass for the CTC milestone  Always ask the listing agent for a meeting if they don't already work with us; a closing is a natural door-opener. If there's a closing issue or poor feedback, set the outcome to "Needs manager attention" so it surfaces for the team.</td></tr>
+      <tr><td style="padding:5px 8px 5px 0;font-weight:600;white-space:nowrap;vertical-align:top">Under Contract Call <span style="color:var(--brand);font-weight:400">counts as Talk-to, note required</span></td><td style="padding:5px 0;color:var(--text-2)">First call to the listing agent as soon as a deal you're the buyer's lender on goes under contract. Script is in Scripts.</td></tr>
       <tr><td style="padding:5px 8px 5px 0;font-weight:600;white-space:nowrap;vertical-align:top">Birthday / Holiday Outreach <span style="color:var(--brand);font-weight:400">counts as Talk-to</span></td><td style="padding:5px 0;color:var(--text-2)">A personal touch: wish the agent a happy birthday or happy holidays. When the Calendar tab shows a birthday alert, send a text, give a quick call, or both. If the agent is a top producer, let the team know so they can wish them well too. When you are on a call with any agent, check if their birthday is on file — a lot of data is missing. If you do not have it, ask and add it to their contact so you never miss it.</td></tr>
       <tr><td style="padding:5px 8px 5px 0;font-weight:600;white-space:nowrap;vertical-align:top">Agent Appreciation <span style="color:var(--brand);font-weight:400">counts as Talk-to</span></td><td style="padding:5px 0;color:var(--text-2)">Recognizing a top producer or celebrating a milestone.</td></tr>
       <tr><td style="padding:5px 8px 5px 0;font-weight:600;white-space:nowrap;vertical-align:top">Market Update <span style="color:var(--brand);font-weight:400">counts as Talk-to</span></td><td style="padding:5px 0;color:var(--text-2)">Sharing what's happening in the market: inventory, days on market, buyer demand, listing trends. This isn't financing or rates; that stays with the LP team.</td></tr>
@@ -1335,6 +1350,7 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI'
     </div>
 
     <div style="font-size:12px;font-weight:700;color:var(--brand);text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px">Cold Call — Opening Script</div>
+    <div style="background:var(--surface-2);border-radius:8px;padding:8px 12px;margin-bottom:10px;font-size:12px;color:var(--text-2)"><strong style="color:var(--text-1)">Before you dial:</strong> Pull up RETR and look them up. Find a recent sale or listing and mention it in your opener — "I saw your listing at [address] just closed, congrats!" It makes the call personal and shows you did your homework.</div>
     <div style="font-size:12.5px;color:var(--text-2);margin-bottom:8px">Goal: introduce yourself, explain how we support agents, and schedule a 20-minute meeting.</div>
     <div style="background:#1E2B3A;color:#fff;border-radius:var(--radius-sm);padding:10px 12px;margin-bottom:8px;font-size:12.5px;font-style:italic">
       "Hey [Agent Name], I wanted to reach out and introduce myself. We love working alongside agents to help buyers better understand their financing options, create listing-specific payment strategies, and explore creative financing options to help ensure you and your clients are winning in this market. I would love to learn more about your business and explore ways we can support you. Would you be open to a quick 20-minute meeting sometime next week?"
@@ -1446,7 +1462,7 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI'
 <div class="modal-overlay" id="encompassModal">
   <div class="modal-box" style="max-width:660px;max-height:85vh;overflow-y:auto">
     <div class="modal-header"><span class="modal-title">Encompass Cheat Guide</span><button class="modal-close" onclick="closeEncompassModal()">×</button></div>
-    <div class="modal-sub" style="margin-bottom:16px">You don't need to know how to process a file. You need to know where to look when you're talking to an agent. Have Encompass, Velocify, and the team inbox open before every call.</div>
+    <div class="modal-sub" style="margin-bottom:16px">You don't need to know how to process a file. You need to know where to look when you're talking to an agent. Before every call, have three things open: <strong>RETR</strong> (to reference their recent sales), <strong>Encompass</strong> (to check file status), and the <strong>team inbox</strong> (to catch any recent updates).</div>
 
     <div style="font-size:12px;font-weight:700;color:var(--brand);text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px">Milestones — what each one means</div>
     <table style="width:100%;border-collapse:collapse;font-size:12.5px;margin-bottom:16px">
@@ -1492,7 +1508,7 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI'
     <div class="modal-sub" style="margin-bottom:16px">These tools exist to help you find answers quickly and show up prepared. The more you use them, the more confident you'll sound in the field.</div>
 
     <table style="width:100%;border-collapse:collapse;font-size:12.5px;margin-bottom:16px">
-      <tr style="border-bottom:1px solid var(--border-light)"><td style="padding:6px 10px 6px 0;font-weight:600;white-space:nowrap;vertical-align:top">RETR</td><td style="padding:6px 0;color:var(--text-2)">Agent and brokerage lookup. Great starting point for tracking down contact info quickly.</td></tr>
+      <tr style="border-bottom:1px solid var(--border-light)"><td style="padding:6px 10px 6px 0;font-weight:600;white-space:nowrap;vertical-align:top">RETR</td><td style="padding:6px 0;color:var(--text-2)">Agent and brokerage lookup — and your secret weapon before every cold call and reconnect. Pull up their profile before you dial: see their recent sales, current listings, and brokerage. Congratulating them on a specific recent sale ("I saw your listing at 123 Main just closed — congrats!") turns a cold call into a warm one instantly.</td></tr>
       <tr style="border-bottom:1px solid var(--border-light)"><td style="padding:6px 10px 6px 0;font-weight:600;white-space:nowrap;vertical-align:top">NFM ChatGPT</td><td style="padding:6px 0;color:var(--text-2)">Great for drafting, quick explanations, and thinking through how to handle a conversation. Use it before, during, or after calls.</td></tr>
       <tr style="border-bottom:1px solid var(--border-light)"><td style="padding:6px 10px 6px 0;font-weight:600;white-space:nowrap;vertical-align:top">All Regs</td><td style="padding:6px 0;color:var(--text-2)">NFM's underwriting guidelines. A solid resource when you want to understand what's possible for a buyer before the conversation goes further.</td></tr>
       <tr style="border-bottom:1px solid var(--border-light)"><td style="padding:6px 10px 6px 0;font-weight:600;white-space:nowrap;vertical-align:top">Encompass</td><td style="padding:6px 0;color:var(--text-2)">File status, milestones, conditions, closing dates. Have it open before agent calls. See the Encompass Cheat Guide for where to find specific things.</td></tr>
@@ -1635,35 +1651,413 @@ function localDateStr(d){const y=d.getFullYear(),m=String(d.getMonth()+1).padSta
 
 const QUOTES=[
   {text:"Women belong in all places where decisions are being made.",author:"Ruth Bader Ginsburg"},
-  {text:"Fight for the things that you care about, but do it in a way that will lead others to join you.",author:"Ruth Bader Ginsburg"},
+  {text:"Fight for the things you care about, but do it in a way that will lead others to join you.",author:"Ruth Bader Ginsburg"},
   {text:"I ask no favor for my sex. All I ask of our brethren is that they take their feet off our necks.",author:"Ruth Bader Ginsburg"},
   {text:"Real change, enduring change, happens one step at a time.",author:"Ruth Bader Ginsburg"},
   {text:"When they go low, we go high.",author:"Michelle Obama"},
   {text:"There is no limit to what we, as women, can accomplish.",author:"Michelle Obama"},
-  {text:"You may not always have a comfortable life and you will not always be able to solve all of the world's problems at once. But do not ever underestimate the importance you can have.",author:"Michelle Obama"},
   {text:"Am I good enough? Yes I am.",author:"Michelle Obama"},
-  {text:"I am not afraid of storms, for I am learning how to sail my ship.",author:"Louisa May Alcott"},
-  {text:"The most courageous act is still to think for yourself. Aloud.",author:"Coco Chanel"},
-  {text:"A woman is like a tea bag. You never know how strong she is until she gets in hot water.",author:"Eleanor Roosevelt"},
-  {text:"No one can make you feel inferior without your consent.",author:"Eleanor Roosevelt"},
-  {text:"Do one thing every day that scares you.",author:"Eleanor Roosevelt"},
-  {text:"I have learned over the years that when one's mind is made up, this diminishes fear.",author:"Rosa Parks"},
-  {text:"You must never be fearful about what you are doing when it is right.",author:"Rosa Parks"},
-  {text:"I'm tough, I'm ambitious, and I know exactly what I want. If that makes me a bitch, okay.",author:"Madonna"},
+  {text:"You may not always have a comfortable life, but do not ever underestimate the importance you can have.",author:"Michelle Obama"},
+  {text:"Becoming isn't about arriving somewhere or achieving a certain aim. It is the journey.",author:"Michelle Obama"},
+  {text:"I never dreamed about success. I worked for it.",author:"Estée Lauder"},
   {text:"Power means happiness. Power means hard work and sacrifice.",author:"Beyoncé"},
   {text:"Your self-worth is determined by you. You do not have to depend on someone telling you who you are.",author:"Beyoncé"},
   {text:"I don't like to gamble, but if there's one thing I'm willing to bet on, it's myself.",author:"Beyoncé"},
-  {text:"Think like a queen. A queen is not afraid to fail. Failure is another stepping stone to greatness.",author:"Oprah Winfrey"},
+  {text:"Think like a queen. A queen is not afraid to fail.",author:"Oprah Winfrey"},
   {text:"The biggest adventure you can take is to live the life of your dreams.",author:"Oprah Winfrey"},
   {text:"You get in life what you have the courage to ask for.",author:"Oprah Winfrey"},
+  {text:"Turn your wounds into wisdom.",author:"Oprah Winfrey"},
+  {text:"The more you praise and celebrate your life, the more there is in life to celebrate.",author:"Oprah Winfrey"},
+  {text:"Surround yourself with only people who are going to lift you higher.",author:"Oprah Winfrey"},
   {text:"I am not going to limit myself just because people won't accept the fact that I can do something else.",author:"Dolly Parton"},
   {text:"Find out who you are and do it on purpose.",author:"Dolly Parton"},
+  {text:"The way I see it, if you want the rainbow, you gotta put up with the rain.",author:"Dolly Parton"},
   {text:"Above all, be the heroine of your life, not the victim.",author:"Nora Ephron"},
-  {text:"I raise up my voice — not so that I can shout, but so that those without a voice can be heard.",author:"Malala Yousafzai"},
+  {text:"I raise up my voice so that those without a voice can be heard.",author:"Malala Yousafzai"},
   {text:"One child, one teacher, one book, one pen can change the world.",author:"Malala Yousafzai"},
-  {text:"I always did something I was a little not ready to do. I think that is how you grow.",author:"Marissa Mayer"},
-  {text:"The question isn't who's going to let me; it's who's going to stop me.",author:"Ayn Rand"},
+  {text:"The question isn't who is going to let me. It's who is going to stop me.",author:"Ayn Rand"},
   {text:"She remembered who she was and the game changed.",author:"Lalah Delia"},
+  {text:"You are allowed to be both a masterpiece and a work in progress.",author:"Sophia Bush"},
+  {text:"A woman is like a tea bag. You never know how strong she is until she gets in hot water.",author:"Eleanor Roosevelt"},
+  {text:"No one can make you feel inferior without your consent.",author:"Eleanor Roosevelt"},
+  {text:"Do one thing every day that scares you.",author:"Eleanor Roosevelt"},
+  {text:"The future belongs to those who believe in the beauty of their dreams.",author:"Eleanor Roosevelt"},
+  {text:"Beautiful young people are accidents of nature, but beautiful old people are works of art.",author:"Eleanor Roosevelt"},
+  {text:"You must do the thing you think you cannot do.",author:"Eleanor Roosevelt"},
+  {text:"I have learned over the years that when one's mind is made up, this diminishes fear.",author:"Rosa Parks"},
+  {text:"You must never be fearful about what you are doing when it is right.",author:"Rosa Parks"},
+  {text:"I'm tough, I'm ambitious, and I know exactly what I want.",author:"Madonna"},
+  {text:"I am not afraid of storms, for I am learning how to sail my ship.",author:"Louisa May Alcott"},
+  {text:"The most courageous act is still to think for yourself. Aloud.",author:"Coco Chanel"},
+  {text:"In order to be irreplaceable, one must always be different.",author:"Coco Chanel"},
+  {text:"I always did something I was a little not ready to do. That is how you grow.",author:"Marissa Mayer"},
+  {text:"I never lose. I either win or learn.",author:"Nelson Mandela"},
+  {text:"She made broken look beautiful and strong look invincible.",author:"Ariana Dancu"},
+  {text:"Women who invest in themselves go further. Women who invest in each other go the farthest.",author:""},
+  {text:"A strong woman looks a challenge dead in the eye and gives it a wink.",author:"Gina Carey"},
+  {text:"There is no force more powerful than a woman who has decided it is her time.",author:""},
+  {text:"She did not wait to be chosen. She chose herself.",author:""},
+  {text:"The crown is already yours. Wear it.",author:""},
+  {text:"Her confidence was not loud. It did not need to be.",author:""},
+  {text:"A woman with a vision is unstoppable.",author:""},
+  {text:"Be the woman your younger self needed to see.",author:""},
+  {text:"A woman who knows what she brings to the table is not afraid to eat alone.",author:""},
+  {text:"She was soft but not weak. Kind but not naive. Ambitious and unapologetic.",author:""},
+  {text:"She turned her can'ts into cans and her dreams into plans.",author:""},
+  {text:"You are not too ambitious. The world is just not used to women who refuse to shrink.",author:""},
+  {text:"She was not built to be quiet. She was built to make things happen.",author:""},
+  {text:"One day she decided she was done waiting for permission. That was the day everything changed.",author:""},
+  {text:"She is not a one in a million kind of girl. She is a once in a lifetime kind of woman.",author:""},
+  {text:"You were not made to fit into someone else's box. You were made to build your own table.",author:""},
+  {text:"Your softness is not a weakness. It is a superpower.",author:""},
+  {text:"A woman who believes in herself is unstoppable. A woman who believes in other women is a force.",author:""},
+  {text:"Women who support each other accomplish extraordinary things.",author:""},
+  {text:"Remember your power.",author:""},
+  {text:"You are not lucky to be here. You earned it.",author:""},
+  {text:"The version of you that succeeds is the one who kept going.",author:""},
+  {text:"You were not built to play small.",author:""},
+  {text:"Be the energy you want to attract.",author:""},
+  {text:"Do it with everything you have or not at all.",author:""},
+  {text:"You are the asset. Never forget that.",author:""},
+  {text:"Your standards are your reputation. Protect them.",author:""},
+  {text:"You do not have to be fearless. You just have to move anyway.",author:""},
+  {text:"What you do on the hard days defines you more than anything else.",author:""},
+  {text:"The goal is not to be perfect. The goal is to be consistent.",author:""},
+  {text:"Your future self is watching. Make her proud.",author:""},
+  {text:"You are building something. Trust the process.",author:""},
+  {text:"The work you put in when no one is watching is what sets you apart.",author:""},
+  {text:"Discipline is not punishment. It is the highest form of self-respect.",author:""},
+  {text:"Every relationship you build today is an investment in who you become.",author:""},
+  {text:"Rest if you must. But do not quit.",author:""},
+  {text:"Your potential is not a ceiling. It is a floor.",author:""},
+  {text:"The most important promise is the one you make to yourself.",author:""},
+  {text:"Hard days are not signs you are failing. They are signs you are doing something that matters.",author:""},
+  {text:"Growth is uncomfortable. So is staying where you are. Choose the one that builds you.",author:""},
+  {text:"The world makes room for people who know where they are going.",author:""},
+  {text:"You are someone's best option. Go remind them.",author:""},
+  {text:"Stop waiting to feel ready. You get ready by doing.",author:""},
+  {text:"She was never meant to be ordinary. Stop trying to make yourself smaller.",author:""},
+  {text:"Women are the largest untapped reservoir of talent in the world.",author:"Hillary Clinton"},
+  {text:"Take criticism seriously, but not personally.",author:"Hillary Clinton"},
+  {text:"Always aim high, work hard, and care deeply about what you believe in.",author:"Hillary Clinton"},
+  {text:"Don't let anyone tell you that great things can't happen in America.",author:"Hillary Clinton"},
+  {text:"I am a woman with thoughts and questions and I am not going to be quiet just to make you comfortable.",author:"Malala Yousafzai"},
+  {text:"The most common way people give up their power is by thinking they don't have any.",author:"Alice Walker"},
+  {text:"The most important thing is to enjoy your life — to be happy. It's all that matters.",author:"Audrey Hepburn"},
+  {text:"Nothing is impossible. The word itself says I'm possible.",author:"Audrey Hepburn"},
+  {text:"I believe in pink. I believe that laughing is the best calorie burner.",author:"Audrey Hepburn"},
+  {text:"The best protection any woman can have is courage.",author:"Elizabeth Cady Stanton"},
+  {text:"We do not need magic to transform our world. We carry all of the power we need inside ourselves.",author:"J.K. Rowling"},
+  {text:"Rock bottom became the solid foundation on which I rebuilt my life.",author:"J.K. Rowling"},
+  {text:"It is impossible to live without failing at something unless you live so cautiously that you might as well not have lived at all.",author:"J.K. Rowling"},
+  {text:"Well-behaved women seldom make history.",author:"Laurel Thatcher Ulrich"},
+  {text:"I am a woman phenomenally. Phenomenal woman, that's me.",author:"Maya Angelou"},
+  {text:"You may encounter many defeats, but you must not be defeated.",author:"Maya Angelou"},
+  {text:"I've learned that people will forget what you said, people will forget what you did, but people will never forget how you made them feel.",author:"Maya Angelou"},
+  {text:"We may encounter many defeats but we must not be defeated.",author:"Maya Angelou"},
+  {text:"Nothing will work unless you do.",author:"Maya Angelou"},
+  {text:"You alone are enough. You have nothing to prove to anybody.",author:"Maya Angelou"},
+  {text:"My mission in life is not merely to survive, but to thrive.",author:"Maya Angelou"},
+  {text:"I can be changed by what happens to me. But I refuse to be reduced by it.",author:"Maya Angelou"},
+  {text:"A woman who is convinced that she deserves to accept only the best challenges herself.",author:"Maya Angelou"},
+  {text:"Courage is the most important of all the virtues because without courage you can't practice any other virtue consistently.",author:"Maya Angelou"},
+  {text:"We need women at all levels, including the top, to change the dynamic, reshape the conversation.",author:"Sheryl Sandberg"},
+  {text:"In the future, there will be no female leaders. There will just be leaders.",author:"Sheryl Sandberg"},
+  {text:"Done is better than perfect.",author:"Sheryl Sandberg"},
+  {text:"Leadership is not bullying and leadership is not aggression. Leadership is the expectation that you can use your voice for good.",author:"Sheryl Sandberg"},
+  {text:"Opportunity is missed by most people because it is dressed in overalls and looks like work.",author:"Thomas Edison"},
+  {text:"If you want something said, ask a man. If you want something done, ask a woman.",author:"Margaret Thatcher"},
+  {text:"You may have to fight a battle more than once to win it.",author:"Margaret Thatcher"},
+  {text:"What is success? I think it is a mixture of having a flair for the thing that you are doing.",author:"Margaret Thatcher"},
+  {text:"I am extraordinarily patient, provided I get my own way in the end.",author:"Margaret Thatcher"},
+  {text:"To love what you do and feel that it matters — how could anything be more fun?",author:"Katharine Graham"},
+  {text:"Once you know what you want and why you want it, figure out — right down to the last detail — what it's going to take to get it.",author:"Indra Nooyi"},
+  {text:"Whatever you do, do it with all your might.",author:"Indra Nooyi"},
+  {text:"Just because you are CEO, don't think you have landed. You must continually increase your learning.",author:"Indra Nooyi"},
+  {text:"Leadership is hard to define and good leadership even harder. But if you can get people to follow you to the ends of the earth, you are a great leader.",author:"Indra Nooyi"},
+  {text:"If I had to live my life again, I'd make the same mistakes, only sooner.",author:"Tallulah Bankhead"},
+  {text:"I was smart enough to go through any door that opened.",author:"Joan Rivers"},
+  {text:"I succeeded by saying what everyone else is thinking.",author:"Joan Rivers"},
+  {text:"I have not failed. I've just found 10,000 ways that won't work.",author:"Thomas Edison"},
+  {text:"The secret of getting ahead is getting started.",author:"Mark Twain"},
+  {text:"Start where you are. Use what you have. Do what you can.",author:"Arthur Ashe"},
+  {text:"Success is not final, failure is not fatal: it is the courage to continue that counts.",author:"Winston Churchill"},
+  {text:"The woman who follows the crowd will usually go no further than the crowd.",author:"Albert Einstein"},
+  {text:"The woman who walks alone is likely to find herself in places no one has ever been before.",author:"Albert Einstein"},
+  {text:"I am no bird; and no net ensnares me. I am a free human being with an independent will.",author:"Charlotte Brontë"},
+  {text:"Whatever our souls are made of, his and mine are the same.",author:"Emily Brontë"},
+  {text:"She is too fond of books, and it has turned her brain.",author:"Louisa May Alcott"},
+  {text:"I am not afraid of storms, for I am learning how to sail.",author:"Louisa May Alcott"},
+  {text:"She wore her scars as her best attire.",author:"Dodinsky"},
+  {text:"A woman knows by intuition, or instinct, what is best for herself.",author:"Marilyn Monroe"},
+  {text:"Keep smiling, because life is a beautiful thing and there's so much to smile about.",author:"Marilyn Monroe"},
+  {text:"We should all start to live before we get too old.",author:"Marilyn Monroe"},
+  {text:"Imperfection is beauty, madness is genius.",author:"Marilyn Monroe"},
+  {text:"Give a girl the right shoes, and she can conquer the world.",author:"Marilyn Monroe"},
+  {text:"She is a friend of my mind. She gather me, man. The pieces I am, she gather them and give them back to me in all the right order.",author:"Toni Morrison"},
+  {text:"If you have some power, then your job is to empower somebody else.",author:"Toni Morrison"},
+  {text:"You wanna fly, you got to give up the stuff that weighs you down.",author:"Toni Morrison"},
+  {text:"If you have some power, then your job is to empower somebody else.",author:"Toni Morrison"},
+  {text:"Freeing yourself was one thing, claiming ownership of that freed self was another.",author:"Toni Morrison"},
+  {text:"There is no greater agony than bearing an untold story inside you.",author:"Maya Angelou"},
+  {text:"Not everything that is faced can be changed, but nothing can be changed until it is faced.",author:"James Baldwin"},
+  {text:"You can't use up creativity. The more you use, the more you have.",author:"Maya Angelou"},
+  {text:"A creative woman digs deep. She doesn't wait for inspiration — she creates it.",author:""},
+  {text:"A woman in harmony with her spirit is like a river flowing. She goes where she will without pretense.",author:"Maya Angelou"},
+  {text:"The most difficult thing is the decision to act. The rest is merely tenacity.",author:"Amelia Earhart"},
+  {text:"The most effective way to do it is to do it.",author:"Amelia Earhart"},
+  {text:"Adventure is worthwhile in itself.",author:"Amelia Earhart"},
+  {text:"Never interrupt someone doing what you said couldn't be done.",author:"Amelia Earhart"},
+  {text:"Courage is the price that life exacts for granting peace.",author:"Amelia Earhart"},
+  {text:"Women must try to do things as men have tried. When they fail, their failure must be but a challenge to others.",author:"Amelia Earhart"},
+  {text:"The most difficult thing is the decision to act, the rest is tenacity.",author:"Amelia Earhart"},
+  {text:"Please know that I am aware of the hazards. I want to do it because I want to do it.",author:"Amelia Earhart"},
+  {text:"Some of us are becoming the men we wanted to marry.",author:"Gloria Steinem"},
+  {text:"A woman without a man is like a fish without a bicycle.",author:"Gloria Steinem"},
+  {text:"The truth will set you free, but first it will piss you off.",author:"Gloria Steinem"},
+  {text:"Without leaps of imagination, or dreaming, we lose the excitement of possibilities.",author:"Gloria Steinem"},
+  {text:"We've begun to raise daughters more like sons, but few have the courage to raise our sons more like our daughters.",author:"Gloria Steinem"},
+  {text:"Hope is a very unruly emotion.",author:"Gloria Steinem"},
+  {text:"A pedestal is as much a prison as any small, confined space.",author:"Gloria Steinem"},
+  {text:"Any woman who chooses to behave like a full human being should be warned that the armies of the status quo will treat her as something of a dirty joke.",author:"Gloria Steinem"},
+  {text:"We can tell our values by looking at our checkbook stubs.",author:"Gloria Steinem"},
+  {text:"Life is not measured by the number of breaths we take, but by the moments that take our breath away.",author:"Maya Angelou"},
+  {text:"The only way to do great work is to love what you do.",author:"Steve Jobs"},
+  {text:"If you look at what you have in life, you'll always have more.",author:"Oprah Winfrey"},
+  {text:"Step out of the history that is holding you back. Step into the new story you are willing to create.",author:"Oprah Winfrey"},
+  {text:"The greatest discovery of all time is that a person can change their future by merely changing their attitude.",author:"Oprah Winfrey"},
+  {text:"Lots of people want to ride with you in the limo, but what you want is someone who will take the bus with you when the limo breaks down.",author:"Oprah Winfrey"},
+  {text:"Be thankful for what you have; you'll end up having more.",author:"Oprah Winfrey"},
+  {text:"Passion is energy. Feel the power that comes from focusing on what excites you.",author:"Oprah Winfrey"},
+  {text:"I know for sure that what we dwell on is who we become.",author:"Oprah Winfrey"},
+  {text:"The whole point of being alive is to evolve into the complete person you were intended to be.",author:"Oprah Winfrey"},
+  {text:"Doing the best at this moment puts you in the best place for the next moment.",author:"Oprah Winfrey"},
+  {text:"You don't become what you want, you become what you believe.",author:"Oprah Winfrey"},
+  {text:"The more you feed your mind with positive thoughts, the more you can attract great things.",author:"Roy T. Bennett"},
+  {text:"You are braver than you believe, stronger than you seem, and smarter than you think.",author:"A.A. Milne"},
+  {text:"Believe you can and you're halfway there.",author:"Theodore Roosevelt"},
+  {text:"It always seems impossible until it's done.",author:"Nelson Mandela"},
+  {text:"Do not go where the path may lead, go instead where there is no path and leave a trail.",author:"Ralph Waldo Emerson"},
+  {text:"In the middle of every difficulty lies opportunity.",author:"Albert Einstein"},
+  {text:"It does not matter how slowly you go as long as you do not stop.",author:"Confucius"},
+  {text:"Our greatest glory is not in never falling, but in rising every time we fall.",author:"Confucius"},
+  {text:"She who is brave is free.",author:"Seneca"},
+  {text:"There is no substitute for hard work.",author:"Thomas Edison"},
+  {text:"Genius is one percent inspiration and ninety-nine percent perspiration.",author:"Thomas Edison"},
+  {text:"I have not failed. I've just found 10,000 ways that won't work.",author:"Thomas Edison"},
+  {text:"The true sign of intelligence is not knowledge but imagination.",author:"Albert Einstein"},
+  {text:"Life is what happens to you while you're busy making other plans.",author:"John Lennon"},
+  {text:"The journey of a thousand miles begins with one step.",author:"Lao Tzu"},
+  {text:"That which does not kill us makes us stronger.",author:"Friedrich Nietzsche"},
+  {text:"You only live once, but if you do it right, once is enough.",author:"Mae West"},
+  {text:"When women support each other, incredible things happen.",author:""},
+  {text:"Be so good they can't ignore you.",author:"Steve Martin"},
+  {text:"I attribute my success to this: I never gave or took any excuse.",author:"Florence Nightingale"},
+  {text:"I am not afraid. I was born to do this.",author:"Joan of Arc"},
+  {text:"One must always be careful of bravado. The more you talk, the less you do.",author:""},
+  {text:"There is a special place in hell for women who don't help other women.",author:"Madeleine Albright"},
+  {text:"You don't have to be pretty. You don't owe prettiness to anyone.",author:"Erin McKean"},
+  {text:"She is a mess of gorgeous chaos, and you can see it in her eyes.",author:""},
+  {text:"She needed a hero so she became one.",author:""},
+  {text:"She was powerful not because she wasn't scared, but because she went on so strongly despite the fear.",author:"Atticus"},
+  {text:"A woman with a voice is by definition a strong woman.",author:"Melinda Gates"},
+  {text:"Empowered women empower women.",author:""},
+  {text:"The most revolutionary thing a woman can do is not explain herself.",author:""},
+  {text:"I am my own muse, the subject I know best.",author:"Frida Kahlo"},
+  {text:"I tried to drown my sorrows, but the bastards learned how to swim.",author:"Frida Kahlo"},
+  {text:"I paint flowers so they will not die.",author:"Frida Kahlo"},
+  {text:"I paint my own reality.",author:"Frida Kahlo"},
+  {text:"At the end of the day, we can endure much more than we think we can.",author:"Frida Kahlo"},
+  {text:"Feet, what do I need you for when I have wings to fly?",author:"Frida Kahlo"},
+  {text:"Take a lover who looks at you like maybe you are magic.",author:"Frida Kahlo"},
+  {text:"The most important thing is not to stop questioning.",author:"Albert Einstein"},
+  {text:"I am woman. I am invincible. I am tired.",author:""},
+  {text:"She built a life she loved.",author:""},
+  {text:"She is not waiting for a knight. She is training to be one.",author:""},
+  {text:"Leave a little sparkle wherever you go.",author:""},
+  {text:"Be a voice, not an echo.",author:"Albert Einstein"},
+  {text:"Don't let yesterday take up too much of today.",author:"Will Rogers"},
+  {text:"You learn more from failure than from success. Don't let it stop you.",author:""},
+  {text:"It's not whether you get knocked down, it's whether you get up.",author:"Vince Lombardi"},
+  {text:"If you are working on something that you really care about, you don't have to be pushed.",author:"Steve Jobs"},
+  {text:"People who are crazy enough to think they can change the world, are the ones who do.",author:"Rob Siltanen"},
+  {text:"Failure will never overtake me if my determination to succeed is strong enough.",author:"Og Mandino"},
+  {text:"Entrepreneurs are great at dealing with uncertainty and also very good at not going insane.",author:"Joe Gebbia"},
+  {text:"We generate fears while we sit. We overcome them by action.",author:"Dr. Henry Link"},
+  {text:"Whether you think you can or think you can't, you're right.",author:"Henry Ford"},
+  {text:"Security is mostly a superstition. Life is either a daring adventure or nothing.",author:"Helen Keller"},
+  {text:"The only thing worse than being blind is having sight but no vision.",author:"Helen Keller"},
+  {text:"Alone we can do so little; together we can do so much.",author:"Helen Keller"},
+  {text:"Keep your face to the sunshine and you cannot see a shadow.",author:"Helen Keller"},
+  {text:"Character cannot be developed in ease and quiet.",author:"Helen Keller"},
+  {text:"Optimism is the faith that leads to achievement.",author:"Helen Keller"},
+  {text:"Although the world is full of suffering, it is also full of the overcoming of it.",author:"Helen Keller"},
+  {text:"The best and most beautiful things in the world cannot be seen or even touched. They must be felt with the heart.",author:"Helen Keller"},
+  {text:"I am only one, but still I am one. I cannot do everything, but still I can do something.",author:"Helen Keller"},
+  {text:"Science is not a boy's game, it's not a girl's game. It's everyone's game.",author:"Nichelle Nichols"},
+  {text:"I don't run away from a challenge because I am afraid. I run toward it.",author:"Ronda Rousey"},
+  {text:"A champion is defined not by their wins but by how they can recover when they fall.",author:"Serena Williams"},
+  {text:"I don't look back now. You move on and you become a better person.",author:"Serena Williams"},
+  {text:"I really think a champion is defined not by their wins but by how they can recover.",author:"Serena Williams"},
+  {text:"I've had to learn to fight all my life — got to learn to keep smiling.",author:"Serena Williams"},
+  {text:"Luck has nothing to do with it, because I have spent many, many hours, countless hours, on the court.",author:"Venus Williams"},
+  {text:"Start where you are. Use what you have. Do what you can.",author:"Arthur Ashe"},
+  {text:"You have to expect things of yourself before you can do them.",author:"Michael Jordan"},
+  {text:"I've missed more than 9,000 shots in my career. That's why I succeed.",author:"Michael Jordan"},
+  {text:"Talent wins games, but teamwork and intelligence win championships.",author:"Michael Jordan"},
+  {text:"Obstacles are what you see when you take your eyes off the goal.",author:"Vince Lombardi"},
+  {text:"It's not the load that breaks you down, it's the way you carry it.",author:"Lou Holtz"},
+  {text:"Show me someone who has done something worthwhile, and I'll show you someone who has overcome adversity.",author:"Lou Holtz"},
+  {text:"The secret of success is to do the common thing uncommonly well.",author:"John D. Rockefeller Jr."},
+  {text:"I find that the harder I work, the more luck I seem to have.",author:"Thomas Jefferson"},
+  {text:"The successful warrior is the average man, with laser-like focus.",author:"Bruce Lee"},
+  {text:"A goal is not always meant to be reached. It often serves simply as something to aim at.",author:"Bruce Lee"},
+  {text:"The key is not to prioritize what's on your schedule, but to schedule your priorities.",author:"Stephen Covey"},
+  {text:"Trust is the glue of life. It's the most essential ingredient in effective communication.",author:"Stephen Covey"},
+  {text:"Most of us spend too much time on what is urgent and not enough time on what is important.",author:"Stephen Covey"},
+  {text:"Strength and growth come only through continuous effort and struggle.",author:"Napoleon Hill"},
+  {text:"Whatever the mind can conceive and believe, it can achieve.",author:"Napoleon Hill"},
+  {text:"A goal is a dream with a deadline.",author:"Napoleon Hill"},
+  {text:"Set your mind on a definite goal and observe how quickly the world stands aside to let you pass.",author:"Napoleon Hill"},
+  {text:"You are the master of your destiny. You can influence, direct, and control your own environment.",author:"Napoleon Hill"},
+  {text:"The starting point of all achievement is desire.",author:"Napoleon Hill"},
+  {text:"You can be anything you want to be, if only you believe with sufficient conviction.",author:"Napoleon Hill"},
+  {text:"Think twice before you speak, because your words and influence will plant the seed of either success or failure.",author:"Napoleon Hill"},
+  {text:"Big shots are only little shots who keep shooting.",author:"Christopher Morley"},
+  {text:"Nothing in life is to be feared, it is only to be understood.",author:"Marie Curie"},
+  {text:"Be less curious about people and more curious about ideas.",author:"Marie Curie"},
+  {text:"I was taught that the way of progress was neither swift nor easy.",author:"Marie Curie"},
+  {text:"Life is not easy for any of us. But what of that? We must have perseverance.",author:"Marie Curie"},
+  {text:"You cannot hope to build a better world without improving the individuals.",author:"Marie Curie"},
+  {text:"In science, we must be interested in things, not in persons.",author:"Marie Curie"},
+  {text:"I am among those who think that science has great beauty.",author:"Marie Curie"},
+  {text:"One never notices what has been done; one can only see what remains to be done.",author:"Marie Curie"},
+  {text:"First, have a definite, clear, practical ideal — a goal, an objective.",author:"Aristotle"},
+  {text:"The secret to happiness is freedom and the secret to freedom is courage.",author:"Thucydides"},
+  {text:"Know thyself.",author:"Socrates"},
+  {text:"The only true wisdom is in knowing you know nothing.",author:"Socrates"},
+  {text:"An unexamined life is not worth living.",author:"Socrates"},
+  {text:"Strong minds discuss ideas, average minds discuss events, weak minds discuss people.",author:"Socrates"},
+  {text:"Education is the kindling of a flame, not the filling of a vessel.",author:"Socrates"},
+  {text:"Employ your time in improving yourself by other men's writings so that you shall come easily by what others have labored hard for.",author:"Socrates"},
+  {text:"The secret of change is to focus all of your energy not on fighting the old, but on building the new.",author:"Socrates"},
+  {text:"She was fierce, she was strong, she wasn't simple. She was crazy and sometimes she barely slept. She always had something to say.",author:"R.H. Sin"},
+  {text:"She was a girl who knew how to be happy even when she was sad.",author:"Marilyn Monroe"},
+  {text:"I'm selfish, impatient and a little insecure. I make mistakes. But if you can't handle me at my worst, you sure as hell don't deserve me at my best.",author:"Marilyn Monroe"},
+  {text:"A wise girl kisses but doesn't love, listens but doesn't believe, and leaves before she is left.",author:"Marilyn Monroe"},
+  {text:"Success makes so many people hate you. I wish it wasn't that way. It would be wonderful to enjoy success without seeing envy in the eyes of those around you.",author:"Marilyn Monroe"},
+  {text:"All a girl really wants is for one guy to prove to her that they are not all the same.",author:"Marilyn Monroe"},
+  {text:"Keep your head, heels, and standards high.",author:"Coco Chanel"},
+  {text:"Fashion fades, only style remains the same.",author:"Coco Chanel"},
+  {text:"Elegance is when the inside is as beautiful as the outside.",author:"Coco Chanel"},
+  {text:"Beauty begins the moment you decide to be yourself.",author:"Coco Chanel"},
+  {text:"A girl should be two things: classy and fabulous.",author:"Coco Chanel"},
+  {text:"Don't spend time beating on a wall, hoping to transform it into a door.",author:"Coco Chanel"},
+  {text:"The most beautiful things are not associated with money; they are memories and moments.",author:"Alek Wek"},
+  {text:"You've got to have something to eat and a little love in your life before you can hold still for any damn body's sermon on how to behave.",author:"Billie Holiday"},
+  {text:"No two people on earth are alike, and it's got to be that way in music or it isn't music.",author:"Billie Holiday"},
+  {text:"I never hurt nobody but myself and that's nobody's business but my own.",author:"Billie Holiday"},
+  {text:"Daring to set boundaries is about having the courage to love ourselves, even when we risk disappointing others.",author:"Brené Brown"},
+  {text:"You are imperfect, you are wired for struggle, but you are also worthy of love and belonging.",author:"Brené Brown"},
+  {text:"Owning our story and loving ourselves through that process is the bravest thing that we will ever do.",author:"Brené Brown"},
+  {text:"Vulnerability is not winning or losing; it's having the courage to show up and be seen when we have no control over the outcome.",author:"Brené Brown"},
+  {text:"You can't get to courage without walking through vulnerability.",author:"Brené Brown"},
+  {text:"Connection is why we're here. It is what gives purpose and meaning to our lives.",author:"Brené Brown"},
+  {text:"Authenticity is a collection of choices that we have to make every day.",author:"Brené Brown"},
+  {text:"If you trade your authenticity for safety, you may experience the following: anxiety, depression, eating disorders, addiction, rage, blame.",author:"Brené Brown"},
+  {text:"Perfectionism is not self-improvement. Perfectionism is, at its core, about trying to earn approval and acceptance.",author:"Brené Brown"},
+  {text:"I define joy as a sustained sense of well-being and internal peace — a connection to what matters.",author:"Oprah Winfrey"},
+  {text:"Breathe. Let go. And remind yourself that this very moment is the only one you know you have for sure.",author:"Oprah Winfrey"},
+  {text:"The thing you fear most has no power. Your fear of it is what has the power.",author:"Oprah Winfrey"},
+  {text:"You have to find what sparks a light in you so that you in your own way can illuminate the world.",author:"Oprah Winfrey"},
+  {text:"Challenges are gifts that force us to search for a new center of gravity. Don't fight them. Just find a new way to stand.",author:"Oprah Winfrey"},
+  {text:"Real integrity is doing the right thing, knowing that nobody's going to know whether you did it or not.",author:"Oprah Winfrey"},
+  {text:"I don't think of myself as a poor, deprived ghetto girl who made good. I think of myself as somebody who from an early age knew I was responsible for myself.",author:"Oprah Winfrey"},
+  {text:"Create the highest, grandest vision possible for your life, because you become what you believe.",author:"Oprah Winfrey"},
+  {text:"The greatest discovery of any generation is that a human can alter his life by altering his attitude.",author:"William James"},
+  {text:"We must accept finite disappointment, but never lose infinite hope.",author:"Martin Luther King Jr."},
+  {text:"Faith is taking the first step even when you don't see the whole staircase.",author:"Martin Luther King Jr."},
+  {text:"The time is always right to do what is right.",author:"Martin Luther King Jr."},
+  {text:"Darkness cannot drive out darkness; only light can do that.",author:"Martin Luther King Jr."},
+  {text:"If you can't fly then run, if you can't run then walk, if you can't walk then crawl, but whatever you do you have to keep moving forward.",author:"Martin Luther King Jr."},
+  {text:"She stood in the storm and when the wind did not blow her away, she adjusted her sails.",author:"Elizabeth Edwards"},
+  {text:"If you want to go fast, go alone. If you want to go far, go together.",author:"African Proverb"},
+  {text:"She is clothed in strength and dignity, and she laughs without fear of the future.",author:"Proverbs 31:25"},
+  {text:"The woman who does not require validation from anyone is the most feared individual on the planet.",author:"Mohadesa Najumi"},
+  {text:"She is a warrior with a gentle heart and a mind that can't be broken.",author:""},
+  {text:"There is no limit to what we, as women, can accomplish.",author:"Michelle Obama"},
+  {text:"When you've worked hard, and done well, and walked through that doorway of opportunity, you do not slam it shut behind you.",author:"Michelle Obama"},
+  {text:"Success isn't about how much money you make, it's about the difference you make in people's lives.",author:"Michelle Obama"},
+  {text:"Don't ever make decisions based on fear. Make decisions based on hope and possibility.",author:"Michelle Obama"},
+  {text:"You may not always have a comfortable life. But do not ever underestimate the importance you can have.",author:"Michelle Obama"},
+  {text:"Every day, you have the power to choose our better history.",author:"Michelle Obama"},
+  {text:"Do not bring people in your life who weigh you down. And trust your instincts — good relationships feel good. They feel right.",author:"Michelle Obama"},
+  {text:"Your story is what you have, what you will always have. It is something to own.",author:"Michelle Obama"},
+  {text:"With every word we utter, with every action we take, we know our kids are watching us.",author:"Michelle Obama"},
+  {text:"If you don't get out there and define yourself, you'll be quickly and inaccurately defined by others.",author:"Michelle Obama"},
+  {text:"We learned about honesty and integrity — that the truth matters even when it's not what you want to hear.",author:"Michelle Obama"},
+  {text:"I have learned that as long as I hold fast to my beliefs and values — and follow my own moral compass — the only expectations I need to live up to are my own.",author:"Michelle Obama"},
+  {text:"Whether you come from a council estate or a country estate, your success will be determined by your own confidence and fortitude.",author:"Michelle Obama"},
+  {text:"Instead of letting your hardships and failures discourage or exhaust you, let them inspire you.",author:"Michelle Obama"},
+  {text:"We need to do a better job of putting ourselves higher on our own 'to do' list.",author:"Michelle Obama"},
+  {text:"You should never view your challenges as a disadvantage. Instead, it's important for you to understand that your experience facing and overcoming adversity is actually one of your biggest advantages.",author:"Michelle Obama"},
+  {text:"The art of communication is the language of leadership.",author:"James Humes"},
+  {text:"Leadership is not about being in charge. Leadership is about taking care of those in your charge.",author:"Simon Sinek"},
+  {text:"People don't buy what you do; they buy why you do it.",author:"Simon Sinek"},
+  {text:"Working hard for something we don't care about is called stress. Working hard for something we love is called passion.",author:"Simon Sinek"},
+  {text:"Dream big. Start small. But most of all, start.",author:"Simon Sinek"},
+  {text:"Great leaders don't set out to be a leader. They set out to make a difference.",author:"Lisa Haisha"},
+  {text:"The secret of joy in work is contained in one word — excellence. To know how to do something well is to enjoy it.",author:"Pearl Buck"},
+  {text:"Why did the real estate agent cross the road? To get to the listing on the other side.",author:"Dad"},
+  {text:"I told my client I had a lot of leads. They said 'great!' I said 'yeah, they're all pencils.'",author:"Dad"},
+  {text:"What do you call a realtor who only sells igloos? A cold caller.",author:"Dad"},
+  {text:"Why don't scientists trust atoms? Because they make up everything. Unlike your pipeline.",author:"Dad"},
+  {text:"I'm reading a book about anti-gravity. It's impossible to put down. Kind of like your cold call list.",author:"Dad"},
+  {text:"Why did the phone go to school? To improve its call quality.",author:"Dad"},
+  {text:"What do you call a bear with no teeth? A gummy bear. What do you call a day with no cold calls? Not your best day.",author:"Dad"},
+  {text:"I told my boss I needed a raise because three companies were after me. He asked which ones. I said gas, electric, and water.",author:"Dad"},
+  {text:"Why do cows wear bells? Because their horns don't work. Unlike your follow-up game.",author:"Dad"},
+  {text:"What's a real estate agent's favorite movie? Gone with the Wind — because that's what happens to listings with no follow-up.",author:"Dad"},
+  {text:"I asked my dog what two minus two is. He said nothing.",author:"Dad"},
+  {text:"Why did the scarecrow win an award? Because he was outstanding in his field. Be outstanding in yours.",author:"Dad"},
+  {text:"What do you call someone who can't stop buying houses? A mortgage-aholic.",author:"Dad"},
+  {text:"I used to hate facial hair but then it grew on me.",author:"Dad"},
+  {text:"Why don't eggs tell jokes? They'd crack each other up. Unlike cold calls, which you handle perfectly.",author:"Dad"},
+  {text:"Did you hear about the guy who invented Lifesavers? He made a mint.",author:"Dad"},
+  {text:"What do you call a fake noodle? An impasta. Don't be an impasta — be the real deal.",author:"Dad"},
+  {text:"I would tell you a construction joke but I'm still working on it.",author:"Dad"},
+  {text:"Why did the math book look so sad? Because it had too many problems. Your only problem is not enough break breads.",author:"Dad"},
+  {text:"What did the ocean say to the beach? Nothing, it just waved. Don't just wave — pick up the phone.",author:"Dad"},
+  {text:"I feel that luck is preparation meeting opportunity.",author:"Oprah Winfrey"},
+  {text:"You can waste your lives drawing lines. Or you can live your life crossing them.",author:"Shonda Rhimes"},
+  {text:"Excellence is the best deterrent to racism or sexism.",author:"Oprah Winfrey"},
+  {text:"I am a human being, not a human doing.",author:"Kurt Vonnegut"},
+  {text:"Whatever you are, be a good one.",author:"Abraham Lincoln"},
+  {text:"Give me six hours to chop down a tree and I will spend the first four sharpening the axe.",author:"Abraham Lincoln"},
+  {text:"The best way to predict your future is to create it.",author:"Abraham Lincoln"},
+  {text:"In the end, it's not the years in your life that count. It's the life in your years.",author:"Abraham Lincoln"},
+  {text:"No matter how you feel, get up, dress up, show up, and never give up.",author:"Regina Brett"},
+  {text:"A woman is unstoppable after she realizes she deserves better.",author:""},
+  {text:"She conquered her demons and wore her scars like wings.",author:"Atticus"},
+  {text:"Her soul is fierce. Her heart is brave. Her mind is strong.",author:""},
+  {text:"She believes she can, so she does.",author:""},
+  {text:"The most powerful thing a woman can do is exactly what she wants.",author:""},
+  {text:"Real queens fix each other's crowns.",author:""},
+  {text:"A woman who knows her worth doesn't measure herself against another woman but stands strong, calm, and self-assured.",author:"Mary J. Blige"},
+  {text:"Don't let what you cannot do interfere with what you can do.",author:"John Wooden"},
+  {text:"Success comes from knowing that you did your best to become the best that you are capable of becoming.",author:"John Wooden"},
+  {text:"It's the little details that are vital. Little things make big things happen.",author:"John Wooden"},
+  {text:"Never mistake activity for achievement.",author:"John Wooden"},
+  {text:"Be more concerned with your character than your reputation, because your character is what you really are, while your reputation is merely what others think you are.",author:"John Wooden"},
+  {text:"Ability is what you're capable of doing. Motivation determines what you do. Attitude determines how well you do it.",author:"Lou Holtz"},
+  {text:"In this world, you only get what you grab for.",author:""},
+  {text:"Be somebody nobody thought you could be.",author:""},
+  {text:"She rises with the sun.",author:""},
+  {text:"There is no way to happiness — happiness is the way.",author:"Thích Nhất Hạnh"},
+  {text:"The present moment is the only moment available to us, and it is the door to all moments.",author:"Thích Nhất Hạnh"},
+  {text:"Because of your smile, you make life more beautiful.",author:"Thích Nhất Hạnh"},
+  {text:"Waking up this morning, I smile. Twenty-four brand new hours are before me.",author:"Thích Nhất Hạnh"},
+  {text:"Feelings come and go like clouds in a windy sky. Conscious breathing is my anchor.",author:"Thích Nhất Hạnh"},
 ];
 
 (function renderQuote(){
@@ -1711,10 +2105,10 @@ async function sbFetch(path,options={}){
   return body;
 }
 
-function toast(msg,type="success"){
+function toast(msg,type="success",duration=3200){
   const el=document.getElementById("toast");
   el.textContent=msg;el.className="toast show "+type;
-  setTimeout(()=>el.className="toast",3200);
+  setTimeout(()=>el.className="toast",duration);
 }
 
 function fmtDate(d){
@@ -1867,7 +2261,7 @@ async function completeIntakeChecklist(){
     openIntake=null;
     resetIntakeChecklist();
     applyLockState();
-    loadWeek();loadFollowups();loadFeed();loadDaniel();loadHealth();loadOnboarding();loadQuiet();loadFlagged();
+    loadWeek();loadFollowups();loadFeed();loadManagement();loadHealth();loadOnboarding();loadQuiet();loadFlagged();
   }catch(e){
     console.error("Complete checklist error:",e);
     toast("Save failed: "+(e.message||"Unknown error"),"error");
@@ -2040,7 +2434,7 @@ function clearLogErrorBanner(){
 
 async function init(){
   testConnection();
-  loadWeek();loadFollowups();loadFeed();loadDaniel();initAutocomplete();loadQuiet();loadFlagged();loadOnboarding();loadStartHere();loadBreakBreadDue();
+  loadWeek();loadFollowups();loadFeed();loadManagement();initAutocomplete();loadQuiet();loadFlagged();loadOnboarding();loadStartHere();loadBreakBreadDue();
   checkOpenIntake();
   updateNotesRequirementHint();
   document.getElementById("agentInput").addEventListener("input",checkDedupOnInput);
@@ -2053,26 +2447,54 @@ async function loadStartHere(){
     const todayStr=today();
     const cutoff7=new Date();cutoff7.setDate(cutoff7.getDate()-7);
     const cutoff60=new Date();cutoff60.setDate(cutoff60.getDate()-60);
-    const[dayActs,escOpen,rcHot,coldCalls60,talkTos60,rcAllNames,breadProfiles,myBreads,lpBreads,fuToday]=await Promise.all([
-      sbFetch("amanda_activities?select=act_type&act_date=eq."+todayStr).catch(()=>[]),
+    const monthStart=new Date();monthStart.setDate(1);
+
+    const[dayActs,escOpen,rcHot,coldCalls60,talkTos60,rcAllNames,breadProfiles,myBreads,lpBreads,fuToday,ctcFiles,birthdayAgents,mtdMeetings]=await Promise.all([
+      sbFetch("amanda_activities?select=act_type,outcome,agent_name&act_date=eq."+todayStr).catch(()=>[]),
       sbFetch("amanda_activities?select=agent_name&outcome=eq.Needs manager attention&act_date=gte."+localDateStr(cutoff7)).catch(()=>[]),
       sbFetch(RC_TABLE+"?select=agent_name,status&status=in.(hot,urgent)&limit=100").catch(()=>[]),
       sbFetch("amanda_activities?select=agent_name,outcome&act_type=eq.Cold Calls&act_date=gte."+localDateStr(cutoff60)+"&limit=1000").catch(()=>[]),
       sbFetch("amanda_activities?select=agent_name,act_type&act_date=gte."+localDateStr(cutoff60)+"&limit=2000").catch(()=>[]),
-      sbFetch(RC_TABLE+"?select=agent_name,status&limit=1000").catch(()=>[]),
+      sbFetch(RC_TABLE+"?select=agent_name,status,grade&limit=1000").catch(()=>[]),
       sbFetch("agent_profiles?select=agent_name,tier&limit=500").catch(()=>[]),
       sbFetch("amanda_activities?select=agent_name,act_date&act_type=eq.Break Breads&order=act_date.desc&limit=2000").catch(()=>[]),
       sbFetch("break_breads?select=agent_name,date&order=date.desc&limit=2000").catch(()=>[]),
-      sbFetch("amanda_activities?select=agent_name,act_type&follow_up_date=eq."+todayStr).catch(()=>[])
+      sbFetch("amanda_activities?select=agent_name,act_type&follow_up_date=eq."+todayStr).catch(()=>[]),
+      sbFetch("call_logs?select=agent_name&outcome=ilike.*ctc*&call_date=eq."+todayStr).catch(()=>[]),
+      sbFetch("agent_profiles?select=agent_name,birthday&birthday=not.is.null&limit=500").catch(()=>[]),
+      sbFetch("amanda_activities?select=agent_name&act_type=eq.New Realtor Meeting&act_date=gte."+localDateStr(monthStart)).catch(()=>[])
     ]);
+
     const normalize=s=>(s||"").toLowerCase().trim();
     const talkToToday=cntTalkTo(dayActs);
-    const coldCallsToday=dayActs.filter(a=>a.act_type==="Cold Calls").length;
+    const coldCallsToday=(dayActs||[]).filter(a=>a.act_type==="Cold Calls").length;
     const talkToGoal=20,coldCallGoal=25;
 
-    // Repeat Cold Calls with no traction: 3+ dials, never a Positive/Meeting Scheduled outcome
+    // Wins today — cold calls or talk-tos with Positive or Meeting Scheduled
+    const winsToday=(dayActs||[]).filter(a=>a.outcome==="Positive"||a.outcome==="Meeting Scheduled").length;
+    const meetingsToday=(dayActs||[]).filter(a=>a.outcome==="Meeting Scheduled").length;
+
+    // CTC files today from LP logs
+    const ctcCount=(ctcFiles||[]).length;
+
+    // Birthdays this week
+    const now=new Date();
+    const todayMD=String(now.getMonth()+1).padStart(2,"0")+"/"+String(now.getDate()).padStart(2,"0");
+    const birthdayToday=(birthdayAgents||[]).filter(a=>{
+      if(!a.birthday)return false;
+      const b=a.birthday.toLowerCase();
+      const months={jan:"01",feb:"02",mar:"03",apr:"04",may:"05",jun:"06",jul:"07",aug:"08",sep:"09",oct:"10",nov:"11",dec:"12"};
+      const parts=b.split(" ");
+      if(parts.length<2)return false;
+      const mon=months[parts[0]];
+      const day=String(parseInt(parts[1])).padStart(2,"0");
+      if(!mon)return false;
+      return mon+"/"+day===todayMD;
+    });
+
+    // Stuck cold calls
     const ccByAgent={};
-    coldCalls60.forEach(a=>{
+    (coldCalls60||[]).forEach(a=>{
       const n=normalize(a.agent_name);if(!n)return;
       if(!ccByAgent[n])ccByAgent[n]={count:0,hasWin:false,display:a.agent_name};
       ccByAgent[n].count++;
@@ -2080,26 +2502,24 @@ async function loadStartHere(){
     });
     const stuckColdCalls=Object.values(ccByAgent).filter(a=>a.count>=3&&!a.hasWin);
 
-    // Repeat Talk-to's with no traction: 3+ talk-to type touches, but agent is still on the Reconnect list
-    // (no lead in 90+ days despite repeated contact) — a real signal without depending on Encompass data.
+    // Stuck talk-tos
     const reconnectNames=new Set((rcAllNames||[]).filter(a=>a.status!=="removed").map(a=>normalize(a.agent_name)).filter(Boolean));
     const rcActiveCount=(rcAllNames||[]).filter(a=>a.status!=="removed").length;
     const ttByAgent={};
-    talkTos60.forEach(a=>{
+    (talkTos60||[]).forEach(a=>{
       if(TALKTO_TYPES.indexOf(a.act_type)<0)return;
       const n=normalize(a.agent_name);if(!n)return;
-      ttByAgent[n]=(ttByAgent[n]||{count:0,display:a.agent_name});
-      ttByAgent[n].count++;
-      ttByAgent[n].display=a.agent_name;
+      if(!ttByAgent[n])ttByAgent[n]={count:0,display:a.agent_name};
+      ttByAgent[n].count++;ttByAgent[n].display=a.agent_name;
     });
     const stuckTalkTos=Object.keys(ttByAgent).filter(n=>ttByAgent[n].count>=3&&reconnectNames.has(n)).map(n=>ttByAgent[n]);
 
-    // Break Breads overdue count, same tier-threshold logic as the Break Bread Due List card
+    // Break breads overdue
     const breadLastTouch={};
-    myBreads.forEach(a=>{const n=normalize(a.agent_name);if(!n)return;if(!breadLastTouch[n]||a.act_date>breadLastTouch[n])breadLastTouch[n]=a.act_date;});
-    lpBreads.forEach(b=>{const n=normalize(b.agent_name);if(!n)return;if(!breadLastTouch[n]||b.date>breadLastTouch[n])breadLastTouch[n]=b.date;});
+    (myBreads||[]).forEach(a=>{const n=normalize(a.agent_name);if(!n)return;if(!breadLastTouch[n]||a.act_date>breadLastTouch[n])breadLastTouch[n]=a.act_date;});
+    (lpBreads||[]).forEach(b=>{const n=normalize(b.agent_name);if(!n)return;if(!breadLastTouch[n]||b.date>breadLastTouch[n])breadLastTouch[n]=b.date;});
     const today0=new Date();today0.setHours(0,0,0,0);
-    const breadOverdue=breadProfiles.filter(p=>{
+    const breadOverdue=(breadProfiles||[]).filter(p=>{
       const n=normalize(p.agent_name);
       const tier=p.tier||"C";
       const th=FT_THRESHOLDS_LOCAL[tier]||FT_THRESHOLDS_LOCAL.C;
@@ -2108,46 +2528,66 @@ async function loadStartHere(){
       return days===null||days>=th[1];
     }).length;
 
-    // Anyone with a follow-up scheduled today — worth a quick prep glance
-    const scheduledToday=(fuToday||[]).length;
+    // Reconnect — count A-tier separately
+    const rcACount=(rcAllNames||[]).filter(a=>a.status!=="removed"&&a.grade==="A").length;
+    const rcBCCount=rcActiveCount-rcACount;
+    const reconnectGoalText=rcACount>0
+      ?"Start with the "+rcACount+" A-tier agent"+(rcACount!==1?"s":"")+" — these are highest priority. Then work through B/C tier (aim for 5+ today). Log as Reconnect Outreach — counts toward Talk-to goal."
+      :"Aim for at least 5 today, B-tier before C-tier. Log as Reconnect Outreach — counts toward Talk-to goal.";
+    const mtdMeetingCount=(mtdMeetings||[]).length;
 
+    // Gifting campaign hint — check if anyone is in week 2 or 3 (value/opportunity)
+    const giftingHint=mtdMeetingCount>0?"Use the week-by-week gifting campaign scripts to stay on track. Week 2 = value touch, Week 3 = ask for the business.":"";
+
+    // Build steps
     const steps=[
-      {icon:"🚩",label:"Escalations",urgent:escOpen.length>0,
-        text:escOpen.length?escOpen.length+" open escalation"+(escOpen.length!==1?"s":"")+" — check Management View and follow up":"None right now"},
-      {icon:"⚡",label:"CTC Calls",urgent:false,
-        text:"Call, VM if no answer, then text. Use the CTC script. Get feedback from both the buyer's agent and listing agent, close for a meeting with the listing agent if they don't work with us yet. Share feedback on WhatsApp with the team in real-time. Check Encompass for the milestone."},
-      {icon:"🔁",label:"Reconnect",urgent:rcActiveCount>0,
-        text:rcActiveCount+" agent"+(rcActiveCount!==1?"s":"")+" on the Reconnect list. Aim for at least 5 today"+(rcHot.length>0?" — start with the "+rcHot.length+" marked hot/urgent":"")+". Log as Reconnect Outreach — counts toward your Talk-to goal. See the Reconnect tab."},
-      {icon:"📞",label:"Talk-to's",urgent:false,
-        text:talkToToday+"/"+talkToGoal+" today. Any real touch counts — a call, a text, a check-in. What matters is that you are present, getting feedback, and noting what you talked about."},
-      {icon:"🤝",label:"Break Breads",urgent:breadOverdue>10,
-        text:breadOverdue+" agent"+(breadOverdue!==1?"s":"")+" due or overdue for a Break Bread — see the Break Bread Due List below for who's actually next in line."},
-      {icon:"🏹",label:"Cold Calls",urgent:false,
-        text:coldCallsToday+"/"+coldCallGoal+" today."}
+      {label:"Escalations",urgent:escOpen.length>0,
+        text:escOpen.length?escOpen.length+" flagged — check Management View and follow up today":"None right now"},
+      {label:"CTC Calls",urgent:ctcCount>0,
+        text:ctcCount>0?ctcCount+" file"+(ctcCount!==1?"s":"")+" at CTC today — call both agents on each. Use the CTC script. Share feedback on WhatsApp. If listing agent is not a partner, close for a meeting."
+          :"Check Encompass for any files that hit CTC today. Call both agents, use the CTC script, share feedback on WhatsApp."},
+      {label:"Reconnect",urgent:rcActiveCount>0,
+        text:rcActiveCount+" agent"+(rcActiveCount!==1?"s":"")+" on the list"+(rcACount>0?" ("+rcACount+" A-tier)":"")+". "+reconnectGoalText},
+      {label:"Talk-to's",urgent:false,
+        text:talkToToday+"/"+talkToGoal+" today"+(winsToday>0?" — "+winsToday+" win"+(winsToday!==1?"s":"")+" today"+(meetingsToday>0?", including "+meetingsToday+" meeting"+(meetingsToday!==1?"s":"")+" booked":"")+". Keep going!":". Any real touch counts — a call, a text, a check-in.")},
+      {label:"Break Breads",urgent:breadOverdue>10,
+        text:breadOverdue+" agent"+(breadOverdue!==1?"s":"")+" due or overdue — see the Break Bread Due List below for who is next."},
+      {label:"Cold Calls",urgent:false,
+        text:coldCallsToday+"/"+coldCallGoal+" today. Two blocks: 10:00 to 10:30 and 12:30 to 1:00. Before each dial, pull up RETR and find a recent sale to mention — it turns a cold call into a warm one instantly."}
     ];
 
-    let html='';
-    html+=steps.map((s,i)=>'<div style="display:flex;gap:10px;align-items:flex-start;padding:8px 0;border-bottom:1px solid var(--border-light)">'
-      +'<span style="font-size:13px;flex-shrink:0;font-weight:700;color:var(--text-3)">'+(i+1)+'.</span>'
+    // Birthday alert
+    let birthdayHtml="";
+    if(birthdayToday.length){
+      birthdayHtml='<div style="background:linear-gradient(135deg,#4E3D8A,#7B6BAE);border-radius:8px;padding:10px 14px;margin-bottom:10px">'
+        +'<div style="font-size:11px;font-weight:600;color:rgba(255,255,255,.7);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Birthday today</div>'
+        +'<div style="font-size:13px;font-weight:600;color:#fff">'+birthdayToday.map(a=>properCase(a.agent_name)).join(", ")+'</div>'
+        +'<div style="font-size:11px;color:rgba(255,255,255,.7);margin-top:3px">Send a text, give them a call. If they are a top agent, let the team know too.</div>'
+        +'</div>';
+    }
+
+    let html=birthdayHtml;
+    html+=steps.map((s,i)=>'<div style="display:flex;gap:10px;align-items:flex-start;padding:9px 0;border-bottom:1px solid var(--border-light)">'
+      +'<span style="font-size:12px;flex-shrink:0;font-weight:700;color:var(--text-3);min-width:16px">'+(i+1)+'.</span>'
       +'<span style="font-size:12.5px;flex:1"><strong style="color:var(--text-1)">'+s.label+':</strong> <span style="color:'+(s.urgent?'var(--danger)':'var(--text-2)')+'">'+s.text+'</span></span>'
       +'</div>').join("");
 
     if(scheduledToday>0){
-      html+='<div style="margin-top:10px;background:var(--surface-2);border-radius:8px;padding:10px 12px;font-size:12px;color:var(--text-2)">'+scheduledToday+' follow-up'+(scheduledToday!==1?"s":"")+' scheduled for today. If one is a New Realtor Meeting or a Break Bread, take a minute to review the Scripts before the call.</div>';
+      html+='<div style="margin-top:10px;background:var(--surface-2);border-radius:8px;padding:10px 12px;font-size:12px;color:var(--text-2)">'+scheduledToday+' follow-up'+(scheduledToday!==1?"s":"")+" scheduled for today. Take a minute to review the Scripts before the call.</div>";
     }
-
+    if(giftingHint){
+      html+='<div style="margin-top:8px;background:var(--surface-2);border-radius:8px;padding:10px 12px;font-size:12px;color:var(--text-2)">'+giftingHint+' See Scripts for the full week-by-week scripts.</div>';
+    }
     if(stuckColdCalls.length){
-      html+='<div style="margin-top:10px;background:var(--surface-2);border-radius:8px;padding:10px 12px">'
-        +'<div style="font-size:11.5px;font-weight:700;color:var(--text-1);margin-bottom:4px">Cold-called 3+ times in 60 days, no traction yet</div>'
-        +'<div style="font-size:11.5px;color:var(--text-2);margin-bottom:6px">Worth a strategy shift, or redirect that time toward names not yet reached.</div>'
-        +'<div style="font-size:11.5px;color:var(--text-2)">'+stuckColdCalls.map(a=>properCase(a.display)+' ('+a.count+'x)').join(', ')+'</div>'
+      html+='<div style="margin-top:8px;background:var(--surface-2);border-radius:8px;padding:10px 12px">'
+        +'<div style="font-size:11.5px;font-weight:700;color:var(--text-1);margin-bottom:3px">Cold-called 3+ times, no traction yet</div>'
+        +'<div style="font-size:11.5px;color:var(--text-2)">'+stuckColdCalls.map(a=>properCase(a.display)+' ('+a.count+'x)').join(", ")+'</div>'
         +'</div>';
     }
     if(stuckTalkTos.length){
-      html+='<div style="margin-top:10px;background:var(--surface-2);border-radius:8px;padding:10px 12px">'
-        +'<div style="font-size:11.5px;font-weight:700;color:var(--text-1);margin-bottom:4px">Talked-to 3+ times in 60 days, still on the Reconnect list</div>'
-        +'<div style="font-size:11.5px;color:var(--text-2);margin-bottom:6px">These agents have had several touches without a lead yet. A different approach or angle might be worth exploring.</div>'
-        +'<div style="font-size:11.5px;color:var(--text-2)">'+stuckTalkTos.map(a=>properCase(a.display)+' ('+a.count+'x)').join(', ')+'</div>'
+      html+='<div style="margin-top:8px;background:var(--surface-2);border-radius:8px;padding:10px 12px">'
+        +'<div style="font-size:11.5px;font-weight:700;color:var(--text-1);margin-bottom:3px">Talked-to 3+ times, still on the Reconnect list</div>'
+        +'<div style="font-size:11.5px;color:var(--text-2)">'+stuckTalkTos.map(a=>properCase(a.display)+' ('+a.count+'x)').join(", ")+'</div>'
         +'</div>';
     }
     el.innerHTML=html;
@@ -2393,7 +2833,7 @@ function switchTab(name){
   
   if(name==="reconnect")loadReconnect();
   if(name==="feed")loadFeed();
-  if(name==="daniel")loadDaniel();
+  if(name==="daniel")loadManagement();
 }
 
 let periodData={mtd:[],ytd:[]},currentPeriod="mtd";
@@ -2565,7 +3005,14 @@ async function loadBreakBreadDue(){
       return{name:p.agent_name,tier,days,status,by:touch?touch.by:null};
     }).filter(r=>r.status!=="ok");
     const order={critical:0,red:1,warn:2};
-    rows.sort((a,b)=>order[a.status]-order[b.status]||(b.days||9999)-(a.days||9999));
+    const tierOrder={A:0,B:1,C:2};
+    rows.sort((a,b)=>{
+      const td=(tierOrder[a.tier]??3)-(tierOrder[b.tier]??3);
+      if(td!==0)return td;
+      const sd=order[a.status]-order[b.status];
+      if(sd!==0)return sd;
+      return(b.days||9999)-(a.days||9999);
+    });
     subEl.textContent=rows.length+" due or overdue";
     if(!rows.length){
       el.innerHTML='<div class="no-data">Everyone\'s current. Nice work.</div>';
@@ -2686,7 +3133,7 @@ async function loadWeek(){
   try{
     const now=new Date();
     const monthStart=now.getFullYear()+"-"+String(now.getMonth()+1).padStart(2,"0")+"-01";
-    const yearStart=now.getFullYear()+"-01-01";
+    const yearStart=now.getFullYear()+"-04-01";// April — role start date
     const todayStr=today();
     const[weekActs,mtdActs,ytdActs,dailyActs]=await Promise.all([
       sbFetch("amanda_activities?select=act_type,outcome&act_date=gte."+week.start+"&act_date=lte."+week.end),
@@ -2696,6 +3143,27 @@ async function loadWeek(){
     ]);
     periodData={daily:dailyActs,wtd:weekActs,mtd:mtdActs,ytd:ytdActs};
     renderSnapshotStats(dailyActs,"daily");
+
+    // Personal scoreboard — MTD wins
+    const psGrid=document.getElementById("personalScorecardGrid");
+    const psSub=document.getElementById("personalScorecardSub");
+    if(psGrid){
+      const mtdMeetings=(mtdActs||[]).filter(a=>a.act_type==="New Realtor Meeting").length;
+      const mtdBreakBreads=(mtdActs||[]).filter(a=>a.act_type==="Break Breads").length;
+      const mtdWins=(mtdActs||[]).filter(a=>a.outcome==="Positive"||a.outcome==="Meeting Scheduled").length;
+      const mtdColdCalls=(mtdActs||[]).filter(a=>a.act_type==="Cold Calls").length;
+      const scoreItems=[
+        {label:"New meetings",val:mtdMeetings,goal:20,color:"var(--brand)"},
+        {label:"Break breads",val:mtdBreakBreads,goal:20,color:"var(--brand)"},
+        {label:"Cold call wins",val:mtdWins,goal:null,color:"var(--success)"},
+        {label:"Cold calls made",val:mtdColdCalls,goal:500,color:"var(--text-2)"},
+      ];
+      psGrid.innerHTML=scoreItems.map(s=>'<div style="background:var(--surface-2);border-radius:8px;padding:10px 12px;text-align:center">'
+        +'<div style="font-size:22px;font-weight:700;color:'+s.color+'">'+s.val+(s.goal?'<span style="font-size:12px;font-weight:400;color:var(--text-3)"> /'+s.goal+'</span>':'')+'</div>'
+        +'<div style="font-size:10px;color:var(--text-3);margin-top:2px">'+s.label+'</div>'
+        +'</div>').join("");
+      if(psSub)psSub.textContent="Month to date";
+    }
 
     // Update week label
     const wlEl=document.getElementById("snapshotWeekLabel");
@@ -2862,7 +3330,7 @@ async function logActivity(){
   
   // VALIDATION: Agent name required
   if(!agentName){
-    toast("Please enter an agent name. 🌸","error");
+    toast("Please enter an agent name.","error");
     return;
   }
   
@@ -2885,7 +3353,7 @@ async function logActivity(){
   }
   
   // VALIDATION: Needs Escalation always requires a real note explaining why
-  if(outcome==="Needs Escalation"&&countWords(notes)<MIN_NOTE_WORDS){
+  if(outcome==="Needs manager attention"&&countWords(notes)<MIN_NOTE_WORDS){
     toast("Explain what's being escalated — minimum "+MIN_NOTE_WORDS+" words.","error");
     return;
   }
@@ -2952,12 +3420,16 @@ async function logActivity(){
         openIntake={id:row.id,agent_name:agentName,act_date:date,outcome,follow_up_date:followupDate,freeNotes:notes,states:intakeStates};
       }
     }else{
-      toast("Logged successfully","success");
+      if(outcome==="Meeting Scheduled"){
+        toast("YES! Meeting booked with "+properCase(agentName)+"! Go get them!","success",5000);
+      }else{
+        toast("Logged successfully","success");
+      }
       resetIntakeChecklist();
     }
     applyLockState();
     initAutocomplete();
-    loadWeek();loadFollowups();loadFeed();loadDaniel();loadHealth();loadOnboarding();loadQuiet();loadFlagged();
+    loadWeek();loadFollowups();loadFeed();loadManagement();loadHealth();loadOnboarding();loadQuiet();loadFlagged();
   }catch(e){
     const msg=e.message||"Unknown error";
     console.error("Log error:",e);
@@ -3010,6 +3482,7 @@ async function loadFollowups(){
         '<div id="fu-edit-'+f.id+'" class="fu-edit-area"><input type="date" id="fu-date-'+f.id+'" value="'+f.follow_up_date+'" style="border:0.5px solid #D9D3C7;border-radius:6px;padding:5px 9px;font-size:12px;margin-right:6px;font-family:inherit"><button class="btn-sm" onclick="saveFollowupDate('+f.id+')">Save</button><button class="btn-sm" onclick="document.getElementById('+"'fu-edit-"+f.id+"'"+').style.display=\'none\'" style="margin-left:4px">Cancel</button></div>'+
         '<div id="fu-log-'+f.id+'" class="fu-inline-log">'+
           '<div style="font-size:11px;font-weight:600;color:#9585C0;margin-bottom:8px">Log outcome for '+f.agent_name+'</div>'+
+          (f.notes?'<div style="font-size:11px;color:var(--text-3);background:var(--surface-2);border-radius:6px;padding:7px 10px;margin-bottom:8px;font-style:italic">Previous note: "'+escHtml(f.notes)+'"</div>':'')+
           '<select id="fu-log-type-'+f.id+'">'+ACT_TYPE_OPTIONS+'</select>'+
           '<div class="inline-row"><select id="fu-log-outcome-'+f.id+'"><option value="">Outcome...</option><option>Positive</option><option>Meeting Scheduled</option><option>Requires follow-up</option><option>Needs manager attention</option><option>Remove / No Further Contact</option></select>'+
           '<input type="date" id="fu-log-newfu-'+f.id+'" placeholder="New follow-up date (if needed)"></div>'+
@@ -3119,7 +3592,8 @@ async function loadBirthdayAlerts(){
       const daysUntil=Math.round((bday-today2)/86400000);
       if(daysUntil<=14)upcoming.push({name:a.agent_name,birthday:a.birthday,days:daysUntil});
     });
-    upcoming.sort((a,b)=>a.days-b.days);
+    const fuPriority=f=>f.outcome==="Meeting Scheduled"?0:f.outcome==="Needs manager attention"?1:2;
+    upcoming.sort((a,b)=>fuPriority(a)-fuPriority(b)||a.days-b.days);
     const listEl=document.getElementById("bdayAlertList");
     if(!listEl)return;
     if(!upcoming.length){listEl.innerHTML="";return;}
@@ -3445,6 +3919,9 @@ async function quickLogSave(){
     const msg=document.getElementById("quickLogMsg");
     msg.style.display="block";
     msg.textContent="✓ "+agentName+" — "+actType+" logged";
+    if(outcome==="Meeting Scheduled"){
+      setTimeout(()=>toast("YES! Meeting booked with "+properCase(agentName)+"! Go get them!","success",5000),200);
+    }
     document.getElementById("quickLogAgent").value="";
     if(document.getElementById("quickLogNotes"))document.getElementById("quickLogNotes").value="";
     if(document.getElementById("quickLogWordCount"))document.getElementById("quickLogWordCount").textContent="";
@@ -3655,7 +4132,9 @@ function renderRcGroup(list,groupStatus){
       '</div>'+
       // Inline log form
       '<div id="rc-log-'+rid+'" class="rc-inline-form">'+
-        '<div style="font-size:11px;font-weight:600;color:#9585C0;margin-bottom:8px">Log outreach — '+r.agent_name+'</div>'+
+        '<div style="font-size:11px;font-weight:600;color:#9585C0;margin-bottom:6px">Log outreach — '+r.agent_name+'</div>'+
+        '<div style="font-size:11px;color:var(--brand);margin-bottom:8px;font-weight:500">Pull up RETR first — find a recent sale to mention in your opener.</div>'+
+        (r.notes?'<div style="font-size:11px;color:var(--text-3);background:var(--surface-2);border-radius:6px;padding:7px 10px;margin-bottom:8px;font-style:italic">Last note: "'+escHtml(r.notes)+'"</div>':'')+
         '<select id="rc-log-type-'+rid+'">'+ACT_TYPE_OPTIONS+'</select>'+
         '<div class="rc-inline-row">'+
           '<select id="rc-log-outcome-'+rid+'"><option value="">Outcome...</option><option>Positive</option><option>Meeting Scheduled</option><option>Requires follow-up</option><option>Needs manager attention</option><option>Remove / No Further Contact</option></select>'+
@@ -3697,7 +4176,7 @@ async function rcSaveLog(id,agentName){
   const notes=document.getElementById("rc-log-notes-"+id).value.trim()||null;
   if(!outcome){toast("Select an outcome first.","error");return;}
   if(outcome==="Requires follow-up"&&!fu){toast("Set a follow-up date.","error");return;}
-  if(outcome==="Needs Escalation"&&countWords(notes)<MIN_NOTE_WORDS){toast("Explain what's being escalated (min "+MIN_NOTE_WORDS+" words).","error");return;}
+  if(outcome==="Needs manager attention"&&countWords(notes)<MIN_NOTE_WORDS){toast("Explain what's being escalated (min "+MIN_NOTE_WORDS+" words).","error");return;}
   if(NOTES_REQUIRED_TYPES.indexOf(actType)>=0&&countWords(notes)<MIN_NOTE_WORDS){toast(actType+" needs notes (min "+MIN_NOTE_WORDS+" words).","error");return;}
   if(NOTES_MANDATORY_NO_MIN.indexOf(actType)>=0&&countWords(notes)<1){toast(actType+" needs a note before saving.","error");return;}
   try{
@@ -3962,10 +4441,13 @@ async function loadHealth(){
       }
     });
     const escEl=document.getElementById("escalationWatch");
+    const escCard=document.getElementById("danielEscalationCard");
     if(escEl){
       if(!escalations.length){
-        escEl.innerHTML='<div class="no-data" style="padding:16px">No agents currently meet the escalation threshold</div>';
+        if(escCard)escCard.style.display="none";
+        escEl.innerHTML='';
       }else{
+        if(escCard)escCard.style.display="block";
         escEl.innerHTML=escalations.map(e=>{
           const safeAgent=e.name.replace(/'/g,"\\'");
           return'<div style="padding:10px 0;border-bottom:1px solid var(--border-light)">'
@@ -4005,8 +4487,10 @@ async function loadHealth(){
     const cpEl=document.getElementById("copyPasteWatch");
     if(cpEl){
       if(!suspiciousRepeats.length){
-        cpEl.innerHTML='<div class="no-data" style="padding:16px">No repeated copy-paste-looking notes found</div>';
+        document.getElementById("danielCopyPasteCard")&&(document.getElementById("danielCopyPasteCard").style.display="none");
+        cpEl.innerHTML='';
       }else{
+        document.getElementById("danielCopyPasteCard")&&(document.getElementById("danielCopyPasteCard").style.display="block");
         cpEl.innerHTML=suspiciousRepeats.slice(0,10).map(([key,rows])=>{
           const[date,noteText]=key.split("||");
           const agents2=rows.map(r=>properCase(r.agent_name)).join(", ");
@@ -4227,7 +4711,7 @@ async function saveNoteFix(id,editId,actType){
   try{
     await sbFetch("amanda_activities?id=eq."+id,{method:"PATCH",prefer:"return=minimal",body:JSON.stringify({notes:newNote,edited_at:new Date().toISOString()})});
     if(msgEl){msgEl.style.color="var(--success)";msgEl.textContent="Saved ✓";}
-    setTimeout(()=>{loadDanielAccountability();},600);
+    setTimeout(()=>{loadMgmtAccountability();},600);
   }catch(e){
     if(msgEl){msgEl.style.color="var(--danger)";msgEl.textContent="Save failed: "+e.message;}
   }
@@ -4286,7 +4770,7 @@ async function confirmDelete(){
       toast("Prospect deleted","success");closeConfirm();loadPipeline();
     } else {
       await sbFetch("amanda_activities?id=eq."+deletingId,{method:"DELETE",prefer:"return=minimal"});
-      toast("Deleted","success");closeConfirm();loadFeed();loadFollowups();loadWeek();loadDaniel();const hv=document.getElementById("historySearch");if(hv&&hv.value.trim().length>=2)doSearchHistory(hv.value.trim());
+      toast("Deleted","success");closeConfirm();loadFeed();loadFollowups();loadWeek();loadManagement();const hv=document.getElementById("historySearch");if(hv&&hv.value.trim().length>=2)doSearchHistory(hv.value.trim());
     }
   }catch(e){toast("Delete failed: "+e.message,"error");closeConfirm();}
 }
@@ -4372,9 +4856,9 @@ async function doSearchHistory(name){
   }
 }
 
-let danielPeriodData={week:[],mtd:[],ytd:[]},currentDanielPeriod="week";
+let mgmtPeriodData={week:[],mtd:[],ytd:[]},currentMgmtPeriod="week";
 
-async function loadDanielAccountability(){
+async function loadMgmtAccountability(){
   try{
     const rmActs=await sbFetch("amanda_activities?select=*&limit=5000");
 
@@ -4394,7 +4878,7 @@ async function loadDanielAccountability(){
             +'</div>'
             +'<div style="font-size:11px;color:var(--text-3);margin-bottom:4px">'+a.act_type+(a.contact_method?" · "+a.contact_method:"")+'</div>'
             +(a.notes?'<div style="font-size:12px;color:var(--text-2);background:var(--surface-2);border-radius:6px;padding:6px 10px">'+escHtml(a.notes)+'</div>':'<div style="font-size:12px;color:var(--text-4);font-style:italic">No note added</div>')
-            +'<button class="btn-sm" style="margin-top:6px;font-size:10px;padding:4px 10px" onclick="var n=\''+safeAgent.replace(/'/g,"\\'")+'\'+(\'(resolved)\');sbFetch(\'amanda_activities?id=eq.'+a.id+'\',{method:\'PATCH\',body:JSON.stringify({outcome:\'Requires follow-up\'})}).then(()=>loadDanielAccountability())">Mark resolved</button>'
+            +'<button class="btn-sm" style="margin-top:6px;font-size:10px;padding:4px 10px" onclick="var n=\''+safeAgent.replace(/'/g,"\\'")+'\'+(\'(resolved)\');sbFetch(\'amanda_activities?id=eq.'+a.id+'\',{method:\'PATCH\',body:JSON.stringify({outcome:\'Requires follow-up\'})}).then(()=>loadMgmtAccountability())">Mark resolved</button>'
             +'</div>';
         }).join("");
       }
@@ -4464,8 +4948,10 @@ async function loadDanielAccountability(){
     const cpEl=document.getElementById("danielCopyPaste");
     if(cpEl){
       if(!suspiciousRepeats.length){
-        cpEl.innerHTML='<div class="no-data" style="padding:16px">No repeated copy-paste-looking notes found</div>';
+        document.getElementById("danielCopyPasteCard")&&(document.getElementById("danielCopyPasteCard").style.display="none");
+        cpEl.innerHTML='';
       }else{
+        document.getElementById("danielCopyPasteCard")&&(document.getElementById("danielCopyPasteCard").style.display="block");
         cpEl.innerHTML=suspiciousRepeats.slice(0,10).map(([key,rows],gi)=>{
           const[date]=key.split("||");
           const detailId="cp-detail-"+gi;
@@ -4507,10 +4993,13 @@ async function loadDanielAccountability(){
       }
     });
     const escEl=document.getElementById("danielEscalation");
+    const escCard=document.getElementById("danielEscalationCard");
     if(escEl){
       if(!escalations.length){
-        escEl.innerHTML='<div class="no-data" style="padding:16px">No agents currently meet the escalation threshold</div>';
+        if(escCard)escCard.style.display="none";
+        escEl.innerHTML='';
       }else{
+        if(escCard)escCard.style.display="block";
         escEl.innerHTML=escalations.map(e=>{
           const safeAgent=e.name.replace(/'/g,"\\'");
           return'<div style="padding:10px 0;border-bottom:1px solid var(--border-light)">'
@@ -4525,17 +5014,17 @@ async function loadDanielAccountability(){
       }
     }
   }catch(e){
-    console.error("loadDanielAccountability error:",e);
+    console.error("loadMgmtAccountability error:",e);
   }
 }
 
-async function loadDaniel(){
-  loadDanielAccountability();
+async function loadManagement(){
+  loadMgmtAccountability();
   try{
     const now=new Date();
     const todayStr=today();
     const monthStart=now.getFullYear()+"-"+String(now.getMonth()+1).padStart(2,"0")+"-01";
-    const yearStart=now.getFullYear()+"-01-01";
+    const yearStart=now.getFullYear()+"-04-01";// April — role start date
     const prevMonthStart=new Date(now.getFullYear(),now.getMonth()-1,1);
     const prevMonthEnd=new Date(now.getFullYear(),now.getMonth(),0);
     const prevStart=prevMonthStart.toISOString().split("T")[0];
@@ -4560,14 +5049,14 @@ async function loadDaniel(){
       sbFetch("call_logs?select=agent_name,call_date,outcome&outcome=ilike.*close*&call_date=gte."+monthStart+"&limit=500").catch(()=>[]),
       sbFetch("call_logs?select=call_date,rm_note_at&rm_note_at=not.is.null&call_date=gte."+escFlagCutoffStr+"&limit=200").catch(()=>[]),
       sbFetch(RC_TABLE+"?select=agent_name,status&status=neq.removed&limit=1000").catch(()=>[]),
-      sbFetch("amanda_activities?select=act_type,agent_name,act_date,outcome&act_date=gte."+funnelCutoffStr+"&act_type=in.(\"Cold Calls\",\"New Realtor Meeting\")&limit=3000").catch(()=>[])
+      sbFetch("amanda_activities?select=act_type,agent_name,act_date,outcome&act_date=gte."+funnelCutoffStr+"&act_type=in.(Cold Calls,New Realtor Meeting)&limit=3000").catch(()=>[])
     ]);
 
-    danielPeriodData={daily:dailyActs,week:weekActs,mtd:mtdActs,ytd:ytdActs};
+    mgmtPeriodData={daily:dailyActs,week:weekActs,mtd:mtdActs,ytd:ytdActs};
     // Render the period-dependent UI (Today/WTD/MTD/YTD goals + table) immediately,
     // before any of the sections below that could throw — this guarantees the period
     // toggle buttons always have real data to show, even if a later section fails.
-    try{ renderDanielPeriod(); renderDanielTable(weekActs); }catch(e){ console.error("renderDanielPeriod/Table error:",e); }
+    try{ renderMgmtPeriod(); renderMgmtTable(weekActs); }catch(e){ console.error("renderDanielPeriod/Table error:",e);document.getElementById("danielGoals").innerHTML='<div class="no-data" style="color:var(--danger)">Error loading activity: '+e.message+'</div>'; }
 
     // ── Helper: count by type ─────────────────────────────────────
     const c=(acts,type)=>acts.filter(a=>a.act_type===type).length;
@@ -4692,8 +5181,10 @@ async function loadDaniel(){
     // ── NEEDS LEADERSHIP ATTENTION: escalations flagged during a touch ──
     try{
       if(!feedbackFlags||!feedbackFlags.length){
-        document.getElementById("danielFeedbackFlags").innerHTML='<div class="no-data">Nothing flagged in the last 30 days.</div>';
+        document.getElementById("danielFeedbackCard")&&(document.getElementById("danielFeedbackCard").style.display="none");
+        document.getElementById("danielFeedbackFlags").innerHTML='';
       }else{
+        document.getElementById("danielFeedbackCard")&&(document.getElementById("danielFeedbackCard").style.display="block");
         document.getElementById("danielFeedbackFlags").innerHTML=feedbackFlags.map(f=>
           '<div style="background:var(--danger-bg);border:1px solid var(--border-danger);border-radius:var(--radius-sm);padding:10px 12px;margin-bottom:8px">'
           +'<div style="display:flex;justify-content:space-between;margin-bottom:4px"><span style="font-weight:600;font-size:13px;color:var(--text-1)">'+properCase(f.agent_name)+'</span><span style="font-size:10px;color:var(--text-3)">'+fmtDate(f.act_date)+' · '+(f.act_type||'')+'</span></div>'
@@ -4710,12 +5201,15 @@ async function loadDaniel(){
         return Math.max(0,(responded-flagged)/86400000);
       }).filter(d=>!isNaN(d));
       if(!diffs.length){
-        document.getElementById("danielResponseTime").innerHTML='<div class="no-data">No responded flags in the last 30 days.</div>';
+        document.getElementById("danielResponseCard")&&(document.getElementById("danielResponseCard").style.display="none");
+        document.getElementById("danielResponseCard")&&(document.getElementById("danielResponseCard").style.display="block");
+        document.getElementById("danielResponseTime").innerHTML='';
       }else{
         const avg=(diffs.reduce((a,b)=>a+b,0)/diffs.length).toFixed(1);
         const within2=diffs.filter(d=>d<=2).length;
         const within2Pct=Math.round((within2/diffs.length)*100);
         const avgColor=avg<=2?"var(--success)":avg<=5?"var(--warning)":"var(--danger)";
+        document.getElementById("danielResponseCard")&&(document.getElementById("danielResponseCard").style.display="block");
         document.getElementById("danielResponseTime").innerHTML=
           '<div style="display:flex;gap:24px;flex-wrap:wrap">'
           +'<div><div style="font-size:24px;font-weight:700;color:'+avgColor+'">'+avg+'d</div><div style="font-size:11px;color:var(--text-3)">avg response time</div></div>'
@@ -4774,6 +5268,7 @@ async function loadDaniel(){
       +'<span style="font-size:10px;font-weight:700;color:var(--text-4);text-align:right;text-transform:uppercase;letter-spacing:.5px">vs Goal</span>'
       +'</div>';
 
+    const aprilStartMonths=Math.min(12,Math.max(1,new Date().getMonth()-2));
     document.getElementById("danielGrowthGrid").innerHTML=gridHeader
       +growthMetricRow("New realtor meetings",c(dailyActs,"New Realtor Meeting"),c(weekActs,"New Realtor Meeting"),mtdMeetings,c(ytdActs,"New Realtor Meeting"),20,"MTD","New Realtor Meeting")
       +growthMetricRow("Cold calls",c(dailyActs,"Cold Calls"),c(weekActs,"Cold Calls"),c(mtdActs,"Cold Calls"),c(ytdActs,"Cold Calls"),500,"MTD","Cold Calls")
@@ -4781,7 +5276,8 @@ async function loadDaniel(){
       +'<div style="margin-top:10px;padding:10px 12px;background:var(--surface-2);border-radius:var(--radius-sm);font-size:12px;color:var(--text-2)">'
       +'On pace for <strong style="color:'+meetingColor+'">'+projectedMeetings+'</strong> new meetings this month '
       +'<span style="color:var(--text-4)">(goal: 20 · 80% pass = 16)</span>'
-      +'</div>';
+      +'</div>'
+      +'<div style="margin-top:6px;font-size:11px;color:var(--text-3)">YTD counts from April (role start). '+aprilStartMonths+' months of data.</div>';
     }catch(e){ console.error("Growth grid render error:",e); }
 
     // ── RETENTION METRICS ─────────────────────────────────────────
@@ -4902,22 +5398,23 @@ async function loadDaniel(){
   }catch(e){console.error(e);}
 }
 
-function showDanielPeriod(p){
-  currentDanielPeriod=p;
+function showMgmtPeriod(p){
+  currentMgmtPeriod=p;
   ["daily","week","mtd","ytd"].forEach(id=>{
-    document.getElementById("dbtn-"+id)?.classList.toggle("active",p===id);
+    document.getElementById("mgbtn-"+id)?.classList.toggle("active",p===id);
   });
-  renderDanielPeriod();
-  renderDanielTable(danielPeriodData[p]||[]);
-  document.getElementById("danielGoals")?.scrollIntoView({behavior:"smooth",block:"start"});
+  renderMgmtPeriod();
+  renderMgmtTable(mgmtPeriodData[p]||[]);
+  document.getElementById("view-daniel")?.scrollIntoView({behavior:"smooth",block:"start"});
 }
 
-function renderDanielPeriod(){
-  const data=danielPeriodData[currentDanielPeriod]||[];
+function renderMgmtPeriod(){
+  const data=mgmtPeriodData[currentMgmtPeriod]||[];
   const labelMap={daily:"Today",week:"This week",mtd:"Month to date",ytd:"Year to date"};
-  const label=labelMap[currentDanielPeriod]||"Month to date";
-  const isWeek=currentDanielPeriod==="week",isYTD=currentDanielPeriod==="ytd",isDaily=currentDanielPeriod==="daily";
-  const goalTarget=g=>isDaily?Math.ceil(g.weekly/5):isWeek?g.weekly:isYTD?g.monthly*12:g.monthly;
+  const label=labelMap[currentMgmtPeriod]||"Month to date";
+  const isWeek=currentMgmtPeriod==="week",isYTD=currentMgmtPeriod==="ytd",isDaily=currentMgmtPeriod==="daily";
+  const monthsSinceStart=Math.min(12,Math.max(1,new Date().getMonth()-2));// April=month 3, so current month - 2 = months since April
+  const goalTarget=g=>isDaily?Math.ceil(g.weekly/5):isWeek?g.weekly:isYTD?g.monthly*monthsSinceStart:g.monthly;
   if(!data.length){document.getElementById("danielGoals").innerHTML='<div class="no-data">No activity logged yet for this period.</div>';return;}
   let html='<div style="font-size:11px;color:#bbb;margin-bottom:14px">'+label+' — '+data.length+' total activities</div>';
   GOALS.forEach(g=>{
@@ -4967,7 +5464,7 @@ async function renderDanielCoverage(){
   }catch(e){console.error(e);}
 }
 
-function renderDanielTable(acts){
+function renderMgmtTable(acts){
   document.getElementById("danielBody").innerHTML=acts.length
     ?acts.map(a=>'<tr><td>'+a.agent_name+'</td><td>'+badgeEmoji(a.act_type)+'</td><td>'+( a.outcome||"—")+'</td><td>'+fmtDate(a.act_date)+'</td><td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+( a.notes||"—")+'</td></tr>').join("")
     :'<tr><td colspan="5" style="text-align:center;padding:20px;color:#bbb">No activity in this period</td></tr>';
