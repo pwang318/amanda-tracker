@@ -5038,8 +5038,8 @@ async function loadManagement(){
     const[dailyActs,weekActs,mtdActs,ytdActs,prevActs,aTierAgents,rcContacted,allAgents,allActs,feedbackFlags,closesMtd,flagResponses,rcAllAgents,funnelCohortActs]=await Promise.all([
       sbFetch("amanda_activities?select=act_type,agent_name,act_date,outcome,notes&act_date=eq."+todayStr),
       sbFetch("amanda_activities?select=*&act_date=gte."+week.start+"&act_date=lte."+week.end+"&order=act_date.desc"),
-      sbFetch("amanda_activities?select=act_type,agent_name,act_date,outcome,notes&act_date=gte."+monthStart),
-      sbFetch("amanda_activities?select=act_type,agent_name,act_date,outcome,notes&act_date=gte."+yearStart),
+      sbFetch("amanda_activities?select=*&act_date=gte."+monthStart+"&order=act_date.desc&limit=2000"),
+      sbFetch("amanda_activities?select=*&act_date=gte."+yearStart+"&order=act_date.desc&limit=5000"),
       sbFetch("amanda_activities?select=act_type,agent_name&act_date=gte."+prevStart+"&act_date=lte."+prevEnd).catch(()=>[]),
       sbFetch("agent_profiles?select=agent_name,tier&tier=eq.A&limit=200").catch(()=>[]),
       sbFetch(RC_TABLE+"?select=agent_name&status=eq.contacted&limit=100").catch(()=>[]),
@@ -5056,7 +5056,7 @@ async function loadManagement(){
     // Render the period-dependent UI (Today/WTD/MTD/YTD goals + table) immediately,
     // before any of the sections below that could throw — this guarantees the period
     // toggle buttons always have real data to show, even if a later section fails.
-    try{ renderMgmtPeriod(); renderMgmtTable(weekActs); }catch(e){ console.error("renderDanielPeriod/Table error:",e);document.getElementById("danielGoals").innerHTML='<div class="no-data" style="color:var(--danger)">Error loading activity: '+e.message+'</div>'; }
+    try{ renderMgmtPeriod(); renderMgmtTable(mgmtPeriodData[currentMgmtPeriod]||weekActs); }catch(e){ console.error("renderMgmtPeriod/Table error:",e);document.getElementById("danielGoals").innerHTML='<div class="no-data" style="color:var(--danger)">Error loading activity: '+e.message+'</div>'; }
 
     // ── Helper: count by type ─────────────────────────────────────
     const c=(acts,type)=>acts.filter(a=>a.act_type===type).length;
