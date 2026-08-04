@@ -4518,11 +4518,10 @@ async function loadDaniel(){
     // ── COLD CALL CONNECT RATE: % of dials that reach a live conversation ──
     try{
       const coldCallsMtd=mtdActs.filter(a=>a.act_type==="Cold Calls");
-      const nonConnectOutcomes=["No answer","Left voicemail"];
-      const withOutcome=coldCallsMtd.filter(a=>a.outcome);
-      const connects=withOutcome.filter(a=>nonConnectOutcomes.indexOf(a.outcome)<0);
-      const noOutcomeLogged=coldCallsMtd.length-withOutcome.length;
-      const connectPct=withOutcome.length?Math.round((connects.length/withOutcome.length)*100):0;
+      const CONNECT_OUTCOMES=["Positive","Meeting Scheduled","Talked — Positive"];
+      const connects=coldCallsMtd.filter(a=>CONNECT_OUTCOMES.indexOf(a.outcome)>=0);
+      const connectPct=coldCallsMtd.length?Math.round((connects.length/coldCallsMtd.length)*100):0;
+      const noOutcomeLogged=coldCallsMtd.filter(a=>!a.outcome).length;
       const crColor=connectPct>=25?"var(--success)":connectPct>=10?"var(--warning)":"var(--danger)";
       document.getElementById("danielConnectRate").innerHTML=
         '<div style="display:flex;gap:24px;flex-wrap:wrap;margin-bottom:8px">'
@@ -4530,27 +4529,26 @@ async function loadDaniel(){
         +'<div><div style="font-size:24px;font-weight:700;color:var(--text-1)">'+connects.length+'</div><div style="font-size:11px;color:var(--text-3)">live conversations MTD</div></div>'
         +'<div><div style="font-size:24px;font-weight:700;color:var(--text-1)">'+coldCallsMtd.length+'</div><div style="font-size:11px;color:var(--text-3)">total dials MTD</div></div>'
         +'</div>'
-        +(noOutcomeLogged>0?'<div style="font-size:11px;color:var(--text-3)">'+noOutcomeLogged+' call'+(noOutcomeLogged!==1?"s":"")+' logged with no outcome selected — excluded from this rate.</div>':'')
-        +'<div style="font-size:11px;color:var(--text-3);margin-top:4px">A low rate is normal for cold outreach — most dials won\'t connect. If it stays under 10-15%, it\'s usually a list-quality issue (stale numbers, already-contacted agents), not a sign the volume is wrong.</div>';
+        +(noOutcomeLogged>0?'<div style="font-size:11px;color:var(--warning);margin-bottom:4px">'+noOutcomeLogged+' call'+(noOutcomeLogged!==1?"s":"")+' logged with no outcome — these are counted as dials but not connections.</div>':'')
+        +'<div style="font-size:11px;color:var(--text-3)">Counts calls logged as Positive or Meeting Scheduled as live connections. A low rate is normal — most dials won\'t connect. Under 10% usually means a list-quality issue.</div>';
     }catch(e){console.error("Connect rate error:",e);document.getElementById("danielConnectRate").innerHTML='<div class="no-data">Unable to load.</div>';}
 
     // ── TALK-TO CONNECT RATE: quality lens, doesn't change the daily goal ──
     try{
       const talkTosMtd=mtdActs.filter(a=>TALKTO_TYPES.indexOf(a.act_type)>=0);
-      const nonConnectOutcomesTt=["No answer","Left voicemail"];
-      const withOutcomeTt=talkTosMtd.filter(a=>a.outcome);
-      const connectsTt=withOutcomeTt.filter(a=>nonConnectOutcomesTt.indexOf(a.outcome)<0);
-      const noOutcomeTt=talkTosMtd.length-withOutcomeTt.length;
-      const connectPctTt=withOutcomeTt.length?Math.round((connectsTt.length/withOutcomeTt.length)*100):0;
+      const CONNECT_OUTCOMES_TT=["Positive","Meeting Scheduled","Talked — Positive"];
+      const connectsTt=talkTosMtd.filter(a=>CONNECT_OUTCOMES_TT.indexOf(a.outcome)>=0);
+      const noOutcomeTt=talkTosMtd.filter(a=>!a.outcome).length;
+      const connectPctTt=talkTosMtd.length?Math.round((connectsTt.length/talkTosMtd.length)*100):0;
       const crColorTt=connectPctTt>=50?"var(--success)":connectPctTt>=25?"var(--warning)":"var(--danger)";
       document.getElementById("danielTalkToConnectRate").innerHTML=
         '<div style="display:flex;gap:24px;flex-wrap:wrap;margin-bottom:8px">'
         +'<div><div style="font-size:24px;font-weight:700;color:'+crColorTt+'">'+connectPctTt+'%</div><div style="font-size:11px;color:var(--text-3)">connect rate</div></div>'
-        +'<div><div style="font-size:24px;font-weight:700;color:var(--text-1)">'+connectsTt.length+'</div><div style="font-size:11px;color:var(--text-3)">real engagement MTD</div></div>'
+        +'<div><div style="font-size:24px;font-weight:700;color:var(--text-1)">'+connectsTt.length+'</div><div style="font-size:11px;color:var(--text-3)">real conversations MTD</div></div>'
         +'<div><div style="font-size:24px;font-weight:700;color:var(--text-1)">'+talkTosMtd.length+'</div><div style="font-size:11px;color:var(--text-3)">total attempted MTD</div></div>'
         +'</div>'
-        +(noOutcomeTt>0?'<div style="font-size:11px;color:var(--text-3)">'+noOutcomeTt+' touch'+(noOutcomeTt!==1?"es":"")+' logged with no outcome selected — excluded from this rate.</div>':'')
-        +'<div style="font-size:11px;color:var(--text-3);margin-top:4px">This does not change the daily 20/day goal — every attempted touch (text, call, voicemail) still counts toward that. This is purely a quality signal on top, to see how much of the volume is turning into real back-and-forth.</div>';
+        +(noOutcomeTt>0?'<div style="font-size:11px;color:var(--warning);margin-bottom:4px">'+noOutcomeTt+' touch'+(noOutcomeTt!==1?"es":"")+' logged with no outcome — counted as attempts but not connections.</div>':'')
+        +'<div style="font-size:11px;color:var(--text-3)">Counts Positive outcomes only as real conversations. Every attempted touch still counts toward the 20/day goal — this is purely a quality signal.</div>';
     }catch(e){console.error("Talk-to connect rate error:",e);document.getElementById("danielTalkToConnectRate").innerHTML='<div class="no-data">Unable to load.</div>';}
 
     // ── RECONNECT PROGRESS: list size, contacted MTD, daily pace ──
