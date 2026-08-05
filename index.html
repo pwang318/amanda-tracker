@@ -894,6 +894,13 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI'
       <button class="ptoggle" id="mgbtn-mtd" onclick="showMgmtPeriod('mtd')" style="padding:8px 16px;font-size:12px">Month to date</button>
       <button class="ptoggle" id="mgbtn-ytd" onclick="showMgmtPeriod('ytd')" style="padding:8px 16px;font-size:12px">Year to date</button>
     </div>
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;background:var(--surface-2);border-radius:8px;padding:8px 10px">
+      <span style="font-size:11px;font-weight:600;color:var(--text-3)">Look back:</span>
+      <input type="date" id="mgmtLookbackDate" style="border:1px solid var(--border);border-radius:6px;padding:5px 8px;font-size:12px;font-family:inherit;color:var(--text-1)">
+      <button onclick="viewCustomMgmtPeriod('day')" style="font-size:11px;font-weight:600;padding:5px 10px;background:#fff;color:var(--text-2);border:1px solid var(--border);border-radius:6px;cursor:pointer;font-family:inherit">View that day</button>
+      <button onclick="viewCustomMgmtPeriod('week')" style="font-size:11px;font-weight:600;padding:5px 10px;background:#fff;color:var(--text-2);border:1px solid var(--border);border-radius:6px;cursor:pointer;font-family:inherit">View that week</button>
+      <span id="mgmtLookbackActive" style="font-size:11px;color:var(--brand-dark);font-weight:600"></span>
+    </div>
     <div style="display:flex;gap:8px;flex-wrap:wrap">
       <button onclick="exportToCSV()" style="padding:8px 16px;background:var(--surface-2);color:var(--text-1);border:1px solid var(--border);border-radius:var(--radius-sm);font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap">Export CSV</button>
       <button onclick="generateDailyCheckin()" style="padding:8px 16px;background:var(--surface-2);color:var(--text-1);border:1px solid var(--border);border-radius:var(--radius-sm);font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap">Copy daily check-in</button>
@@ -2289,7 +2296,7 @@ async function completeIntakeChecklist(){
     openIntake=null;
     resetIntakeChecklist();
     applyLockState();
-    loadWeek();loadFollowups();loadFeed();loadManagement();loadOnboarding();loadQuiet();loadFlagged();
+    loadWeek();loadFollowups();loadFeed();loadManagement();loadOnboarding();loadQuiet();loadFlagged();loadStartHere();
   }catch(e){
     console.error("Complete checklist error:",e);
     toast("Save failed: "+(e.message||"Unknown error"),"error");
@@ -2507,7 +2514,7 @@ async function loadStartHere(){
     const[dayActs,escOpen,rcHot,coldCalls60,talkTos60,rcAllNames,breadProfiles,myBreads,lpBreads,fuToday,ctcFiles,birthdayAgents,mtdMeetings,fuOverdue,serverSnoozes]=await Promise.all([
       sbFetch("amanda_activities?select=act_type,outcome,agent_name&act_date=eq."+todayStr).catch(()=>[]),
       sbFetch("amanda_activities?select=agent_name&outcome=eq.Needs manager attention&act_date=gte."+localDateStr(cutoff7)).catch(()=>[]),
-      sbFetch(RC_TABLE+"?select=agent_name,status&status=in.(hot,urgent)&limit=100").catch(()=>[]),
+      sbFetch(RC_TABLE+"?select=agent_name,status,grade&status=in.(hot,urgent)&limit=100").catch(()=>[]),
       sbFetch("amanda_activities?select=agent_name,outcome&act_type=eq.Cold Calls&act_date=gte."+localDateStr(cutoff60)+"&limit=1000").catch(()=>[]),
       sbFetch("amanda_activities?select=agent_name,act_type&act_date=gte."+localDateStr(cutoff60)+"&limit=2000").catch(()=>[]),
       sbFetch(RC_TABLE+"?select=agent_name,status,grade&limit=1000").catch(()=>[]),
@@ -2647,6 +2654,10 @@ async function loadStartHere(){
     // Priority touches right now — hot/urgent reconnect agents (previously fetched but never surfaced)
     const rcHotAll=rcHot||[];
     const rcHotVisible=rcHotAll.filter(a=>!isSnoozed(a.agent_name));
+    // Prioritize by producer tier — A first, then B, then C, then ungraded — so she's spending
+    // her limited hot/urgent time on who actually produces, not whoever happens to sort first.
+    const GRADE_RANK={A:0,B:1,C:2};
+    rcHotVisible.sort((a,b)=>(GRADE_RANK[a.grade]??3)-(GRADE_RANK[b.grade]??3));
     const snoozedCount=rcHotAll.length-rcHotVisible.length;
     const tomorrowStr=localDateStr(new Date(Date.now()+1*86400000));
     const nowDow=new Date().getDay();
@@ -2660,8 +2671,9 @@ async function loadStartHere(){
         +'<div style="font-size:11px;font-weight:700;color:var(--danger);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">🎯 Priority touches right now ('+rcHotVisible.length+' hot/urgent)</div>'
         +priorityNames.map(a=>{
           const safeName=String(a.agent_name||"").replace(/'/g,"\\'");
+          const gradeBadge=a.grade?'<span style="font-size:9px;font-weight:700;padding:1px 6px;border-radius:10px;background:#fff;color:var(--danger);border:1px solid var(--border-danger)">'+a.grade+'</span>':'';
           return'<div style="display:flex;justify-content:space-between;align-items:center;padding:4px 0;gap:6px;flex-wrap:wrap">'
-          +'<span style="font-size:13px;font-weight:600;color:var(--text-1)">'+properCase(a.agent_name)+'</span>'
+          +'<span style="font-size:13px;font-weight:600;color:var(--text-1);display:flex;align-items:center;gap:6px">'+properCase(a.agent_name)+gradeBadge+'</span>'
           +'<div style="display:flex;gap:6px;align-items:center">'
           +'<select onchange="if(this.value){snoozeAgent(\''+safeName+'\',this.value)}" style="font-size:10px;padding:3px 4px;border-radius:6px;border:1px solid var(--border);background:#fff;color:var(--text-2);font-family:inherit">'
           +'<option value="">Snooze…</option>'
@@ -2698,7 +2710,7 @@ async function loadStartHere(){
     }else if(ctcCount>0){
       focusLine="🟠 "+ctcCount+" file"+(ctcCount!==1?"s":"")+" at CTC today — call both agents before anything else.";
     }else if(rcHotVisible.length>0){
-      focusLine="🎯 Start with "+properCase(rcHotVisible[0].agent_name)+" — hot/urgent on the Reconnect list.";
+      focusLine="🎯 Start with "+properCase(rcHotVisible[0].agent_name)+(rcHotVisible[0].grade?" ("+rcHotVisible[0].grade+"-tier)":"")+" — hot/urgent on the Reconnect list.";
     }else if(scheduledToday>0){
       focusLine="📅 "+scheduledToday+" follow-up"+(scheduledToday!==1?"s":"")+" scheduled for today.";
     }else if(coldCallsToday<coldCallGoal){
@@ -2718,7 +2730,7 @@ async function loadStartHere(){
     (escOpen||[]).forEach(e=>focusQueue.push({agent:e.agent_name,reason:"Escalation — needs a resolution today",action:"log",urgency:0}));
     (fuOverdue||[]).forEach(f=>focusQueue.push({agent:f.agent_name,reason:"Follow-up overdue since "+fmtDate(f.follow_up_date),action:"log",urgency:1}));
     (ctcFiles||[]).forEach(c=>focusQueue.push({agent:c.agent_name,reason:"At CTC today — call and use the CTC script",action:"log",urgency:2}));
-    rcHotVisible.forEach(a=>focusQueue.push({agent:a.agent_name,reason:"Hot/urgent on the Reconnect list",action:"log",urgency:3}));
+    rcHotVisible.forEach(a=>focusQueue.push({agent:a.agent_name,reason:(a.grade?a.grade+"-tier — ":"")+"hot/urgent on the Reconnect list",action:"log",urgency:a.grade==="A"?2.5:a.grade==="B"?2.7:3}));
     (fuToday||[]).forEach(f=>focusQueue.push({agent:f.agent_name,reason:"Follow-up due today",action:"log",urgency:4}));
     focusQueue.sort((a,b)=>a.urgency-b.urgency);
     // de-dupe by agent name, keep the highest-priority reason
@@ -2767,7 +2779,7 @@ async function loadStartHere(){
 async function loadQuietCoverage(){
   try{
     const[allAgents,priorActs,weekActs]=await Promise.all([
-      sbFetch("agent_profiles?select=agent_name&order=agent_name.asc&limit=500"),
+      sbFetch("agent_profiles?select=agent_name,tier&order=agent_name.asc&limit=500"),
       sbFetch("amanda_activities?select=agent_name,act_date&act_date=lt."+week.start+"&order=act_date.desc&limit=3000"),
       sbFetch("amanda_activities?select=agent_name&act_date=gte."+week.start+"&act_date=lte."+week.end)
     ]);
@@ -2781,11 +2793,13 @@ async function loadQuietCoverage(){
 
     // Dedupe agent_profiles rows that are the same person with different casing/spacing
     const seenAgents={};
+    const tierByName={};
     allAgents.forEach(a=>{
       const raw=(a.agent_name||"").trim();
       const n=normalize(raw);
       if(!n)return;
       if(!seenAgents[n])seenAgents[n]=raw; // keep first-seen display casing
+      if(a.tier&&!tierByName[n])tierByName[n]=a.tier;
     });
 
     const mondayDate=new Date(week.start+"T12:00:00");
@@ -2799,11 +2813,17 @@ async function loadQuietCoverage(){
     const pct=quietAsOfMonday.length?Math.round(coveredNames.length/quietAsOfMonday.length*100):100;
 
     // Build rich names list with days silent for the coverage widget
+    // Prioritize A/B-tier producers over C-tier and untiered — so the time she spends here goes
+    // toward agents who actually produce, not whoever happens to sort first alphabetically.
+    const TIER_RANK={A:0,B:1,C:2};
     const richNames=quietAsOfMonday.map(n=>{
       const last=lastSeenBefore[n];
       const days=last?Math.round((new Date()-new Date(last+"T12:00:00"))/86400000):null;
-      return{name:properCase(seenAgents[n]||n),covered:touchedThisWeek.has(n),days:days||"60+"};
-    }).sort((a,b)=>(a.covered===b.covered)?0:a.covered?1:-1); // uncovered first
+      return{name:properCase(seenAgents[n]||n),covered:touchedThisWeek.has(n),days:days||"60+",tier:tierByName[n]||null};
+    }).sort((a,b)=>{
+      if(a.covered!==b.covered)return a.covered?1:-1; // uncovered first
+      return (TIER_RANK[a.tier]??3)-(TIER_RANK[b.tier]??3); // then A, B, C, untiered
+    });
 
     return{
       pct, total:quietAsOfMonday.length, covered:coveredNames.length,
@@ -3001,6 +3021,7 @@ function switchTab(name){
   document.querySelectorAll(".tab").forEach((t,i)=>t.classList.toggle("active",tabOrder[i]===name));
   document.querySelectorAll(".view").forEach(v=>v.classList.remove("active"));
   document.getElementById("view-"+name).classList.add("active");
+  if(name==="week")loadStartHere();
   if(name==="pipeline")loadPipeline();
   if(name==="calendar")loadCalendar();
   if(name==="contacts")loadContacts();
@@ -3157,6 +3178,18 @@ async function showDayWrapUp(targetDateStr){
     const prevDate=localDateStr(new Date(dateObj.getTime()-86400000));
     const nextDate=localDateStr(new Date(dateObj.getTime()+86400000));
 
+    // Email/check-in version — same data, formatted for a quick standup or a message to a manager
+    const typeLines=Object.entries(counts).map(([t,n])=>"- "+t+": "+n);
+    const emailSummary=[
+      "Daily recap — "+dateLabel,
+      "",
+      totalLogged+" activities logged, "+uniqAgentsToday+" agent"+(uniqAgentsToday!==1?"s":"")+" touched.",
+      ...(typeLines.length?["",...typeLines]:[]),
+      "",
+      "Win: "+(bestWin?properCase(bestWin.agent_name)+" — "+bestWin.outcome+(wins.length>1?" (+"+(wins.length-1)+" more)":""):"None logged this day."),
+      ...(isToday?["","Still open: "+((openFu||[]).filter(f=>f.follow_up_date>todayStr).length+" follow-up(s), "+(escToday||[]).length+" escalation(s)")]:[])
+    ].join("\n");
+
     body.innerHTML='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">'
       +'<button onclick="showDayWrapUp(\''+prevDate+'\')" style="font-size:11px;padding:4px 9px;background:var(--surface-2);border:1px solid var(--border);border-radius:6px;cursor:pointer;color:var(--text-2);font-family:inherit">← Prev day</button>'
       +'<span style="font-size:11px;color:var(--text-3);font-weight:600">'+dateLabel+(isToday?" (today)":"")+'</span>'
@@ -3171,8 +3204,10 @@ async function showDayWrapUp(targetDateStr){
       +'<div style="font-size:13px;color:var(--text-1)">'+winLine+'</div>'
       +'</div>'
       +carrySection
-      +(isToday?'<button onclick="copyWrapUp()" style="width:100%;padding:10px;background:var(--brand);color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit">Copy for myself</button>':'');
+      +(isToday?'<button onclick="copyWrapUp()" style="width:100%;padding:10px;background:var(--brand);color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;margin-bottom:8px">Copy for myself</button>':'')
+      +'<button onclick="copyWrapUpEmail()" style="width:100%;padding:10px;background:var(--surface-2);color:var(--text-1);border:1px solid var(--border);border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit">Copy for check-in / email</button>';
     document.getElementById("wrapUpBody").dataset.plain=plainSummary;
+    document.getElementById("wrapUpBody").dataset.plainEmail=emailSummary;
   }catch(e){
     body.innerHTML='<div class="no-data">Could not load — '+e.message+'</div>';
   }
@@ -3182,6 +3217,14 @@ function copyWrapUp(){
   const plain=document.getElementById("wrapUpBody").dataset.plain||"";
   navigator.clipboard.writeText(plain).then(()=>{
     toast("Copied — screenshot or paste it wherever you check out for the day","success");
+  }).catch(()=>{
+    toast("Couldn't copy automatically — select the text above manually","error");
+  });
+}
+function copyWrapUpEmail(){
+  const plain=document.getElementById("wrapUpBody").dataset.plainEmail||"";
+  navigator.clipboard.writeText(plain).then(()=>{
+    toast("Copied — ready to paste into an email or the check-in","success");
   }).catch(()=>{
     toast("Couldn't copy automatically — select the text above manually","error");
   });
@@ -3905,7 +3948,7 @@ async function logActivity(){
     }
     applyLockState();
     initAutocomplete();
-    loadWeek();loadFollowups();loadFeed();loadManagement();loadOnboarding();loadQuiet();loadFlagged();
+    loadWeek();loadFollowups();loadFeed();loadManagement();loadOnboarding();loadQuiet();loadFlagged();loadStartHere();
   }catch(e){
     const msg=e.message||"Unknown error";
     console.error("Log error:",e);
@@ -4341,7 +4384,7 @@ async function ccSave(){
     if(document.getElementById('ccDoubleDialWarn'))document.getElementById('ccDoubleDialWarn').style.display='none';
     document.getElementById('ccAcList').classList.remove('open');
     setTimeout(()=>{if(msg)msg.style.display='none';},3000);
-    loadWeek();
+    loadWeek();loadStartHere();
   }catch(e){
     toast("Save failed: "+e.message,"error");
   }finally{
@@ -4407,6 +4450,9 @@ async function quickLogSave(){
   const btn=document.querySelector('[onclick="quickLogSave()"]');
   if(btn){btn.disabled=true;btn.textContent="Saving...";}
   try{
+    // Clear any existing follow-up dates for this agent — otherwise an old overdue follow-up
+    // stays flagged forever even after she's logged something new with them.
+    await sbFetch("amanda_activities?agent_name=eq."+encodeURIComponent(agentName)+"&follow_up_date=not.is.null",{method:"PATCH",prefer:"return=minimal",body:JSON.stringify({follow_up_date:null})}).catch(()=>{});
     await sbFetch("amanda_activities",{method:"POST",prefer:"return=minimal",body:JSON.stringify({agent_name:agentName,act_type:actType,act_date:today(),outcome,notes,follow_up_date:outcome==="Requires follow-up"?followupDate:null})});
     const msg=document.getElementById("quickLogMsg");
     msg.style.display="block";
@@ -4423,7 +4469,7 @@ async function quickLogSave(){
     if(document.getElementById("quickLogDoubleDialWarn"))document.getElementById("quickLogDoubleDialWarn").style.display="none";
     document.getElementById("quickLogAcList").classList.remove("open");
     setTimeout(()=>{if(msg)msg.style.display="none";},3000);
-    loadWeek();loadFeed();
+    loadWeek();loadFeed();loadStartHere();
   }catch(e){
     toast("Save failed: "+e.message,"error");
   }finally{
@@ -4553,7 +4599,31 @@ function renderReconnect(){
 
   let html="";
   if(active.length){
-    html+=renderRcGroup(active,"active");
+    if(sort==="grade"){
+      // Explicit A / B / C sections — so priority order is visible, not just implied by position
+      const gradeA=active.filter(r=>r.grade==="A");
+      const gradeB=active.filter(r=>r.grade==="B");
+      const gradeC=active.filter(r=>r.grade==="C");
+      const gradeU=active.filter(r=>!r.grade);
+      if(gradeA.length){
+        html+='<div class="rc-section-header" style="color:#16A34A;border-color:#BBF0D0">A-tier — highest priority ('+gradeA.length+')</div>';
+        html+=renderRcGroup(gradeA,"active");
+      }
+      if(gradeB.length){
+        html+='<div class="rc-section-header" style="color:#9585C0;border-color:#D9D3EE;margin-top:16px">B-tier ('+gradeB.length+')</div>';
+        html+=renderRcGroup(gradeB,"active");
+      }
+      if(gradeC.length){
+        html+='<div class="rc-section-header" style="color:#B85B00;border-color:#FFE69C;margin-top:16px">C-tier — lower priority, work these last ('+gradeC.length+')</div>';
+        html+=renderRcGroup(gradeC,"active");
+      }
+      if(gradeU.length){
+        html+='<div class="rc-section-header" style="color:#999;border-color:#ddd;margin-top:16px">No tier set ('+gradeU.length+')</div>';
+        html+=renderRcGroup(gradeU,"active");
+      }
+    }else{
+      html+=renderRcGroup(active,"active");
+    }
   }
   if(contacted.length&&(status==="all"||status==="contacted")){
     html+='<div class="rc-section-header" style="color:#4E3D8A;border-color:#D9D3EE;margin-top:16px">Contacted this cycle ('+contacted.length+')</div>';
@@ -5270,6 +5340,8 @@ async function loadMgmtAccountability(){
 
 async function loadManagement(){
   loadMgmtAccountability();
+  const lookbackLabel=document.getElementById("mgmtLookbackActive");
+  if(lookbackLabel)lookbackLabel.textContent="";
   try{
     const now=new Date();
     const todayStr=today();
@@ -5599,6 +5671,42 @@ function showMgmtPeriod(p){
   document.getElementById("view-daniel")?.scrollIntoView({behavior:"smooth",block:"start"});
 }
 
+// ── Look back to a specific past day or week — reuses the daily/week render pipeline with
+// custom bounds, so every card (goals, funnel, connect rate, trends) works exactly like normal. ──
+async function viewCustomMgmtPeriod(mode){
+  const dateInput=document.getElementById("mgmtLookbackDate");
+  const dateVal=dateInput?dateInput.value:"";
+  if(!dateVal){toast("Pick a date first.","error");return;}
+  const activeLabel=document.getElementById("mgmtLookbackActive");
+  ["daily","week","mtd","ytd"].forEach(id=>document.getElementById("mgbtn-"+id)?.classList.remove("active"));
+  try{
+    if(mode==="day"){
+      const acts=await sbFetch("amanda_activities?select=*&act_date=eq."+dateVal+"&order=act_date.desc");
+      mgmtPeriodData.daily=acts;
+      mgmtPeriodBounds.daily={start:dateVal,end:dateVal,label:fmtDate(dateVal)};
+      currentMgmtPeriod="daily";
+      if(activeLabel)activeLabel.innerHTML="Viewing "+fmtDate(dateVal)+' — <a href="#" onclick="loadManagement();return false;" style="color:var(--brand-dark);text-decoration:underline">back to live data</a>';
+    }else{
+      const d=new Date(dateVal+"T12:00:00");
+      const dow=d.getDay();
+      const diffToMon=dow===0?-6:1-dow;
+      const wkStart=new Date(d);wkStart.setDate(d.getDate()+diffToMon);
+      const wkEnd=new Date(wkStart);wkEnd.setDate(wkStart.getDate()+6);
+      const wkStartStr=localDateStr(wkStart),wkEndStr=localDateStr(wkEnd);
+      const acts=await sbFetch("amanda_activities?select=*&act_date=gte."+wkStartStr+"&act_date=lte."+wkEndStr+"&order=act_date.desc");
+      mgmtPeriodData.week=acts;
+      mgmtPeriodBounds.week={start:wkStartStr,end:wkEndStr,label:"Week of "+fmtDate(wkStartStr)};
+      currentMgmtPeriod="week";
+      if(activeLabel)activeLabel.innerHTML="Viewing week of "+fmtDate(wkStartStr)+' — <a href="#" onclick="loadManagement();return false;" style="color:var(--brand-dark);text-decoration:underline">back to live data</a>';
+    }
+    renderMgmtPeriod();
+    renderMgmtTable(mgmtPeriodData[currentMgmtPeriod]);
+    renderMgmtPeriodDetail(currentMgmtPeriod);
+  }catch(e){
+    toast("Couldn't load that period: "+e.message,"error");
+  }
+}
+
 // ── Period-aware Funnel / Connect Rates / Reconnect Pace / Production Signal ──
 function renderMgmtPeriodDetail(period){
   const acts=mgmtPeriodData[period]||[];
@@ -5738,7 +5846,7 @@ function renderMgmtPeriodDetail(period){
 function renderMgmtPeriod(){
   const data=mgmtPeriodData[currentMgmtPeriod]||[];
   const labelMap={daily:"Today",week:"This week",mtd:"Month to date",ytd:"Year to date"};
-  const label=labelMap[currentMgmtPeriod]||"Month to date";
+  const label=(mgmtPeriodBounds[currentMgmtPeriod]&&mgmtPeriodBounds[currentMgmtPeriod].label)||labelMap[currentMgmtPeriod]||"Month to date";
   const isWeek=currentMgmtPeriod==="week",isYTD=currentMgmtPeriod==="ytd",isDaily=currentMgmtPeriod==="daily";
   const monthsSinceStart=Math.min(12,Math.max(1,new Date().getMonth()-2));// April=month 3, so current month - 2 = months since April
   const goalTarget=g=>isDaily?Math.ceil(g.weekly/5):isWeek?g.weekly:isYTD?g.monthly*monthsSinceStart:g.monthly;
@@ -5769,14 +5877,16 @@ async function renderDanielCoverage(){
     covHtml+='<div style="max-height:340px;overflow-y:auto;border:1px solid #f0f0f5;border-radius:8px;padding:0 12px">';
 
     if(notCovered.length){
-      covHtml+='<div style="font-size:11px;font-weight:600;color:#9B3B3B;margin:10px 0 8px;position:sticky;top:0;background:#fff;padding-top:2px">Still needs attention ('+notCovered.length+')</div>';
-      covHtml+=notCovered.map(n=>'<div style="display:flex;align-items:center;justify-content:space-between;padding:7px 0;border-bottom:0.5px solid #f5f5f8">'
-        +'<span style="font-size:13px;font-weight:500;color:#1a1a2e">'+n.name+'</span>'
+      covHtml+='<div style="font-size:11px;font-weight:600;color:#9B3B3B;margin:10px 0 8px;position:sticky;top:0;background:#fff;padding-top:2px">Still needs attention ('+notCovered.length+') — A-tier first</div>';
+      covHtml+=notCovered.map(n=>{
+        const tierBadge=n.tier?'<span style="font-size:9px;font-weight:700;padding:1px 6px;border-radius:10px;background:'+(n.tier==="A"?"#DCFCE7;color:#16A34A":n.tier==="B"?"#EEEBF8;color:#9585C0":"#FFF3E0;color:#B85B00")+'">'+n.tier+'</span>':'';
+        return'<div style="display:flex;align-items:center;justify-content:space-between;padding:7px 0;border-bottom:0.5px solid #f5f5f8">'
+        +'<span style="font-size:13px;font-weight:500;color:#1a1a2e;display:flex;align-items:center;gap:6px">'+n.name+tierBadge+'</span>'
         +'<div style="display:flex;gap:6px;align-items:center">'
         +'<span style="font-size:10px;color:#9585C0;font-weight:500">'+n.days+'d silent</span>'
         +'<button onclick="document.getElementById(\'agentInput\').value=\''+n.name.replace(/'/g,"\\'")+'\';switchTab(\'log\')" style="font-size:10px;padding:3px 9px;background:#9585C0;color:#fff;border:none;border-radius:6px;cursor:pointer;font-family:inherit">Log outreach</button>'
-        +'</div></div>'
-      ).join("");
+        +'</div></div>';
+      }).join("");
     }
 
     if(covered.length){
