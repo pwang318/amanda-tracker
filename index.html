@@ -2522,7 +2522,8 @@ async function loadStartHere(){
     const breadOverdue=(breadProfiles||[]).filter(p=>{
       const n=normalize(p.agent_name);
       const tier=p.tier||"C";
-      const th=FT_THRESHOLDS_LOCAL[tier]||FT_THRESHOLDS_LOCAL.C;
+      const _thresh={A:[10,14,21],B:[21,30,45],C:[45,60,90]};
+      const th=_thresh[tier]||_thresh.C;
       const last=breadLastTouch[n];
       const days=last?Math.floor((today0-new Date(last+"T12:00:00"))/86400000):null;
       return days===null||days>=th[1];
@@ -2593,7 +2594,7 @@ async function loadStartHere(){
     el.innerHTML=html;
   }catch(e){
     console.error("Start Here error:",e);
-    el.innerHTML='<div class="no-data">Unable to load.</div>';
+    el.innerHTML='<div class="no-data" style="color:var(--danger);font-size:11px">Unable to load: '+e.message+'</div>';
   }
 }
 
@@ -2907,6 +2908,15 @@ function showPeriod(p){
     document.getElementById("btn-"+id)?.classList.toggle("active",p===id);
   });
   const data=periodData[p]||[];
+  if(!data.length&&p!=="daily"){
+    // Data not loaded yet — trigger a reload
+    loadWeek().then(()=>{
+      const d=periodData[p]||[];
+      renderSnapshotStats(d,p);
+      renderPeriodScorecard();
+    });
+    return;
+  }
   renderSnapshotStats(data,p);
   renderPeriodScorecard();
 }
@@ -5262,11 +5272,20 @@ async function loadManagement(){
     const meetingPct=Math.min(100,Math.round((mtdMeetings/20)*100));
     const meetingColor=meetingPct>=100?"var(--success)":meetingPct>=60?"var(--brand)":"var(--danger)";
 
-    // ── GROWTH METRICS ────────────────────────────────────────────
-    try{
+    // ── SHARED GRID LAYOUT ────────────────────────────────────────
     const isMobile=window.innerWidth<600;
     const gridCols=isMobile?"1.8fr 50px 55px 55px":"1.6fr 60px 60px 70px 70px 80px";
+    const gridHeader='<div style="display:grid;grid-template-columns:'+gridCols+';gap:8px;padding:0 0 8px;border-bottom:2px solid var(--border);margin-bottom:4px">'
+      +'<span style="font-size:10px;font-weight:700;color:var(--text-4);text-transform:uppercase;letter-spacing:.5px">Metric</span>'
+      +(isMobile?'':'<span style="font-size:10px;font-weight:700;color:var(--text-4);text-align:center;text-transform:uppercase;letter-spacing:.5px">Today</span>')
+      +'<span style="font-size:10px;font-weight:700;color:var(--text-4);text-align:center;text-transform:uppercase;letter-spacing:.5px">WTD</span>'
+      +'<span style="font-size:10px;font-weight:700;color:var(--text-1);text-align:center;text-transform:uppercase;letter-spacing:.5px">MTD</span>'
+      +'<span style="font-size:10px;font-weight:700;color:var(--text-4);text-align:center;text-transform:uppercase;letter-spacing:.5px">YTD</span>'
+      +(isMobile?'':'<span style="font-size:10px;font-weight:700;color:var(--text-4);text-align:right;text-transform:uppercase;letter-spacing:.5px">vs Goal</span>')
+      +'</div>';
 
+    // ── GROWTH METRICS ────────────────────────────────────────────
+    try{
     const growthMetricRow=(label,daily,wtd,mtd,ytd,goal,goalPeriod,actType)=>{
       const pct=goal?Math.min(100,Math.round((mtd/goal)*100)):null;
       const pctBadge=pct!==null&&!isMobile?'<span style="font-size:10px;padding:2px 7px;border-radius:20px;font-weight:600;background:'+(pct>=100?"var(--success-bg)":pct>=60?"var(--brand-light)":"var(--danger-bg)")+';color:'+(pct>=100?"var(--success)":pct>=60?"var(--brand)":"var(--danger)")+'">'+pct+'%</span>':"";
@@ -5280,14 +5299,6 @@ async function loadManagement(){
         +(isMobile?'':'<span style="text-align:right">'+pctBadge+'</span>')
         +'</div>';
     };
-    const gridHeader='<div style="display:grid;grid-template-columns:'+gridCols+';gap:8px;padding:0 0 8px;border-bottom:2px solid var(--border);margin-bottom:4px">'
-      +'<span style="font-size:10px;font-weight:700;color:var(--text-4);text-transform:uppercase;letter-spacing:.5px">Metric</span>'
-      +(isMobile?'':'<span style="font-size:10px;font-weight:700;color:var(--text-4);text-align:center;text-transform:uppercase;letter-spacing:.5px">Today</span>')
-      +'<span style="font-size:10px;font-weight:700;color:var(--text-4);text-align:center;text-transform:uppercase;letter-spacing:.5px">WTD</span>'
-      +'<span style="font-size:10px;font-weight:700;color:var(--text-1);text-align:center;text-transform:uppercase;letter-spacing:.5px">MTD</span>'
-      +'<span style="font-size:10px;font-weight:700;color:var(--text-4);text-align:center;text-transform:uppercase;letter-spacing:.5px">YTD</span>'
-      +(isMobile?'':'<span style="font-size:10px;font-weight:700;color:var(--text-4);text-align:right;text-transform:uppercase;letter-spacing:.5px">vs Goal</span>')
-      +'</div>';
 
     const aprilStartMonths=Math.min(12,Math.max(1,new Date().getMonth()-2));
     document.getElementById("danielGrowthGrid").innerHTML=gridHeader
