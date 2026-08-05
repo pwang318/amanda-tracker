@@ -459,6 +459,9 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI'
           <option value="Market Update">Market update</option>
           <option value="Holiday Outreach">Holiday outreach</option>
           <option value="Agent Appreciation">Appreciation</option>
+          <option value="New Agent Follow-up">New agent follow-up</option>
+          <option value="Co-hosted Event">Co-hosted event</option>
+          <option value="Realtor Buddy Referral Ask">Realtor buddy ask</option>
         </select>
         <select id="quickLogContactMethod" style="border:1px solid var(--border);border-radius:var(--radius-sm);padding:9px 11px;font-size:12px;font-family:inherit;color:var(--text-1);outline:none;background:var(--surface)">
           <option value="Call">Call</option>
@@ -552,21 +555,31 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI'
     <div id="breadDueList" style="max-height:360px;overflow-y:auto"><div class="no-data">Loading...</div></div>
   </div>
 
+  <!-- Approaching 90-day drop-off — proactive warning before an agent is officially inactive -->
+  <div class="card" id="dropoffCard" style="display:none;border:1px solid var(--border-danger)">
+    <div class="card-title" style="margin-bottom:4px">⏳ Approaching 90-Day Drop-Off</div>
+    <div style="font-size:11px;color:var(--text-4);margin-bottom:12px">No lead in 90 days and an agent falls off as active per policy. These are getting close — reach out now, before that happens, not after.</div>
+    <div id="dropoffList" style="max-height:280px;overflow-y:auto"></div>
+  </div>
+
   <!-- Attention items — 2 col -->
   <div class="week-bottom">
     <div class="card">
-      <div class="card-title" style="margin-bottom:12px">Needs attention <span class="card-sub" id="flaggedSub"></span></div>
-      <!-- Birthdays -->
-      <div id="bdayAlertList" style="margin-bottom:8px"></div>
+      <div class="card-title" style="margin-bottom:4px">On Your Radar <span class="card-sub" id="flaggedSub"></span></div>
+      <div style="font-size:11px;color:var(--text-4);margin-bottom:12px">Items with an explicit action attached: a follow-up date you set, an LP note, or a recent close not yet thanked with a CTC call. This does not check Encompass — check Encompass separately for files currently at CTC.</div>
+      <!-- Flagged by LPs — moved to the top since these are external and time-sensitive -->
+      <div id="weekFlagged" style="max-height:240px;overflow-y:auto"></div>
       <!-- CTC trigger -->
       <div id="weekCtcTrigger"></div>
       <!-- Follow-ups due -->
+      <div id="followupsSectionLabel" style="display:none;font-size:11px;font-weight:700;color:var(--text-3);text-transform:uppercase;letter-spacing:.4px;margin:10px 0 6px;padding-top:8px;border-top:1px solid var(--border-light)">📅 Follow-ups you scheduled</div>
       <div id="weekFollowups" style="max-height:280px;overflow-y:auto"></div>
-      <!-- Flagged by LPs -->
-      <div id="weekFlagged" style="max-height:240px;overflow-y:auto"></div>
+      <!-- Birthdays -->
+      <div id="bdayAlertList" style="margin-top:8px"></div>
     </div>
     <div class="card">
-      <div class="card-title" style="margin-bottom:12px">At Risk — Need a Touch <span class="card-sub">retained agents not touched in 21+ days</span></div>
+      <div class="card-title" style="margin-bottom:4px">At Risk — Need a Touch <span class="card-sub">retained agents overdue for their tier's cadence</span></div>
+      <div style="font-size:11px;color:var(--text-4);margin-bottom:12px"><strong style="color:var(--danger)">Needs outreach now</strong> — surfaced automatically by inactivity.</div>
       <div id="weekQuiet" style="max-height:320px;overflow-y:auto"><div class="no-data" style="padding:16px">Loading...</div></div>
     </div>
   </div>
@@ -1677,50 +1690,7 @@ const QUOTES=[
   {text:"I always did something I was a little not ready to do. That is how you grow.",author:"Marissa Mayer"},
   {text:"I never lose. I either win or learn.",author:"Nelson Mandela"},
   {text:"She made broken look beautiful and strong look invincible.",author:"Ariana Dancu"},
-  {text:"Women who invest in themselves go further. Women who invest in each other go the farthest.",author:"Unknown"},
   {text:"A strong woman looks a challenge dead in the eye and gives it a wink.",author:"Gina Carey"},
-  {text:"There is no force more powerful than a woman who has decided it is her time.",author:"Unknown"},
-  {text:"She did not wait to be chosen. She chose herself.",author:"Unknown"},
-  {text:"The crown is already yours. Wear it.",author:"Unknown"},
-  {text:"Her confidence was not loud. It did not need to be.",author:"Unknown"},
-  {text:"A woman with a vision is unstoppable.",author:"Unknown"},
-  {text:"Be the woman your younger self needed to see.",author:"Unknown"},
-  {text:"A woman who knows what she brings to the table is not afraid to eat alone.",author:"Unknown"},
-  {text:"She was soft but not weak. Kind but not naive. Ambitious and unapologetic.",author:"Unknown"},
-  {text:"She turned her can'ts into cans and her dreams into plans.",author:"Unknown"},
-  {text:"You are not too ambitious. The world is just not used to women who refuse to shrink.",author:"Unknown"},
-  {text:"She was not built to be quiet. She was built to make things happen.",author:"Unknown"},
-  {text:"One day she decided she was done waiting for permission. That was the day everything changed.",author:"Unknown"},
-  {text:"She is not a one in a million kind of girl. She is a once in a lifetime kind of woman.",author:"Unknown"},
-  {text:"You were not made to fit into someone else's box. You were made to build your own table.",author:"Unknown"},
-  {text:"Your softness is not a weakness. It is a superpower.",author:"Unknown"},
-  {text:"A woman who believes in herself is unstoppable. A woman who believes in other women is a force.",author:"Unknown"},
-  {text:"Women who support each other accomplish extraordinary things.",author:"Unknown"},
-  {text:"Remember your power.",author:"Unknown"},
-  {text:"You are not lucky to be here. You earned it.",author:"Unknown"},
-  {text:"The version of you that succeeds is the one who kept going.",author:"Unknown"},
-  {text:"You were not built to play small.",author:"Unknown"},
-  {text:"Be the energy you want to attract.",author:"Unknown"},
-  {text:"Do it with everything you have or not at all.",author:"Unknown"},
-  {text:"You are the asset. Never forget that.",author:"Unknown"},
-  {text:"Your standards are your reputation. Protect them.",author:"Unknown"},
-  {text:"You do not have to be fearless. You just have to move anyway.",author:"Unknown"},
-  {text:"What you do on the hard days defines you more than anything else.",author:"Unknown"},
-  {text:"The goal is not to be perfect. The goal is to be consistent.",author:"Unknown"},
-  {text:"Your future self is watching. Make her proud.",author:"Unknown"},
-  {text:"You are building something. Trust the process.",author:"Unknown"},
-  {text:"The work you put in when no one is watching is what sets you apart.",author:"Unknown"},
-  {text:"Discipline is not punishment. It is the highest form of self-respect.",author:"Unknown"},
-  {text:"Every relationship you build today is an investment in who you become.",author:"Unknown"},
-  {text:"Rest if you must. But do not quit.",author:"Unknown"},
-  {text:"Your potential is not a ceiling. It is a floor.",author:"Unknown"},
-  {text:"The most important promise is the one you make to yourself.",author:"Unknown"},
-  {text:"Hard days are not signs you are failing. They are signs you are doing something that matters.",author:"Unknown"},
-  {text:"Growth is uncomfortable. So is staying where you are. Choose the one that builds you.",author:"Unknown"},
-  {text:"The world makes room for people who know where they are going.",author:"Unknown"},
-  {text:"You are someone's best option. Go remind them.",author:"Unknown"},
-  {text:"Stop waiting to feel ready. You get ready by doing.",author:"Unknown"},
-  {text:"She was never meant to be ordinary. Stop trying to make yourself smaller.",author:"Unknown"},
   {text:"Women are the largest untapped reservoir of talent in the world.",author:"Hillary Clinton"},
   {text:"Take criticism seriously, but not personally.",author:"Hillary Clinton"},
   {text:"Always aim high, work hard, and care deeply about what you believe in.",author:"Hillary Clinton"},
@@ -1786,7 +1756,6 @@ const QUOTES=[
   {text:"There is no greater agony than bearing an untold story inside you.",author:"Maya Angelou"},
   {text:"Not everything that is faced can be changed, but nothing can be changed until it is faced.",author:"James Baldwin"},
   {text:"You can't use up creativity. The more you use, the more you have.",author:"Maya Angelou"},
-  {text:"A creative woman digs deep. She doesn't wait for inspiration — she creates it.",author:"Unknown"},
   {text:"A woman in harmony with her spirit is like a river flowing. She goes where she will without pretense.",author:"Maya Angelou"},
   {text:"The most difficult thing is the decision to act. The rest is merely tenacity.",author:"Amelia Earhart"},
   {text:"The most effective way to do it is to do it.",author:"Amelia Earhart"},
@@ -1834,19 +1803,13 @@ const QUOTES=[
   {text:"The journey of a thousand miles begins with one step.",author:"Lao Tzu"},
   {text:"That which does not kill us makes us stronger.",author:"Friedrich Nietzsche"},
   {text:"You only live once, but if you do it right, once is enough.",author:"Mae West"},
-  {text:"When women support each other, incredible things happen.",author:"Unknown"},
   {text:"Be so good they can't ignore you.",author:"Steve Martin"},
   {text:"I attribute my success to this: I never gave or took any excuse.",author:"Florence Nightingale"},
   {text:"I am not afraid. I was born to do this.",author:"Joan of Arc"},
-  {text:"One must always be careful of bravado. The more you talk, the less you do.",author:"Unknown"},
   {text:"There is a special place in hell for women who don't help other women.",author:"Madeleine Albright"},
   {text:"You don't have to be pretty. You don't owe prettiness to anyone.",author:"Erin McKean"},
-  {text:"She is a mess of gorgeous chaos, and you can see it in her eyes.",author:"Unknown"},
-  {text:"She needed a hero so she became one.",author:"Unknown"},
   {text:"She was powerful not because she wasn't scared, but because she went on so strongly despite the fear.",author:"Atticus"},
   {text:"A woman with a voice is by definition a strong woman.",author:"Melinda Gates"},
-  {text:"Empowered women empower women.",author:"Unknown"},
-  {text:"The most revolutionary thing a woman can do is not explain herself.",author:"Unknown"},
   {text:"I am my own muse, the subject I know best.",author:"Frida Kahlo"},
   {text:"I tried to drown my sorrows, but the bastards learned how to swim.",author:"Frida Kahlo"},
   {text:"I paint flowers so they will not die.",author:"Frida Kahlo"},
@@ -1855,13 +1818,8 @@ const QUOTES=[
   {text:"Feet, what do I need you for when I have wings to fly?",author:"Frida Kahlo"},
   {text:"Take a lover who looks at you like maybe you are magic.",author:"Frida Kahlo"},
   {text:"The most important thing is not to stop questioning.",author:"Albert Einstein"},
-  {text:"I am woman. I am invincible. I am tired.",author:"Unknown"},
-  {text:"She built a life she loved.",author:"Unknown"},
-  {text:"She is not waiting for a knight. She is training to be one.",author:"Unknown"},
-  {text:"Leave a little sparkle wherever you go.",author:"Unknown"},
   {text:"Be a voice, not an echo.",author:"Albert Einstein"},
   {text:"Don't let yesterday take up too much of today.",author:"Will Rogers"},
-  {text:"You learn more from failure than from success. Don't let it stop you.",author:"Unknown"},
   {text:"It's not whether you get knocked down, it's whether you get up.",author:"Vince Lombardi"},
   {text:"If you are working on something that you really care about, you don't have to be pushed.",author:"Steve Jobs"},
   {text:"People who are crazy enough to think they can change the world, are the ones who do.",author:"Rob Siltanen"},
@@ -1960,7 +1918,6 @@ const QUOTES=[
   {text:"If you want to go fast, go alone. If you want to go far, go together.",author:"African Proverb"},
   {text:"She is clothed in strength and dignity, and she laughs without fear of the future.",author:"Proverbs 31:25"},
   {text:"The woman who does not require validation from anyone is the most feared individual on the planet.",author:"Mohadesa Najumi"},
-  {text:"She is a warrior with a gentle heart and a mind that can't be broken.",author:"Unknown"},
   {text:"There is no limit to what we, as women, can accomplish.",author:"Michelle Obama"},
   {text:"When you've worked hard, and done well, and walked through that doorway of opportunity, you do not slam it shut behind you.",author:"Michelle Obama"},
   {text:"Success isn't about how much money you make, it's about the difference you make in people's lives.",author:"Michelle Obama"},
@@ -1993,12 +1950,7 @@ const QUOTES=[
   {text:"The best way to predict your future is to create it.",author:"Abraham Lincoln"},
   {text:"In the end, it's not the years in your life that count. It's the life in your years.",author:"Abraham Lincoln"},
   {text:"No matter how you feel, get up, dress up, show up, and never give up.",author:"Regina Brett"},
-  {text:"A woman is unstoppable after she realizes she deserves better.",author:"Unknown"},
   {text:"She conquered her demons and wore her scars like wings.",author:"Atticus"},
-  {text:"Her soul is fierce. Her heart is brave. Her mind is strong.",author:"Unknown"},
-  {text:"She believes she can, so she does.",author:"Unknown"},
-  {text:"The most powerful thing a woman can do is exactly what she wants.",author:"Unknown"},
-  {text:"Real queens fix each other's crowns.",author:"Unknown"},
   {text:"A woman who knows her worth doesn't measure herself against another woman but stands strong, calm, and self-assured.",author:"Mary J. Blige"},
   {text:"Don't let what you cannot do interfere with what you can do.",author:"John Wooden"},
   {text:"Success comes from knowing that you did your best to become the best that you are capable of becoming.",author:"John Wooden"},
@@ -2006,9 +1958,6 @@ const QUOTES=[
   {text:"Never mistake activity for achievement.",author:"John Wooden"},
   {text:"Be more concerned with your character than your reputation, because your character is what you really are, while your reputation is merely what others think you are.",author:"John Wooden"},
   {text:"Ability is what you're capable of doing. Motivation determines what you do. Attitude determines how well you do it.",author:"Lou Holtz"},
-  {text:"In this world, you only get what you grab for.",author:"Unknown"},
-  {text:"Be somebody nobody thought you could be.",author:"Unknown"},
-  {text:"She rises with the sun.",author:"Unknown"},
   {text:"There is no way to happiness — happiness is the way.",author:"Thích Nhất Hạnh"},
   {text:"The present moment is the only moment available to us, and it is the door to all moments.",author:"Thích Nhất Hạnh"},
   {text:"Because of your smile, you make life more beautiful.",author:"Thích Nhất Hạnh"},
@@ -2034,6 +1983,31 @@ const QUOTES=[
   {text:"What do you call a fake noodle? An impasta.",author:"Dad"},
   {text:"I would tell you a construction joke but I'm still working on it.",author:"Dad"},
   {text:"What did the ocean say to the beach? Nothing, it just waved.",author:"Dad"},
+  {text:"I called it networking. It was 40 rejections and one voicemail.",author:"Deadpan"},
+  {text:"Cold calling: proof that optimism is a renewable resource.",author:"Deadpan"},
+  {text:"My phone and I have a complicated relationship.",author:"Deadpan"},
+  {text:"Rejection builds character. I have a lot of character today.",author:"Deadpan"},
+  {text:"I don't have a type. I have a target list.",author:"Deadpan"},
+  {text:"Voicemail is just a text message nobody asked for.",author:"Deadpan"},
+  {text:"Confidence is pretending the no didn't just happen.",author:"Deadpan"},
+  {text:"Some people collect stamps. I collect declined callbacks.",author:"Deadpan"},
+  {text:"I'm not avoiding my to-do list, I'm building suspense.",author:"Deadpan"},
+  {text:"The follow-up email: hope, disguised as professionalism.",author:"Deadpan"},
+  {text:"I run on caffeine, spite, and closing ratios.",author:"Deadpan"},
+  {text:"Networking event: free food, forced smiling, occasional business.",author:"Deadpan"},
+  {text:"My CRM knows things about me my therapist doesn't.",author:"Deadpan"},
+  {text:"Cold calls build character. Warm calls build commission.",author:"Deadpan"},
+  {text:"Nothing humbles you like a prospect who mutes you mid-sentence.",author:"Deadpan"},
+  {text:"I've made peace with rejection. We're basically roommates now.",author:"Deadpan"},
+  {text:"Persistence: doing the same thing until it's suddenly a yes.",author:"Deadpan"},
+  {text:"My optimism and my call log do not agree today.",author:"Deadpan"},
+  {text:"I don't chase leads. I politely, relentlessly stalk them.",author:"Deadpan"},
+  {text:"Some days the only thing I close is my laptop.",author:"Deadpan"},
+  {text:"If enthusiasm were a KPI, I'd already be retired.",author:"Deadpan"},
+  {text:"I've heard every rejection tone. There are at least twelve.",author:"Deadpan"},
+  {text:"The goal isn't to avoid no. It's to out-dial it.",author:"Deadpan"},
+  {text:"Small talk before the pitch: the appetizer nobody orders twice.",author:"Deadpan"},
+  {text:"I don't take it personally. I take it as data.",author:"Deadpan"},
 ];
 
 (function renderQuote(){
@@ -2320,7 +2294,7 @@ async function completeIntakeChecklist(){
     openIntake=null;
     resetIntakeChecklist();
     applyLockState();
-    loadWeek();loadFollowups();loadFeed();loadManagement();loadOnboarding();loadQuiet();loadFlagged();loadStartHere();
+    loadWeek();loadFollowups();loadFeed();loadManagement();loadOnboarding();loadQuiet();loadFlagged();loadStartHere();loadDropoffWarning();
   }catch(e){
     console.error("Complete checklist error:",e);
     toast("Save failed: "+(e.message||"Unknown error"),"error");
@@ -2493,7 +2467,7 @@ function clearLogErrorBanner(){
 
 async function init(){
   testConnection();
-  loadWeek();loadFollowups();loadFeed();loadManagement();initAutocomplete();loadQuiet();loadFlagged();loadOnboarding();loadStartHere();loadBreakBreadDue();
+  loadWeek();loadFollowups();loadFeed();loadManagement();initAutocomplete();loadQuiet();loadFlagged();loadOnboarding();loadStartHere();loadBreakBreadDue();loadDropoffWarning();
   checkOpenIntake();
   updateNotesRequirementHint();
   document.getElementById("agentInput").addEventListener("input",checkDedupOnInput);
@@ -2961,10 +2935,38 @@ async function resolveFlag(id){
   }catch(e){console.error(e);}
 }
 
+// ── Proactive 90-day drop-off warning — catches agents BEFORE they officially go inactive,
+// not after. Policy: no lead in 90 days = falls off as an active agent. This flags the 60-89
+// day window so there's still real runway to act.
+async function loadDropoffWarning(){
+  const card=document.getElementById("dropoffCard");
+  const listEl=document.getElementById("dropoffList");
+  if(!card||!listEl)return;
+  try{
+    const rows=await sbFetch(RC_TABLE+"?select=agent_name,days_since,grade,status&status=neq.removed&limit=1000").catch(()=>[]);
+    const approaching=(rows||[])
+      .filter(r=>typeof r.days_since==="number"&&r.days_since>=60&&r.days_since<90)
+      .sort((a,b)=>b.days_since-a.days_since); // closest to falling off first
+    if(!approaching.length){card.style.display="none";return;}
+    card.style.display="block";
+    listEl.innerHTML=approaching.map(r=>{
+      const daysLeft=90-r.days_since;
+      const urgColor=daysLeft<=10?"var(--danger)":daysLeft<=20?"var(--warning)":"var(--brand)";
+      const safeAgent=(r.agent_name||"").replace(/'/g,"\\'");
+      return'<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border-light)">'
+        +'<div><span style="font-size:13px;font-weight:600;color:var(--text-1)">'+properCase(r.agent_name)+'</span>'
+        +(r.grade?' <span style="font-size:9px;font-weight:700;padding:1px 6px;border-radius:10px;background:var(--surface-2);color:var(--text-2)">'+r.grade+'</span>':'')
+        +'<div style="font-size:11px;color:'+urgColor+';font-weight:600;margin-top:2px">'+daysLeft+' day'+(daysLeft!==1?"s":"")+' left before drop-off ('+r.days_since+'d since last lead)</div></div>'
+        +'<button onclick="document.getElementById(\'agentInput\').value=\''+safeAgent+'\';switchTab(\'log\')" style="font-size:10px;padding:4px 10px;background:var(--brand);color:#fff;border:none;border-radius:6px;cursor:pointer;font-family:inherit;white-space:nowrap">Log outreach</button>'
+        +'</div>';
+    }).join("");
+  }catch(e){console.error("Dropoff warning error:",e);card.style.display="none";}
+}
+
 async function loadQuiet(){
   try{
     const[allAgents,allActs,lpCalls]=await Promise.all([
-      sbFetch("agent_profiles?select=agent_name,retained,do_not_contact&order=agent_name.asc&limit=500").catch(()=>sbFetch("agent_profiles?select=agent_name,retained&order=agent_name.asc&limit=500").catch(()=>[])),
+      sbFetch("agent_profiles?select=agent_name,retained,tier,do_not_contact&order=agent_name.asc&limit=500").catch(()=>sbFetch("agent_profiles?select=agent_name,retained,tier&order=agent_name.asc&limit=500").catch(()=>[])),
       sbFetch("amanda_activities?select=agent_name,act_date&order=act_date.desc&limit=2000"),
       sbFetch("call_logs?select=agent_name,call_date&order=call_date.desc&limit=2000").catch(()=>[])
     ]);
@@ -2975,6 +2977,11 @@ async function loadQuiet(){
     lpCalls.forEach(c=>{const n=(c.agent_name||"").trim().toLowerCase();if(n&&!lastSeenLP[n])lastSeenLP[n]=c.call_date;});
 
     const now=new Date();
+    // Cadence scales by tier — an A-tier producer needs checking on far more often than a C-tier
+    // one. A flat threshold for everyone means C-tier gets called as often as A-tier, which isn't
+    // smart prioritization of limited time.
+    const TIER_TOUCH_THRESHOLD={A:21,B:35,C:60};
+    const TIER_URGENT_THRESHOLD={A:35,B:55,C:90};
     const rows=allAgents.filter(a=>a.do_not_contact!==true).map(a=>{
       const name=(a.agent_name||"").trim();if(!name)return null;
       const lookupKey=name.toLowerCase();
@@ -2982,20 +2989,26 @@ async function loadQuiet(){
       const lastLP=lastSeenLP[lookupKey];
       const daysRM=lastRM?Math.round((now-new Date(lastRM+"T12:00:00"))/86400000):null;
       const daysLP=lastLP?Math.round((now-new Date(lastLP+"T12:00:00"))/86400000):null;
+      // Whichever channel touched them most recently — an LP staying active with an agent
+      // should count toward keeping the relationship warm, not just show as a side note
+      // while the agent still gets flagged as gone quiet.
+      const daysAny=(daysRM===null&&daysLP===null)?null:Math.min(daysRM===null?Infinity:daysRM,daysLP===null?Infinity:daysLP);
       const retained=!!a.retained;
-      const threshold=retained?21:60;
-      return{name,daysRM,daysLP,retained,threshold};
+      const tier=a.tier||null;
+      const threshold=TIER_TOUCH_THRESHOLD[tier]||21;
+      const urgentThreshold=TIER_URGENT_THRESHOLD[tier]||35;
+      return{name,daysRM,daysLP,daysAny,retained,tier,threshold,urgentThreshold};
     }).filter(Boolean);
 
-    // At Risk = retained agents not touched in 21+ days only
-    const quiet=rows.filter(r=>r.retained&&(r.daysRM===null||r.daysRM>=21)).sort((a,b)=>{
+    // At Risk = retained agents with NEITHER channel (RM or LP) touching them within their tier's cadence
+    const quiet=rows.filter(r=>r.retained&&(r.daysAny===null||r.daysAny>=r.threshold)).sort((a,b)=>{
       // Retained agents first, then by days
       if(a.retained&&!b.retained)return-1;
       if(!a.retained&&b.retained)return 1;
-      if(a.daysRM===null&&b.daysRM===null)return 0;
-      if(a.daysRM===null)return-1;
-      if(b.daysRM===null)return 1;
-      return b.daysRM-a.daysRM;
+      if(a.daysAny===null&&b.daysAny===null)return 0;
+      if(a.daysAny===null)return-1;
+      if(b.daysAny===null)return 1;
+      return b.daysAny-a.daysAny;
     });
 
     const qSub=document.getElementById("quietSub");if(qSub)qSub.textContent=quiet.length?quiet.length+" agent"+(quiet.length!==1?"s":""):"";
@@ -3008,7 +3021,7 @@ async function loadQuiet(){
     }
 
     const quietHtml=quiet.map(r=>{
-      const isUrgent=r.daysRM===null||r.daysRM>=(r.retained?35:90);
+      const isUrgent=r.daysAny===null||r.daysAny>=r.urgentThreshold;
       const dotColor=isUrgent?"var(--danger)":"var(--warning)";
       const rmLabel=r.daysRM===null?"No activity logged":r.daysRM+"d since last touch";
       const lpLabel=r.daysLP!==null?'<span style="color:var(--text-4);margin-left:8px">LP: '+r.daysLP+'d ago</span>'
@@ -3018,10 +3031,11 @@ async function loadQuiet(){
         :'<span style="color:var(--warning);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.4px">At Risk</span>';
       const retainedBadge=r.retained
         ?'<span style="font-size:9px;padding:1px 6px;background:var(--brand-light);color:var(--brand);border-radius:20px;font-weight:600;margin-left:5px">Retained</span>':"";
+      const tierBadge=r.tier?'<span style="font-size:9px;padding:1px 6px;background:var(--surface-2);color:var(--text-2);border-radius:20px;font-weight:600;margin-left:5px">'+r.tier+'-tier · '+r.threshold+'d cadence</span>':"";
       return'<div class="quiet-agent-row">'
         +'<div style="display:flex;align-items:center;gap:8px;flex:1;min-width:0">'
         +'<div style="width:7px;height:7px;border-radius:50%;background:'+dotColor+';flex-shrink:0"></div>'
-        +'<div><div style="font-size:13px;font-weight:600;color:var(--text-1)">'+properCase(r.name)+retainedBadge+'</div>'
+        +'<div><div style="font-size:13px;font-weight:600;color:var(--text-1)">'+properCase(r.name)+retainedBadge+tierBadge+'</div>'
         +'<div style="font-size:11px;color:var(--text-3);margin-top:1px">'+rmLabel+lpLabel+'</div></div></div>'
         +'<div style="display:flex;align-items:center;gap:8px;flex-shrink:0">'
         +urgencyLabel
@@ -3752,6 +3766,8 @@ async function loadWeek(){
       sbFetch("amanda_activities?select=id,agent_name,act_type,follow_up_date&follow_up_date=lt."+todayStr+"&follow_up_date=not.is.null&order=follow_up_date.desc&limit=4")
     ]);
     const all=[...overdue,...fus];
+    const fuLabel=document.getElementById("followupsSectionLabel");
+    if(fuLabel)fuLabel.style.display=all.length?"block":"none";
     document.getElementById("weekFollowups").innerHTML=all.length?all.map(f=>{
       const isOvr=f.follow_up_date<todayStr;
       const c=isOvr?"var(--danger)":"var(--brand)";
@@ -3765,7 +3781,7 @@ async function loadWeek(){
         +'<button onclick="sbFetch(\'amanda_activities?id=eq.'+f.id+'\',{method:\'PATCH\',prefer:\'return=minimal\',body:JSON.stringify({follow_up_date:null})});document.getElementById(\'agentInput\').value=\''+safeAgent+'\';switchTab(\'log\')" '
         +'style="font-size:10px;padding:3px 9px;background:var(--brand);color:#fff;border:none;border-radius:6px;cursor:pointer;font-family:inherit;font-weight:600">Log</button>'
         +'</div></div>';
-    }).join(""):'<div class="no-data" style="padding:16px">No follow-ups due</div>';
+    }).join(""):"";
   }catch(e){console.error(e);}
 
   try{
@@ -3964,7 +3980,7 @@ async function logActivity(){
     }
     applyLockState();
     initAutocomplete();
-    loadWeek();loadFollowups();loadFeed();loadManagement();loadOnboarding();loadQuiet();loadFlagged();loadStartHere();
+    loadWeek();loadFollowups();loadFeed();loadManagement();loadOnboarding();loadQuiet();loadFlagged();loadStartHere();loadDropoffWarning();
   }catch(e){
     const msg=e.message||"Unknown error";
     console.error("Log error:",e);
@@ -5690,25 +5706,41 @@ async function loadManagement(){
 
   // ── AT RISK ──────────────────────────────────────────────────────
   try{
-    const[agts,acts2]=await Promise.all([
-      sbFetch("agent_profiles?select=agent_name&limit=500"),
-      sbFetch("amanda_activities?select=agent_name,act_date&order=act_date.desc&limit=2000")
+    const[agts,acts2,lpCalls2]=await Promise.all([
+      sbFetch("agent_profiles?select=agent_name,retained,tier,do_not_contact&limit=500"),
+      sbFetch("amanda_activities?select=agent_name,act_date&order=act_date.desc&limit=2000"),
+      sbFetch("call_logs?select=agent_name,call_date&order=call_date.desc&limit=2000").catch(()=>[])
     ]);
     const ls={};
     acts2.forEach(a=>{const n=(a.agent_name||"").trim().toLowerCase();if(n&&!ls[n])ls[n]=a.act_date;});
+    const lsLP={};
+    (lpCalls2||[]).forEach(c=>{const n=(c.agent_name||"").trim().toLowerCase();if(n&&!lsLP[n])lsLP[n]=c.call_date;});
     const now3=new Date();
-    const quiet=agts.map(a=>{
+    // Same tiered cadence as Snapshot — A-tier checked on far more often than C-tier
+    const TIER_TOUCH_THRESHOLD2={A:21,B:35,C:60};
+    const TIER_URGENT_THRESHOLD2={A:35,B:55,C:90};
+    const quiet=(agts||[]).filter(a=>a.retained&&a.do_not_contact!==true).map(a=>{
       const name=(a.agent_name||"").trim();if(!name)return null;
       const last=ls[name.toLowerCase()];
+      const lastLP=lsLP[name.toLowerCase()];
       const days=last?Math.round((now3-new Date(last+"T12:00:00"))/86400000):null;
-      return{name,days};
-    }).filter(Boolean).filter(r=>r.days===null||r.days>=60)
-      .sort((a,b)=>(a.days===null?-1:b.days===null?1:b.days-a.days));
+      const daysLP=lastLP?Math.round((now3-new Date(lastLP+"T12:00:00"))/86400000):null;
+      // Whichever channel (RM or LP) touched them most recently — an active LP relationship
+      // should count toward keeping an agent off this list, not just show as a side note.
+      const daysAny=(days===null&&daysLP===null)?null:Math.min(days===null?Infinity:days,daysLP===null?Infinity:daysLP);
+      const tier=a.tier||null;
+      const threshold=TIER_TOUCH_THRESHOLD2[tier]||21;
+      const urgentThreshold=TIER_URGENT_THRESHOLD2[tier]||35;
+      return{name,days,daysLP,daysAny,tier,threshold,urgentThreshold};
+    }).filter(Boolean).filter(r=>r.daysAny===null||r.daysAny>=r.threshold)
+      .sort((a,b)=>(a.daysAny===null?-1:b.daysAny===null?1:b.daysAny-a.daysAny));
     document.getElementById("danielQuiet").innerHTML=quiet.length?quiet.map(r=>{
-      const isUrgent=r.days===null||r.days>=90,c3=isUrgent?"var(--danger)":"var(--warning)";
-      const label=r.days===null?"No activity logged":r.days+"d since last touch";
-      return'<div class="fu-item"><div class="fu-dot" style="background:'+c3+'"></div><div class="fu-body"><div class="fu-name">'+r.name+'</div><div class="fu-meta" style="color:'+c3+'">'+label+'</div></div></div>';
-    }).join(""):'<div class="no-data" style="padding:16px">Everyone touched within 60 days</div>';
+      const isUrgent=r.daysAny===null||r.daysAny>=r.urgentThreshold,c3=isUrgent?"var(--danger)":"var(--warning)";
+      const label=r.days===null?"No RM activity logged":r.days+"d since last RM touch";
+      const lpLabel2=r.daysLP!==null?' · LP '+r.daysLP+'d ago':' · LP: no calls logged';
+      const tierBadge2=r.tier?' <span style="font-size:9px;padding:1px 6px;background:var(--surface-2);color:var(--text-2);border-radius:20px;font-weight:600">'+r.tier+'-tier · '+r.threshold+'d cadence</span>':"";
+      return'<div class="fu-item"><div class="fu-dot" style="background:'+c3+'"></div><div class="fu-body"><div class="fu-name">'+properCase(r.name)+tierBadge2+'</div><div class="fu-meta" style="color:'+c3+'">'+label+lpLabel2+'</div></div></div>';
+    }).join(""):'<div class="no-data" style="padding:16px">No retained agents overdue for their tier\'s cadence</div>';
   }catch(e){console.error(e);}
 }
 
