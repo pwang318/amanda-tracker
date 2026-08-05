@@ -903,7 +903,7 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI'
     </div>
     <div style="display:flex;gap:8px;flex-wrap:wrap">
       <button onclick="exportToCSV()" style="padding:8px 16px;background:var(--surface-2);color:var(--text-1);border:1px solid var(--border);border-radius:var(--radius-sm);font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap">Export CSV</button>
-      <button onclick="generateDailyCheckin()" style="padding:8px 16px;background:var(--surface-2);color:var(--text-1);border:1px solid var(--border);border-radius:var(--radius-sm);font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap">Copy daily check-in</button>
+      <button onclick="generateDailyCheckin()" style="padding:8px 16px;background:var(--brand);color:#fff;border:none;border-radius:var(--radius-sm);font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap">Daily Check-in</button>
       <button onclick="generateWeeklySummary()" style="padding:8px 16px;background:var(--brand);color:#fff;border:none;border-radius:var(--radius-sm);font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap">Copy summary</button>
     </div>
   </div>
@@ -1112,6 +1112,14 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI'
       <button class="btn-primary" onclick="saveNewAgent()">Add agent</button>
       <button class="btn-sm" onclick="closeAddAgentModal()">Cancel</button>
     </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="dailyCheckinModal">
+  <div class="modal-box" style="max-width:520px;max-height:85vh;overflow-y:auto">
+    <div class="modal-header"><span class="modal-title" id="checkinModalTitle">Daily Check-in</span><button class="modal-close" onclick="closeDailyCheckin()">×</button></div>
+    <div class="modal-sub">Pull this up together for the 5-minute check-in — numbers first, then talk through what got in the way and what's next.</div>
+    <div id="checkinModalBody" style="margin-top:10px">Loading...</div>
   </div>
 </div>
 
@@ -2106,6 +2114,22 @@ function vibrateSaved(){
 
 // ── Voice-to-text dictation for note fields ─────────────────────────────────
 let _activeVoiceRec=null,_activeVoiceBtn=null;
+// ── Clear old follow-up dates for an agent before logging something new — matched by trimmed,
+// case-insensitive name so a stray space or different capitalization doesn't leave a stuck
+// overdue entry behind (exact-string matching silently misses those variants).
+async function clearOldFollowups(name){
+  try{
+    const target=(name||"").trim().toLowerCase();
+    if(!target)return;
+    const rows=await sbFetch("amanda_activities?select=id,agent_name&follow_up_date=not.is.null&limit=2000").catch(()=>[]);
+    const matches=(rows||[]).filter(r=>(r.agent_name||"").trim().toLowerCase()===target);
+    if(!matches.length)return;
+    await Promise.all(matches.map(r=>
+      sbFetch("amanda_activities?id=eq."+r.id,{method:"PATCH",prefer:"return=minimal",body:JSON.stringify({follow_up_date:null})}).catch(()=>{})
+    ));
+  }catch(e){console.error("clearOldFollowups failed:",e);}
+}
+
 function toggleVoiceNote(textareaId,btnEl){
   const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
   if(!SR){toast("Voice dictation isn't supported in this browser — try Chrome","error");return;}
@@ -2391,7 +2415,7 @@ async function checkDoubleDial(agentName,warnElId){
   const name=(agentName||"").trim();
   if(!name){warnEl.style.display="none";return;}
   try{
-    const rows=await sbFetch("amanda_activities?agent_name=eq."+encodeURIComponent(name)+"&act_date=eq."+today()+"&select=act_type,outcome,notes&order=id.desc&limit=10");
+    const rows=await sbFetch("amanda_activities?agent_name=ilike."+encodeURIComponent(name)+"&act_date=eq."+today()+"&select=act_type,outcome,notes&order=id.desc&limit=10");
     if(!rows.length){warnEl.style.display="none";return;}
     const vmCount=rows.filter(r=>VM_OUTCOMES.indexOf(r.outcome)>=0).length;
     const hasTextFollowup=rows.some(r=>/📱/.test(r.notes||""));
@@ -2496,7 +2520,7 @@ async function snoozeAgent(name,untilDateStr){
   loadStartHere();
   if(snoozeSupported){
     try{
-      await sbFetch("snoozes?agent_name=eq."+encodeURIComponent(name),{method:"DELETE",prefer:"return=minimal"}).catch(()=>{});
+      await sbFetch("snoozes?agent_name=ilike."+encodeURIComponent(name),{method:"DELETE",prefer:"return=minimal"}).catch(()=>{});
       await sbFetch("snoozes",{method:"POST",prefer:"return=minimal",body:JSON.stringify({agent_name:name,snoozed_until:untilDateStr})});
     }catch(e){console.error("Snooze sync failed:",e);}
   }
@@ -2946,15 +2970,16 @@ async function loadQuiet(){
     ]);
 
     const lastSeenRM={};
-    allActs.forEach(a=>{const n=(a.agent_name||"").trim();if(n&&!lastSeenRM[n])lastSeenRM[n]=a.act_date;});
+    allActs.forEach(a=>{const n=(a.agent_name||"").trim().toLowerCase();if(n&&!lastSeenRM[n])lastSeenRM[n]=a.act_date;});
     const lastSeenLP={};
-    lpCalls.forEach(c=>{const n=(c.agent_name||"").trim();if(n&&!lastSeenLP[n])lastSeenLP[n]=c.call_date;});
+    lpCalls.forEach(c=>{const n=(c.agent_name||"").trim().toLowerCase();if(n&&!lastSeenLP[n])lastSeenLP[n]=c.call_date;});
 
     const now=new Date();
     const rows=allAgents.filter(a=>a.do_not_contact!==true).map(a=>{
       const name=(a.agent_name||"").trim();if(!name)return null;
-      const lastRM=lastSeenRM[name];
-      const lastLP=lastSeenLP[name];
+      const lookupKey=name.toLowerCase();
+      const lastRM=lastSeenRM[lookupKey];
+      const lastLP=lastSeenLP[lookupKey];
       const daysRM=lastRM?Math.round((now-new Date(lastRM+"T12:00:00"))/86400000):null;
       const daysLP=lastLP?Math.round((now-new Date(lastLP+"T12:00:00"))/86400000):null;
       const retained=!!a.retained;
@@ -3178,18 +3203,6 @@ async function showDayWrapUp(targetDateStr){
     const prevDate=localDateStr(new Date(dateObj.getTime()-86400000));
     const nextDate=localDateStr(new Date(dateObj.getTime()+86400000));
 
-    // Email/check-in version — same data, formatted for a quick standup or a message to a manager
-    const typeLines=Object.entries(counts).map(([t,n])=>"- "+t+": "+n);
-    const emailSummary=[
-      "Daily recap — "+dateLabel,
-      "",
-      totalLogged+" activities logged, "+uniqAgentsToday+" agent"+(uniqAgentsToday!==1?"s":"")+" touched.",
-      ...(typeLines.length?["",...typeLines]:[]),
-      "",
-      "Win: "+(bestWin?properCase(bestWin.agent_name)+" — "+bestWin.outcome+(wins.length>1?" (+"+(wins.length-1)+" more)":""):"None logged this day."),
-      ...(isToday?["","Still open: "+((openFu||[]).filter(f=>f.follow_up_date>todayStr).length+" follow-up(s), "+(escToday||[]).length+" escalation(s)")]:[])
-    ].join("\n");
-
     body.innerHTML='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">'
       +'<button onclick="showDayWrapUp(\''+prevDate+'\')" style="font-size:11px;padding:4px 9px;background:var(--surface-2);border:1px solid var(--border);border-radius:6px;cursor:pointer;color:var(--text-2);font-family:inherit">← Prev day</button>'
       +'<span style="font-size:11px;color:var(--text-3);font-weight:600">'+dateLabel+(isToday?" (today)":"")+'</span>'
@@ -3204,10 +3217,8 @@ async function showDayWrapUp(targetDateStr){
       +'<div style="font-size:13px;color:var(--text-1)">'+winLine+'</div>'
       +'</div>'
       +carrySection
-      +(isToday?'<button onclick="copyWrapUp()" style="width:100%;padding:10px;background:var(--brand);color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;margin-bottom:8px">Copy for myself</button>':'')
-      +'<button onclick="copyWrapUpEmail()" style="width:100%;padding:10px;background:var(--surface-2);color:var(--text-1);border:1px solid var(--border);border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit">Copy for check-in / email</button>';
+      +(isToday?'<button onclick="copyWrapUp()" style="width:100%;padding:10px;background:var(--brand);color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit">Copy for myself</button>':'');
     document.getElementById("wrapUpBody").dataset.plain=plainSummary;
-    document.getElementById("wrapUpBody").dataset.plainEmail=emailSummary;
   }catch(e){
     body.innerHTML='<div class="no-data">Could not load — '+e.message+'</div>';
   }
@@ -3217,14 +3228,6 @@ function copyWrapUp(){
   const plain=document.getElementById("wrapUpBody").dataset.plain||"";
   navigator.clipboard.writeText(plain).then(()=>{
     toast("Copied — screenshot or paste it wherever you check out for the day","success");
-  }).catch(()=>{
-    toast("Couldn't copy automatically — select the text above manually","error");
-  });
-}
-function copyWrapUpEmail(){
-  const plain=document.getElementById("wrapUpBody").dataset.plainEmail||"";
-  navigator.clipboard.writeText(plain).then(()=>{
-    toast("Copied — ready to paste into an email or the check-in","success");
   }).catch(()=>{
     toast("Couldn't copy automatically — select the text above manually","error");
   });
@@ -3899,7 +3902,7 @@ async function logActivity(){
   
   // DUPLICATE DETECTION: Check if same agent/type/date already logged
   try{
-    const existing=await sbFetch("amanda_activities?agent_name=eq."+encodeURIComponent(agentName)+"&act_type=eq."+encodeURIComponent(activityType)+"&act_date=eq."+date+"&limit=1");
+    const existing=await sbFetch("amanda_activities?agent_name=ilike."+encodeURIComponent(agentName)+"&act_type=eq."+encodeURIComponent(activityType)+"&act_date=eq."+date+"&limit=1");
     if(existing.length>0){
       const proceed=confirm("⚠️ Already logged "+activityType+" for "+agentName+" on "+date+".\n\nLog another?");
       if(!proceed)return;
@@ -3918,7 +3921,7 @@ async function logActivity(){
   
   try{
     // Clear existing follow-up dates for this agent before saving new activity
-    await sbFetch("amanda_activities?agent_name=eq."+encodeURIComponent(agentName)+"&follow_up_date=not.is.null",{method:"PATCH",prefer:"return=minimal",body:JSON.stringify({follow_up_date:null})}).catch(()=>{});
+    await clearOldFollowups(agentName);
     const inserted=await sbFetch("amanda_activities",{method:"POST",body:JSON.stringify({agent_name:agentName,act_type:activityType,act_date:date,outcome,follow_up_date:followupDate,notes:finalNotes})});
     
     document.getElementById("agentInput").value="";
@@ -4199,8 +4202,8 @@ async function generateWeeklySummary(){
     const newMeetings=weekActs.filter(a=>a.act_type==="New Realtor Meeting");
     const mtdMeetings=mtdCounts["New Realtor Meeting"]||0;
     const mtdPct=Math.round((mtdMeetings/20)*100);
-    const aTierNames=new Set(aTierAgents.map(a=>(a.agent_name||"").toLowerCase()));
-    const aTierTouched=[...new Set(mtdActs.map(a=>(a.agent_name||"").toLowerCase()))].filter(n=>aTierNames.has(n)).length;
+    const aTierNames=new Set(aTierAgents.map(a=>(a.agent_name||"").trim().toLowerCase()));
+    const aTierTouched=[...new Set(mtdActs.map(a=>(a.agent_name||"").trim().toLowerCase()))].filter(n=>aTierNames.has(n)).length;
     const lines=[
       "📊 Weekly Activity Summary — "+week.label,
       "══════════════════════════════════",
@@ -4236,61 +4239,102 @@ async function generateWeeklySummary(){
   }catch(e){toast("Summary failed: "+e.message,"error");}
 }
 
-async function generateDailyCheckin(){
+async function generateDailyCheckin(){ showDailyCheckin(); }
+
+function closeDailyCheckin(){document.getElementById("dailyCheckinModal").classList.remove("open");}
+
+async function showDailyCheckin(){
+  const modal=document.getElementById("dailyCheckinModal");
+  const body=document.getElementById("checkinModalBody");
+  const titleEl=document.getElementById("checkinModalTitle");
+  modal.classList.add("open");
+  body.innerHTML="Loading...";
   try{
     const now=new Date();
-    const monthStart=now.getFullYear()+"-"+String(now.getMonth()+1).padStart(2,"0")+"-01";
     const todayStr=today();
-    const cutoff30=new Date();cutoff30.setDate(cutoff30.getDate()-30);
-    const[dayActs,mtdActsCk,escToday,flaggedOpen,rcDue]=await Promise.all([
+    const tomorrowStr=localDateStr(new Date(Date.now()+86400000));
+    const[dayActs,escToday,flaggedOpen,fuTomorrow,rcHotRows]=await Promise.all([
       sbFetch("amanda_activities?select=act_type,agent_name,outcome,notes&act_date=eq."+todayStr),
-      sbFetch("amanda_activities?select=act_type&act_date=gte."+monthStart),
       sbFetch("amanda_activities?select=agent_name,act_type,notes&outcome=eq.Needs manager attention&act_date=eq."+todayStr).catch(()=>[]),
       sbFetch("call_logs?select=agent_name,lp,note&flag_rm=eq.true&limit=20").catch(()=>[]),
-      sbFetch("amanda_activities?select=agent_name,act_date&act_type=eq.New Realtor Meeting&act_date=gte."+localDateStr(cutoff30)+"&order=act_date.desc").catch(()=>[])
+      sbFetch("amanda_activities?select=agent_name,act_type&follow_up_date=eq."+tomorrowStr).catch(()=>[]),
+      sbFetch(RC_TABLE+"?select=agent_name,status,grade&status=in.(hot,urgent)&limit=10").catch(()=>[])
     ]);
-    const cCounts={};
-    dayActs.forEach(a=>{cCounts[a.act_type]=(cCounts[a.act_type]||0)+1;});
-    const talkToToday=cntTalkTo(dayActs);
-    const coldCallsToday=dayActs.filter(a=>a.act_type==="Cold Calls");
-    const connectsToday=coldCallsToday.filter(a=>a.outcome&&["No answer","Left voicemail"].indexOf(a.outcome)<0);
-    const connectPctToday=coldCallsToday.filter(a=>a.outcome).length?Math.round((connectsToday.length/coldCallsToday.filter(a=>a.outcome).length)*100):null;
 
-    const lines=[
-      "📋 Daily Check-in — "+new Date().toLocaleDateString("en-US",{weekday:"long",month:"long",day:"numeric",year:"numeric"}),
-      "══════════════════════════════════",
-      "",
-      "TODAY'S NUMBERS",
-      "   Cold Calls: "+coldCallsToday.length+" / 25"+(connectPctToday!==null?" ("+connectPctToday+"% connected)":""),
-      "   Talk-to's: "+talkToToday+" / 20",
-      "   New Realtor Meeting: "+(cCounts["New Realtor Meeting"]||0)+" / 1",
-      "   Break Breads: "+(cCounts["Break Breads"]||0)+" / 1",
-      "   Buddy Asks: "+(cCounts["Realtor Buddy Referral Ask"]||0)+" / 1",
-      "",
-      "WIN",
-      "   [fill in — one thing that went well today]",
-      "",
-      "FLAGGED",
-      ...(escToday.length?escToday.map(f=>"   ⚠️ "+f.agent_name+" ("+f.act_type+"): "+(f.notes||"")):["   None logged today"]),
-      ...(flaggedOpen.length?["   🚩 "+flaggedOpen.length+" open LP flag"+(flaggedOpen.length!==1?"s":"")+" awaiting response"]:[]),
-      "",
-      "GIFTING CAMPAIGN",
-      "   "+(rcDue.length?rcDue.length+" agent(s) currently in their first 4 weeks — check Snapshot for who's due":"No agents currently in the 4-week window"),
-      "",
-      "TOMORROW'S FOCUS",
-      "   [fill in — one priority, not five]",
-      "",
-      "Generated "+new Date().toLocaleTimeString("en-US",{hour:"numeric",minute:"2-digit"})
+    titleEl.textContent="Daily Check-in — "+now.toLocaleDateString("en-US",{weekday:"long",month:"short",day:"numeric"});
+
+    const cCounts={};
+    (dayActs||[]).forEach(a=>{cCounts[a.act_type]=(cCounts[a.act_type]||0)+1;});
+    const talkToToday=cntTalkTo(dayActs);
+    const coldCallsToday=(dayActs||[]).filter(a=>a.act_type==="Cold Calls").length;
+    const wins=(dayActs||[]).filter(a=>a.outcome==="Positive"||a.outcome==="Meeting Scheduled");
+    const bestWin=wins.find(w=>w.outcome==="Meeting Scheduled")||wins[0];
+
+    // ── The numbers, actual vs goal, color-coded so it's obvious at a glance ──
+    const numberRow=(label,actual,goal)=>{
+      const pct=goal?Math.round(actual/goal*100):0;
+      const color=pct>=100?"var(--success)":pct>=80?"var(--brand)":pct>=50?"var(--warning)":"var(--danger)";
+      return'<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border-light)">'
+        +'<span style="font-size:13px;color:var(--text-1)">'+label+'</span>'
+        +'<span style="font-size:14px;font-weight:700;color:'+color+'">'+actual+'<span style="font-size:11px;color:var(--text-4);font-weight:400"> / '+goal+'</span></span>'
+        +'</div>';
+    };
+    const numbersHtml=numberRow("Cold Calls",coldCallsToday,25)
+      +numberRow("Talk-to's",talkToToday,20)
+      +numberRow("New Realtor Meetings",cCounts["New Realtor Meeting"]||0,1)
+      +numberRow("Break Breads",cCounts["Break Breads"]||0,1)
+      +numberRow("Realtor Buddy Asks",cCounts["Realtor Buddy Referral Ask"]||0,1);
+
+    // ── Still open — things worth actually talking through together ──
+    const openItems=[
+      ...(escToday||[]).map(f=>"⚠️ "+properCase(f.agent_name)+" — "+f.act_type+(f.notes?": "+f.notes:"")),
+      ...(flaggedOpen&&flaggedOpen.length?["🚩 "+flaggedOpen.length+" open LP flag"+(flaggedOpen.length!==1?"s":"")+" awaiting response"]:[])
     ];
-    const summary=lines.join("\n");
-    navigator.clipboard.writeText(summary).then(()=>{
-      toast("Daily check-in copied — paste into email ✓","success");
-    }).catch(()=>{
-      const el=document.getElementById("danielSummaryOut");
-      if(el){el.style.display="block";el.textContent=summary;}
-      toast("Check-in ready below — select all and copy","success");
-    });
-  }catch(e){toast("Daily check-in failed: "+e.message,"error");}
+
+    // ── Tomorrow, auto-populated — follow-ups already due, plus hot/urgent reconnects to prioritize ──
+    const tomorrowItems=[
+      ...(fuTomorrow||[]).map(f=>"📅 "+properCase(f.agent_name)+" — follow-up due"),
+      ...(rcHotRows||[]).slice(0,3).map(r=>"🎯 "+properCase(r.agent_name)+(r.grade?" ("+r.grade+"-tier)":"")+" — hot/urgent on Reconnect")
+    ];
+
+    body.innerHTML='<div style="font-size:11px;font-weight:700;color:var(--text-3);text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px">Today\'s numbers</div>'
+      +numbersHtml
+      +'<div style="background:var(--success-bg);border-radius:8px;padding:10px 14px;margin:14px 0">'
+      +'<div style="font-size:10px;font-weight:700;color:var(--success);text-transform:uppercase;letter-spacing:.4px;margin-bottom:3px">Win today</div>'
+      +'<div style="font-size:13px;color:var(--text-1)">'+(bestWin?properCase(bestWin.agent_name)+" — "+bestWin.outcome+(wins.length>1?" (+"+(wins.length-1)+" more)":""):"None logged yet today.")+'</div>'
+      +'</div>'
+      +(openItems.length?'<div style="background:var(--danger-bg);border-radius:8px;padding:10px 14px;margin-bottom:14px">'
+        +'<div style="font-size:10px;font-weight:700;color:var(--danger);text-transform:uppercase;letter-spacing:.4px;margin-bottom:5px">Worth discussing</div>'
+        +openItems.map(t=>'<div style="font-size:12px;color:var(--text-1);padding:2px 0">'+t+'</div>').join("")
+        +'</div>':'')
+      +'<div style="margin-bottom:14px">'
+      +'<label style="font-size:11px;font-weight:700;color:var(--text-3);text-transform:uppercase;letter-spacing:.4px">Struggles today <span style="font-weight:400;color:var(--text-4);text-transform:none">— talk it through, jot it down</span></label>'
+      +'<textarea id="checkinStruggles" rows="3" placeholder="What got in the way today?" style="width:100%;margin-top:6px;border:1px solid var(--border);border-radius:8px;padding:9px 12px;font-size:13px;font-family:inherit;color:var(--text-1);outline:none;resize:vertical;box-sizing:border-box"></textarea>'
+      +'</div>'
+      +'<div style="margin-bottom:14px">'
+      +'<div style="font-size:11px;font-weight:700;color:var(--text-3);text-transform:uppercase;letter-spacing:.4px;margin-bottom:5px">Tomorrow\'s plan</div>'
+      +(tomorrowItems.length?tomorrowItems.map(t=>'<div style="font-size:12px;color:var(--text-1);padding:2px 0">'+t+'</div>').join(""):'<div style="font-size:12px;color:var(--text-4)">Nothing auto-queued — set the priority together below.</div>')
+      +'<textarea id="checkinTomorrowNotes" rows="2" placeholder="Anything else for tomorrow, in your own words..." style="width:100%;margin-top:8px;border:1px solid var(--border);border-radius:8px;padding:9px 12px;font-size:13px;font-family:inherit;color:var(--text-1);outline:none;resize:vertical;box-sizing:border-box"></textarea>'
+      +'</div>'
+      +'<button onclick="copyDailyCheckin()" style="width:100%;padding:10px;background:var(--brand);color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit">Copy recap (with notes) for the record</button>';
+  }catch(e){
+    body.innerHTML='<div class="no-data">Could not load — '+e.message+'</div>';
+  }
+}
+
+function copyDailyCheckin(){
+  const struggles=(document.getElementById("checkinStruggles")?.value||"").trim();
+  const tomorrowNotes=(document.getElementById("checkinTomorrowNotes")?.value||"").trim();
+  const title=document.getElementById("checkinModalTitle").textContent;
+  const lines=[title,"","(numbers, win, and open items reviewed together)"];
+  if(struggles)lines.push("","Struggles today:",struggles);
+  if(tomorrowNotes)lines.push("","Tomorrow's plan (notes):",tomorrowNotes);
+  const summary=lines.join("\n");
+  navigator.clipboard.writeText(summary).then(()=>{
+    toast("Recap + notes copied for the record","success");
+  }).catch(()=>{
+    toast("Couldn't copy automatically — select the text manually","error");
+  });
 }
 
 
@@ -4331,7 +4375,7 @@ async function ccSave(){
   if(btn){btn.disabled=true;btn.textContent="Saving...";}
   try{
     // Clear existing follow-up dates for this agent
-    await sbFetch("amanda_activities?agent_name=eq."+encodeURIComponent(name)+"&follow_up_date=not.is.null",{method:"PATCH",prefer:"return=minimal",body:JSON.stringify({follow_up_date:null})}).catch(()=>{});
+    await clearOldFollowups(name);
     // 1. Log the cold call activity
     await sbFetch("amanda_activities",{method:"POST",prefer:"return=minimal",body:JSON.stringify({
       agent_name:name, act_type:"Cold Calls", act_date:today(), outcome, notes, follow_up_date:outcome==="Requires follow-up"?new Date(Date.now()+3*86400000).toISOString().split("T")[0]:null
@@ -4339,8 +4383,8 @@ async function ccSave(){
 
     // 2. Check if already in prospects or agents
     const [existingProspect, existingAgent] = await Promise.all([
-      sbFetch("outreach_prospects?agent_name=eq."+encodeURIComponent(name)+"&select=id&limit=1").catch(()=>[]),
-      sbFetch("agent_profiles?agent_name=eq."+encodeURIComponent(name)+"&select=id&limit=1").catch(()=>[])
+      sbFetch("outreach_prospects?agent_name=ilike."+encodeURIComponent(name)+"&select=id&limit=1").catch(()=>[]),
+      sbFetch("agent_profiles?agent_name=ilike."+encodeURIComponent(name)+"&select=id&limit=1").catch(()=>[])
     ]);
 
     // 3. Add to pipeline if not already there
@@ -4452,7 +4496,7 @@ async function quickLogSave(){
   try{
     // Clear any existing follow-up dates for this agent — otherwise an old overdue follow-up
     // stays flagged forever even after she's logged something new with them.
-    await sbFetch("amanda_activities?agent_name=eq."+encodeURIComponent(agentName)+"&follow_up_date=not.is.null",{method:"PATCH",prefer:"return=minimal",body:JSON.stringify({follow_up_date:null})}).catch(()=>{});
+    await clearOldFollowups(agentName);
     await sbFetch("amanda_activities",{method:"POST",prefer:"return=minimal",body:JSON.stringify({agent_name:agentName,act_type:actType,act_date:today(),outcome,notes,follow_up_date:outcome==="Requires follow-up"?followupDate:null})});
     const msg=document.getElementById("quickLogMsg");
     msg.style.display="block";
@@ -5462,9 +5506,9 @@ async function loadManagement(){
 
     // ── At risk count ─────────────────────────────────────────────
     const lastSeen={};
-    allActs.forEach(a=>{const n=(a.agent_name||"").trim();if(n&&!lastSeen[n])lastSeen[n]=a.act_date;});
+    allActs.forEach(a=>{const n=(a.agent_name||"").trim().toLowerCase();if(n&&!lastSeen[n])lastSeen[n]=a.act_date;});
     const atRiskCount=allAgents.filter(a=>{
-      const name=(a.agent_name||"").trim();
+      const name=(a.agent_name||"").trim().toLowerCase();
       if(!name)return false;
       const last=lastSeen[name];
       const days=last?Math.round((now-new Date(last+"T12:00:00"))/86400000):null;
@@ -5638,11 +5682,11 @@ async function loadManagement(){
       sbFetch("amanda_activities?select=agent_name,act_date&order=act_date.desc&limit=2000")
     ]);
     const ls={};
-    acts2.forEach(a=>{const n=(a.agent_name||"").trim();if(n&&!ls[n])ls[n]=a.act_date;});
+    acts2.forEach(a=>{const n=(a.agent_name||"").trim().toLowerCase();if(n&&!ls[n])ls[n]=a.act_date;});
     const now3=new Date();
     const quiet=agts.map(a=>{
       const name=(a.agent_name||"").trim();if(!name)return null;
-      const last=ls[name];
+      const last=ls[name.toLowerCase()];
       const days=last?Math.round((now3-new Date(last+"T12:00:00"))/86400000):null;
       return{name,days};
     }).filter(Boolean).filter(r=>r.days===null||r.days>=60)
@@ -5920,7 +5964,8 @@ async function loadPipeline(){
     allProspects=prospects||[];
     prospectActivities={};
     (acts||[]).forEach(a=>{
-      const n=a.agent_name;
+      const n=(a.agent_name||"").trim().toLowerCase();
+      if(!n)return;
       if(!prospectActivities[n])prospectActivities[n]=[];
       prospectActivities[n].push(a);
     });
@@ -5959,7 +6004,7 @@ function renderProspects(list){
     const sp=(p.phone||"").replace(/'/g,"\\'");
     const se=(p.email||"").replace(/'/g,"\\'");
     const sb=(p.brokerage||"").replace(/'/g,"\\'");
-    const acts=(prospectActivities[p.agent_name]||[]).slice(0,3);
+    const acts=(prospectActivities[(p.agent_name||"").trim().toLowerCase()]||[]).slice(0,3);
     let actHtml="";
     if(acts.length){
       actHtml='<div class="pc-activity-feed"><div class="pc-activity-feed-title">Recent activity</div>';
@@ -6053,7 +6098,13 @@ async function deleteAgent(){
   if(!name)return;
   if(!confirm("Delete "+name+" from contacts? This cannot be undone."))return;
   try{
-    await sbFetch("agent_profiles?agent_name=eq."+encodeURIComponent(name),{method:"DELETE",prefer:"return=minimal"});
+    // Case-insensitive delete with a real confirmation the row existed — prevents a false
+    // "deleted" toast when the displayed name's casing doesn't exactly match what's stored.
+    const deleted=await sbFetch("agent_profiles?agent_name=ilike."+encodeURIComponent(name),{method:"DELETE",prefer:"return=representation"});
+    if(!deleted||!deleted.length){
+      toast("Couldn't find a matching contact to delete — nothing was removed","error");
+      return;
+    }
     toast(name+" deleted from contacts","success");
     closeContactModal();
     loadContacts();
@@ -6067,7 +6118,7 @@ async function openContactModal(name,phone,email,brokerage,birthday){
   // If called with just a name (from Agent History), fetch the full profile
   if(!phone&&!email&&!brokerage&&!birthday){
     try{
-      const profiles=await sbFetch("agent_profiles?agent_name=eq."+encodeURIComponent(name)+"&limit=1").catch(()=>[]);
+      const profiles=await sbFetch("agent_profiles?agent_name=ilike."+encodeURIComponent(name)+"&limit=1").catch(()=>[]);
       const p=profiles&&profiles[0];
       if(p){
         phone=p.phone||"";email=p.email||"";brokerage=p.brokerage||"";birthday=p.birthday||"";
@@ -6085,8 +6136,11 @@ async function saveContactModal(){
   if(!editingContactName)return;
   const payload={agent_name:editingContactName,phone:document.getElementById("contactPhone").value.trim()||null,email:document.getElementById("contactEmail").value.trim()||null,birthday:document.getElementById("contactBirthday").value.trim()||null,tier:document.getElementById("contactTier").value||null,do_not_contact:document.getElementById("contactDNC").checked};
   try{
-    const existing=await sbFetch("agent_profiles?agent_name=eq."+encodeURIComponent(editingContactName)+"&limit=1").catch(()=>[]);
-    if(existing&&existing.length>0){await sbFetch("agent_profiles?agent_name=eq."+encodeURIComponent(editingContactName),{method:"PATCH",prefer:"return=minimal",body:JSON.stringify(payload)});}
+    // Case-insensitive lookup by id — an exact-string match here was the likely cause of
+    // duplicate profiles (e.g. "Cheryl Kinsey" vs "CHERYL KINSEY" creating two separate rows
+    // instead of updating the one that already existed).
+    const existing=await sbFetch("agent_profiles?agent_name=ilike."+encodeURIComponent(editingContactName)+"&select=id&limit=1").catch(()=>[]);
+    if(existing&&existing.length>0){await sbFetch("agent_profiles?id=eq."+existing[0].id,{method:"PATCH",prefer:"return=minimal",body:JSON.stringify(payload)});}
     else{await sbFetch("agent_profiles",{method:"POST",prefer:"return=minimal",body:JSON.stringify(payload)});}
     toast("Contact updated","success");closeContactModal();if(window._contactSaveCallback){window._contactSaveCallback();window._contactSaveCallback=null;}
     if(document.getElementById("historySearch").value.length>=2)doSearchHistory(document.getElementById("historySearch").value.trim());
