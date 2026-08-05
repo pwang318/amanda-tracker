@@ -3267,27 +3267,33 @@ async function showWinsDetail(kind){
 
     if(kind==="coldcall"){
       if(titleEl)titleEl.textContent="Cold call wins — month to date";
-      if(subEl)subEl.textContent="Cold calls logged as Positive or Meeting Scheduled this month, and whether they've turned into a meeting yet.";
-      const[wins,meetings]=await Promise.all([
+      if(subEl)subEl.textContent="Cold calls this month that turned into a meeting — and whether they're actually still retained, not just logged.";
+      const[allColdCalls,meetings,rcAgents]=await Promise.all([
         sbFetch("amanda_activities?select=agent_name,act_date,outcome&act_type=eq.Cold Calls&act_date=gte."+monthStart+"&outcome=in.(Positive,Meeting Scheduled)&order=act_date.desc"),
-        sbFetch("amanda_activities?select=agent_name,act_date&act_type=eq.New Realtor Meeting&order=act_date.desc&limit=500").catch(()=>[])
+        sbFetch("amanda_activities?select=agent_name,act_date&act_type=eq.New Realtor Meeting&order=act_date.desc&limit=500").catch(()=>[]),
+        sbFetch(RC_TABLE+"?select=agent_name,status&status=neq.removed&limit=1000").catch(()=>[])
       ]);
-      if(!wins.length){listEl.innerHTML='<div class="no-data">No cold call wins logged yet this month.</div>';return;}
       const meetingByAgent={};
       (meetings||[]).forEach(m=>{
         const n=normalize(m.agent_name);if(!n)return;
         if(!meetingByAgent[n]||m.act_date>meetingByAgent[n])meetingByAgent[n]=m.act_date;
       });
-      listEl.innerHTML=wins.map(w=>{
-        const n=normalize(w.agent_name);
-        const meetingDate=meetingByAgent[n];
-        const converted=!!meetingDate;
-        const statusHtml=converted
-          ?'<span style="font-size:11px;font-weight:700;color:var(--success)">✓ Meeting held '+fmtDate(meetingDate)+'</span>'
-          :'<span style="font-size:11px;font-weight:700;color:var(--warning)">No meeting logged yet</span>';
+      const churnedNames=new Set((rcAgents||[]).map(a=>normalize(a.agent_name)).filter(Boolean));
+      const wins=(allColdCalls||[]).filter(w=>meetingByAgent[normalize(w.agent_name)]);
+      if(!wins.length){listEl.innerHTML='<div class="no-data">No cold calls have converted to a held meeting yet this month.</div>';return;}
+      const retainedCount=wins.filter(w=>!churnedNames.has(normalize(w.agent_name))).length;
+      const summaryHtml='<div style="background:var(--surface-2);border-radius:8px;padding:10px 14px;margin-bottom:10px;font-size:12px;color:var(--text-2)">'
+        +'<strong style="color:var(--text-1)">'+retainedCount+' of '+wins.length+'</strong> still retained — sending business, not just a name that once got logged.'
+        +'</div>';
+      listEl.innerHTML=summaryHtml+wins.map(w=>{
+        const meetingDate=meetingByAgent[normalize(w.agent_name)];
+        const stillRetained=!churnedNames.has(normalize(w.agent_name));
+        const statusHtml=stillRetained
+          ?'<span style="font-size:11px;font-weight:700;color:var(--success)">✓ Still retained</span>'
+          :'<span style="font-size:11px;font-weight:700;color:var(--warning)">Met, but gone quiet</span>';
         return'<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border-light)">'
           +'<div><div style="font-size:13px;font-weight:600;color:var(--text-1)">'+properCase(w.agent_name)+'</div>'
-          +'<div style="font-size:11px;color:var(--text-3)">'+fmtDate(w.act_date)+' — '+w.outcome+'</div></div>'
+          +'<div style="font-size:11px;color:var(--text-3)">Called '+fmtDate(w.act_date)+' · Meeting held '+fmtDate(meetingDate)+'</div></div>'
           +statusHtml
           +'</div>';
       }).join("");
@@ -3647,11 +3653,12 @@ async function loadWeek(){
     const monthStart=now.getFullYear()+"-"+String(now.getMonth()+1).padStart(2,"0")+"-01";
     const yearStart=now.getFullYear()+"-04-01";// April — role start date
     const todayStr=today();
-    const[weekActs,mtdActs,ytdActs,dailyActs]=await Promise.all([
+    const[weekActs,mtdActs,ytdActs,dailyActs,everMeetings]=await Promise.all([
       sbFetch("amanda_activities?select=act_type,outcome&act_date=gte."+week.start+"&act_date=lte."+week.end),
-      sbFetch("amanda_activities?select=act_type,outcome&act_date=gte."+monthStart),
+      sbFetch("amanda_activities?select=act_type,outcome,agent_name&act_date=gte."+monthStart),
       sbFetch("amanda_activities?select=act_type,outcome&act_date=gte."+yearStart),
-      sbFetch("amanda_activities?select=act_type,outcome&act_date=eq."+todayStr)
+      sbFetch("amanda_activities?select=act_type,outcome&act_date=eq."+todayStr),
+      sbFetch("amanda_activities?select=agent_name&act_type=eq.New Realtor Meeting&limit=2000").catch(()=>[])
     ]);
     periodData={daily:dailyActs,wtd:weekActs,mtd:mtdActs,ytd:ytdActs};
     renderSnapshotStats(dailyActs,"daily");
@@ -3662,7 +3669,13 @@ async function loadWeek(){
     if(psGrid){
       const mtdMeetings=(mtdActs||[]).filter(a=>a.act_type==="New Realtor Meeting").length;
       const mtdBreakBreads=(mtdActs||[]).filter(a=>a.act_type==="Break Breads").length;
-      const mtdWins=(mtdActs||[]).filter(a=>a.act_type==="Cold Calls"&&(a.outcome==="Positive"||a.outcome==="Meeting Scheduled")).length;
+      // A "win" requires an actual meeting held, not just a promising outcome on the call —
+      // a Positive or Meeting Scheduled response alone isn't a win until it's actually happened.
+      // Checked against ALL meetings ever held (not just this month), so a call made this month
+      // that converts a few weeks later still counts once it actually happens.
+      const normalizeWin=s=>(s||"").toLowerCase().trim();
+      const everMeetingNames=new Set((everMeetings||[]).map(a=>normalizeWin(a.agent_name)).filter(Boolean));
+      const mtdWins=(mtdActs||[]).filter(a=>a.act_type==="Cold Calls"&&(a.outcome==="Positive"||a.outcome==="Meeting Scheduled")&&everMeetingNames.has(normalizeWin(a.agent_name))).length;
       const mtdColdCalls=(mtdActs||[]).filter(a=>a.act_type==="Cold Calls").length;
       const scoreItems=[
         {label:"New meetings",val:mtdMeetings,goal:20,color:"var(--brand)",click:"showWinsDetail('meetings')"},
