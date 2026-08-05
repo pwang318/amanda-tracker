@@ -353,6 +353,7 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI'
     <span class="brand-sub">Relationship Manager</span>
   </div>
   <div class="header-right">
+    <button onclick="toggleAppGuide()" title="What does each tab do?" style="background:rgba(255,255,255,.2);border:1px solid rgba(255,255,255,.4);color:#fff;border-radius:20px;width:26px;height:26px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;margin-right:2px">?</button>
     <span class="week-chip" id="weekPill"></span>
     <div class="sync"><span class="sync-dot" id="syncDot"></span><span id="syncTxt">Connecting...</span><button class="sync-btn" id="syncBtn" onclick="testConnection()" title="Test connection">🔄</button></div>
   </div>
@@ -382,7 +383,7 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI'
   </div>
 
   <!-- START HERE -->
-  <div class="card" style="background:linear-gradient(135deg,#EEEBF8,#DDD8F0);border:1px solid #C8C0E0">
+  <div class="card" id="startHereOuterCard" style="background:linear-gradient(135deg,#EEEBF8,#DDD8F0);border:1px solid #C8C0E0">
     <div style="display:flex;justify-content:space-between;align-items:center">
       <div class="card-title" style="font-size:15px;margin-bottom:0">Start Here</div>
       <button onclick="showDayWrapUp()" style="font-size:11px;font-weight:600;padding:5px 11px;background:#fff;color:var(--brand-dark);border:1px solid var(--border);border-radius:6px;cursor:pointer;font-family:inherit;white-space:nowrap">Wrap up my day</button>
@@ -421,7 +422,7 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI'
   </div>
 
   <!-- Quick Log -->
-  <div class="card" style="padding:16px 18px">
+  <div class="card" id="quickLogCard" style="padding:16px 18px">
     <div style="display:flex;align-items:center;justify-content:flex-end;gap:14px;margin-bottom:6px;flex-wrap:wrap">
       <button type="button" onclick="openScheduleModal()" style="font-size:11px;font-weight:600;color:var(--brand);background:none;border:none;cursor:pointer;font-family:inherit;padding:0">Schedule</button>
       <button type="button" onclick="openScriptsModal()" style="font-size:11px;font-weight:600;color:var(--brand);background:none;border:none;cursor:pointer;font-family:inherit;padding:0">Scripts</button>
@@ -547,7 +548,7 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI'
   </div>
 
   <!-- Break Bread Due List -->
-  <div class="card">
+  <div class="card" id="breadDueCard">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap;gap:8px">
       <div><span class="card-title">Break Bread Due List</span> <span class="card-sub" id="breadSub"></span></div>
     </div>
@@ -564,9 +565,16 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI'
     <div id="dropoffList" style="max-height:280px;overflow-y:auto"></div>
   </div>
 
+  <!-- Contact info gaps — missing data isn't just a data-quality problem, it's a legitimate reason to reach out -->
+  <div class="card" id="contactDataCard" style="display:none;border:1px solid #FFE69C">
+    <div class="card-title" style="margin-bottom:4px">📇 Contact Info Needs Updating</div>
+    <div style="font-size:11px;color:var(--text-4);margin-bottom:12px">Missing email, address, or birthday on a retained agent. Address matters for gifts and mail, birthday for outreach timing — and honestly, "just confirming your info is current" is a perfectly good reason to call.</div>
+    <div id="contactDataList" style="max-height:300px;overflow-y:auto"></div>
+  </div>
+
   <!-- Attention items — 2 col -->
   <div class="week-bottom">
-    <div class="card">
+    <div class="card" id="onYourRadarCard">
       <div class="card-title" style="margin-bottom:4px">On Your Radar <span class="card-sub" id="flaggedSub"></span></div>
       <div style="font-size:11px;color:var(--text-4);margin-bottom:12px">Items with an explicit action attached: a follow-up date you set, an LP note, or a recent close not yet thanked with a CTC call. This does not check Encompass — check Encompass separately for files currently at CTC.</div>
       <!-- Flagged by LPs — moved to the top since these are external and time-sensitive -->
@@ -582,7 +590,7 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI'
       <!-- Birthdays -->
       <div id="bdayAlertList" style="margin-top:8px"></div>
     </div>
-    <div class="card">
+    <div class="card" id="atRiskCard">
       <div class="card-title" style="margin-bottom:4px">At Risk — Need a Touch <span class="card-sub">retained agents overdue for their tier's cadence</span></div>
       <div style="font-size:11px;color:var(--text-4);margin-bottom:12px"><strong style="color:var(--danger)">Needs outreach now</strong> — surfaced automatically by inactivity.</div>
       <div id="weekQuiet" style="max-height:320px;overflow-y:auto"><div class="no-data" style="padding:16px">Loading...</div></div>
@@ -1158,6 +1166,68 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI'
   <div class="modal-box" style="max-width:380px">
     <div class="modal-header"><span class="modal-title">Wrap up my day</span><button class="modal-close" onclick="closeWrapUpModal()">×</button></div>
     <div id="wrapUpBody" style="margin-top:10px">Loading...</div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="appGuideModal">
+  <div class="modal-box" style="max-width:560px;max-height:85vh;overflow-y:auto">
+    <div class="modal-header"><span class="modal-title">What each tab does</span><button class="modal-close" onclick="closeAppGuide()">×</button></div>
+    <div class="modal-sub">A quick reference for every page in the tracker — what it's for and how it helps.</div>
+    <div style="margin-top:14px">
+
+      <div style="margin-bottom:16px">
+        <div style="font-size:14px;font-weight:700;color:var(--text-1)">📋 Snapshot</div>
+        <div style="font-size:12px;color:var(--text-2);margin-top:3px;line-height:1.5">Your daily home base. "Start Here" tells you the one thing that matters most right now, ranked across everything. "On Your Radar" and "At Risk" are two different kinds of follow-up — one someone flagged on purpose (a follow-up date, an LP note), the other the app noticed on its own (someone's gone quiet and nobody said anything). "Approaching 90-Day Drop-Off" warns before an agent falls off as active, not after. Your Wins This Month is clickable — see exactly who converted, not just a count.</div>
+      </div>
+
+      <div style="margin-bottom:16px">
+        <div style="font-size:14px;font-weight:700;color:var(--text-1)">📝 Log Activity</div>
+        <div style="font-size:12px;color:var(--text-2);margin-top:3px;line-height:1.5">The full logging form — every activity type, every outcome, follow-up scheduling. Use this when Quick Log on Snapshot doesn't have the specific activity type you need (like New Realtor Meeting, which needs the full intake checklist).</div>
+      </div>
+
+      <div style="margin-bottom:16px">
+        <div style="font-size:14px;font-weight:700;color:var(--text-1)">🎯 Outreach</div>
+        <div style="font-size:12px;color:var(--text-2);margin-top:3px;line-height:1.5">Your prospect pipeline — people you're working before they're a real relationship yet. Cold call leads land here automatically.</div>
+      </div>
+
+      <div style="margin-bottom:16px">
+        <div style="font-size:14px;font-weight:700;color:var(--text-1)">🔄 Reconnect</div>
+        <div style="font-size:12px;color:var(--text-2);margin-top:3px;line-height:1.5">Agents who've gone quiet, sorted A-tier first so you're not spending equal effort on a C-tier agent as an A-tier one. Select several at once and mark contacted, snooze, or remove in bulk instead of one at a time.</div>
+      </div>
+
+      <div style="margin-bottom:16px">
+        <div style="font-size:14px;font-weight:700;color:var(--text-1)">📰 Activity Feed</div>
+        <div style="font-size:12px;color:var(--text-2);margin-top:3px;line-height:1.5">Every activity ever logged, searchable and filterable by type, date, or outcome. The full paper trail.</div>
+      </div>
+
+      <div style="margin-bottom:16px">
+        <div style="font-size:14px;font-weight:700;color:var(--text-1)">👤 Agent History</div>
+        <div style="font-size:12px;color:var(--text-2);margin-top:3px;line-height:1.5">Search one agent and see their entire relationship with you — every call, meeting, and note, in order.</div>
+      </div>
+
+      <div style="margin-bottom:16px">
+        <div style="font-size:14px;font-weight:700;color:var(--text-1)">📅 Calendar</div>
+        <div style="font-size:12px;color:var(--text-2);margin-top:3px;line-height:1.5">Scheduled meetings and events at a glance.</div>
+      </div>
+
+      <div style="margin-bottom:16px">
+        <div style="font-size:14px;font-weight:700;color:var(--text-1)">📇 Contacts</div>
+        <div style="font-size:12px;color:var(--text-2);margin-top:3px;line-height:1.5">The source of truth for every agent — phone, email, home address (this is where gift/mail addresses live), tier, and Do Not Contact status. Everything else in the app leans on this being accurate.</div>
+      </div>
+
+      <div style="margin-bottom:6px;padding-top:10px;border-top:2px solid var(--brand-light)">
+        <div style="font-size:14px;font-weight:700;color:var(--brand-dark)">📊 Management View <span style="font-size:10px;font-weight:600;background:var(--brand-light);color:var(--brand);padding:2px 8px;border-radius:20px;margin-left:4px">for Daniel</span></div>
+        <div style="font-size:12px;color:var(--text-2);margin-top:6px;line-height:1.5">
+          <strong>Daily Check-In</strong> — the actual tool for your 5-minute meeting together. Real numbers vs. goal, her win, what's worth discussing, a blank box to talk through struggles live, and an auto-populated plan for tomorrow.<br><br>
+          <strong>Today / This week / MTD / YTD</strong> — every card on this page recalculates for whichever period you pick. YTD is anchored to her actual April start date, not the calendar year.<br><br>
+          <strong>Look Back</strong> — pick any past date or week and pull up exactly what that day looked like, together.<br><br>
+          <strong>Funnel, Growth, Connect Rates, Trends</strong> — the full pipeline from cold call through retained relationship, month-over-month comparisons, and connect-rate quality signals.<br><br>
+          <strong>Retention grid</strong> — click "Unique agents touched" to see exactly who's behind that number, not just the count.<br><br>
+          <strong>Duplicate cleanup</strong> — flags and helps merge accidental duplicate contact records.
+        </div>
+      </div>
+
+    </div>
   </div>
 </div>
 
@@ -2312,7 +2382,7 @@ async function completeIntakeChecklist(){
     openIntake=null;
     resetIntakeChecklist();
     applyLockState();
-    loadWeek();loadFollowups();loadFeed();loadManagement();loadOnboarding();loadQuiet();loadFlagged();loadStartHere();loadDropoffWarning();
+    loadWeek();loadFollowups();loadFeed();loadManagement();loadOnboarding();loadQuiet();loadFlagged();loadStartHere();loadDropoffWarning();loadContactDataQuality();
   }catch(e){
     console.error("Complete checklist error:",e);
     toast("Save failed: "+(e.message||"Unknown error"),"error");
@@ -2487,7 +2557,7 @@ function clearLogErrorBanner(){
 
 async function init(){
   testConnection();
-  loadWeek();loadFollowups();loadFeed();loadManagement();initAutocomplete();loadQuiet();loadFlagged();loadOnboarding();loadStartHere();loadBreakBreadDue();loadDropoffWarning();
+  loadWeek();loadFollowups();loadFeed();loadManagement();initAutocomplete();loadQuiet();loadFlagged();loadOnboarding();loadStartHere();loadBreakBreadDue();loadDropoffWarning();loadContactDataQuality();
   checkOpenIntake();
   updateNotesRequirementHint();
   document.getElementById("agentInput").addEventListener("input",checkDedupOnInput);
@@ -2987,6 +3057,47 @@ async function loadDropoffWarning(){
   }catch(e){console.error("Dropoff warning error:",e);card.style.display="none";}
 }
 
+// ── Contact info gaps — missing data is a data-quality problem AND a legitimate reason to reach
+// out. Flags retained agents missing email, address, or birthday, scaled by tier so an A-tier gap
+// surfaces before a C-tier one. Address matters specifically for the gifting workflow; birthday for
+// outreach timing; email for anything that needs to go beyond a phone call.
+async function loadContactDataQuality(){
+  const card=document.getElementById("contactDataCard");
+  const listEl=document.getElementById("contactDataList");
+  if(!card||!listEl)return;
+  try{
+    const rows=await sbFetch("agent_profiles?select=agent_name,tier,retained,do_not_contact,email,brokerage,birthday&retained=eq.true&do_not_contact=neq.true&limit=1000").catch(()=>[]);
+    const TIER_RANK={A:0,B:1,C:2};
+    const gaps=(rows||[]).map(a=>{
+      const missing=[];
+      if(!a.email)missing.push("email");
+      if(!a.brokerage)missing.push("address");
+      if(!a.birthday)missing.push("birthday");
+      if(!missing.length)return null;
+      return{agent_name:a.agent_name,tier:a.tier||null,missing};
+    }).filter(Boolean).sort((a,b)=>{
+      const td=(TIER_RANK[a.tier]??3)-(TIER_RANK[b.tier]??3);
+      if(td!==0)return td;
+      return b.missing.length-a.missing.length; // most incomplete first within a tier
+    });
+    if(!gaps.length){card.style.display="none";return;}
+    card.style.display="block";
+    const titleEl=card.querySelector(".card-title");
+    if(titleEl)titleEl.textContent="📇 Contact Info Needs Updating ("+gaps.length+")";
+    listEl.innerHTML=gaps.map(g=>{
+      const safeAgent=(g.agent_name||"").replace(/'/g,"\\'");
+      const tierBadge=g.tier?'<span style="font-size:9px;font-weight:700;padding:1px 6px;border-radius:10px;background:var(--surface-2);color:var(--text-2);margin-left:5px">'+g.tier+'-tier</span>':"";
+      const missingChips=g.missing.map(m=>'<span style="font-size:9px;font-weight:700;padding:1px 7px;border-radius:10px;background:#FFF3E0;color:#B85B00;margin-right:4px">'+m+'</span>').join("");
+      return'<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border-light);gap:8px">'
+        +'<div><span style="font-size:13px;font-weight:600;color:var(--text-1)">'+properCase(g.agent_name)+'</span>'+tierBadge
+        +'<div style="margin-top:3px">'+missingChips+'</div></div>'
+        +'<button onclick="document.getElementById(\'agentInput\').value=\''+safeAgent+'\';switchTab(\'log\')" style="font-size:10px;padding:4px 10px;background:var(--warning);color:#fff;border:none;border-radius:6px;cursor:pointer;font-family:inherit;white-space:nowrap;flex-shrink:0">Log check-in</button>'
+        +'</div>';
+    }).join("");
+    addScrollHintIfNeeded("contactDataList");
+  }catch(e){console.error("Contact data quality error:",e);card.style.display="none";}
+}
+
 async function loadQuiet(){
   try{
     const[allAgents,allActs,lpCalls]=await Promise.all([
@@ -3085,6 +3196,7 @@ function switchTab(name){
   document.querySelectorAll(".tab").forEach((t,i)=>t.classList.toggle("active",tabOrder[i]===name));
   document.querySelectorAll(".view").forEach(v=>v.classList.remove("active"));
   document.getElementById("view-"+name).classList.add("active");
+  if(typeof updatePageGuideVisibility==="function")updatePageGuideVisibility();
   if(name==="week")loadStartHere();
   if(name==="pipeline")loadPipeline();
   if(name==="calendar")loadCalendar();
@@ -3597,13 +3709,16 @@ async function loadOnboarding(){
     const cutoff=new Date();cutoff.setDate(cutoff.getDate()-28);
     const cutoffStr=localDateStr(cutoff);
     const sevenDaysAgo=new Date();sevenDaysAgo.setDate(sevenDaysAgo.getDate()-7);
-    const [meetings,recentActs]=await Promise.all([
+    const [meetings,recentActs,addressRows]=await Promise.all([
       sbFetch("amanda_activities?select=agent_name,act_date&act_type=eq.New Realtor Meeting&act_date=gte."+cutoffStr+"&order=act_date.desc"),
-      sbFetch("amanda_activities?select=agent_name,act_date,act_type,notes&act_date=gte."+localDateStr(sevenDaysAgo)+"&order=act_date.desc")
+      sbFetch("amanda_activities?select=agent_name,act_date,act_type,notes&act_date=gte."+localDateStr(sevenDaysAgo)+"&order=act_date.desc"),
+      sbFetch("agent_profiles?select=agent_name,brokerage&brokerage=not.is.null").catch(()=>[])
     ]);
     if(!meetings||!meetings.length){document.getElementById("onboardingCard").style.display="none";return;}
 
     const normalize=s=>(s||"").toLowerCase().trim().replace(/\s+/g," ").replace(/s{2,}/g,"s");
+    const addressByAgent={};
+    (addressRows||[]).forEach(a=>{if(a.brokerage)addressByAgent[normalize(a.agent_name)]=a.brokerage;});
     const qualifyingActs=(recentActs||[]).filter(a=>TALKTO_TYPES.indexOf(a.act_type)>=0&&countWords(a.notes)>=MIN_NOTE_WORDS);
     const touchedThisWeek=new Set(qualifyingActs.map(a=>normalize(a.agent_name)));
     const recentActMap={};
@@ -3661,10 +3776,15 @@ async function loadOnboarding(){
       const fullNote=doneAct&&doneAct.notes?doneAct.notes:"";
       const isLongNote=fullNote.length>80;
       const shortNote=isLongNote?fullNote.substring(0,80)+"...":fullNote;
+      const addr=addressByAgent[key];
+      const addrLine=addr
+        ?'<div style="font-size:11px;color:var(--text-2);margin-top:3px">📍 '+addr+'</div>'
+        :'<div style="font-size:11px;color:var(--danger);margin-top:3px;font-weight:600">⚠️ No address on file — add one in Contacts before sending anything</div>';
       html+='<div style="display:flex;align-items:flex-start;justify-content:space-between;padding:11px 0;border-bottom:1px solid var(--border-light);gap:12px;opacity:'+(isDone?".6":"1")+'">'
         +'<div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:600;color:var(--text-1)">'+properCase(name)
         +' <span style="display:inline-block;padding:2px 8px;border-radius:20px;font-size:10px;font-weight:700;background:'+bg+';color:'+color+'">Week '+weekNum+' of 4</span></div>'
         +'<div style="font-size:11px;color:var(--text-3);margin-top:2px">Met '+fmtDate(metDate)+'</div>'
+        +addrLine
         +(!isDone?'<div style="font-size:12px;color:var(--text-2);margin-top:4px;font-style:italic;line-height:1.4">'+task+'</div>':"")
         +(isDone&&doneAct?'<div style="font-size:11px;color:var(--text-3);margin-top:4px">'+fmtDate(doneAct.act_date)+' · '+(doneAct.act_type||'')
           +(fullNote?' — <em style="color:var(--text-2)" id="'+noteId+'">"'+shortNote+'"</em>'
@@ -4101,7 +4221,7 @@ async function logActivity(){
     }
     applyLockState();
     initAutocomplete();
-    loadWeek();loadFollowups();loadFeed();loadManagement();loadOnboarding();loadQuiet();loadFlagged();loadStartHere();loadDropoffWarning();
+    loadWeek();loadFollowups();loadFeed();loadManagement();loadOnboarding();loadQuiet();loadFlagged();loadStartHere();loadDropoffWarning();loadContactDataQuality();
   }catch(e){
     const msg=e.message||"Unknown error";
     console.error("Log error:",e);
@@ -6396,7 +6516,7 @@ async function openContactModal(name,phone,email,brokerage,birthday){
 function closeContactModal(){document.getElementById("contactModal").classList.remove("open");editingContactName=null;}
 async function saveContactModal(){
   if(!editingContactName)return;
-  const payload={agent_name:editingContactName,phone:document.getElementById("contactPhone").value.trim()||null,email:document.getElementById("contactEmail").value.trim()||null,birthday:document.getElementById("contactBirthday").value.trim()||null,tier:document.getElementById("contactTier").value||null,do_not_contact:document.getElementById("contactDNC").checked};
+  const payload={agent_name:editingContactName,phone:document.getElementById("contactPhone").value.trim()||null,email:document.getElementById("contactEmail").value.trim()||null,brokerage:document.getElementById("contactBrokerage").value.trim()||null,birthday:document.getElementById("contactBirthday").value.trim()||null,tier:document.getElementById("contactTier").value||null,do_not_contact:document.getElementById("contactDNC").checked};
   try{
     // Case-insensitive lookup by id — an exact-string match here was the likely cause of
     // duplicate profiles (e.g. "Cheryl Kinsey" vs "CHERYL KINSEY" creating two separate rows
@@ -6660,6 +6780,77 @@ init();
     localStorage.setItem(SEED_KEY,"1");
   }catch(e){console.warn("Prospect seed failed:",e);}
 })();
+</script>
+<!-- Page Guide — floating index so nothing on Snapshot gets missed just because someone didn't scroll -->
+<div id="pageGuideBtn" onclick="togglePageGuide()" style="display:none;position:fixed;bottom:20px;right:20px;z-index:998;background:var(--brand);color:#fff;border-radius:24px;padding:10px 16px;font-size:12px;font-weight:700;cursor:pointer;box-shadow:var(--shadow-lg);font-family:inherit;display:flex;align-items:center;gap:6px">
+  📍 <span>Page Guide</span>
+</div>
+<div id="pageGuidePanel" style="display:none;position:fixed;bottom:70px;right:20px;z-index:999;background:#fff;border-radius:12px;box-shadow:var(--shadow-lg);border:1px solid var(--border);width:280px;max-height:70vh;overflow-y:auto;padding:6px">
+  <div style="padding:10px 12px;font-size:11px;font-weight:700;color:var(--text-3);text-transform:uppercase;letter-spacing:.4px;border-bottom:1px solid var(--border-light)">Jump to a section</div>
+  <div id="pageGuideList"></div>
+</div>
+
+<script>
+const PAGE_GUIDE_SECTIONS=[
+  {id:"startHereOuterCard",label:"Start Here",desc:"What matters most right now + your daily checklist"},
+  {id:"personalScorecard",label:"Your Wins This Month",desc:"Meetings, break breads, cold call wins — tap any number"},
+  {id:"quickLogCard",label:"Quick Log",desc:"Fast entry for calls & talk-to's"},
+  {id:"onboardingCard",label:"Gifting Campaign Follow-Up",desc:"New agents in their first 4 weeks"},
+  {id:"breadDueCard",label:"Break Bread Due List",desc:"Who's due for a break bread, soonest first"},
+  {id:"dropoffCard",label:"Approaching 90-Day Drop-Off",desc:"Agents about to fall off as active — act now"},
+  {id:"contactDataCard",label:"Contact Info Needs Updating",desc:"Missing email, address, or birthday — also a good reason to call"},
+  {id:"onYourRadarCard",label:"On Your Radar",desc:"LP flags, CTC calls, buddy asks, follow-ups you scheduled"},
+  {id:"atRiskCard",label:"At Risk — Need a Touch",desc:"Retained agents gone quiet — nobody flagged these, the app noticed"}
+];
+function toggleAppGuide(){
+  const modal=document.getElementById("appGuideModal");
+  const isOpen=modal.classList.contains("open");
+  if(isOpen){modal.classList.remove("open");}
+  else{modal.classList.add("open");}
+}
+function closeAppGuide(){document.getElementById("appGuideModal").classList.remove("open");}
+
+function togglePageGuide(){
+  const panel=document.getElementById("pageGuidePanel");
+  const isOpen=panel.style.display==="block";
+  if(isOpen){panel.style.display="none";return;}
+  renderPageGuide();
+  panel.style.display="block";
+}
+function renderPageGuide(){
+  const list=document.getElementById("pageGuideList");
+  if(!list)return;
+  list.innerHTML=PAGE_GUIDE_SECTIONS.map(s=>{
+    const el=document.getElementById(s.id);
+    const isVisible=el&&el.offsetParent!==null; // skip sections currently hidden (e.g. no drop-offs right now)
+    if(!isVisible)return"";
+    return'<div onclick="scrollToPageSection(\''+s.id+'\')" style="padding:10px 12px;cursor:pointer;border-bottom:1px solid var(--border-light)" onmouseover="this.style.background=\'var(--surface-2)\'" onmouseout="this.style.background=\'transparent\'">'
+      +'<div style="font-size:13px;font-weight:600;color:var(--text-1)">'+s.label+'</div>'
+      +'<div style="font-size:11px;color:var(--text-3);margin-top:1px">'+s.desc+'</div>'
+      +'</div>';
+  }).join("")||'<div style="padding:12px;font-size:12px;color:var(--text-3)">Nothing to jump to right now.</div>';
+}
+function scrollToPageSection(id){
+  const el=document.getElementById(id);
+  if(el)el.scrollIntoView({behavior:"smooth",block:"start"});
+  document.getElementById("pageGuidePanel").style.display="none";
+}
+// Only show the guide button while on Snapshot — it's not relevant on other tabs
+function updatePageGuideVisibility(){
+  const btn=document.getElementById("pageGuideBtn");
+  if(!btn)return;
+  const snapshotActive=document.getElementById("view-week")?.classList.contains("active");
+  btn.style.display=snapshotActive?"flex":"none";
+  if(!snapshotActive)document.getElementById("pageGuidePanel").style.display="none";
+}
+document.addEventListener("click",function(e){
+  const panel=document.getElementById("pageGuidePanel");
+  const btn=document.getElementById("pageGuideBtn");
+  if(panel&&panel.style.display==="block"&&!panel.contains(e.target)&&!btn.contains(e.target)){
+    panel.style.display="none";
+  }
+});
+setTimeout(updatePageGuideVisibility,500);
 </script>
 </body>
 </html>
