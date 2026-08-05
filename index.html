@@ -30,7 +30,7 @@
   --text-1:#2A2050;
   --text-2:#4A4470;
   --text-3:#8A84A8;
-  --text-4:#C4C0D8;
+  --text-4:#54507A;
   --success:#16A34A;
   --success-bg:#DCFCE7;
   --warning:#B45309;
@@ -504,6 +504,8 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI'
         </div>
         <input type="text" id="ccPhone" placeholder="Phone (optional)"
           style="flex:1;min-width:120px;border:1px solid var(--border);border-radius:var(--radius-sm);padding:9px 12px;font-size:13px;font-family:inherit;color:var(--text-1);outline:none">
+        <input type="text" id="ccReferredBy" placeholder="Referred by (optional)"
+          style="flex:1;min-width:130px;border:1px solid var(--border);border-radius:var(--radius-sm);padding:9px 12px;font-size:13px;font-family:inherit;color:var(--text-1);outline:none">
         <select id="ccContactMethod" style="border:1px solid var(--border);border-radius:var(--radius-sm);padding:9px 11px;font-size:12px;font-family:inherit;color:var(--text-1);outline:none;background:var(--surface)">
           <option value="Call">Call</option>
           <option value="Text">Text</option>
@@ -571,6 +573,8 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI'
       <div id="weekFlagged" style="max-height:240px;overflow-y:auto"></div>
       <!-- CTC trigger -->
       <div id="weekCtcTrigger"></div>
+      <div id="buddyAskTrigger"></div>
+      <div id="deadEndTrigger"></div>
       <!-- Follow-ups due -->
       <div id="followupsSectionLabel" style="display:none;font-size:11px;font-weight:700;color:var(--text-3);text-transform:uppercase;letter-spacing:.4px;margin:10px 0 6px;padding-top:8px;border-top:1px solid var(--border-light)">📅 Follow-ups you scheduled</div>
       <div id="weekFollowups" style="max-height:280px;overflow-y:auto"></div>
@@ -632,6 +636,12 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI'
               <option>Agent Appreciation</option>
             </optgroup>
           </select>
+        </div>
+      </div>
+      <div class="form-row" id="referredByRow" style="display:none">
+        <div class="field" style="flex:1">
+          <label>Referred by <span style="font-weight:400;color:var(--text-4)">(the buddy who introduced you — optional)</span></label>
+          <input type="text" id="referredByInput" placeholder="e.g. Sarah Chen" autocomplete="off">
         </div>
       </div>
       <div class="form-row three">
@@ -792,9 +802,9 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI'
       </select>
       <select id="rcUrgencyFilter" onchange="renderReconnect()">
         <option value="all">All urgency</option>
-        <option value="hot">90-120 days — highest priority</option>
-        <option value="warm">121-180 days — still reachable</option>
-        <option value="cold">180+ days — long gone</option>
+        <option value="hot">Hot — priority window scales by tier</option>
+        <option value="warm">Warm — still reachable</option>
+        <option value="cold">Cold — long gone</option>
       </select>
       <select id="rcStatusFilter" onchange="renderReconnect()">
         <option value="active">Active only</option>
@@ -810,6 +820,13 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI'
         <option value="name">Sort: Name A–Z</option>
       </select>
       <input type="text" id="rcSearch" placeholder="Search name..." oninput="renderReconnect()">
+    </div>
+    <div id="rcBulkBar" style="display:none;align-items:center;gap:8px;background:var(--brand-light);border-radius:8px;padding:8px 12px;margin-top:10px;flex-wrap:wrap">
+      <span id="rcBulkCount" style="font-size:12px;font-weight:700;color:var(--brand-dark)"></span>
+      <button onclick="rcBulkMarkContacted()" style="font-size:11px;font-weight:600;padding:5px 10px;background:var(--brand);color:#fff;border:none;border-radius:6px;cursor:pointer;font-family:inherit">Mark contacted</button>
+      <button onclick="rcBulkSnooze()" style="font-size:11px;font-weight:600;padding:5px 10px;background:#fff;color:var(--text-2);border:1px solid var(--border);border-radius:6px;cursor:pointer;font-family:inherit">Snooze…</button>
+      <button onclick="rcBulkRemove()" style="font-size:11px;font-weight:600;padding:5px 10px;background:#fff;color:var(--danger);border:1px solid var(--border-danger);border-radius:6px;cursor:pointer;font-family:inherit">Remove</button>
+      <button onclick="rcClearSelection()" style="font-size:11px;padding:5px 10px;background:none;color:var(--text-3);border:none;cursor:pointer;font-family:inherit">Clear</button>
     </div>
     <div id="rcList" style="max-height:500px;overflow-y:auto;border-top:0.5px solid var(--border);margin-top:12px"><div class="no-data">Upload a Power BI export to see your reconnect list.</div></div>
   </div>
@@ -1235,7 +1252,7 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI'
       <tr><td style="padding:5px 8px 5px 0;font-weight:600;white-space:nowrap;vertical-align:top">Agent Appreciation <span style="color:var(--brand);font-weight:400">counts as Talk-to</span></td><td style="padding:5px 0;color:var(--text-2)">Recognizing a top producer or celebrating a milestone.</td></tr>
       <tr><td style="padding:5px 8px 5px 0;font-weight:600;white-space:nowrap;vertical-align:top">Market Update <span style="color:var(--brand);font-weight:400">counts as Talk-to</span></td><td style="padding:5px 0;color:var(--text-2)">Sharing what's happening in the market: inventory, days on market, buyer demand, listing trends. This isn't financing or rates; that stays with the LP team.</td></tr>
       <tr><td style="padding:5px 8px 5px 0;font-weight:600;white-space:nowrap;vertical-align:top">Break Breads <span style="color:var(--brand);font-weight:400">note required, 10+ words</span></td><td style="padding:5px 0;color:var(--text-2)">More than a meal: sitting down with the agent to get real feedback and confirm the relationship is genuinely solid. Its own goal (5/week), separate from Talk-to's. To figure out who's due, check the Break Bread Due List on Snapshot (or the Face Time Tracker on the LP tracker), it shows last touch date per agent across both you and the LPs. Consider bringing the assigned LP along when it makes sense.</td></tr>
-      <tr><td style="padding:5px 8px 5px 0;font-weight:600;white-space:nowrap;vertical-align:top">Realtor Buddy Referral Ask</td><td style="padding:5px 0;color:var(--text-2)">Asking a happy agent to introduce you to someone else. Its own goal (3/week).</td></tr>
+      <tr><td style="padding:5px 8px 5px 0;font-weight:600;white-space:nowrap;vertical-align:top">Realtor Buddy Referral Ask</td><td style="padding:5px 0;color:var(--text-2)">Ask an existing happy agent to introduce you to someone else they know — you're not calling a new person here, you're asking the buddy to make the intro. Own goal (3/week). When the intro leads to an actual new cold call or meeting, tag it with "Referred by" on that new entry so the ask's real result gets tracked, not just that you asked.</td></tr>
       <tr><td style="padding:5px 8px 5px 0;font-weight:600;white-space:nowrap;vertical-align:top">Co-hosted Event</td><td style="padding:5px 0;color:var(--text-2)">Hosting something together with the agent.</td></tr>
     </table>
 
@@ -2309,6 +2326,8 @@ document.getElementById("activityType").addEventListener("change",function(){
   if(outcome==="Requires follow-up")autoSetFollowUp();
   toggleIntakeBlock();
   updateNotesRequirementHint();
+  const referredRow=document.getElementById("referredByRow");
+  if(referredRow)referredRow.style.display=(this.value==="Cold Calls"||this.value==="New Realtor Meeting")?"flex":"none";
 });
 
 document.getElementById("activityOutcome").addEventListener("change",function(){
@@ -3815,6 +3834,86 @@ async function loadWeek(){
       }
     }
   }catch(e){console.warn("CTC trigger:",e);}
+
+  // Buddy referral ask follow-through — same pattern as CTC: flag asks that never got a check-in,
+  // AND show whether asks are actually turning into referrals (tagged via "Referred by:" in notes
+  // on new Cold Calls / New Realtor Meeting entries), not just counting that she asked.
+  try{
+    const cutoff2=new Date();cutoff2.setDate(cutoff2.getDate()-14);
+    const cutoff2Str=cutoff2.toISOString().split("T")[0];
+    const cutoff90=new Date();cutoff90.setDate(cutoff90.getDate()-90);
+    const cutoff90Str=cutoff90.toISOString().split("T")[0];
+    const[asks,allTouches,allAsks90,referralNotes]=await Promise.all([
+      sbFetch("amanda_activities?select=agent_name,act_date&act_type=eq.Realtor Buddy Referral Ask&act_date=lte."+cutoff2Str+"&order=act_date.desc&limit=50").catch(()=>[]),
+      sbFetch("amanda_activities?select=agent_name,act_date&order=act_date.desc&limit=3000").catch(()=>[]),
+      sbFetch("amanda_activities?select=agent_name&act_type=eq.Realtor Buddy Referral Ask&act_date=gte."+cutoff90Str+"&limit=200").catch(()=>[]),
+      sbFetch("amanda_activities?select=notes&act_type=in.(Cold Calls,New Realtor Meeting)&notes=ilike.*Referred by*&act_date=gte."+cutoff90Str+"&limit=200").catch(()=>[])
+    ]);
+    const normalize2=s=>(s||"").toLowerCase().trim();
+    const askByAgent={};
+    asks.forEach(a=>{const n=normalize2(a.agent_name);if(n&&(!askByAgent[n]||a.act_date>askByAgent[n]))askByAgent[n]=a.act_date;});
+    const lastTouchByAgent={};
+    allTouches.forEach(a=>{const n=normalize2(a.agent_name);if(n&&(!lastTouchByAgent[n]||a.act_date>lastTouchByAgent[n]))lastTouchByAgent[n]=a.act_date;});
+    const needsCheckin=Object.keys(askByAgent).filter(n=>(lastTouchByAgent[n]||"")<=askByAgent[n]).slice(0,6);
+
+    // Did the ask actually turn into a referral? Cross-reference against "Referred by:" tags.
+    const referredBuddyNames=new Set();
+    (referralNotes||[]).forEach(r=>{
+      const m=(r.notes||"").match(/Referred by:\s*([^—]+)/i);
+      if(m)referredBuddyNames.add(normalize2(m[1].trim()));
+    });
+    const totalAskedNames=new Set((allAsks90||[]).map(a=>normalize2(a.agent_name)));
+    const successCount=[...totalAskedNames].filter(n=>referredBuddyNames.has(n)).length;
+
+    const buddyEl=document.getElementById("buddyAskTrigger");
+    if(buddyEl){
+      let html="";
+      if(totalAskedNames.size>0){
+        html+='<div style="background:var(--surface-2);border-radius:8px;padding:10px 14px;margin-top:10px;margin-bottom:8px;font-size:12px;color:var(--text-2)">'
+          +'<strong style="color:var(--text-1)">'+successCount+' of '+totalAskedNames.size+'</strong> buddies asked (last 90 days) actually referred someone — tag it with "Referred by" when you log the new cold call to track this.'
+          +'</div>';
+      }
+      if(needsCheckin.length){
+        html+='<div class="card-title" style="margin-bottom:10px">Buddy Asks — Check In <span class="card-sub">asked 14+d ago, no follow-up touch since</span></div>'+
+          needsCheckin.map(n=>'<div class="fu-item"><div class="fu-dot" style="background:#9585C0"></div><div class="fu-body"><div class="fu-name">'+properCase(n)+'</div><div class="fu-meta" style="color:#9585C0">Asked '+fmtDate(askByAgent[n])+'</div></div><button class="btn-sm" style="background:#9585C0;color:#fff;border:none;border-radius:6px;padding:4px 10px;font-size:11px;cursor:pointer;font-family:inherit" onclick="document.getElementById(\'agentInput\').value=\''+n.replace(/'/g,"\\'")+'\';switchTab(\'log\')">Check in</button></div>').join("");
+      }
+      buddyEl.innerHTML=html;
+      buddyEl.style.display=html?"block":"none";
+    }
+  }catch(e){console.warn("Buddy ask trigger:",e);}
+
+  // ── WENT NOWHERE — no outcome and no plan to follow up ──────────────────────────
+  // The general version of the buddy-ask check: any outreach that didn't land (not Positive,
+  // not a meeting) and has no follow-up date set is an ask that's about to just disappear with
+  // nobody accountable for it. Excludes pure relationship gestures (birthday/holiday/appreciation)
+  // that aren't asks and don't need to "produce" anything.
+  try{
+    const cutoff3=new Date();cutoff3.setDate(cutoff3.getDate()-14);
+    const cutoff3Str=cutoff3.toISOString().split("T")[0];
+    const PURE_GESTURE_TYPES=["Birthday Outreach","Holiday Outreach","Agent Appreciation"];
+    const[weakActs,allTouches2]=await Promise.all([
+      sbFetch("amanda_activities?select=id,agent_name,act_type,act_date,outcome&act_date=gte."+cutoff3Str+"&follow_up_date=is.null&order=act_date.desc&limit=100").catch(()=>[]),
+      sbFetch("amanda_activities?select=agent_name,act_date&order=act_date.desc&limit=3000").catch(()=>[])
+    ]);
+    const normalize3=s=>(s||"").toLowerCase().trim();
+    const lastTouchByAgent2={};
+    allTouches2.forEach(a=>{const n=normalize3(a.agent_name);if(n&&(!lastTouchByAgent2[n]||a.act_date>lastTouchByAgent2[n]))lastTouchByAgent2[n]=a.act_date;});
+    const wentNowhere=(weakActs||[])
+      .filter(a=>PURE_GESTURE_TYPES.indexOf(a.act_type)<0)
+      .filter(a=>a.outcome!=="Positive"&&a.outcome!=="Meeting Scheduled")
+      .filter(a=>{const n=normalize3(a.agent_name);return(lastTouchByAgent2[n]||"")<=a.act_date;})
+      .slice(0,6);
+    const deadEl=document.getElementById("deadEndTrigger");
+    if(deadEl){
+      if(wentNowhere.length){
+        deadEl.innerHTML='<div class="card-title" style="margin-bottom:10px;margin-top:10px">Went Nowhere — No Next Step <span class="card-sub">no outcome, no follow-up set, nothing since</span></div>'+
+          wentNowhere.map(a=>'<div class="fu-item"><div class="fu-dot" style="background:var(--warning)"></div><div class="fu-body"><div class="fu-name">'+properCase(a.agent_name)+'</div><div class="fu-meta" style="color:var(--warning)">'+badgeEmoji(a.act_type)+' — '+(a.outcome||"no outcome")+' · '+fmtDate(a.act_date)+'</div></div><button class="btn-sm" style="background:var(--warning);color:#fff;border:none;border-radius:6px;padding:4px 10px;font-size:11px;cursor:pointer;font-family:inherit" onclick="document.getElementById(\'agentInput\').value=\''+String(a.agent_name||"").replace(/'/g,"\\'")+'\';switchTab(\'log\')">Follow up now</button></div>').join("");
+        deadEl.style.display="block";
+      }else{
+        deadEl.style.display="none";
+      }
+    }
+  }catch(e){console.warn("Dead-end trigger:",e);}
 }
 
 let agentNames=[],prospectNames=[],allAgentNames=[],dncAgentNames=new Set();
@@ -3875,6 +3974,10 @@ async function logActivity(){
   const followupDate=document.getElementById("followupDate").value||null;
   const contactMethod=document.getElementById("activityContactMethod")?document.getElementById("activityContactMethod").value:"Call";
   let notes=document.getElementById("activityNotes").value.trim()||null;
+  const referredBy=document.getElementById("referredByInput")?document.getElementById("referredByInput").value.trim():"";
+  if(referredBy&&(activityType==="Cold Calls"||activityType==="New Realtor Meeting")){
+    notes="🌾 Referred by: "+referredBy+(notes?" — "+notes:"");
+  }
   
   clearLogErrorBanner();
   
@@ -3959,6 +4062,7 @@ async function logActivity(){
     document.getElementById("activityOutcome").value="";
     document.getElementById("followupDate").value="";
     document.getElementById("activityNotes").value="";
+    if(document.getElementById("referredByInput"))document.getElementById("referredByInput").value="";
     document.getElementById("followupRow").classList.remove("show");
     document.getElementById("doubleDialWarn").style.display="none";
     updateNotesRequirementHint();
@@ -4396,10 +4500,12 @@ async function ccSave(){
   const outcome = document.getElementById('ccOutcome').value;
   const contactMethod = document.getElementById('ccContactMethod')?document.getElementById('ccContactMethod').value:"Call";
   let notes = (document.getElementById('ccNotes')?document.getElementById('ccNotes').value:"").trim()||null;
+  const referredBy = (document.getElementById('ccReferredBy')?document.getElementById('ccReferredBy').value:"").trim();
   if(!name){toast("Enter an agent name.","error");document.getElementById('ccName').focus();return;}
   if(countWords(notes)<1){toast("Add a note before saving — e.g. left VM, texted, double-dialed.","error");return;}
   const methodEmoji={Call:"☎️",Text:"📱"}[contactMethod]||"☎️";
   notes=methodEmoji+" "+notes;
+  if(referredBy)notes="🌾 Referred by: "+referredBy+" — "+notes;
   const btn = document.querySelector('[onclick="ccSave()"]');
   if(btn){btn.disabled=true;btn.textContent="Saving...";}
   try{
@@ -4452,6 +4558,7 @@ async function ccSave(){
     }
     document.getElementById('ccName').value='';
     document.getElementById('ccPhone').value='';
+    if(document.getElementById('ccReferredBy'))document.getElementById('ccReferredBy').value='';
     if(document.getElementById('ccNotes'))document.getElementById('ccNotes').value='';
     if(document.getElementById('ccWordCount'))document.getElementById('ccWordCount').textContent='';
     if(document.getElementById('ccDoubleDialWarn'))document.getElementById('ccDoubleDialWarn').style.display='none';
@@ -4563,6 +4670,66 @@ document.getElementById("quickLogAgent").addEventListener("input",function(){
 
 // ── 🔁 RECONNECT TAB ─────────────────────────────────────────────────────────
 let rcData=[];
+let rcSelected=new Set();
+
+function rcToggleSelect(id,checked){
+  if(checked)rcSelected.add(id);else rcSelected.delete(id);
+  rcUpdateBulkBar();
+}
+function rcClearSelection(){
+  rcSelected.clear();
+  document.querySelectorAll(".rc-select-box").forEach(cb=>cb.checked=false);
+  rcUpdateBulkBar();
+}
+function rcUpdateBulkBar(){
+  const bar=document.getElementById("rcBulkBar");
+  const countEl=document.getElementById("rcBulkCount");
+  if(!bar)return;
+  if(rcSelected.size>0){
+    bar.style.display="flex";
+    if(countEl)countEl.textContent=rcSelected.size+" selected";
+  }else{
+    bar.style.display="none";
+  }
+}
+async function rcBulkMarkContacted(){
+  const ids=[...rcSelected];
+  if(!ids.length)return;
+  if(!confirm("Mark "+ids.length+" agent"+(ids.length!==1?"s":"")+" as contacted?"))return;
+  try{
+    await Promise.all(ids.map(id=>sbFetch(RC_TABLE+"?id=eq."+id,{method:"PATCH",prefer:"return=minimal",body:JSON.stringify({status:"contacted",contacted_at:new Date().toISOString()})})));
+    ids.forEach(id=>{const row=rcData.find(r=>r.id===id);if(row){row.status="contacted";row.contacted_at=new Date().toISOString();}});
+    toast(ids.length+" marked as contacted ✓","success");
+    rcClearSelection();updateRcSummary();renderReconnect();
+  }catch(e){toast("Bulk update failed: "+e.message,"error");}
+}
+async function rcBulkSnooze(){
+  const ids=[...rcSelected];
+  if(!ids.length)return;
+  const preset=prompt("Snooze "+ids.length+" agent"+(ids.length!==1?"s":"")+" until when? Type: tomorrow, thursday, or a date like 2026-08-20");
+  if(!preset)return;
+  let untilDate;
+  const p=preset.trim().toLowerCase();
+  if(p==="tomorrow")untilDate=localDateStr(new Date(Date.now()+86400000));
+  else if(p==="thursday"){const dow=new Date().getDay();const diff=((4-dow)+7)%7||7;untilDate=localDateStr(new Date(Date.now()+diff*86400000));}
+  else if(/^\d{4}-\d{2}-\d{2}$/.test(p))untilDate=p;
+  else{toast("Didn't understand that date — try tomorrow, thursday, or YYYY-MM-DD","error");return;}
+  const names=ids.map(id=>{const row=rcData.find(r=>r.id===id);return row?row.agent_name:null;}).filter(Boolean);
+  for(const name of names){await snoozeAgent(name,untilDate);}
+  toast(names.length+" agent"+(names.length!==1?"s":"")+" snoozed until "+fmtDate(untilDate),"success");
+  rcClearSelection();
+}
+async function rcBulkRemove(){
+  const ids=[...rcSelected];
+  if(!ids.length)return;
+  if(!confirm("Remove "+ids.length+" agent"+(ids.length!==1?"s":"")+" from the reconnect list? This can be undone individually via Restore."))return;
+  try{
+    await Promise.all(ids.map(id=>sbFetch(RC_TABLE+"?id=eq."+id,{method:"PATCH",prefer:"return=minimal",body:JSON.stringify({status:"removed",removed_at:new Date().toISOString()})})));
+    ids.forEach(id=>{const row=rcData.find(r=>r.id===id);if(row){row.status="removed";}});
+    toast(ids.length+" removed ✓","success");
+    rcClearSelection();updateRcSummary();renderReconnect();
+  }catch(e){toast("Bulk remove failed: "+e.message,"error");}
+}
 let rcLpLastTouch={}; // agent_name.toLowerCase() → {lp, date, days}
 const RC_TABLE="reconnect_agents";
 
@@ -4641,10 +4808,10 @@ function renderReconnect(){
     else list=list.filter(r=>r.grade===grade);
   }
 
-  // Urgency filter
-  if(urgency==="hot") list=list.filter(r=>r.days_since&&r.days_since<=120);
-  else if(urgency==="warm") list=list.filter(r=>r.days_since&&r.days_since>120&&r.days_since<=180);
-  else if(urgency==="cold") list=list.filter(r=>r.days_since&&r.days_since>180);
+  // Urgency filter — scaled by tier, matching the same "act sooner on higher-value producers" logic
+  if(urgency==="hot") list=list.filter(r=>{const b=rcUrgencyBounds(r.grade);return r.days_since&&r.days_since<=b.hot;});
+  else if(urgency==="warm") list=list.filter(r=>{const b=rcUrgencyBounds(r.grade);return r.days_since&&r.days_since>b.hot&&r.days_since<=b.warm;});
+  else if(urgency==="cold") list=list.filter(r=>{const b=rcUrgencyBounds(r.grade);return r.days_since&&r.days_since>b.warm;});
 
   // Search
   if(q) list=list.filter(r=>(r.agent_name||"").toLowerCase().includes(q)||(r.email||"").toLowerCase().includes(q));
@@ -4710,16 +4877,22 @@ function renderReconnect(){
   document.querySelectorAll('[id^="rc-log-type-"]').forEach(sel=>{sel.value="Reconnect Outreach";});
 }
 
-function urgencyClass(days){
+// Reconnect urgency scales by tier — a lost A-tier producer needs faster win-back attention
+// than a lost C-tier one, so "hot" kicks in much sooner for A than for C.
+const RC_URGENCY_THRESHOLDS={A:{hot:60,warm:120},B:{hot:90,warm:150},C:{hot:120,warm:180}};
+function rcUrgencyBounds(grade){return RC_URGENCY_THRESHOLDS[grade]||RC_URGENCY_THRESHOLDS.C;}
+function urgencyClass(days,grade){
   if(!days) return "rc-badge-days-cold";
-  if(days<=120) return "rc-badge-days-hot";
-  if(days<=180) return "rc-badge-days-warm";
+  const b=rcUrgencyBounds(grade);
+  if(days<=b.hot) return "rc-badge-days-hot";
+  if(days<=b.warm) return "rc-badge-days-warm";
   return "rc-badge-days-cold";
 }
-function urgencyLabel(days){
+function urgencyLabel(days,grade){
   if(!days) return "No date";
-  if(days<=120) return days+"d overdue";
-  if(days<=180) return days+"d due soon";
+  const b=rcUrgencyBounds(grade);
+  if(days<=b.hot) return days+"d overdue";
+  if(days<=b.warm) return days+"d due soon";
   return days+"d";
 }
 
@@ -4727,7 +4900,7 @@ function renderRcGroup(list,groupStatus){
   return list.map(r=>{
     const rid=r.id;
     const gradeBadge=r.grade?'<span class="rc-badge rc-badge-'+r.grade+'">'+r.grade+'</span>':'<span class="rc-badge rc-badge-U">?</span>';
-    const daysBadge='<span class="'+urgencyClass(r.days_since)+'">'+urgencyLabel(r.days_since)+'</span>';
+    const daysBadge='<span class="'+urgencyClass(r.days_since,r.grade)+'">'+urgencyLabel(r.days_since,r.grade)+'</span>';
     const contactedBadge=r.status==="contacted"?'<span class="rc-contacted-badge">✓ Contacted</span>':"";
     const removedBadge=r.status==="removed"?'<span class="rc-removed-badge">Removed</span>':"";
     const lastInteraction=r.last_interaction_type?(r.last_interaction_type+(r.last_interaction_date?" — "+r.last_interaction_date:"")):"No prior interaction";
@@ -4756,6 +4929,7 @@ function renderRcGroup(list,groupStatus){
 
     return'<div class="rc-agent" id="rca-'+rid+'">'+
       '<div class="rc-agent-top">'+
+        (groupStatus!=="removed"?'<input type="checkbox" class="rc-select-box" data-id="'+rid+'" onchange="rcToggleSelect('+rid+',this.checked)" style="margin-right:8px;margin-top:4px;flex-shrink:0">':'')+
         '<div>'+
           '<div class="rc-agent-name">'+r.agent_name+' '+gradeBadge+' '+daysBadge+contactedBadge+removedBadge+'</div>'+
           '<div class="rc-agent-meta">'+
