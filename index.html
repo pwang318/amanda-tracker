@@ -1171,6 +1171,15 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI'
   </div>
 </div>
 
+<div class="modal-overlay" id="coldCallWinsModal">
+  <div class="modal-box">
+    <div class="modal-header"><span class="modal-title">Cold call wins — month to date</span><button class="modal-close" onclick="closeColdCallWinsModal()">×</button></div>
+    <div class="modal-sub">Cold calls logged as Positive or Meeting Scheduled this month, and whether they've turned into a meeting yet.</div>
+    <div id="coldCallWinsList" style="margin-top:10px;max-height:60vh;overflow-y:auto">Loading...</div>
+    <div style="margin-top:14px"><button class="btn-sm" onclick="closeColdCallWinsModal()">Close</button></div>
+  </div>
+</div>
+
 <div class="modal-overlay" id="contactModal">
   <div class="modal-box">
     <div class="modal-header"><span class="modal-title">Edit contact info</span><button class="modal-close" onclick="closeContactModal()">×</button></div>
@@ -2536,6 +2545,7 @@ async function loadStartHere(){
       ?"Start with the "+rcACount+" A-tier agent"+(rcACount!==1?"s":"")+" — these are highest priority. Then work through B/C tier (aim for 5+ today). Log as Reconnect Outreach — counts toward Talk-to goal."
       :"Aim for at least 5 today, B-tier before C-tier. Log as Reconnect Outreach — counts toward Talk-to goal.";
     const mtdMeetingCount=(mtdMeetings||[]).length;
+    const scheduledToday=(fuToday||[]).length;
 
     // Gifting campaign hint — check if anyone is in week 2 or 3 (value/opportunity)
     const giftingHint=mtdMeetingCount>0?"Use the week-by-week gifting campaign scripts to stay on track. Week 2 = value touch, Week 3 = ask for the business.":"";
@@ -2858,6 +2868,45 @@ function snapshotDrillDown(type){
   },200);
 }
 
+function closeColdCallWinsModal(){document.getElementById("coldCallWinsModal").classList.remove("open");}
+
+async function showColdCallWinsDetail(){
+  const modal=document.getElementById("coldCallWinsModal");
+  const listEl=document.getElementById("coldCallWinsList");
+  modal.classList.add("open");
+  listEl.innerHTML="Loading...";
+  try{
+    const now=new Date();
+    const monthStart=now.getFullYear()+"-"+String(now.getMonth()+1).padStart(2,"0")+"-01";
+    const[wins,meetings]=await Promise.all([
+      sbFetch("amanda_activities?select=agent_name,act_date,outcome&act_type=eq.Cold Calls&act_date=gte."+monthStart+"&outcome=in.(Positive,Meeting Scheduled)&order=act_date.desc"),
+      sbFetch("amanda_activities?select=agent_name,act_date&act_type=eq.New Realtor Meeting&order=act_date.desc&limit=500").catch(()=>[])
+    ]);
+    if(!wins.length){listEl.innerHTML='<div class="no-data">No cold call wins logged yet this month.</div>';return;}
+    const normalize=s=>(s||"").toLowerCase().trim();
+    const meetingByAgent={};
+    (meetings||[]).forEach(m=>{
+      const n=normalize(m.agent_name);if(!n)return;
+      if(!meetingByAgent[n]||m.act_date>meetingByAgent[n])meetingByAgent[n]=m.act_date;
+    });
+    listEl.innerHTML=wins.map(w=>{
+      const n=normalize(w.agent_name);
+      const meetingDate=meetingByAgent[n];
+      const converted=!!meetingDate;
+      const statusHtml=converted
+        ?'<span style="font-size:11px;font-weight:700;color:var(--success)">✓ Meeting held '+fmtDate(meetingDate)+'</span>'
+        :'<span style="font-size:11px;font-weight:700;color:var(--warning)">No meeting logged yet</span>';
+      return'<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border-light)">'
+        +'<div><div style="font-size:13px;font-weight:600;color:var(--text-1)">'+properCase(w.agent_name)+'</div>'
+        +'<div style="font-size:11px;color:var(--text-3)">'+fmtDate(w.act_date)+' — '+w.outcome+'</div></div>'
+        +statusHtml
+        +'</div>';
+    }).join("");
+  }catch(e){
+    listEl.innerHTML='<div class="no-data">Could not load — '+e.message+'</div>';
+  }
+}
+
 function renderSnapshotStats(acts, period){
   const labels={daily:"Today",wtd:"This week",mtd:"This month",ytd:"This year"};
   const goals={
@@ -3165,12 +3214,12 @@ async function loadWeek(){
       const scoreItems=[
         {label:"New meetings",val:mtdMeetings,goal:20,color:"var(--brand)"},
         {label:"Break breads",val:mtdBreakBreads,goal:20,color:"var(--brand)"},
-        {label:"Cold call wins",val:mtdWins,goal:null,color:"var(--success)"},
+        {label:"Cold call wins",val:mtdWins,goal:null,color:"var(--success)",click:"showColdCallWinsDetail()"},
         {label:"Cold calls made",val:mtdColdCalls,goal:500,color:"var(--text-2)"},
       ];
-      psGrid.innerHTML=scoreItems.map(s=>'<div style="background:var(--surface-2);border-radius:8px;padding:10px 12px;text-align:center">'
+      psGrid.innerHTML=scoreItems.map(s=>'<div '+(s.click?'onclick="'+s.click+'" ':'')+'style="background:var(--surface-2);border-radius:8px;padding:10px 12px;text-align:center'+(s.click?';cursor:pointer;transition:box-shadow .15s':'')+'"'+(s.click?' onmouseover="this.style.boxShadow=\'var(--shadow)\'" onmouseout="this.style.boxShadow=\'none\'"':'')+'>'
         +'<div style="font-size:22px;font-weight:700;color:'+s.color+'">'+s.val+(s.goal?'<span style="font-size:12px;font-weight:400;color:var(--text-3)"> /'+s.goal+'</span>':'')+'</div>'
-        +'<div style="font-size:10px;color:var(--text-3);margin-top:2px">'+s.label+'</div>'
+        +'<div style="font-size:10px;color:var(--text-3);margin-top:2px">'+s.label+(s.click?' <span style="text-decoration:underline">(view)</span>':'')+'</div>'
         +'</div>').join("");
       if(psSub)psSub.textContent="Month to date";
     }
@@ -5385,7 +5434,7 @@ async function loadManagement(){
         +trendRow("Cold calls",c(prevActs,"Cold Calls"),c(mtdActs,"Cold Calls"),500)
         +trendRow("Active Agent Talk-to's",cntTalkTo(prevActs),cntTalkTo(mtdActs),400)
         +trendRow("Break breads",c(prevActs,"Break Breads"),c(mtdActs,"Break Breads"),20)
-        +trendRow("Unique agents touched",uniq(prevActs),uniqMtd,null)
+        +trendRow("Unique agents touched",uniq(prevActs),uniq(mtdActs),null)
         +trendRow("CTC calls",c(prevActs,CTC_TYPE),c(mtdActs,CTC_TYPE),null);
       momCard.style.display="block";
     }
