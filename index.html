@@ -6091,16 +6091,21 @@ function renderMgmtPeriodDetail(period){
   }catch(e){console.error("Talk-to connect rate error:",e);const el=document.getElementById("danielTalkToConnectRate");if(el)el.innerHTML='<div class="no-data">Unable to load.</div>';}
 
   // ── RECONNECT PACE: list size, contacted within the period ──
+  // "Contacted" now counts BOTH the explicit "Mark contacted" button on the Reconnect tab AND
+  // any regular activity logged for that agent during the period — otherwise this only reflects
+  // people run through one specific button, while real outreach logged through Quick Log or the
+  // main form (which is how most of her activity actually happens) never counted at all.
   (async()=>{
     try{
       const rcEl=document.getElementById("danielReconnectProgress");
       if(!rcEl)return;
       const allRc=await sbFetch(RC_TABLE+"?select=agent_name,status,contacted_at&limit=1000").catch(()=>[]);
       const totalOnList=(allRc||[]).filter(a=>a.status!=="removed").length;
+      const loggedNamesInPeriod=new Set(acts.map(a=>normalize(a.agent_name)).filter(Boolean));
       const contactedInPeriod=(allRc||[]).filter(a=>{
-        if(!a.contacted_at)return false;
-        const d=a.contacted_at.slice(0,10);
-        return d>=bounds.start&&d<=bounds.end;
+        const markedContacted=a.contacted_at&&a.contacted_at.slice(0,10)>=bounds.start&&a.contacted_at.slice(0,10)<=bounds.end;
+        const loggedDirectly=loggedNamesInPeriod.has(normalize(a.agent_name));
+        return markedContacted||loggedDirectly;
       }).length;
       const dailyGoal=5;
       const periodWorkdays=period==="daily"?1:period==="week"?5:period==="mtd"?22:Math.min(12,Math.max(1,new Date().getMonth()-2))*22;
@@ -6118,26 +6123,29 @@ function renderMgmtPeriodDetail(period){
     }catch(e){console.error("Reconnect progress error:",e);const el=document.getElementById("danielReconnectProgress");if(el)el.innerHTML='<div class="no-data">Unable to load.</div>';}
   })();
 
-  // ── PRODUCTION SIGNAL: agents touched in the period vs agents who closed in the period ──
+  // ── PRODUCTION SIGNAL: agents touched in the period vs agents who closed — checked against
+  // EVER closing, not closing within this exact same window. A close can land weeks after the
+  // touch that led to it, so requiring both in the same 7-day window made this structurally
+  // impossible to read as anything but ~0% for any single week.
   try{
     const touchedNames=new Set(acts.map(a=>normalize(a.agent_name)).filter(Boolean));
+    const closedNames=new Set((lookup.closesAll||[]).map(cl=>normalize(cl.agent_name)).filter(Boolean));
     const closedInPeriod=(lookup.closesAll||[]).filter(cl=>cl.call_date&&cl.call_date>=bounds.start&&cl.call_date<=bounds.end);
-    const closedNames=new Set(closedInPeriod.map(cl=>normalize(cl.agent_name)).filter(Boolean));
+    const closedNotTouched=closedInPeriod.filter(cl=>!touchedNames.has(normalize(cl.agent_name))).length;
     const touchedCount=touchedNames.size;
     const closedAmongTouched=[...touchedNames].filter(n=>closedNames.has(n)).length;
-    const closedNotTouched=[...closedNames].filter(n=>!touchedNames.has(n)).length;
     const pct=touchedCount?Math.round((closedAmongTouched/touchedCount)*100):0;
     const pctColor=pct>=20?"var(--success)":pct>=10?"var(--warning)":"var(--danger)";
     const psEl=document.getElementById("danielProductionSignal");
     if(psEl)psEl.innerHTML=
       '<div style="display:flex;gap:24px;flex-wrap:wrap;margin-bottom:8px">'
       +'<div><div style="font-size:24px;font-weight:700;color:var(--text-1)">'+touchedCount+'</div><div style="font-size:11px;color:var(--text-3)">agents touched, '+bounds.label.toLowerCase()+'</div></div>'
-      +'<div><div style="font-size:24px;font-weight:700;color:'+pctColor+'">'+closedAmongTouched+'</div><div style="font-size:11px;color:var(--text-3)">of those also closed</div></div>'
+      +'<div><div style="font-size:24px;font-weight:700;color:'+pctColor+'">'+closedAmongTouched+'</div><div style="font-size:11px;color:var(--text-3)">of those have ever closed</div></div>'
       +'<div><div style="font-size:24px;font-weight:700;color:'+pctColor+'">'+pct+'%</div><div style="font-size:11px;color:var(--text-3)">touch-to-close rate</div></div>'
       +'</div>'
       +(closedNotTouched>0?'<div style="font-size:11px;color:var(--warning)">'+closedNotTouched+' agent'+(closedNotTouched!==1?"s":"")+' closed in this window with no RM touch logged — flagging for visibility, could be a referral or outside deal.</div>':'<div style="font-size:11px;color:var(--text-3)">Every agent who closed in this window also had an RM touch logged.</div>');
     const psSub=document.getElementById("danielProductionSub");
-    if(psSub)psSub.textContent="agents touched "+bounds.label.toLowerCase()+" vs agents who closed";
+    if(psSub)psSub.textContent="agents touched "+bounds.label.toLowerCase()+" vs whether they've ever closed";
   }catch(e){console.error("Production signal error:",e);const el=document.getElementById("danielProductionSignal");if(el)el.innerHTML='<div class="no-data">Unable to load.</div>';}
 }
 
