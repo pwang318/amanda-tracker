@@ -3150,7 +3150,7 @@ async function loadWeek(){
     if(psGrid){
       const mtdMeetings=(mtdActs||[]).filter(a=>a.act_type==="New Realtor Meeting").length;
       const mtdBreakBreads=(mtdActs||[]).filter(a=>a.act_type==="Break Breads").length;
-      const mtdWins=(mtdActs||[]).filter(a=>a.outcome==="Positive"||a.outcome==="Meeting Scheduled").length;
+      const mtdWins=(mtdActs||[]).filter(a=>a.act_type==="Cold Calls"&&(a.outcome==="Positive"||a.outcome==="Meeting Scheduled")).length;
       const mtdColdCalls=(mtdActs||[]).filter(a=>a.act_type==="Cold Calls").length;
       const scoreItems=[
         {label:"New meetings",val:mtdMeetings,goal:20,color:"var(--brand)"},
@@ -5029,6 +5029,14 @@ async function loadManagement(){
     const prevMonthEnd=new Date(now.getFullYear(),now.getMonth(),0);
     const prevStart=prevMonthStart.toISOString().split("T")[0];
     const prevEnd=prevMonthEnd.toISOString().split("T")[0];
+    // Week bounds — Monday to Sunday
+    const nowD=new Date();
+    const dayOfWeek=nowD.getDay();
+    const diffToMon=dayOfWeek===0?-6:1-dayOfWeek;
+    const weekStartD=new Date(nowD);weekStartD.setDate(nowD.getDate()+diffToMon);weekStartD.setHours(0,0,0,0);
+    const weekEndD=new Date(weekStartD);weekEndD.setDate(weekStartD.getDate()+6);
+    const wkStart=weekStartD.toISOString().split("T")[0];
+    const wkEnd=weekEndD.toISOString().split("T")[0];
 
     const escFlagCutoff=new Date();escFlagCutoff.setDate(escFlagCutoff.getDate()-30);
     const escFlagCutoffStr=localDateStr(escFlagCutoff);
@@ -5036,8 +5044,8 @@ async function loadManagement(){
     const funnelCutoffStr=localDateStr(funnelCutoff);
 
     const[dailyActs,weekActs,mtdActs,ytdActs,prevActs,aTierAgents,rcContacted,allAgents,allActs,feedbackFlags,closesMtd,flagResponses,rcAllAgents,funnelCohortActs]=await Promise.all([
-      sbFetch("amanda_activities?select=act_type,agent_name,act_date,outcome,notes&act_date=eq."+todayStr),
-      sbFetch("amanda_activities?select=*&act_date=gte."+week.start+"&act_date=lte."+week.end+"&order=act_date.desc"),
+      sbFetch("amanda_activities?select=*&act_date=eq."+todayStr),
+      sbFetch("amanda_activities?select=*&act_date=gte."+wkStart+"&act_date=lte."+wkEnd+"&order=act_date.desc"),
       sbFetch("amanda_activities?select=*&act_date=gte."+monthStart+"&order=act_date.desc&limit=2000"),
       sbFetch("amanda_activities?select=*&act_date=gte."+yearStart+"&order=act_date.desc&limit=5000"),
       sbFetch("amanda_activities?select=act_type,agent_name&act_date=gte."+prevStart+"&act_date=lte."+prevEnd).catch(()=>[]),
@@ -5256,26 +5264,29 @@ async function loadManagement(){
 
     // ── GROWTH METRICS ────────────────────────────────────────────
     try{
+    const isMobile=window.innerWidth<600;
+    const gridCols=isMobile?"1.8fr 50px 55px 55px":"1.6fr 60px 60px 70px 70px 80px";
+
     const growthMetricRow=(label,daily,wtd,mtd,ytd,goal,goalPeriod,actType)=>{
       const pct=goal?Math.min(100,Math.round((mtd/goal)*100)):null;
-      const pctBadge=pct!==null?'<span style="font-size:10px;padding:2px 7px;border-radius:20px;font-weight:600;background:'+(pct>=100?"var(--success-bg)":pct>=60?"var(--brand-light)":"var(--danger-bg)")+';color:'+(pct>=100?"var(--success)":pct>=60?"var(--brand)":"var(--danger)")+'">'+pct+'%</span>':"";
+      const pctBadge=pct!==null&&!isMobile?'<span style="font-size:10px;padding:2px 7px;border-radius:20px;font-weight:600;background:'+(pct>=100?"var(--success-bg)":pct>=60?"var(--brand-light)":"var(--danger-bg)")+';color:'+(pct>=100?"var(--success)":pct>=60?"var(--brand)":"var(--danger)")+'">'+pct+'%</span>':"";
       const clickAttr=actType?' onclick="jumpToFeedType(\''+actType.replace(/'/g,"\\'")+'\')"':"";
-      return'<div'+clickAttr+' style="display:grid;grid-template-columns:1.6fr 60px 60px 70px 70px 80px;gap:10px;align-items:center;padding:9px 0;border-bottom:1px solid var(--border-light);font-size:13px'+(actType?';cursor:pointer':'')+'">'
+      return'<div'+clickAttr+' style="display:grid;grid-template-columns:'+gridCols+';gap:8px;align-items:center;padding:9px 0;border-bottom:1px solid var(--border-light);font-size:13px'+(actType?';cursor:pointer':'')+'">'
         +'<span style="font-weight:500;color:var(--text-1)">'+label+'</span>'
-        +'<span style="text-align:center;color:var(--text-3)">'+daily+'</span>'
+        +(isMobile?'':'<span style="text-align:center;color:var(--text-3)">'+daily+'</span>')
         +'<span style="text-align:center;color:var(--text-2)">'+wtd+'</span>'
         +'<span style="text-align:center;font-weight:600;color:var(--text-1)">'+mtd+(goal?'<span style="font-size:10px;color:var(--text-4);font-weight:400">/'+goal+'</span>':'')+'</span>'
         +'<span style="text-align:center;color:var(--text-3)">'+ytd+'</span>'
-        +'<span style="text-align:right">'+pctBadge+'</span>'
+        +(isMobile?'':'<span style="text-align:right">'+pctBadge+'</span>')
         +'</div>';
     };
-    const gridHeader='<div style="display:grid;grid-template-columns:1.6fr 60px 60px 70px 70px 80px;gap:10px;padding:0 0 8px;border-bottom:2px solid var(--border);margin-bottom:4px">'
+    const gridHeader='<div style="display:grid;grid-template-columns:'+gridCols+';gap:8px;padding:0 0 8px;border-bottom:2px solid var(--border);margin-bottom:4px">'
       +'<span style="font-size:10px;font-weight:700;color:var(--text-4);text-transform:uppercase;letter-spacing:.5px">Metric</span>'
-      +'<span style="font-size:10px;font-weight:700;color:var(--text-4);text-align:center;text-transform:uppercase;letter-spacing:.5px">Today</span>'
+      +(isMobile?'':'<span style="font-size:10px;font-weight:700;color:var(--text-4);text-align:center;text-transform:uppercase;letter-spacing:.5px">Today</span>')
       +'<span style="font-size:10px;font-weight:700;color:var(--text-4);text-align:center;text-transform:uppercase;letter-spacing:.5px">WTD</span>'
       +'<span style="font-size:10px;font-weight:700;color:var(--text-1);text-align:center;text-transform:uppercase;letter-spacing:.5px">MTD</span>'
       +'<span style="font-size:10px;font-weight:700;color:var(--text-4);text-align:center;text-transform:uppercase;letter-spacing:.5px">YTD</span>'
-      +'<span style="font-size:10px;font-weight:700;color:var(--text-4);text-align:right;text-transform:uppercase;letter-spacing:.5px">vs Goal</span>'
+      +(isMobile?'':'<span style="font-size:10px;font-weight:700;color:var(--text-4);text-align:right;text-transform:uppercase;letter-spacing:.5px">vs Goal</span>')
       +'</div>';
 
     const aprilStartMonths=Math.min(12,Math.max(1,new Date().getMonth()-2));
@@ -5294,13 +5305,13 @@ async function loadManagement(){
     try{
     const retentionRow=(label,daily,wtd,mtd,ytd,note,actType)=>{
       const clickAttr=actType?' onclick="jumpToFeedType(\''+actType.replace(/'/g,"\\'")+'\')"':"";
-      return'<div'+clickAttr+' style="display:grid;grid-template-columns:1.6fr 60px 60px 70px 70px 80px;gap:10px;align-items:center;padding:9px 0;border-bottom:1px solid var(--border-light);font-size:13px'+(actType?';cursor:pointer':'')+'">'
+      return'<div'+clickAttr+' style="display:grid;grid-template-columns:'+gridCols+';gap:8px;align-items:center;padding:9px 0;border-bottom:1px solid var(--border-light);font-size:13px'+(actType?';cursor:pointer':'')+'">'
         +'<div><span style="font-weight:500;color:var(--text-1)">'+label+'</span>'+(note?'<div style="font-size:10px;color:var(--text-4);margin-top:1px">'+note+'</div>':'')+'</div>'
-        +'<span style="text-align:center;color:var(--text-3)">'+daily+'</span>'
+        +(isMobile?'':'<span style="text-align:center;color:var(--text-3)">'+daily+'</span>')
         +'<span style="text-align:center;color:var(--text-2)">'+wtd+'</span>'
         +'<span style="text-align:center;font-weight:600;color:var(--text-1)">'+mtd+'</span>'
         +'<span style="text-align:center;color:var(--text-3)">'+ytd+'</span>'
-        +'<span></span>'
+        +(isMobile?'':'<span></span>')
         +'</div>';
     };
     const uniqMtd=uniq(mtdActs);
@@ -5413,7 +5424,6 @@ function showMgmtPeriod(p){
   ["daily","week","mtd","ytd"].forEach(id=>{
     document.getElementById("mgbtn-"+id)?.classList.toggle("active",p===id);
   });
-  // If data not loaded yet, trigger a reload
   const hasData=mgmtPeriodData&&(mgmtPeriodData[p]||[]).length>0;
   if(!hasData){
     loadManagement();
