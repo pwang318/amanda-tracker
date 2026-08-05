@@ -473,6 +473,7 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI'
         <select id="quickLogOutcome" onchange="toggleQuickLogFollowup()" style="border:1px solid var(--border);border-radius:var(--radius-sm);padding:9px 11px;font-size:12px;font-family:inherit;color:var(--text-1);outline:none;background:var(--surface)">
           <option value="">Select outcome...</option>
           <option value="Positive">Positive</option>
+          <option value="Meeting Scheduled">Meeting scheduled</option>
           <option value="No answer">No answer</option>
           <option value="Requires follow-up">Requires follow-up</option>
           <option value="Needs manager attention">Needs manager attention</option>
@@ -481,7 +482,7 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI'
         <button onclick="quickLogSave()" style="padding:9px 18px;background:var(--brand);color:#fff;border:none;border-radius:var(--radius-sm);font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap">Log it</button>
       </div>
       <div id="quickLogFollowupRow" style="display:none;margin-top:8px">
-        <label style="font-size:11px;font-weight:600;color:var(--text-2)">Follow-up date <span style="font-weight:400;color:var(--text-4)">(required — a real date, not a junk-drawer)</span></label>
+        <label style="font-size:11px;font-weight:600;color:var(--text-2)"><span id="quickLogFollowupLabelText">Follow-up date</span> <span id="quickLogFollowupHint" style="font-weight:400;color:var(--text-4)">(required — a real date, not a junk-drawer)</span></label>
         <input type="date" id="quickLogFollowupDate" style="width:100%;border:1px solid var(--border);border-radius:var(--radius-sm);padding:8px 11px;font-size:13px;font-family:inherit;color:var(--text-1);outline:none;margin-top:4px">
       </div>
       <div style="margin-top:8px">
@@ -511,7 +512,7 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI'
           <option value="Call">Call</option>
           <option value="Text">Text</option>
         </select>
-        <select id="ccOutcome" style="border:1px solid var(--border);border-radius:var(--radius-sm);padding:9px 11px;font-size:12px;font-family:inherit;color:var(--text-1);outline:none;background:var(--surface)">
+        <select id="ccOutcome" onchange="toggleCcScheduled()" style="border:1px solid var(--border);border-radius:var(--radius-sm);padding:9px 11px;font-size:12px;font-family:inherit;color:var(--text-1);outline:none;background:var(--surface)">
           <option value="Left voicemail">Left voicemail</option>
           <option value="No answer">No answer</option>
           <option value="Positive">Talked — Positive</option>
@@ -521,6 +522,10 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI'
           <option value="Remove / No Further Contact">Remove — not interested</option>
         </select>
         <button onclick="ccSave()" style="padding:9px 18px;background:var(--brand);color:#fff;border:none;border-radius:var(--radius-sm);font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap">Log call</button>
+      </div>
+      <div id="ccScheduledRow" style="display:none;margin-top:8px">
+        <label style="font-size:11px;font-weight:600;color:var(--text-2)">Scheduled for <span style="font-weight:400;color:var(--text-4)">(required — this is what puts it on the Calendar)</span></label>
+        <input type="date" id="ccScheduledDate" style="width:100%;border:1px solid var(--border);border-radius:var(--radius-sm);padding:8px 11px;font-size:13px;font-family:inherit;color:var(--text-1);outline:none;margin-top:4px">
       </div>
       <div style="margin-top:8px">
         <div style="display:flex;justify-content:flex-end;margin-bottom:4px">
@@ -634,7 +639,7 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI'
               <option>Realtor Buddy Referral Ask</option>
             </optgroup>
             <optgroup label="Management">
-              <option>Active Agent Talk-to</option>
+              <option>Agent Talk-to</option>
               <option>Reconnect Outreach</option>
             </optgroup>
             <optgroup label="Retention and Referrals">
@@ -669,7 +674,7 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI'
           </select>
         </div>
         <div class="field followup-row" id="followupRow">
-          <label>Follow-up date <span id="followup-hint" style="font-size:10px;color:#9C27B0;font-weight:400;text-transform:none;letter-spacing:0;margin-left:4px"></span></label>
+          <label><span id="followupLabelText">Follow-up date</span> <span id="followup-hint" style="font-size:10px;color:#9C27B0;font-weight:400;text-transform:none;letter-spacing:0;margin-left:4px"></span></label>
           <input type="date" id="followupDate">
         </div>
       </div>
@@ -727,9 +732,10 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI'
         <select id="feedTypeFilter" onchange="applyFeedFilters()" style="flex:1;padding:8px 11px;border:0.5px solid var(--border);border-radius:8px;font-size:12px;font-family:inherit;color:var(--text-2);background:var(--surface);">
           <option value="all">All types</option>
           <option>Cold Calls</option><option>New Realtor Meeting</option><option>New Agent Follow-up</option><option>Break Breads</option>
-          <option>CTC Call</option><option>Under Contract Call</option><option>Realtor Buddy Referral Ask</option>
-          <option>Market Update</option>
-          <option>Agent Appreciation</option><option>Birthday Outreach</option>
+          <option>Market Update</option><option>Co-hosted Event</option><option>Realtor Buddy Referral Ask</option>
+          <option>Agent Talk-to</option><option>Reconnect Outreach</option>
+          <option>CTC Call</option><option>Under Contract Call</option>
+          <option>Birthday Outreach</option><option>Holiday Outreach</option><option>Agent Appreciation</option>
         </select>
         <select id="feedPeriodFilter" onchange="applyFeedFilters()" style="flex:1;padding:8px 11px;border:0.5px solid var(--border);border-radius:8px;font-size:12px;font-family:inherit;color:var(--text-2);background:var(--surface);">
           <option value="all">All time</option>
@@ -1116,8 +1122,14 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI'
   <div class="card">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
       <div class="card-title" style="margin-bottom:0">Agent contacts <span class="card-sub">Edit phone, email and birthday for any agent</span></div>
-      <button onclick="openAddAgentModal()" style="padding:8px 14px;background:var(--brand);color:#fff;border:none;border-radius:var(--radius-sm);font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap">+ Add agent</button>
+      <div style="display:flex;gap:8px">
+        <input type="file" id="contactsImportFile" accept=".csv,.xlsx" style="display:none" onchange="importContactsFile(this)">
+        <button onclick="document.getElementById('contactsImportFile').click()" style="padding:8px 14px;background:var(--surface-2);color:var(--text-2);border:1px solid var(--border);border-radius:var(--radius-sm);font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap">📥 Bulk import</button>
+        <button onclick="openAddAgentModal()" style="padding:8px 14px;background:var(--brand);color:#fff;border:none;border-radius:var(--radius-sm);font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap">+ Add agent</button>
+      </div>
     </div>
+    <div style="font-size:11px;color:var(--text-3);margin:-8px 0 14px">Upload a .csv or .xlsx with columns for name, email, phone, address, birthday, and tier — column names are flexible. Existing agents get updated (blank cells never overwrite data that's already there); new names get added. Names are matched case-insensitively, so this also catches near-duplicates automatically.</div>
+    <div id="contactsImportProgress" style="display:none;font-size:12px;color:var(--brand);margin-bottom:10px">Importing...</div>
     <div style="display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap">
       <input type="text" id="contactsSearch" placeholder="Search by name, phone, email or birthday..." oninput="filterContacts()" style="flex:1;min-width:180px;padding:9px 11px;border:0.5px solid #D9D3C7;border-radius:8px;font-size:13px;font-family:inherit;color:#1a1a2e;outline:none">
       <select id="contactsFilter" onchange="filterContacts()" style="padding:8px 11px;border:0.5px solid var(--border);border-radius:8px;font-size:12px;font-family:inherit;color:var(--text-2);background:var(--surface);">
@@ -1310,13 +1322,13 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI'
     </table>
 
     <div style="font-size:12px;font-weight:700;color:var(--brand);text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px">3 · If They Go Quiet: Reconnect 🔁</div>
-    <div style="font-size:12.5px;color:var(--text-2);margin-bottom:16px">If an agent hasn't sent us a lead in 90 days, they fall off and land on the <strong>Reconnect list</strong> (its own tab). That's a flag that it's time to work on earning a lead from them again. Re-engaging someone from that list is <strong>not a Cold Call</strong>: the relationship already exists, you're just picking it back up. Log it as <strong>Reconnect Outreach</strong>, not Active Agent Talk-to, since technically they're not active until they send a lead again. It still counts toward your Talk-to goal.</div>
+    <div style="font-size:12.5px;color:var(--text-2);margin-bottom:16px">If an agent hasn't sent us a lead in 90 days, they fall off and land on the <strong>Reconnect list</strong> (its own tab). That's a flag that it's time to work on earning a lead from them again. Re-engaging someone from that list is <strong>not a Cold Call</strong>: the relationship already exists, you're just picking it back up. Log it as <strong>Reconnect Outreach</strong>, not a regular Agent Talk-to, since technically they're not active until they send a lead again. It still counts toward your Talk-to goal.</div>
 
     <div style="font-size:12px;font-weight:700;color:var(--brand);text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px">4 · Staying in Touch 💛</div>
     <div style="font-size:12.5px;color:var(--text-2);margin-bottom:6px">Everything marked <span style="color:var(--brand);font-weight:600">counts as Talk-to</span> feeds into your weekly Talk-to goal (100/week). Log it once and it does double duty. Whatever the reason for the touch, use it to get real feedback on how the relationship is going. Every touch is an opportunity.</div>
     <table style="width:100%;border-collapse:collapse;font-size:12.5px;margin-bottom:16px">
-      <tr><td style="padding:5px 8px 5px 0;font-weight:600;white-space:nowrap;vertical-align:top">Active Agent Talk-to <span style="color:var(--brand);font-weight:400">counts as Talk-to</span></td><td style="padding:5px 0;color:var(--text-2)">A proactive check-in with an agent who's currently active and sending business.</td></tr>
-      <tr><td style="padding:5px 8px 5px 0;font-weight:600;white-space:nowrap;vertical-align:top">Reconnect Outreach <span style="color:var(--brand);font-weight:400">counts as Talk-to</span></td><td style="padding:5px 0;color:var(--text-2)">The right type for re-engaging someone from the Reconnect list. It's not a Cold Call since you already know them, but "Active Agent Talk-to" isn't accurate either since they haven't sent a lead in 90+ days.</td></tr>
+      <tr><td style="padding:5px 8px 5px 0;font-weight:600;white-space:nowrap;vertical-align:top">Agent Talk-to <span style="color:var(--brand);font-weight:400">counts as Talk-to</span></td><td style="padding:5px 0;color:var(--text-2)">A proactive check-in with an agent who's currently active and sending business.</td></tr>
+      <tr><td style="padding:5px 8px 5px 0;font-weight:600;white-space:nowrap;vertical-align:top">Reconnect Outreach <span style="color:var(--brand);font-weight:400">counts as Talk-to</span></td><td style="padding:5px 0;color:var(--text-2)">The right type for re-engaging someone from the Reconnect list. It's not a Cold Call since you already know them, but a regular Agent Talk-to isn't quite right either since they haven't sent a lead in 90+ days.</td></tr>
       <tr><td style="padding:5px 8px 5px 0;font-weight:600;white-space:nowrap;vertical-align:top">CTC Call <span style="color:var(--brand);font-weight:400">counts as Talk-to</span></td><td style="padding:5px 0;color:var(--text-2)">Process: call the agent, leave a voicemail if no answer, then follow up with a text. Script is in Scripts. Get feedback from <strong>both</strong> the buyer's agent and the listing agent. Share that feedback on WhatsApp with the team in real-time, proactively, the way Daniel does, proactively. Check Encompass for the CTC milestone  Always ask the listing agent for a meeting if they don't already work with us; a closing is a natural door-opener. If there's a closing issue or poor feedback, set the outcome to "Needs manager attention" so it surfaces for the team.</td></tr>
       <tr><td style="padding:5px 8px 5px 0;font-weight:600;white-space:nowrap;vertical-align:top">Under Contract Call <span style="color:var(--brand);font-weight:400">counts as Talk-to, note required</span></td><td style="padding:5px 0;color:var(--text-2)">First call to the listing agent as soon as a deal you're the buyer's lender on goes under contract. Script is in Scripts.</td></tr>
       <tr><td style="padding:5px 8px 5px 0;font-weight:600;white-space:nowrap;vertical-align:top">Birthday / Holiday Outreach <span style="color:var(--brand);font-weight:400">counts as Talk-to</span></td><td style="padding:5px 0;color:var(--text-2)">A personal touch: wish the agent a happy birthday or happy holidays. When the Calendar tab shows a birthday alert, send a text, give a quick call, or both. If the agent is a top producer, let the team know so they can wish them well too. When you are on a call with any agent, check if their birthday is on file — a lot of data is missing. If you do not have it, ask and add it to their contact so you never miss it.</td></tr>
@@ -1623,15 +1635,15 @@ const GOALS=[
   {label:"Cold calls",type:"Cold Calls",weekly:125,monthly:500},
   {label:"New realtor meetings",type:"New Realtor Meeting",weekly:5,monthly:20},
   {label:"Break breads",type:"Break Breads",weekly:5,monthly:20},
-  {label:"Active Agent Talk-to's",type:"__talkto__",weekly:100,monthly:400},
+  {label:"Agent Talk-to's",type:"__talkto__",weekly:100,monthly:400},
   {label:"Realtor buddy asks",type:"Realtor Buddy Referral Ask",weekly:3,monthly:12}
 ];
 const GOAL_THRESHOLD=0.8; // 80% = passing
 const CTC_TYPE="CTC Call";
-// All activity types that count toward the Active Agent Talk-to goal
+// All activity types that count toward the Agent Talk-to goal
 const TALKTO_TYPES=["Agent Talk-to","Active Agent Talk-to","Active Agent Check-in","Reconnect Outreach","CTC Call","Under Contract Call","Birthday Outreach","Holiday Outreach","Agent Appreciation","Market Update","Market Update Call","Sent Market Report","Sent Referral","Co-Marketing Discussion","New Agent Follow-up","Closed Deal Thank You"];
 // Activity types that require a minimum 10-word note
-const NOTES_REQUIRED_TYPES=["Active Agent Talk-to","Reconnect Outreach","CTC Call","Under Contract Call","Birthday Outreach","Break Breads"];
+const NOTES_REQUIRED_TYPES=["Agent Talk-to","Reconnect Outreach","CTC Call","Under Contract Call","Birthday Outreach","Break Breads"];
 // Cold Calls: a note is always required, but no word-count minimum — just needs to say
 // something (left VM / texted / double-dialed / etc), not hit a length bar.
 const NOTES_MANDATORY_NO_MIN=["Cold Calls"];
@@ -1672,7 +1684,7 @@ function toggleDetail(id){
 }
 
 function cntTalkTo(acts){return(acts||[]).filter(function(a){return TALKTO_TYPES.indexOf((a.act_type||"").trim())>=0;}).length;}
-const ACT_TYPE_OPTIONS='<optgroup label="New Relationships"><option>Cold Calls</option><option>New Realtor Meeting</option></optgroup><optgroup label="Relationship Deepening"><option>New Agent Follow-up</option><option>Break Breads</option><option>Market Update</option><option>Co-hosted Event</option><option>Realtor Buddy Referral Ask</option></optgroup><optgroup label="Retention and Referrals"><option>Agent Talk-to</option><option>Reconnect Outreach</option><option>CTC Call</option><option>Under Contract Call</option><option>Birthday Outreach</option><option>Holiday Outreach</option><option>Agent Appreciation</option></optgroup>';
+const ACT_TYPE_OPTIONS='<optgroup label="New Relationships"><option>Cold Calls</option><option>New Realtor Meeting</option></optgroup><optgroup label="Relationship Deepening"><option>New Agent Follow-up</option><option>Break Breads</option><option>Market Update</option><option>Co-hosted Event</option><option>Realtor Buddy Referral Ask</option></optgroup><optgroup label="Management"><option>Agent Talk-to</option><option>Reconnect Outreach</option></optgroup><optgroup label="Retention and Referrals"><option>CTC Call</option><option>Under Contract Call</option><option>Birthday Outreach</option><option>Holiday Outreach</option><option>Agent Appreciation</option></optgroup>';
 function badgeEmoji(type){return type||"";}
 
 const NEXT_CALL_DAYS={
@@ -2403,9 +2415,16 @@ document.getElementById("activityType").addEventListener("change",function(){
 
 document.getElementById("activityOutcome").addEventListener("change",function(){
   const row=document.getElementById("followupRow");
+  const labelText=document.getElementById("followupLabelText");
   if(this.value==="Requires follow-up"){
     row.classList.add("show");
+    if(labelText)labelText.textContent="Follow-up date";
     autoSetFollowUp();
+  }else if(this.value==="Meeting Scheduled"){
+    row.classList.add("show");
+    if(labelText)labelText.textContent="Scheduled for";
+    // Don't auto-fill — she typically already knows the real date they agreed on, unlike a
+    // generic "check back in" follow-up where a default makes sense.
   }else{row.classList.remove("show");document.getElementById("followupDate").value="";}
 });
 
@@ -3066,13 +3085,28 @@ async function loadContactDataQuality(){
   const listEl=document.getElementById("contactDataList");
   if(!card||!listEl)return;
   try{
-    const rows=await sbFetch("agent_profiles?select=agent_name,tier,retained,do_not_contact,email,brokerage,birthday&retained=eq.true&do_not_contact=neq.true&limit=1000").catch(()=>[]);
+    // Not filtering to retained=true anymore — most agents likely don't have that field set yet,
+    // which meant this silently checked almost nobody. Now checks every agent who isn't DNC'd,
+    // and treats an unset retained status as its own gap worth flagging too.
+    let rows;
+    try{
+      rows=await sbFetch("agent_profiles?select=agent_name,tier,retained,do_not_contact,email,address,birthday&do_not_contact=neq.true&limit=2000");
+    }catch(fetchErr){
+      // Surface this instead of silently hiding — a failed query looks identical to "nothing's
+      // missing" if we just swallow it, which is actively misleading.
+      card.style.display="block";
+      const titleEl=card.querySelector(".card-title");
+      if(titleEl)titleEl.textContent="📇 Contact Info Needs Updating — error";
+      listEl.innerHTML='<div style="padding:10px;font-size:12px;color:var(--danger)">Couldn\'t check contact data: '+fetchErr.message+'. This usually means a column this check expects doesn\'t match your Supabase table — worth double-checking the schema.</div>';
+      return;
+    }
     const TIER_RANK={A:0,B:1,C:2};
     const gaps=(rows||[]).map(a=>{
       const missing=[];
       if(!a.email)missing.push("email");
-      if(!a.brokerage)missing.push("address");
+      if(!a.address)missing.push("address");
       if(!a.birthday)missing.push("birthday");
+      if(a.retained===null||a.retained===undefined)missing.push("retained status");
       if(!missing.length)return null;
       return{agent_name:a.agent_name,tier:a.tier||null,missing};
     }).filter(Boolean).sort((a,b)=>{
@@ -3712,13 +3746,13 @@ async function loadOnboarding(){
     const [meetings,recentActs,addressRows]=await Promise.all([
       sbFetch("amanda_activities?select=agent_name,act_date&act_type=eq.New Realtor Meeting&act_date=gte."+cutoffStr+"&order=act_date.desc"),
       sbFetch("amanda_activities?select=agent_name,act_date,act_type,notes&act_date=gte."+localDateStr(sevenDaysAgo)+"&order=act_date.desc"),
-      sbFetch("agent_profiles?select=agent_name,brokerage&brokerage=not.is.null").catch(()=>[])
+      sbFetch("agent_profiles?select=agent_name,address&address=not.is.null").catch(()=>[])
     ]);
     if(!meetings||!meetings.length){document.getElementById("onboardingCard").style.display="none";return;}
 
     const normalize=s=>(s||"").toLowerCase().trim().replace(/\s+/g," ").replace(/s{2,}/g,"s");
     const addressByAgent={};
-    (addressRows||[]).forEach(a=>{if(a.brokerage)addressByAgent[normalize(a.agent_name)]=a.brokerage;});
+    (addressRows||[]).forEach(a=>{if(a.address)addressByAgent[normalize(a.agent_name)]=a.address;});
     const qualifyingActs=(recentActs||[]).filter(a=>TALKTO_TYPES.indexOf(a.act_type)>=0&&countWords(a.notes)>=MIN_NOTE_WORDS);
     const touchedThisWeek=new Set(qualifyingActs.map(a=>normalize(a.agent_name)));
     const recentActMap={};
@@ -3792,7 +3826,7 @@ async function loadOnboarding(){
           :' — <span style="color:var(--danger)">no note on this entry</span>')+'</div>':"")
         +'</div><div style="text-align:right;flex-shrink:0">'
         +'<div style="font-size:11px;font-weight:600;color:'+dueColor+';margin-bottom:6px">'+dueLabel+'</div>'
-        +(!isDone?'<button onclick="document.getElementById(\'agentInput\').value=\''+safeAgent+'\';document.getElementById(\'activityType\').value=\'Active Agent Talk-to\';switchTab(\'log\')" style="padding:5px 12px;background:var(--brand);color:#fff;border:none;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit">Log check-in</button>'
+        +(!isDone?'<button onclick="document.getElementById(\'agentInput\').value=\''+safeAgent+'\';document.getElementById(\'activityType\').value=\'Agent Talk-to\';switchTab(\'log\')" style="padding:5px 12px;background:var(--brand);color:#fff;border:none;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit">Log check-in</button>'
         :'<button data-agent="'+properCase(name).replace(/"/g,"&quot;")+'" onclick="var n=this.getAttribute(\'data-agent\');switchTab(\'history\');document.getElementById(\'historySearch\').value=n;setTimeout(()=>doSearchHistory(n),150)" style="padding:5px 12px;background:var(--surface-2);color:var(--brand);border:1px solid var(--brand);border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit">View history</button>')
         +'</div></div>';
     });
@@ -4139,6 +4173,12 @@ async function logActivity(){
   // VALIDATION: Follow-up date required when outcome = "Requires follow-up"
   if(outcome==="Requires follow-up"&&!followupDate){
     toast("Set a follow-up date when outcome is 'Requires follow-up'.","error");
+    return;
+  }
+
+  // VALIDATION: Date required when outcome = "Meeting Scheduled" — this is what puts it on the Calendar
+  if(outcome==="Meeting Scheduled"&&!followupDate){
+    toast("Add the date it's scheduled for — that's what makes it show up on the Calendar.","error");
     return;
   }
   
@@ -4630,6 +4670,12 @@ function ccAutoComplete(q){
   list.classList.add('open');
 }
 
+function toggleCcScheduled(){
+  const row=document.getElementById("ccScheduledRow");
+  const outcome=document.getElementById("ccOutcome").value;
+  if(row)row.style.display=(outcome==="Meeting Scheduled")?"block":"none";
+}
+
 async function ccSave(){
   if(openIntake){toast("Finish the open checklist for "+openIntake.agent_name+" first.","error");return;}
   const name = (document.getElementById('ccName').value||'').trim();
@@ -4638,8 +4684,10 @@ async function ccSave(){
   const contactMethod = document.getElementById('ccContactMethod')?document.getElementById('ccContactMethod').value:"Call";
   let notes = (document.getElementById('ccNotes')?document.getElementById('ccNotes').value:"").trim()||null;
   const referredBy = (document.getElementById('ccReferredBy')?document.getElementById('ccReferredBy').value:"").trim();
+  const scheduledDate = document.getElementById('ccScheduledDate')?document.getElementById('ccScheduledDate').value:"";
   if(!name){toast("Enter an agent name.","error");document.getElementById('ccName').focus();return;}
   if(countWords(notes)<1){toast("Add a note before saving — e.g. left VM, texted, double-dialed.","error");return;}
+  if(outcome==="Meeting Scheduled"&&!scheduledDate){toast("Add the date it's scheduled for — that's what puts it on the Calendar.","error");return;}
   const methodEmoji={Call:"☎️",Text:"📱"}[contactMethod]||"☎️";
   notes=methodEmoji+" "+notes;
   if(referredBy)notes="🌾 Referred by: "+referredBy+" — "+notes;
@@ -4650,7 +4698,7 @@ async function ccSave(){
     await clearOldFollowups(name);
     // 1. Log the cold call activity
     await sbFetch("amanda_activities",{method:"POST",prefer:"return=minimal",body:JSON.stringify({
-      agent_name:name, act_type:"Cold Calls", act_date:today(), outcome, notes, follow_up_date:outcome==="Requires follow-up"?new Date(Date.now()+3*86400000).toISOString().split("T")[0]:null
+      agent_name:name, act_type:"Cold Calls", act_date:today(), outcome, notes, follow_up_date:outcome==="Requires follow-up"?new Date(Date.now()+3*86400000).toISOString().split("T")[0]:(outcome==="Meeting Scheduled"?scheduledDate:null)
     })});
 
     // 2. Check if already in prospects or agents
@@ -4696,6 +4744,8 @@ async function ccSave(){
     document.getElementById('ccName').value='';
     document.getElementById('ccPhone').value='';
     if(document.getElementById('ccReferredBy'))document.getElementById('ccReferredBy').value='';
+    if(document.getElementById('ccScheduledDate'))document.getElementById('ccScheduledDate').value='';
+    if(document.getElementById('ccScheduledRow'))document.getElementById('ccScheduledRow').style.display='none';
     if(document.getElementById('ccNotes'))document.getElementById('ccNotes').value='';
     if(document.getElementById('ccWordCount'))document.getElementById('ccWordCount').textContent='';
     if(document.getElementById('ccDoubleDialWarn'))document.getElementById('ccDoubleDialWarn').style.display='none';
@@ -4758,11 +4808,19 @@ function addScrollHintIfNeeded(elId){
 function toggleQuickLogFollowup(){
   const row=document.getElementById("quickLogFollowupRow");
   const outcome=document.getElementById("quickLogOutcome").value;
+  const labelText=document.getElementById("quickLogFollowupLabelText");
+  const hint=document.getElementById("quickLogFollowupHint");
   if(!row)return;
   if(outcome==="Requires follow-up"){
     row.style.display="block";
+    if(labelText)labelText.textContent="Follow-up date";
+    if(hint)hint.textContent="(required — a real date, not a junk-drawer)";
     const dateInput=document.getElementById("quickLogFollowupDate");
     if(dateInput&&!dateInput.value)dateInput.value=localDateStr(new Date(Date.now()+3*86400000));
+  }else if(outcome==="Meeting Scheduled"){
+    row.style.display="block";
+    if(labelText)labelText.textContent="Scheduled for";
+    if(hint)hint.textContent="(required — this is what puts it on the Calendar)";
   }else{
     row.style.display="none";
   }
@@ -4780,6 +4838,7 @@ async function quickLogSave(){
   if(countWords(notes)<MIN_NOTE_WORDS){toast("Notes need at least "+MIN_NOTE_WORDS+" words.","error");return;}
   const followupDate=document.getElementById("quickLogFollowupDate")?document.getElementById("quickLogFollowupDate").value:"";
   if(outcome==="Requires follow-up"&&!followupDate){toast("Set a real follow-up date — not a junk-drawer.","error");return;}
+  if(outcome==="Meeting Scheduled"&&!followupDate){toast("Add the date it's scheduled for — that's what puts it on the Calendar.","error");return;}
   const methodEmoji={Call:"☎️",Text:"📱",Email:"✉️"}[contactMethod]||"☎️";
   notes=methodEmoji+" "+notes;
   const btn=document.querySelector('[onclick="quickLogSave()"]');
@@ -4788,7 +4847,7 @@ async function quickLogSave(){
     // Clear any existing follow-up dates for this agent — otherwise an old overdue follow-up
     // stays flagged forever even after she's logged something new with them.
     await clearOldFollowups(agentName);
-    await sbFetch("amanda_activities",{method:"POST",prefer:"return=minimal",body:JSON.stringify({agent_name:agentName,act_type:actType,act_date:today(),outcome,notes,follow_up_date:outcome==="Requires follow-up"?followupDate:null})});
+    await sbFetch("amanda_activities",{method:"POST",prefer:"return=minimal",body:JSON.stringify({agent_name:agentName,act_type:actType,act_date:today(),outcome,notes,follow_up_date:(outcome==="Requires follow-up"||outcome==="Meeting Scheduled")?followupDate:null})});
     const msg=document.getElementById("quickLogMsg");
     msg.style.display="block";
     msg.textContent="✓ "+agentName+" — "+actType+" logged";
@@ -5960,7 +6019,7 @@ async function loadManagement(){
     document.getElementById("danielRetentionGrid").innerHTML=gridHeader
       +retentionRow("Unique agents touched",uniqDaily,uniqWtd,uniqMtd,uniqYtd,"tap to see who","__uniqueagents__")
       +(aTierTotal?retentionRow("A-tier agents touched",aTierTouched(dailyActs),aTierTouched(weekActs),aTierMtd+" of "+aTierTotal,aTierTouched(ytdActs),"highest-value agents"):"")
-      +retentionRow("Active Agent Talk-to's",cntTalkTo(dailyActs),cntTalkTo(weekActs),cntTalkTo(mtdActs)+" / 400",cntTalkTo(ytdActs),"all meaningful touches with existing agents")
+      +retentionRow("Agent Talk-to's",cntTalkTo(dailyActs),cntTalkTo(weekActs),cntTalkTo(mtdActs)+" / 400",cntTalkTo(ytdActs),"all meaningful touches with existing agents")
       +retentionRow("Break breads",c(dailyActs,"Break Breads"),c(weekActs,"Break Breads"),c(mtdActs,"Break Breads")+" / 20",c(ytdActs,"Break Breads"),"","Break Breads")
       +retentionRow("CTC calls",c(dailyActs,CTC_TYPE),c(weekActs,CTC_TYPE),c(mtdActs,CTC_TYPE),c(ytdActs,CTC_TYPE),"post-close thank you",CTC_TYPE)
       +retentionRow("Reconnect contacts",0,0,rcContacted.length,"—","agents brought back")
@@ -6010,7 +6069,7 @@ async function loadManagement(){
         +'</div>'
         +trendRow("New meetings",c(prevActs,"New Realtor Meeting"),mtdMeetings,20)
         +trendRow("Cold calls",c(prevActs,"Cold Calls"),c(mtdActs,"Cold Calls"),500)
-        +trendRow("Active Agent Talk-to's",cntTalkTo(prevActs),cntTalkTo(mtdActs),400)
+        +trendRow("Agent Talk-to's",cntTalkTo(prevActs),cntTalkTo(mtdActs),400)
         +trendRow("Break breads",c(prevActs,"Break Breads"),c(mtdActs,"Break Breads"),20)
         +trendRow("Unique agents touched",uniq(prevActs),uniq(mtdActs),null,true)
         +trendRow("CTC calls",c(prevActs,CTC_TYPE),c(mtdActs,CTC_TYPE),null);
@@ -6465,7 +6524,7 @@ async function saveNewAgent(){
       agent_name:name,
       phone:document.getElementById("addAgentPhone").value.trim()||null,
       email:document.getElementById("addAgentEmail").value.trim()||null,
-      brokerage:document.getElementById("addAgentBrokerage").value.trim()||null,
+      address:document.getElementById("addAgentBrokerage").value.trim()||null,
       birthday:document.getElementById("addAgentBirthday").value.trim()||null,
       tier:document.getElementById("addAgentTier").value||null
     })});
@@ -6503,7 +6562,7 @@ async function openContactModal(name,phone,email,brokerage,birthday){
       const profiles=await sbFetch("agent_profiles?agent_name=ilike."+encodeURIComponent(name)+"&limit=1").catch(()=>[]);
       const p=profiles&&profiles[0];
       if(p){
-        phone=p.phone||"";email=p.email||"";brokerage=p.brokerage||"";birthday=p.birthday||"";
+        phone=p.phone||"";email=p.email||"";brokerage=p.address||"";birthday=p.birthday||"";
         document.getElementById("contactTier").value=p.tier||"";
         document.getElementById("contactDNC").checked=!!(p.do_not_contact);
       }
@@ -6516,7 +6575,7 @@ async function openContactModal(name,phone,email,brokerage,birthday){
 function closeContactModal(){document.getElementById("contactModal").classList.remove("open");editingContactName=null;}
 async function saveContactModal(){
   if(!editingContactName)return;
-  const payload={agent_name:editingContactName,phone:document.getElementById("contactPhone").value.trim()||null,email:document.getElementById("contactEmail").value.trim()||null,brokerage:document.getElementById("contactBrokerage").value.trim()||null,birthday:document.getElementById("contactBirthday").value.trim()||null,tier:document.getElementById("contactTier").value||null,do_not_contact:document.getElementById("contactDNC").checked};
+  const payload={agent_name:editingContactName,phone:document.getElementById("contactPhone").value.trim()||null,email:document.getElementById("contactEmail").value.trim()||null,address:document.getElementById("contactBrokerage").value.trim()||null,birthday:document.getElementById("contactBirthday").value.trim()||null,tier:document.getElementById("contactTier").value||null,do_not_contact:document.getElementById("contactDNC").checked};
   try{
     // Case-insensitive lookup by id — an exact-string match here was the likely cause of
     // duplicate profiles (e.g. "Cheryl Kinsey" vs "CHERYL KINSEY" creating two separate rows
@@ -6606,12 +6665,103 @@ function showCalDayDetail(dateStr){
     const isFollowup=e.calType==="followup",cls=isFollowup?"followup":calEventClass(e.act_type);
     const dotColors={meeting:"#9585C0",followup:"#B85B00",ctc:"#0F6E56",other:"#9585C0"};
     const dotColor=dotColors[cls]||"#9585C0";
-    return'<div class="cal-day-item"><div class="cal-day-dot" style="background:'+dotColor+'"></div><div style="flex:1"><div style="font-size:12px;font-weight:500;color:#1a1a2e">'+e.agent_name+'</div><div style="font-size:11px;color:#aaa">'+emoji+" "+(isFollowup?"Follow-up — "+e.act_type:e.act_type)+(e.outcome?" · "+e.outcome:"")+'</div>'+( e.notes?'<div style="font-size:11px;color:#777;font-style:italic;margin-top:2px">"'+e.notes.substring(0,80)+'"</div>':"")+'</div></div>';
+    return'<div class="cal-day-item"><div class="cal-day-dot" style="background:'+dotColor+'"></div><div style="flex:1"><div style="font-size:12px;font-weight:500;color:#1a1a2e">'+e.agent_name+'</div><div style="font-size:11px;color:#aaa">'+badgeEmoji(e.act_type)+" "+(isFollowup?"Follow-up — "+e.act_type:e.act_type)+(e.outcome?" · "+e.outcome:"")+'</div>'+( e.notes?'<div style="font-size:11px;color:#777;font-style:italic;margin-top:2px">"'+e.notes.substring(0,80)+'"</div>':"")+'</div></div>';
   }).join("");
   detail.style.display="block";
 }
 
 let allContacts=[];
+
+// ── Bulk contact import — the tiered cadence, prioritization, and retention filtering throughout
+// the app all depend on tier/retained/contact fields being populated. Doing that one agent at a
+// time through the edit modal for a full book of agents is a real barrier, not a nice-to-have.
+async function importContactsFile(input){
+  const file=input.files&&input.files[0];
+  if(!file)return;
+  const progressEl=document.getElementById("contactsImportProgress");
+  if(progressEl){progressEl.style.display="block";progressEl.textContent="Reading file...";}
+  try{
+    const XLSX=window.XLSX||await import("https://cdn.sheetjs.com/xlsx-0.20.1/package/xlsx.mjs");
+    let wb;
+    if(file.name.toLowerCase().endsWith(".csv")){
+      const text=await file.text();
+      wb=XLSX.read(text,{type:"string"});
+    }else{
+      const buf=await file.arrayBuffer();
+      wb=XLSX.read(buf,{type:"array"});
+    }
+    const ws=wb.Sheets[wb.SheetNames[0]];
+    const raw=XLSX.utils.sheet_to_json(ws,{defval:null});
+    if(!raw.length){toast("No rows found in that file.","error");if(progressEl)progressEl.style.display="none";return;}
+
+    // Flexible column matching — real spreadsheets never use exactly one header name
+    const ALIASES={
+      name:["agent name","name","agent","full name"],
+      email:["email","email address","e-mail"],
+      phone:["phone","cell phone","phone number","cell","mobile"],
+      address:["address","home address","brokerage","mailing address"],
+      birthday:["birthday","dob","date of birth","bday"],
+      tier:["tier","grade"],
+      retained:["retained","active","is active","status"],
+      dnc:["do not contact","dnc","do_not_contact"]
+    };
+    const firstRowKeys=Object.keys(raw[0]||{});
+    const colMap={};
+    Object.entries(ALIASES).forEach(([field,aliases])=>{
+      const match=firstRowKeys.find(k=>aliases.indexOf((k||"").toLowerCase().trim())>=0);
+      if(match)colMap[field]=match;
+    });
+    if(!colMap.name){toast("Couldn't find a name column — needs a header like \"Agent Name\" or \"Name\".","error");if(progressEl)progressEl.style.display="none";return;}
+
+    if(progressEl)progressEl.textContent="Matching against existing contacts...";
+    const existing=await sbFetch("agent_profiles?select=id,agent_name&limit=2000").catch(()=>[]);
+    const existingByName={};
+    existing.forEach(e=>{const n=(e.agent_name||"").trim().toLowerCase();if(n&&!existingByName[n])existingByName[n]=e.id;});
+
+    let created=0,updated=0,skipped=0;
+    const truthy=v=>{const s=(v||"").toString().trim().toLowerCase();return s==="y"||s==="yes"||s==="true"||s==="active"||s==="1";};
+
+    for(let i=0;i<raw.length;i++){
+      const row=raw[i];
+      const name=(row[colMap.name]||"").toString().trim();
+      if(!name){skipped++;continue;}
+      if(progressEl)progressEl.textContent="Importing "+(i+1)+" of "+raw.length+"...";
+      const payload={};
+      if(colMap.email&&row[colMap.email])payload.email=row[colMap.email].toString().trim();
+      if(colMap.phone&&row[colMap.phone])payload.phone=row[colMap.phone].toString().trim();
+      if(colMap.address&&row[colMap.address])payload.address=row[colMap.address].toString().trim();
+      if(colMap.birthday&&row[colMap.birthday])payload.birthday=row[colMap.birthday].toString().trim();
+      if(colMap.tier&&row[colMap.tier])payload.tier=row[colMap.tier].toString().trim().toUpperCase();
+      if(colMap.retained&&row[colMap.retained]!=null)payload.retained=truthy(row[colMap.retained]);
+      if(colMap.dnc&&row[colMap.dnc]!=null)payload.do_not_contact=truthy(row[colMap.dnc]);
+
+      const key=name.toLowerCase();
+      try{
+        if(existingByName[key]){
+          if(Object.keys(payload).length){
+            await sbFetch("agent_profiles?id=eq."+existingByName[key],{method:"PATCH",prefer:"return=minimal",body:JSON.stringify(payload)});
+            updated++;
+          }
+        }else{
+          payload.agent_name=name;
+          await sbFetch("agent_profiles",{method:"POST",prefer:"return=minimal",body:JSON.stringify(payload)});
+          existingByName[key]="new"; // prevent dupes if the same name appears twice in one file
+          created++;
+        }
+      }catch(e){skipped++;}
+    }
+
+    if(progressEl)progressEl.style.display="none";
+    input.value="";
+    toast(created+" added, "+updated+" updated"+(skipped?", "+skipped+" skipped":"")+" ✓","success",5000);
+    loadContacts();
+    initAutocomplete();
+  }catch(e){
+    console.error("Contact import error:",e);
+    toast("Import failed: "+e.message,"error");
+    if(progressEl)progressEl.style.display="none";
+  }
+}
 
 async function loadContacts(){
   const el=document.getElementById("contacts-list");
@@ -6671,7 +6821,7 @@ function renderDupeCleanupList(){
     listEl.innerHTML='<div class="no-data">No duplicates found — all clean!</div>';
     return;
   }
-  const completeness=c=>["phone","email","brokerage","birthday","tier"].filter(k=>c[k]).length;
+  const completeness=c=>["phone","email","address","birthday","tier"].filter(k=>c[k]).length;
   listEl.innerHTML=dupes.map((group,gi)=>{
     // recommend keeping the row with the most filled-in fields
     const sorted=[...group].sort((a,b)=>completeness(b)-completeness(a));
@@ -6754,7 +6904,7 @@ function openContactsEdit(nameOrEl){
   document.getElementById("contactModalName").textContent=name;
   document.getElementById("contactPhone").value=c.phone||"";
   document.getElementById("contactEmail").value=c.email||"";
-  document.getElementById("contactBrokerage").value=c.brokerage||"";
+  document.getElementById("contactBrokerage").value=c.address||"";
   document.getElementById("contactBirthday").value=c.birthday||"";
   document.getElementById("contactTier").value=c.tier||"";
   document.getElementById("contactDNC").checked=!!(c.do_not_contact);
