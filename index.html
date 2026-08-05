@@ -571,10 +571,11 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI'
       <div style="font-size:11px;color:var(--text-4);margin-bottom:12px">Items with an explicit action attached: a follow-up date you set, an LP note, or a recent close not yet thanked with a CTC call. This does not check Encompass — check Encompass separately for files currently at CTC.</div>
       <!-- Flagged by LPs — moved to the top since these are external and time-sensitive -->
       <div id="weekFlagged" style="max-height:240px;overflow-y:auto"></div>
-      <!-- CTC trigger -->
-      <div id="weekCtcTrigger"></div>
-      <div id="buddyAskTrigger"></div>
-      <div id="deadEndTrigger"></div>
+      <!-- Each trigger below gets its own bounded, visually separated box so this card reads as
+           distinct sections instead of one continuous scrolling wall -->
+      <div id="weekCtcTrigger" style="max-height:220px;overflow-y:auto;margin-top:10px"></div>
+      <div id="buddyAskTrigger" style="max-height:260px;overflow-y:auto;margin-top:10px"></div>
+      <div id="deadEndTrigger" style="max-height:260px;overflow-y:auto;margin-top:10px"></div>
       <!-- Follow-ups due -->
       <div id="followupsSectionLabel" style="display:none;font-size:11px;font-weight:700;color:var(--text-3);text-transform:uppercase;letter-spacing:.4px;margin:10px 0 6px;padding-top:8px;border-top:1px solid var(--border-light)">📅 Follow-ups you scheduled</div>
       <div id="weekFollowups" style="max-height:280px;overflow-y:auto"></div>
@@ -2915,6 +2916,7 @@ async function loadFlagged(){
     }).join("");
 
     document.getElementById("weekFlagged").innerHTML=html;
+    addScrollHintIfNeeded("weekFlagged");
   }catch(e){
     console.error(e);
     document.getElementById("weekFlagged").innerHTML='<div class="no-data">Unable to load.</div>';
@@ -2968,6 +2970,8 @@ async function loadDropoffWarning(){
       .sort((a,b)=>b.days_since-a.days_since); // closest to falling off first
     if(!approaching.length){card.style.display="none";return;}
     card.style.display="block";
+    const titleEl=card.querySelector(".card-title");
+    if(titleEl)titleEl.textContent="⏳ Approaching 90-Day Drop-Off ("+approaching.length+")";
     listEl.innerHTML=approaching.map(r=>{
       const daysLeft=90-r.days_since;
       const urgColor=daysLeft<=10?"var(--danger)":daysLeft<=20?"var(--warning)":"var(--brand)";
@@ -2979,6 +2983,7 @@ async function loadDropoffWarning(){
         +'<button onclick="document.getElementById(\'agentInput\').value=\''+safeAgent+'\';switchTab(\'log\')" style="font-size:10px;padding:4px 10px;background:var(--brand);color:#fff;border:none;border-radius:6px;cursor:pointer;font-family:inherit;white-space:nowrap">Log outreach</button>'
         +'</div>';
     }).join("");
+    addScrollHintIfNeeded("dropoffList");
   }catch(e){console.error("Dropoff warning error:",e);card.style.display="none";}
 }
 
@@ -3064,6 +3069,7 @@ async function loadQuiet(){
     }).join("");
 
     document.getElementById("weekQuiet").innerHTML=quietHtml;
+    addScrollHintIfNeeded("weekQuiet");
     const dq=document.getElementById("danielQuiet");
     if(dq)dq.innerHTML=quietHtml||'<div class="no-data" style="padding:16px">No retained agents at risk right now</div>';
   }catch(e){
@@ -3786,7 +3792,10 @@ async function loadWeek(){
     ]);
     const all=[...overdue,...fus];
     const fuLabel=document.getElementById("followupsSectionLabel");
-    if(fuLabel)fuLabel.style.display=all.length?"block":"none";
+    if(fuLabel){
+      fuLabel.style.display=all.length?"block":"none";
+      fuLabel.textContent=all.length?"📅 Follow-ups you scheduled ("+all.length+")":"";
+    }
     document.getElementById("weekFollowups").innerHTML=all.length?all.map(f=>{
       const isOvr=f.follow_up_date<todayStr;
       const c=isOvr?"var(--danger)":"var(--brand)";
@@ -3801,6 +3810,7 @@ async function loadWeek(){
         +'style="font-size:10px;padding:3px 9px;background:var(--brand);color:#fff;border:none;border-radius:6px;cursor:pointer;font-family:inherit;font-weight:600">Log</button>'
         +'</div></div>';
     }).join(""):"";
+    addScrollHintIfNeeded("weekFollowups");
   }catch(e){console.error(e);}
 
   try{
@@ -3821,14 +3831,16 @@ async function loadWeek(){
     ]);
     const thankedSet=new Set(recentCtc.map(a=>(a.agent_name||"").toLowerCase().trim()));
     const needsCtc=[...new Map(recentCloses.map(c=>[( c.agent_name||"").toLowerCase().trim(),c])).values()]
-      .filter(c=>!thankedSet.has((c.agent_name||"").toLowerCase().trim()))
-      .slice(0,6);
+      .filter(c=>!thankedSet.has((c.agent_name||"").toLowerCase().trim()));
     const ctcEl=document.getElementById("weekCtcTrigger");
     if(ctcEl){
       if(needsCtc.length){
-        ctcEl.innerHTML='<div class="card-title" style="margin-bottom:10px">CTC Calls Needed <span class="card-sub">closed in last 14d, not yet thanked</span></div>'+
-          needsCtc.map(c=>'<div class="fu-item"><div class="fu-dot" style="background:#9585C0"></div><div class="fu-body"><div class="fu-name">'+c.agent_name+'</div><div class="fu-meta" style="color:#9585C0">Closed '+fmtDate(c.call_date)+'</div></div><button class="btn-sm" style="background:#9585C0;color:#fff;border:none;border-radius:6px;padding:4px 10px;font-size:11px;cursor:pointer;font-family:inherit" onclick="document.getElementById(\'agentInput\').value=\''+c.agent_name.replace(/'/g,"\\'")+'\';document.getElementById(\'activityType\').value=\'CTC Call\';switchTab(\'log\')">Log CTC</button></div>').join("");
+        ctcEl.innerHTML='<div style="background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:10px 12px">'
+          +'<div class="card-title" style="margin-bottom:10px">CTC Calls Needed ('+needsCtc.length+') <span class="card-sub">closed in last 14d, not yet thanked</span></div>'+
+          needsCtc.map(c=>'<div class="fu-item"><div class="fu-dot" style="background:#9585C0"></div><div class="fu-body"><div class="fu-name">'+c.agent_name+'</div><div class="fu-meta" style="color:#9585C0">Closed '+fmtDate(c.call_date)+'</div></div><button class="btn-sm" style="background:#9585C0;color:#fff;border:none;border-radius:6px;padding:4px 10px;font-size:11px;cursor:pointer;font-family:inherit" onclick="document.getElementById(\'agentInput\').value=\''+c.agent_name.replace(/'/g,"\\'")+'\';document.getElementById(\'activityType\').value=\'CTC Call\';switchTab(\'log\')">Log CTC</button></div>').join("")
+          +'</div>';
         ctcEl.style.display="block";
+        addScrollHintIfNeeded("weekCtcTrigger");
       }else{
         ctcEl.style.display="none";
       }
@@ -3854,7 +3866,7 @@ async function loadWeek(){
     asks.forEach(a=>{const n=normalize2(a.agent_name);if(n&&(!askByAgent[n]||a.act_date>askByAgent[n]))askByAgent[n]=a.act_date;});
     const lastTouchByAgent={};
     allTouches.forEach(a=>{const n=normalize2(a.agent_name);if(n&&(!lastTouchByAgent[n]||a.act_date>lastTouchByAgent[n]))lastTouchByAgent[n]=a.act_date;});
-    const needsCheckin=Object.keys(askByAgent).filter(n=>(lastTouchByAgent[n]||"")<=askByAgent[n]).slice(0,6);
+    const needsCheckin=Object.keys(askByAgent).filter(n=>(lastTouchByAgent[n]||"")<=askByAgent[n]);
 
     // Did the ask actually turn into a referral? Cross-reference against "Referred by:" tags.
     const referredBuddyNames=new Set();
@@ -3869,16 +3881,19 @@ async function loadWeek(){
     if(buddyEl){
       let html="";
       if(totalAskedNames.size>0){
-        html+='<div style="background:var(--surface-2);border-radius:8px;padding:10px 14px;margin-top:10px;margin-bottom:8px;font-size:12px;color:var(--text-2)">'
+        html+='<div style="background:var(--surface-2);border-radius:8px;padding:10px 14px;margin-bottom:8px;font-size:12px;color:var(--text-2)">'
           +'<strong style="color:var(--text-1)">'+successCount+' of '+totalAskedNames.size+'</strong> buddies asked (last 90 days) actually referred someone — tag it with "Referred by" when you log the new cold call to track this.'
           +'</div>';
       }
       if(needsCheckin.length){
-        html+='<div class="card-title" style="margin-bottom:10px">Buddy Asks — Check In <span class="card-sub">asked 14+d ago, no follow-up touch since</span></div>'+
-          needsCheckin.map(n=>'<div class="fu-item"><div class="fu-dot" style="background:#9585C0"></div><div class="fu-body"><div class="fu-name">'+properCase(n)+'</div><div class="fu-meta" style="color:#9585C0">Asked '+fmtDate(askByAgent[n])+'</div></div><button class="btn-sm" style="background:#9585C0;color:#fff;border:none;border-radius:6px;padding:4px 10px;font-size:11px;cursor:pointer;font-family:inherit" onclick="document.getElementById(\'agentInput\').value=\''+n.replace(/'/g,"\\'")+'\';switchTab(\'log\')">Check in</button></div>').join("");
+        html+='<div style="background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:10px 12px">'
+          +'<div class="card-title" style="margin-bottom:10px">Buddy Asks — Check In ('+needsCheckin.length+') <span class="card-sub">asked 14+d ago, no follow-up touch since</span></div>'+
+          needsCheckin.map(n=>'<div class="fu-item"><div class="fu-dot" style="background:#9585C0"></div><div class="fu-body"><div class="fu-name">'+properCase(n)+'</div><div class="fu-meta" style="color:#9585C0">Asked '+fmtDate(askByAgent[n])+'</div></div><button class="btn-sm" style="background:#9585C0;color:#fff;border:none;border-radius:6px;padding:4px 10px;font-size:11px;cursor:pointer;font-family:inherit" onclick="document.getElementById(\'agentInput\').value=\''+n.replace(/'/g,"\\'")+'\';switchTab(\'log\')">Check in</button></div>').join("")
+          +'</div>';
       }
       buddyEl.innerHTML=html;
       buddyEl.style.display=html?"block":"none";
+      if(html)addScrollHintIfNeeded("buddyAskTrigger");
     }
   }catch(e){console.warn("Buddy ask trigger:",e);}
 
@@ -3900,15 +3915,17 @@ async function loadWeek(){
     allTouches2.forEach(a=>{const n=normalize3(a.agent_name);if(n&&(!lastTouchByAgent2[n]||a.act_date>lastTouchByAgent2[n]))lastTouchByAgent2[n]=a.act_date;});
     const wentNowhere=(weakActs||[])
       .filter(a=>PURE_GESTURE_TYPES.indexOf(a.act_type)<0)
-      .filter(a=>a.outcome!=="Positive"&&a.outcome!=="Meeting Scheduled")
-      .filter(a=>{const n=normalize3(a.agent_name);return(lastTouchByAgent2[n]||"")<=a.act_date;})
-      .slice(0,6);
+      .filter(a=>{const TERMINAL_OUTCOMES=["Positive","Meeting Scheduled","Remove / No Further Contact","Needs manager attention"];return TERMINAL_OUTCOMES.indexOf(a.outcome)<0;})
+      .filter(a=>{const n=normalize3(a.agent_name);return(lastTouchByAgent2[n]||"")<=a.act_date;});
     const deadEl=document.getElementById("deadEndTrigger");
     if(deadEl){
       if(wentNowhere.length){
-        deadEl.innerHTML='<div class="card-title" style="margin-bottom:10px;margin-top:10px">Went Nowhere — No Next Step <span class="card-sub">no outcome, no follow-up set, nothing since</span></div>'+
-          wentNowhere.map(a=>'<div class="fu-item"><div class="fu-dot" style="background:var(--warning)"></div><div class="fu-body"><div class="fu-name">'+properCase(a.agent_name)+'</div><div class="fu-meta" style="color:var(--warning)">'+badgeEmoji(a.act_type)+' — '+(a.outcome||"no outcome")+' · '+fmtDate(a.act_date)+'</div></div><button class="btn-sm" style="background:var(--warning);color:#fff;border:none;border-radius:6px;padding:4px 10px;font-size:11px;cursor:pointer;font-family:inherit" onclick="document.getElementById(\'agentInput\').value=\''+String(a.agent_name||"").replace(/'/g,"\\'")+'\';switchTab(\'log\')">Follow up now</button></div>').join("");
+        deadEl.innerHTML='<div style="background:var(--warning-bg);border:1px solid #FFE69C;border-radius:8px;padding:10px 12px">'
+          +'<div class="card-title" style="margin-bottom:10px">Went Nowhere — No Next Step ('+wentNowhere.length+') <span class="card-sub">no outcome, no follow-up set, nothing since</span></div>'+
+          wentNowhere.map(a=>'<div class="fu-item"><div class="fu-dot" style="background:var(--warning)"></div><div class="fu-body"><div class="fu-name">'+properCase(a.agent_name)+'</div><div class="fu-meta" style="color:var(--warning)">'+badgeEmoji(a.act_type)+' — '+(a.outcome||"no outcome")+' · '+fmtDate(a.act_date)+'</div></div><button class="btn-sm" style="background:var(--warning);color:#fff;border:none;border-radius:6px;padding:4px 10px;font-size:11px;cursor:pointer;font-family:inherit" onclick="document.getElementById(\'agentInput\').value=\''+String(a.agent_name||"").replace(/'/g,"\\'")+'\';switchTab(\'log\')">Follow up now</button></div>').join("")
+          +'</div>';
         deadEl.style.display="block";
+        addScrollHintIfNeeded("deadEndTrigger");
       }else{
         deadEl.style.display="none";
       }
@@ -4600,6 +4617,24 @@ function quickLogAutoComplete(q){
   list.innerHTML=matches.map(n=>'<div class="ac-item" onclick="document.getElementById(\'quickLogAgent\').value=\''+n.replace(/'/g,"\\'")+'\';document.getElementById(\'quickLogAcList\').classList.remove(\'open\');checkDoubleDial(\''+n.replace(/'/g,"\\'")+'\',\'quickLogDoubleDialWarn\')">'+n+'</div>').join("");
   list.classList.add("open");
 }
+// A bounded scroll box is easy to miss, especially on mobile where scrollbars don't show until
+// you touch them. This adds a visible "scroll for more" chip under any box whose content actually
+// overflows — silent when everything fits, visible when it doesn't.
+function addScrollHintIfNeeded(elId){
+  const el=document.getElementById(elId);
+  if(!el)return;
+  const existing=document.getElementById("scrollhint-"+elId);
+  if(existing)existing.remove();
+  if(el.scrollHeight>el.clientHeight+4){
+    const hint=document.createElement("div");
+    hint.id="scrollhint-"+elId;
+    hint.style.cssText="text-align:center;font-size:10px;color:var(--brand);font-weight:700;padding:5px;background:var(--brand-light);border-radius:0 0 8px 8px;cursor:pointer;margin-top:-2px";
+    hint.textContent="↓ scroll for more";
+    hint.onclick=function(){el.scrollTop+=120;};
+    el.insertAdjacentElement("afterend",hint);
+  }
+}
+
 function toggleQuickLogFollowup(){
   const row=document.getElementById("quickLogFollowupRow");
   const outcome=document.getElementById("quickLogOutcome").value;
