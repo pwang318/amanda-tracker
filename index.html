@@ -1156,8 +1156,16 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI'
     <div class="field" style="margin-bottom:12px"><label>Agent name *</label><input type="text" id="addAgentName" placeholder="Full name"></div>
     <div class="field" style="margin-bottom:12px"><label>Phone</label><input type="text" id="addAgentPhone" placeholder="Phone number"></div>
     <div class="field" style="margin-bottom:12px"><label>Email</label><input type="email" id="addAgentEmail" placeholder="Email address"></div>
-    <div class="field" style="margin-bottom:12px"><label>Brokerage</label><input type="text" id="addAgentBrokerage" placeholder="Brokerage name"></div>
-    <div class="field" style="margin-bottom:12px"><label>Birthday</label><input type="text" id="addAgentBirthday" placeholder="e.g. Mar 14"></div>
+    <div class="field" style="margin-bottom:12px">
+      <label>Home Address <span style="font-weight:400;color:var(--text-4)">(for gifts and mail)</span></label>
+      <input type="text" id="addAgentStreet" placeholder="Street address" style="margin-bottom:6px">
+      <div style="display:flex;gap:6px">
+        <input type="text" id="addAgentCity" placeholder="City" style="flex:2">
+        <input type="text" id="addAgentState" placeholder="State" style="flex:1" maxlength="2">
+        <input type="text" id="addAgentZip" placeholder="Zip" style="flex:1.2" maxlength="10">
+      </div>
+    </div>
+    <div class="field" style="margin-bottom:12px"><label>Birthday <span style="font-weight:400;color:var(--text-4)">(MM/DD — no year)</span></label><input type="text" id="addAgentBirthday" placeholder="e.g. 03/14" maxlength="5" oninput="formatBirthdayInput(this)"></div>
     <div class="field" style="margin-bottom:18px"><label>Tier</label><select id="addAgentTier"><option value="">No tier set</option><option value="A">A-Tier</option><option value="B">B-Tier</option><option value="C">C-Tier</option></select></div>
     <div style="display:flex;gap:10px">
       <button class="btn-primary" onclick="saveNewAgent()">Add agent</button>
@@ -1274,8 +1282,16 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI'
     <div class="modal-sub" id="contactModalName"></div>
     <div class="field" style="margin-bottom:12px"><label>Phone</label><input type="text" id="contactPhone" placeholder="Phone number"></div>
     <div class="field" style="margin-bottom:12px"><label>Email</label><input type="email" id="contactEmail" placeholder="Email address"></div>
-    <div class="field" style="margin-bottom:12px"><label>Home Address</label><input type="text" id="contactBrokerage" placeholder="Home address"></div>
-    <div class="field" style="margin-bottom:12px"><label>Birthday</label><input type="text" id="contactBirthday" placeholder="e.g. Mar 14"></div>
+    <div class="field" style="margin-bottom:12px">
+      <label>Home Address <span style="font-weight:400;color:var(--text-4)">(for gifts and mail)</span></label>
+      <input type="text" id="contactStreet" placeholder="Street address" style="margin-bottom:6px">
+      <div style="display:flex;gap:6px">
+        <input type="text" id="contactCity" placeholder="City" style="flex:2">
+        <input type="text" id="contactState" placeholder="State" style="flex:1" maxlength="2">
+        <input type="text" id="contactZip" placeholder="Zip" style="flex:1.2" maxlength="10">
+      </div>
+    </div>
+    <div class="field" style="margin-bottom:12px"><label>Birthday <span style="font-weight:400;color:var(--text-4)">(MM/DD — no year)</span></label><input type="text" id="contactBirthday" placeholder="e.g. 03/14" maxlength="5" oninput="formatBirthdayInput(this)"></div>
     <div class="field" style="margin-bottom:12px"><label>Tier</label><select id="contactTier"><option value="">No tier set</option><option value="A">A-Tier (Top producer, active partner)</option><option value="B">B-Tier (Mid-tier, building relationship)</option><option value="C">C-Tier (New or low-volume)</option></select></div>
     <div style="margin-bottom:18px;padding:10px 12px;background:var(--surface-2);border-radius:8px;border:0.5px solid var(--border)">
       <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:13px;font-weight:500;color:var(--text-1)">
@@ -1673,10 +1689,10 @@ function countWords(str){
 }
 function properCase(str){
   if(!str)return"";
-  return str.toLowerCase().replace(/\b\w/g,c=>c.toUpperCase());
+  return escHtml(str.toLowerCase().replace(/\b\w/g,c=>c.toUpperCase()));
 }
 function escHtml(s){
-  return(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+  return(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#39;");
 }
 function toggleDetail(id){
   const el=document.getElementById(id);
@@ -2155,6 +2171,9 @@ async function sbFetch(path,options={}){
   return body;
 }
 
+// Escapes user-typed text before it goes into innerHTML — without this, a stray "<" or ">" in a
+// name or note gets interpreted as an actual HTML tag and silently disappears from what's shown,
+// rather than displaying as the literal characters someone actually typed.
 function toast(msg,type="success",duration=3200){
   const el=document.getElementById("toast");
   el.textContent=msg;el.className="toast show "+type;
@@ -2175,7 +2194,7 @@ function callAgent(name,phone,ev){
 function phoneCallLink(name,phone){
   if(!phone)return'<span style="color:#ffb3b3">No phone</span>';
   const safeName=String(name||"").replace(/'/g,"\\'").replace(/"/g,"&quot;");
-  return'<span onclick="callAgent(\''+safeName+'\',\''+phone.replace(/'/g,"\\'")+'\',event)" style="cursor:pointer;color:var(--brand,#4E3D8A);font-weight:600;text-decoration:underline;text-decoration-style:dotted">📞 '+phone+'</span>';
+  return'<span onclick="callAgent(\''+safeName+'\',\''+phone.replace(/'/g,"\\'")+'\',event)" style="cursor:pointer;color:var(--brand,#4E3D8A);font-weight:600;text-decoration:underline;text-decoration-style:dotted">📞 '+escHtml(phone)+'</span>';
 }
 
 // ── Haptic feedback on save — nothing to look at, just feel it ──
@@ -2359,7 +2378,7 @@ function applyLockState(){
 
   if(openIntake){
     banner.style.display="flex";
-    banner.innerHTML='<span>🔒 Open checklist: <strong>'+openIntake.agent_name+'</strong> — met '+fmtDate(openIntake.act_date)+'.</span><button class="lock-resume-btn" onclick="switchTab(\'log\')">Resume checklist</button>';
+    banner.innerHTML='<span>🔒 Open checklist: <strong>'+escHtml(openIntake.agent_name)+'</strong> — met '+fmtDate(openIntake.act_date)+'.</span><button class="lock-resume-btn" onclick="switchTab(\'log\')">Resume checklist</button>';
     lockedCard.style.display="block";
     document.getElementById("logLockedSub").textContent="Great job logging your meeting with "+properCase(openIntake.agent_name)+"! Before you log anything else, there are a few quick onboarding steps below. These make sure they get set up correctly and nothing falls through the cracks.";
     normalFields.style.display="none";
@@ -2663,13 +2682,10 @@ async function loadStartHere(){
     const todayMD=String(now.getMonth()+1).padStart(2,"0")+"/"+String(now.getDate()).padStart(2,"0");
     const birthdayToday=(birthdayAgents||[]).filter(a=>{
       if(!a.birthday)return false;
-      const b=a.birthday.toLowerCase();
-      const months={jan:"01",feb:"02",mar:"03",apr:"04",may:"05",jun:"06",jul:"07",aug:"08",sep:"09",oct:"10",nov:"11",dec:"12"};
-      const parts=b.split(" ");
-      if(parts.length<2)return false;
-      const mon=months[parts[0]];
-      const day=String(parseInt(parts[1])).padStart(2,"0");
-      if(!mon)return false;
+      const parsed=parseBirthdayMD(a.birthday);
+      if(!parsed)return false;
+      const mon=String(parsed.month+1).padStart(2,"0");
+      const day=String(parsed.day).padStart(2,"0");
       return mon+"/"+day===todayMD;
     });
 
@@ -3117,8 +3133,14 @@ async function loadContactDataQuality(){
     if(!gaps.length){card.style.display="none";return;}
     card.style.display="block";
     const titleEl=card.querySelector(".card-title");
+    // Default to today's slice, not the full backlog — 167 flagged at once reads like 167 daily
+    // failures when most of it is a one-time cleanup, not an ongoing task. Nothing here is hidden
+    // from tracking, just not all dumped on her every morning by default.
+    const DAILY_CAP=8;
+    const showAll=card.dataset.showAll==="true";
+    const visible=showAll?gaps:gaps.slice(0,DAILY_CAP);
     if(titleEl)titleEl.textContent="📇 Contact Info Needs Updating ("+gaps.length+")";
-    listEl.innerHTML=gaps.map(g=>{
+    listEl.innerHTML=visible.map(g=>{
       const safeAgent=(g.agent_name||"").replace(/'/g,"\\'");
       const tierBadge=g.tier?'<span style="font-size:9px;font-weight:700;padding:1px 6px;border-radius:10px;background:var(--surface-2);color:var(--text-2);margin-left:5px">'+g.tier+'-tier</span>':"";
       const missingChips=g.missing.map(m=>'<span style="font-size:9px;font-weight:700;padding:1px 7px;border-radius:10px;background:#FFF3E0;color:#B85B00;margin-right:4px">'+m+'</span>').join("");
@@ -3130,6 +3152,16 @@ async function loadContactDataQuality(){
         +'<button onclick="document.getElementById(\'agentInput\').value=\''+safeAgent+'\';switchTab(\'log\')" style="font-size:10px;padding:4px 10px;background:var(--warning);color:#fff;border:none;border-radius:6px;cursor:pointer;font-family:inherit;white-space:nowrap">Log check-in</button>'
         +'</div></div>';
     }).join("");
+    if(!showAll&&gaps.length>DAILY_CAP){
+      listEl.innerHTML+='<div style="text-align:center;padding:10px 0 4px">'
+        +'<button onclick="this.closest(\'.card\').dataset.showAll=\'true\';loadContactDataQuality()" style="font-size:11px;font-weight:600;padding:6px 14px;background:var(--surface-2);color:var(--text-2);border:1px solid var(--border);border-radius:6px;cursor:pointer;font-family:inherit">Show all '+gaps.length+' →</button>'
+        +'<div style="font-size:10px;color:var(--text-4);margin-top:4px">Showing today\'s '+DAILY_CAP+', highest priority first — not hidden, just not all at once</div>'
+        +'</div>';
+    }else if(showAll&&gaps.length>DAILY_CAP){
+      listEl.innerHTML+='<div style="text-align:center;padding:10px 0 4px">'
+        +'<button onclick="this.closest(\'.card\').dataset.showAll=\'false\';loadContactDataQuality()" style="font-size:11px;font-weight:600;padding:6px 14px;background:var(--surface-2);color:var(--text-2);border:1px solid var(--border);border-radius:6px;cursor:pointer;font-family:inherit">Show today\'s '+DAILY_CAP+' only</button>'
+        +'</div>';
+    }
     addScrollHintIfNeeded("contactDataList");
   }catch(e){console.error("Contact data quality error:",e);card.style.display="none";}
 }
@@ -3993,7 +4025,7 @@ async function loadWeek(){
       if(needsCtc.length){
         ctcEl.innerHTML='<div style="background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:10px 12px">'
           +'<div class="card-title" style="margin-bottom:10px">CTC Calls Needed ('+needsCtc.length+') <span class="card-sub">closed in last 14d, not yet thanked</span></div>'+
-          needsCtc.map(c=>'<div class="fu-item"><div class="fu-dot" style="background:#9585C0"></div><div class="fu-body"><div class="fu-name">'+c.agent_name+'</div><div class="fu-meta" style="color:#9585C0">Closed '+fmtDate(c.call_date)+'</div></div><button class="btn-sm" style="background:#9585C0;color:#fff;border:none;border-radius:6px;padding:4px 10px;font-size:11px;cursor:pointer;font-family:inherit" onclick="document.getElementById(\'agentInput\').value=\''+c.agent_name.replace(/'/g,"\\'")+'\';document.getElementById(\'activityType\').value=\'CTC Call\';switchTab(\'log\')">Log CTC</button></div>').join("")
+          needsCtc.map(c=>'<div class="fu-item"><div class="fu-dot" style="background:#9585C0"></div><div class="fu-body"><div class="fu-name">'+escHtml(c.agent_name)+'</div><div class="fu-meta" style="color:#9585C0">Closed '+fmtDate(c.call_date)+'</div></div><button class="btn-sm" style="background:#9585C0;color:#fff;border:none;border-radius:6px;padding:4px 10px;font-size:11px;cursor:pointer;font-family:inherit" onclick="document.getElementById(\'agentInput\').value=\''+c.agent_name.replace(/'/g,"\\'")+'\';document.getElementById(\'activityType\').value=\'CTC Call\';switchTab(\'log\')">Log CTC</button></div>').join("")
           +'</div>';
         ctcEl.style.display="block";
         addScrollHintIfNeeded("weekCtcTrigger");
@@ -4312,10 +4344,10 @@ async function loadFollowups(){
       '<div class="fu-dot" style="background:'+dotC+'"></div>'+
       '<div class="fu-body">'+
         '<div class="fu-name">'+properCase(f.agent_name)+'</div>'+
-        '<div class="fu-meta">'+badgeEmoji(f.act_type)+(f.notes?" · "+f.notes.substring(0,45):"")+'</div>'+
+        '<div class="fu-meta">'+badgeEmoji(f.act_type)+(f.notes?" · "+escHtml(f.notes.substring(0,45)):"")+'</div>'+
         '<div id="fu-edit-'+f.id+'" class="fu-edit-area"><input type="date" id="fu-date-'+f.id+'" value="'+f.follow_up_date+'" style="border:0.5px solid #D9D3C7;border-radius:6px;padding:5px 9px;font-size:12px;margin-right:6px;font-family:inherit"><button class="btn-sm" onclick="saveFollowupDate('+f.id+')">Save</button><button class="btn-sm" onclick="document.getElementById('+"'fu-edit-"+f.id+"'"+').style.display=\'none\'" style="margin-left:4px">Cancel</button></div>'+
         '<div id="fu-log-'+f.id+'" class="fu-inline-log">'+
-          '<div style="font-size:11px;font-weight:600;color:#9585C0;margin-bottom:8px">Log outcome for '+f.agent_name+'</div>'+
+          '<div style="font-size:11px;font-weight:600;color:#9585C0;margin-bottom:8px">Log outcome for '+escHtml(f.agent_name)+'</div>'+
           (f.notes?'<div style="font-size:11px;color:var(--text-3);background:var(--surface-2);border-radius:6px;padding:7px 10px;margin-bottom:8px;font-style:italic">Previous note: "'+escHtml(f.notes)+'"</div>':'')+
           '<select id="fu-log-type-'+f.id+'">'+ACT_TYPE_OPTIONS+'</select>'+
           '<div class="inline-row"><select id="fu-log-outcome-'+f.id+'"><option value="">Outcome...</option><option>Positive</option><option>Meeting Scheduled</option><option>Requires follow-up</option><option>Needs manager attention</option><option>Remove / No Further Contact</option></select>'+
@@ -4416,11 +4448,9 @@ async function loadBirthdayAlerts(){
     const upcoming=[];
     agents.forEach(a=>{
       if(!a.birthday)return;
-      const parts=a.birthday.trim().split(" ");
-      if(parts.length<2)return;
-      const monthNum=new Date(Date.parse(parts[0]+" 1, 2021")).getMonth();
-      const day=parseInt(parts[1]);
-      if(isNaN(monthNum)||isNaN(day))return;
+      const parsed=parseBirthdayMD(a.birthday);
+      if(!parsed)return;
+      const{month:monthNum,day}=parsed;
       let bday=new Date(today2.getFullYear(),monthNum,day);
       if(bday<today2)bday=new Date(today2.getFullYear()+1,monthNum,day);
       const daysUntil=Math.round((bday-today2)/86400000);
@@ -4434,7 +4464,7 @@ async function loadBirthdayAlerts(){
     listEl.innerHTML=upcoming.map(u=>{
       const urgency=u.days===0?"🎂 TODAY!":u.days<=3?"in "+u.days+"d ⚡":"in "+u.days+"d";
       const color=u.days<=3?"#880E4F":"#6A1B9A";
-      return'<div class="bday-alert-item"><span style="font-weight:500">'+u.name+'</span><span style="color:'+color+';font-weight:600;font-size:12px">'+u.birthday+' — '+urgency+'</span></div>';
+      return'<div class="bday-alert-item"><span style="font-weight:500">'+u.name+'</span><span style="color:'+color+';font-weight:600;font-size:12px">'+formatBirthdayDisplay(u.birthday)+' — '+urgency+'</span></div>';
     }).join("");
   }catch(e){console.warn("Birthday alert load failed:",e);}
 }
@@ -4458,7 +4488,7 @@ async function checkDedupOnInput(){
       const exact=matches.filter(m=>m.agent_name.toLowerCase()!==name.toLowerCase());
       if(exact.length){
         warn.classList.add("show");
-        warn.innerHTML="⚠️ Similar agent names already exist: <strong>"+exact.map(m=>m.agent_name).join(", ")+"</strong> — make sure this isn't a duplicate.";
+        warn.innerHTML="⚠️ Similar agent names already exist: <strong>"+exact.map(m=>escHtml(m.agent_name)).join(", ")+"</strong> — make sure this isn't a duplicate.";
       }else{warn.classList.remove("show");}
     }catch(e){warn.classList.remove("show");}
   },600);
@@ -4599,7 +4629,7 @@ async function showDailyCheckin(){
 
     // ── Still open — things worth actually talking through together ──
     const openItems=[
-      ...(escToday||[]).map(f=>"⚠️ "+properCase(f.agent_name)+" — "+f.act_type+(f.notes?": "+f.notes:"")),
+      ...(escToday||[]).map(f=>"⚠️ "+properCase(f.agent_name)+" — "+escHtml(f.act_type)+(f.notes?": "+escHtml(f.notes):"")),
       ...(flaggedOpen&&flaggedOpen.length?["🚩 "+flaggedOpen.length+" open LP flag"+(flaggedOpen.length!==1?"s":"")+" awaiting response"]:[])
     ];
 
@@ -4805,6 +4835,94 @@ function addScrollHintIfNeeded(elId){
     hint.onclick=function(){el.scrollTop+=120;};
     el.insertAdjacentElement("afterend",hint);
   }
+}
+
+// Parses a stored birthday string into {month (0-indexed), day}. Supports the standard MM/DD
+// format going forward, and legacy "Mon Day" / "Month Day" entries already in the data so old
+// records don't silently stop matching once we standardize on MM/DD.
+// Auto-formats a birthday field as MM/DD while typing — inserts the slash automatically so it's
+// much harder to end up with an inconsistent format like "March 14" or "3-14" that the birthday
+// matching logic won't recognize.
+// Combine the structured Street/City/State/Zip fields into the single "address" text column,
+// and split an existing address string back into those fields for editing.
+function combineAddress(street,city,state,zip){
+  const parts=[];
+  if(street&&street.trim())parts.push(street.trim());
+  const cityStateZip=[city?city.trim():"",[state?state.trim().toUpperCase():"",zip?zip.trim():""].filter(Boolean).join(" ")].filter(Boolean).join(", ");
+  if(cityStateZip)parts.push(cityStateZip);
+  return parts.join(", ")||null;
+}
+function splitAddress(full){
+  if(!full)return{street:"",city:"",state:"",zip:""};
+  const parts=full.split(",").map(p=>p.trim()).filter(Boolean);
+  if(parts.length>=2){
+    const street=parts[0];
+    const stateZipMatch=(parts[parts.length-1]||"").match(/^([A-Za-z]{2})\s*(\d{5}(-\d{4})?)?$/);
+    if(stateZipMatch&&parts.length>=3){
+      return{street,city:parts.slice(1,parts.length-1).join(", "),state:stateZipMatch[1]?stateZipMatch[1].toUpperCase():"",zip:stateZipMatch[2]||""};
+    }
+    return{street,city:parts.slice(1).join(", "),state:"",zip:""};
+  }
+  return{street:full,city:"",state:"",zip:""};
+}
+function applyAddressToFields(full,prefix){
+  const parsed=splitAddress(full);
+  const streetEl=document.getElementById(prefix+"Street");
+  const cityEl=document.getElementById(prefix+"City");
+  const stateEl=document.getElementById(prefix+"State");
+  const zipEl=document.getElementById(prefix+"Zip");
+  if(streetEl)streetEl.value=parsed.street;
+  if(cityEl)cityEl.value=parsed.city;
+  if(stateEl)stateEl.value=parsed.state;
+  if(zipEl)zipEl.value=parsed.zip;
+}
+
+function formatBirthdayInput(input){
+  let digits=input.value.replace(/\D/g,"").slice(0,4);
+  input.value=digits.length>2?digits.slice(0,2)+"/"+digits.slice(2):digits;
+}
+function isValidBirthdayFormat(str){
+  if(!str)return true;
+  return /^(0[1-9]|1[0-2])\/(0[1-9]|[12]\d|3[01])$/.test(str.trim());
+}
+
+// Bulk imports (both Reconnect XLSX and Contacts CSV/XLSX) get whatever format a spreadsheet
+// happens to use — this converts anything parseable into the standard MM/DD, so the manual-entry
+// validation isn't the only place format actually gets enforced. Keeps the raw value if it truly
+// can't be parsed, rather than silently dropping real data.
+function normalizeBirthdayForImport(raw){
+  if(!raw)return null;
+  const str=String(raw).trim();
+  if(!str)return null;
+  const parsed=parseBirthdayMD(str);
+  if(parsed)return String(parsed.month+1).padStart(2,"0")+"/"+String(parsed.day).padStart(2,"0");
+  return str; // couldn't confidently parse — keep it rather than lose the data, just not standardized
+}
+// Reformats a stored birthday (old or new format) to MM/DD for display, so lists don't show a mix
+// of "Jun 21" and "06/21" side by side even before every record gets manually cleaned up.
+function formatBirthdayDisplay(str){
+  const parsed=parseBirthdayMD(str);
+  if(!parsed)return str||"";
+  return String(parsed.month+1).padStart(2,"0")+"/"+String(parsed.day).padStart(2,"0");
+}
+
+function parseBirthdayMD(str){
+  if(!str)return null;
+  const s=str.trim();
+  const slashMatch=s.match(/^(\d{1,2})\s*\/\s*(\d{1,2})$/);
+  if(slashMatch){
+    const month=parseInt(slashMatch[1],10)-1;
+    const day=parseInt(slashMatch[2],10);
+    if(month>=0&&month<=11&&day>=1&&day<=31)return{month,day};
+    return null;
+  }
+  const parts=s.split(" ");
+  if(parts.length>=2){
+    const monthNum=new Date(Date.parse(parts[0]+" 1, 2021")).getMonth();
+    const day=parseInt(parts[1]);
+    if(!isNaN(monthNum)&&!isNaN(day)&&day>=1&&day<=31)return{month:monthNum,day};
+  }
+  return null;
 }
 
 function toggleQuickLogFollowup(){
@@ -5147,20 +5265,20 @@ function renderRcGroup(list,groupStatus){
       '<div class="rc-agent-top">'+
         (groupStatus!=="removed"?'<input type="checkbox" class="rc-select-box" data-id="'+rid+'" onchange="rcToggleSelect('+rid+',this.checked)" style="margin-right:8px;margin-top:4px;flex-shrink:0">':'')+
         '<div>'+
-          '<div class="rc-agent-name">'+r.agent_name+' '+gradeBadge+' '+daysBadge+contactedBadge+removedBadge+'</div>'+
+          '<div class="rc-agent-name">'+escHtml(r.agent_name)+' '+gradeBadge+' '+daysBadge+contactedBadge+removedBadge+'</div>'+
           '<div class="rc-agent-meta">'+
             '<span>Last lead: '+lastInteraction+'</span>'+
             (closesInfo?'<span>'+closesInfo+'</span>':'')+
             '<span>'+lpTouchStr+'</span>'+
             (contactInfo?'<span>'+contactInfo+'</span>':'')+
-            (r.notes?'<span>'+r.notes+'</span>':'')+
+            (r.notes?'<span>'+escHtml(r.notes)+'</span>':'')+
           '</div>'+
         '</div>'+
         '<div class="rc-agent-actions">'+actions+'</div>'+
       '</div>'+
       // Inline log form
       '<div id="rc-log-'+rid+'" class="rc-inline-form">'+
-        '<div style="font-size:11px;font-weight:600;color:#9585C0;margin-bottom:6px">Log outreach — '+r.agent_name+'</div>'+
+        '<div style="font-size:11px;font-weight:600;color:#9585C0;margin-bottom:6px">Log outreach — '+escHtml(r.agent_name)+'</div>'+
         '<div style="font-size:11px;color:var(--brand);margin-bottom:8px;font-weight:500">Pull up RETR first — find a recent sale to mention in your opener.</div>'+
         (r.notes?'<div style="font-size:11px;color:var(--text-3);background:var(--surface-2);border-radius:6px;padding:7px 10px;margin-bottom:8px;font-style:italic">Last note: "'+escHtml(r.notes)+'"</div>':'')+
         '<select id="rc-log-type-'+rid+'">'+ACT_TYPE_OPTIONS+'</select>'+
@@ -5176,7 +5294,7 @@ function renderRcGroup(list,groupStatus){
       '</div>'+
       // Remove form
       '<div id="rc-remove-'+rid+'" class="rc-remove-form">'+
-        '<div style="font-size:11px;font-weight:600;color:#B85B00;margin-bottom:8px">Remove '+r.agent_name+' from reconnect list</div>'+
+        '<div style="font-size:11px;font-weight:600;color:#B85B00;margin-bottom:8px">Remove '+escHtml(r.agent_name)+' from reconnect list</div>'+
         '<input type="text" id="rc-remove-reason-'+rid+'" placeholder="Reason (optional — e.g. moved, retired, DNC...)" style="width:100%;border:0.5px solid #FFE69C;border-radius:6px;padding:7px 10px;font-size:12px;font-family:inherit;outline:none;box-sizing:border-box;margin-bottom:8px">'+
         '<div style="display:flex;gap:8px">'+
           '<button class="btn-sm" style="background:#A32D2D;color:#fff;border:none;border-radius:6px;padding:6px 12px;cursor:pointer;font-family:inherit;font-size:12px" onclick="rcConfirmRemove('+rid+')">Confirm remove</button>'+
@@ -5303,7 +5421,7 @@ async function rcParseXLSX(arrayBuffer){
           email:r["Email"]?String(r["Email"]).trim().toLowerCase():null,
           phone:r["Phone Number"]?String(r["Phone Number"]).trim():null,
           address:r["Address"]?String(r["Address"]).trim():null,
-          birthday:r["Birthday"]?String(r["Birthday"]).trim():null,
+          birthday:normalizeBirthdayForImport(r["Birthday"]),
           notes:r["Notes"]?String(r["Notes"]).trim():null,
           status:"active",
           uploaded_at:uploadedAt
@@ -5426,11 +5544,11 @@ function renderNetworkFeed(data){
     const isCtc=(isRm?a.act_type:a.activity_type)===CTC_TYPE;
     const badgeClass=isRm?(isCtc?"ctc":"rm"):"lp";
     const badgeText=isRm?badgeEmoji(a.act_type||""):badgeEmoji(a.activity_type||"LP Call");
-    const lpLabel=isRm?"":'<span style="font-size:10px;color:#bbb;font-weight:400;margin-left:6px">via '+(a.lp||"LP")+'</span>';
+    const lpLabel=isRm?"":'<span style="font-size:10px;color:#bbb;font-weight:400;margin-left:6px">via '+escHtml(a.lp||"LP")+'</span>';
     return'<div class="feed-item"><div class="feed-top"><span class="feed-agent">'+properCase(a.agent_name)+lpLabel+'</span><div class="feed-right"><span class="feed-date">'+fmtDate(a.displayDate)+'</span>'+( isRm?'<button class="btn-sm" onclick="openEditModal('+a.id+')" style="font-size:10px;padding:3px 8px">Edit</button><button class="btn-sm danger" onclick="openConfirm('+a.id+',\''+a.agent_name.replace(/'/g,"\\'") +'\',\''+a.displayType.replace(/'/g,"\\'") +'\')">Delete</button>':'')+'</div></div><span class="feed-badge '+badgeClass+'">'+badgeText+'</span>'+
-    (a.outcome?'<div class="feed-outcome">'+a.outcome+'</div>':"")+
+    (a.outcome?'<div class="feed-outcome">'+escHtml(a.outcome)+'</div>':"")+
     ((isRm?a.follow_up_date:null)?'<div class="feed-fu">Follow-up: '+fmtDate(isRm?a.follow_up_date:null)+'</div>':"")+
-    ((isRm?a.notes:a.note)?'<div class="feed-notes">"'+(isRm?a.notes:a.note)+'"</div>':"")+
+    ((isRm?a.notes:a.note)?'<div class="feed-notes">"'+escHtml(isRm?a.notes:a.note)+'"</div>':"")+
     '</div>'
   }).join("");
 }
@@ -5461,17 +5579,17 @@ function renderFeed(data){
     const safeAgent=agentName.replace(/'/g,"\\'");
     const safeType=(a._type||"").replace(/'/g,"\\'");
     return'<div class="feed-item">'
-      +'<div class="feed-top"><span class="feed-agent">'+agentName+'</span>'
+      +'<div class="feed-top"><span class="feed-agent">'+escHtml(agentName)+'</span>'
       +'<div class="feed-right"><span class="feed-date">'+fmtDate(a._date)+'</span>'
       +(isLP
-        ?'<span style="font-size:10px;padding:2px 8px;background:#E8EAF6;color:#3949AB;border-radius:20px;font-weight:600">LP: '+(a._lp||"LP")+'</span>'
+        ?'<span style="font-size:10px;padding:2px 8px;background:#E8EAF6;color:#3949AB;border-radius:20px;font-weight:600">LP: '+escHtml(a._lp||"LP")+'</span>'
         :'<button class="btn-sm" onclick="openEditModal('+a.id+')" style="font-size:10px;padding:3px 8px">Edit</button><button class="btn-sm danger" onclick="openConfirm('+a.id+',\''+safeAgent+'\',\''+safeType+'\')">Delete</button>'
       )
       +'</div></div>'
       +'<span class="feed-badge '+(isLP?"lp":a._type===CTC_TYPE?"ctc":"rm")+'">'+badgeEmoji(a._type)+'</span>'
-      +(a._outcome?'<div class="feed-outcome">'+a._outcome+'</div>':"")
+      +(a._outcome?'<div class="feed-outcome">'+escHtml(a._outcome)+'</div>':"")
       +(a.follow_up_date?'<div class="feed-fu">Follow-up: '+fmtDate(a.follow_up_date)+'</div>':"")
-      +(a._note?'<div class="feed-notes">"'+a._note+'"</div>':"")
+      +(a._note?'<div class="feed-notes">"'+escHtml(a._note)+'"</div>':"")
       +(a.edited_at?'<div class="feed-edited">Last edited: '+fmtDateTime(a.edited_at)+'</div>':"")
       +'</div>';
   }).join("");
@@ -5575,14 +5693,15 @@ async function doSearchHistory(name){
       // Birthday calculation
       let bdayInfo="";
       if(p.birthday){
-        const [month,day]=p.birthday.split(" ");
-        const monthNum=new Date(Date.parse(month+" 1, 2021")).getMonth();
-        const today2=new Date();
-        let bdayThisYear=new Date(today2.getFullYear(),monthNum,parseInt(day));
-        if(bdayThisYear<today2){bdayThisYear.setFullYear(today2.getFullYear()+1);}
-        const daysUntil=Math.round((bdayThisYear-today2)/86400000);
-        const bdayColor=daysUntil<=7?"#E91E63":daysUntil<=30?"#9C27B0":"#888";
-        bdayInfo='<div style="color:'+bdayColor+';font-weight:500">'+p.birthday+' ('+daysUntil+' days away)</div>';
+        const parsedBday=parseBirthdayMD(p.birthday);
+        if(parsedBday){
+          const today2=new Date();
+          let bdayThisYear=new Date(today2.getFullYear(),parsedBday.month,parsedBday.day);
+          if(bdayThisYear<today2){bdayThisYear.setFullYear(today2.getFullYear()+1);}
+          const daysUntil=Math.round((bdayThisYear-today2)/86400000);
+          const bdayColor=daysUntil<=7?"#E91E63":daysUntil<=30?"#9C27B0":"#888";
+          bdayInfo='<div style="color:'+bdayColor+';font-weight:500">'+formatBirthdayDisplay(p.birthday)+' ('+daysUntil+' days away)</div>';
+        }
       }
       
       // Last touch info
@@ -5602,11 +5721,11 @@ async function doSearchHistory(name){
       
       html+='<div style="background:#EEEBF8;border:0.5px solid #D9D3EE;border-radius:10px;padding:16px;margin-bottom:14px">'
         +'<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px">'
-        +'<div style="font-size:16px;font-weight:500;color:#4E3D8A">'+p.agent_name+'</div>'
+        +'<div style="font-size:16px;font-weight:500;color:#4E3D8A">'+escHtml(p.agent_name)+'</div>'
         +'<button onclick="openContactModal(\''+p.agent_name.replace(/'/g,"\\'")+'\''+')" style="padding:4px 12px;background:#fff;color:var(--brand-dark);border:1px solid var(--border);border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit">Edit contact</button>'
         +'</div>'
         +'<div style="display:flex;flex-direction:column;gap:8px;font-size:12px">'
-        +(p.email?'<div>Email <span style="font-weight:500;color:#4E3D8A">'+p.email+'</span></div>':"")+
+        +(p.email?'<div>Email <span style="font-weight:500;color:#4E3D8A">'+escHtml(p.email)+'</span></div>':"")+
         (p.phone?'<div>Phone <span style="font-weight:500;color:#4E3D8A">'+phoneCallLink(p.agent_name,p.phone)+'</span></div>':"")+
         bdayInfo+
         touchInfo+
@@ -5621,10 +5740,10 @@ async function doSearchHistory(name){
       html+='<div style="font-size:11px;color:#bbb;margin-bottom:10px">'+items.length+' contact records</div>';
       html+=items.map(item=>{
         const isCtc=item.type===CTC_TYPE,isLp=item.source==="LP";
-        return'<div class="feed-item"><div class="feed-top"><span class="feed-agent">'+( isLp?(item.lp||"LP")+" → "+item.agent:item.agent)+'</span><div class="feed-right"><span class="feed-date">'+fmtDate(item.date)+'</span>'+( isLp?'':'<button class="btn-sm" onclick="openEditModal('+item.id+')" style="font-size:10px;padding:3px 8px">Edit</button><button class="btn-sm danger" onclick="openConfirm('+item.id+',\''+item.agent.replace(/'/g,"\\'") +'\',\''+item.type.replace(/'/g,"\\'") +'\')">Delete</button>')+'</div></div><span class="feed-badge '+( isLp?"lp":isCtc?"ctc":"rm")+'">'+badgeEmoji(item.type)+'</span>'+
-        (item.outcome?'<div class="feed-outcome">'+item.outcome+'</div>':"")+
+        return'<div class="feed-item"><div class="feed-top"><span class="feed-agent">'+( isLp?escHtml(item.lp||"LP")+" → "+escHtml(item.agent):escHtml(item.agent))+'</span><div class="feed-right"><span class="feed-date">'+fmtDate(item.date)+'</span>'+( isLp?'':'<button class="btn-sm" onclick="openEditModal('+item.id+')" style="font-size:10px;padding:3px 8px">Edit</button><button class="btn-sm danger" onclick="openConfirm('+item.id+',\''+item.agent.replace(/'/g,"\\'") +'\',\''+item.type.replace(/'/g,"\\'") +'\')">Delete</button>')+'</div></div><span class="feed-badge '+( isLp?"lp":isCtc?"ctc":"rm")+'">'+badgeEmoji(item.type)+'</span>'+
+        (item.outcome?'<div class="feed-outcome">'+escHtml(item.outcome)+'</div>':"")+
         (item.fu?'<div class="feed-fu">Follow-up: '+fmtDate(item.fu)+'</div>':"")+
-        (item.notes?'<div class="feed-notes">"'+item.notes+'"</div>':"")+
+        (item.notes?'<div class="feed-notes">"'+escHtml(item.notes)+'"</div>':"")+
         (item.edited_at?'<div class="feed-edited">Last edited: '+fmtDateTime(item.edited_at)+'</div>':"")+
       '</div>';
     }).join("");
@@ -5886,8 +6005,8 @@ async function loadManagement(){
         document.getElementById("danielFeedbackCard")&&(document.getElementById("danielFeedbackCard").style.display="block");
         document.getElementById("danielFeedbackFlags").innerHTML=feedbackFlags.map(f=>
           '<div style="background:var(--danger-bg);border:1px solid var(--border-danger);border-radius:var(--radius-sm);padding:10px 12px;margin-bottom:8px">'
-          +'<div style="display:flex;justify-content:space-between;margin-bottom:4px"><span style="font-weight:600;font-size:13px;color:var(--text-1)">'+properCase(f.agent_name)+'</span><span style="font-size:10px;color:var(--text-3)">'+fmtDate(f.act_date)+' · '+(f.act_type||'')+'</span></div>'
-          +(f.notes?'<div style="font-size:12px;color:var(--text-2)">'+f.notes+'</div>':'')
+          +'<div style="display:flex;justify-content:space-between;margin-bottom:4px"><span style="font-weight:600;font-size:13px;color:var(--text-1)">'+properCase(f.agent_name)+'</span><span style="font-size:10px;color:var(--text-3)">'+fmtDate(f.act_date)+' · '+escHtml(f.act_type||'')+'</span></div>'
+          +(f.notes?'<div style="font-size:12px;color:var(--text-2)">'+escHtml(f.notes)+'</div>':'')
           +'</div>'
         ).join("");
       }
@@ -6393,7 +6512,7 @@ async function renderDanielCoverage(){
 
 function renderMgmtTable(acts){
   document.getElementById("danielBody").innerHTML=acts.length
-    ?acts.map(a=>'<tr><td>'+a.agent_name+'</td><td>'+badgeEmoji(a.act_type)+'</td><td>'+( a.outcome||"—")+'</td><td>'+fmtDate(a.act_date)+'</td><td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+( a.notes||"—")+'</td></tr>').join("")
+    ?acts.map(a=>'<tr><td>'+escHtml(a.agent_name)+'</td><td>'+badgeEmoji(a.act_type)+'</td><td>'+escHtml(a.outcome||"—")+'</td><td>'+fmtDate(a.act_date)+'</td><td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+escHtml(a.notes||"—")+'</td></tr>').join("")
     :'<tr><td colspan="5" style="text-align:center;padding:20px;color:#bbb">No activity in this period</td></tr>';
 }
 
@@ -6451,16 +6570,16 @@ function renderProspects(list){
     let actHtml="";
     if(acts.length){
       actHtml='<div class="pc-activity-feed"><div class="pc-activity-feed-title">Recent activity</div>';
-      acts.forEach(a=>{actHtml+='<div class="pc-activity-item"><span>'+badgeEmoji(a.act_type)+" "+fmtDate(a.act_date)+(a.outcome?" · "+a.outcome:"")+'</span><span style="color:#bbb;font-size:10px;white-space:nowrap">'+(a.notes?a.notes.substring(0,40)+"...":"")+'</span></div>';});
+      acts.forEach(a=>{actHtml+='<div class="pc-activity-item"><span>'+badgeEmoji(a.act_type)+" "+fmtDate(a.act_date)+(a.outcome?" · "+escHtml(a.outcome):"")+'</span><span style="color:#bbb;font-size:10px;white-space:nowrap">'+(a.notes?escHtml(a.notes.substring(0,40))+"...":"")+'</span></div>';});
       actHtml+='</div>';
     }
     let html='<div class="prospect-card '+(isDNC?"dnc":isNFM?"nfm":"")+'">';
-    html+='<div class="pc-top"><div><div class="pc-name">'+properCase(p.agent_name)+'</div><div class="pc-brokerage">'+(p.brokerage||"—")+'</div></div><span class="pc-badge '+bClass+'">'+bLabel+'</span></div>';
+    html+='<div class="pc-top"><div><div class="pc-name">'+properCase(p.agent_name)+'</div><div class="pc-brokerage">'+escHtml(p.brokerage||"—")+'</div></div><span class="pc-badge '+bClass+'">'+bLabel+'</span></div>';
     html+='<div class="pc-contact" style="justify-content:space-between;align-items:center">';
-    html+='<div style="display:flex;gap:14px;flex-wrap:wrap">'+(p.phone?'<span>'+phoneCallLink(p.agent_name,p.phone)+'</span>':'<span style="color:#ccc">No phone</span>')+(p.email?' <span>✉️ '+p.email+'</span>':'')+'</div>';
+    html+='<div style="display:flex;gap:14px;flex-wrap:wrap">'+(p.phone?'<span>'+phoneCallLink(p.agent_name,p.phone)+'</span>':'<span style="color:#ccc">No phone</span>')+(p.email?' <span>✉️ '+escHtml(p.email)+'</span>':'')+'</div>';
     html+='<button class="btn-sm" style="font-size:10px;padding:3px 8px;flex-shrink:0" onclick="openPipelineContact('+p.id+')">Edit contact</button></div>';
     if(p.follow_up_date&&!isDNC&&!isNFM)html+='<div class="pc-fudate '+(fuOvr?"overdue":"")+'">Follow-up: '+(fuOvr?"OVERDUE — ":"")+fmtDate(p.follow_up_date)+'</div>';
-    if(p.notes)html+='<div class="pc-notes">'+p.notes+'</div>';
+    if(p.notes)html+='<div class="pc-notes">'+escHtml(p.notes)+'</div>';
     html+=actHtml;
     html+='<div class="pc-actions"><button class="btn-sm" onclick="editProspect('+p.id+')">Edit</button>';
     if(isDNC||isNFM)html+='<button class="btn-sm" onclick="unmarkDNC('+p.id+')">Reactivate</button>';
@@ -6510,7 +6629,7 @@ function openAddAgentModal(){
   document.getElementById("addAgentName").value="";
   document.getElementById("addAgentPhone").value="";
   document.getElementById("addAgentEmail").value="";
-  document.getElementById("addAgentBrokerage").value="";
+  applyAddressToFields("","addAgent");
   document.getElementById("addAgentBirthday").value="";
   document.getElementById("addAgentTier").value="";
   document.getElementById("addAgentModal").classList.add("open");
@@ -6521,13 +6640,18 @@ function closeAddAgentModal(){
 async function saveNewAgent(){
   const name=(document.getElementById("addAgentName").value||"").trim();
   if(!name){toast("Enter the agent name.","error");return;}
+  const birthdayVal=document.getElementById("addAgentBirthday").value.trim();
+  if(birthdayVal&&!isValidBirthdayFormat(birthdayVal)){
+    toast("Birthday needs to be MM/DD, like 03/14 — no year, no month name.","error");
+    return;
+  }
   try{
     await sbFetch("agent_profiles",{method:"POST",prefer:"return=minimal",body:JSON.stringify({
       agent_name:name,
       phone:document.getElementById("addAgentPhone").value.trim()||null,
       email:document.getElementById("addAgentEmail").value.trim()||null,
-      address:document.getElementById("addAgentBrokerage").value.trim()||null,
-      birthday:document.getElementById("addAgentBirthday").value.trim()||null,
+      address:combineAddress(document.getElementById("addAgentStreet").value,document.getElementById("addAgentCity").value,document.getElementById("addAgentState").value,document.getElementById("addAgentZip").value),
+      birthday:birthdayVal||null,
       tier:document.getElementById("addAgentTier").value||null
     })});
     toast(name+" added to contacts ✓","success");
@@ -6571,13 +6695,19 @@ async function openContactModal(name,phone,email,brokerage,birthday){
     }catch(e){}
   }
   document.getElementById("contactPhone").value=phone||"";document.getElementById("contactEmail").value=email||"";
-  document.getElementById("contactBrokerage").value=brokerage||"";document.getElementById("contactBirthday").value=birthday||"";
+  applyAddressToFields(brokerage||"","contact");
+  document.getElementById("contactBirthday").value=birthday||"";
   document.getElementById("contactModal").classList.add("open");
 }
 function closeContactModal(){document.getElementById("contactModal").classList.remove("open");editingContactName=null;}
 async function saveContactModal(){
   if(!editingContactName)return;
-  const payload={agent_name:editingContactName,phone:document.getElementById("contactPhone").value.trim()||null,email:document.getElementById("contactEmail").value.trim()||null,address:document.getElementById("contactBrokerage").value.trim()||null,birthday:document.getElementById("contactBirthday").value.trim()||null,tier:document.getElementById("contactTier").value||null,do_not_contact:document.getElementById("contactDNC").checked};
+  const birthdayVal=document.getElementById("contactBirthday").value.trim();
+  if(birthdayVal&&!isValidBirthdayFormat(birthdayVal)){
+    toast("Birthday needs to be MM/DD, like 03/14 — no year, no month name.","error");
+    return;
+  }
+  const payload={agent_name:editingContactName,phone:document.getElementById("contactPhone").value.trim()||null,email:document.getElementById("contactEmail").value.trim()||null,address:combineAddress(document.getElementById("contactStreet").value,document.getElementById("contactCity").value,document.getElementById("contactState").value,document.getElementById("contactZip").value),birthday:birthdayVal||null,tier:document.getElementById("contactTier").value||null,do_not_contact:document.getElementById("contactDNC").checked};
   try{
     // Case-insensitive lookup by id — an exact-string match here was the likely cause of
     // duplicate profiles (e.g. "Cheryl Kinsey" vs "CHERYL KINSEY" creating two separate rows
@@ -6609,11 +6739,9 @@ async function loadCalendar(){
     calBirthdays={};
     (agents||[]).forEach(a=>{
       if(!a.birthday)return;
-      const parts=a.birthday.trim().split(" ");
-      if(parts.length<2)return;
-      const monthNum=new Date(Date.parse(parts[0]+" 1, 2021")).getMonth();
-      const day=parseInt(parts[1]);
-      if(isNaN(monthNum)||isNaN(day))return;
+      const parsed=parseBirthdayMD(a.birthday);
+      if(!parsed)return;
+      const{month:monthNum,day}=parsed;
       if(monthNum===calMonth){
         const dateStr=calYear+"-"+String(calMonth+1).padStart(2,"0")+"-"+String(day).padStart(2,"0");
         if(!calBirthdays[dateStr])calBirthdays[dateStr]=[];
@@ -6642,7 +6770,7 @@ function renderCalendar(){
     html+='<div class="cal-day'+( isToday?" today":"")+'" style="'+( isSelected?"background:#EEEBF8;border-color:#AFA9EC;":"")+'" onclick="selectCalDay(\''+ dateStr +'\')">';
     html+='<div class="cal-num">'+d+(bdayNames.length?'':'')+'</div>';
     bdayNames.slice(0,1).forEach(n=>{html+='<div class="cal-event" style="background:#FCE4EC;color:#880E4F;border-radius:4px;font-size:9px;padding:1px 4px;margin-bottom:1px">'+n+'</div>';});
-    events.slice(0,bdayNames.length?1:2).forEach(e=>{const cls=e.calType==="followup"?"followup":calEventClass(e.act_type);html+='<div class="cal-event '+cls+'">'+e.agent_name+'</div>';});
+    events.slice(0,bdayNames.length?1:2).forEach(e=>{const cls=e.calType==="followup"?"followup":calEventClass(e.act_type);html+='<div class="cal-event '+cls+'">'+escHtml(e.agent_name)+'</div>';});
     const totalShown=bdayNames.slice(0,1).length+events.slice(0,bdayNames.length?1:2).length;
     const totalAll=bdayNames.length+events.length;
     if(totalAll>totalShown)html+='<div style="font-size:9px;color:#aaa;padding:1px 4px">+'+(totalAll-totalShown)+' more</div>';
@@ -6667,7 +6795,7 @@ function showCalDayDetail(dateStr){
     const isFollowup=e.calType==="followup",cls=isFollowup?"followup":calEventClass(e.act_type);
     const dotColors={meeting:"#9585C0",followup:"#B85B00",ctc:"#0F6E56",other:"#9585C0"};
     const dotColor=dotColors[cls]||"#9585C0";
-    return'<div class="cal-day-item"><div class="cal-day-dot" style="background:'+dotColor+'"></div><div style="flex:1"><div style="font-size:12px;font-weight:500;color:#1a1a2e">'+e.agent_name+'</div><div style="font-size:11px;color:#aaa">'+badgeEmoji(e.act_type)+" "+(isFollowup?"Follow-up — "+e.act_type:e.act_type)+(e.outcome?" · "+e.outcome:"")+'</div>'+( e.notes?'<div style="font-size:11px;color:#777;font-style:italic;margin-top:2px">"'+e.notes.substring(0,80)+'"</div>':"")+'</div></div>';
+    return'<div class="cal-day-item"><div class="cal-day-dot" style="background:'+dotColor+'"></div><div style="flex:1"><div style="font-size:12px;font-weight:500;color:#1a1a2e">'+escHtml(e.agent_name)+'</div><div style="font-size:11px;color:#aaa">'+badgeEmoji(e.act_type)+" "+(isFollowup?"Follow-up — "+escHtml(e.act_type):escHtml(e.act_type))+(e.outcome?" · "+escHtml(e.outcome):"")+'</div>'+( e.notes?'<div style="font-size:11px;color:#777;font-style:italic;margin-top:2px">"'+escHtml(e.notes.substring(0,80))+'"</div>':"")+'</div></div>';
   }).join("");
   detail.style.display="block";
 }
@@ -6732,7 +6860,7 @@ async function importContactsFile(input){
       if(colMap.email&&row[colMap.email])payload.email=row[colMap.email].toString().trim();
       if(colMap.phone&&row[colMap.phone])payload.phone=row[colMap.phone].toString().trim();
       if(colMap.address&&row[colMap.address])payload.address=row[colMap.address].toString().trim();
-      if(colMap.birthday&&row[colMap.birthday])payload.birthday=row[colMap.birthday].toString().trim();
+      if(colMap.birthday&&row[colMap.birthday])payload.birthday=normalizeBirthdayForImport(row[colMap.birthday]);
       if(colMap.tier&&row[colMap.tier])payload.tier=row[colMap.tier].toString().trim().toUpperCase();
       if(colMap.retained&&row[colMap.retained]!=null)payload.retained=truthy(row[colMap.retained]);
       if(colMap.dnc&&row[colMap.dnc]!=null)payload.do_not_contact=truthy(row[colMap.dnc]);
@@ -6797,7 +6925,7 @@ function renderContactsDupeBanner(contacts){
   const dupeCount=dupes.length;
   el.innerHTML='<div style="background:var(--warning-bg);border:1px solid #FFE69C;border-radius:8px;padding:10px 14px;margin-bottom:14px">'
     +'<div style="font-size:12px;font-weight:700;color:#B85B00;margin-bottom:4px">⚠️ '+dupeCount+' agent name'+(dupeCount!==1?"s":"")+' with duplicate profiles (likely casing/spacing differences)</div>'
-    +'<div style="font-size:11px;color:#8A6100">'+dupes.map(([n,list])=>list.map(c=>c.agent_name).join(" / ")).join(", ")+'</div>'
+    +'<div style="font-size:11px;color:#8A6100">'+dupes.map(([n,list])=>list.map(c=>escHtml(c.agent_name)).join(" / ")).join(", ")+'</div>'
     +'<button onclick="openDupeCleanupModal()" style="margin-top:8px;font-size:11px;font-weight:600;padding:6px 12px;background:#B85B00;color:#fff;border:none;border-radius:6px;cursor:pointer;font-family:inherit">Review &amp; clean up →</button>'
     +'</div>';
 }
@@ -6829,13 +6957,13 @@ function renderDupeCleanupList(){
     const sorted=[...group].sort((a,b)=>completeness(b)-completeness(a));
     const keep=sorted[0],rest=sorted.slice(1);
     return'<div style="border:1px solid var(--border-light);border-radius:8px;padding:12px;margin-bottom:12px">'
-      +'<div style="font-size:12px;font-weight:700;color:var(--text-1);margin-bottom:8px">"'+group[0].agent_name+'" — '+group.length+' profiles found</div>'
+      +'<div style="font-size:12px;font-weight:700;color:var(--text-1);margin-bottom:8px">"'+escHtml(group[0].agent_name)+'" — '+group.length+' profiles found</div>'
       +group.map(c=>{
         const isRecommendedKeep=c===keep;
         const details=[c.phone?"phone":"",c.email?"email":"",c.tier?"tier "+c.tier:"",c.birthday?"birthday":"",c.do_not_contact?"DNC":""].filter(Boolean).join(", ")||"no extra info";
         const safeName=c.agent_name.replace(/'/g,"\\'");
         return'<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-top:1px solid var(--border-light)">'
-          +'<div><span style="font-size:13px;font-weight:600;color:var(--text-1)">'+c.agent_name+'</span>'
+          +'<div><span style="font-size:13px;font-weight:600;color:var(--text-1)">'+escHtml(c.agent_name)+'</span>'
           +(isRecommendedKeep?' <span style="font-size:10px;font-weight:700;color:var(--success);background:var(--success-bg);padding:1px 7px;border-radius:20px">Recommended keep</span>':'')
           +'<div style="font-size:11px;color:var(--text-3);margin-top:2px">'+details+'</div></div>'
           +(isRecommendedKeep
@@ -6887,11 +7015,11 @@ function renderContacts(list){
     return'<div class="contact-row">'+
       '<div class="contact-avatar">'+initials+'</div>'+
       '<div class="contact-info">'+
-        '<div class="contact-name" style="display:flex;align-items:center;gap:7px">'+c.agent_name+tierBadge(c.tier)+'</div>'+
+        '<div class="contact-name" style="display:flex;align-items:center;gap:7px">'+escHtml(c.agent_name)+tierBadge(c.tier)+'</div>'+
         '<div class="contact-meta">'+
           (c.phone?'<span>'+phoneCallLink(c.agent_name,c.phone)+'</span>':'<span style="color:#ffb3b3">No phone</span>')+
-          (c.email?'<span>'+c.email+'</span>':'')+
-          (c.birthday?'<span class="contact-bday">'+c.birthday+'</span>':'<span style="color:#ffb3b3">No birthday</span>')+
+          (c.email?'<span>'+escHtml(c.email)+'</span>':'')+
+          (c.birthday?'<span class="contact-bday">'+formatBirthdayDisplay(c.birthday)+'</span>':'<span style="color:#ffb3b3">No birthday</span>')+
         '</div>'+
       '</div>'+
       '<button class="btn-sm" onclick="openContactsEdit(this)" data-name="'+c.agent_name.replace(/"/g,'&quot;')+'" style="flex-shrink:0">Edit</button>'+
@@ -6906,7 +7034,7 @@ function openContactsEdit(nameOrEl){
   document.getElementById("contactModalName").textContent=name;
   document.getElementById("contactPhone").value=c.phone||"";
   document.getElementById("contactEmail").value=c.email||"";
-  document.getElementById("contactBrokerage").value=c.address||"";
+  applyAddressToFields(c.address||"","contact");
   document.getElementById("contactBirthday").value=c.birthday||"";
   document.getElementById("contactTier").value=c.tier||"";
   document.getElementById("contactDNC").checked=!!(c.do_not_contact);
