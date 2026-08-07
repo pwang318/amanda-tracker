@@ -171,6 +171,7 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI'
 
 /* ── TIER BADGES ───────────────────────────────────────────────── */
 .tier-badge{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;font-size:10px;font-weight:800;flex-shrink:0}
+.tier-Channel{background:#1E3A8A;color:#fff}
 .tier-A{background:#FFC107;color:#5D4000}
 .tier-B{background:#B0BEC5;color:#263238}
 .tier-C{background:#C07D3E;color:#fff}
@@ -210,6 +211,7 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI'
 .rc-agent-meta{font-size:11px;color:var(--text-3);margin-top:4px;display:flex;flex-wrap:wrap;gap:8px;line-height:1.6}
 .rc-agent-actions{display:flex;gap:6px;flex-shrink:0;flex-wrap:wrap;justify-content:flex-end}
 .rc-badge{display:inline-block;padding:2px 9px;border-radius:20px;font-size:10px;font-weight:700;letter-spacing:.2px}
+.rc-badge-Channel{background:#1E3A8A;color:#fff}
 .rc-badge-A{background:#FFC107;color:#5D4000}
 .rc-badge-B{background:#B0BEC5;color:#263238}
 .rc-badge-C{background:#C07D3E;color:#fff}
@@ -246,6 +248,7 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI'
 .btn-primary:hover{background:var(--brand-dark);box-shadow:0 4px 12px rgba(91,79,207,.3)}
 .btn-primary:disabled{background:var(--text-4);cursor:not-allowed;box-shadow:none}
 .btn-sm{background:var(--surface-2);border:1px solid var(--border);padding:5px 11px;border-radius:var(--radius-sm);font-size:11px;cursor:pointer;font-weight:600;color:var(--text-2);font-family:inherit;transition:all .15s}
+.btn-sm.btn-active{background:var(--brand);border-color:var(--brand);color:#fff}
 .btn-sm:hover{background:var(--brand-light);color:var(--brand);border-color:var(--brand-mid)}
 .btn-sm.danger{background:#FFF5F5;color:var(--danger);border-color:#FACACA}
 .btn-sm.danger:hover{background:var(--danger-bg)}
@@ -370,6 +373,7 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI'
   <div class="tab" onclick="switchTab('contacts')">Contacts</div>
   <div class="tab" onclick="switchTab('growth')">Agent Growth</div>
   <div class="tab" onclick="switchTab('daniel')">Management View</div>
+  <div class="tab" onclick="switchTab('portfolio')">Monthly Portfolio Review</div>
 </div>
 
 <div id="globalLockBanner" style="display:none"></div>
@@ -706,6 +710,7 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI'
         </div>
       </div>
       <div class="form-row one">
+        <div id="playbookHelperBox" style="display:none;background:var(--surface-2);border:0.5px solid var(--border);border-radius:8px;padding:10px 12px;margin-bottom:12px"></div>
         <div class="field"><label>Notes <span id="notesReqHint" style="font-size:10px;color:var(--text-4);font-weight:400;text-transform:none;letter-spacing:0"></span> <button type="button" onclick="toggleVoiceNote('activityNotes',this)" title="Dictate notes" style="font-size:12px;padding:2px 8px;background:var(--surface-2);color:var(--text-2);border:1px solid var(--border);border-radius:6px;cursor:pointer;font-weight:400;text-transform:none;letter-spacing:0">🎤</button></label><textarea id="activityNotes" placeholder="Details, referrals mentioned, next steps..."></textarea>
         <div id="activityWordCount" style="font-size:10px;color:var(--text-4);margin-top:3px"></div>
         </div>
@@ -740,7 +745,7 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI'
     <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:16px">
       <div class="period-toggle" style="margin-bottom:0">
         <button class="ptoggle active" id="fsrc-both" onclick="setFeedSource('both')">Both</button>
-        <button class="ptoggle" id="fsrc-amanda" onclick="setFeedSource('amanda')">Amanda only</button>
+        <button class="ptoggle" id="fsrc-amanda" onclick="setFeedSource('amanda')">RM only</button>
         <button class="ptoggle" id="fsrc-lp" onclick="setFeedSource('lp')">LP only</button>
       </div>
       <input type="text" id="feedSearch" placeholder="Search agent name or notes..." oninput="applyFeedFilters()" style="padding:9px 12px;border:0.5px solid #D9D3C7;border-radius:8px;font-size:13px;font-family:inherit;color:#1a1a2e;outline:none;width:100%">
@@ -798,7 +803,7 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI'
 </div>
 
 <div id="view-reconnect" class="view">
-  <!-- Clean header - no upload zone visible to Amanda -->
+  <!-- Clean header - no upload zone visible to the RM -->
   <div class="card">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
       <div>
@@ -826,6 +831,7 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI'
     <div class="rc-filters">
       <select id="rcGradeFilter" onchange="renderReconnect()">
         <option value="all">All grades</option>
+        <option value="Channel">Channel only</option>
         <option value="A">A-tier only</option>
         <option value="B">B-tier only</option>
         <option value="C">C-tier only</option>
@@ -1039,9 +1045,9 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI'
     <div id="danielProductionSignal"><div class="no-data">Loading...</div></div>
   </div>
 
-  <!-- NEEDS MANAGER ATTENTION — priority flags from Amanda -->
+  <!-- NEEDS MANAGER ATTENTION — priority flags from the RM -->
   <div class="card" style="border:1.5px solid #C8C0E0">
-    <div class="card-title" style="color:var(--brand-dark)">Needs Your Attention <span class="card-sub">flagged by Amanda as needing manager input — review these first</span></div>
+    <div class="card-title" style="color:var(--brand-dark)">Needs Your Attention <span class="card-sub">flagged by the RM as needing manager input — review these first</span></div>
     <div id="danielManagerFlags" style="max-height:320px;overflow-y:auto"><div class="no-data">Loading...</div></div>
   </div>
 
@@ -1120,7 +1126,7 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI'
       <div style="display:flex;gap:10px;flex-wrap:wrap">
         <select id="networkSourceFilter" onchange="applyNetworkFilters()" style="flex:1;padding:8px 11px;border:0.5px solid var(--border);border-radius:8px;font-size:12px;font-family:inherit;color:var(--text-2);background:var(--surface);">
           <option value="all">All sources</option>
-          <option value="RM">Amanda Only</option>
+          <option value="RM">RM Only</option>
           <option value="LP">LP Only</option>
         </select>
         <select id="networkPeriodFilter" onchange="applyNetworkFilters()" style="flex:1;padding:8px 11px;border:0.5px solid var(--border);border-radius:8px;font-size:12px;font-family:inherit;color:var(--text-2);background:var(--surface);">
@@ -1138,7 +1144,7 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI'
     <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px">
       <div style="text-align:center;padding:12px;background:#f5f4f8;border-radius:8px">
         <div style="font-size:24px;font-weight:500;color:#9585C0" id="networkTotalRm">—</div>
-        <div style="font-size:10px;color:#aaa;margin-top:3px">Amanda activities</div>
+        <div style="font-size:10px;color:#aaa;margin-top:3px">RM activities</div>
       </div>
       <div style="text-align:center;padding:12px;background:#f5f4f8;border-radius:8px">
         <div style="font-size:24px;font-weight:500;color:#1565C0" id="networkTotalLp">—</div>
@@ -1172,6 +1178,7 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI'
       <input type="text" id="contactsSearch" placeholder="Search by name, phone, email or birthday..." oninput="filterContacts()" style="flex:1;min-width:180px;padding:9px 11px;border:0.5px solid #D9D3C7;border-radius:8px;font-size:13px;font-family:inherit;color:#1a1a2e;outline:none">
       <select id="contactsFilter" onchange="filterContacts()" style="padding:8px 11px;border:0.5px solid var(--border);border-radius:8px;font-size:12px;font-family:inherit;color:var(--text-2);background:var(--surface);">
         <option value="all">All agents</option>
+        <option value="tier-Channel">Channel</option>
         <option value="tier-A">A-tier</option>
         <option value="tier-B">B-tier</option>
         <option value="tier-C">C-tier</option>
@@ -1192,6 +1199,28 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI'
     <div style="font-size:12px;color:var(--text-2);line-height:1.5">Tier criteria: <strong>C</strong> = 0-1 closes · <strong>B</strong> = 2-3 closes · <strong>A</strong> = 4+ closes (past year). Stays current from either the Reconnect tab's Power BI upload or the Contacts Bulk Import — you only need to do one, not both.</div>
   </div>
   <div id="growthMovementPanel"><div class="no-data">Loading...</div></div>
+</div>
+
+<div id="view-portfolio" class="view">
+  <div class="card" style="background:linear-gradient(135deg,#1E3A8A,#2D4FA0);border:1px solid #1E3A8A">
+    <div class="card-title" style="font-size:15px;color:#fff">Monthly Portfolio Review</div>
+    <div style="font-size:12px;color:#DDE4F5;line-height:1.5">Playbook §17 — where the RM and Team Lead review Active Partner Count, Tier Migration, Active Agent-to-Lead Ratio, Partner Health, and Growth Opportunities together. Every number below is clickable to see the partners behind it.</div>
+  </div>
+  <div class="card" style="display:flex;gap:8px;padding:10px">
+    <button class="btn-sm" id="pfPeriodWeek" onclick="setPortfolioPeriod('week')">This Week</button>
+    <button class="btn-sm" id="pfPeriodMonth" onclick="setPortfolioPeriod('month')">This Month</button>
+    <button class="btn-sm" id="pfPeriodQuarter" onclick="setPortfolioPeriod('quarter')">This Quarter</button>
+  </div>
+  <div id="portfolioReviewBody"><div class="no-data">Loading...</div></div>
+</div>
+
+<div class="modal-overlay" id="portfolioListModal">
+  <div class="modal-box">
+    <div class="modal-header"><span class="modal-title" id="portfolioListModalTitle">Details</span><button class="modal-close" onclick="closePortfolioListModal()">×</button></div>
+    <div class="modal-sub" id="portfolioListModalSub"></div>
+    <div id="portfolioListModalBody" style="margin-top:10px;max-height:60vh;overflow-y:auto">Loading...</div>
+    <div style="margin-top:14px"><button class="btn-sm" onclick="closePortfolioListModal()">Close</button></div>
+  </div>
 </div>
 
 <!-- Add Agent Modal -->
@@ -1340,6 +1369,32 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI'
     <div class="field" style="margin-bottom:12px"><label>Birthday <span style="font-weight:400;color:var(--text-4)">(MM/DD — no year)</span></label><input type="text" id="contactBirthday" placeholder="e.g. 03/14" maxlength="5" oninput="formatBirthdayInput(this)"></div>
     <div class="field" style="margin-bottom:12px"><label>Things to remember <span style="font-weight:400;color:var(--text-4)">(hobbies, kids, what they mentioned last time — shows up right before you talk to them)</span></label><textarea id="contactPersonalNotes" placeholder="e.g. has a golden retriever named Max, daughter starting college in the fall, loves the Buckeyes..." rows="2"></textarea></div>
     <div class="field" style="margin-bottom:12px"><label>Tier</label><select id="contactTier"><option value="">No tier set</option><option value="A">A-Tier (Top producer, active partner)</option><option value="B">B-Tier (Mid-tier, building relationship)</option><option value="C">C-Tier (New or low-volume)</option></select></div>
+    <details style="margin-bottom:18px;border:0.5px solid var(--border);border-radius:8px;padding:10px 12px;background:var(--surface-2)">
+      <summary style="cursor:pointer;font-size:13px;font-weight:600;color:var(--text-1)">RM Playbook fields — Documentation Requirements (§13)</summary>
+      <div style="margin-top:12px">
+        <div class="field" style="margin-bottom:12px"><label>Next Growth Opportunity <span style="font-weight:400;color:var(--text-4)">(required for Channel/A partners — playbook §15)</span></label><textarea id="contactGrowthOpp" placeholder="e.g. convert B to A, host past-client event, introduce to team leader..." rows="2"></textarea></div>
+        <div class="field" style="margin-bottom:12px"><label>Growth Opportunity Follow-up Deadline</label><input type="date" id="contactGrowthOppDeadline"></div>
+        <div class="field" style="margin-bottom:12px"><label>Partner Goals</label><textarea id="contactGoals" rows="2"></textarea></div>
+        <div class="field" style="margin-bottom:12px"><label>Partner Pain Points</label><textarea id="contactPainPoints" rows="2"></textarea></div>
+        <div class="field" style="margin-bottom:12px"><label>Referral Leakage Notes</label><textarea id="contactLeakageNotes" rows="2"></textarea></div>
+        <div class="field" style="margin-bottom:12px"><label>Recovery Plan <span style="font-weight:400;color:var(--text-4)">(for Red partners — playbook §14)</span></label><textarea id="contactRecoveryPlan" rows="2"></textarea></div>
+        <div class="field" style="margin-bottom:12px"><label>Satisfaction / Support Rating <span style="font-weight:400;color:var(--text-4)">(your read on how they feel — not computable from activity data)</span></label><select id="contactSatisfaction"><option value="">Not set</option><option value="5">5 — Thriving, fully supported</option><option value="4">4 — Good, minor gaps</option><option value="3">3 — Neutral</option><option value="2">2 — Some frustration</option><option value="1">1 — At risk of leaving</option></select></div>
+        <div style="padding:8px 10px;background:#fff;border-radius:6px;border:0.5px solid var(--border-danger)">
+          <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:13px;font-weight:500;color:var(--text-1)">
+            <input type="checkbox" id="contactCompetitorRisk" style="width:16px;height:16px;cursor:pointer">
+            Signs of lost trust / competing lender gaining share
+          </label>
+          <div style="font-size:11px;color:var(--text-3);margin-top:4px;margin-left:26px">Drives Red status on the Partner Health Score (playbook §14) — check when you see it, uncheck once resolved.</div>
+        </div>
+        <div style="padding:8px 10px;background:#fff;border-radius:6px;border:0.5px solid var(--border);margin-top:10px">
+          <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:13px;font-weight:500;color:var(--text-1)">
+            <input type="checkbox" id="contactHighPotential" style="width:16px;height:16px;cursor:pointer">
+            High-Potential Agent
+          </label>
+          <div style="font-size:11px;color:var(--text-3);margin-top:4px;margin-left:26px">Growth radar per playbook §8 — flag agents worth investing extra time in, even before their production justifies it.</div>
+        </div>
+      </div>
+    </details>
     <div style="margin-bottom:18px;padding:10px 12px;background:var(--surface-2);border-radius:8px;border:0.5px solid var(--border)">
       <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:13px;font-weight:500;color:var(--text-1)">
         <input type="checkbox" id="contactDNC" style="width:16px;height:16px;cursor:pointer">
@@ -1462,7 +1517,7 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI'
     <div style="font-size:12px;font-weight:700;color:var(--brand);text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px">Under Contract Call (Listing Agent)</div>
     <div style="font-size:12.5px;color:var(--text-2);margin-bottom:8px">Call the listing agent as soon as a deal you're the buyer's lender on goes under contract. Set the tone early, this is your first real touchpoint with them on this file.</div>
     <div style="background:#1E2B3A;color:#fff;border-radius:var(--radius-sm);padding:10px 12px;margin-bottom:8px;font-size:12.5px;font-style:italic">
-      "Hey [Agent Name], this is Amanda from the Daniel Sa Team at NFM Lending. I'm calling about your listing at [Property Address], which has just gone into contract. I'm the lender representing the buyer. First, I have a couple of questions about the transaction, I want to make sure we have a smooth process. Does that sound good? Congratulations again on the sale."
+      "Hey [Agent Name], this is [Your Name] from the Daniel Sa Team at NFM Lending. I'm calling about your listing at [Property Address], which has just gone into contract. I'm the lender representing the buyer. First, I have a couple of questions about the transaction, I want to make sure we have a smooth process. Does that sound good? Congratulations again on the sale."
     </div>
     <div style="font-size:12.5px;color:var(--text-2);margin-bottom:4px">Questions to cover:</div>
     <ul style="font-size:12.5px;color:var(--text-2);margin:0 0 8px;padding-left:18px;line-height:1.6">
@@ -1485,7 +1540,7 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI'
     <div style="font-size:12px;font-weight:700;color:var(--brand);text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px">Under Contract Call (Buyer's Agent)</div>
     <div style="font-size:12.5px;color:var(--text-2);margin-bottom:8px">Call the buyer's agent once the file goes under contract. This call sets the tone for how you will work together throughout.</div>
     <div style="background:#1E2B3A;color:#fff;border-radius:var(--radius-sm);padding:10px 12px;margin-bottom:8px;font-size:12.5px;font-style:italic">
-      "Hey [Agent Name], this is Amanda from the Daniel Sa Team at NFM Lending. I'm calling about [Buyer Name]'s contract on [Property Address] — congratulations to you and your buyers for going into contract! I wanted to reach out personally and introduce myself. [LP Name] will be your main point of contact throughout the transaction and our team is here to support you every step of the way."
+      "Hey [Agent Name], this is [Your Name] from the Daniel Sa Team at NFM Lending. I'm calling about [Buyer Name]'s contract on [Property Address] — congratulations to you and your buyers for going into contract! I wanted to reach out personally and introduce myself. [LP Name] will be your main point of contact throughout the transaction and our team is here to support you every step of the way."
     </div>
     <div style="font-size:12.5px;color:var(--text-2);margin-bottom:4px">Questions to cover:</div>
     <ul style="font-size:12.5px;color:var(--text-2);margin:0 0 8px;padding-left:18px;line-height:1.6">
@@ -1502,7 +1557,7 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI'
     <div style="font-size:12px;font-weight:700;color:var(--brand);text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px">CTC Call</div>
     <div style="font-size:12.5px;color:var(--text-2);margin-bottom:8px">Process: call the agent, leave a voicemail if no answer, follow up with a text if still no response.</div>
     <div style="background:#1E2B3A;color:#fff;border-radius:var(--radius-sm);padding:10px 12px;margin-bottom:8px;font-size:12.5px;font-style:italic">
-      "Hi [Agent Name], this is Amanda, I'm the Relationship Manager for the Daniel Sa Team at NFM Lending. Congrats on getting [Buyer/Property] to clear to close! I wanted to check in personally, was there anything that went really smoothly for you, or anything we could've done better on our end?"
+      "Hi [Agent Name], this is [Your Name], I'm the Relationship Manager for the Daniel Sa Team at NFM Lending. Congrats on getting [Buyer/Property] to clear to close! I wanted to check in personally, was there anything that went really smoothly for you, or anything we could've done better on our end?"
     </div>
     <div style="font-size:12.5px;color:var(--text-2);margin-bottom:8px">If it's the listing agent and they don't already work with us, bridge straight into the meeting ask before ending the call:</div>
     <div style="background:#1E2B3A;color:#fff;border-radius:var(--radius-sm);padding:10px 12px;margin-bottom:16px;font-size:12.5px;font-style:italic">
@@ -1532,7 +1587,7 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI'
     <div style="font-size:12px;font-weight:700;color:var(--brand);text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px">No Answer — Follow-Up Text</div>
     <div style="font-size:12.5px;color:var(--text-2);margin-bottom:8px">Send immediately after the missed call.</div>
     <div style="background:#1E2B3A;color:#fff;border-radius:var(--radius-sm);padding:10px 12px;margin-bottom:16px;font-size:12.5px;font-style:italic">
-      "Hey [Name], this is Amanda with the Daniel Sa Team at NFM Lending. I just tried to give you a quick call to introduce myself. We love working alongside agents to support their buyers, create listing-specific payment strategies, and explore creative financing options to help you and your clients win in this market. I would love to connect for a quick 20-minute conversation. Do you have any availability next week?"
+      "Hey [Name], this is [Your Name] with the Daniel Sa Team at NFM Lending. I just tried to give you a quick call to introduce myself. We love working alongside agents to support their buyers, create listing-specific payment strategies, and explore creative financing options to help you and your clients win in this market. I would love to connect for a quick 20-minute conversation. Do you have any availability next week?"
     </div>
 
     <div style="background:var(--surface-2);border-radius:var(--radius-sm);padding:10px 12px;font-size:12.5px;color:var(--text-2);margin-bottom:16px">
@@ -1546,41 +1601,41 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI'
     <div style="font-size:12px;font-weight:700;color:var(--brand);text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px">Week 1: Break the Ice</div>
     <div style="font-size:12.5px;color:var(--text-2);margin-bottom:6px">Call:</div>
     <div style="background:#1E2B3A;color:#fff;border-radius:var(--radius-sm);padding:10px 12px;margin-bottom:8px;font-size:12.5px;font-style:italic">
-      "Hey [Agent Name], this is Amanda with the Daniel Sa Team at NFM Lending. I wanted to follow up after our meeting. It was great connecting with you and I'm excited to work together. How has your week been going?"
+      "Hey [Agent Name], this is [Your Name] with the Daniel Sa Team at NFM Lending. I wanted to follow up after our meeting. It was great connecting with you and I'm excited to work together. How has your week been going?"
     </div>
     <div style="font-size:12.5px;color:var(--text-2);margin-bottom:6px">Text if no answer:</div>
     <div style="background:#1E2B3A;color:#fff;border-radius:var(--radius-sm);padding:10px 12px;margin-bottom:16px;font-size:12.5px;font-style:italic">
-      "Hey [Agent Name], this is Amanda with the Daniel Sa Team at NFM. Great meeting with you. Looking forward to working together. Here to support you and your buyers."
+      "Hey [Agent Name], this is [Your Name] with the Daniel Sa Team at NFM. Great meeting with you. Looking forward to working together. Here to support you and your buyers."
     </div>
 
     <div style="font-size:12px;font-weight:700;color:var(--brand);text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px">Week 2: Value Touch</div>
     <div style="font-size:12.5px;color:var(--text-2);margin-bottom:6px">Call:</div>
     <div style="background:#1E2B3A;color:#fff;border-radius:var(--radius-sm);padding:10px 12px;margin-bottom:8px;font-size:12.5px;font-style:italic">
-      "Hey [Agent Name], it's Amanda with the Daniel Sa Team at NFM. I've been thinking about your business and wanted to share something I think will be useful for you. [share resource or market update]. Would you have a few minutes this week to connect?"
+      "Hey [Agent Name], it's [Your Name] with the Daniel Sa Team at NFM. I've been thinking about your business and wanted to share something I think will be useful for you. [share resource or market update]. Would you have a few minutes this week to connect?"
     </div>
     <div style="font-size:12.5px;color:var(--text-2);margin-bottom:6px">Text if no answer:</div>
     <div style="background:#1E2B3A;color:#fff;border-radius:var(--radius-sm);padding:10px 12px;margin-bottom:16px;font-size:12.5px;font-style:italic">
-      "Hey [Agent Name], it's Amanda with NFM. I have something I think will be useful for you. [resource]. Let's connect this week!"
+      "Hey [Agent Name], it's [Your Name] with NFM. I have something I think will be useful for you. [resource]. Let's connect this week!"
     </div>
 
     <div style="font-size:12px;font-weight:700;color:var(--brand);text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px">Week 3: Opportunity Call</div>
     <div style="font-size:12.5px;color:var(--text-2);margin-bottom:6px">Call:</div>
     <div style="background:#1E2B3A;color:#fff;border-radius:var(--radius-sm);padding:10px 12px;margin-bottom:8px;font-size:12.5px;font-style:italic">
-      "Hey [Agent Name], it's Amanda with the Daniel Sa Team at NFM. I've really enjoyed getting to know you. Do you have any buyers right now we can help with? We would love to earn your business."
+      "Hey [Agent Name], it's [Your Name] with the Daniel Sa Team at NFM. I've really enjoyed getting to know you. Do you have any buyers right now we can help with? We would love to earn your business."
     </div>
     <div style="font-size:12.5px;color:var(--text-2);margin-bottom:6px">Text if no answer:</div>
     <div style="background:#1E2B3A;color:#fff;border-radius:var(--radius-sm);padding:10px 12px;margin-bottom:16px;font-size:12.5px;font-style:italic">
-      "Hey [Agent Name], it's Amanda with NFM. Do you have any buyers we can help with right now? We would love to earn your business."
+      "Hey [Agent Name], it's [Your Name] with NFM. Do you have any buyers we can help with right now? We would love to earn your business."
     </div>
 
     <div style="font-size:12px;font-weight:700;color:var(--brand);text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px">Week 4: Accountability Follow-Up</div>
     <div style="font-size:12.5px;color:var(--text-2);margin-bottom:6px">Call:</div>
     <div style="background:#1E2B3A;color:#fff;border-radius:var(--radius-sm);padding:10px 12px;margin-bottom:8px;font-size:12.5px;font-style:italic">
-      "Hey [Agent Name], it's Amanda with the Daniel Sa Team at NFM. Wanted to connect and see how your business is going. Do you have any buyers or listings we can support? We are committed to being your go-to team and we are here whenever you need us."
+      "Hey [Agent Name], it's [Your Name] with the Daniel Sa Team at NFM. Wanted to connect and see how your business is going. Do you have any buyers or listings we can support? We are committed to being your go-to team and we are here whenever you need us."
     </div>
     <div style="font-size:12.5px;color:var(--text-2);margin-bottom:6px">Text if no answer:</div>
     <div style="background:#1E2B3A;color:#fff;border-radius:var(--radius-sm);padding:10px 12px;margin-bottom:16px;font-size:12.5px;font-style:italic">
-      "Hey [Agent Name], it's Amanda with NFM. Do you have any buyers or listings we can support right now? We are here whenever you need us."
+      "Hey [Agent Name], it's [Your Name] with NFM. Do you have any buyers or listings we can support right now? We are here whenever you need us."
     </div>
 
     <div style="background:var(--surface-2);border-radius:var(--radius-sm);padding:10px 12px;font-size:12.5px;color:var(--text-2);margin-bottom:16px">
@@ -1706,7 +1761,7 @@ const CTC_TYPE="CTC Call";
 // All activity types that count toward the Agent Talk-to goal
 const TALKTO_TYPES=["Agent Talk-to","Active Agent Talk-to","Active Agent Check-in","Reconnect Outreach","CTC Call","Under Contract Call","Birthday Outreach","Holiday Outreach","Agent Appreciation","Market Update","Market Update Call","Sent Market Report","Sent Referral","Co-Marketing Discussion","New Agent Follow-up","Closed Deal Thank You"];
 // Activity types that require a minimum 10-word note
-const NOTES_REQUIRED_TYPES=["Agent Talk-to","Reconnect Outreach","CTC Call","Under Contract Call","Birthday Outreach","Break Breads"];
+const NOTES_REQUIRED_TYPES=["Agent Talk-to","Reconnect Outreach","CTC Call","Under Contract Call","Birthday Outreach","Break Breads","Partner Meeting","New Lead Received","Pre-Approval Issued","New Contract","Clear to Close","Service Recovery","Partner Feedback"];
 // Cold Calls: a note is always required, but no word-count minimum — just needs to say
 // something (left VM / texted / double-dialed / etc), not hit a length bar.
 const NOTES_MANDATORY_NO_MIN=["Cold Calls"];
@@ -1766,7 +1821,7 @@ function toggleDetail(id){
 }
 
 function cntTalkTo(acts){return(acts||[]).filter(function(a){return TALKTO_TYPES.indexOf((a.act_type||"").trim())>=0;}).length;}
-const ACT_TYPE_OPTIONS='<optgroup label="New Relationships"><option>Cold Calls</option><option>New Realtor Meeting</option></optgroup><optgroup label="Relationship Deepening"><option>New Agent Follow-up</option><option>Break Breads</option><option>Market Update</option><option>Co-hosted Event</option><option>Realtor Buddy Referral Ask</option></optgroup><optgroup label="Management"><option>Agent Talk-to</option><option>Reconnect Outreach</option></optgroup><optgroup label="Retention and Referrals"><option>CTC Call</option><option>Under Contract Call</option><option>Birthday Outreach</option><option>Holiday Outreach</option><option>Agent Appreciation</option></optgroup>';
+const ACT_TYPE_OPTIONS='<optgroup label="New Relationships"><option>Cold Calls</option><option>New Realtor Meeting</option></optgroup><optgroup label="Relationship Deepening"><option>New Agent Follow-up</option><option>Break Breads</option><option>Market Update</option><option>Co-hosted Event</option><option>Realtor Buddy Referral Ask</option></optgroup><optgroup label="Management"><option>Agent Talk-to</option><option>Reconnect Outreach</option></optgroup><optgroup label="Retention and Referrals"><option>CTC Call</option><option>Under Contract Call</option><option>Birthday Outreach</option><option>Holiday Outreach</option><option>Agent Appreciation</option></optgroup><optgroup label="Playbook — Formal Meetings"><option>Partner Meeting</option></optgroup><optgroup label="Playbook — Experience Monitoring"><option>New Lead Received</option><option>Pre-Approval Issued</option><option>New Contract</option><option>Clear to Close</option></optgroup><optgroup label="Playbook — Service &amp; Feedback"><option>Service Recovery</option><option>Partner Feedback</option></optgroup>';
 function badgeEmoji(type){return type||"";}
 
 const NEXT_CALL_DAYS={
@@ -2529,7 +2584,46 @@ function updateNotesRequirementHint(){
     hint.textContent="";
     if(notesEl)notesEl.placeholder="Details, referrals mentioned, next steps...";
   }
+  updatePlaybookHelper(type);
   updateNotesWordCount();
+}
+// Playbook §12 Experience Monitoring — the exact required actions per trigger point, straight
+// from the CORE Team playbook, shown as a checklist reminder so notes actually cover what the
+// playbook requires instead of just meeting the word-count bar.
+const PLAYBOOK_TRIGGER_ACTIONS={
+  "New Lead Received":["Text or call partner upon receipt","Thank partner for referral","Confirm who on the team is working the lead","Reinforce that you'll monitor the experience"],
+  "Pre-Approval Issued":["Text or call partner after pre-approval","Confirm partner received update","Ask for feedback on client experience","Identify any friction or concern"],
+  "New Contract":["Call or text listing agent when appropriate","Congratulate agent","Reinforce execution confidence","Attempt to schedule meeting with listing agent if relationship opportunity exists"],
+  "Clear to Close":["Call or text buyer agent","Call or text listing agent when appropriate","Congratulate agent","Reinforce smooth execution","Ask for feedback","Attempt to schedule future meeting"]
+};
+const THEME_TAGS=["Responsiveness","Loan Speed","Communication","Pricing","Process/Experience","Other"];
+function updatePlaybookHelper(type){
+  const box=document.getElementById("playbookHelperBox");
+  if(!box)return;
+  if(PLAYBOOK_TRIGGER_ACTIONS[type]){
+    box.style.display="block";
+    box.innerHTML='<div style="font-size:11px;font-weight:700;color:var(--brand);text-transform:uppercase;letter-spacing:.4px;margin-bottom:5px">Playbook required actions — cover these in your note</div>'
+      +'<ul style="margin:0;padding-left:18px;font-size:12.5px;color:var(--text-2);line-height:1.6">'
+      +PLAYBOOK_TRIGGER_ACTIONS[type].map(a=>'<li>'+a+'</li>').join("")
+      +'</ul>';
+  }else if(type==="Service Recovery"||type==="Partner Feedback"){
+    box.style.display="block";
+    box.innerHTML='<div style="font-size:11px;font-weight:700;color:var(--brand);text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px">Tag a theme — feeds the Monthly Portfolio Review</div>'
+      +'<select id="themeTagSelect" onchange="applyThemeTag()" style="width:100%;padding:6px 8px;border:0.5px solid var(--border);border-radius:6px;font-size:12.5px;font-family:inherit"><option value="">Choose a theme...</option>'
+      +THEME_TAGS.map(t=>'<option value="'+t+'">'+t+'</option>').join("")
+      +'</select>';
+  }else{
+    box.style.display="none";
+    box.innerHTML="";
+  }
+}
+function applyThemeTag(){
+  const tag=document.getElementById("themeTagSelect").value;
+  const notesEl=document.getElementById("activityNotes");
+  if(!tag||!notesEl)return;
+  // Strip any existing tag prefix, then apply the new one — keeps re-tagging clean instead of stacking tags.
+  let v=notesEl.value.replace(/^\[Theme:\s*[^\]]+\]\s*/,"");
+  notesEl.value="[Theme: "+tag+"] "+v;
 }
 function updateNotesWordCount(){
   const type=document.getElementById("activityType").value;
@@ -2568,7 +2662,7 @@ document.getElementById("ccNotes").addEventListener("input",function(){
 const VM_OUTCOMES=["Left voicemail","No answer"];
 // Escalation rule: 3+ unanswered attempts, across 2+ different contact methods,
 // within a 10-day window, with no positive contact in that window = flag for
-// escalation to a manager/teammate rather than another call from Amanda.
+// escalation to a manager/teammate rather than another call from the RM.
 const ESCALATION_MIN_ATTEMPTS=3;
 const ESCALATION_WINDOW_DAYS=10;
 function noteChannel(notes){
@@ -2843,7 +2937,7 @@ async function loadStartHere(){
     const breadOverdue=(breadProfiles||[]).filter(p=>{
       const n=normalize(p.agent_name);
       const tier=p.tier||"C";
-      const _thresh={A:[10,14,21],B:[21,30,45],C:[45,60,90]};
+      const _thresh={Channel:[10,14,21],A:[10,14,21],B:[21,30,45],C:[45,60,90]};
       const th=_thresh[tier]||_thresh.C;
       const last=breadLastTouch[n];
       const days=last?Math.floor((today0-new Date(last+"T12:00:00"))/86400000):null;
@@ -3117,7 +3211,7 @@ async function loadFlagged(){
             +(isLong?'<span id="'+btnId+'" onclick="toggleFlagNote(\''+noteId+'\',\''+btnId+'\',\''+note.replace(/'/g,"\\'").replace(/\n/g," ")+'\',\''+shortNote.replace(/'/g,"\\'")+'\',\''+(isLong?'1':'0')+'\')" style="color:var(--brand);cursor:pointer;font-size:11px;margin-left:5px;font-weight:600">See more</span>':"")
           +'</div>'
           :"")
-        // Amanda's existing reply if any
+        // RM's existing reply if any
         +(hasReply
           ?'<div style="background:#E8F5E9;border:1px solid #81C784;border-radius:6px;padding:8px 10px;margin-bottom:10px;font-size:12px;color:#1B5E20">'
             +'<div style="font-size:10px;font-weight:700;color:#4E3D8A;margin-bottom:3px">Your response · '+fmtDate(f.rm_note_at)+'</div>'
@@ -3439,8 +3533,8 @@ async function loadQuiet(){
     // Cadence scales by tier — an A-tier producer needs checking on far more often than a C-tier
     // one. A flat threshold for everyone means C-tier gets called as often as A-tier, which isn't
     // smart prioritization of limited time.
-    const TIER_TOUCH_THRESHOLD={A:14,B:30,C:60};
-    const TIER_URGENT_THRESHOLD={A:21,B:45,C:90};
+    const TIER_TOUCH_THRESHOLD={Channel:14,A:14,B:30,C:60};
+    const TIER_URGENT_THRESHOLD={Channel:21,A:21,B:45,C:90};
     const rows=allAgents.filter(a=>a.do_not_contact!==true).map(a=>{
       const name=(a.agent_name||"").trim();if(!name)return null;
       const lookupKey=name.toLowerCase();
@@ -3490,7 +3584,8 @@ async function loadQuiet(){
         :'<span style="color:var(--warning);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.4px">At Risk</span>';
       const retainedBadge=r.retained
         ?'<span style="font-size:9px;padding:1px 6px;background:var(--brand-light);color:var(--brand);border-radius:20px;font-weight:600;margin-left:5px">Retained</span>':"";
-      const tierBadge=r.tier?'<span style="font-size:9px;padding:1px 6px;background:var(--surface-2);color:var(--text-2);border-radius:20px;font-weight:600;margin-left:5px">'+r.tier+'-tier · '+r.threshold+'d cadence</span>':"";
+      const tierLabel=r.tier==="Channel"?"Channel":r.tier+"-tier";
+      const tierBadge=r.tier?'<span style="font-size:9px;padding:1px 6px;background:var(--surface-2);color:var(--text-2);border-radius:20px;font-weight:600;margin-left:5px">'+tierLabel+' · '+r.threshold+'d cadence</span>':"";
       return'<div class="quiet-agent-row">'
         +'<div style="display:flex;align-items:center;gap:8px;flex:1;min-width:0">'
         +'<div style="width:7px;height:7px;border-radius:50%;background:'+dotColor+';flex-shrink:0"></div>'
@@ -3516,7 +3611,7 @@ async function loadQuiet(){
 }
 
 function switchTab(name){
-  const tabOrder=["week","log","pipeline","reconnect","feed","history","calendar","contacts","growth","daniel"];
+  const tabOrder=["week","log","pipeline","reconnect","feed","history","calendar","contacts","growth","daniel","portfolio"];
   document.querySelectorAll(".tab").forEach((t,i)=>t.classList.toggle("active",tabOrder[i]===name));
   document.querySelectorAll(".view").forEach(v=>v.classList.remove("active"));
   document.getElementById("view-"+name).classList.add("active");
@@ -3531,6 +3626,7 @@ function switchTab(name){
   if(name==="reconnect")loadReconnect();
   if(name==="feed")loadFeed();
   if(name==="daniel")loadManagement();
+  if(name==="portfolio")loadPortfolioReview();
 }
 
 let periodData={mtd:[],ytd:[]},currentPeriod="mtd";
@@ -5604,7 +5700,7 @@ function renderReconnect(){
   if(q) list=list.filter(r=>(r.agent_name||"").toLowerCase().includes(q)||(r.email||"").toLowerCase().includes(q));
 
   // Sort
-  const gradeOrder={A:0,B:1,C:2,null:3,undefined:3};
+  const gradeOrder={Channel:0,A:1,B:2,C:3,null:4,undefined:4};
   if(sort==="grade") list.sort((a,b)=>{
     const gd=(gradeOrder[a.grade]??3)-(gradeOrder[b.grade]??3);
     return gd!==0?gd:(b.days_since||0)-(a.days_since||0);
@@ -5666,7 +5762,7 @@ function renderReconnect(){
 
 // Reconnect urgency scales by tier — a lost A-tier producer needs faster win-back attention
 // than a lost C-tier one, so "hot" kicks in much sooner for A than for C.
-const RC_URGENCY_THRESHOLDS={A:{hot:60,warm:120},B:{hot:90,warm:150},C:{hot:120,warm:180}};
+const RC_URGENCY_THRESHOLDS={Channel:{hot:60,warm:120},A:{hot:60,warm:120},B:{hot:90,warm:150},C:{hot:120,warm:180}};
 function rcUrgencyBounds(grade){return RC_URGENCY_THRESHOLDS[grade]||RC_URGENCY_THRESHOLDS.C;}
 function urgencyClass(days,grade){
   if(!days) return "rc-badge-days-cold";
@@ -5878,7 +5974,11 @@ async function rcParseXLSX(arrayBuffer){
     };
     return raw.filter(r=>r["Agent"]&&typeof r["Agent"]==="string"&&r["Agent"].trim()&&!r["Agent"].includes("filter"))
       .map(r=>{
-        const grade=r["Level"]?String(r["Level"]).trim():(r["Grade"]?String(r["Grade"]).trim():null);
+        const closesForTier=r["Closed Past Year"]?parseInt(r["Closed Past Year"])||0:0;
+        // Channel Partner = 10+ closings in the trailing 12 months, per the playbook — this
+        // overrides whatever tier/grade the export itself assigned, since Channel isn't a
+        // Power BI concept, it's a derived status computed here from raw closings.
+        const grade=closesForTier>=10?"Channel":(r["Level"]?String(r["Level"]).trim():(r["Grade"]?String(r["Grade"]).trim():null));
 
         let daysSince=null,lastInteractionDate=null,lastInteractionType=null,latestInteractionLabel=null;
         const modernDate=parseAnyDate(r["Latest Lead (In Velocify)"]);
@@ -5982,16 +6082,64 @@ async function rcUploadToSupabase(agents){
   return inserted;
 }
 
+// Playbook §14 — Partner Health Score. Mechanical, audit-able version of the playbook's literal
+// Green/Yellow/Red definitions: lead recency + touch-cadence status (reusing the exact same
+// thresholds as the At Risk check, so there's one definition of "on cadence" in the whole app,
+// not two) + the manual competitor-risk flag for the one criterion that can't be computed
+// (signs of lost trust / competing lender gaining share).
+function computeHealthScore(daysSinceLead,daysAny,threshold,urgentThreshold,competitorRisk){
+  if(competitorRisk)return"Red";
+  if(daysSinceLead===null||daysSinceLead>=60)return"Red";
+  if(daysAny===null||daysAny>=urgentThreshold)return"Red";
+  if(daysSinceLead>=30)return"Yellow";
+  if(daysAny>=threshold)return"Yellow";
+  return"Green";
+}
+let portfolioPeriod="month";
+function setPortfolioPeriod(p){
+  portfolioPeriod=p;
+  ["Week","Month","Quarter"].forEach(k=>{
+    const btn=document.getElementById("pfPeriod"+k);
+    if(btn)btn.classList.toggle("btn-active",k.toLowerCase()===p);
+  });
+  loadPortfolioReview();
+}
+function portfolioPeriodRange(){
+  const now=new Date();
+  if(portfolioPeriod==="week")return{start:weekRange().start,label:"This Week",meetingTargetMult:0.25};
+  if(portfolioPeriod==="quarter"){
+    const qStartMonth=Math.floor(now.getMonth()/3)*3;
+    const d=new Date(now.getFullYear(),qStartMonth,1);
+    return{start:localDateStr(d),label:"This Quarter",meetingTargetMult:3};
+  }
+  const d=new Date(now.getFullYear(),now.getMonth(),1);
+  return{start:localDateStr(d),label:"This Month",meetingTargetMult:1};
+}
+
+// Playbook §5 — Weighted Success Scorecard, 50% Tier Migration. Logs every C→B, B→A, A→Channel
+// (or any tier change) as its own row so the Monthly Portfolio Review can count real migrations
+// in a period instead of only ever seeing a partner's current tier with no history behind it.
+// Best-effort: a failed log here should never block the import itself.
+async function logTierMigration(agentName,fromTier,toTier){
+  if(!fromTier||!toTier||fromTier===toTier)return;
+  try{
+    await sbFetch("tier_migrations",{method:"POST",prefer:"return=minimal",body:JSON.stringify({
+      agent_name:agentName,from_tier:fromTier,to_tier:toTier,migration_date:localDateStr(new Date())
+    })});
+  }catch(e){console.warn("Tier migration log failed (non-critical):",e.message);}
+}
+
 async function syncReconnectDataToContacts(agents){
-  const existing=await sbFetch("agent_profiles?select=id,agent_name&limit=5000").catch(()=>[]);
+  const existing=await sbFetch("agent_profiles?select=id,agent_name,tier&limit=5000").catch(()=>[]);
   const existingByName={};
-  existing.forEach(e=>{const n=agentMatchKey(e.agent_name);if(n&&!existingByName[n])existingByName[n]=e.id;});
+  const existingTierByName={};
+  existing.forEach(e=>{const n=agentMatchKey(e.agent_name);if(n&&!existingByName[n]){existingByName[n]=e.id;existingTierByName[n]=e.tier||null;}});
   let synced=0,created=0;
   for(const a of agents){
     const name=normalizeAgentName(a.agent_name);
     if(!name)continue;
     const payload={};
-    if(a.grade)payload.tier=a.grade.toString().trim().toUpperCase();
+    if(a.grade)payload.tier=a.grade.toString().trim()==="Channel"?"Channel":a.grade.toString().trim().toUpperCase();
     if(typeof a.closes_past_year==="number")payload.closes_past_year=a.closes_past_year;
     if(a.last_interaction_date)payload.latest_lead_date=a.last_interaction_date;
     if(a.email)payload.email=a.email;
@@ -6000,6 +6148,9 @@ async function syncReconnectDataToContacts(agents){
     if(a.birthday)payload.birthday=a.birthday;
     if(!Object.keys(payload).length)continue;
     const key=agentMatchKey(name);
+    if(payload.tier&&existingTierByName[key]&&payload.tier!==existingTierByName[key]){
+      logTierMigration(name,existingTierByName[key],payload.tier);
+    }
     try{
       if(existingByName[key]){
         await sbFetch("agent_profiles?id=eq."+existingByName[key],{method:"PATCH",prefer:"return=minimal",body:JSON.stringify(payload)});
@@ -6259,7 +6410,7 @@ async function doSearchHistory(name){
         const lastDate=isRM?lastTouch.act_date:lastTouch.call_date;
         const days=Math.round((new Date()-new Date(lastDate+"T12:00:00"))/86400000);
         const color=days>60?"#A32D2D":days>30?"#E24B4A":"#4E3D8A";
-        const source=isRM?"Amanda":"LP";
+        const source=isRM?"RM":"LP";
         touchInfo='<div style="color:'+color+';font-size:11px;margin-top:6px">Last touch: '+source+' '+days+'d ago</div>';
       }
       
@@ -6313,7 +6464,7 @@ async function loadMgmtAccountability(){
   try{
     const rmActs=await sbFetch("amanda_activities?select=*&limit=5000");
 
-    // ── Needs Manager Attention — flagged by Amanda ──────────────────────────
+    // ── Needs Manager Attention — flagged by the RM ──────────────────────────
     const managerFlags=(rmActs||[]).filter(a=>a.outcome==="Needs manager attention").sort((a,b)=>(b.act_date||"").localeCompare(a.act_date||"")).slice(0,20);
     const mfEl=document.getElementById("danielManagerFlags");
     if(mfEl){
@@ -6576,7 +6727,7 @@ async function loadGoalPace(){
       // it's the one real signal available until an upload happens.
       body.innerHTML=currentActiveInput
         +'<div style="padding:12px 14px;border-radius:8px;background:var(--warning-bg);margin-bottom:10px">'
-        +'<div style="font-size:13px;font-weight:700;color:var(--warning)">⚠ No Reconnect data found yet</div>'
+        +'<div style="font-size:13px;font-weight:700;color:var(--warning)">⚠️ No Reconnect data found yet</div>'
         +'<div style="font-size:12px;color:var(--text-2);margin-top:4px">Pace and projection need real days-since-last-activity data, which only exists once a Power BI export has been uploaded through the Reconnect tab. Upload one there, then come back — this card will fill in with a real number, not a guess.</div>'
         +'</div>'
         +pendingHtml;
@@ -6591,7 +6742,7 @@ async function loadGoalPace(){
       +'<div style="text-align:center;padding:12px 8px;background:var(--surface-2);border-radius:8px"><div style="font-size:22px;font-weight:700;color:var(--brand)">'+settings.target+'</div><div style="font-size:10px;color:var(--text-3);margin-top:2px">goal</div></div>'
       +'</div>'
       +'<div style="padding:12px 14px;border-radius:8px;background:'+(onPace?"var(--success-bg)":"var(--danger-bg)")+';margin-bottom:10px">'
-      +'<div style="font-size:13px;font-weight:700;color:'+verdictColor+'">'+(onPace?"✓ On pace to hit "+settings.target:"⚠ Off pace — projected to land at "+projected+", "+(settings.target-projected)+" short")+'</div>'
+      +'<div style="font-size:13px;font-weight:700;color:'+verdictColor+'">'+(onPace?"✓ On pace to hit "+settings.target:"⚠️ Off pace — projected to land at "+projected+", "+(settings.target-projected)+" short")+'</div>'
       +'<div style="font-size:12px;color:var(--text-2);margin-top:4px">Currently adding ~'+grossAddsPerWeek.toFixed(1)+' net-new agents/week (new meetings that actually went on to show real activity, trailing 8 weeks). Need '+requiredPerWeek.toFixed(1)+'/week to hit '+settings.target+' by '+fmtDate(settings.targetDate)+' ('+daysRemaining+' days out).</div>'
       +'</div>'
       +pendingHtml
@@ -6931,11 +7082,351 @@ async function loadManagement(){
       const isUrgent=r.daysAny===null||r.daysAny>=r.urgentThreshold,c3=isUrgent?"var(--danger)":"var(--warning)";
       const label=r.days===null?"No RM activity logged":r.days+"d since last RM touch";
       const lpLabel2=r.daysLP!==null?' · LP '+r.daysLP+'d ago':' · LP: no calls logged';
-      const tierBadge2=r.tier?' <span style="font-size:9px;padding:1px 6px;background:var(--surface-2);color:var(--text-2);border-radius:20px;font-weight:600">'+r.tier+'-tier · '+r.threshold+'d cadence</span>':"";
+      const tierLabel2=r.tier==="Channel"?"Channel":r.tier+"-tier";
+      const tierBadge2=r.tier?' <span style="font-size:9px;padding:1px 6px;background:var(--surface-2);color:var(--text-2);border-radius:20px;font-weight:600">'+tierLabel2+' · '+r.threshold+'d cadence</span>':"";
       return'<div class="fu-item"><div class="fu-dot" style="background:'+c3+'"></div><div class="fu-body"><div class="fu-name">'+properCase(r.name)+tierBadge2+'</div><div class="fu-meta" style="color:'+c3+'">'+label+lpLabel2+'</div></div></div>';
     }).join(""):'<div class="no-data" style="padding:16px">No retained agents overdue for their tier\'s cadence</div>';
   }catch(e){console.error(e);}
 }
+
+// ── Monthly Portfolio Review (playbook §17) ──────────────────────────────────
+const PF_TARGETS={total:200,A:25,B:35};
+let pfDrillData=[];
+async function loadPortfolioReview(){
+  const body=document.getElementById("portfolioReviewBody");
+  if(!body)return;
+  body.innerHTML='<div class="no-data">Loading...</div>';
+  try{
+    const range=portfolioPeriodRange();
+    const[allAgents,allActs,lpCalls,periodActs,migrations,allPartnerMeetings]=await Promise.all([
+      sbFetch("agent_profiles?select=*&limit=2000").catch(()=>[]),
+      sbFetch("amanda_activities?select=agent_name,act_date&order=act_date.desc&limit=3000").catch(()=>[]),
+      sbFetch("call_logs?select=agent_name,call_date&order=call_date.desc&limit=2000").catch(()=>[]),
+      sbFetch("amanda_activities?select=agent_name,act_type,act_date,outcome,notes&act_date=gte."+range.start+"&limit=3000").catch(()=>[]),
+      sbFetch("tier_migrations?select=agent_name,from_tier,to_tier,migration_date&migration_date=gte."+range.start+"&limit=1000").catch(()=>[]),
+      sbFetch("amanda_activities?select=agent_name,act_date&act_type=eq.Partner Meeting&order=act_date.desc&limit=3000").catch(()=>[])
+    ]);
+
+    const TIER_TOUCH_THRESHOLD={Channel:14,A:14,B:30,C:60};
+    const TIER_URGENT_THRESHOLD={Channel:21,A:21,B:45,C:90};
+    const now=new Date();
+    const lastSeenRM={};
+    allActs.forEach(a=>{const n=(a.agent_name||"").trim().toLowerCase();if(n&&!lastSeenRM[n])lastSeenRM[n]=a.act_date;});
+    const lastSeenLP={};
+    lpCalls.forEach(c=>{const n=(c.agent_name||"").trim().toLowerCase();if(n&&!lastSeenLP[n])lastSeenLP[n]=c.call_date;});
+
+    const active=(allAgents||[]).filter(a=>a.retained&&a.do_not_contact!==true);
+
+    // Per-agent computed rows: touch recency + lead recency + Health Score
+    const rows=active.map(a=>{
+      const name=(a.agent_name||"").trim();
+      const key=name.toLowerCase();
+      const lastRM=lastSeenRM[key],lastLP=lastSeenLP[key];
+      const daysRM=lastRM?Math.round((now-new Date(lastRM+"T12:00:00"))/86400000):null;
+      const daysLP=lastLP?Math.round((now-new Date(lastLP+"T12:00:00"))/86400000):null;
+      const daysAny=(daysRM===null&&daysLP===null)?null:Math.min(daysRM===null?Infinity:daysRM,daysLP===null?Infinity:daysLP);
+      const tier=a.tier||null;
+      const threshold=TIER_TOUCH_THRESHOLD[tier]||14;
+      const urgentThreshold=TIER_URGENT_THRESHOLD[tier]||21;
+      const daysSinceLead=a.latest_lead_date?Math.round((now-new Date(a.latest_lead_date+"T12:00:00"))/86400000):null;
+      const health=computeHealthScore(daysSinceLead,daysAny,threshold,urgentThreshold,!!a.competitor_risk_flag);
+      return{name,tier,health,daysAny,daysSinceLead,next_growth_opportunity:a.next_growth_opportunity||null,satisfaction:a.satisfaction_rating||null,high_potential:!!a.high_potential_flag,agent:a};
+    });
+
+    // Satisfaction Rating rollup (playbook Success Definitions — "partners feel supported and valued")
+    const rated=rows.filter(r=>r.satisfaction!==null);
+    const avgSatisfaction=rated.length?(rated.reduce((s,r)=>s+r.satisfaction,0)/rated.length).toFixed(1):null;
+    const lowSatisfaction=rows.filter(r=>r.satisfaction!==null&&r.satisfaction<=2);
+    const highPotential=active.filter(a=>a.high_potential_flag);
+
+    // 1. Active Partner Count by tier vs targets
+    const countByTier={Channel:0,A:0,B:0,C:0,None:0};
+    active.forEach(a=>{const t=a.tier&&countByTier.hasOwnProperty(a.tier)?a.tier:"None";countByTier[t]++;});
+    const totalActive=active.length;
+
+    // 2. Active Agent-to-Lead Ratio — "New Lead Received" activities this period ÷ active partner count
+    const leadsThisPeriod=periodActs.filter(a=>a.act_type==="New Lead Received").length;
+    const ratio=totalActive>0?(leadsThisPeriod/totalActive):0;
+    const ratioLabel=ratio>=1.30?"Elite":ratio>=1.15?"On Target":ratio>=0.90?"Acceptable":"Below Minimum";
+    const ratioColor=ratio>=1.15?"var(--success)":ratio>=0.90?"var(--warning)":"var(--danger)";
+
+    // 3. Tier Migration Progress this period
+    const migCtoB=migrations.filter(m=>m.from_tier==="C"&&m.to_tier==="B").length;
+    const migBtoA=migrations.filter(m=>m.from_tier==="B"&&m.to_tier==="A").length;
+    const migAtoChannel=migrations.filter(m=>m.from_tier==="A"&&m.to_tier==="Channel").length;
+    const migOther=migrations.length-migCtoB-migBtoA-migAtoChannel;
+
+    // 4. Health breakdown
+    const healthCounts={Green:0,Yellow:0,Red:0};
+    rows.forEach(r=>healthCounts[r.health]++);
+
+    // 5. Growth Opportunity coverage + escalation (Channel/A missing it)
+    const missingGrowthOpp=active.filter(a=>!a.next_growth_opportunity);
+    const escalation=active.filter(a=>(a.tier==="Channel"||a.tier==="A")&&!a.next_growth_opportunity);
+    const growthOppPct=totalActive>0?Math.round(((totalActive-missingGrowthOpp.length)/totalActive)*100):0;
+
+    // 6. Monthly meeting counts vs targets (10 new / 20 existing), scaled to the selected period
+    const newMeetings=periodActs.filter(a=>a.act_type==="New Realtor Meeting").length;
+    const partnerMeetings=periodActs.filter(a=>a.act_type==="Partner Meeting").length;
+    const newMeetingTarget=Math.round(10*range.meetingTargetMult);
+    const partnerMeetingTarget=Math.round(20*range.meetingTargetMult);
+
+    // 7. Weighted Scorecard (50/30/20) — playbook gives the category weights, not an exact point
+    // formula, so this is a reasonable composite: migrations this period + progress toward 2026
+    // targets (50%), the ratio vs. its 1.15 target (30%), active count vs. its 200 target (20%).
+    // This is a reference number for the conversation, not a bonus calculation — that's HR policy,
+    // intentionally not modeled here.
+    const migScore=Math.min(100,(migCtoB+migBtoA+migAtoChannel)*10+((countByTier.A/PF_TARGETS.A)*30)+((countByTier.B/PF_TARGETS.B)*20));
+    const ratioScore=Math.min(100,(ratio/1.15)*100);
+    const countScore=Math.min(100,(totalActive/PF_TARGETS.total)*100);
+    const weighted=Math.round(migScore*0.5+ratioScore*0.3+countScore*0.2);
+
+    pfDrillData={rows,migrations,missingGrowthOpp,escalation};
+
+    // ── Meeting Cadence Compliance (playbook §8/§6 — formal meetings, distinct from touch cadence) ──
+    const FORMAL_CADENCE={Channel:30,A:30,B:60,C:90};
+    const lastPartnerMeeting={};
+    allPartnerMeetings.forEach(m=>{const n=(m.agent_name||"").trim().toLowerCase();if(n&&!lastPartnerMeeting[n])lastPartnerMeeting[n]=m.act_date;});
+    let meetingCompliant=0;
+    const meetingRows=active.map(a=>{
+      const key=(a.agent_name||"").trim().toLowerCase();
+      const last=lastPartnerMeeting[key];
+      const daysSince=last?Math.round((now-new Date(last+"T12:00:00"))/86400000):null;
+      const cadence=FORMAL_CADENCE[a.tier]||90;
+      const compliant=daysSince!==null&&daysSince<=cadence;
+      if(compliant)meetingCompliant++;
+      return{name:a.agent_name,tier:a.tier,daysSince,cadence,compliant};
+    });
+    const meetingCompliancePct=totalActive>0?Math.round((meetingCompliant/totalActive)*100):0;
+
+    // ── Existing Partner Meetings by tier this period ──
+    const partnerMeetingsByTier={Channel:0,A:0,B:0,C:0};
+    const tierByName={};
+    active.forEach(a=>{tierByName[(a.agent_name||"").trim().toLowerCase()]=a.tier;});
+    periodActs.filter(a=>a.act_type==="Partner Meeting").forEach(a=>{
+      const t=tierByName[(a.agent_name||"").trim().toLowerCase()];
+      if(t&&partnerMeetingsByTier.hasOwnProperty(t))partnerMeetingsByTier[t]++;
+    });
+
+    // ── Weekly Scorecard extras (playbook §16) ──
+    const meetingsScheduled=periodActs.filter(a=>(a.act_type==="Cold Calls"||a.act_type==="New Realtor Meeting")&&a.outcome==="Meeting Scheduled").length;
+    const newRealtorMeetingActs=periodActs.filter(a=>a.act_type==="New Realtor Meeting");
+    const followUpComplete=newRealtorMeetingActs.filter(a=>!(a.notes||"").startsWith("⏳ INTAKE PENDING ")).length;
+    const followUpPct=newRealtorMeetingActs.length>0?Math.round((followUpComplete/newRealtorMeetingActs.length)*100):0;
+    // "Converted to active" — agents who had a New Realtor Meeting this period and are now retained
+    const metThisPeriod=new Set(newRealtorMeetingActs.map(a=>(a.agent_name||"").trim().toLowerCase()));
+    const convertedToActive=active.filter(a=>metThisPeriod.has((a.agent_name||"").trim().toLowerCase())).length;
+
+    // ── Top 10 At-Risk Partners (Red, ranked by days since lead) ──
+    const top10AtRisk=rows.filter(r=>r.health==="Red").sort((a,b)=>(b.daysSinceLead===null?9999:b.daysSinceLead)-(a.daysSinceLead===null?9999:a.daysSinceLead)).slice(0,10);
+
+    // ── Top 10 Growth Opportunities (documented, Channel/A prioritized) ──
+    const tierRank={Channel:0,A:1,B:2,C:3};
+    const top10GrowthOpp=active.filter(a=>a.next_growth_opportunity).sort((a,b)=>(tierRank[a.tier]??4)-(tierRank[b.tier]??4)).slice(0,10);
+
+    // ── Service Recovery / Partner Feedback Themes (playbook §18) — parses the [Theme: X] tag
+    // applied at logging time, since free-text "theme" extraction needs real language analysis,
+    // not something this tracker can reliably do — tagging at the point of entry is the honest
+    // alternative to that.
+    const themeCount={Recovery:{},Feedback:{}};
+    periodActs.filter(a=>a.act_type==="Service Recovery"||a.act_type==="Partner Feedback").forEach(a=>{
+      const m=(a.notes||"").match(/^\[Theme:\s*([^\]]+)\]/);
+      const theme=m?m[1].trim():"Untagged";
+      const bucket=a.act_type==="Service Recovery"?"Recovery":"Feedback";
+      themeCount[bucket][theme]=(themeCount[bucket][theme]||0)+1;
+    });
+
+    // ── Required Leadership Escalations — reuses the existing "Needs manager attention" outcome
+    // that already exists across every activity type, rather than inventing a parallel system.
+    const escalations=periodActs.filter(a=>a.outcome==="Needs manager attention");
+    pfDrillData.escalations=escalations;
+    pfDrillData.meetingRows=meetingRows;
+    pfDrillData.lowSatisfaction=lowSatisfaction;
+
+    body.innerHTML=
+      '<div class="card" style="text-align:center;padding:20px">'
+        +'<div style="font-size:11px;font-weight:700;color:var(--text-3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">Weighted Scorecard — '+range.label+'</div>'
+        +'<div style="font-size:38px;font-weight:800;color:var(--brand)">'+weighted+'</div>'
+        +'<div style="font-size:11.5px;color:var(--text-3);margin-top:4px">50% Tier Migration ('+Math.round(migScore)+') · 30% Agent-to-Lead Ratio ('+Math.round(ratioScore)+') · 20% Active Count ('+Math.round(countScore)+')</div>'
+        +'<div style="font-size:10.5px;color:var(--text-4);margin-top:6px">Reference number for the conversation — not a bonus calculation.</div>'
+      +'</div>'
+
+      +'<div class="card">'
+        +'<div class="card-title" style="font-size:14px">Active Partner Count</div>'
+        +'<div style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-top:10px">'
+          +pfCountTile("Total",totalActive,PF_TARGETS.total,"all")
+          +pfCountTile("Channel",countByTier.Channel,null,"Channel")
+          +pfCountTile("A",countByTier.A,PF_TARGETS.A,"A")
+          +pfCountTile("B",countByTier.B,PF_TARGETS.B,"B")
+          +pfCountTile("C",countByTier.C,null,"C")
+        +'</div>'
+      +'</div>'
+
+      +'<div class="card">'
+        +'<div class="card-title" style="font-size:14px">Active Agent-to-Lead Ratio</div>'
+        +'<div style="font-size:12px;color:var(--text-2);margin-bottom:8px">'+leadsThisPeriod+' "New Lead Received" logged ÷ '+totalActive+' active partners</div>'
+        +'<div style="font-size:26px;font-weight:800;color:'+ratioColor+'">'+ratio.toFixed(2)+'<span style="font-size:13px;font-weight:600;margin-left:8px">'+ratioLabel+'</span></div>'
+        +'<div style="font-size:11px;color:var(--text-3);margin-top:4px">Min 0.90 · Target 1.15+ · Elite 1.30+</div>'
+      +'</div>'
+
+      +'<div class="card">'
+        +'<div class="card-title" style="font-size:14px">Tier Migration Progress — '+range.label+'</div>'
+        +'<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:10px">'
+          +pfMigTile("C → B",migCtoB)
+          +pfMigTile("B → A",migBtoA)
+          +pfMigTile("A → Channel",migAtoChannel)
+          +pfMigTile("Other",migOther)
+        +'</div>'
+      +'</div>'
+
+      +'<div class="card">'
+        +'<div class="card-title" style="font-size:14px">Partner Health (playbook §14)</div>'
+        +'<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px;margin-bottom:12px">'
+          +pfHealthTile("Green",healthCounts.Green,"var(--success)")
+          +pfHealthTile("Yellow",healthCounts.Yellow,"var(--warning)")
+          +pfHealthTile("Red",healthCounts.Red,"var(--danger)")
+        +'</div>'
+        +(top10AtRisk.length?'<div style="border-top:1px solid var(--border-light);padding-top:8px"><div style="font-size:11px;font-weight:700;color:var(--text-3);text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px">Top Red — ranked by days since last lead</div>'+top10AtRisk.map((r,i)=>pfListRow(i+1,r.name,(r.tier||"No tier")+"-tier · "+(r.daysSinceLead===null?"no lead logged":r.daysSinceLead+"d since last lead")+(r.agent.recovery_plan?" · recovery plan on file":" · ⚠️ no recovery plan"))).join("")+'</div>'
+          :'<div class="no-data" style="padding:10px 0">No Red partners right now.</div>')
+      +'</div>'
+
+      +'<div class="card">'
+        +'<div class="card-title" style="font-size:14px">Partner Satisfaction / Support Rating</div>'
+        +(avgSatisfaction?'<div style="font-size:26px;font-weight:800;color:'+(avgSatisfaction>=4?"var(--success)":avgSatisfaction>=3?"var(--warning)":"var(--danger)")+'">'+avgSatisfaction+'<span style="font-size:13px;font-weight:600;color:var(--text-4)"> / 5 avg</span></div><div style="font-size:11px;color:var(--text-3);margin-top:2px">'+rated.length+' of '+totalActive+' active partners rated</div>'
+          :'<div class="no-data" style="padding:6px 0">No satisfaction ratings set yet — add one from a partner Contacts entry.</div>')
+        +(lowSatisfaction.length?'<div onclick="openPortfolioList(\'lowsat\')" style="cursor:pointer;margin-top:10px;background:#FDECEC;border:1px solid var(--border-danger);border-radius:8px;padding:10px 12px;font-size:12.5px;color:var(--danger);font-weight:600">⚠️ '+lowSatisfaction.length+' partner'+(lowSatisfaction.length!==1?"s":"")+' rated 1–2 (frustrated or at risk of leaving). Click to view →</div>':'')
+      +'</div>'
+
+      +'<div class="card">'
+        +'<div class="card-title" style="font-size:14px">High-Potential Agents to Watch (playbook §8)</div>'
+        +(highPotential.length?'<div>'+highPotential.map((a,i)=>pfListRow(i+1,a.agent_name,(a.tier||"No tier")+"-tier")).join("")+'</div>'
+          :'<div class="no-data" style="padding:10px 0">None flagged yet — mark a partner High-Potential from their Contacts entry.</div>')
+      +'</div>'
+
+      +'<div class="card">'
+        +'<div class="card-title" style="font-size:14px">Growth Opportunity Coverage (playbook §15)</div>'
+        +'<div style="font-size:12px;color:var(--text-2);margin-bottom:8px">'+growthOppPct+'% of active partners have a documented next growth opportunity</div>'
+        +(escalation.length?'<div onclick="openPortfolioList(\'escalation\')" style="cursor:pointer;background:#FDECEC;border:1px solid var(--border-danger);border-radius:8px;padding:10px 12px;font-size:12.5px;color:var(--danger);font-weight:600">⚠️ '+escalation.length+' Channel/A partner'+(escalation.length!==1?"s":"")+' missing a growth opportunity — escalation required. Click to view →</div>'
+          :'<div style="font-size:12px;color:var(--success)">✓ All Channel/A partners have a growth opportunity documented</div>')
+      +'</div>'
+
+      +'<div class="card">'
+        +'<div class="card-title" style="font-size:14px">Meeting Cadence Compliance (playbook §6/§8 — formal meetings)</div>'
+        +'<div style="font-size:12px;color:var(--text-2);margin-bottom:8px">Distinct from touch cadence — this checks logged "Partner Meeting" activity against each tier\'s formal cadence (Channel/A monthly, B every-other-month, C quarterly).</div>'
+        +'<div style="font-size:26px;font-weight:800;color:'+(meetingCompliancePct>=80?"var(--success)":meetingCompliancePct>=50?"var(--warning)":"var(--danger)")+'">'+meetingCompliancePct+'%</div>'
+        +'<div style="font-size:11px;color:var(--text-3);margin-top:2px">'+meetingCompliant+' of '+totalActive+' active partners current on formal meeting cadence</div>'
+      +'</div>'
+
+      +'<div class="card">'
+        +'<div class="card-title" style="font-size:14px">Weekly Scorecard extras (playbook §16)</div>'
+        +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:8px">'
+          +pfStatTile("New Meetings Scheduled",meetingsScheduled)
+          +pfStatTile("New Agents Converted to Active",convertedToActive)
+          +pfStatTile("New Meeting Follow-up Complete",followUpPct+"%")
+          +pfStatTile("Existing Meetings — Channel",partnerMeetingsByTier.Channel)
+          +pfStatTile("Existing Meetings — A",partnerMeetingsByTier.A)
+          +pfStatTile("Existing Meetings — B",partnerMeetingsByTier.B)
+        +'</div>'
+      +'</div>'
+
+      +'<div class="card">'
+        +'<div class="card-title" style="font-size:14px">Top 10 Growth Opportunities</div>'
+        +(top10GrowthOpp.length?'<div>'+top10GrowthOpp.map((a,i)=>pfListRow(i+1,a.agent_name,(a.tier||"No tier")+"-tier · "+escHtml(a.next_growth_opportunity))).join("")+'</div>'
+          :'<div class="no-data" style="padding:10px 0">No growth opportunities documented yet.</div>')
+      +'</div>'
+
+      +'<div class="card">'
+        +'<div class="card-title" style="font-size:14px">Service Recovery Themes</div>'
+        +(Object.keys(themeCount.Recovery).length?'<div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:8px">'+Object.entries(themeCount.Recovery).sort((a,b)=>b[1]-a[1]).map(([t,c])=>'<span style="background:var(--surface-2);border-radius:20px;padding:6px 12px;font-size:12px;font-weight:600;color:var(--text-2)">'+escHtml(t)+' · '+c+'</span>').join("")+'</div>'
+          :'<div class="no-data" style="padding:10px 0">No Service Recovery logged this period.</div>')
+      +'</div>'
+
+      +'<div class="card">'
+        +'<div class="card-title" style="font-size:14px">Partner Feedback Themes</div>'
+        +(Object.keys(themeCount.Feedback).length?'<div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:8px">'+Object.entries(themeCount.Feedback).sort((a,b)=>b[1]-a[1]).map(([t,c])=>'<span style="background:var(--surface-2);border-radius:20px;padding:6px 12px;font-size:12px;font-weight:600;color:var(--text-2)">'+escHtml(t)+' · '+c+'</span>').join("")+'</div>'
+          :'<div class="no-data" style="padding:10px 0">No Partner Feedback logged this period.</div>')
+      +'</div>'
+
+      +'<div class="card">'
+        +'<div class="card-title" style="font-size:14px">Required Leadership Escalations</div>'
+        +(escalations.length?'<div>'+escalations.map(e=>pfListRow(null,e.agent_name,escHtml((e.notes||"").slice(0,120)))).join("")+'</div>'
+          :'<div class="no-data" style="padding:10px 0">Nothing escalated this period.</div>')
+      +'</div>'
+
+      +'<div class="card">'
+        +'<div class="card-title" style="font-size:14px">Monthly Activity Expectations (playbook §11)</div>'
+        +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:8px">'
+          +pfActivityTile("New Agent Meetings",newMeetings,newMeetingTarget)
+          +pfActivityTile("Existing Partner Meetings",partnerMeetings,partnerMeetingTarget)
+        +'</div>'
+      +'</div>';
+  }catch(e){console.error(e);body.innerHTML='<div class="no-data">Unable to load Portfolio Review.</div>';}
+}
+function pfStatTile(label,value){
+  return '<div style="background:var(--surface-2);border-radius:8px;padding:10px 12px">'
+    +'<div style="font-size:11px;color:var(--text-3);margin-bottom:4px">'+label+'</div>'
+    +'<div style="font-size:18px;font-weight:800;color:var(--text-1)">'+value+'</div>'
+  +'</div>';
+}
+function pfListRow(rank,name,detail){
+  return '<div style="padding:8px 0;border-bottom:1px solid var(--border-light);display:flex;align-items:center;gap:10px">'
+    +(rank?'<span style="font-size:11px;font-weight:700;color:var(--text-4);width:16px;flex-shrink:0">'+rank+'</span>':'')
+    +'<div style="flex:1;min-width:0"><div style="font-weight:600;font-size:13px">'+escHtml(properCase(name))+'</div><div style="font-size:11.5px;color:var(--text-3)">'+detail+'</div></div>'
+  +'</div>';
+}
+function pfCountTile(label,count,target,tierFilter){
+  return '<div onclick="openPortfolioList(\'tier:'+tierFilter+'\')" style="cursor:pointer;text-align:center;background:var(--surface-2);border-radius:8px;padding:10px 6px">'
+    +'<div style="font-size:20px;font-weight:800;color:var(--text-1)">'+count+(target?'<span style="font-size:11px;font-weight:600;color:var(--text-4)"> / '+target+'</span>':'')+'</div>'
+    +'<div style="font-size:10.5px;color:var(--text-3);margin-top:2px">'+label+'</div></div>';
+}
+function pfMigTile(label,count){
+  return '<div style="text-align:center;background:var(--surface-2);border-radius:8px;padding:10px 6px">'
+    +'<div style="font-size:20px;font-weight:800;color:var(--text-1)">'+count+'</div>'
+    +'<div style="font-size:10.5px;color:var(--text-3);margin-top:2px">'+label+'</div></div>';
+}
+function pfHealthTile(label,count,color){
+  return '<div onclick="openPortfolioList(\'health:'+label+'\')" style="cursor:pointer;text-align:center;background:var(--surface-2);border-radius:8px;padding:10px 6px;border-bottom:3px solid '+color+'">'
+    +'<div style="font-size:20px;font-weight:800;color:'+color+'">'+count+'</div>'
+    +'<div style="font-size:10.5px;color:var(--text-3);margin-top:2px">'+label+'</div></div>';
+}
+function pfActivityTile(label,count,target){
+  const pct=target>0?Math.min(100,Math.round((count/target)*100)):0;
+  const color=pct>=100?"var(--success)":pct>=60?"var(--warning)":"var(--danger)";
+  return '<div style="background:var(--surface-2);border-radius:8px;padding:10px 12px">'
+    +'<div style="font-size:11px;color:var(--text-3);margin-bottom:4px">'+label+'</div>'
+    +'<div style="font-size:18px;font-weight:800;color:var(--text-1)">'+count+'<span style="font-size:12px;font-weight:600;color:var(--text-4)"> / '+target+'</span></div>'
+    +'<div style="height:5px;background:var(--border);border-radius:3px;margin-top:5px;overflow:hidden"><div style="height:100%;width:'+pct+'%;background:'+color+'"></div></div>'
+  +'</div>';
+}
+function openPortfolioList(key){
+  const modal=document.getElementById("portfolioListModal");
+  const title=document.getElementById("portfolioListModalTitle");
+  const sub=document.getElementById("portfolioListModalSub");
+  const listEl=document.getElementById("portfolioListModalBody");
+  let items=[];
+  if(key==="escalation"){
+    title.textContent="Missing Growth Opportunity — Channel/A";
+    sub.textContent="Escalation required per playbook §15.";
+    items=pfDrillData.escalation.map(a=>({name:a.agent_name,detail:(a.tier||"")+"-tier"}));
+  }else if(key==="lowsat"){
+    title.textContent="Low Satisfaction / Support Rating";
+    sub.textContent="Rated 1–2 — frustrated or at risk of leaving.";
+    items=pfDrillData.lowSatisfaction.map(r=>({name:r.name,detail:(r.tier||"No tier")+"-tier · rated "+r.satisfaction+"/5"}));
+  }else if(key.indexOf("tier:")===0){
+    const t=key.split(":")[1];
+    title.textContent=t==="all"?"All Active Partners":t+"-Tier Active Partners";
+    sub.textContent=t==="all"?"":"Filtered to "+t+" tier.";
+    items=pfDrillData.rows.filter(r=>t==="all"||(t==="None"?!r.tier:r.tier===t)).map(r=>({name:r.name,detail:(r.tier||"No tier")+" · "+r.health+" · "+(r.daysAny===null?"no touch logged":r.daysAny+"d since last touch")}));
+  }else if(key.indexOf("health:")===0){
+    const h=key.split(":")[1];
+    title.textContent=h+" Partners";
+    sub.textContent="Health Score per playbook §14.";
+    items=pfDrillData.rows.filter(r=>r.health===h).map(r=>({name:r.name,detail:(r.tier||"No tier")+"-tier · "+(r.daysSinceLead===null?"no lead logged":r.daysSinceLead+"d since last lead")}));
+  }
+  listEl.innerHTML=items.length?items.map(i=>'<div style="padding:8px 0;border-bottom:1px solid var(--border-light);display:flex;justify-content:space-between;gap:10px"><span style="font-weight:600;font-size:13px">'+escHtml(properCase(i.name))+'</span><span style="font-size:11.5px;color:var(--text-3)">'+escHtml(i.detail)+'</span></div>').join(""):'<div class="no-data">Nothing here.</div>';
+  modal.classList.add("open");
+}
+function closePortfolioListModal(){document.getElementById("portfolioListModal").classList.remove("open");}
 
 function showMgmtPeriod(p){
   currentMgmtPeriod=p;
@@ -7169,7 +7660,7 @@ async function renderDanielCoverage(){
     if(notCovered.length){
       covHtml+='<div style="font-size:11px;font-weight:600;color:#9B3B3B;margin:10px 0 8px;position:sticky;top:0;background:#fff;padding-top:2px">Still needs attention ('+notCovered.length+') — A-tier first</div>';
       covHtml+=notCovered.map(n=>{
-        const tierBadge=n.tier?'<span style="font-size:9px;font-weight:700;padding:1px 6px;border-radius:10px;background:'+(n.tier==="A"?"#DCFCE7;color:#16A34A":n.tier==="B"?"#EEEBF8;color:#9585C0":"#FFF3E0;color:#B85B00")+'">'+n.tier+'</span>':'';
+        const tierBadge=n.tier?'<span style="font-size:9px;font-weight:700;padding:1px 6px;border-radius:10px;background:'+(n.tier==="Channel"?"#1E3A8A;color:#fff":n.tier==="A"?"#DCFCE7;color:#16A34A":n.tier==="B"?"#EEEBF8;color:#9585C0":"#FFF3E0;color:#B85B00")+'">'+n.tier+'</span>':'';
         return'<div style="display:flex;align-items:center;justify-content:space-between;padding:7px 0;border-bottom:0.5px solid #f5f5f8">'
         +'<span style="font-size:13px;font-weight:500;color:#1a1a2e;display:flex;align-items:center;gap:6px">'+n.name+tierBadge+'</span>'
         +'<div style="display:flex;gap:6px;align-items:center">'
@@ -7395,6 +7886,15 @@ async function saveContactModal(){
     return;
   }
   const payload={agent_name:editingContactName,phone:document.getElementById("contactPhone").value.trim()||null,email:document.getElementById("contactEmail").value.trim()||null,address:combineAddress(document.getElementById("contactStreet").value,document.getElementById("contactCity").value,document.getElementById("contactState").value,document.getElementById("contactZip").value),birthday:birthdayVal||null,personal_notes:document.getElementById("contactPersonalNotes")?document.getElementById("contactPersonalNotes").value.trim()||null:null,tier:document.getElementById("contactTier").value||null,do_not_contact:document.getElementById("contactDNC").checked};
+  if(document.getElementById("contactGrowthOpp"))payload.next_growth_opportunity=document.getElementById("contactGrowthOpp").value.trim()||null;
+  if(document.getElementById("contactGrowthOppDeadline"))payload.growth_opportunity_deadline=document.getElementById("contactGrowthOppDeadline").value||null;
+  if(document.getElementById("contactGoals"))payload.partner_goals=document.getElementById("contactGoals").value.trim()||null;
+  if(document.getElementById("contactPainPoints"))payload.partner_pain_points=document.getElementById("contactPainPoints").value.trim()||null;
+  if(document.getElementById("contactLeakageNotes"))payload.referral_leakage_notes=document.getElementById("contactLeakageNotes").value.trim()||null;
+  if(document.getElementById("contactRecoveryPlan"))payload.recovery_plan=document.getElementById("contactRecoveryPlan").value.trim()||null;
+  if(document.getElementById("contactSatisfaction"))payload.satisfaction_rating=document.getElementById("contactSatisfaction").value?parseInt(document.getElementById("contactSatisfaction").value):null;
+  if(document.getElementById("contactCompetitorRisk"))payload.competitor_risk_flag=document.getElementById("contactCompetitorRisk").checked;
+  if(document.getElementById("contactHighPotential"))payload.high_potential_flag=document.getElementById("contactHighPotential").checked;
   try{
     // Case-insensitive lookup by id — an exact-string match here was the likely cause of
     // duplicate profiles (e.g. "Cheryl Kinsey" vs "CHERYL KINSEY" creating two separate rows
@@ -7534,9 +8034,10 @@ async function importContactsFile(input){
     if(!colMap.name){toast("Couldn't find a name column — needs a header like \"Agent Name\" or \"Name\".","error");if(progressEl)progressEl.style.display="none";return;}
 
     if(progressEl)progressEl.textContent="Matching against existing contacts...";
-    const existing=await sbFetch("agent_profiles?select=id,agent_name&limit=5000").catch(()=>[]);
+    const existing=await sbFetch("agent_profiles?select=id,agent_name,tier&limit=5000").catch(()=>[]);
     const existingByName={};
-    existing.forEach(e=>{const n=agentMatchKey(e.agent_name);if(n&&!existingByName[n])existingByName[n]=e.id;});
+    const existingTierByName={};
+    existing.forEach(e=>{const n=agentMatchKey(e.agent_name);if(n&&!existingByName[n]){existingByName[n]=e.id;existingTierByName[n]=e.tier||null;}});
 
     let created=0,updated=0,skipped=0;
     const truthy=v=>{const s=(v||"").toString().trim().toLowerCase();return s==="y"||s==="yes"||s==="true"||s==="active"||s==="1";};
@@ -7555,6 +8056,10 @@ async function importContactsFile(input){
       if(colMap.retained&&row[colMap.retained]!=null)payload.retained=truthy(row[colMap.retained]);
       if(colMap.dnc&&row[colMap.dnc]!=null)payload.do_not_contact=truthy(row[colMap.dnc]);
       if(colMap.closesPastYear&&row[colMap.closesPastYear]!=null){const n=parseInt(row[colMap.closesPastYear]);if(!isNaN(n))payload.closes_past_year=n;}
+      // Channel Partner = 10+ closings in the trailing 12 months, per the playbook — computed
+      // here and overrides any tier value the source column carried, since Channel is derived,
+      // not something Power BI itself labels.
+      if((payload.closes_past_year||0)>=10)payload.tier="Channel";
       if(colMap.totalLeadsPastYear&&row[colMap.totalLeadsPastYear]!=null){const n=parseInt(row[colMap.totalLeadsPastYear]);if(!isNaN(n))payload.total_leads_past_year=n;}
       if(colMap.latestLeadDate&&row[colMap.latestLeadDate]){
         const rawVal=row[colMap.latestLeadDate];
@@ -7574,6 +8079,9 @@ async function importContactsFile(input){
       }
 
       const key=agentMatchKey(name);
+      if(payload.tier&&existingTierByName[key]&&payload.tier!==existingTierByName[key]){
+        logTierMigration(name,existingTierByName[key],payload.tier);
+      }
       try{
         if(existingByName[key]){
           if(Object.keys(payload).length){
@@ -7779,7 +8287,8 @@ function filterContacts(){
   const f=document.getElementById("contactsFilter")?.value||"all";
   let list=allContacts;
   if(q)list=list.filter(c=>(c.agent_name||"").toLowerCase().includes(q)||(c.phone||"").includes(q)||(c.email||"").toLowerCase().includes(q)||(c.birthday||"").toLowerCase().includes(q));
-  if(f==="tier-A")list=list.filter(c=>c.tier==="A");
+  if(f==="tier-Channel")list=list.filter(c=>c.tier==="Channel");
+  else if(f==="tier-A")list=list.filter(c=>c.tier==="A");
   else if(f==="tier-B")list=list.filter(c=>c.tier==="B");
   else if(f==="tier-C")list=list.filter(c=>c.tier==="C");
   else if(f==="notier")list=list.filter(c=>!c.tier);
@@ -7824,6 +8333,15 @@ function openContactsEdit(nameOrEl){
   if(document.getElementById("contactPersonalNotes"))document.getElementById("contactPersonalNotes").value=c.personal_notes||"";
   document.getElementById("contactTier").value=c.tier||"";
   document.getElementById("contactDNC").checked=!!(c.do_not_contact);
+  if(document.getElementById("contactGrowthOpp"))document.getElementById("contactGrowthOpp").value=c.next_growth_opportunity||"";
+  if(document.getElementById("contactGrowthOppDeadline"))document.getElementById("contactGrowthOppDeadline").value=c.growth_opportunity_deadline||"";
+  if(document.getElementById("contactGoals"))document.getElementById("contactGoals").value=c.partner_goals||"";
+  if(document.getElementById("contactPainPoints"))document.getElementById("contactPainPoints").value=c.partner_pain_points||"";
+  if(document.getElementById("contactLeakageNotes"))document.getElementById("contactLeakageNotes").value=c.referral_leakage_notes||"";
+  if(document.getElementById("contactRecoveryPlan"))document.getElementById("contactRecoveryPlan").value=c.recovery_plan||"";
+  if(document.getElementById("contactSatisfaction"))document.getElementById("contactSatisfaction").value=c.satisfaction_rating||"";
+  if(document.getElementById("contactCompetitorRisk"))document.getElementById("contactCompetitorRisk").checked=!!(c.competitor_risk_flag);
+  if(document.getElementById("contactHighPotential"))document.getElementById("contactHighPotential").checked=!!(c.high_potential_flag);
   document.getElementById("contactModal").classList.add("open");
   window._contactSaveCallback=function(){loadContacts();};
 }
