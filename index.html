@@ -852,6 +852,12 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI'
       </select>
       <input type="text" id="rcSearch" placeholder="Search name..." oninput="renderReconnect()">
     </div>
+    <div style="display:flex;align-items:center;gap:6px;margin-top:8px">
+      <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text-2);cursor:pointer;font-weight:500">
+        <input type="checkbox" id="rcSelectAllBox" onchange="rcToggleSelectAll(this.checked)" style="width:15px;height:15px;cursor:pointer">
+        Select all visible
+      </label>
+    </div>
     <div id="rcBulkBar" style="display:none;align-items:center;gap:8px;background:var(--brand-light);border-radius:8px;padding:8px 12px;margin-top:10px;flex-wrap:wrap">
       <span id="rcBulkCount" style="font-size:12px;font-weight:700;color:var(--brand-dark)"></span>
       <button onclick="rcBulkMarkContacted()" style="font-size:11px;font-weight:600;padding:5px 10px;background:var(--brand);color:#fff;border:none;border-radius:6px;cursor:pointer;font-family:inherit">Mark contacted</button>
@@ -1183,7 +1189,7 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI'
 <div id="view-growth" class="view">
   <div class="card" style="background:linear-gradient(135deg,#EEEBF8,#DDD8F0);border:1px solid #C8C0E0">
     <div class="card-title" style="font-size:15px">Agent Growth</div>
-    <div style="font-size:12px;color:var(--text-2);line-height:1.5">Tier criteria: <strong>C</strong> = 0-1 closes · <strong>B</strong> = 2-3 closes · <strong>A</strong> = 4+ closes (past year). Updates automatically from whatever's in Contacts — keep that current via Bulk Import for this to stay accurate.</div>
+    <div style="font-size:12px;color:var(--text-2);line-height:1.5">Tier criteria: <strong>C</strong> = 0-1 closes · <strong>B</strong> = 2-3 closes · <strong>A</strong> = 4+ closes (past year). Stays current from either the Reconnect tab's Power BI upload or the Contacts Bulk Import — you only need to do one, not both.</div>
   </div>
   <div id="growthMovementPanel"><div class="no-data">Loading...</div></div>
 </div>
@@ -5438,6 +5444,14 @@ document.getElementById("quickLogAgent").addEventListener("input",function(){
 let rcData=[];
 let rcSelected=new Set();
 
+function rcToggleSelectAll(checked){
+  document.querySelectorAll(".rc-select-box").forEach(cb=>{
+    cb.checked=checked;
+    const id=parseInt(cb.getAttribute("data-id"));
+    if(checked)rcSelected.add(id);else rcSelected.delete(id);
+  });
+  rcUpdateBulkBar();
+}
 function rcToggleSelect(id,checked){
   if(checked)rcSelected.add(id);else rcSelected.delete(id);
   rcUpdateBulkBar();
@@ -5445,6 +5459,8 @@ function rcToggleSelect(id,checked){
 function rcClearSelection(){
   rcSelected.clear();
   document.querySelectorAll(".rc-select-box").forEach(cb=>cb.checked=false);
+  const selectAllBox=document.getElementById("rcSelectAllBox");
+  if(selectAllBox)selectAllBox.checked=false;
   rcUpdateBulkBar();
 }
 function rcUpdateBulkBar(){
@@ -5560,6 +5576,11 @@ function renderReconnect(){
   const status=document.getElementById("rcStatusFilter").value;
   const sort=document.getElementById("rcSortBy").value;
   const q=(document.getElementById("rcSearch").value||"").toLowerCase();
+  // The "select all" box reflects the currently-visible list — reset its visual state whenever
+  // filters change the underlying set, so it never shows checked against a list that's since
+  // changed out from under it.
+  const selectAllBox=document.getElementById("rcSelectAllBox");
+  if(selectAllBox)selectAllBox.checked=false;
 
   let list=[...rcData];
 
@@ -5818,7 +5839,7 @@ async function rcHandleFile(file){
     if(!agents.length){toast("No agents found in file.","error");return;}
     toast("Saving "+agents.length+" agents to Supabase...","success");
     await rcUploadToSupabase(agents);
-    toast("Reconnect list updated — "+agents.length+" agents loaded.","success");
+    toast("Reconnect list updated — "+agents.length+" agents loaded, and Contacts synced too ✓","success",4500);
     loadReconnect();
   }catch(e){
     console.error("Upload error:",e);
@@ -5835,12 +5856,13 @@ async function rcParseXLSX(arrayBuffer){
     const raw=XLSX.utils.sheet_to_json(ws,{defval:null});
     const uploadedAt=new Date().toISOString();
     const today0=new Date();today0.setHours(0,0,0,0);
-    // Real Power BI export columns, confirmed against an actual file: LO, Agent, Level,
-    // Active Prequals, Active In Pipeline, Total Leads Past Year, Closed Past Year, Closed
-    // Past Year Vol, Latest Lead (In Velocify), Latest File Started, Latest Contract, Latest
-    // Close, Email, Phone Number, Address, Birthday, Notes. "Latest Lead (In Velocify)" is the
-    // real activity-recency signal — an agent is active because they sent a lead through
-    // Velocify, so that date is what days_since should be computed from.
+    // Two real Power BI export formats have actually shown up in practice, and this needs to
+    // handle either one without knowing in advance which was uploaded:
+    // Format A: separate columns — Level, Latest Lead (In Velocify), Latest File Started, Latest
+    // Contract, Latest Close, Total Leads Past Year.
+    // Format B: combined columns — Grade, and a single "Latest Interaction" text field like
+    // "4/17/2026 - File Started (112 Days Ago)" that bundles the date, the interaction type, and
+    // the days-ago count into one string.
     const parseAnyDate=(v)=>{
       if(v===null||v===undefined||v==="")return null;
       if(v instanceof Date)return isNaN(v.getTime())?null:v;
@@ -5856,15 +5878,37 @@ async function rcParseXLSX(arrayBuffer){
     };
     return raw.filter(r=>r["Agent"]&&typeof r["Agent"]==="string"&&r["Agent"].trim()&&!r["Agent"].includes("filter"))
       .map(r=>{
-        const latestLeadDate=parseAnyDate(r["Latest Lead (In Velocify)"]);
-        const daysSince=latestLeadDate?Math.max(0,Math.round((today0-latestLeadDate)/86400000)):null;
+        const grade=r["Level"]?String(r["Level"]).trim():(r["Grade"]?String(r["Grade"]).trim():null);
+
+        let daysSince=null,lastInteractionDate=null,lastInteractionType=null,latestInteractionLabel=null;
+        const modernDate=parseAnyDate(r["Latest Lead (In Velocify)"]);
+        if(modernDate){
+          daysSince=Math.max(0,Math.round((today0-modernDate)/86400000));
+          lastInteractionDate=localDateStr(modernDate);
+          lastInteractionType="Lead (Velocify)";
+          latestInteractionLabel="Lead (Velocify) - "+modernDate.toLocaleDateString("en-US");
+        }else if(r["Latest Interaction"]){
+          // Combined-text format: "M/D/YYYY - Type (N Days Ago)"
+          const raw2=String(r["Latest Interaction"]);
+          const daysMatch=raw2.match(/\((\d+)\s*Days?\s*Ago\)/i);
+          const dateMatch=raw2.match(/(\d{1,2}\/\d{1,2}\/\d{2,4})/);
+          const typeMatch=raw2.match(/-\s*([A-Za-z ]+?)\s*\(/);
+          if(daysMatch)daysSince=parseInt(daysMatch[1]);
+          if(dateMatch){
+            const d=parseAnyDate(dateMatch[1]);
+            if(d)lastInteractionDate=localDateStr(d);
+          }
+          if(typeMatch)lastInteractionType=typeMatch[1].trim();
+          latestInteractionLabel=raw2;
+        }
+
         return{
           agent_name:(r["Agent"]||"").trim(),
           lo:(r["LO"]||"").trim(),
-          grade:r["Level"]?String(r["Level"]).trim():null,
-          latest_interaction:latestLeadDate?"Lead (Velocify) - "+latestLeadDate.toLocaleDateString("en-US"):null,
-          last_interaction_type:latestLeadDate?"Lead (Velocify)":null,
-          last_interaction_date:latestLeadDate?localDateStr(latestLeadDate):null,
+          grade,
+          latest_interaction:latestInteractionLabel,
+          last_interaction_type:lastInteractionType,
+          last_interaction_date:lastInteractionDate,
           days_since:daysSince,
           closes_past_year:r["Closed Past Year"]?parseInt(r["Closed Past Year"])||0:0,
           volume_past_year:r["Closed Past Year Vol"]?parseInt(r["Closed Past Year Vol"])||0:0,
@@ -5924,7 +5968,53 @@ async function rcUploadToSupabase(agents){
       throw new Error("Upload partially failed at agent "+i+" — "+e.message);
     }
   }
+
+  // 5. Also keep Contacts (agent_profiles) current from the same file — same underlying Power BI
+  // data feeds both Reconnect's pace tracking and Agent Growth's tier movement, so there's no
+  // real reason to require two separate uploads to keep both current. This is a best-effort sync:
+  // it never blocks or fails the main Reconnect upload above, since that's the primary operation.
+  try{
+    await syncReconnectDataToContacts(agents);
+  }catch(e){
+    console.warn("Contacts sync from Reconnect upload failed (non-critical):",e.message);
+  }
+
   return inserted;
+}
+
+async function syncReconnectDataToContacts(agents){
+  const existing=await sbFetch("agent_profiles?select=id,agent_name&limit=5000").catch(()=>[]);
+  const existingByName={};
+  existing.forEach(e=>{const n=agentMatchKey(e.agent_name);if(n&&!existingByName[n])existingByName[n]=e.id;});
+  let synced=0,created=0;
+  for(const a of agents){
+    const name=normalizeAgentName(a.agent_name);
+    if(!name)continue;
+    const payload={};
+    if(a.grade)payload.tier=a.grade.toString().trim().toUpperCase();
+    if(typeof a.closes_past_year==="number")payload.closes_past_year=a.closes_past_year;
+    if(a.last_interaction_date)payload.latest_lead_date=a.last_interaction_date;
+    if(a.email)payload.email=a.email;
+    if(a.phone)payload.phone=a.phone;
+    if(a.address)payload.address=a.address;
+    if(a.birthday)payload.birthday=a.birthday;
+    if(!Object.keys(payload).length)continue;
+    const key=agentMatchKey(name);
+    try{
+      if(existingByName[key]){
+        await sbFetch("agent_profiles?id=eq."+existingByName[key],{method:"PATCH",prefer:"return=minimal",body:JSON.stringify(payload)});
+        synced++;
+      }else{
+        payload.agent_name=name;
+        await sbFetch("agent_profiles",{method:"POST",prefer:"return=minimal",body:JSON.stringify(payload)});
+        existingByName[key]="new";
+        created++;
+      }
+    }catch(e){
+      // best-effort per-agent — one bad row shouldn't stop the rest of the sync
+    }
+  }
+  return{synced,created};
 }
 
 let allFeedData=[];
@@ -6421,6 +6511,7 @@ async function loadGoalPace(){
       const n=normalize(r.agent_name);
       if(n&&typeof r.days_since==="number")activeDaysMap[n]=r.days_since;
     });
+    const hasRealReconnectData=Object.keys(activeDaysMap).length>0;
     const computedActive=Object.values(activeDaysMap).filter(d=>d<=90).length;
     const currentActive=settings.currentActive||computedActive;
 
@@ -6435,6 +6526,22 @@ async function loadGoalPace(){
     });
     const grossAddsPerWeek=stillRetainedMeetings.length/8;
 
+    // Recently met agents who haven't shown up as confirmed active yet — either brand new and
+    // not in any Power BI export at all, or logged but no real lead activity yet. Surfaced
+    // separately rather than folded into "current active," since a meeting alone still isn't
+    // confirmation — this is visibility into the pipeline, not a claim they're already active.
+    const pendingMap={};
+    meetingsInWindow.forEach(m=>{
+      const n=normalize(m.agent_name);
+      if(!n)return;
+      const d=activeDaysMap[n];
+      const isConfirmed=typeof d==="number"&&d<=90;
+      if(!isConfirmed){
+        if(!pendingMap[n]||m.act_date>pendingMap[n].date)pendingMap[n]={name:m.agent_name,date:m.act_date};
+      }
+    });
+    const pendingList=Object.values(pendingMap).sort((a,b)=>b.date.localeCompare(a.date));
+
     const todayD=new Date();todayD.setHours(0,0,0,0);
     const targetD=new Date(settings.targetDate+"T12:00:00");
     const daysRemaining=Math.max(0,Math.round((targetD-todayD)/86400000));
@@ -6446,11 +6553,38 @@ async function loadGoalPace(){
     const onPace=projected>=settings.target;
     const verdictColor=onPace?"var(--success)":projected>=settings.target*0.85?"var(--warning)":"var(--danger)";
 
-    body.innerHTML=
+    const pendingHtml=pendingList.length?
+      '<div style="padding:10px 14px;border-radius:8px;background:var(--surface-2);margin-bottom:10px">'
+      +'<div style="font-size:12px;font-weight:700;color:var(--text-1)">'+pendingList.length+' recently met, not yet confirmed active</div>'
+      +'<div style="font-size:11px;color:var(--text-3);margin-top:3px;margin-bottom:6px">Logged a New Realtor Meeting in the last 120 days, but no confirmed recent lead activity yet — not counted in "current active" above, this is just visibility into who\'s in the pipeline.</div>'
+      +'<div style="max-height:140px;overflow-y:auto">'
+      +pendingList.map(p=>'<div style="display:flex;justify-content:space-between;padding:3px 0;font-size:11.5px"><span style="color:var(--text-1)">'+properCase(p.name)+'</span><span style="color:var(--text-4)">met '+fmtDate(p.date)+'</span></div>').join("")
+      +'</div></div>'
+      :'';
+
+    const currentActiveInput=
       '<div style="margin-bottom:10px">'
-      +'<label style="font-size:10px;font-weight:600;color:var(--text-3);text-transform:uppercase;letter-spacing:.4px">Current active agents <span style="font-weight:400;text-transform:none">(auto-estimated at '+computedActive+' from real Reconnect list activity — override if you know the real number)</span></label>'
+      +'<label style="font-size:10px;font-weight:600;color:var(--text-3);text-transform:uppercase;letter-spacing:.4px">Current active agents <span style="font-weight:400;text-transform:none">('+(hasRealReconnectData?"auto-estimated at "+computedActive+" from real Reconnect list activity":"no Reconnect data yet")+' — override if you know the real number)</span></label>'
       +'<input type="number" id="goalCurrentActive" value="'+currentActive+'" style="width:80px;display:block;margin-top:4px;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:13px;font-family:inherit" onchange="saveGoalSettings();loadGoalPace()">'
-      +'</div>'
+      +'</div>';
+
+    if(!hasRealReconnectData){
+      // Never show a pace verdict built on zero real data — that reads as "you're failing" when
+      // it actually means "nothing's been uploaded yet." Current active (if manually overridden)
+      // still shows honestly; the pace math itself is withheld until there's something real to
+      // measure it against. Recently-met agents still show here even with no Reconnect data —
+      // it's the one real signal available until an upload happens.
+      body.innerHTML=currentActiveInput
+        +'<div style="padding:12px 14px;border-radius:8px;background:var(--warning-bg);margin-bottom:10px">'
+        +'<div style="font-size:13px;font-weight:700;color:var(--warning)">⚠ No Reconnect data found yet</div>'
+        +'<div style="font-size:12px;color:var(--text-2);margin-top:4px">Pace and projection need real days-since-last-activity data, which only exists once a Power BI export has been uploaded through the Reconnect tab. Upload one there, then come back — this card will fill in with a real number, not a guess.</div>'
+        +'</div>'
+        +pendingHtml;
+      return;
+    }
+
+    body.innerHTML=
+      currentActiveInput
       +'<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:12px">'
       +'<div style="text-align:center;padding:12px 8px;background:var(--surface-2);border-radius:8px"><div style="font-size:22px;font-weight:700;color:var(--text-1)">'+currentActive+'</div><div style="font-size:10px;color:var(--text-3);margin-top:2px">current active</div></div>'
       +'<div style="text-align:center;padding:12px 8px;background:var(--surface-2);border-radius:8px"><div style="font-size:22px;font-weight:700;color:'+verdictColor+'">'+projected+'</div><div style="font-size:10px;color:var(--text-3);margin-top:2px">projected by target</div></div>'
@@ -6460,6 +6594,7 @@ async function loadGoalPace(){
       +'<div style="font-size:13px;font-weight:700;color:'+verdictColor+'">'+(onPace?"✓ On pace to hit "+settings.target:"⚠ Off pace — projected to land at "+projected+", "+(settings.target-projected)+" short")+'</div>'
       +'<div style="font-size:12px;color:var(--text-2);margin-top:4px">Currently adding ~'+grossAddsPerWeek.toFixed(1)+' net-new agents/week (new meetings that actually went on to show real activity, trailing 8 weeks). Need '+requiredPerWeek.toFixed(1)+'/week to hit '+settings.target+' by '+fmtDate(settings.targetDate)+' ('+daysRemaining+' days out).</div>'
       +'</div>'
+      +pendingHtml
       +'<div style="font-size:10px;color:var(--text-4);line-height:1.5">"Active" and gross-adds pace both use real days-since-last-activity from your Reconnect list (lead, file, contract, or close within 90 days) — not just that a meeting happened. A meeting only counts toward growth if that agent actually went on to show real activity. Treat this as a directional pace check, not an exact forecast, and keep it accurate by uploading your Power BI export to Reconnect regularly.</div>';
   }catch(e){
     body.innerHTML='<div class="no-data">Unable to load — '+e.message+'</div>';
@@ -7388,7 +7523,7 @@ async function importContactsFile(input){
       dnc:["do not contact","dnc","do_not_contact"],
       closesPastYear:["closed past year","closes past year"],
       totalLeadsPastYear:["total leads past year","total leads"],
-      latestLeadDate:["latest lead (in velocify)","latest lead"]
+      latestLeadDate:["latest lead (in velocify)","latest lead","latest interaction"]
     };
     const firstRowKeys=Object.keys(raw[0]||{});
     const colMap={};
@@ -7426,12 +7561,16 @@ async function importContactsFile(input){
         // Power BI hands back a raw Excel serial number for this column even with cellDates:true
         // set — new Date(rawNumber) misreads that as milliseconds-since-epoch and silently
         // produces 1970-01-01. 25569 is the day offset between Excel's epoch (Dec 30 1899) and
-        // the JS epoch (Jan 1 1970).
-        let d;
+        // the JS epoch (Jan 1 1970). A different export format bundles the date into a combined
+        // text string like "4/17/2026 - File Started (112 Days Ago)" instead of a real date cell.
+        let d=null;
         if(rawVal instanceof Date){d=rawVal;}
         else if(typeof rawVal==="number"&&rawVal>1){d=new Date(Math.round((rawVal-25569)*86400*1000));}
-        else{d=new Date(rawVal);}
-        if(!isNaN(d.getTime())&&d.getFullYear()>1971)payload.latest_lead_date=localDateStr(d);
+        else if(typeof rawVal==="string"&&/\d{1,2}\/\d{1,2}\/\d{2,4}/.test(rawVal)){
+          const dateMatch=rawVal.match(/(\d{1,2}\/\d{1,2}\/\d{2,4})/);
+          if(dateMatch)d=new Date(dateMatch[1]);
+        }else{d=new Date(rawVal);}
+        if(d&&!isNaN(d.getTime())&&d.getFullYear()>1971)payload.latest_lead_date=localDateStr(d);
       }
 
       const key=agentMatchKey(name);
@@ -7527,9 +7666,13 @@ function renderDupeCleanupList(){
   const toDeleteCount=dupes.reduce((sum,g)=>sum+g.length-1,0);
   let html='<div style="background:var(--surface-2);border-radius:8px;padding:12px 14px;margin-bottom:14px">'
     +'<div style="font-size:12px;color:var(--text-2);margin-bottom:8px">'+dupes.length+' duplicate name'+(dupes.length!==1?"s":"")+' found — '+toDeleteCount+' record'+(toDeleteCount!==1?"s":"")+' would be removed, keeping whichever profile in each group has the most info filled in. Nothing here touches activity history, only the contact record.</div>'
+    +'<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">'
+    +'<label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text-2);cursor:pointer;font-weight:500;margin-right:4px">'
+    +'<input type="checkbox" id="dupeSelectAllBox" onchange="dupeToggleSelectAll(this.checked)" style="width:15px;height:15px;cursor:pointer">Select all</label>'
     +'<button id="bulkCleanupBtn" onclick="bulkCleanupAllDuplicates()" style="font-size:12px;font-weight:700;padding:8px 16px;background:var(--danger);color:#fff;border:none;border-radius:8px;cursor:pointer;font-family:inherit">Clean up all '+dupes.length+' at once</button>'
-    +'<span id="bulkCleanupProgress" style="font-size:12px;color:var(--text-2);margin-left:10px"></span>'
-    +'</div>';
+    +'<button id="bulkCleanupSelectedBtn" onclick="bulkCleanupSelected()" style="font-size:12px;font-weight:700;padding:8px 16px;background:#fff;color:var(--danger);border:1px solid var(--danger);border-radius:8px;cursor:pointer;font-family:inherit" disabled>Clean up selected (<span id="dupeSelectedCount">0</span>)</button>'
+    +'<span id="bulkCleanupProgress" style="font-size:12px;color:var(--text-2)"></span>'
+    +'</div></div>';
   html+=dupes.map((group,gi)=>{
     // recommend keeping the row with the most filled-in fields
     const sorted=[...group].sort((a,b)=>dupeCompleteness(b)-dupeCompleteness(a));
@@ -7541,9 +7684,11 @@ function renderDupeCleanupList(){
         const details=[c.phone?"phone":"",c.email?"email":"",c.tier?"tier "+c.tier:"",c.birthday?"birthday":"",c.do_not_contact?"DNC":""].filter(Boolean).join(", ")||"no extra info";
         const safeName=c.agent_name.replace(/'/g,"\\'");
         return'<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-top:1px solid var(--border-light)">'
+          +'<div style="display:flex;align-items:center;gap:8px">'
+          +(isRecommendedKeep?'':'<input type="checkbox" class="dupe-select-box" data-name="'+c.agent_name.replace(/"/g,"&quot;")+'" onchange="updateDupeSelection()" style="width:15px;height:15px;cursor:pointer;flex-shrink:0">')
           +'<div><span style="font-size:13px;font-weight:600;color:var(--text-1)">'+escHtml(c.agent_name)+'</span>'
           +(isRecommendedKeep?' <span style="font-size:10px;font-weight:700;color:var(--success);background:var(--success-bg);padding:1px 7px;border-radius:20px">Recommended keep</span>':'')
-          +'<div style="font-size:11px;color:var(--text-3);margin-top:2px">'+details+'</div></div>'
+          +'<div style="font-size:11px;color:var(--text-3);margin-top:2px">'+details+'</div></div></div>'
           +(isRecommendedKeep
             ?'<span style="font-size:11px;color:var(--text-4)">kept</span>'
             :'<button onclick="deleteDuplicateProfile(\''+safeName+'\',this)" style="font-size:11px;padding:5px 12px;background:var(--danger);color:#fff;border:none;border-radius:6px;cursor:pointer;font-family:inherit">Delete this one</button>')
@@ -7552,6 +7697,39 @@ function renderDupeCleanupList(){
       +'</div>';
   }).join("");
   listEl.innerHTML=html;
+}
+
+function dupeToggleSelectAll(checked){
+  document.querySelectorAll(".dupe-select-box").forEach(cb=>{cb.checked=checked;});
+  updateDupeSelection();
+}
+function updateDupeSelection(){
+  const checked=document.querySelectorAll(".dupe-select-box:checked").length;
+  const countEl=document.getElementById("dupeSelectedCount");
+  const btn=document.getElementById("bulkCleanupSelectedBtn");
+  if(countEl)countEl.textContent=checked;
+  if(btn)btn.disabled=checked===0;
+}
+
+async function bulkCleanupSelected(){
+  const boxes=document.querySelectorAll(".dupe-select-box:checked");
+  const names=[...boxes].map(b=>b.getAttribute("data-name"));
+  if(!names.length)return;
+  if(!confirm("Delete "+names.length+" selected profile"+(names.length!==1?"s":"")+"? Activity history is never touched — only the contact records you checked. This cannot be undone."))return;
+  const btn=document.getElementById("bulkCleanupSelectedBtn");
+  const progressEl=document.getElementById("bulkCleanupProgress");
+  if(btn)btn.disabled=true;
+  let done=0,failed=0;
+  for(const name of names){
+    if(progressEl)progressEl.textContent="Deleting "+(done+failed+1)+" of "+names.length+"...";
+    try{
+      await sbFetch("agent_profiles?agent_name=eq."+encodeURIComponent(name),{method:"DELETE",prefer:"return=minimal"});
+      done++;
+    }catch(e){failed++;console.error("Selected cleanup failed for",name,e);}
+  }
+  toast(done+" profile"+(done!==1?"s":"")+" deleted"+(failed?", "+failed+" failed":"")+" ✓",failed?"error":"success",4500);
+  await loadContacts();
+  renderDupeCleanupList();
 }
 
 async function bulkCleanupAllDuplicates(){
