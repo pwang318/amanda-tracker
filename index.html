@@ -368,6 +368,7 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI'
   <div class="tab" onclick="switchTab('history')">Agent History</div>
   <div class="tab" onclick="switchTab('calendar')">Calendar</div>
   <div class="tab" onclick="switchTab('contacts')">Contacts</div>
+  <div class="tab" onclick="switchTab('growth')">Agent Growth</div>
   <div class="tab" onclick="switchTab('daniel')">Management View</div>
 </div>
 
@@ -1177,6 +1178,14 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI'
     <div id="contactsDupeBanner"></div>
     <div id="contacts-list"><div class="no-data">Loading contacts...</div></div>
   </div>
+</div>
+
+<div id="view-growth" class="view">
+  <div class="card" style="background:linear-gradient(135deg,#EEEBF8,#DDD8F0);border:1px solid #C8C0E0">
+    <div class="card-title" style="font-size:15px">Agent Growth</div>
+    <div style="font-size:12px;color:var(--text-2);line-height:1.5">Tier criteria: <strong>C</strong> = 0-1 closes · <strong>B</strong> = 2-3 closes · <strong>A</strong> = 4+ closes (past year). Updates automatically from whatever's in Contacts — keep that current via Bulk Import for this to stay accurate.</div>
+  </div>
+  <div id="growthMovementPanel"><div class="no-data">Loading...</div></div>
 </div>
 
 <!-- Add Agent Modal -->
@@ -3235,6 +3244,89 @@ async function loadZeroProduction(){
   }catch(e){console.error("Zero production error:",e);card.style.display="none";}
 }
 
+// ── Agent Growth — its own tab, not smooshed into another one. Groups agents by which tier
+// transition they're approaching, using the real thresholds (C: 0-1, B: 2-3, A: 4+ closes past
+// year), split into "ready now" (already qualifies, just needs the tier field updated) and "one
+// close away" (predictive — hasn't crossed yet). Pulls from agent_profiles, which gets its real
+// close/lead numbers from the Contacts Bulk Import — keep that current for this to stay accurate.
+let growthContainerVersion=0;
+async function loadAgentGrowth(){
+  const el=document.getElementById("growthMovementPanel");
+  if(!el)return;
+  el.innerHTML='<div class="no-data">Loading...</div>';
+  try{
+    const rows=await sbFetch("agent_profiles?select=agent_name,tier,do_not_contact,closes_past_year&do_not_contact=neq.true&limit=2000").catch(()=>[]);
+    const cToB_ready=[],cToB_close=[],bToA_ready=[],bToA_close=[];
+    (rows||[]).forEach(a=>{
+      const closes=a.closes_past_year||0;
+      const row={name:a.agent_name,closes};
+      if(a.tier==="C"){
+        if(closes>=2)cToB_ready.push(row);
+        else if(closes===1)cToB_close.push(row);
+      }else if(a.tier==="B"){
+        if(closes>=4)bToA_ready.push(row);
+        else if(closes===3)bToA_close.push(row);
+      }
+    });
+    [cToB_ready,cToB_close,bToA_ready,bToA_close].forEach(list=>list.sort((a,b)=>b.closes-a.closes));
+    const total=cToB_ready.length+cToB_close.length+bToA_ready.length+bToA_close.length;
+    if(!total){
+      el.innerHTML='<div class="card"><div class="no-data">No tier movement to show right now. Make sure Contacts has real tier and closed-past-year data — Bulk Import from a Power BI export populates this automatically.</div></div>';
+      return;
+    }
+    growthContainerVersion++;
+    const vid=growthContainerVersion;
+    const rowHtml=(c,color,bg,badgeText)=>{
+      return'<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border-light);gap:8px">'
+        +'<div><span style="font-size:13px;font-weight:600;color:var(--text-1)">'+properCase(c.name)+'</span></div>'
+        +'<div style="display:flex;align-items:center;gap:8px;flex-shrink:0">'
+        +'<span style="font-size:11px;color:var(--text-3)">'+c.closes+' close'+(c.closes!==1?"s":"")+'</span>'
+        +'<span style="font-size:9px;font-weight:700;padding:2px 8px;border-radius:10px;background:'+bg+';color:'+color+'">'+badgeText+'</span>'
+        +'</div></div>';
+    };
+    const subgroup=(id,label,list,color,bg,badgeText,cap)=>{
+      if(!list.length)return"";
+      const visible=list.slice(0,cap),rest=list.slice(cap);
+      let html='<div style="font-size:10px;font-weight:700;color:'+color+';text-transform:uppercase;letter-spacing:.4px;margin:10px 0 4px">'+label+' ('+list.length+')</div>';
+      visible.forEach(c=>{html+=rowHtml(c,color,bg,badgeText);});
+      if(rest.length){
+        html+='<div id="'+id+'" style="display:none">';
+        rest.forEach(c=>{html+=rowHtml(c,color,bg,badgeText);});
+        html+='</div>';
+        html+='<div style="text-align:center;padding:6px 0">'
+          +'<button onclick="var d=document.getElementById(\''+id+'\');var open=d.style.display!==\'none\';d.style.display=open?\'none\':\'block\';this.textContent=open?\'Show all '+list.length+' \\u2192\':\'Show fewer\';" style="font-size:10.5px;font-weight:600;color:'+color+';background:none;border:1px solid '+color+';border-radius:20px;padding:3px 12px;cursor:pointer;font-family:inherit">Show all '+list.length+' &rarr;</button>'
+          +'</div>';
+      }
+      return html;
+    };
+    let html='<div class="card">'
+      +'<div class="card-title" style="margin-bottom:4px">Tier Movement ('+total+')</div>'
+      +'<div style="font-size:11px;color:var(--text-4);margin-bottom:6px">Based on real production data, not gut feel.</div>';
+    html+='<div style="border-top:2px solid var(--success-bg);padding-top:8px;margin-top:6px">'
+      +'<div style="font-size:11px;font-weight:700;color:var(--success);text-transform:uppercase;letter-spacing:.4px">B &rarr; A</div>';
+    if(bToA_ready.length||bToA_close.length){
+      html+=subgroup("gr-ba-ready-"+vid,"Ready now (4+ closes)",bToA_ready,"var(--success)","var(--success-bg)","Ready → A",6);
+      html+=subgroup("gr-ba-close-"+vid,"1 close away (3 closes)",bToA_close,"var(--success)","var(--success-bg)","→ A soon",6);
+    }else{
+      html+='<div style="font-size:11px;color:var(--text-4);padding:6px 0">No one in range right now.</div>';
+    }
+    html+='</div>';
+    html+='<div style="border-top:2px solid var(--brand-light);padding-top:8px;margin-top:10px">'
+      +'<div style="font-size:11px;font-weight:700;color:var(--brand-dark);text-transform:uppercase;letter-spacing:.4px">C &rarr; B</div>';
+    if(cToB_ready.length||cToB_close.length){
+      html+=subgroup("gr-cb-ready-"+vid,"Ready now (2+ closes)",cToB_ready,"var(--brand-dark)","var(--brand-light)","Ready → B",6);
+      html+=subgroup("gr-cb-close-"+vid,"1 close away (1 close)",cToB_close,"var(--brand-dark)","var(--brand-light)","→ B soon",6);
+    }else{
+      html+='<div style="font-size:11px;color:var(--text-4);padding:6px 0">No one in range right now.</div>';
+    }
+    html+='</div></div>';
+    el.innerHTML=html;
+  }catch(e){
+    console.error("Agent growth error:",e);
+    el.innerHTML='<div class="card"><div class="no-data">Unable to load — '+e.message+'</div></div>';
+  }
+}
+
 async function loadContactDataQuality(){
   const card=document.getElementById("contactDataCard");
   const listEl=document.getElementById("contactDataList");
@@ -3399,7 +3491,7 @@ async function loadQuiet(){
 }
 
 function switchTab(name){
-  const tabOrder=["week","log","pipeline","reconnect","feed","history","calendar","contacts","daniel"];
+  const tabOrder=["week","log","pipeline","reconnect","feed","history","calendar","contacts","growth","daniel"];
   document.querySelectorAll(".tab").forEach((t,i)=>t.classList.toggle("active",tabOrder[i]===name));
   document.querySelectorAll(".view").forEach(v=>v.classList.remove("active"));
   document.getElementById("view-"+name).classList.add("active");
@@ -3408,6 +3500,7 @@ function switchTab(name){
   if(name==="pipeline")loadPipeline();
   if(name==="calendar")loadCalendar();
   if(name==="contacts")loadContacts();
+  if(name==="growth")loadAgentGrowth();
   
   
   if(name==="reconnect")loadReconnect();
@@ -3609,6 +3702,25 @@ function showUniqueAgentsModal(period){
     +'<div style="font-size:11px;color:var(--text-3)">last touch '+fmtDate(a.lastDate)+'</div></div>'
     +'<span style="font-size:11px;font-weight:700;color:var(--text-2)">'+a.count+' activit'+(a.count!==1?"ies":"y")+'</span>'
     +'</div>').join("");
+}
+
+function showReconnectContactedModal(){
+  const modal=document.getElementById("coldCallWinsModal");
+  const listEl=document.getElementById("coldCallWinsList");
+  const titleEl=document.getElementById("winsModalTitle");
+  const subEl=document.getElementById("winsModalSub");
+  modal.classList.add("open");
+  if(titleEl)titleEl.textContent="Reconnect contacts — "+mgmtReconnectContactedCache.length+" agent"+(mgmtReconnectContactedCache.length!==1?"s":"")+" brought back";
+  if(subEl)subEl.textContent="Every agent on the Reconnect list currently marked contacted this cycle, most recent first.";
+  if(!mgmtReconnectContactedCache.length){listEl.innerHTML='<div class="no-data">No one marked contacted on the Reconnect list yet.</div>';return;}
+  listEl.innerHTML=mgmtReconnectContactedCache.map(a=>{
+    const safeName=(a.name||"").replace(/'/g,"\\'");
+    return'<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border-light)">'
+    +'<div><div style="font-size:13px;font-weight:600;color:var(--text-1)">'+properCase(a.name)+'</div>'
+    +'<div style="font-size:11px;color:var(--text-3)">'+(a.contactedAt?"marked contacted "+fmtDateTime(a.contactedAt):"no contacted date on record")+'</div></div>'
+    +'<button onclick="closeColdCallWinsModal();switchTab(\'reconnect\');document.getElementById(\'rcSearch\').value=\''+safeName+'\'" style="font-size:11px;font-weight:600;padding:5px 12px;background:var(--brand);color:#fff;border:none;border-radius:6px;cursor:pointer;font-family:inherit">View on list</button>'
+    +'</div>';
+  }).join("");
 }
 
 async function showWinsDetail(kind){
@@ -6085,6 +6197,7 @@ async function doSearchHistory(name){
 let mgmtPeriodData={week:[],mtd:[],ytd:[]},currentMgmtPeriod="week";
 let mgmtPeriodBounds={};
 let mgmtUniqueAgentsCache={daily:[],week:[],mtd:[],ytd:[]};
+let mgmtReconnectContactedCache=[];
 let mgmtLookupData={allColdCallsAndMeetings:[],rcAllAgents:[],aTierAgents:[],closesAll:[]};
 
 async function loadMgmtAccountability(){
@@ -6356,7 +6469,7 @@ async function loadManagement(){
       sbFetch("amanda_activities?select=*&act_date=gte."+yearStart+"&order=act_date.desc&limit=5000"),
       sbFetch("amanda_activities?select=act_type,agent_name&act_date=gte."+prevStart+"&act_date=lte."+prevEnd).catch(()=>[]),
       sbFetch("agent_profiles?select=agent_name,tier&tier=eq.A&limit=200").catch(()=>[]),
-      sbFetch(RC_TABLE+"?select=agent_name&status=eq.contacted&limit=100").catch(()=>[]),
+      sbFetch(RC_TABLE+"?select=agent_name,contacted_at&status=eq.contacted&limit=100").catch(()=>[]),
       sbFetch("agent_profiles?select=agent_name&limit=500").catch(()=>[]),
       sbFetch("amanda_activities?select=agent_name,act_date&order=act_date.desc&limit=2000").catch(()=>[]),
       sbFetch("amanda_activities?select=agent_name,act_type,act_date,notes&outcome=eq.Needs manager attention&act_date=gte."+escFlagCutoffStr+"&order=act_date.desc&limit=50").catch(()=>[]),
@@ -6507,8 +6620,8 @@ async function loadManagement(){
     // ── RETENTION METRICS ─────────────────────────────────────────
     try{
     const retentionRow=(label,daily,wtd,mtd,ytd,note,actType)=>{
-      const clickAttr=actType==="__uniqueagents__"?' onclick="showUniqueAgentsModal(\'mtd\')"':actType?' onclick="jumpToFeedType(\''+actType.replace(/'/g,"\\'")+'\')"':"";
-      const isClickable=actType==="__uniqueagents__"||!!actType;
+      const clickAttr=actType==="__uniqueagents__"?' onclick="showUniqueAgentsModal(\'mtd\')"':actType==="__reconnectcontacted__"?' onclick="showReconnectContactedModal()"':actType?' onclick="jumpToFeedType(\''+actType.replace(/'/g,"\\'")+'\')"':"";
+      const isClickable=actType==="__uniqueagents__"||actType==="__reconnectcontacted__"||!!actType;
       return'<div'+clickAttr+' style="display:grid;grid-template-columns:'+gridCols+';gap:8px;align-items:center;padding:9px 0;border-bottom:1px solid var(--border-light);font-size:13px'+(isClickable?';cursor:pointer':'')+'">'
         +'<div><span style="font-weight:500;color:var(--text-1)">'+label+'</span>'+(note?'<div style="font-size:10px;color:var(--text-4);margin-top:1px">'+note+'</div>':'')+'</div>'
         +(isMobile?'':'<span style="text-align:center;color:var(--text-3)">'+daily+'</span>')
@@ -6538,6 +6651,7 @@ async function loadManagement(){
       return Object.values(seen).sort((a,b)=>b.count-a.count);
     };
     mgmtUniqueAgentsCache={daily:namesWithCounts(dailyActs),week:namesWithCounts(weekActs),mtd:namesWithCounts(mtdActs),ytd:namesWithCounts(ytdActs)};
+    mgmtReconnectContactedCache=(rcContacted||[]).map(r=>({name:r.agent_name,contactedAt:r.contacted_at})).sort((a,b)=>(b.contactedAt||"").localeCompare(a.contactedAt||""));
 
     document.getElementById("danielRetentionGrid").innerHTML=gridHeader
       +retentionRow("Unique agents touched",uniqDaily,uniqWtd,uniqMtd,uniqYtd,"tap to see who","__uniqueagents__")
@@ -6545,7 +6659,7 @@ async function loadManagement(){
       +retentionRow("Agent Talk-to's",cntTalkTo(dailyActs),cntTalkTo(weekActs),cntTalkTo(mtdActs)+" / 400",cntTalkTo(ytdActs),"all meaningful touches with existing agents")
       +retentionRow("Break breads",c(dailyActs,"Break Breads"),c(weekActs,"Break Breads"),c(mtdActs,"Break Breads")+" / 20",c(ytdActs,"Break Breads"),"","Break Breads")
       +retentionRow("CTC calls",c(dailyActs,CTC_TYPE),c(weekActs,CTC_TYPE),c(mtdActs,CTC_TYPE),c(ytdActs,CTC_TYPE),"post-close thank you",CTC_TYPE)
-      +retentionRow("Reconnect contacts",0,0,rcContacted.length,"—","agents brought back")
+      +retentionRow("Reconnect contacts",0,0,rcContacted.length,"—","tap to see who","__reconnectcontacted__")
       +'<div style="margin-top:10px;padding:10px 12px;background:'+(atRiskCount>20?"var(--danger-bg)":"var(--success-bg)")+';border-radius:var(--radius-sm);font-size:12px;color:var(--text-2)">'
       +'<strong style="color:'+(atRiskCount>20?"var(--danger)":"var(--success)")+'">'+atRiskCount+'</strong> agents at risk of going cold (60+ days no touch)'
       +'</div>'
@@ -7275,9 +7389,16 @@ async function importContactsFile(input){
       if(colMap.closesPastYear&&row[colMap.closesPastYear]!=null){const n=parseInt(row[colMap.closesPastYear]);if(!isNaN(n))payload.closes_past_year=n;}
       if(colMap.totalLeadsPastYear&&row[colMap.totalLeadsPastYear]!=null){const n=parseInt(row[colMap.totalLeadsPastYear]);if(!isNaN(n))payload.total_leads_past_year=n;}
       if(colMap.latestLeadDate&&row[colMap.latestLeadDate]){
-        const raw=row[colMap.latestLeadDate];
-        const d=raw instanceof Date?raw:new Date(raw);
-        if(!isNaN(d.getTime()))payload.latest_lead_date=localDateStr(d);
+        const rawVal=row[colMap.latestLeadDate];
+        // Power BI hands back a raw Excel serial number for this column even with cellDates:true
+        // set — new Date(rawNumber) misreads that as milliseconds-since-epoch and silently
+        // produces 1970-01-01. 25569 is the day offset between Excel's epoch (Dec 30 1899) and
+        // the JS epoch (Jan 1 1970).
+        let d;
+        if(rawVal instanceof Date){d=rawVal;}
+        else if(typeof rawVal==="number"&&rawVal>1){d=new Date(Math.round((rawVal-25569)*86400*1000));}
+        else{d=new Date(rawVal);}
+        if(!isNaN(d.getTime())&&d.getFullYear()>1971)payload.latest_lead_date=localDateStr(d);
       }
 
       const key=name.toLowerCase();
