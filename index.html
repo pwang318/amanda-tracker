@@ -571,6 +571,15 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI'
     <div id="dropoffList" style="max-height:280px;overflow-y:auto"></div>
   </div>
 
+  <!-- Zero production — retained agents who've never actually closed. Different problem than
+       "gone quiet": these are relationships that exist but never converted. Prioritized by who's
+       actually receiving leads but not closing them — that's the most fixable subset. -->
+  <div class="card" id="zeroProductionCard" style="display:none;border:1px solid var(--border-danger)">
+    <div class="card-title" style="margin-bottom:4px">🎯 Never Converted — Zero Closes</div>
+    <div style="font-size:11px;color:var(--text-4);margin-bottom:12px">Retained relationships with zero closes in the past year. Sorted by who's actually getting leads sent to them but not converting — that's the most fixable group, work those first.</div>
+    <div id="zeroProductionList" style="max-height:300px;overflow-y:auto"></div>
+  </div>
+
   <!-- Contact info gaps — missing data isn't just a data-quality problem, it's a legitimate reason to reach out -->
   <div class="card" id="contactDataCard" style="display:none;border:1px solid #FFE69C">
     <div class="card-title" style="margin-bottom:4px">📇 Contact Info Needs Updating</div>
@@ -618,6 +627,10 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI'
       <div class="offline-queue-badge" style="display:none;align-items:center;gap:6px;background:#EEEBF8;color:#4E3D8A;border-radius:8px;padding:8px 12px;margin-bottom:10px;font-size:12px;font-weight:600"></div>
       <div id="dedupWarn" class="dedup-warn"></div>
       <div id="doubleDialWarn" class="dedup-warn" style="background:var(--warning-bg);color:#4E3D8A"></div>
+      <div id="personalNotesReminder" style="display:none;background:#EEEBF8;border:1px solid #D9D3EE;border-radius:8px;padding:10px 12px;margin-bottom:14px">
+        <div style="font-size:10px;font-weight:700;color:var(--brand);text-transform:uppercase;letter-spacing:.4px;margin-bottom:3px">💭 Remember</div>
+        <div id="personalNotesReminderText" style="font-size:12.5px;color:var(--text-1);line-height:1.5"></div>
+      </div>
       <div class="form-row">
         <div class="field">
           <label>Agent name</label>
@@ -958,6 +971,20 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI'
   </div>
   <pre id="danielSummaryOut" style="display:none;background:var(--surface-2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:14px;font-size:11px;font-family:monospace;white-space:pre-wrap;margin-bottom:14px;color:var(--text-1);line-height:1.6"></pre>
 
+  <!-- GOAL PACE — the number that actually matters: are we going to hit the target by the date, not just "how much activity happened" -->
+  <div class="card" style="border:1.5px solid #C8C0E0">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:8px">
+      <div class="card-title" style="margin-bottom:0;color:var(--brand-dark)">🎯 Goal Pace</div>
+      <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+        <span style="font-size:11px;color:var(--text-3)">Target:</span>
+        <input type="number" id="goalTargetCount" value="200" style="width:60px;padding:4px 6px;border:1px solid var(--border);border-radius:6px;font-size:12px;font-family:inherit" onchange="saveGoalSettings();loadGoalPace()">
+        <span style="font-size:11px;color:var(--text-3)">active agents by</span>
+        <input type="date" id="goalTargetDate" style="padding:4px 6px;border:1px solid var(--border);border-radius:6px;font-size:12px;font-family:inherit" onchange="saveGoalSettings();loadGoalPace()">
+      </div>
+    </div>
+    <div id="goalPaceBody"><div class="no-data">Loading...</div></div>
+  </div>
+
   <!-- ACQUISITION FUNNEL -->
   <div class="card">
     <div class="card-title">Realtor Acquisition Funnel <span class="card-sub" id="danielFunnelSub">Cold Calls → Meeting Scheduled → Meeting Held → Still Retained, month to date</span></div>
@@ -1132,7 +1159,7 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI'
         <button onclick="openAddAgentModal()" style="padding:8px 14px;background:var(--brand);color:#fff;border:none;border-radius:var(--radius-sm);font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap">+ Add agent</button>
       </div>
     </div>
-    <div style="font-size:11px;color:var(--text-3);margin:-8px 0 14px">Upload a .csv or .xlsx with columns for name, email, phone, address, birthday, and tier — column names are flexible. Existing agents get updated (blank cells never overwrite data that's already there); new names get added. Names are matched case-insensitively, so this also catches near-duplicates automatically.</div>
+    <div style="font-size:11px;color:var(--text-3);margin:-8px 0 14px">Upload a .csv or .xlsx with columns for name, email, phone, address, birthday, tier, and production data (closed past year, total leads, latest lead date) — column names are flexible, including a straight Power BI/Velocify export. Existing agents get updated (blank cells never overwrite data that's already there); new names get added. Names are matched case-insensitively, so this also catches near-duplicates automatically.</div>
     <div id="contactsImportProgress" style="display:none;font-size:12px;color:var(--brand);margin-bottom:10px">Importing...</div>
     <div style="display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap">
       <input type="text" id="contactsSearch" placeholder="Search by name, phone, email or birthday..." oninput="filterContacts()" style="flex:1;min-width:180px;padding:9px 11px;border:0.5px solid #D9D3C7;border-radius:8px;font-size:13px;font-family:inherit;color:#1a1a2e;outline:none">
@@ -1296,6 +1323,7 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI'
       </div>
     </div>
     <div class="field" style="margin-bottom:12px"><label>Birthday <span style="font-weight:400;color:var(--text-4)">(MM/DD — no year)</span></label><input type="text" id="contactBirthday" placeholder="e.g. 03/14" maxlength="5" oninput="formatBirthdayInput(this)"></div>
+    <div class="field" style="margin-bottom:12px"><label>Things to remember <span style="font-weight:400;color:var(--text-4)">(hobbies, kids, what they mentioned last time — shows up right before you talk to them)</span></label><textarea id="contactPersonalNotes" placeholder="e.g. has a golden retriever named Max, daughter starting college in the fall, loves the Buckeyes..." rows="2"></textarea></div>
     <div class="field" style="margin-bottom:12px"><label>Tier</label><select id="contactTier"><option value="">No tier set</option><option value="A">A-Tier (Top producer, active partner)</option><option value="B">B-Tier (Mid-tier, building relationship)</option><option value="C">C-Tier (New or low-volume)</option></select></div>
     <div style="margin-bottom:18px;padding:10px 12px;background:var(--surface-2);border-radius:8px;border:0.5px solid var(--border)">
       <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:13px;font-weight:500;color:var(--text-1)">
@@ -2417,7 +2445,7 @@ async function completeIntakeChecklist(){
     openIntake=null;
     resetIntakeChecklist();
     applyLockState();
-    loadWeek();loadFollowups();loadFeed();loadManagement();loadOnboarding();loadQuiet();loadFlagged();loadStartHere();loadDropoffWarning();loadContactDataQuality();
+    loadWeek();loadFollowups();loadFeed();loadManagement();loadOnboarding();loadQuiet();loadFlagged();loadStartHere();loadDropoffWarning();loadContactDataQuality();loadZeroProduction();
   }catch(e){
     console.error("Complete checklist error:",e);
     toast("Save failed: "+(e.message||"Unknown error"),"error");
@@ -2540,7 +2568,7 @@ let ddTimer=null;
 document.getElementById("agentInput").addEventListener("input",function(){
   clearTimeout(ddTimer);
   const val=this.value;
-  ddTimer=setTimeout(()=>checkDoubleDial(val,"doubleDialWarn"),500);
+  ddTimer=setTimeout(()=>{checkDoubleDial(val,"doubleDialWarn");showPersonalNotesReminder(val);},500);
 });
 
 // Connection test with actual write validation
@@ -2601,7 +2629,7 @@ async function init(){
   testConnection();
   flushOfflineQueue();
   updateOfflineBadge();
-  loadWeek();loadFollowups();loadFeed();loadManagement();initAutocomplete();loadQuiet();loadFlagged();loadOnboarding();loadStartHere();loadBreakBreadDue();loadDropoffWarning();loadContactDataQuality();
+  loadWeek();loadFollowups();loadFeed();loadManagement();initAutocomplete();loadQuiet();loadFlagged();loadOnboarding();loadStartHere();loadBreakBreadDue();loadDropoffWarning();loadContactDataQuality();loadZeroProduction();
   checkOpenIntake();
   updateNotesRequirementHint();
   document.getElementById("agentInput").addEventListener("input",checkDedupOnInput);
@@ -3158,6 +3186,55 @@ async function loadDropoffWarning(){
 // out. Flags retained agents missing email, address, or birthday, scaled by tier so an A-tier gap
 // surfaces before a C-tier one. Address matters specifically for the gifting workflow; birthday for
 // outreach timing; email for anything that needs to go beyond a phone call.
+// ── Zero production — the data makes this the real priority, not just "gone quiet." Retained
+// agents with a confirmed zero in closes_past_year (not missing data — an actual zero) are
+// relationships that exist but have never converted. Prioritized by total_leads_past_year so
+// agents who ARE getting sent leads but not closing them surface first — that's fixable with a
+// touch, versus someone who's never been sent anything at all.
+async function loadZeroProduction(){
+  const card=document.getElementById("zeroProductionCard");
+  const listEl=document.getElementById("zeroProductionList");
+  if(!card||!listEl)return;
+  try{
+    const rows=await sbFetch("agent_profiles?select=agent_name,tier,do_not_contact,closes_past_year,total_leads_past_year,latest_lead_date&do_not_contact=neq.true&closes_past_year=eq.0&limit=2000").catch(()=>[]);
+    const TIER_RANK={A:0,B:1,C:2};
+    const zero=(rows||[]).sort((a,b)=>{
+      const leadDiff=(b.total_leads_past_year||0)-(a.total_leads_past_year||0);
+      if(leadDiff!==0)return leadDiff;
+      return(TIER_RANK[a.tier]??3)-(TIER_RANK[b.tier]??3);
+    });
+    if(!zero.length){card.style.display="none";return;}
+    card.style.display="block";
+    const titleEl=card.querySelector(".card-title");
+    const DAILY_CAP=8;
+    const showAll=card.dataset.showAll==="true";
+    const visible=showAll?zero:zero.slice(0,DAILY_CAP);
+    if(titleEl)titleEl.textContent="🎯 Never Converted — Zero Closes ("+zero.length+")";
+    listEl.innerHTML=visible.map(a=>{
+      const safeAgent=(a.agent_name||"").replace(/'/g,"\\'");
+      const tierBadge=a.tier?'<span style="font-size:9px;font-weight:700;padding:1px 6px;border-radius:10px;background:var(--surface-2);color:var(--text-2);margin-left:5px">'+a.tier+'-tier</span>':"";
+      const leadsInfo=a.total_leads_past_year?'<span style="font-size:9px;font-weight:700;padding:1px 7px;border-radius:10px;background:#FFF3E0;color:#B85B00;margin-right:4px">'+a.total_leads_past_year+' lead'+(a.total_leads_past_year!==1?"s":"")+' sent, 0 closed</span>':'<span style="font-size:9px;font-weight:700;padding:1px 7px;border-radius:10px;background:var(--surface-2);color:var(--text-3)">no leads on file</span>';
+      const lastLead=a.latest_lead_date?'<span style="font-size:10px;color:var(--text-4)">last lead '+fmtDate(a.latest_lead_date)+'</span>':'';
+      return'<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border-light);gap:8px">'
+        +'<div><span style="font-size:13px;font-weight:600;color:var(--text-1)">'+properCase(a.agent_name)+'</span>'+tierBadge
+        +'<div style="margin-top:3px;display:flex;align-items:center;gap:6px">'+leadsInfo+lastLead+'</div></div>'
+        +'<button onclick="document.getElementById(\'agentInput\').value=\''+safeAgent+'\';switchTab(\'log\')" style="font-size:10px;padding:4px 10px;background:var(--danger);color:#fff;border:none;border-radius:6px;cursor:pointer;font-family:inherit;white-space:nowrap;flex-shrink:0">Log check-in</button>'
+        +'</div>';
+    }).join("");
+    if(!showAll&&zero.length>DAILY_CAP){
+      listEl.innerHTML+='<div style="text-align:center;padding:10px 0 4px">'
+        +'<button onclick="this.closest(\'.card\').dataset.showAll=\'true\';loadZeroProduction()" style="font-size:11px;font-weight:600;padding:6px 14px;background:var(--surface-2);color:var(--text-2);border:1px solid var(--border);border-radius:6px;cursor:pointer;font-family:inherit">Show all '+zero.length+' →</button>'
+        +'<div style="font-size:10px;color:var(--text-4);margin-top:4px">Showing today\'s '+DAILY_CAP+', highest-lead-volume first — not hidden, just not all at once</div>'
+        +'</div>';
+    }else if(showAll&&zero.length>DAILY_CAP){
+      listEl.innerHTML+='<div style="text-align:center;padding:10px 0 4px">'
+        +'<button onclick="this.closest(\'.card\').dataset.showAll=\'false\';loadZeroProduction()" style="font-size:11px;font-weight:600;padding:6px 14px;background:var(--surface-2);color:var(--text-2);border:1px solid var(--border);border-radius:6px;cursor:pointer;font-family:inherit">Show today\'s '+DAILY_CAP+' only</button>'
+        +'</div>';
+    }
+    addScrollHintIfNeeded("zeroProductionList");
+  }catch(e){console.error("Zero production error:",e);card.style.display="none";}
+}
+
 async function loadContactDataQuality(){
   const card=document.getElementById("contactDataCard");
   const listEl=document.getElementById("contactDataList");
@@ -4224,7 +4301,45 @@ async function initAutocomplete(){
   });
   document.addEventListener("click",e=>{if(!e.target.closest(".ac-wrap"))list.classList.remove("open");});
 }
-function selectAgent(name){document.getElementById("agentInput").value=name;document.getElementById("acList").classList.remove("open");checkDoubleDial(name,"doubleDialWarn");}
+function selectAgent(name){document.getElementById("agentInput").value=name;document.getElementById("acList").classList.remove("open");checkDoubleDial(name,"doubleDialWarn");showPersonalNotesReminder(name);}
+async function showPersonalNotesReminder(name){
+  const el=document.getElementById("personalNotesReminder");
+  const textEl=document.getElementById("personalNotesReminderText");
+  if(!el||!textEl)return;
+  const target=(name||"").trim();
+  if(!target){el.style.display="none";return;}
+  try{
+    const[profiles,referralCount]=await Promise.all([
+      sbFetch("agent_profiles?agent_name=ilike."+encodeURIComponent(target)+"&select=personal_notes&limit=1").catch(()=>[]),
+      getReferralCredit(target)
+    ]);
+    const notes=profiles&&profiles[0]&&profiles[0].personal_notes;
+    const lines=[];
+    if(referralCount>0)lines.push('<div style="margin-bottom:'+(notes?"4px":"0")+'">🌾 Has sent <strong>'+referralCount+'</strong> buddy referral'+(referralCount!==1?"s":"")+' — worth a thank you.</div>');
+    if(notes)lines.push('<div>'+escHtml(notes)+'</div>');
+    if(lines.length){
+      textEl.innerHTML=lines.join("");
+      el.style.display="block";
+    }else{
+      el.style.display="none";
+    }
+  }catch(e){el.style.display="none";}
+}
+// ── Buddy referral credit — counts how many times an agent shows up as "Referred by: X" across
+// all history, so a real referral is trackable and creditable, not just logged once and forgotten.
+async function getReferralCredit(name){
+  const target=(name||"").trim().toLowerCase();
+  if(!target)return 0;
+  try{
+    const rows=await sbFetch("amanda_activities?select=notes&notes=ilike.*Referred by*&limit=1000").catch(()=>[]);
+    let count=0;
+    (rows||[]).forEach(r=>{
+      const m=(r.notes||"").match(/Referred by:\s*([^—]+)/i);
+      if(m&&m[1].trim().toLowerCase()===target)count++;
+    });
+    return count;
+  }catch(e){return 0;}
+}
 
 async function logActivity(){
   // GUARD: cannot log anything new while a checklist is open — this is the whole point
@@ -4338,6 +4453,7 @@ async function logActivity(){
     if(document.getElementById("referredByInput"))document.getElementById("referredByInput").value="";
     document.getElementById("followupRow").classList.remove("show");
     document.getElementById("doubleDialWarn").style.display="none";
+    document.getElementById("personalNotesReminder").style.display="none";
     updateNotesRequirementHint();
     vibrateSaved();
 
@@ -4357,7 +4473,7 @@ async function logActivity(){
     }
     applyLockState();
     initAutocomplete();
-    loadWeek();loadFollowups();loadFeed();loadManagement();loadOnboarding();loadQuiet();loadFlagged();loadStartHere();loadDropoffWarning();loadContactDataQuality();
+    loadWeek();loadFollowups();loadFeed();loadManagement();loadOnboarding();loadQuiet();loadFlagged();loadStartHere();loadDropoffWarning();loadContactDataQuality();loadZeroProduction();
   }catch(e){
     const msg=e.message||"Unknown error";
     console.error("Log error:",e);
@@ -5873,6 +5989,10 @@ async function doSearchHistory(name){
       sbFetch("call_logs?agent_name=ilike.*"+encodeURIComponent(name)+"*&order=call_date.desc&limit=5000").catch(()=>[])
     ]);
     let html="";
+    let referralCreditForProfile=0;
+    if(profiles.length){
+      referralCreditForProfile=await getReferralCredit(profiles[0].agent_name);
+    }
     if(profiles.length){
       const p=profiles[0];
       // Birthday calculation
@@ -5909,6 +6029,10 @@ async function doSearchHistory(name){
         +'<div style="font-size:16px;font-weight:500;color:#4E3D8A">'+escHtml(p.agent_name)+'</div>'
         +'<button onclick="openContactModal(\''+p.agent_name.replace(/'/g,"\\'")+'\''+')" style="padding:4px 12px;background:#fff;color:var(--brand-dark);border:1px solid var(--border);border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit">Edit contact</button>'
         +'</div>'
+        +(p.personal_notes||referralCreditForProfile>0?'<div style="background:#fff;border:1px solid #D9D3EE;border-radius:8px;padding:10px 12px;margin-bottom:10px">'
+          +(referralCreditForProfile>0?'<div style="font-size:12.5px;color:var(--text-1);margin-bottom:'+(p.personal_notes?"6px":"0")+'">🌾 Has sent <strong>'+referralCreditForProfile+'</strong> buddy referral'+(referralCreditForProfile!==1?"s":"")+' — worth a thank you.</div>':'')
+          +(p.personal_notes?'<div style="font-size:10px;font-weight:700;color:var(--brand);text-transform:uppercase;letter-spacing:.4px;margin-bottom:3px">💭 Remember</div><div style="font-size:12.5px;color:var(--text-1);line-height:1.5">'+escHtml(p.personal_notes)+'</div>':'')
+          +'</div>':"")
         +'<div style="display:flex;flex-direction:column;gap:8px;font-size:12px">'
         +(p.email?'<div>Email <span style="font-weight:500;color:#4E3D8A">'+escHtml(p.email)+'</span></div>':"")+
         (p.phone?'<div>Phone <span style="font-weight:500;color:#4E3D8A">'+phoneCallLink(p.agent_name,p.phone)+'</span></div>':"")+
@@ -6105,9 +6229,83 @@ async function loadMgmtAccountability(){
   }
 }
 
+// ── Goal Pace — the question that actually matters for a headcount goal: not "how much
+// activity happened" but "are we going to land on the number by the date." Gross adds are
+// measured as New Realtor Meetings that are still retained today (not on the reconnect list),
+// which nets out early churn but won't catch an established agent going quiet later — flagged
+// honestly in the UI rather than pretending this is a perfect churn model.
+const GOAL_SETTINGS_KEY="rm_goal_settings";
+function getGoalSettings(){
+  try{
+    const s=JSON.parse(localStorage.getItem(GOAL_SETTINGS_KEY)||"{}");
+    return{target:s.target||200,targetDate:s.targetDate||(new Date().getFullYear()+"-12-31"),currentActive:s.currentActive||null};
+  }catch(e){return{target:200,targetDate:(new Date().getFullYear()+"-12-31"),currentActive:null};}
+}
+function saveGoalSettings(){
+  const target=parseInt(document.getElementById("goalTargetCount").value)||200;
+  const targetDate=document.getElementById("goalTargetDate").value||(new Date().getFullYear()+"-12-31");
+  const currentActive=document.getElementById("goalCurrentActive")?parseInt(document.getElementById("goalCurrentActive").value)||null:null;
+  try{localStorage.setItem(GOAL_SETTINGS_KEY,JSON.stringify({target,targetDate,currentActive}));}catch(e){}
+}
+async function loadGoalPace(){
+  const body=document.getElementById("goalPaceBody");
+  if(!body)return;
+  const settings=getGoalSettings();
+  const targetInput=document.getElementById("goalTargetCount");
+  const dateInput=document.getElementById("goalTargetDate");
+  if(targetInput&&!targetInput.value)targetInput.value=settings.target;
+  if(dateInput&&!dateInput.value)dateInput.value=settings.targetDate;
+  try{
+    const cutoff8wk=new Date();cutoff8wk.setDate(cutoff8wk.getDate()-56);
+    const[recentMeetings,rcActive,allAgentsCount]=await Promise.all([
+      sbFetch("amanda_activities?select=agent_name,act_date&act_type=eq.New Realtor Meeting&act_date=gte."+localDateStr(cutoff8wk)).catch(()=>[]),
+      sbFetch(RC_TABLE+"?select=agent_name&status=neq.removed&limit=2000").catch(()=>[]),
+      sbFetch("agent_profiles?select=agent_name&limit=2000").catch(()=>[])
+    ]);
+    const normalize=s=>(s||"").toLowerCase().trim();
+    const churnedNames=new Set((rcActive||[]).map(a=>normalize(a.agent_name)).filter(Boolean));
+    const totalContactsKnown=(allAgentsCount||[]).length;
+    const computedActive=Math.max(0,totalContactsKnown-churnedNames.size);
+    const currentActive=settings.currentActive||computedActive;
+
+    const stillRetainedMeetings=(recentMeetings||[]).filter(m=>!churnedNames.has(normalize(m.agent_name)));
+    const grossAddsPerWeek=stillRetainedMeetings.length/8;
+
+    const todayD=new Date();todayD.setHours(0,0,0,0);
+    const targetD=new Date(settings.targetDate+"T12:00:00");
+    const daysRemaining=Math.max(0,Math.round((targetD-todayD)/86400000));
+    const weeksRemaining=Math.max(0.1,daysRemaining/7);
+
+    const gap=settings.target-currentActive;
+    const requiredPerWeek=gap/weeksRemaining;
+    const projected=Math.round(currentActive+(grossAddsPerWeek*weeksRemaining));
+    const onPace=projected>=settings.target;
+    const verdictColor=onPace?"var(--success)":projected>=settings.target*0.85?"var(--warning)":"var(--danger)";
+
+    body.innerHTML=
+      '<div style="margin-bottom:10px">'
+      +'<label style="font-size:10px;font-weight:600;color:var(--text-3);text-transform:uppercase;letter-spacing:.4px">Current active agents <span style="font-weight:400;text-transform:none">(auto-estimated at '+computedActive+' — override if you know the real number)</span></label>'
+      +'<input type="number" id="goalCurrentActive" value="'+currentActive+'" style="width:80px;display:block;margin-top:4px;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:13px;font-family:inherit" onchange="saveGoalSettings();loadGoalPace()">'
+      +'</div>'
+      +'<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:12px">'
+      +'<div style="text-align:center;padding:12px 8px;background:var(--surface-2);border-radius:8px"><div style="font-size:22px;font-weight:700;color:var(--text-1)">'+currentActive+'</div><div style="font-size:10px;color:var(--text-3);margin-top:2px">current active</div></div>'
+      +'<div style="text-align:center;padding:12px 8px;background:var(--surface-2);border-radius:8px"><div style="font-size:22px;font-weight:700;color:'+verdictColor+'">'+projected+'</div><div style="font-size:10px;color:var(--text-3);margin-top:2px">projected by target</div></div>'
+      +'<div style="text-align:center;padding:12px 8px;background:var(--surface-2);border-radius:8px"><div style="font-size:22px;font-weight:700;color:var(--brand)">'+settings.target+'</div><div style="font-size:10px;color:var(--text-3);margin-top:2px">goal</div></div>'
+      +'</div>'
+      +'<div style="padding:12px 14px;border-radius:8px;background:'+(onPace?"var(--success-bg)":"var(--danger-bg)")+';margin-bottom:10px">'
+      +'<div style="font-size:13px;font-weight:700;color:'+verdictColor+'">'+(onPace?"✓ On pace to hit "+settings.target:"⚠ Off pace — projected to land at "+projected+", "+(settings.target-projected)+" short")+'</div>'
+      +'<div style="font-size:12px;color:var(--text-2);margin-top:4px">Currently adding ~'+grossAddsPerWeek.toFixed(1)+' net-new agents/week (still retained, trailing 8 weeks). Need '+requiredPerWeek.toFixed(1)+'/week to hit '+settings.target+' by '+fmtDate(settings.targetDate)+' ('+daysRemaining+' days out).</div>'
+      +'</div>'
+      +'<div style="font-size:10px;color:var(--text-4);line-height:1.5">Gross-adds pace is measured as New Realtor Meetings still retained today — it nets out early churn on new agents, but won\'t catch an established agent going quiet later. Treat this as a directional pace check, not an exact forecast.</div>';
+  }catch(e){
+    body.innerHTML='<div class="no-data">Unable to load — '+e.message+'</div>';
+  }
+}
+
 async function loadManagement(){
   loadMgmtAccountability();
   updateBackupReminder();
+  loadGoalPace();
   const lookbackLabel=document.getElementById("mgmtLookbackActive");
   if(lookbackLabel)lookbackLabel.textContent="";
   try{
@@ -6869,12 +7067,14 @@ async function openContactModal(name,phone,email,brokerage,birthday){
   editingContactName=name;
   document.getElementById("contactModalName").textContent=name;
   // If called with just a name (from Agent History), fetch the full profile
+  let personalNotes="";
   if(!phone&&!email&&!brokerage&&!birthday){
     try{
       const profiles=await sbFetch("agent_profiles?agent_name=ilike."+encodeURIComponent(name)+"&limit=1").catch(()=>[]);
       const p=profiles&&profiles[0];
       if(p){
         phone=p.phone||"";email=p.email||"";brokerage=p.address||"";birthday=p.birthday||"";
+        personalNotes=p.personal_notes||"";
         document.getElementById("contactTier").value=p.tier||"";
         document.getElementById("contactDNC").checked=!!(p.do_not_contact);
       }
@@ -6883,6 +7083,7 @@ async function openContactModal(name,phone,email,brokerage,birthday){
   document.getElementById("contactPhone").value=phone||"";document.getElementById("contactEmail").value=email||"";
   applyAddressToFields(brokerage||"","contact");
   document.getElementById("contactBirthday").value=birthday||"";
+  if(document.getElementById("contactPersonalNotes"))document.getElementById("contactPersonalNotes").value=personalNotes;
   document.getElementById("contactModal").classList.add("open");
 }
 function closeContactModal(){document.getElementById("contactModal").classList.remove("open");editingContactName=null;}
@@ -6893,7 +7094,7 @@ async function saveContactModal(){
     toast("Birthday needs to be MM/DD, like 03/14 — no year, no month name.","error");
     return;
   }
-  const payload={agent_name:editingContactName,phone:document.getElementById("contactPhone").value.trim()||null,email:document.getElementById("contactEmail").value.trim()||null,address:combineAddress(document.getElementById("contactStreet").value,document.getElementById("contactCity").value,document.getElementById("contactState").value,document.getElementById("contactZip").value),birthday:birthdayVal||null,tier:document.getElementById("contactTier").value||null,do_not_contact:document.getElementById("contactDNC").checked};
+  const payload={agent_name:editingContactName,phone:document.getElementById("contactPhone").value.trim()||null,email:document.getElementById("contactEmail").value.trim()||null,address:combineAddress(document.getElementById("contactStreet").value,document.getElementById("contactCity").value,document.getElementById("contactState").value,document.getElementById("contactZip").value),birthday:birthdayVal||null,personal_notes:document.getElementById("contactPersonalNotes")?document.getElementById("contactPersonalNotes").value.trim()||null:null,tier:document.getElementById("contactTier").value||null,do_not_contact:document.getElementById("contactDNC").checked};
   try{
     // Case-insensitive lookup by id — an exact-string match here was the likely cause of
     // duplicate profiles (e.g. "Cheryl Kinsey" vs "CHERYL KINSEY" creating two separate rows
@@ -7001,10 +7202,10 @@ async function importContactsFile(input){
     let wb;
     if(file.name.toLowerCase().endsWith(".csv")){
       const text=await file.text();
-      wb=XLSX.read(text,{type:"string"});
+      wb=XLSX.read(text,{type:"string",cellDates:true});
     }else{
       const buf=await file.arrayBuffer();
-      wb=XLSX.read(buf,{type:"array"});
+      wb=XLSX.read(buf,{type:"array",cellDates:true});
     }
     const ws=wb.Sheets[wb.SheetNames[0]];
     const raw=XLSX.utils.sheet_to_json(ws,{defval:null});
@@ -7017,9 +7218,12 @@ async function importContactsFile(input){
       phone:["phone","cell phone","phone number","cell","mobile"],
       address:["address","home address","brokerage","mailing address"],
       birthday:["birthday","dob","date of birth","bday"],
-      tier:["tier","grade"],
+      tier:["tier","grade","level"],
       retained:["retained","active","is active","status"],
-      dnc:["do not contact","dnc","do_not_contact"]
+      dnc:["do not contact","dnc","do_not_contact"],
+      closesPastYear:["closed past year","closes past year"],
+      totalLeadsPastYear:["total leads past year","total leads"],
+      latestLeadDate:["latest lead (in velocify)","latest lead"]
     };
     const firstRowKeys=Object.keys(raw[0]||{});
     const colMap={};
@@ -7050,6 +7254,13 @@ async function importContactsFile(input){
       if(colMap.tier&&row[colMap.tier])payload.tier=row[colMap.tier].toString().trim().toUpperCase();
       if(colMap.retained&&row[colMap.retained]!=null)payload.retained=truthy(row[colMap.retained]);
       if(colMap.dnc&&row[colMap.dnc]!=null)payload.do_not_contact=truthy(row[colMap.dnc]);
+      if(colMap.closesPastYear&&row[colMap.closesPastYear]!=null){const n=parseInt(row[colMap.closesPastYear]);if(!isNaN(n))payload.closes_past_year=n;}
+      if(colMap.totalLeadsPastYear&&row[colMap.totalLeadsPastYear]!=null){const n=parseInt(row[colMap.totalLeadsPastYear]);if(!isNaN(n))payload.total_leads_past_year=n;}
+      if(colMap.latestLeadDate&&row[colMap.latestLeadDate]){
+        const raw=row[colMap.latestLeadDate];
+        const d=raw instanceof Date?raw:new Date(raw);
+        if(!isNaN(d.getTime()))payload.latest_lead_date=localDateStr(d);
+      }
 
       const key=name.toLowerCase();
       try{
@@ -7222,6 +7433,7 @@ function openContactsEdit(nameOrEl){
   document.getElementById("contactEmail").value=c.email||"";
   applyAddressToFields(c.address||"","contact");
   document.getElementById("contactBirthday").value=c.birthday||"";
+  if(document.getElementById("contactPersonalNotes"))document.getElementById("contactPersonalNotes").value=c.personal_notes||"";
   document.getElementById("contactTier").value=c.tier||"";
   document.getElementById("contactDNC").checked=!!(c.do_not_contact);
   document.getElementById("contactModal").classList.add("open");
@@ -7264,6 +7476,7 @@ const PAGE_GUIDE_SECTIONS=[
   {id:"onboardingCard",label:"Gifting Campaign Follow-Up",desc:"New agents in their first 4 weeks"},
   {id:"breadDueCard",label:"Break Bread Due List",desc:"Who's due for a break bread, soonest first"},
   {id:"dropoffCard",label:"Approaching 90-Day Drop-Off",desc:"Agents about to fall off as active — act now"},
+  {id:"zeroProductionCard",label:"Never Converted — Zero Closes",desc:"Retained agents with zero closes — prioritized by who's actually getting leads"},
   {id:"contactDataCard",label:"Contact Info Needs Updating",desc:"Missing email, address, or birthday — also a good reason to call"},
   {id:"onYourRadarCard",label:"On Your Radar",desc:"LP flags, CTC calls, buddy asks, follow-ups you scheduled"},
   {id:"atRiskCard",label:"At Risk — Need a Touch",desc:"Retained agents gone quiet — nobody flagged these, the app noticed"}
