@@ -6116,9 +6116,13 @@ async function rcUploadToSupabase(agents){
 // (signs of lost trust / competing lender gaining share).
 function computeHealthScore(daysSinceLead,daysAny,threshold,urgentThreshold,competitorRisk){
   if(competitorRisk)return"Red";
-  if(daysSinceLead===null||daysSinceLead>=60)return"Red";
+  // Lead-recency now scales by tier, same as touch cadence — an A-tier partner going quiet on
+  // leads gets flagged much sooner than a C-tier one, consistent with the tier-scaling used
+  // everywhere else in this build. Playbook §14 states this flat (30/60 days), but a flat cutoff
+  // undercuts the point of tiering at all: A-tier partners deserve to be caught earlier.
+  if(daysSinceLead===null||daysSinceLead>=urgentThreshold)return"Red";
   if(daysAny===null||daysAny>=urgentThreshold)return"Red";
-  if(daysSinceLead>=30)return"Yellow";
+  if(daysSinceLead>=threshold)return"Yellow";
   if(daysAny>=threshold)return"Yellow";
   return"Green";
 }
@@ -7131,7 +7135,7 @@ async function loadPortfolioReview(){
       sbFetch("call_logs?select=agent_name,call_date&order=call_date.desc&limit=2000").catch(()=>[]),
       sbFetch("amanda_activities?select=agent_name,act_type,act_date,outcome,notes&act_date=gte."+range.start+"&limit=3000").catch(()=>[]),
       sbFetch("tier_migrations?select=agent_name,from_tier,to_tier,migration_date&migration_date=gte."+range.start+"&limit=1000").catch(()=>[]),
-      sbFetch("amanda_activities?select=agent_name,act_date&act_type=eq.Partner Meeting&order=act_date.desc&limit=3000").catch(()=>[])
+      sbFetch("amanda_activities?select=agent_name,act_date&act_type=in.(Partner Meeting,Break Breads)&order=act_date.desc&limit=3000").catch(()=>[])
     ]);
 
     const TIER_TOUCH_THRESHOLD={Channel:14,A:14,B:30,C:60};
@@ -7157,8 +7161,25 @@ async function loadPortfolioReview(){
       const urgentThreshold=TIER_URGENT_THRESHOLD[tier]||21;
       const daysSinceLead=a.latest_lead_date?Math.round((now-new Date(a.latest_lead_date+"T12:00:00"))/86400000):null;
       const health=computeHealthScore(daysSinceLead,daysAny,threshold,urgentThreshold,!!a.competitor_risk_flag);
-      return{name,tier,health,daysAny,daysSinceLead,next_growth_opportunity:a.next_growth_opportunity||null,satisfaction:a.satisfaction_rating||null,high_potential:!!a.high_potential_flag,agent:a};
+      // Proactive buffer — how many days until this partner WOULD flip to Yellow if nothing
+      // changes. Yellow itself fires the same day someone becomes officially overdue (daysAny
+      // reaches threshold), so by definition it's not a leading indicator — this is what gives
+      // Green partners actual lead time to be reached out to before they cross that line, instead
+      // of only surfacing once they're already there.
+      const daysToYellowTouch=daysAny===null?null:threshold-daysAny;
+      const daysToYellowLead=daysSinceLead===null?null:threshold-daysSinceLead;
+      const daysUntilYellow=[daysToYellowTouch,daysToYellowLead].filter(d=>d!==null).length
+        ?Math.min(...[daysToYellowTouch,daysToYellowLead].filter(d=>d!==null))
+        :null;
+      return{name,tier,health,daysAny,daysSinceLead,daysUntilYellow,next_growth_opportunity:a.next_growth_opportunity||null,satisfaction:a.satisfaction_rating||null,high_potential:!!a.high_potential_flag,agent:a};
     });
+
+    // Proactive Watch — Green partners within a short window of crossing into Yellow. This is the
+    // actual "catch it before it happens" list, separate from Green/Yellow/Red itself, which stays
+    // faithful to the playbook's literal (already-overdue) definitions.
+    const PROACTIVE_WINDOW_DAYS=7;
+    const proactiveWatch=rows.filter(r=>r.health==="Green"&&r.daysUntilYellow!==null&&r.daysUntilYellow<=PROACTIVE_WINDOW_DAYS)
+      .sort((a,b)=>a.daysUntilYellow-b.daysUntilYellow);
 
     // Satisfaction Rating rollup (playbook Success Definitions — "partners feel supported and valued")
     const rated=rows.filter(r=>r.satisfaction!==null);
@@ -7194,7 +7215,7 @@ async function loadPortfolioReview(){
 
     // 6. Monthly meeting counts vs targets (10 new / 20 existing), scaled to the selected period
     const newMeetings=periodActs.filter(a=>a.act_type==="New Realtor Meeting").length;
-    const partnerMeetings=periodActs.filter(a=>a.act_type==="Partner Meeting").length;
+    const partnerMeetings=periodActs.filter(a=>a.act_type==="Partner Meeting"||a.act_type==="Break Breads").length;
     const newMeetingTarget=Math.round(10*range.meetingTargetMult);
     const partnerMeetingTarget=Math.round(20*range.meetingTargetMult);
 
@@ -7203,10 +7224,23 @@ async function loadPortfolioReview(){
     // targets (50%), the ratio vs. its 1.15 target (30%), active count vs. its 200 target (20%).
     // This is a reference number for the conversation, not a bonus calculation — that's HR policy,
     // intentionally not modeled here.
-    const migScore=Math.min(100,(migCtoB+migBtoA+migAtoChannel)*10+((countByTier.A/PF_TARGETS.A)*30)+((countByTier.B/PF_TARGETS.B)*20));
+    // migScore now measures actual migration EVENTS only (C→B, B→A, A→Channel this period) —
+    // it previously also folded in A/B count-vs-target, which countScore already measures at its
+    // own 20% weight, silently propping up the "migration" score with data that had nothing to
+    // do with migration activity. 25 points per migration, capped at 100, is a working heuristic
+    // in the absence of a playbook-specified migrations/period target — revisit once real pace
+    // data exists to calibrate against.
+    const migScore=Math.min(100,(migCtoB+migBtoA+migAtoChannel)*25);
     const ratioScore=Math.min(100,(ratio/1.15)*100);
     const countScore=Math.min(100,(totalActive/PF_TARGETS.total)*100);
     const weighted=Math.round(migScore*0.5+ratioScore*0.3+countScore*0.2);
+    // Components with zero underlying activity are flagged separately from components that are
+    // genuinely at zero performance — a 0 because nobody's logged "New Lead Received" yet reads
+    // very differently from a 0 because leads actually dried up, and blending them into one
+    // number without saying which is misleading.
+    const scoreDataGaps=[];
+    if(migrations.length===0)scoreDataGaps.push("No tier migrations logged yet — Migration score is 0 by default, not necessarily 0 performance.");
+    if(leadsThisPeriod===0)scoreDataGaps.push("No \"New Lead Received\" activity logged yet — Ratio score is 0 by default until that logging starts.");
 
     pfDrillData={rows,migrations,missingGrowthOpp,escalation};
 
@@ -7230,7 +7264,7 @@ async function loadPortfolioReview(){
     const partnerMeetingsByTier={Channel:0,A:0,B:0,C:0};
     const tierByName={};
     active.forEach(a=>{tierByName[(a.agent_name||"").trim().toLowerCase()]=a.tier;});
-    periodActs.filter(a=>a.act_type==="Partner Meeting").forEach(a=>{
+    periodActs.filter(a=>a.act_type==="Partner Meeting"||a.act_type==="Break Breads").forEach(a=>{
       const t=tierByName[(a.agent_name||"").trim().toLowerCase()];
       if(t&&partnerMeetingsByTier.hasOwnProperty(t))partnerMeetingsByTier[t]++;
     });
@@ -7273,8 +7307,9 @@ async function loadPortfolioReview(){
     pfDrillData.newRealtorMeetingActs=newRealtorMeetingActs;
     pfDrillData.meetingsScheduledActs=periodActs.filter(a=>(a.act_type==="Cold Calls"||a.act_type==="New Realtor Meeting")&&a.outcome==="Meeting Scheduled");
     pfDrillData.convertedActive=active.filter(a=>metThisPeriod.has((a.agent_name||"").trim().toLowerCase()));
-    pfDrillData.partnerMeetingActsByTier=periodActs.filter(a=>a.act_type==="Partner Meeting");
+    pfDrillData.partnerMeetingActsByTier=periodActs.filter(a=>a.act_type==="Partner Meeting"||a.act_type==="Break Breads");
     pfDrillData.highPotential=highPotential;
+    pfDrillData.proactiveWatch=proactiveWatch;
 
     body.innerHTML=
       '<div class="card" style="text-align:center;padding:20px">'
@@ -7282,6 +7317,7 @@ async function loadPortfolioReview(){
         +'<div style="font-size:38px;font-weight:800;color:var(--brand)">'+weighted+'</div>'
         +'<div style="font-size:11.5px;color:var(--text-3);margin-top:4px">50% Tier Migration ('+Math.round(migScore)+') · 30% Agent-to-Lead Ratio ('+Math.round(ratioScore)+') · 20% Active Count ('+Math.round(countScore)+')</div>'
         +'<div style="font-size:10.5px;color:var(--text-4);margin-top:6px">Reference number for the conversation — not a bonus calculation.</div>'
+        +(scoreDataGaps.length?'<div style="text-align:left;background:#FFF7E6;border:1px solid #FFE8A3;border-radius:8px;padding:8px 12px;margin-top:12px;font-size:11px;color:#8A6100;line-height:1.5">⚠️ '+scoreDataGaps.join('<br>⚠️ ')+'</div>':'')
       +'</div>'
 
       +'<div class="card">'
@@ -7310,6 +7346,13 @@ async function loadPortfolioReview(){
           +pfMigTile("A → Channel",migAtoChannel,"mig:A:Channel")
           +pfMigTile("Other",migOther,"mig:other")
         +'</div>'
+      +'</div>'
+
+      +'<div class="card" style="border-left:3px solid var(--brand)">'
+        +'<div class="card-title" style="font-size:14px">Proactive Watch — reach out before they go Yellow</div>'
+        +'<div style="font-size:12px;color:var(--text-2);margin-bottom:8px">Green partners within 7 days of crossing into Yellow if nothing changes. This is the actual early-warning list — Green/Yellow/Red itself only flags once someone\'s already overdue.</div>'
+        +(proactiveWatch.length?'<div>'+proactiveWatch.map((r,i)=>pfListRow(i+1,r.name,(r.tier||"No tier")+"-tier · "+r.daysUntilYellow+(r.daysUntilYellow===1?" day":" days")+" until Yellow")).join("")+'</div>'
+          :'<div class="no-data" style="padding:10px 0">Nobody\'s close to slipping right now.</div>')
       +'</div>'
 
       +'<div class="card">'
@@ -7345,7 +7388,7 @@ async function loadPortfolioReview(){
 
       +'<div class="card">'
         +'<div class="card-title" style="font-size:14px">Meeting Cadence Compliance (playbook §6/§8 — formal meetings)</div>'
-        +'<div style="font-size:12px;color:var(--text-2);margin-bottom:8px">Distinct from touch cadence — this checks logged "Partner Meeting" activity against each tier\'s formal cadence (Channel/A monthly, B every-other-month, C quarterly).</div>'
+        +'<div style="font-size:12px;color:var(--text-2);margin-bottom:8px">Distinct from touch cadence — this checks logged "Partner Meeting" or "Break Breads" activity against each tier\'s formal cadence (Channel/A monthly, B every-other-month, C quarterly).</div>'
         +'<div style="font-size:26px;font-weight:800;color:'+(meetingCompliancePct>=80?"var(--success)":meetingCompliancePct>=50?"var(--warning)":"var(--danger)")+'">'+meetingCompliancePct+'%</div>'
         +'<div style="font-size:11px;color:var(--text-3);margin-top:2px">'+meetingCompliant+' of '+totalActive+' active partners current on formal meeting cadence</div>'
       +'</div>'
