@@ -1,4 +1,4 @@
- <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -7486,8 +7486,7 @@ function openDupeCleanupModal(){
 }
 function closeDupeCleanupModal(){document.getElementById("dupeCleanupModal").classList.remove("open");}
 
-function renderDupeCleanupList(){
-  const listEl=document.getElementById("dupeCleanupList");
+function computeDupeGroups(){
   const byName={};
   (allContacts||[]).forEach(c=>{
     const raw=(c.agent_name||"").trim();
@@ -7496,15 +7495,26 @@ function renderDupeCleanupList(){
     if(!byName[n])byName[n]=[];
     byName[n].push(c);
   });
-  const dupes=Object.values(byName).filter(list=>list.length>1);
+  return Object.values(byName).filter(list=>list.length>1);
+}
+const dupeCompleteness=c=>["phone","email","address","birthday","tier"].filter(k=>c[k]).length;
+
+function renderDupeCleanupList(){
+  const listEl=document.getElementById("dupeCleanupList");
+  const dupes=computeDupeGroups();
   if(!dupes.length){
     listEl.innerHTML='<div class="no-data">No duplicates found — all clean!</div>';
     return;
   }
-  const completeness=c=>["phone","email","address","birthday","tier"].filter(k=>c[k]).length;
-  listEl.innerHTML=dupes.map((group,gi)=>{
+  const toDeleteCount=dupes.reduce((sum,g)=>sum+g.length-1,0);
+  let html='<div style="background:var(--surface-2);border-radius:8px;padding:12px 14px;margin-bottom:14px">'
+    +'<div style="font-size:12px;color:var(--text-2);margin-bottom:8px">'+dupes.length+' duplicate name'+(dupes.length!==1?"s":"")+' found — '+toDeleteCount+' record'+(toDeleteCount!==1?"s":"")+' would be removed, keeping whichever profile in each group has the most info filled in. Nothing here touches activity history, only the contact record.</div>'
+    +'<button id="bulkCleanupBtn" onclick="bulkCleanupAllDuplicates()" style="font-size:12px;font-weight:700;padding:8px 16px;background:var(--danger);color:#fff;border:none;border-radius:8px;cursor:pointer;font-family:inherit">Clean up all '+dupes.length+' at once</button>'
+    +'<span id="bulkCleanupProgress" style="font-size:12px;color:var(--text-2);margin-left:10px"></span>'
+    +'</div>';
+  html+=dupes.map((group,gi)=>{
     // recommend keeping the row with the most filled-in fields
-    const sorted=[...group].sort((a,b)=>completeness(b)-completeness(a));
+    const sorted=[...group].sort((a,b)=>dupeCompleteness(b)-dupeCompleteness(a));
     const keep=sorted[0],rest=sorted.slice(1);
     return'<div style="border:1px solid var(--border-light);border-radius:8px;padding:12px;margin-bottom:12px">'
       +'<div style="font-size:12px;font-weight:700;color:var(--text-1);margin-bottom:8px">"'+escHtml(group[0].agent_name)+'" — '+group.length+' profiles found</div>'
@@ -7523,6 +7533,35 @@ function renderDupeCleanupList(){
       }).join("")
       +'</div>';
   }).join("");
+  listEl.innerHTML=html;
+}
+
+async function bulkCleanupAllDuplicates(){
+  const dupes=computeDupeGroups();
+  if(!dupes.length)return;
+  const toDelete=[];
+  dupes.forEach(group=>{
+    const sorted=[...group].sort((a,b)=>dupeCompleteness(b)-dupeCompleteness(a));
+    sorted.slice(1).forEach(c=>toDelete.push(c.agent_name));
+  });
+  if(!confirm("Delete "+toDelete.length+" duplicate profile"+(toDelete.length!==1?"s":"")+" across "+dupes.length+" name"+(dupes.length!==1?"s":"")+"? For each group, the profile with the most info filled in is kept automatically. Activity history is never touched — only the extra contact records. This cannot be undone."))return;
+  const btn=document.getElementById("bulkCleanupBtn");
+  const progressEl=document.getElementById("bulkCleanupProgress");
+  if(btn)btn.disabled=true;
+  let done=0,failed=0;
+  for(const name of toDelete){
+    if(progressEl)progressEl.textContent="Deleting "+(done+failed+1)+" of "+toDelete.length+"...";
+    try{
+      await sbFetch("agent_profiles?agent_name=eq."+encodeURIComponent(name),{method:"DELETE",prefer:"return=minimal"});
+      done++;
+    }catch(e){
+      failed++;
+      console.error("Bulk cleanup failed for",name,e);
+    }
+  }
+  toast(done+" duplicate"+(done!==1?"s":"")+" cleaned up"+(failed?", "+failed+" failed — try those individually":"")+" ✓",failed?"error":"success",5000);
+  await loadContacts(); // refetches allContacts + re-renders banner
+  renderDupeCleanupList();
 }
 
 async function deleteDuplicateProfile(name,btnEl){
