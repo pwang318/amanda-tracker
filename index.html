@@ -6388,18 +6388,32 @@ async function loadGoalPace(){
   if(dateInput&&!dateInput.value)dateInput.value=settings.targetDate;
   try{
     const cutoff8wk=new Date();cutoff8wk.setDate(cutoff8wk.getDate()-56);
-    const[recentMeetings,rcActive,allAgentsCount]=await Promise.all([
-      sbFetch("amanda_activities?select=agent_name,act_date&act_type=eq.New Realtor Meeting&act_date=gte."+localDateStr(cutoff8wk)).catch(()=>[]),
-      sbFetch(RC_TABLE+"?select=agent_name&status=neq.removed&limit=2000").catch(()=>[]),
-      sbFetch("agent_profiles?select=agent_name&limit=2000").catch(()=>[])
+    const cutoffNewAgent=new Date();cutoffNewAgent.setDate(cutoffNewAgent.getDate()-120);
+    const[recentMeetings,rcAll]=await Promise.all([
+      sbFetch("amanda_activities?select=agent_name,act_date&act_type=eq.New Realtor Meeting&act_date=gte."+localDateStr(cutoffNewAgent)).catch(()=>[]),
+      sbFetch(RC_TABLE+"?select=agent_name,days_since&status=neq.removed&limit=2000").catch(()=>[])
     ]);
     const normalize=s=>(s||"").toLowerCase().trim();
-    const churnedNames=new Set((rcActive||[]).map(a=>normalize(a.agent_name)).filter(Boolean));
-    const totalContactsKnown=(allAgentsCount||[]).length;
-    const computedActive=Math.max(0,totalContactsKnown-churnedNames.size);
+    // "Active" here means real production, not just "on the list" — the same 90-day threshold
+    // used everywhere else in the app. days_since comes from the real Power BI upload, so this
+    // is measuring actual activity, not just presence in agent_profiles.
+    const activeDaysMap={};
+    (rcAll||[]).forEach(r=>{
+      const n=normalize(r.agent_name);
+      if(n&&typeof r.days_since==="number")activeDaysMap[n]=r.days_since;
+    });
+    const computedActive=Object.values(activeDaysMap).filter(d=>d<=90).length;
     const currentActive=settings.currentActive||computedActive;
 
-    const stillRetainedMeetings=(recentMeetings||[]).filter(m=>!churnedNames.has(normalize(m.agent_name)));
+    // A meeting only counts as real growth if that agent went on to show actual recent activity
+    // — meeting someone doesn't guarantee they ever send a lead, so a bare meeting count would
+    // overstate growth. This checks the same real days_since data, not just that a meeting happened.
+    const meetingsInWindow=(recentMeetings||[]).filter(m=>m.act_date>=localDateStr(cutoff8wk));
+    const stillRetainedMeetings=meetingsInWindow.filter(m=>{
+      const n=normalize(m.agent_name);
+      const d=activeDaysMap[n];
+      return typeof d==="number"&&d<=90;
+    });
     const grossAddsPerWeek=stillRetainedMeetings.length/8;
 
     const todayD=new Date();todayD.setHours(0,0,0,0);
@@ -6415,7 +6429,7 @@ async function loadGoalPace(){
 
     body.innerHTML=
       '<div style="margin-bottom:10px">'
-      +'<label style="font-size:10px;font-weight:600;color:var(--text-3);text-transform:uppercase;letter-spacing:.4px">Current active agents <span style="font-weight:400;text-transform:none">(auto-estimated at '+computedActive+' — override if you know the real number)</span></label>'
+      +'<label style="font-size:10px;font-weight:600;color:var(--text-3);text-transform:uppercase;letter-spacing:.4px">Current active agents <span style="font-weight:400;text-transform:none">(auto-estimated at '+computedActive+' from real Reconnect list activity — override if you know the real number)</span></label>'
       +'<input type="number" id="goalCurrentActive" value="'+currentActive+'" style="width:80px;display:block;margin-top:4px;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:13px;font-family:inherit" onchange="saveGoalSettings();loadGoalPace()">'
       +'</div>'
       +'<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:12px">'
@@ -6425,9 +6439,9 @@ async function loadGoalPace(){
       +'</div>'
       +'<div style="padding:12px 14px;border-radius:8px;background:'+(onPace?"var(--success-bg)":"var(--danger-bg)")+';margin-bottom:10px">'
       +'<div style="font-size:13px;font-weight:700;color:'+verdictColor+'">'+(onPace?"✓ On pace to hit "+settings.target:"⚠ Off pace — projected to land at "+projected+", "+(settings.target-projected)+" short")+'</div>'
-      +'<div style="font-size:12px;color:var(--text-2);margin-top:4px">Currently adding ~'+grossAddsPerWeek.toFixed(1)+' net-new agents/week (still retained, trailing 8 weeks). Need '+requiredPerWeek.toFixed(1)+'/week to hit '+settings.target+' by '+fmtDate(settings.targetDate)+' ('+daysRemaining+' days out).</div>'
+      +'<div style="font-size:12px;color:var(--text-2);margin-top:4px">Currently adding ~'+grossAddsPerWeek.toFixed(1)+' net-new agents/week (new meetings that actually went on to show real activity, trailing 8 weeks). Need '+requiredPerWeek.toFixed(1)+'/week to hit '+settings.target+' by '+fmtDate(settings.targetDate)+' ('+daysRemaining+' days out).</div>'
       +'</div>'
-      +'<div style="font-size:10px;color:var(--text-4);line-height:1.5">Gross-adds pace is measured as New Realtor Meetings still retained today — it nets out early churn on new agents, but won\'t catch an established agent going quiet later. Treat this as a directional pace check, not an exact forecast.</div>';
+      +'<div style="font-size:10px;color:var(--text-4);line-height:1.5">"Active" and gross-adds pace both use real days-since-last-activity from your Reconnect list (lead, file, contract, or close within 90 days) — not just that a meeting happened. A meeting only counts toward growth if that agent actually went on to show real activity. Treat this as a directional pace check, not an exact forecast, and keep it accurate by uploading your Power BI export to Reconnect regularly.</div>';
   }catch(e){
     body.innerHTML='<div class="no-data">Unable to load — '+e.message+'</div>';
   }
