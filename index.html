@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+ <!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -3439,8 +3439,8 @@ async function loadQuiet(){
     // Cadence scales by tier — an A-tier producer needs checking on far more often than a C-tier
     // one. A flat threshold for everyone means C-tier gets called as often as A-tier, which isn't
     // smart prioritization of limited time.
-    const TIER_TOUCH_THRESHOLD={A:21,B:35,C:60};
-    const TIER_URGENT_THRESHOLD={A:35,B:55,C:90};
+    const TIER_TOUCH_THRESHOLD={A:14,B:30,C:60};
+    const TIER_URGENT_THRESHOLD={A:21,B:45,C:90};
     const rows=allAgents.filter(a=>a.do_not_contact!==true).map(a=>{
       const name=(a.agent_name||"").trim();if(!name)return null;
       const lookupKey=name.toLowerCase();
@@ -3454,8 +3454,8 @@ async function loadQuiet(){
       const daysAny=(daysRM===null&&daysLP===null)?null:Math.min(daysRM===null?Infinity:daysRM,daysLP===null?Infinity:daysLP);
       const retained=!!a.retained;
       const tier=a.tier||null;
-      const threshold=TIER_TOUCH_THRESHOLD[tier]||21;
-      const urgentThreshold=TIER_URGENT_THRESHOLD[tier]||35;
+      const threshold=TIER_TOUCH_THRESHOLD[tier]||14;
+      const urgentThreshold=TIER_URGENT_THRESHOLD[tier]||21;
       return{name,daysRM,daysLP,daysAny,retained,tier,threshold,urgentThreshold};
     }).filter(Boolean);
 
