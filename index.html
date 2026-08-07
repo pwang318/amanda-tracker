@@ -1728,6 +1728,25 @@ function countWords(str){
   if(!str)return 0;
   return str.trim().split(/\s+/).filter(Boolean).length;
 }
+// Cleans a raw imported name for storage: fixes smart/curly quotes that Excel and Power BI
+// autocorrect commonly introduce (which don't match a straight-quote name typed elsewhere in the
+// app), and collapses any run of whitespace — including double spaces and non-breaking spaces —
+// down to a single space. This is what actually gets saved as agent_name.
+function normalizeAgentName(raw){
+  return(raw||"").toString()
+    .replace(/[\u2018\u2019]/g,"'")
+    .replace(/[\u201C\u201D]/g,'"')
+    .replace(/\s+/g," ")
+    .trim();
+}
+// The lowercase matching key used for duplicate detection — same cleaning as above, plus
+// case-folding. Applying the same normalization on both the incoming name and the existing
+// records means a pure case difference, a stray double space, or a smart-quote variant all
+// correctly match the same existing profile instead of silently creating a duplicate.
+function agentMatchKey(raw){
+  return normalizeAgentName(raw).toLowerCase();
+}
+
 function properCase(str){
   if(!str)return"";
   return escHtml(str.toLowerCase().replace(/\b\w/g,c=>c.toUpperCase()));
@@ -7380,16 +7399,16 @@ async function importContactsFile(input){
     if(!colMap.name){toast("Couldn't find a name column — needs a header like \"Agent Name\" or \"Name\".","error");if(progressEl)progressEl.style.display="none";return;}
 
     if(progressEl)progressEl.textContent="Matching against existing contacts...";
-    const existing=await sbFetch("agent_profiles?select=id,agent_name&limit=2000").catch(()=>[]);
+    const existing=await sbFetch("agent_profiles?select=id,agent_name&limit=5000").catch(()=>[]);
     const existingByName={};
-    existing.forEach(e=>{const n=(e.agent_name||"").trim().toLowerCase();if(n&&!existingByName[n])existingByName[n]=e.id;});
+    existing.forEach(e=>{const n=agentMatchKey(e.agent_name);if(n&&!existingByName[n])existingByName[n]=e.id;});
 
     let created=0,updated=0,skipped=0;
     const truthy=v=>{const s=(v||"").toString().trim().toLowerCase();return s==="y"||s==="yes"||s==="true"||s==="active"||s==="1";};
 
     for(let i=0;i<raw.length;i++){
       const row=raw[i];
-      const name=(row[colMap.name]||"").toString().trim();
+      const name=normalizeAgentName(row[colMap.name]);
       if(!name){skipped++;continue;}
       if(progressEl)progressEl.textContent="Importing "+(i+1)+" of "+raw.length+"...";
       const payload={};
@@ -7415,7 +7434,7 @@ async function importContactsFile(input){
         if(!isNaN(d.getTime())&&d.getFullYear()>1971)payload.latest_lead_date=localDateStr(d);
       }
 
-      const key=name.toLowerCase();
+      const key=agentMatchKey(name);
       try{
         if(existingByName[key]){
           if(Object.keys(payload).length){
@@ -7489,8 +7508,7 @@ function closeDupeCleanupModal(){document.getElementById("dupeCleanupModal").cla
 function computeDupeGroups(){
   const byName={};
   (allContacts||[]).forEach(c=>{
-    const raw=(c.agent_name||"").trim();
-    const n=raw.toLowerCase();
+    const n=agentMatchKey(c.agent_name);
     if(!n)return;
     if(!byName[n])byName[n]=[];
     byName[n].push(c);
