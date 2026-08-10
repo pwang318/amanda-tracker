@@ -1,5 +1,4 @@
- 
-<!DOCTYPE html>
+ <!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -8048,14 +8047,24 @@ async function deleteAgent(){
   if(!name)return;
   if(!confirm("Remove "+name+" from contacts? They won't come back on the next import. You can re-add them manually if needed."))return;
   try{
-    // Soft delete — set retained=false rather than hard-deleting the row. Hard deletes let the
-    // next Power BI import recreate the agent; retained=false is respected by the import and
-    // prevents that. Activity history is preserved. Re-add via + Add Agent if needed.
-    const profiles=await sbFetch("agent_profiles?agent_name=ilike."+encodeURIComponent(name)+"&select=id&limit=1").catch(()=>[]);
-    if(!profiles||!profiles.length){
-      toast("Couldn't find "+name+" — nothing removed","error");return;
+    let profileId=editingContactId;
+    // If we don't have the id from when the modal opened, look it up — try exact match first,
+    // then case-insensitive, then normalized proper case
+    if(!profileId){
+      const tries=[
+        name,
+        name.toLowerCase(),
+        name.split(" ").map(w=>w?w.charAt(0).toUpperCase()+w.slice(1).toLowerCase():"").join(" ")
+      ];
+      for(const n of tries){
+        const r=await sbFetch("agent_profiles?agent_name=ilike."+encodeURIComponent(n)+"&select=id&limit=1").catch(()=>[]);
+        if(r&&r.length){profileId=r[0].id;break;}
+      }
     }
-    await sbFetch("agent_profiles?id=eq."+profiles[0].id,{method:"PATCH",prefer:"return=minimal",body:JSON.stringify({retained:false,do_not_contact:true})});
+    if(!profileId){
+      toast("Couldn't find "+name+" — try editing them first, then delete","error");return;
+    }
+    await sbFetch("agent_profiles?id=eq."+profileId,{method:"PATCH",prefer:"return=minimal",body:JSON.stringify({retained:false,do_not_contact:true})});
     toast(name+" removed from contacts","success");
     closeContactModal();
     loadContacts();
