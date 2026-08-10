@@ -8076,15 +8076,18 @@ async function openContactModal(name,phone,email,brokerage,birthday){
   editingContactName=name;
   editingContactId=null;
   document.getElementById("contactModalName").textContent=name;
-  // If called with just a name (from Agent History), fetch the full profile
+  // Always check for an existing profile so we capture its id (needed for Save/Delete to
+  // target the right row). Previously this only ran when the caller passed no phone/email/
+  // brokerage/birthday at all, so callers like the Pipeline tab (which pass the prospect's
+  // own phone/email/brokerage) skipped it, leaving editingContactId null and breaking Delete.
   let personalNotes="";
-  if(!phone&&!email&&!brokerage&&!birthday){
+  {
     try{
       const profiles=await sbFetch("agent_profiles?agent_name=ilike."+encodeURIComponent(name)+"&limit=1").catch(()=>[]);
       const p=profiles&&profiles[0];
       if(p){
         editingContactId=p.id;
-        phone=p.phone||"";email=p.email||"";brokerage=p.address||"";birthday=p.birthday||"";
+        phone=p.phone||phone||"";email=p.email||email||"";brokerage=p.address||brokerage||"";birthday=p.birthday||birthday||"";
         personalNotes=p.personal_notes||"";
         document.getElementById("contactTier").value=p.tier||"";
         document.getElementById("contactDNC").checked=!!(p.do_not_contact);
