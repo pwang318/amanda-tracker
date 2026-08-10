@@ -8062,7 +8062,15 @@ async function deleteAgent(){
       }
     }
     if(!profileId){
-      toast("Couldn't find "+name+" — try editing them first, then delete","error");return;
+      // No agent_profiles row exists yet (common for Pipeline-only prospects that were
+      // never formally saved as a contact) — create one directly marked as removed,
+      // instead of blocking the user with an error.
+      await sbFetch("agent_profiles",{method:"POST",prefer:"return=minimal",body:JSON.stringify({agent_name:name,retained:false,do_not_contact:true})});
+      toast(name+" removed from contacts","success");
+      closeContactModal();
+      loadContacts();
+      initAutocomplete();
+      return;
     }
     await sbFetch("agent_profiles?id=eq."+profileId,{method:"PATCH",prefer:"return=minimal",body:JSON.stringify({retained:false,do_not_contact:true})});
     toast(name+" removed from contacts","success");
