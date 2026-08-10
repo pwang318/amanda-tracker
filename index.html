@@ -8282,6 +8282,7 @@ async function importContactsFile(input){
       if(colMap.birthday&&row[colMap.birthday])payload.birthday=normalizeBirthdayForImport(row[colMap.birthday]);
       if(colMap.tier&&row[colMap.tier])payload.tier=row[colMap.tier].toString().trim().toUpperCase();
       if(colMap.retained&&row[colMap.retained]!=null)payload.retained=truthy(row[colMap.retained]);
+      else payload.retained=true; // Power BI export doesn't have a retained column — being in the file means they're an active partner
       if(colMap.dnc&&row[colMap.dnc]!=null)payload.do_not_contact=truthy(row[colMap.dnc]);
       if(colMap.closesPastYear&&row[colMap.closesPastYear]!=null){const n=parseInt(row[colMap.closesPastYear]);if(!isNaN(n))payload.closes_past_year=n;}
       // Channel Partner = 10+ closings in the trailing 12 months, per the playbook — computed
