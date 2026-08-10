@@ -373,7 +373,6 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI'
   <div class="tab" onclick="switchTab('contacts')">Contacts</div>
   <div class="tab" onclick="switchTab('growth')">Agent Growth</div>
   <div class="tab" onclick="switchTab('daniel')">Management View</div>
-  <div class="tab" onclick="switchTab('portfolio')">Monthly Portfolio Review</div>
 </div>
 
 <div id="globalLockBanner" style="display:none"></div>
@@ -1197,32 +1196,12 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI'
 <div id="view-growth" class="view">
   <div class="card" style="background:linear-gradient(135deg,#EEEBF8,#DDD8F0);border:1px solid #C8C0E0">
     <div class="card-title" style="font-size:15px">Agent Growth</div>
-    <div style="font-size:12px;color:var(--text-2);line-height:1.5">Tier criteria: <strong>C</strong> = 0-1 closes · <strong>B</strong> = 2-3 closes · <strong>A</strong> = 4+ closes (past year). Stays current from either the Reconnect tab's Power BI upload or the Contacts Bulk Import — you only need to do one, not both.</div>
+    <div style="font-size:12px;color:var(--text-2);line-height:1.5">Tier criteria (trailing 12 months): <strong>Channel</strong> = 10+ closes (auto-computed) · <strong>A</strong> = 4+ closes · <strong>B</strong> = 2–3 closes · <strong>C</strong> = 1 close or sent a lead. Populated from Power BI upload or Contacts Bulk Import — only need to do one.</div>
   </div>
   <div id="growthMovementPanel"><div class="no-data">Loading...</div></div>
 </div>
 
-<div id="view-portfolio" class="view">
-  <div class="card" style="background:linear-gradient(135deg,#1E3A8A,#2D4FA0);border:1px solid #1E3A8A">
-    <div class="card-title" style="font-size:15px;color:#fff">Monthly Portfolio Review</div>
-    <div style="font-size:12px;color:#DDE4F5;line-height:1.5">Playbook Sec. 17 — where the RM and Team Lead review Active Partner Count, Tier Migration, Active Agent-to-Lead Ratio, Partner Health, and Growth Opportunities together. Every number below is clickable to see the partners behind it.</div>
-  </div>
-  <div class="card" style="display:flex;gap:8px;padding:10px">
-    <button class="btn-sm" id="pfPeriodWeek" onclick="setPortfolioPeriod('week')">This Week</button>
-    <button class="btn-sm" id="pfPeriodMonth" onclick="setPortfolioPeriod('month')">This Month</button>
-    <button class="btn-sm" id="pfPeriodQuarter" onclick="setPortfolioPeriod('quarter')">This Quarter</button>
-  </div>
-  <div id="portfolioReviewBody"><div class="no-data">Loading...</div></div>
-</div>
 
-<div class="modal-overlay" id="portfolioListModal">
-  <div class="modal-box">
-    <div class="modal-header"><span class="modal-title" id="portfolioListModalTitle">Details</span><button class="modal-close" onclick="closePortfolioListModal()">×</button></div>
-    <div class="modal-sub" id="portfolioListModalSub"></div>
-    <div id="portfolioListModalBody" style="margin-top:10px;max-height:60vh;overflow-y:auto">Loading...</div>
-    <div style="margin-top:14px"><button class="btn-sm" onclick="closePortfolioListModal()">Close</button></div>
-  </div>
-</div>
 
 <!-- Add Agent Modal -->
 <div class="modal-overlay" id="addAgentModal">
@@ -1375,6 +1354,8 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI'
       <div style="margin-top:12px">
         <div class="field" style="margin-bottom:12px"><label>Next Growth Opportunity <span style="font-weight:400;color:var(--text-4)">(required for Channel/A partners — playbook Sec. 15)</span></label><textarea id="contactGrowthOpp" placeholder="e.g. convert B to A, host past-client event, introduce to team leader..." rows="2"></textarea></div>
         <div class="field" style="margin-bottom:12px"><label>Growth Opportunity Follow-up Deadline</label><input type="date" id="contactGrowthOppDeadline"></div>
+        <div class="field" style="margin-bottom:12px"><label>Last Meaningful Contact Date <span style="font-weight:400;color:var(--text-4)">(the last conversation that actually mattered — not just a text — playbook Sec. 13)</span></label><input type="date" id="contactLastMeaningfulContact"></div>
+        <div class="field" style="margin-bottom:12px"><label>Next Meeting Date <span style="font-weight:400;color:var(--text-4)">(scheduled or target date for the next formal meeting)</span></label><input type="date" id="contactNextMeetingDate"></div>
         <div class="field" style="margin-bottom:12px"><label>Partner Goals</label><textarea id="contactGoals" rows="2"></textarea></div>
         <div class="field" style="margin-bottom:12px"><label>Partner Pain Points</label><textarea id="contactPainPoints" rows="2"></textarea></div>
         <div class="field" style="margin-bottom:12px"><label>Referral Leakage Notes</label><textarea id="contactLeakageNotes" rows="2"></textarea></div>
@@ -1667,6 +1648,59 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI'
     <div style="background:var(--surface-2);border-radius:var(--radius-sm);padding:10px 12px;font-size:12.5px;color:var(--text-2);margin-bottom:16px">
       <strong style="color:var(--text-1)">Note:</strong> Replace [resource or market update] in Week 2 with something specific to that agent. The more relevant it is to their market or situation, the better it lands.
     </div>
+
+    <div style="font-size:12px;font-weight:700;color:var(--brand);text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px">New Agent Meeting — Commitment &amp; 4-Week Follow-Up</div>
+    <div style="font-size:12.5px;color:var(--text-2);margin-bottom:10px">The most common failure mode: great meeting, agent signs up for the mailing list, nothing else happens. This framework closes that gap. The commitment ask is the single most important moment — get it every time, no exceptions.</div>
+
+    <div style="font-size:12px;font-weight:600;color:var(--text-1);margin-bottom:4px">The Commitment Ask — end of every new agent meeting</div>
+    <div style="background:#1E2B3A;color:#fff;border-radius:var(--radius-sm);padding:10px 12px;margin-bottom:6px;font-size:12.5px;font-style:italic">
+      "Do I have your commitment to send me the next two to three leads that come your way?"
+    </div>
+    <div style="background:var(--surface-2);border-radius:var(--radius-sm);padding:8px 12px;margin-bottom:14px;font-size:12px;color:var(--text-2)">
+      Deliver this while looking them in the eye and shaking their hand. This creates a spoken agreement that is genuinely difficult to break without consciously going back on their word. Ending a meeting with a vague "let me know if I can ever help" puts zero pressure on the agent and gives you no leverage to follow up on. The handshake is what makes weeks 3 and 4 feel earned rather than pushy. <strong style="color:var(--text-1)">Getting a lead within the first 30 days is critical</strong> — after that window closes, the agent has usually reverted to their previous lender and reconverting them becomes exponentially harder.
+    </div>
+
+    <div style="font-size:12px;font-weight:600;color:var(--text-1);margin-bottom:8px">The 4-Week Follow-Up Structure</div>
+
+    <div style="font-size:11.5px;font-weight:700;color:var(--brand);margin-bottom:3px">Week 0 — Day of the meeting</div>
+    <div style="font-size:12.5px;color:var(--text-2);margin-bottom:12px;padding-left:10px">Send the How to Refer template (see script above). Add them on social media. No ask yet — this is pure value delivery.</div>
+
+    <div style="font-size:11.5px;font-weight:700;color:var(--brand);margin-bottom:3px">Week 1 — Break the walls down</div>
+    <div style="background:#1E2B3A;color:#fff;border-radius:var(--radius-sm);padding:10px 12px;margin-bottom:6px;font-size:12.5px;font-style:italic">Send a relatable meme or short video — nothing salesy. Just staying on their radar in a human way.</div>
+    <div style="font-size:12.5px;color:var(--text-2);margin-bottom:12px;padding-left:10px">No direct ask. Goal is to make them smile and remember you.</div>
+
+    <div style="font-size:11.5px;font-weight:700;color:var(--brand);margin-bottom:3px">Week 2 — Value touch, still no ask</div>
+    <div style="background:#1E2B3A;color:#fff;border-radius:var(--radius-sm);padding:10px 12px;margin-bottom:6px;font-size:12.5px;font-style:italic">Send something relevant — mailing campaign content, a market update, or something from the sales meeting. Nothing that asks for a lead.</div>
+    <div style="font-size:12.5px;color:var(--text-2);margin-bottom:12px;padding-left:10px">Patience here pays off in week 3. Two touches in, no pressure — this is what separates you from the LO who emailed them three times in a row asking for business.</div>
+
+    <div style="font-size:11.5px;font-weight:700;color:var(--brand);margin-bottom:3px">Week 3 — First lead ask, paired with a unique product</div>
+    <div style="background:#1E2B3A;color:#fff;border-radius:var(--radius-sm);padding:10px 12px;margin-bottom:6px;font-size:12.5px;font-style:italic">
+      "Hey [Agent], I was thinking about you — do you have any buyers who've been told no elsewhere? We have a 1099 program / bank statement option / portfolio loan that might be worth a look. Also, did anyone come to mind since we met that I could help with?"
+    </div>
+    <div style="background:var(--surface-2);border-radius:var(--radius-sm);padding:8px 12px;margin-bottom:12px;font-size:12px;color:var(--text-2)">
+      Lead with the unfamiliar product, not a well-known one. Every agent has heard of bank statement and DSCR — leading with something more unique (1099, portfolio program) signals you have tools others don't and gives them a specific reason to think of a client. This activates a specific memory rather than asking them to generate one from nothing.
+    </div>
+
+    <div style="font-size:11.5px;font-weight:700;color:var(--brand);margin-bottom:3px">Week 4 — Accountability call</div>
+    <div style="background:#1E2B3A;color:#fff;border-radius:var(--radius-sm);padding:10px 12px;margin-bottom:6px;font-size:12.5px;font-style:italic">
+      "Hey [Agent], I wanted to circle back — when we met, you committed to sending me the next couple of leads that came your way. Is there anyone you're working with right now I could help with?"
+    </div>
+    <div style="font-size:12.5px;color:var(--text-2);margin-bottom:4px;padding-left:10px">If they push back or go quiet:</div>
+    <div style="background:#1E2B3A;color:#fff;border-radius:var(--radius-sm);padding:10px 12px;margin-bottom:6px;font-size:12.5px;font-style:italic">
+      "Did I do something wrong?"
+    </div>
+    <div style="background:var(--surface-2);border-radius:var(--radius-sm);padding:8px 12px;margin-bottom:14px;font-size:12px;color:var(--text-2)">
+      This surfaces the real reason almost every time — and gives you a chance to fix it, or pivot: "No worries at all — would you be open to just introducing me to whoever you're currently working with? I'd love the chance to earn a second opinion." Either way, you get information you'd never get by staying silent.
+    </div>
+
+    <div style="font-size:12px;font-weight:600;color:var(--text-1);margin-bottom:6px">For Existing Partners — shifting from earning a lead to earning 100%</div>
+    <div style="background:#1E2B3A;color:#fff;border-radius:var(--radius-sm);padding:10px 12px;margin-bottom:6px;font-size:12.5px;font-style:italic">
+      "What's one thing we could do better to make working together easier for you?"
+    </div>
+    <div style="font-size:12.5px;color:var(--text-2);margin-bottom:14px;padding-left:10px">This ask invites specific, actionable feedback and deepens trust simultaneously. The agent who answers this honestly is the one you're going to earn 100% of business from.</div>
+
+    <div style="font-size:12px;font-weight:600;color:var(--text-1);margin-bottom:6px">Pre-Approval Pipeline Review (monthly or bi-weekly to top agents)</div>
+    <div style="font-size:12.5px;color:var(--text-2);margin-bottom:8px;padding-left:10px">Send the agent a view of their entire pre-approved pipeline with status updates. This creates mutual accountability — it shows them their own buyers' statuses, holds them accountable to follow up, and surfaces intelligence on where leads are being lost. Top agents love this. It makes you look like a partner, not a vendor.</div>
 
     <button class="btn-sm" onclick="closeScriptsModal()" style="margin-top:8px">Close</button>
   </div>
@@ -3638,7 +3672,7 @@ async function loadQuiet(){
 }
 
 function switchTab(name){
-  const tabOrder=["week","log","pipeline","reconnect","feed","history","calendar","contacts","growth","daniel","portfolio"];
+  const tabOrder=["week","log","pipeline","reconnect","feed","history","calendar","contacts","growth","daniel"];
   document.querySelectorAll(".tab").forEach((t,i)=>t.classList.toggle("active",tabOrder[i]===name));
   document.querySelectorAll(".view").forEach(v=>v.classList.remove("active"));
   document.getElementById("view-"+name).classList.add("active");
@@ -3653,7 +3687,6 @@ function switchTab(name){
   if(name==="reconnect")loadReconnect();
   if(name==="feed")loadFeed();
   if(name==="daniel")loadManagement();
-  if(name==="portfolio")loadPortfolioReview();
 }
 
 let periodData={mtd:[],ytd:[]},currentPeriod="mtd";
@@ -6096,17 +6129,72 @@ async function rcUploadToSupabase(agents){
     }
   }
 
-  // 5. Also keep Contacts (agent_profiles) current from the same file — same underlying Power BI
-  // data feeds both Reconnect's pace tracking and Agent Growth's tier movement, so there's no
-  // real reason to require two separate uploads to keep both current. This is a best-effort sync:
-  // it never blocks or fails the main Reconnect upload above, since that's the primary operation.
+  // 5. Also keep Contacts (agent_profiles) current from the same file
   try{
     await syncReconnectDataToContacts(agents);
   }catch(e){
     console.warn("Contacts sync from Reconnect upload failed (non-critical):",e.message);
   }
 
+  // 6. Write a health snapshot for every retained agent — this is what makes the Quarterly Review's
+  // trend lines possible. One row per agent per snapshot_date; if you run two imports on the same
+  // day, the second upserts over the first so you don't get duplicate rows for the same date.
+  // History only exists from this point forward, but even one quarter of snapshots is useful.
+  try{
+    await writeHealthSnapshots();
+  }catch(e){
+    console.warn("Health snapshot write failed (non-critical):",e.message);
+  }
+
   return inserted;
+}
+
+// Playbook Sec. 18 — Health Score historical snapshots. Called automatically after every Power BI
+// import so the Portfolio Review can show quarter-over-quarter trend (improving / declining book).
+// Uses ON CONFLICT on (agent_name, snapshot_date) so two imports on the same day don't duplicate.
+async function writeHealthSnapshots(){
+  const now=new Date();
+  const snapshotDate=localDateStr(now);
+  const TIER_TOUCH_THRESHOLD={Channel:14,A:14,B:30,C:60};
+  const TIER_URGENT_THRESHOLD={Channel:21,A:21,B:45,C:90};
+
+  // Fetch everything needed to compute the Health Score for every retained agent
+  const[allAgents,allActs,lpCalls]=await Promise.all([
+    sbFetch("agent_profiles?select=agent_name,tier,retained,do_not_contact,latest_lead_date,competitor_risk_flag&limit=2000").catch(()=>[]),
+    sbFetch("amanda_activities?select=agent_name,act_date&order=act_date.desc&limit=3000").catch(()=>[]),
+    sbFetch("call_logs?select=agent_name,call_date&order=call_date.desc&limit=2000").catch(()=>[])
+  ]);
+
+  const lastSeenRM={};
+  (allActs||[]).forEach(a=>{const n=(a.agent_name||"").trim().toLowerCase();if(n&&!lastSeenRM[n])lastSeenRM[n]=a.act_date;});
+  const lastSeenLP={};
+  (lpCalls||[]).forEach(c=>{const n=(c.agent_name||"").trim().toLowerCase();if(n&&!lastSeenLP[n])lastSeenLP[n]=c.call_date;});
+
+  const active=(allAgents||[]).filter(a=>a.retained&&a.do_not_contact!==true);
+  if(!active.length)return;
+
+  const rows=active.map(a=>{
+    const key=(a.agent_name||"").trim().toLowerCase();
+    const lastRM=lastSeenRM[key],lastLP=lastSeenLP[key];
+    const daysRM=lastRM?Math.round((now-new Date(lastRM+"T12:00:00"))/86400000):null;
+    const daysLP=lastLP?Math.round((now-new Date(lastLP+"T12:00:00"))/86400000):null;
+    const daysAny=(daysRM===null&&daysLP===null)?null:Math.min(daysRM===null?Infinity:daysRM,daysLP===null?Infinity:daysLP);
+    const tier=a.tier||null;
+    const threshold=TIER_TOUCH_THRESHOLD[tier]||14;
+    const urgent=TIER_URGENT_THRESHOLD[tier]||21;
+    const daysSinceLead=a.latest_lead_date?Math.round((now-new Date(a.latest_lead_date+"T12:00:00"))/86400000):null;
+    const health=computeHealthScore(daysSinceLead,daysAny,threshold,urgent,!!a.competitor_risk_flag);
+    return{agent_name:a.agent_name,tier:tier||null,health_score:health,snapshot_date:snapshotDate};
+  });
+
+  // Batch in groups of 100 to stay within Supabase's request size limits
+  for(let i=0;i<rows.length;i+=100){
+    const batch=rows.slice(i,i+100);
+    await sbFetch("health_snapshots",{method:"POST",prefer:"resolution=merge-duplicates,return=minimal",headers:{"Prefer":"resolution=merge-duplicates,return=minimal"},body:JSON.stringify(batch)}).catch(e=>{
+      console.warn("Health snapshot batch failed (non-critical):",e.message);
+    });
+  }
+  console.log("Health snapshots written for "+rows.length+" agents on "+snapshotDate);
 }
 
 // Playbook Sec. 14 — Partner Health Score. Mechanical, audit-able version of the playbook's literal
@@ -7918,7 +8006,7 @@ async function unmarkDNC(id){
   catch(e){toast("Error: "+e.message,"error");}
 }
 
-let editingContactName=null;
+let editingContactName=null,editingContactId=null;
 function openAddAgentModal(){
   document.getElementById("addAgentName").value="";
   document.getElementById("addAgentPhone").value="";
@@ -7975,6 +8063,7 @@ async function deleteAgent(){
 
 async function openContactModal(name,phone,email,brokerage,birthday){
   editingContactName=name;
+  editingContactId=null;
   document.getElementById("contactModalName").textContent=name;
   // If called with just a name (from Agent History), fetch the full profile
   let personalNotes="";
@@ -7983,10 +8072,22 @@ async function openContactModal(name,phone,email,brokerage,birthday){
       const profiles=await sbFetch("agent_profiles?agent_name=ilike."+encodeURIComponent(name)+"&limit=1").catch(()=>[]);
       const p=profiles&&profiles[0];
       if(p){
+        editingContactId=p.id;
         phone=p.phone||"";email=p.email||"";brokerage=p.address||"";birthday=p.birthday||"";
         personalNotes=p.personal_notes||"";
         document.getElementById("contactTier").value=p.tier||"";
         document.getElementById("contactDNC").checked=!!(p.do_not_contact);
+        if(document.getElementById("contactGrowthOpp"))document.getElementById("contactGrowthOpp").value=p.next_growth_opportunity||"";
+        if(document.getElementById("contactGrowthOppDeadline"))document.getElementById("contactGrowthOppDeadline").value=p.growth_opportunity_deadline||"";
+        if(document.getElementById("contactLastMeaningfulContact"))document.getElementById("contactLastMeaningfulContact").value=p.last_meaningful_contact_date||"";
+        if(document.getElementById("contactNextMeetingDate"))document.getElementById("contactNextMeetingDate").value=p.next_meeting_date||"";
+        if(document.getElementById("contactGoals"))document.getElementById("contactGoals").value=p.partner_goals||"";
+        if(document.getElementById("contactPainPoints"))document.getElementById("contactPainPoints").value=p.partner_pain_points||"";
+        if(document.getElementById("contactLeakageNotes"))document.getElementById("contactLeakageNotes").value=p.referral_leakage_notes||"";
+        if(document.getElementById("contactRecoveryPlan"))document.getElementById("contactRecoveryPlan").value=p.recovery_plan||"";
+        if(document.getElementById("contactSatisfaction"))document.getElementById("contactSatisfaction").value=p.satisfaction_rating||"";
+        if(document.getElementById("contactCompetitorRisk"))document.getElementById("contactCompetitorRisk").checked=!!(p.competitor_risk_flag);
+        if(document.getElementById("contactHighPotential"))document.getElementById("contactHighPotential").checked=!!(p.high_potential_flag);
       }
     }catch(e){}
   }
@@ -7996,7 +8097,7 @@ async function openContactModal(name,phone,email,brokerage,birthday){
   if(document.getElementById("contactPersonalNotes"))document.getElementById("contactPersonalNotes").value=personalNotes;
   document.getElementById("contactModal").classList.add("open");
 }
-function closeContactModal(){document.getElementById("contactModal").classList.remove("open");editingContactName=null;}
+function closeContactModal(){document.getElementById("contactModal").classList.remove("open");editingContactName=null;editingContactId=null;}
 async function saveContactModal(){
   if(!editingContactName)return;
   const birthdayVal=document.getElementById("contactBirthday").value.trim();
@@ -8007,6 +8108,8 @@ async function saveContactModal(){
   const payload={agent_name:editingContactName,phone:document.getElementById("contactPhone").value.trim()||null,email:document.getElementById("contactEmail").value.trim()||null,address:combineAddress(document.getElementById("contactStreet").value,document.getElementById("contactCity").value,document.getElementById("contactState").value,document.getElementById("contactZip").value),birthday:birthdayVal||null,personal_notes:document.getElementById("contactPersonalNotes")?document.getElementById("contactPersonalNotes").value.trim()||null:null,tier:document.getElementById("contactTier").value||null,do_not_contact:document.getElementById("contactDNC").checked};
   if(document.getElementById("contactGrowthOpp"))payload.next_growth_opportunity=document.getElementById("contactGrowthOpp").value.trim()||null;
   if(document.getElementById("contactGrowthOppDeadline"))payload.growth_opportunity_deadline=document.getElementById("contactGrowthOppDeadline").value||null;
+  if(document.getElementById("contactLastMeaningfulContact"))payload.last_meaningful_contact_date=document.getElementById("contactLastMeaningfulContact").value||null;
+  if(document.getElementById("contactNextMeetingDate"))payload.next_meeting_date=document.getElementById("contactNextMeetingDate").value||null;
   if(document.getElementById("contactGoals"))payload.partner_goals=document.getElementById("contactGoals").value.trim()||null;
   if(document.getElementById("contactPainPoints"))payload.partner_pain_points=document.getElementById("contactPainPoints").value.trim()||null;
   if(document.getElementById("contactLeakageNotes"))payload.referral_leakage_notes=document.getElementById("contactLeakageNotes").value.trim()||null;
@@ -8015,12 +8118,18 @@ async function saveContactModal(){
   if(document.getElementById("contactCompetitorRisk"))payload.competitor_risk_flag=document.getElementById("contactCompetitorRisk").checked;
   if(document.getElementById("contactHighPotential"))payload.high_potential_flag=document.getElementById("contactHighPotential").checked;
   try{
-    // Case-insensitive lookup by id — an exact-string match here was the likely cause of
-    // duplicate profiles (e.g. "Cheryl Kinsey" vs "CHERYL KINSEY" creating two separate rows
-    // instead of updating the one that already existed).
-    const existing=await sbFetch("agent_profiles?agent_name=ilike."+encodeURIComponent(editingContactName)+"&select=id&limit=1").catch(()=>[]);
-    if(existing&&existing.length>0){await sbFetch("agent_profiles?id=eq."+existing[0].id,{method:"PATCH",prefer:"return=minimal",body:JSON.stringify(payload)});}
-    else{await sbFetch("agent_profiles",{method:"POST",prefer:"return=minimal",body:JSON.stringify(payload)});}
+    if(editingContactId){
+      // Best path: id captured at open time — PATCH directly, no second lookup, no duplicate risk
+      await sbFetch("agent_profiles?id=eq."+editingContactId,{method:"PATCH",prefer:"return=minimal",body:JSON.stringify(payload)});
+    }else{
+      // Fallback for callers that pass phone/email directly (id not fetched at open time)
+      const existing=await sbFetch("agent_profiles?agent_name=ilike."+encodeURIComponent(editingContactName)+"&select=id&limit=1").catch(()=>[]);
+      if(existing&&existing.length>0){
+        await sbFetch("agent_profiles?id=eq."+existing[0].id,{method:"PATCH",prefer:"return=minimal",body:JSON.stringify(payload)});
+      }else{
+        await sbFetch("agent_profiles",{method:"POST",prefer:"return=minimal",body:JSON.stringify(payload)});
+      }
+    }
     toast("Contact updated","success");closeContactModal();if(window._contactSaveCallback){window._contactSaveCallback();window._contactSaveCallback=null;}
     if(document.getElementById("historySearch").value.length>=2)doSearchHistory(document.getElementById("historySearch").value.trim());
   }catch(e){toast("Save failed: "+e.message,"error");}
@@ -8444,6 +8553,7 @@ function openContactsEdit(nameOrEl){
   const name=typeof nameOrEl==="string"?nameOrEl:(nameOrEl&&nameOrEl.dataset?nameOrEl.dataset.name:String(nameOrEl));
   const c=allContacts.find(x=>x.agent_name===name)||{agent_name:name};
   editingContactName=name;
+  editingContactId=c.id||null;
   document.getElementById("contactModalName").textContent=name;
   document.getElementById("contactPhone").value=c.phone||"";
   document.getElementById("contactEmail").value=c.email||"";
@@ -8454,6 +8564,8 @@ function openContactsEdit(nameOrEl){
   document.getElementById("contactDNC").checked=!!(c.do_not_contact);
   if(document.getElementById("contactGrowthOpp"))document.getElementById("contactGrowthOpp").value=c.next_growth_opportunity||"";
   if(document.getElementById("contactGrowthOppDeadline"))document.getElementById("contactGrowthOppDeadline").value=c.growth_opportunity_deadline||"";
+  if(document.getElementById("contactLastMeaningfulContact"))document.getElementById("contactLastMeaningfulContact").value=c.last_meaningful_contact_date||"";
+  if(document.getElementById("contactNextMeetingDate"))document.getElementById("contactNextMeetingDate").value=c.next_meeting_date||"";
   if(document.getElementById("contactGoals"))document.getElementById("contactGoals").value=c.partner_goals||"";
   if(document.getElementById("contactPainPoints"))document.getElementById("contactPainPoints").value=c.partner_pain_points||"";
   if(document.getElementById("contactLeakageNotes"))document.getElementById("contactLeakageNotes").value=c.referral_leakage_notes||"";
