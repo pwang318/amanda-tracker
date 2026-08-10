@@ -1172,7 +1172,7 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI'
         <button onclick="openAddAgentModal()" style="padding:8px 14px;background:var(--brand);color:#fff;border:none;border-radius:var(--radius-sm);font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap">+ Add agent</button>
       </div>
     </div>
-    <div style="font-size:11px;color:var(--text-3);margin:-8px 0 14px">Upload a .csv or .xlsx with columns for name, email, phone, address, birthday, tier, and production data (closed past year, total leads, latest lead date) — column names are flexible, including a straight Power BI/Velocify export. Existing agents get updated (blank cells never overwrite data that's already there); new names get added. Names are matched case-insensitively, so this also catches near-duplicates automatically.</div>
+    <div style="font-size:11px;color:var(--text-3);margin:-8px 0 14px">Upload a .csv or .xlsx with columns for name, email, phone, address, birthday, tier, and production data (closed past year, total leads, latest lead date) — column names are flexible, including a straight Power BI/Velocify export. Existing agents get updated (blank cells never overwrite data that's already there); new names get added. Names are matched case-insensitively, so this also catches near-duplicates automatically.<br><span style="color:var(--text-4)">Core Team Tracker is the primary place to upload the weekly Power BI export — it updates the same shared contacts. Use this if you need Contacts current here before that's run.</span></div>
     <div id="contactsImportProgress" style="display:none;font-size:12px;color:var(--brand);margin-bottom:10px">Importing...</div>
     <div style="display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap">
       <input type="text" id="contactsSearch" placeholder="Search by name, phone, email or birthday..." oninput="filterContacts()" style="flex:1;min-width:180px;padding:9px 11px;border:0.5px solid #D9D3C7;border-radius:8px;font-size:13px;font-family:inherit;color:#1a1a2e;outline:none">
@@ -5321,7 +5321,11 @@ async function ccSave(){
     // 2. Check if already in prospects or agents
     const [existingProspect, existingAgent] = await Promise.all([
       sbFetch("outreach_prospects?agent_name=ilike."+encodeURIComponent(name)+"&select=id&limit=1").catch(()=>[]),
-      sbFetch("agent_profiles?agent_name=ilike."+encodeURIComponent(name)+"&select=id&limit=1").catch(()=>[])
+      // agent_profiles has no id column — this is a pure existence check, so select the real
+      // key (agent_name) instead. The old select=id here always failed silently (column doesn't
+      // exist) and was swallowed by .catch(()=>[]), making the app think an agent already in
+      // agent_profiles was NOT there — which could add them to outreach_prospects as if new.
+      sbFetch("agent_profiles?agent_name=ilike."+encodeURIComponent(name)+"&select=agent_name&limit=1").catch(()=>[])
     ]);
 
     // 3. Add to pipeline if not already there
@@ -5498,6 +5502,16 @@ function parseBirthdayMD(str){
   if(slashMatch){
     const month=parseInt(slashMatch[1],10)-1;
     const day=parseInt(slashMatch[2],10);
+    if(month>=0&&month<=11&&day>=1&&day<=31)return{month,day};
+    return null;
+  }
+  // HOTFIX: the Core Team Tracker stored birthdays as MM-DD (dash) until this same pass fixed
+  // it to MM/DD — this app needs to keep reading dash-formatted values it didn't write itself,
+  // so existing records don't display or block-save incorrectly during the transition.
+  const dashMatch=s.match(/^(\d{1,2})\s*-\s*(\d{1,2})$/);
+  if(dashMatch){
+    const month=parseInt(dashMatch[1],10)-1;
+    const day=parseInt(dashMatch[2],10);
     if(month>=0&&month<=11&&day>=1&&day<=31)return{month,day};
     return null;
   }
@@ -6035,10 +6049,14 @@ async function rcParseXLSX(arrayBuffer){
     return raw.filter(r=>r["Agent"]&&typeof r["Agent"]==="string"&&r["Agent"].trim()&&!r["Agent"].includes("filter"))
       .map(r=>{
         const closesForTier=r["Closed Past Year"]?parseInt(r["Closed Past Year"])||0:0;
-        // Channel Partner = 10+ closings in the trailing 12 months, per the playbook — this
-        // overrides whatever tier/grade the export itself assigned, since Channel isn't a
-        // Power BI concept, it's a derived status computed here from raw closings.
-        const grade=closesForTier>=10?"Channel":(r["Level"]?String(r["Level"]).trim():(r["Grade"]?String(r["Grade"]).trim():null));
+        const leadsForTier=r["Total Leads Past Year"]?parseInt(r["Total Leads Past Year"])||0:0;
+        // HOTFIX: Relationship Tier is now always computed from closes/leads per the draft RM
+        // Playbook (Channel 10+, A 4-9, B 2-3, C = 1+ close OR 1+ lead, else no tier) — it no
+        // longer falls back to Power BI's own Level/Grade column. Power BI's Level has no
+        // "Channel" concept at all and was found to disagree with this formula for at least two
+        // real, low-activity agents (1 lead / 0 closes, blank Level) who this used to leave with
+        // no tier at all — this is the same formula Core Team's tracker uses, so both agree.
+        const grade=closesForTier>=10?"Channel":closesForTier>=4?"A":closesForTier>=2?"B":(closesForTier>=1||leadsForTier>=1)?"C":null;
 
         let daysSince=null,lastInteractionDate=null,lastInteractionType=null,latestInteractionLabel=null;
         const modernDate=parseAnyDate(r["Latest Lead (In Velocify)"]);
@@ -6061,14 +6079,27 @@ async function rcParseXLSX(arrayBuffer){
           if(typeMatch)lastInteractionType=typeMatch[1].trim();
           latestInteractionLabel=raw2;
         }
+        // Captured separately from the "latest interaction" signal above (which is Format B's
+        // single bundled field and may not be a close at all) so Active Partner below can check
+        // specifically for a qualifying lead OR close, per the playbook definition — Format A
+        // (the real export we validated against) has "Latest Close" as its own column.
+        const latestCloseDate=parseAnyDate(r["Latest Close"]);
+        // HOTFIX: Active Partner is now a qualifying lead or close within the last 90 days —
+        // not just being present in this file. Left null (not guessed) when neither date is
+        // available, so downstream code can tell "known inactive" from "unknown."
+        const ninetyAgoRc=new Date(today0.getTime()-90*86400000);
+        const hasLeadOrClose=modernDate||latestCloseDate;
+        const retainedFromDates=hasLeadOrClose?!!((modernDate&&modernDate>=ninetyAgoRc)||(latestCloseDate&&latestCloseDate>=ninetyAgoRc)):null;
 
         return{
           agent_name:(r["Agent"]||"").trim(),
           lo:(r["LO"]||"").trim(),
           grade,
+          retained:retainedFromDates,
           latest_interaction:latestInteractionLabel,
           last_interaction_type:lastInteractionType,
           last_interaction_date:lastInteractionDate,
+          latest_close_date:latestCloseDate?localDateStr(latestCloseDate):null,
           days_since:daysSince,
           closes_past_year:r["Closed Past Year"]?parseInt(r["Closed Past Year"])||0:0,
           volume_past_year:r["Closed Past Year Vol"]?parseInt(r["Closed Past Year Vol"])||0:0,
@@ -6249,10 +6280,16 @@ async function logTierMigration(agentName,fromTier,toTier){
 }
 
 async function syncReconnectDataToContacts(agents){
-  const existing=await sbFetch("agent_profiles?select=id,agent_name,tier&limit=5000").catch(()=>[]);
+  // HOTFIX: agent_profiles has no id column — was mapped from e.id (always undefined), which
+  // meant every existing agent looked "new" here and every PATCH silently became a failed
+  // INSERT (agent_name is the real key, so it collided and was swallowed by the catch below).
+  // In practice this meant existing agents' production data was never actually updated by this
+  // sync — only genuinely brand-new agents were ever created successfully. Now keyed on the
+  // real column, agent_name, so updates actually land.
+  const existing=await sbFetch("agent_profiles?select=agent_name,tier&limit=5000").catch(()=>[]);
   const existingByName={};
   const existingTierByName={};
-  existing.forEach(e=>{const n=agentMatchKey(e.agent_name);if(n&&!existingByName[n]){existingByName[n]=e.id;existingTierByName[n]=e.tier||null;}});
+  existing.forEach(e=>{const n=agentMatchKey(e.agent_name);if(n&&!existingByName[n]){existingByName[n]=e.agent_name;existingTierByName[n]=e.tier||null;}});
   let synced=0,created=0;
   for(const a of agents){
     const name=normalizeAgentName(a.agent_name);
@@ -6260,11 +6297,12 @@ async function syncReconnectDataToContacts(agents){
     const payload={};
     if(a.grade)payload.tier=a.grade.toString().trim()==="Channel"?"Channel":a.grade.toString().trim().toUpperCase();
     if(typeof a.closes_past_year==="number")payload.closes_past_year=a.closes_past_year;
+    if(a.retained!==null&&a.retained!==undefined)payload.retained=a.retained; // derived from actual lead/close dates in the row mapper above — left unset (untouched) when we couldn't tell
     if(a.last_interaction_date)payload.latest_lead_date=a.last_interaction_date;
     if(a.email)payload.email=a.email;
     if(a.phone)payload.phone=a.phone;
     if(a.address)payload.address=a.address;
-    if(a.birthday)payload.birthday=a.birthday;
+    if(a.birthday)payload.birthday=normalizeBirthdayForImport(a.birthday);
     if(!Object.keys(payload).length)continue;
     const key=agentMatchKey(name);
     if(payload.tier&&existingTierByName[key]&&payload.tier!==existingTierByName[key]){
@@ -6272,12 +6310,12 @@ async function syncReconnectDataToContacts(agents){
     }
     try{
       if(existingByName[key]){
-        await sbFetch("agent_profiles?id=eq."+existingByName[key],{method:"PATCH",prefer:"return=minimal",body:JSON.stringify(payload)});
+        await sbFetch("agent_profiles?agent_name=eq."+encodeURIComponent(existingByName[key]),{method:"PATCH",prefer:"return=minimal",body:JSON.stringify(payload)});
         synced++;
       }else{
         payload.agent_name=name;
         await sbFetch("agent_profiles",{method:"POST",prefer:"return=minimal",body:JSON.stringify(payload)});
-        existingByName[key]="new";
+        existingByName[key]=name;
         created++;
       }
     }catch(e){
@@ -8006,7 +8044,20 @@ async function unmarkDNC(id){
   catch(e){toast("Error: "+e.message,"error");}
 }
 
-let editingContactName=null,editingContactId=null;
+let editingContactName=null,editingContactOriginalName=null;
+// ── HOTFIX (Phase 1) ──────────────────────────────────────────────────────
+// agent_profiles has NO id column — confirmed against the live schema. Its real key is
+// agent_name (text, not null). Every place that used to look an agent up by id or store
+// one now goes through this instead: a safe, case-insensitive lookup that refuses to guess
+// when a name matches more than one existing row (a known duplicate-casing/spacing issue —
+// see the Contacts tab's "Clean up duplicate agents" tool), and hands back the EXACT stored
+// agent_name string to write back to, so a save never silently renames the key.
+async function findAgentProfileByName(name){
+  if(!name)return{matches:[],exact:null,ambiguous:false};
+  const rows=await sbFetch("agent_profiles?agent_name=ilike."+encodeURIComponent(name)+"&limit=5").catch(()=>null);
+  if(rows===null)throw new Error("Couldn't check existing contacts — try again.");
+  return{matches:rows,exact:rows.length===1?rows[0]:null,ambiguous:rows.length>1};
+}
 function openAddAgentModal(){
   document.getElementById("addAgentName").value="";
   document.getElementById("addAgentPhone").value="";
@@ -8028,15 +8079,28 @@ async function saveNewAgent(){
     return;
   }
   try{
-    await sbFetch("agent_profiles",{method:"POST",prefer:"return=minimal",body:JSON.stringify({
-      agent_name:name,
+    const payload={
       phone:document.getElementById("addAgentPhone").value.trim()||null,
       email:document.getElementById("addAgentEmail").value.trim()||null,
       address:combineAddress(document.getElementById("addAgentStreet").value,document.getElementById("addAgentCity").value,document.getElementById("addAgentState").value,document.getElementById("addAgentZip").value),
       birthday:birthdayVal||null,
       tier:document.getElementById("addAgentTier").value||null
-    })});
-    toast(name+" added to contacts ✓","success");
+    };
+    // Check first — "Add agent" for a name that already has a profile should update it, not
+    // attempt a second row for the same key.
+    const{matches,exact,ambiguous}=await findAgentProfileByName(name);
+    if(ambiguous){
+      toast(matches.length+" contacts already match this name — not added. Clean up the duplicates first (Management View \u2192 Clean up duplicate agents).","error",6000);
+      return;
+    }
+    if(exact){
+      await sbFetch("agent_profiles?agent_name=eq."+encodeURIComponent(exact.agent_name),{method:"PATCH",prefer:"return=minimal",body:JSON.stringify(payload)});
+      toast(name+" already existed — updated instead of duplicated ✓","success");
+    }else{
+      payload.agent_name=name;
+      await sbFetch("agent_profiles",{method:"POST",prefer:"return=minimal",body:JSON.stringify(payload)});
+      toast(name+" added to contacts ✓","success");
+    }
     closeAddAgentModal();
     loadContacts();
     initAutocomplete();
@@ -8046,55 +8110,49 @@ async function deleteAgent(){
   const name=document.getElementById("contactModalName").textContent;
   if(!name)return;
   if(!confirm("Remove "+name+" from contacts? They won't come back on the next import. You can re-add them manually if needed."))return;
+  const btn=document.getElementById("deleteAgentBtn");
+  if(btn){if(btn.disabled)return;btn.disabled=true;btn.textContent="Removing...";}
   try{
-    let profileId=editingContactId;
-    // If we don't have the id from when the modal opened, look it up — try exact match first,
-    // then case-insensitive, then normalized proper case
-    if(!profileId){
-      const tries=[
-        name,
-        name.toLowerCase(),
-        name.split(" ").map(w=>w?w.charAt(0).toUpperCase()+w.slice(1).toLowerCase():"").join(" ")
-      ];
-      for(const n of tries){
-        const r=await sbFetch("agent_profiles?agent_name=ilike."+encodeURIComponent(n)+"&select=id&limit=1").catch(()=>[]);
-        if(r&&r.length){profileId=r[0].id;break;}
-      }
+    // agent_profiles has no id column — re-check by name right before writing, same as Save.
+    const{matches,exact,ambiguous}=await findAgentProfileByName(name);
+    if(ambiguous){
+      toast(matches.length+" contacts match this name — not removed. Clean up the duplicates first (Management View \u2192 Clean up duplicate agents).","error",6000);
+      return;
     }
-    if(!profileId){
+    if(!exact){
       // No agent_profiles row exists yet (common for Pipeline-only prospects that were
       // never formally saved as a contact) — create one directly marked as removed,
       // instead of blocking the user with an error.
       await sbFetch("agent_profiles",{method:"POST",prefer:"return=minimal",body:JSON.stringify({agent_name:name,retained:false,do_not_contact:true})});
-      toast(name+" removed from contacts","success");
-      closeContactModal();
-      loadContacts();
-      initAutocomplete();
-      return;
+    }else{
+      await sbFetch("agent_profiles?agent_name=eq."+encodeURIComponent(exact.agent_name),{method:"PATCH",prefer:"return=minimal",body:JSON.stringify({retained:false,do_not_contact:true})});
     }
-    await sbFetch("agent_profiles?id=eq."+profileId,{method:"PATCH",prefer:"return=minimal",body:JSON.stringify({retained:false,do_not_contact:true})});
     toast(name+" removed from contacts","success");
     closeContactModal();
     loadContacts();
     initAutocomplete();
   }catch(e){toast("Remove failed: "+e.message,"error");}
+  finally{if(btn){btn.disabled=false;btn.textContent="Delete agent";}}
 }
 
 async function openContactModal(name,phone,email,brokerage,birthday){
   editingContactName=name;
-  editingContactId=null;
+  editingContactOriginalName=null;
   document.getElementById("contactModalName").textContent=name;
-  // Always check for an existing profile so we capture its id (needed for Save/Delete to
-  // target the right row). Previously this only ran when the caller passed no phone/email/
-  // brokerage/birthday at all, so callers like the Pipeline tab (which pass the prospect's
-  // own phone/email/brokerage) skipped it, leaving editingContactId null and breaking Delete.
+  // Always check for an existing profile — needed for Save/Delete to target the right row,
+  // and to catch possible duplicate rows early. Previously this only ran when the caller
+  // passed no phone/email/brokerage/birthday at all, so callers like the Pipeline tab (which
+  // pass the prospect's own phone/email/brokerage) skipped it.
   let personalNotes="";
   {
     try{
-      const profiles=await sbFetch("agent_profiles?agent_name=ilike."+encodeURIComponent(name)+"&limit=1").catch(()=>[]);
-      const p=profiles&&profiles[0];
+      const{matches:profiles,exact,ambiguous}=await findAgentProfileByName(name);
+      if(ambiguous){
+        toast("Heads up: "+profiles.length+" contacts already match this name (case/spacing). Saving is disabled until that's cleaned up — see Management View \u2192 Clean up duplicate agents.","error",6000);
+      }
+      const p=exact||(profiles&&profiles[0]);
       if(p){
-        editingContactId=p.id;
+        editingContactOriginalName=ambiguous?null:p.agent_name;
         phone=p.phone||phone||"";email=p.email||email||"";brokerage=p.address||brokerage||"";birthday=p.birthday||birthday||"";
         personalNotes=p.personal_notes||"";
         document.getElementById("contactTier").value=p.tier||"";
@@ -8115,46 +8173,72 @@ async function openContactModal(name,phone,email,brokerage,birthday){
   }
   document.getElementById("contactPhone").value=phone||"";document.getElementById("contactEmail").value=email||"";
   applyAddressToFields(brokerage||"","contact");
-  document.getElementById("contactBirthday").value=birthday||"";
+  // Normalize whatever's stored (MM/DD, MM-DD from the Core Team app, or "Month D" from a Power
+  // BI import) to MM/DD for display, so the field always shows the format Save expects — and a
+  // save the user doesn't touch never gets blocked by a format Save didn't write in the first place.
+  document.getElementById("contactBirthday").value=birthday?formatBirthdayDisplay(birthday):"";
   if(document.getElementById("contactPersonalNotes"))document.getElementById("contactPersonalNotes").value=personalNotes;
   document.getElementById("contactModal").classList.add("open");
 }
-function closeContactModal(){document.getElementById("contactModal").classList.remove("open");editingContactName=null;editingContactId=null;}
+function closeContactModal(){document.getElementById("contactModal").classList.remove("open");editingContactName=null;editingContactOriginalName=null;}
 async function saveContactModal(){
   if(!editingContactName)return;
-  const birthdayVal=document.getElementById("contactBirthday").value.trim();
-  if(birthdayVal&&!isValidBirthdayFormat(birthdayVal)){
-    toast("Birthday needs to be MM/DD, like 03/14 — no year, no month name.","error");
-    return;
-  }
-  const payload={agent_name:editingContactName,phone:document.getElementById("contactPhone").value.trim()||null,email:document.getElementById("contactEmail").value.trim()||null,address:combineAddress(document.getElementById("contactStreet").value,document.getElementById("contactCity").value,document.getElementById("contactState").value,document.getElementById("contactZip").value),birthday:birthdayVal||null,personal_notes:document.getElementById("contactPersonalNotes")?document.getElementById("contactPersonalNotes").value.trim()||null:null,tier:document.getElementById("contactTier").value||null,do_not_contact:document.getElementById("contactDNC").checked};
-  if(document.getElementById("contactGrowthOpp"))payload.next_growth_opportunity=document.getElementById("contactGrowthOpp").value.trim()||null;
-  if(document.getElementById("contactGrowthOppDeadline"))payload.growth_opportunity_deadline=document.getElementById("contactGrowthOppDeadline").value||null;
-  if(document.getElementById("contactLastMeaningfulContact"))payload.last_meaningful_contact_date=document.getElementById("contactLastMeaningfulContact").value||null;
-  if(document.getElementById("contactNextMeetingDate"))payload.next_meeting_date=document.getElementById("contactNextMeetingDate").value||null;
-  if(document.getElementById("contactGoals"))payload.partner_goals=document.getElementById("contactGoals").value.trim()||null;
-  if(document.getElementById("contactPainPoints"))payload.partner_pain_points=document.getElementById("contactPainPoints").value.trim()||null;
-  if(document.getElementById("contactLeakageNotes"))payload.referral_leakage_notes=document.getElementById("contactLeakageNotes").value.trim()||null;
-  if(document.getElementById("contactRecoveryPlan"))payload.recovery_plan=document.getElementById("contactRecoveryPlan").value.trim()||null;
-  if(document.getElementById("contactSatisfaction"))payload.satisfaction_rating=document.getElementById("contactSatisfaction").value?parseInt(document.getElementById("contactSatisfaction").value):null;
-  if(document.getElementById("contactCompetitorRisk"))payload.competitor_risk_flag=document.getElementById("contactCompetitorRisk").checked;
-  if(document.getElementById("contactHighPotential"))payload.high_potential_flag=document.getElementById("contactHighPotential").checked;
+  const saveBtn=document.querySelector("#contactModal .btn-primary");
+  if(saveBtn){if(saveBtn.disabled)return;saveBtn.disabled=true;saveBtn.textContent="Saving...";}
   try{
-    if(editingContactId){
-      // Best path: id captured at open time — PATCH directly, no second lookup, no duplicate risk
-      await sbFetch("agent_profiles?id=eq."+editingContactId,{method:"PATCH",prefer:"return=minimal",body:JSON.stringify(payload)});
-    }else{
-      // Fallback for callers that pass phone/email directly (id not fetched at open time)
-      const existing=await sbFetch("agent_profiles?agent_name=ilike."+encodeURIComponent(editingContactName)+"&select=id&limit=1").catch(()=>[]);
-      if(existing&&existing.length>0){
-        await sbFetch("agent_profiles?id=eq."+existing[0].id,{method:"PATCH",prefer:"return=minimal",body:JSON.stringify(payload)});
+    const birthdayValRaw=document.getElementById("contactBirthday").value.trim();
+    // Accept MM/DD (what the field displays), but also normalize away any MM-DD or "Month D"
+    // that slipped in (e.g. pasted, or an older record whose display normalization didn't run)
+    // instead of hard-blocking the whole save over a birthday format mismatch.
+    let birthdayVal=null;
+    if(birthdayValRaw){
+      if(isValidBirthdayFormat(birthdayValRaw)){
+        birthdayVal=birthdayValRaw;
       }else{
-        await sbFetch("agent_profiles",{method:"POST",prefer:"return=minimal",body:JSON.stringify(payload)});
+        const normalized=normalizeBirthdayForImport(birthdayValRaw);
+        if(normalized&&isValidBirthdayFormat(normalized)){
+          birthdayVal=normalized;
+        }else{
+          toast("Birthday needs to be MM/DD, like 03/14 — no year, no month name.","error");
+          return;
+        }
       }
+    }
+    const payload={phone:document.getElementById("contactPhone").value.trim()||null,email:document.getElementById("contactEmail").value.trim()||null,address:combineAddress(document.getElementById("contactStreet").value,document.getElementById("contactCity").value,document.getElementById("contactState").value,document.getElementById("contactZip").value),birthday:birthdayVal,personal_notes:document.getElementById("contactPersonalNotes")?document.getElementById("contactPersonalNotes").value.trim()||null:null,tier:document.getElementById("contactTier").value||null,do_not_contact:document.getElementById("contactDNC").checked};
+    if(document.getElementById("contactGrowthOpp"))payload.next_growth_opportunity=document.getElementById("contactGrowthOpp").value.trim()||null;
+    if(document.getElementById("contactGrowthOppDeadline"))payload.growth_opportunity_deadline=document.getElementById("contactGrowthOppDeadline").value||null;
+    if(document.getElementById("contactLastMeaningfulContact"))payload.last_meaningful_contact_date=document.getElementById("contactLastMeaningfulContact").value||null;
+    if(document.getElementById("contactNextMeetingDate"))payload.next_meeting_date=document.getElementById("contactNextMeetingDate").value||null;
+    if(document.getElementById("contactGoals"))payload.partner_goals=document.getElementById("contactGoals").value.trim()||null;
+    if(document.getElementById("contactPainPoints"))payload.partner_pain_points=document.getElementById("contactPainPoints").value.trim()||null;
+    if(document.getElementById("contactLeakageNotes"))payload.referral_leakage_notes=document.getElementById("contactLeakageNotes").value.trim()||null;
+    if(document.getElementById("contactRecoveryPlan"))payload.recovery_plan=document.getElementById("contactRecoveryPlan").value.trim()||null;
+    if(document.getElementById("contactSatisfaction"))payload.satisfaction_rating=document.getElementById("contactSatisfaction").value?parseInt(document.getElementById("contactSatisfaction").value):null;
+    if(document.getElementById("contactCompetitorRisk"))payload.competitor_risk_flag=document.getElementById("contactCompetitorRisk").checked;
+    if(document.getElementById("contactHighPotential"))payload.high_potential_flag=document.getElementById("contactHighPotential").checked;
+
+    // agent_profiles has no id column — agent_name IS the key. Re-check right before writing
+    // (not just at modal-open time) so stale state from a long-open modal can't cause a write
+    // against a name that's since changed underneath it.
+    const{matches,exact,ambiguous}=await findAgentProfileByName(editingContactName);
+    if(ambiguous){
+      toast(matches.length+" contacts already match this name — not saved. Clean up the duplicates first (Management View \u2192 Clean up duplicate agents), then try again.","error",6000);
+      return;
+    }
+    if(exact){
+      // Existing row — PATCH by its exact stored name. Do NOT include agent_name in the
+      // payload: this modal never edits the name field, so there's nothing to rename, and
+      // omitting it means a save can never accidentally rewrite the key into a collision.
+      await sbFetch("agent_profiles?agent_name=eq."+encodeURIComponent(exact.agent_name),{method:"PATCH",prefer:"return=minimal",body:JSON.stringify(payload)});
+    }else{
+      // Genuinely new — insert exactly one row.
+      payload.agent_name=editingContactName;
+      await sbFetch("agent_profiles",{method:"POST",prefer:"return=minimal",body:JSON.stringify(payload)});
     }
     toast("Contact updated","success");closeContactModal();if(window._contactSaveCallback){window._contactSaveCallback();window._contactSaveCallback=null;}
     if(document.getElementById("historySearch").value.length>=2)doSearchHistory(document.getElementById("historySearch").value.trim());
   }catch(e){toast("Save failed: "+e.message,"error");}
+  finally{if(saveBtn){saveBtn.disabled=false;saveBtn.textContent="Save changes";}}
 }
 
 let calYear=new Date().getFullYear(),calMonth=new Date().getMonth(),calActivities=[],calBirthdays={},selectedCalDay=null;
@@ -8273,7 +8357,8 @@ async function importContactsFile(input){
       dnc:["do not contact","dnc","do_not_contact"],
       closesPastYear:["closed past year","closes past year"],
       totalLeadsPastYear:["total leads past year","total leads"],
-      latestLeadDate:["latest lead (in velocify)","latest lead","latest interaction"]
+      latestLeadDate:["latest lead (in velocify)","latest lead","latest interaction"],
+      latestCloseDate:["latest close","latest closing"]
     };
     const firstRowKeys=Object.keys(raw[0]||{});
     const colMap={};
@@ -8282,13 +8367,31 @@ async function importContactsFile(input){
       if(match)colMap[field]=match;
     });
     if(!colMap.name){toast("Couldn't find a name column — needs a header like \"Agent Name\" or \"Name\".","error");if(progressEl)progressEl.style.display="none";return;}
+    // Shared date-cell parser (Excel serial, combined "M/D/YYYY - Type (N Days Ago)" text, or a
+    // plain date string) — used for both Latest Lead and Latest Close below so they're parsed
+    // identically instead of duplicating the same logic twice.
+    const parsePowerBIDateCell=(rawVal)=>{
+      if(rawVal===null||rawVal===undefined||rawVal==="")return null;
+      let d=null;
+      if(rawVal instanceof Date){d=rawVal;}
+      else if(typeof rawVal==="number"&&rawVal>1){d=new Date(Math.round((rawVal-25569)*86400*1000));}
+      else if(typeof rawVal==="string"&&/\d{1,2}\/\d{1,2}\/\d{2,4}/.test(rawVal)){
+        const dateMatch=rawVal.match(/(\d{1,2}\/\d{1,2}\/\d{2,4})/);
+        if(dateMatch)d=new Date(dateMatch[1]);
+      }else{d=new Date(rawVal);}
+      return(d&&!isNaN(d.getTime())&&d.getFullYear()>1971)?localDateStr(d):null;
+    };
 
     if(progressEl)progressEl.textContent="Matching against existing contacts...";
-    const existing=await sbFetch("agent_profiles?select=id,agent_name,tier,retained&limit=5000").catch(()=>[]);
+    // HOTFIX: agent_profiles has no id column — this was mapped from e.id (always undefined),
+    // so every existing agent was treated as "not found" below and every repeat import tried to
+    // INSERT over an already-existing row, which fails on the agent_name key and was silently
+    // counted as "skipped." Now keyed on the real column so existing agents actually get updated.
+    const existing=await sbFetch("agent_profiles?select=agent_name,tier,retained&limit=5000").catch(()=>[]);
     const existingByName={};
     const existingTierByName={};
     const existingRetainedByName={};
-    existing.forEach(e=>{const n=agentMatchKey(e.agent_name);if(n&&!existingByName[n]){existingByName[n]=e.id;existingTierByName[n]=e.tier||null;existingRetainedByName[n]=e.retained;}});
+    existing.forEach(e=>{const n=agentMatchKey(e.agent_name);if(n&&!existingByName[n]){existingByName[n]=e.agent_name;existingTierByName[n]=e.tier||null;existingRetainedByName[n]=e.retained;}});
 
     let created=0,updated=0,skipped=0;
     const truthy=v=>{const s=(v||"").toString().trim().toLowerCase();return s==="y"||s==="yes"||s==="true"||s==="active"||s==="1";};
@@ -8304,8 +8407,6 @@ async function importContactsFile(input){
       if(colMap.address&&row[colMap.address])payload.address=row[colMap.address].toString().trim();
       if(colMap.birthday&&row[colMap.birthday])payload.birthday=normalizeBirthdayForImport(row[colMap.birthday]);
       if(colMap.tier&&row[colMap.tier])payload.tier=row[colMap.tier].toString().trim().toUpperCase();
-      if(colMap.retained&&row[colMap.retained]!=null)payload.retained=truthy(row[colMap.retained]);
-      else payload.retained=true; // Power BI export doesn't have a retained column — being in the file means they're an active partner
       if(colMap.dnc&&row[colMap.dnc]!=null)payload.do_not_contact=truthy(row[colMap.dnc]);
       if(colMap.closesPastYear&&row[colMap.closesPastYear]!=null){const n=parseInt(row[colMap.closesPastYear]);if(!isNaN(n))payload.closes_past_year=n;}
       // Channel Partner = 10+ closings in the trailing 12 months, per the playbook — computed
@@ -8326,20 +8427,21 @@ async function importContactsFile(input){
       if(existingByName[lookupKey]&&existingRetainedByName[lookupKey]===false)continue;
       if(colMap.totalLeadsPastYear&&row[colMap.totalLeadsPastYear]!=null){const n=parseInt(row[colMap.totalLeadsPastYear]);if(!isNaN(n))payload.total_leads_past_year=n;}
       if(colMap.latestLeadDate&&row[colMap.latestLeadDate]){
-        const rawVal=row[colMap.latestLeadDate];
-        // Power BI hands back a raw Excel serial number for this column even with cellDates:true
-        // set — new Date(rawNumber) misreads that as milliseconds-since-epoch and silently
-        // produces 1970-01-01. 25569 is the day offset between Excel's epoch (Dec 30 1899) and
-        // the JS epoch (Jan 1 1970). A different export format bundles the date into a combined
-        // text string like "4/17/2026 - File Started (112 Days Ago)" instead of a real date cell.
-        let d=null;
-        if(rawVal instanceof Date){d=rawVal;}
-        else if(typeof rawVal==="number"&&rawVal>1){d=new Date(Math.round((rawVal-25569)*86400*1000));}
-        else if(typeof rawVal==="string"&&/\d{1,2}\/\d{1,2}\/\d{2,4}/.test(rawVal)){
-          const dateMatch=rawVal.match(/(\d{1,2}\/\d{1,2}\/\d{2,4})/);
-          if(dateMatch)d=new Date(dateMatch[1]);
-        }else{d=new Date(rawVal);}
-        if(d&&!isNaN(d.getTime())&&d.getFullYear()>1971)payload.latest_lead_date=localDateStr(d);
+        const d=parsePowerBIDateCell(row[colMap.latestLeadDate]);
+        if(d)payload.latest_lead_date=d;
+      }
+      const latestCloseParsed=colMap.latestCloseDate&&row[colMap.latestCloseDate]?parsePowerBIDateCell(row[colMap.latestCloseDate]):null;
+      // HOTFIX: Active Partner is now derived from actual production dates (a qualifying lead
+      // or closing within the last 90 days) instead of assuming everyone present in an uploaded
+      // file is automatically active. If the file has neither date column, we don't guess —
+      // an explicit "Retained"/"Active" source column (if present) still wins either way, and
+      // absent both, retained is left untouched (existing agents keep whatever they had; new
+      // agents start with no Active status until a later import or manual edit sets one).
+      if(colMap.retained&&row[colMap.retained]!=null){
+        payload.retained=truthy(row[colMap.retained]);
+      }else if(payload.latest_lead_date||latestCloseParsed){
+        const ninetyAgo=new Date(Date.now()-90*86400000);
+        payload.retained=!!((payload.latest_lead_date&&new Date(payload.latest_lead_date)>=ninetyAgo)||(latestCloseParsed&&new Date(latestCloseParsed)>=ninetyAgo));
       }
 
       const key=agentMatchKey(name);
@@ -8349,13 +8451,13 @@ async function importContactsFile(input){
       try{
         if(existingByName[key]){
           if(Object.keys(payload).length){
-            await sbFetch("agent_profiles?id=eq."+existingByName[key],{method:"PATCH",prefer:"return=minimal",body:JSON.stringify(payload)});
+            await sbFetch("agent_profiles?agent_name=eq."+encodeURIComponent(existingByName[key]),{method:"PATCH",prefer:"return=minimal",body:JSON.stringify(payload)});
             updated++;
           }
         }else{
           payload.agent_name=name;
           await sbFetch("agent_profiles",{method:"POST",prefer:"return=minimal",body:JSON.stringify(payload)});
-          existingByName[key]="new"; // prevent dupes if the same name appears twice in one file
+          existingByName[key]=name; // prevent dupes if the same name appears twice in one file
           created++;
         }
       }catch(e){skipped++;}
@@ -8589,12 +8691,12 @@ function openContactsEdit(nameOrEl){
   const name=typeof nameOrEl==="string"?nameOrEl:(nameOrEl&&nameOrEl.dataset?nameOrEl.dataset.name:String(nameOrEl));
   const c=allContacts.find(x=>x.agent_name===name)||{agent_name:name};
   editingContactName=name;
-  editingContactId=c.id||null;
+  editingContactOriginalName=c.agent_name||name; // best-effort cache; saveContactModal re-verifies before writing
   document.getElementById("contactModalName").textContent=name;
   document.getElementById("contactPhone").value=c.phone||"";
   document.getElementById("contactEmail").value=c.email||"";
   applyAddressToFields(c.address||"","contact");
-  document.getElementById("contactBirthday").value=c.birthday||"";
+  document.getElementById("contactBirthday").value=c.birthday?formatBirthdayDisplay(c.birthday):"";
   if(document.getElementById("contactPersonalNotes"))document.getElementById("contactPersonalNotes").value=c.personal_notes||"";
   document.getElementById("contactTier").value=c.tier||"";
   document.getElementById("contactDNC").checked=!!(c.do_not_contact);
@@ -8615,6 +8717,35 @@ function openContactsEdit(nameOrEl){
 
 
 init();
+
+// ── Near-real-time refresh (Phase 2 architecture pass) ──────────────────────────────────────
+// There are no Supabase Realtime (push) subscriptions here — turning those on requires a
+// database-side change (adding these tables to the `supabase_realtime` publication), which is
+// outside a no-schema/no-database-change pass and was intentionally NOT done. This is a
+// refetch-based approximation instead, mirroring the polling pattern the Core Team Tracker
+// already uses for LP call data: Contacts (the shared agent_profiles data) and the At Risk feed
+// (which already combines RM + LP activity) reload automatically when this tab regains focus,
+// and every couple of minutes while it stays open — so a change made in the other tracker shows
+// up here without a manual page refresh, typically within a couple of minutes, not instantly.
+// This intentionally does NOT force-refresh every tab/dashboard in the app — only the two views
+// most directly tied to shared, cross-tracker data — to keep the change scoped and low-risk.
+var userTyping=false;
+document.addEventListener("focusin",function(e){if(e.target.tagName==="TEXTAREA"||e.target.tagName==="INPUT"){userTyping=true;}});
+document.addEventListener("focusout",function(e){if(e.target.tagName==="TEXTAREA"||e.target.tagName==="INPUT"){userTyping=false;}});
+let _lastNearRealtimeRefresh=Date.now();
+function nearRealtimeRefreshSharedData(){
+  if(userTyping)return;
+  if(document.querySelector(".modal-overlay.open"))return; // never refetch out from under an open modal
+  _lastNearRealtimeRefresh=Date.now();
+  loadContacts().catch(()=>{});
+  loadQuiet().catch(()=>{});
+}
+document.addEventListener("visibilitychange",()=>{
+  if(!document.hidden&&Date.now()-_lastNearRealtimeRefresh>20000){
+    nearRealtimeRefreshSharedData();
+  }
+});
+setInterval(()=>{if(!document.hidden)nearRealtimeRefreshSharedData();},120000);
 
 // ── ONE-TIME PROSPECT SEED ────────────────────────────────────────────────────
 (async function seedProspects(){
