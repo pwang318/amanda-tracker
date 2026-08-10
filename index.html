@@ -8045,20 +8045,21 @@ async function saveNewAgent(){
 async function deleteAgent(){
   const name=document.getElementById("contactModalName").textContent;
   if(!name)return;
-  if(!confirm("Delete "+name+" from contacts? This cannot be undone."))return;
+  if(!confirm("Remove "+name+" from contacts? They won't come back on the next import. You can re-add them manually if needed."))return;
   try{
-    // Case-insensitive delete with a real confirmation the row existed — prevents a false
-    // "deleted" toast when the displayed name's casing doesn't exactly match what's stored.
-    const deleted=await sbFetch("agent_profiles?agent_name=ilike."+encodeURIComponent(name),{method:"DELETE",prefer:"return=representation"});
-    if(!deleted||!deleted.length){
-      toast("Couldn't find a matching contact to delete — nothing was removed","error");
-      return;
+    // Soft delete — set retained=false rather than hard-deleting the row. Hard deletes let the
+    // next Power BI import recreate the agent; retained=false is respected by the import and
+    // prevents that. Activity history is preserved. Re-add via + Add Agent if needed.
+    const profiles=await sbFetch("agent_profiles?agent_name=ilike."+encodeURIComponent(name)+"&select=id&limit=1").catch(()=>[]);
+    if(!profiles||!profiles.length){
+      toast("Couldn't find "+name+" — nothing removed","error");return;
     }
-    toast(name+" deleted from contacts","success");
+    await sbFetch("agent_profiles?id=eq."+profiles[0].id,{method:"PATCH",prefer:"return=minimal",body:JSON.stringify({retained:false,do_not_contact:true})});
+    toast(name+" removed from contacts","success");
     closeContactModal();
     loadContacts();
     initAutocomplete();
-  }catch(e){toast("Delete failed: "+e.message,"error");}
+  }catch(e){toast("Remove failed: "+e.message,"error");}
 }
 
 async function openContactModal(name,phone,email,brokerage,birthday){
@@ -8262,10 +8263,11 @@ async function importContactsFile(input){
     if(!colMap.name){toast("Couldn't find a name column — needs a header like \"Agent Name\" or \"Name\".","error");if(progressEl)progressEl.style.display="none";return;}
 
     if(progressEl)progressEl.textContent="Matching against existing contacts...";
-    const existing=await sbFetch("agent_profiles?select=id,agent_name,tier&limit=5000").catch(()=>[]);
+    const existing=await sbFetch("agent_profiles?select=id,agent_name,tier,retained&limit=5000").catch(()=>[]);
     const existingByName={};
     const existingTierByName={};
-    existing.forEach(e=>{const n=agentMatchKey(e.agent_name);if(n&&!existingByName[n]){existingByName[n]=e.id;existingTierByName[n]=e.tier||null;}});
+    const existingRetainedByName={};
+    existing.forEach(e=>{const n=agentMatchKey(e.agent_name);if(n&&!existingByName[n]){existingByName[n]=e.id;existingTierByName[n]=e.tier||null;existingRetainedByName[n]=e.retained;}});
 
     let created=0,updated=0,skipped=0;
     const truthy=v=>{const s=(v||"").toString().trim().toLowerCase();return s==="y"||s==="yes"||s==="true"||s==="active"||s==="1";};
@@ -8289,6 +8291,18 @@ async function importContactsFile(input){
       // here and overrides any tier value the source column carried, since Channel is derived,
       // not something Power BI itself labels.
       if((payload.closes_past_year||0)>=10)payload.tier="Channel";
+
+      // Normalize name to Proper Case — Power BI exports ALL CAPS which looks inconsistent
+      // next to manually-added contacts. Normalize on import so everything is consistent.
+      const rawName=payload.agent_name||"";
+      const normalizedName=rawName.trim().split(/\s+/).map(w=>w?w.charAt(0).toUpperCase()+w.slice(1).toLowerCase():"").join(" ");
+      payload.agent_name=normalizedName;
+
+      // Skip agents that were manually deleted — retained===false means intentionally removed.
+      // Their row stays in the DB (so we can distinguish "never imported" from "was deleted")
+      // but the import never brings them back. Only manual re-adding via + Add Agent restores them.
+      const lookupKey=agentMatchKey(normalizedName)||agentMatchKey(rawName);
+      if(existingByName[lookupKey]&&existingRetainedByName[lookupKey]===false)continue;
       if(colMap.totalLeadsPastYear&&row[colMap.totalLeadsPastYear]!=null){const n=parseInt(row[colMap.totalLeadsPastYear]);if(!isNaN(n))payload.total_leads_past_year=n;}
       if(colMap.latestLeadDate&&row[colMap.latestLeadDate]){
         const rawVal=row[colMap.latestLeadDate];
