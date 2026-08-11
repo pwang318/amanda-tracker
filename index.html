@@ -511,7 +511,7 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI'
         <div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start;flex-wrap:wrap;margin-bottom:10px">
           <div>
             <div style="font-size:13px;font-weight:800;color:var(--text-1)">Clear to Close workflow</div>
-            <div style="font-size:11px;color:var(--text-4);margin-top:2px">Save both agent contacts, log each call, and create Daniel's WhatsApp update from one place.</div>
+            <div style="font-size:11px;color:var(--text-4);margin-top:2px">Save both agent contacts, log each call, and create Daniel's WhatsApp update from one place — no loan number needed.</div>
           </div>
           <button type="button" class="btn-sm" onclick="ctcResetForm()">Clear form</button>
         </div>
@@ -521,14 +521,13 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI'
           <textarea id="ctcPasteSource" rows="3" placeholder="Paste the CTC message here and click Parse..." style="width:100%;box-sizing:border-box;margin-top:5px;border:1px solid var(--border);border-radius:8px;padding:8px 10px;font-size:12px;font-family:inherit;resize:vertical"></textarea>
           <div style="display:flex;gap:8px;align-items:center;margin-top:6px;flex-wrap:wrap">
             <button type="button" class="btn-sm" onclick="ctcParsePastedUpdate()">Parse CTC alert</button>
-            <span style="font-size:10px;color:var(--text-4)">Borrower, loan #, property, and agent lines will fill when the pasted format includes them.</span>
+            <span style="font-size:10px;color:var(--text-4)">Borrower/client, property, and agent lines will fill when the pasted format includes them.</span>
           </div>
         </div>
 
         <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:8px;margin-bottom:12px">
-          <div><label style="font-size:10px;font-weight:700;color:var(--text-3)">BORROWER / CLIENT</label><input id="ctcBorrower" type="text" placeholder="Khaled Jaber" oninput="ctcUpdatePreview()" style="width:100%;box-sizing:border-box;margin-top:4px;border:1px solid var(--border);border-radius:8px;padding:8px 10px;font-size:12px"></div>
-          <div><label style="font-size:10px;font-weight:700;color:var(--text-3)">LOAN NUMBER</label><input id="ctcLoanNumber" type="text" placeholder="33026068699" oninput="ctcUpdatePreview()" style="width:100%;box-sizing:border-box;margin-top:4px;border:1px solid var(--border);border-radius:8px;padding:8px 10px;font-size:12px"></div>
-          <div style="grid-column:span 2"><label style="font-size:10px;font-weight:700;color:var(--text-3)">PROPERTY ADDRESS</label><input id="ctcProperty" type="text" placeholder="5175 Vinings Blvd, Dublin, OH 43016" oninput="ctcUpdatePreview()" style="width:100%;box-sizing:border-box;margin-top:4px;border:1px solid var(--border);border-radius:8px;padding:8px 10px;font-size:12px"></div>
+          <div><label style="font-size:10px;font-weight:700;color:var(--text-3)">CLIENT / BORROWER</label><input id="ctcBorrower" type="text" placeholder="Client name" oninput="ctcUpdatePreview()" style="width:100%;box-sizing:border-box;margin-top:4px;border:1px solid var(--border);border-radius:8px;padding:8px 10px;font-size:12px"></div>
+          <div style="grid-column:span 2"><label style="font-size:10px;font-weight:700;color:var(--text-3)">PROPERTY ADDRESS</label><input id="ctcProperty" type="text" placeholder="Property address" oninput="ctcUpdatePreview()" style="width:100%;box-sizing:border-box;margin-top:4px;border:1px solid var(--border);border-radius:8px;padding:8px 10px;font-size:12px"></div>
         </div>
 
         <datalist id="ctcAgentOptions"></datalist>
@@ -571,7 +570,6 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI'
         <div style="margin-top:10px;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:11px">
           <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:6px">
             <div style="font-size:11px;font-weight:800;color:var(--text-2)">WHATSAPP UPDATE PREVIEW</div>
-            <label style="font-size:10px;color:var(--text-4);display:flex;gap:5px;align-items:center"><input id="ctcIncludeFullLoan" type="checkbox" onchange="ctcUpdatePreview()"> Include full loan # (default is last 4 only)</label>
           </div>
           <textarea id="ctcWhatsAppPreview" rows="8" readonly style="width:100%;box-sizing:border-box;border:1px solid var(--border);border-radius:8px;padding:9px 10px;font-size:12px;font-family:inherit;background:var(--surface-2);resize:vertical"></textarea>
           <div style="display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap;margin-top:8px">
@@ -5845,12 +5843,6 @@ function ctcRefreshAgentOptions(){
 }
 function ctcField(id){return(document.getElementById(id)?.value||"").trim();}
 function ctcSet(id,val){const el=document.getElementById(id);if(el&&val!==undefined&&val!==null)el.value=val;}
-function ctcMaskLoan(loan){
-  const clean=String(loan||"").replace(/\s+/g,"");
-  if(!clean)return"";
-  if(document.getElementById("ctcIncludeFullLoan")?.checked)return clean;
-  const last=clean.slice(-4);return last?"ending "+last:"";
-}
 function ctcToggleMeetingDate(role){
   const cap=role==="buyer"?"Buyer":"Seller";
   const out=ctcField("ctc"+cap+"Outcome"), rel=ctcField("ctc"+cap+"Relationship");
@@ -5874,7 +5866,6 @@ function ctcParsePastedUpdate(){
   const one=raw.replace(/\r/g,"");
   let m=one.match(/Name\s*:\s*([^\n}]+)/i);if(m)ctcSet("ctcBorrower",m[1].trim());
   if(!ctcField("ctcBorrower")){m=one.match(/Update\s*:\s*[^\n/]*\/([^:\n]+)\s*:\s*CLEAR\s*TO\s*CLOSE/i);if(m)ctcSet("ctcBorrower",m[1].trim());}
-  m=one.match(/Loan\s*(?:Number|#)\s*:\s*([A-Za-z0-9-]+)/i);if(m)ctcSet("ctcLoanNumber",m[1].trim());
   m=one.match(/(?:Loan\s*)?Address\s*:\s*([\s\S]*?)(?=\n\s*(?:Buyer\s*Agent|Listing\s*Agent|Seller\s*Agent|Name\s*:|Loan\s*(?:Number|#)\s*:)|$)/i);
   if(m){const addr=m[1].split("\n").map(s=>s.trim()).filter(Boolean).join(", ").replace(/,\s*,/g,",");if(addr)ctcSet("ctcProperty",addr);}
   m=one.match(/Buyer\s*Agent\s*:\s*([^\n|]+)(?:\||,)?\s*([^\n]*)/i);if(m){ctcSet("ctcBuyerAgent",m[1].trim());if(m[2])ctcSet("ctcBuyerPhone",m[2].trim());}
@@ -5882,13 +5873,12 @@ function ctcParsePastedUpdate(){
   ctcFillContact("buyer");ctcFillContact("seller");ctcUpdatePreview();toast("CTC alert parsed — double-check the fields before saving.","success",3500);
 }
 function ctcBuildWhatsApp(){
-  const borrower=ctcField("ctcBorrower"),loan=ctcMaskLoan(ctcField("ctcLoanNumber")),property=ctcField("ctcProperty");
+  const borrower=ctcField("ctcBorrower"),property=ctcField("ctcProperty");
   const ba=ctcField("ctcBuyerAgent"),bp=ctcField("ctcBuyerPhone"),bf=ctcField("ctcBuyerFeedback"),br=ctcField("ctcBuyerRelationship");
   const sa=ctcField("ctcSellerAgent"),sp=ctcField("ctcSellerPhone"),sf=ctcField("ctcSellerFeedback"),sr=ctcField("ctcSellerRelationship"),smd=ctcField("ctcSellerMeetingDate");
   const lines=["CLEAR TO CLOSE!"];
-  if(borrower)lines.push("Borrower: "+borrower);
+  if(borrower)lines.push("Client: "+borrower);
   if(property)lines.push("Property: "+property);
-  if(loan)lines.push("Loan #: "+loan);
   lines.push("");lines.push("Buyer Agent: "+(ba||"—")+" | "+(bp||"—"));if(bf)lines.push("Feedback: "+bf);if(br&&br!=="Unknown")lines.push("Relationship: "+br);
   lines.push("");lines.push("Listing Agent: "+(sa||"—")+" | "+(sp||"—"));if(sf)lines.push("Feedback: "+sf);if(sr&&sr!=="Unknown")lines.push("Opportunity: "+sr+(smd?" — "+fmtDate(smd):""));
   return lines.join("\n");
@@ -5919,9 +5909,9 @@ async function ctcSyncOpportunity(name,phone,email,relationship,meetingDate,role
   else if(existing.length===0)await sbFetch("outreach_prospects",{method:"POST",prefer:"return=minimal",body:JSON.stringify(Object.assign({agent_name:name},payload))});
 }
 function ctcActivityNotes(role,feedback,relationship){
-  const borrower=ctcField("ctcBorrower"),property=ctcField("ctcProperty"),loan=ctcField("ctcLoanNumber");
+  const borrower=ctcField("ctcBorrower"),property=ctcField("ctcProperty");
   const parts=["☎️ CTC",role+" agent"];
-  if(borrower)parts.push("Borrower: "+borrower);if(property)parts.push("Property: "+property);if(loan)parts.push("Loan: ending "+loan.replace(/\s+/g,"").slice(-4));
+  if(borrower)parts.push("Client: "+borrower);if(property)parts.push("Property: "+property);
   if(feedback)parts.push("Feedback: "+feedback);if(relationship&&relationship!=="Unknown")parts.push("Relationship: "+relationship);
   return parts.join(" | ");
 }
@@ -5959,9 +5949,8 @@ async function saveCtcWorkflow(copyAfter){
   finally{buttons.forEach(b=>b.disabled=false);}
 }
 function ctcResetForm(){
-  ["ctcPasteSource","ctcBorrower","ctcLoanNumber","ctcProperty","ctcBuyerAgent","ctcBuyerPhone","ctcBuyerEmail","ctcBuyerMeetingDate","ctcBuyerFeedback","ctcSellerAgent","ctcSellerPhone","ctcSellerEmail","ctcSellerMeetingDate","ctcSellerFeedback"].forEach(id=>ctcSet(id,""));
+  ["ctcPasteSource","ctcBorrower","ctcProperty","ctcBuyerAgent","ctcBuyerPhone","ctcBuyerEmail","ctcBuyerMeetingDate","ctcBuyerFeedback","ctcSellerAgent","ctcSellerPhone","ctcSellerEmail","ctcSellerMeetingDate","ctcSellerFeedback"].forEach(id=>ctcSet(id,""));
   ctcSet("ctcBuyerOutcome","Positive");ctcSet("ctcBuyerRelationship","Unknown");ctcSet("ctcSellerOutcome","Positive");ctcSet("ctcSellerRelationship","Unknown");
-  const full=document.getElementById("ctcIncludeFullLoan");if(full)full.checked=false;
   ctcToggleMeetingDate("buyer");ctcToggleMeetingDate("seller");ctcUpdatePreview();
 }
 
