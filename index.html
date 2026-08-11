@@ -1282,6 +1282,8 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI'
         <option value="notier">No tier set</option>
         <option value="bday">Has birthday</option>
         <option value="nobday">Missing birthday</option>
+        <option value="noaddress">Missing address</option>
+        <option value="noemail">Missing email</option>
         <option value="nophone">Missing phone</option>
       </select>
     </div>
@@ -5451,12 +5453,19 @@ async function showDailyCheckin(viewDateStr){
   try{
     const dateObj=new Date(viewDate+"T12:00:00");
     const nextDayStr=localDateStr(new Date(dateObj.getTime()+86400000));
-    const[dayActs,escToday,flaggedOpen,fuTomorrow,rcHotRows]=await Promise.all([
+    const[dayActs,escToday,flaggedOpen,fuTomorrow,rcHotRows,rcBacklog,contactBacklog,openFollowups,healthActs,healthLpCalls,lpBreakBreads,ctcFilesToday]=await Promise.all([
       sbFetch("amanda_activities?select=id,act_type,agent_name,outcome,notes,follow_up_date&act_date=eq."+viewDate+"&order=id.asc"),
       sbFetch("amanda_activities?select=agent_name,act_type,notes&outcome=eq.Needs manager attention&act_date=eq."+viewDate).catch(()=>[]),
-      sbFetch("call_logs?select=agent_name,lp,note&flag_rm=eq.true&limit=20").catch(()=>[]),
+      sbFetch("call_logs?select=agent_name,lp,note&flag_rm=eq.true&limit=100").catch(()=>[]),
       sbFetch("amanda_activities?select=agent_name,act_type&follow_up_date=eq."+nextDayStr).catch(()=>[]),
-      sbFetch(RC_TABLE+"?select=agent_name,status,grade&status=in.(hot,urgent)&limit=10").catch(()=>[])
+      sbFetch(RC_TABLE+"?select=agent_name,status,grade&status=in.(hot,urgent)&limit=10").catch(()=>[]),
+      sbFetch(RC_TABLE+"?select=agent_name,status,grade,days_since&limit=1000").catch(()=>[]),
+      sbFetch("agent_profiles?select=agent_name,tier,retained,do_not_contact,relationship_status,email,address,birthday,next_growth_opportunity,latest_lead_date,competitor_risk_flag&limit=3000").catch(()=>sbFetch("agent_profiles?select=agent_name,tier,retained,do_not_contact,relationship_status,email,address,birthday&limit=3000").catch(()=>[])),
+      sbFetch("amanda_activities?select=id,agent_name,act_type,follow_up_date&follow_up_date=lte."+viewDate+"&follow_up_date=not.is.null&order=follow_up_date.asc&limit=1000").catch(()=>[]),
+      sbFetch("amanda_activities?select=agent_name,act_date,outcome,act_type,notes&order=act_date.desc&limit=3000").catch(()=>[]),
+      sbFetch("call_logs?select=agent_name,call_date,outcome&order=call_date.desc&limit=2000").catch(()=>[]),
+      sbFetch("break_breads?select=agent_name,date,logged_by&order=date.desc&limit=2000").catch(()=>[]),
+      sbFetch("call_logs?select=agent_name,outcome&outcome=ilike.*ctc*&call_date=eq."+viewDate+"&limit=100").catch(()=>[])
     ]);
 
     titleEl.textContent="Daily Check-in — "+dateObj.toLocaleDateString("en-US",{weekday:"long",month:"short",day:"numeric"})+(isToday?"":" (past)");
@@ -5513,6 +5522,130 @@ async function showDailyCheckin(viewDateStr){
       +miniStat("Follow-ups set",followUpsSet.length,"future follow-up dates")
       +'</div></div>';
 
+    // ── OPEN WORK: the rest of the tracker belongs in the daily conversation too. ──
+    // These are backlog/work-queue signals, not extra daily quotas. Counts can overlap because one
+    // agent can be missing contact data AND be on Reconnect AND need a portfolio plan. The point is
+    // to make available work visible when the headline activity numbers are light.
+    const currentContacts=(contactBacklog||[]).filter(a=>a.do_not_contact!==true&&a.relationship_status!=="inactive");
+    const inactiveNames=new Set((contactBacklog||[]).filter(a=>a.relationship_status==="inactive").map(a=>agentMatchKey(a.agent_name)));
+    const reconnectOpen=(rcBacklog||[]).filter(r=>(!r.status||r.status==="active")&&!inactiveNames.has(agentMatchKey(r.agent_name)));
+    const reconnectAB=reconnectOpen.filter(r=>r.grade==="Channel"||r.grade==="A"||r.grade==="B");
+    const reconnectWorkedToday=activities.filter(a=>a.act_type==="Reconnect Outreach").length;
+    const missingBirthday=currentContacts.filter(a=>!a.birthday);
+    const missingAddress=currentContacts.filter(a=>!a.address);
+    const missingEmail=currentContacts.filter(a=>!a.email);
+    const overdueFollowups=(openFollowups||[]).filter(f=>f.follow_up_date<viewDate);
+    const dueTodayFollowups=(openFollowups||[]).filter(f=>f.follow_up_date===viewDate);
+    const activePortfolio=currentContacts.filter(a=>a.retained===true);
+    const growthFieldAvailable=(contactBacklog||[]).some(a=>Object.prototype.hasOwnProperty.call(a,"next_growth_opportunity"));
+    const missingGrowthOpp=growthFieldAvailable?activePortfolio.filter(a=>!a.next_growth_opportunity):[];
+    const missingGrowthPriority=missingGrowthOpp.filter(a=>a.tier==="Channel"||a.tier==="A");
+
+    // Match the Portfolio Review health calculation so the Daily Check-in surfaces the same book,
+    // not a competing definition of who needs attention.
+    const lastHealthRM={};
+    (healthActs||[]).forEach(a=>{
+      const k=agentMatchKey(a.agent_name);
+      if(k&&!lastHealthRM[k]&&isMeaningfulOutcome(a.outcome,NOT_MEANINGFUL_RM_OUTCOMES,a.act_type))lastHealthRM[k]=a.act_date;
+    });
+    const lastHealthLP={};
+    (healthLpCalls||[]).forEach(c=>{
+      const k=agentMatchKey(c.agent_name);
+      if(k&&!lastHealthLP[k]&&isMeaningfulOutcome(c.outcome,NOT_MEANINGFUL_LP_OUTCOMES))lastHealthLP[k]=c.call_date;
+    });
+    const healthNow=new Date(viewDate+"T12:00:00");
+    const touchThreshold={Channel:14,A:14,B:30,C:60};
+    const urgentThreshold={Channel:21,A:21,B:45,C:90};
+    const healthDataAvailable=(contactBacklog||[]).some(a=>Object.prototype.hasOwnProperty.call(a,"latest_lead_date"));
+    const healthNeeds=healthDataAvailable?activePortfolio.map(a=>{
+      const k=agentMatchKey(a.agent_name),rm=lastHealthRM[k],lp=lastHealthLP[k];
+      const daysRM=rm?Math.max(0,Math.round((healthNow-new Date(rm+"T12:00:00"))/86400000)):null;
+      const daysLP=lp?Math.max(0,Math.round((healthNow-new Date(lp+"T12:00:00"))/86400000)):null;
+      const daysAny=(daysRM===null&&daysLP===null)?null:Math.min(daysRM===null?Infinity:daysRM,daysLP===null?Infinity:daysLP);
+      const daysLead=a.latest_lead_date?Math.max(0,Math.round((healthNow-new Date(a.latest_lead_date+"T12:00:00"))/86400000)):null;
+      const tier=a.tier||null;
+      const health=computeHealthScore(daysLead,daysAny,touchThreshold[tier]||14,urgentThreshold[tier]||21,!!a.competitor_risk_flag);
+      return{agent_name:a.agent_name,tier,health,daysAny,daysLead};
+    }).filter(r=>r.health!=="Green").sort((a,b)=>{
+      const hr={Red:0,Yellow:1},tr={Channel:0,A:1,B:2,C:3};
+      return(hr[a.health]??2)-(hr[b.health]??2)||(tr[a.tier]??4)-(tr[b.tier]??4);
+    }):[];
+    const healthRed=healthNeeds.filter(r=>r.health==="Red").length;
+    const healthYellow=healthNeeds.filter(r=>r.health==="Yellow").length;
+
+    // Break Bread Due List — same thresholds and same current-roster population as Snapshot.
+    const lastBread={};
+    (healthActs||[]).filter(a=>a.act_type==="Break Breads").forEach(a=>{const k=agentMatchKey(a.agent_name);if(k&&(!lastBread[k]||a.act_date>lastBread[k]))lastBread[k]=a.act_date;});
+    (lpBreakBreads||[]).forEach(b=>{const k=agentMatchKey(b.agent_name);if(k&&(!lastBread[k]||b.date>lastBread[k]))lastBread[k]=b.date;});
+    const breadThreshold={Channel:[10,14,21],A:[10,14,21],B:[21,30,45],C:[45,60,90]};
+    const breadDue=currentContacts.map(a=>{
+      const k=agentMatchKey(a.agent_name),last=lastBread[k],tier=a.tier||"C",th=breadThreshold[tier]||breadThreshold.C;
+      const days=last?Math.max(0,Math.floor((healthNow-new Date(last+"T12:00:00"))/86400000)):null;
+      return{agent_name:a.agent_name,tier,days,due:days===null||days>=th[1],critical:days===null||days>=th[2]};
+    }).filter(r=>r.due).sort((a,b)=>{const tr={Channel:0,A:1,B:2,C:3};return(tr[a.tier]??4)-(tr[b.tier]??4)||(b.days||9999)-(a.days||9999);});
+
+    // Gifting Campaign Follow-Up — mirrors the 4-week onboarding card: a qualifying relationship
+    // touch with a real note completes the current week's follow-up.
+    const cutoff28=new Date(healthNow);cutoff28.setDate(cutoff28.getDate()-28);
+    const cutoff7=new Date(healthNow);cutoff7.setDate(cutoff7.getDate()-7);
+    const recentMeetings=(healthActs||[]).filter(a=>a.act_type==="New Realtor Meeting"&&new Date(a.act_date+"T12:00:00")>=cutoff28&&new Date(a.act_date+"T12:00:00")<=healthNow);
+    const firstMeetingByAgent={};
+    recentMeetings.forEach(m=>{const k=agentMatchKey(m.agent_name);if(k&&(!firstMeetingByAgent[k]||m.act_date<firstMeetingByAgent[k].act_date))firstMeetingByAgent[k]=m;});
+    const touchedLast7=new Set((healthActs||[]).filter(a=>new Date(a.act_date+"T12:00:00")>=cutoff7&&new Date(a.act_date+"T12:00:00")<=healthNow&&TALKTO_TYPES.indexOf(a.act_type)>=0&&countWords(a.notes)>=MIN_NOTE_WORDS).map(a=>agentMatchKey(a.agent_name)));
+    const giftingOutstanding=Object.values(firstMeetingByAgent).map(m=>{
+      const days=Math.floor((healthNow-new Date(m.act_date+"T12:00:00"))/86400000),weekNum=Math.floor(days/7)+1;
+      return{agent_name:m.agent_name,weekNum,days};
+    }).filter(r=>r.weekNum>=1&&r.weekNum<=4&&!touchedLast7.has(agentMatchKey(r.agent_name))).sort((a,b)=>a.weekNum-b.weekNum);
+
+    const birthdayTodayKnown=currentContacts.filter(a=>{
+      if(!a.birthday)return false;const d=parseBirthdayMD(a.birthday);if(!d)return false;return d.month===healthNow.getMonth()&&d.day===healthNow.getDate();
+    });
+
+    const backlogTile=(label,value,sub,kind,color)=>'<div '+(kind?'onclick="openDailyCheckinWork(\''+kind+'\')"':'')+' style="background:#fff;border:1px solid var(--border-light);border-radius:8px;padding:9px 10px;min-width:0;'+(kind?'cursor:pointer;':'')+'">'
+      +'<div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start"><div style="font-size:10.5px;font-weight:700;color:var(--text-3);line-height:1.2">'+label+'</div><div style="font-size:18px;font-weight:800;color:'+(color||'var(--text-1)')+';line-height:1">'+value+'</div></div>'
+      +(sub?'<div style="font-size:9.5px;color:var(--text-4);margin-top:4px;line-height:1.3">'+sub+'</div>':'')+'</div>';
+
+    const tierRank={Channel:0,A:1,B:2,C:3};
+    const reconnectPriority=[...reconnectOpen].sort((a,b)=>(tierRank[a.grade]??4)-(tierRank[b.grade]??4)||(b.days_since||0)-(a.days_since||0));
+    const contactPriority=currentContacts.map(a=>{
+      const missing=[];if(!a.birthday)missing.push("birthday");if(!a.address)missing.push("address");if(!a.email)missing.push("email");
+      return{agent_name:a.agent_name,tier:a.tier,missing};
+    }).filter(a=>a.missing.length).sort((a,b)=>(tierRank[a.tier]??4)-(tierRank[b.tier]??4)||b.missing.length-a.missing.length);
+    const growthPriority=[...missingGrowthOpp].sort((a,b)=>(tierRank[a.tier]??4)-(tierRank[b.tier]??4));
+    const priorityQueue=[];
+    (flaggedOpen||[]).slice(0,3).forEach(f=>priorityQueue.push({level:0,text:"LP flag — "+properCase(f.agent_name||"General")+(f.lp?" ("+f.lp+")":"")}));
+    (ctcFilesToday||[]).slice(0,3).forEach(f=>priorityQueue.push({level:1,text:"CTC today — "+properCase(f.agent_name||"File")+" (call both agents)"}));
+    birthdayTodayKnown.slice(0,2).forEach(a=>priorityQueue.push({level:1.2,text:"Birthday today — "+properCase(a.agent_name)}));
+    overdueFollowups.slice(0,3).forEach(f=>priorityQueue.push({level:1.5,text:"Overdue follow-up — "+properCase(f.agent_name)}));
+    reconnectPriority.filter(r=>r.grade==="Channel"||r.grade==="A"||r.grade==="B").slice(0,3).forEach(r=>priorityQueue.push({level:2,text:"Reconnect — "+properCase(r.agent_name)+(r.grade?" ("+r.grade+")":"")}));
+    healthNeeds.filter(r=>r.health==="Red").slice(0,3).forEach(r=>priorityQueue.push({level:3,text:"Partner Health RED — "+properCase(r.agent_name)+(r.tier?" ("+r.tier+")":"")}));
+    growthPriority.filter(a=>a.tier==="Channel"||a.tier==="A").slice(0,2).forEach(a=>priorityQueue.push({level:4,text:"Portfolio plan missing — "+properCase(a.agent_name)+(a.tier?" ("+a.tier+")":"")}));
+    giftingOutstanding.slice(0,2).forEach(a=>priorityQueue.push({level:4.2,text:"Gifting follow-up — "+properCase(a.agent_name)+" (week "+a.weekNum+")"}));
+    breadDue.filter(a=>a.tier==="Channel"||a.tier==="A").slice(0,2).forEach(a=>priorityQueue.push({level:4.5,text:"Break Bread due — "+properCase(a.agent_name)+" ("+a.tier+")"}));
+    contactPriority.slice(0,3).forEach(a=>priorityQueue.push({level:5,text:"Contact cleanup — "+properCase(a.agent_name)+": "+a.missing.join(", ")}));
+    priorityQueue.sort((a,b)=>a.level-b.level);
+
+    const openWorkHtml=isToday?'<div style="margin:14px 0;padding:12px;background:#F7F5FB;border:1px solid var(--border);border-radius:10px">'
+      +'<div style="font-size:11px;font-weight:800;color:var(--brand-dark);text-transform:uppercase;letter-spacing:.45px;margin-bottom:3px">Open work across the tracker</div>'
+      +'<div style="font-size:10.5px;color:var(--text-3);line-height:1.4;margin-bottom:9px">This is not another daily quota. It is the work still available when calls or meetings are light. Counts can overlap.</div>'
+      +'<div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px">'
+      +backlogTile("Reconnect queue",reconnectOpen.length,reconnectAB.length+" Channel/A/B priority · "+reconnectWorkedToday+" worked today","reconnect",reconnectOpen.length?'var(--warning)':'var(--success)')
+      +backlogTile("Follow-ups due",overdueFollowups.length+dueTodayFollowups.length,overdueFollowups.length+" overdue · "+dueTodayFollowups.length+" due today","followups",overdueFollowups.length?'var(--danger)':'var(--text-1)')
+      +backlogTile("Open LP flags",(flaggedOpen||[]).length,"awaiting RM response","lpflags",(flaggedOpen||[]).length?'var(--danger)':'var(--success)')
+      +backlogTile("Partner Health",healthNeeds.length,(healthDataAvailable?healthRed+" red · "+healthYellow+" yellow":"health data unavailable"),"management",healthRed?'var(--danger)':healthYellow?'var(--warning)':'var(--success)')
+      +backlogTile("Break Breads due",breadDue.length,(breadDue.filter(r=>r.critical).length+" critical · "+breakBreads+" held today"),"followups",breadDue.length?'var(--warning)':'var(--success)')
+      +backlogTile("Gifting follow-ups",giftingOutstanding.length,"new agents in weeks 1–4 still needing this week’s touch","followups",giftingOutstanding.length?'var(--warning)':'var(--success)')
+      +backlogTile("CTC files today",(ctcFilesToday||[]).length,"call both agents + capture feedback","followups",(ctcFilesToday||[]).length?'var(--danger)':'var(--success)')
+      +(birthdayTodayKnown.length?backlogTile("Birthdays today",birthdayTodayKnown.length,birthdayTodayKnown.slice(0,2).map(a=>properCase(a.agent_name)).join(", "),"birthday","var(--brand)"):"")
+      +backlogTile("Missing birthdays",missingBirthday.length,"current contacts","birthday",missingBirthday.length?'var(--warning)':'var(--success)')
+      +backlogTile("Missing addresses",missingAddress.length,"current contacts · gifting/mail","address",missingAddress.length?'var(--warning)':'var(--success)')
+      +backlogTile("Missing emails",missingEmail.length,"current contacts","email",missingEmail.length?'var(--warning)':'var(--success)')
+      +backlogTile("Portfolio plans missing",missingGrowthOpp.length,(growthFieldAvailable?missingGrowthPriority.length+" Channel/A priority":"portfolio field unavailable"),"management",missingGrowthPriority.length?'var(--danger)':missingGrowthOpp.length?'var(--warning)':'var(--success)')
+      +(openIntake?backlogTile("Onboarding checklist",1,properCase(openIntake.agent_name)+" still open","log","var(--danger)"):"")
+      +'</div>'
+      +(priorityQueue.length?'<details open style="margin-top:9px;background:#fff;border:1px solid var(--border-light);border-radius:8px;overflow:hidden"><summary style="cursor:pointer;padding:8px 10px;font-size:10.5px;font-weight:800;color:var(--text-2);text-transform:uppercase;letter-spacing:.35px">If there is open time, start here</summary><div style="padding:4px 10px 8px">'+priorityQueue.slice(0,8).map((p,i)=>'<div style="font-size:11.5px;color:var(--text-1);padding:4px 0;border-bottom:'+(i<Math.min(priorityQueue.length,8)-1?'1px solid var(--border-light)':'none')+'">'+(i+1)+'. '+escHtml(p.text)+'</div>').join("")+'</div></details>':'<div style="font-size:11px;color:var(--success);font-weight:600;margin-top:8px">No backlog priorities surfaced right now.</div>')
+      +'</div>':'';
+
     // Full daily trail: who, what happened, what was documented, and what's next.
     const activityRows=activities.map((a,i)=>{
       const outcome=a.outcome||"No outcome entered";
@@ -5568,6 +5701,7 @@ async function showDailyCheckin(viewDateStr){
       +'<div><span style="font-size:13px;color:var(--text-1);font-weight:600">Meetings Booked Today</span><div style="font-size:10.5px;color:var(--text-4);margin-top:1px">outcome = Meeting Scheduled; separate from meetings held</div></div>'
       +'<span style="font-size:15px;font-weight:700;color:'+(meetingBookings.length?'var(--success)':'var(--danger)')+'">'+meetingBookings.length+'</span></div>'
       +whereDayWentHtml
+      +openWorkHtml
       +activityDetailHtml
       +'<div onclick="showTodayWinsDetail()" style="background:var(--success-bg);border-radius:8px;padding:10px 14px;margin:0 0 14px;cursor:'+(wins.length?'pointer':'default')+'">'
       +'<div style="font-size:10px;font-weight:700;color:var(--success);text-transform:uppercase;letter-spacing:.4px;margin-bottom:3px">Win today'+(wins.length?' <span style="font-weight:400;text-decoration:underline">(tap for notes + next step)</span>':'')+'</div>'
@@ -5613,6 +5747,22 @@ async function showDailyCheckin(viewDateStr){
       "Meetings booked: "+meetingBookings.length,
       "Follow-ups set: "+followUpsSet.length
     ].join("\n");
+    const plainOpenWork=isToday?[
+      "Reconnect queue: "+reconnectOpen.length+" ("+reconnectAB.length+" Channel/A/B priority; "+reconnectWorkedToday+" worked today)",
+      "Follow-ups due: "+(overdueFollowups.length+dueTodayFollowups.length)+" ("+overdueFollowups.length+" overdue; "+dueTodayFollowups.length+" due today)",
+      "Open LP flags: "+(flaggedOpen||[]).length,
+      "Partner Health needing attention: "+healthNeeds.length+(healthDataAvailable?" ("+healthRed+" red; "+healthYellow+" yellow)":" (health data unavailable)"),
+      "Break Breads due: "+breadDue.length+" ("+breadDue.filter(r=>r.critical).length+" critical; "+breakBreads+" held today)",
+      "Gifting campaign follow-ups outstanding: "+giftingOutstanding.length,
+      "CTC files today: "+(ctcFilesToday||[]).length,
+      ...(birthdayTodayKnown.length?["Birthdays today: "+birthdayTodayKnown.map(a=>properCase(a.agent_name)).join(", ")]:[]),
+      "Missing birthdays: "+missingBirthday.length,
+      "Missing addresses: "+missingAddress.length,
+      "Missing emails: "+missingEmail.length,
+      "Portfolio plans missing: "+missingGrowthOpp.length+(growthFieldAvailable?" ("+missingGrowthPriority.length+" Channel/A priority)":" (field unavailable)"),
+      ...(openIntake?["Open onboarding checklist: "+properCase(openIntake.agent_name)]:[]),
+      ...(priorityQueue.length?["Priority queue:",...priorityQueue.slice(0,8).map((p,i)=>"  "+(i+1)+". "+p.text)]:[])
+    ].join("\n"):"Historical day — current backlog snapshot intentionally omitted.";
     const plainActivity=activities.length?activities.map(a=>{
       const pieces=["- "+plainName(a)+" — "+(a.act_type||"Activity")+" — "+(a.outcome||"No outcome entered")];
       if(a.notes)pieces.push("  Notes: "+a.notes);
@@ -5627,6 +5777,7 @@ async function showDailyCheckin(viewDateStr){
     document.getElementById("checkinModalBody").dataset.plainRecap=[
       "TODAY'S NUMBERS",plainNumbers,
       "\nWHERE THE DAY WENT",plainWhere,
+      "\nOPEN WORK ACROSS THE TRACKER",plainOpenWork,
       "\nACTIVITY → OUTCOME → NEXT",plainActivity,
       "\nWIN TODAY",plainWin,
       "\nWORTH DISCUSSING",plainOpen,
@@ -5635,6 +5786,29 @@ async function showDailyCheckin(viewDateStr){
   }catch(e){
     body.innerHTML='<div class="no-data">Could not load — '+escHtml(e.message)+'</div>';
   }
+}
+
+function openDailyCheckinWork(kind){
+  closeDailyCheckin();
+  if(kind==="reconnect"){switchTab("reconnect");return;}
+  if(kind==="birthday"||kind==="address"||kind==="email"){
+    const filter=document.getElementById("contactsFilter");
+    if(filter)filter.value=kind==="birthday"?"nobday":kind==="address"?"noaddress":"noemail";
+    switchTab("contacts");
+    return;
+  }
+  if(kind==="log"){switchTab("log");return;}
+  if(kind==="followups"){
+    switchTab("week");
+    setTimeout(()=>document.getElementById("weekFollowups")?.scrollIntoView({behavior:"smooth",block:"center"}),250);
+    return;
+  }
+  if(kind==="lpflags"){
+    switchTab("week");
+    setTimeout(()=>document.getElementById("onYourRadarCard")?.scrollIntoView({behavior:"smooth",block:"start"}),250);
+    return;
+  }
+  if(kind==="management"){switchTab("daniel");return;}
 }
 
 let dailyCheckinWins=[];
@@ -9166,6 +9340,8 @@ function filterContacts(){
   else if(f==="notier")list=list.filter(c=>!c.tier);
   else if(f==="bday")list=list.filter(c=>c.birthday);
   else if(f==="nobday")list=list.filter(c=>!c.birthday);
+  else if(f==="noaddress")list=list.filter(c=>!c.address);
+  else if(f==="noemail")list=list.filter(c=>!c.email);
   else if(f==="nophone")list=list.filter(c=>!c.phone);
   renderContacts(list);
 }
