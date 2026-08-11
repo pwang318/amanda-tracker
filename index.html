@@ -1183,7 +1183,8 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI'
     <div style="display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap">
       <input type="text" id="contactsSearch" placeholder="Search by name, phone, email or birthday..." oninput="filterContacts()" style="flex:1;min-width:180px;padding:9px 11px;border:0.5px solid #D9D3C7;border-radius:8px;font-size:13px;font-family:inherit;color:#1a1a2e;outline:none">
       <select id="contactsFilter" onchange="filterContacts()" style="padding:8px 11px;border:0.5px solid var(--border);border-radius:8px;font-size:12px;font-family:inherit;color:var(--text-2);background:var(--surface);">
-        <option value="all">All agents</option>
+        <option value="all">Current agents</option>
+        <option value="inactive">Inactive / removed</option>
         <option value="tier-Channel">Channel</option>
         <option value="tier-A">A-tier</option>
         <option value="tier-B">B-tier</option>
@@ -8753,7 +8754,13 @@ async function deleteDuplicateProfile(name,btnEl){
 function filterContacts(){
   const q=(document.getElementById("contactsSearch")?.value||"").toLowerCase();
   const f=document.getElementById("contactsFilter")?.value||"all";
+  // Contacts defaults to the CURRENT relationship roster. "Delete agent" is intentionally
+  // non-destructive: it sets relationship_status=inactive so history/production remain intact.
+  // Inactive records stay available through the dedicated filter instead of continuing to
+  // appear in the everyday contact list after removal.
   let list=allContacts;
+  if(f==="inactive") list=list.filter(c=>c.relationship_status==="inactive");
+  else list=list.filter(c=>c.relationship_status!=="inactive");
   if(q)list=list.filter(c=>(c.agent_name||"").toLowerCase().includes(q)||(c.phone||"").includes(q)||(c.email||"").toLowerCase().includes(q)||(c.birthday||"").toLowerCase().includes(q));
   if(f==="tier-Channel")list=list.filter(c=>c.tier==="Channel");
   else if(f==="tier-A")list=list.filter(c=>c.tier==="A");
