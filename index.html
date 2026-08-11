@@ -3431,8 +3431,19 @@ async function loadQuietCoverage(){
 
 async function loadFlagged(){
   try{
-    const flagged=await sbFetch("call_logs?flag_rm=eq.true&select=id,agent_name,lp,call_date,note,outcome,rm_note,rm_note_at&order=call_date.desc&limit=50");
-    document.getElementById("flaggedSub").textContent=flagged.length?flagged.length+" agent"+(flagged.length!==1?"s":""):"";
+    const[legacyFlags,standaloneFlags]=await Promise.all([
+      sbFetch("call_logs?flag_rm=eq.true&select=id,agent_name,lp,call_date,note,outcome,rm_note,rm_note_at&order=call_date.desc&limit=100").catch(()=>[]),
+      sbFetch("lp_flags?resolved=eq.false&select=id,agent_name,lp,note,created_at,assigned_to&order=created_at.desc&limit=100").catch(()=>[])
+    ]);
+    const legacy=(legacyFlags||[]).map(f=>({...f,_flagSource:"call",_sortDate:f.call_date||""}));
+    const standalone=(standaloneFlags||[]).map(f=>({
+      id:f.id,agent_name:f.agent_name||"",lp:f.lp||"LP",note:f.note||"",outcome:"Standalone flag",
+      call_date:(f.created_at||"").slice(0,10),created_at:f.created_at,assigned_to:f.assigned_to||null,
+      rm_note:null,rm_note_at:null,_flagSource:"lpflag",_sortDate:f.created_at||""
+    }));
+    const flagged=legacy.concat(standalone).sort((a,b)=>(b._sortDate||"").localeCompare(a._sortDate||""));
+    const sub=document.getElementById("flaggedSub");
+    if(sub)sub.textContent=flagged.length?flagged.length+" flag"+(flagged.length!==1?"s":""):"";
 
     if(!flagged.length){
       document.getElementById("weekFlagged").innerHTML='';
@@ -3440,55 +3451,38 @@ async function loadFlagged(){
     }
 
     let html='<div style="font-size:11px;font-weight:700;color:var(--danger);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;padding-top:8px;border-top:1px solid var(--border-light)">🚩 Flagged by LPs — action needed</div>';
-
     html+=flagged.map(f=>{
       const note=(f.note||"").trim();
       const isLong=note.length>100;
       const shortNote=isLong?note.substring(0,100)+"...":note;
-      const noteId="flag-note-"+f.id;
-      const btnId="flag-btn-"+f.id;
+      const noteId="flag-note-"+f._flagSource+"-"+f.id;
+      const btnId="flag-btn-"+f._flagSource+"-"+f.id;
       const safeAgent=(f.agent_name||"").replace(/'/g,"\\'");
-      const hasReply=f.rm_note&&f.rm_note.trim();
+      const hasReply=f._flagSource==="call"&&f.rm_note&&f.rm_note.trim();
+      const sourceLabel=f._flagSource==="lpflag"?" · direct LP flag":"";
+      const flagDate=f.call_date?fmtDate(f.call_date):"Today";
 
-      return'<div id="flag-card-'+f.id+'" style="background:var(--danger-bg);border:1px solid var(--border-danger);border-radius:var(--radius);padding:12px 14px;margin-bottom:8px">'
-        // Header
+      return'<div id="flag-card-'+f._flagSource+'-'+f.id+'" style="background:var(--danger-bg);border:1px solid var(--border-danger);border-radius:var(--radius);padding:12px 14px;margin-bottom:8px">'
         +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">'
-        +'<div><span style="font-size:14px;font-weight:700;color:var(--text-1)">'+properCase(f.agent_name)+'</span>'
-        +'<span style="font-size:11px;color:var(--text-3);margin-left:8px">via '+(f.lp||"LP")+'</span></div>'
-        +'<span style="font-size:10px;color:var(--text-3)">'+fmtDate(f.call_date)+(f.outcome?" · "+f.outcome:"")+'</span>'
+        +'<div><span style="font-size:14px;font-weight:700;color:var(--text-1)">'+(f.agent_name?properCase(f.agent_name):"General LP flag")+'</span>'
+        +'<span style="font-size:11px;color:var(--text-3);margin-left:8px">via '+(f.lp||"LP")+sourceLabel+'</span></div>'
+        +'<span style="font-size:10px;color:var(--text-3)">'+flagDate+(f._flagSource==="call"&&f.outcome?" · "+f.outcome:"")+'</span>'
         +'</div>'
-        // LP note
-        +(note
-          ?'<div style="font-size:13px;color:var(--text-1);line-height:1.5;margin-bottom:10px;padding:8px 10px;background:rgba(255,255,255,.6);border-radius:6px">'
-            +'<span id="'+noteId+'">'+shortNote+'</span>'
-            +(isLong?'<span id="'+btnId+'" onclick="toggleFlagNote(\''+noteId+'\',\''+btnId+'\',\''+note.replace(/'/g,"\\'").replace(/\n/g," ")+'\',\''+shortNote.replace(/'/g,"\\'")+'\',\''+(isLong?'1':'0')+'\')" style="color:var(--brand);cursor:pointer;font-size:11px;margin-left:5px;font-weight:600">See more</span>':"")
-          +'</div>'
-          :"")
-        // RM's existing reply if any
-        +(hasReply
-          ?'<div style="background:#E8F5E9;border:1px solid #81C784;border-radius:6px;padding:8px 10px;margin-bottom:10px;font-size:12px;color:#1B5E20">'
-            +'<div style="font-size:10px;font-weight:700;color:#4E3D8A;margin-bottom:3px">Your response · '+fmtDate(f.rm_note_at)+'</div>'
-            +f.rm_note
-          +'</div>'
-          :"")
-        // Reply box (collapsed by default, shown on demand)
-        +'<div id="flag-reply-'+f.id+'" style="display:none;margin-bottom:10px">'
-        +'<textarea id="flag-reply-text-'+f.id+'" placeholder="Type your response to '+(f.lp||"LP")+'..." rows="2" '
-        +'style="width:100%;border:1px solid var(--border);border-radius:6px;padding:8px 10px;font-size:12px;font-family:inherit;color:var(--text-1);outline:none;resize:vertical;box-sizing:border-box;margin-bottom:6px"></textarea>'
-        +'<div style="display:flex;gap:6px">'
-        +'<button onclick="sendFlagReply('+f.id+')" style="padding:6px 14px;background:var(--brand);color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">Send response</button>'
-        +'<button onclick="document.getElementById(\'flag-reply-'+f.id+'\').style.display=\'none\'" style="padding:6px 10px;background:#fff;color:var(--text-2);border:1px solid var(--border);border-radius:6px;font-size:12px;cursor:pointer;font-family:inherit">Cancel</button>'
-        +'</div></div>'
-        // Action buttons
-        +'<div style="display:flex;gap:8px">'
-        +'<button onclick="document.getElementById(\'agentInput\').value=\''+safeAgent+'\';switchTab(\'log\')" '
-        +'style="flex:1;padding:7px;background:var(--brand);color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">Log outreach</button>'
-        +'<button onclick="document.getElementById(\'flag-reply-'+f.id+'\').style.display=\'block\';document.getElementById(\'flag-reply-text-'+f.id+'\').focus()" '
-        +'style="padding:7px 14px;background:#fff;color:var(--brand);border:1px solid var(--brand);border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">'+(hasReply?"Edit reply":"Reply to LP")+'</button>'
-        +'<button onclick="resolveFlag(\''+f.id+'\')" '
-        +'style="padding:7px 14px;background:#fff;color:var(--text-2);border:1px solid var(--border);border-radius:6px;font-size:12px;cursor:pointer;font-family:inherit">Mark handled</button>'
-        +'</div>'
-        +'</div>';
+        +(note?'<div style="font-size:13px;color:var(--text-1);line-height:1.5;margin-bottom:10px;padding:8px 10px;background:rgba(255,255,255,.6);border-radius:6px">'
+          +'<span id="'+noteId+'">'+shortNote+'</span>'
+          +(isLong?'<span id="'+btnId+'" onclick="toggleFlagNote(\''+noteId+'\',\''+btnId+'\',\''+note.replace(/'/g,"\\'").replace(/\n/g," ")+'\',\''+shortNote.replace(/'/g,"\\'")+'\',\'1\')" style="color:var(--brand);cursor:pointer;font-size:11px;margin-left:5px;font-weight:600">See more</span>':"")
+          +'</div>':"")
+        +(hasReply?'<div style="background:#E8F5E9;border:1px solid #81C784;border-radius:6px;padding:8px 10px;margin-bottom:10px;font-size:12px;color:#1B5E20">'
+          +'<div style="font-size:10px;font-weight:700;color:#4E3D8A;margin-bottom:3px">Your response · '+fmtDate(f.rm_note_at)+'</div>'+f.rm_note+'</div>':"")
+        +(f._flagSource==="call"?'<div id="flag-reply-'+f.id+'" style="display:none;margin-bottom:10px">'
+          +'<textarea id="flag-reply-text-'+f.id+'" placeholder="Type your response to '+(f.lp||"LP")+'..." rows="2" style="width:100%;border:1px solid var(--border);border-radius:6px;padding:8px 10px;font-size:12px;font-family:inherit;color:var(--text-1);outline:none;resize:vertical;box-sizing:border-box;margin-bottom:6px"></textarea>'
+          +'<div style="display:flex;gap:6px"><button onclick="sendFlagReply('+f.id+')" style="padding:6px 14px;background:var(--brand);color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">Send response</button>'
+          +'<button onclick="document.getElementById(\'flag-reply-'+f.id+'\').style.display=\'none\'" style="padding:6px 10px;background:#fff;color:var(--text-2);border:1px solid var(--border);border-radius:6px;font-size:12px;cursor:pointer;font-family:inherit">Cancel</button></div></div>':"")
+        +'<div style="display:flex;gap:8px;flex-wrap:wrap">'
+        +(f.agent_name?'<button onclick="document.getElementById(\'agentInput\').value=\''+safeAgent+'\';switchTab(\'log\')" style="flex:1;min-width:110px;padding:7px;background:var(--brand);color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">Log outreach</button>':'')
+        +(f._flagSource==="call"?'<button onclick="document.getElementById(\'flag-reply-'+f.id+'\').style.display=\'block\';document.getElementById(\'flag-reply-text-'+f.id+'\').focus()" style="padding:7px 14px;background:#fff;color:var(--brand);border:1px solid var(--brand);border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">'+(hasReply?"Edit reply":"Reply to LP")+'</button>':'')
+        +'<button onclick="resolveFlag(\''+f._flagSource+'\',\''+f.id+'\')" style="padding:7px 14px;background:#fff;color:var(--text-2);border:1px solid var(--border);border-radius:6px;font-size:12px;cursor:pointer;font-family:inherit">Mark handled</button>'
+        +'</div></div>';
     }).join("");
 
     document.getElementById("weekFlagged").innerHTML=html;
@@ -3503,8 +3497,7 @@ async function sendFlagReply(id){
   const text=(document.getElementById("flag-reply-text-"+id).value||"").trim();
   if(!text){toast("Type a response first.","error");return;}
   try{
-    await sbFetch("call_logs?id=eq."+id,{method:"PATCH",prefer:"return=minimal",
-      body:JSON.stringify({rm_note:text,rm_note_at:new Date().toISOString()})});
+    await sbFetch("call_logs?id=eq."+id,{method:"PATCH",prefer:"return=minimal",body:JSON.stringify({rm_note:text,rm_note_at:new Date().toISOString()})});
     toast("Response sent ✓","success");
     loadFlagged();
   }catch(e){toast("Failed: "+e.message,"error");}
@@ -3525,11 +3518,16 @@ function toggleFlagNote(noteId,btnId,fullText,shortText,isShowing){
   }
 }
 
-async function resolveFlag(id){
+async function resolveFlag(source,id){
   try{
-    await sbFetch("call_logs?id=eq."+encodeURIComponent(id),{method:"PATCH",prefer:"return=minimal",body:JSON.stringify({flag_rm:false})});
+    if(source==="lpflag"){
+      await sbFetch("lp_flags?id=eq."+encodeURIComponent(id),{method:"PATCH",prefer:"return=minimal",body:JSON.stringify({resolved:true,resolved_at:new Date().toISOString(),assigned_to:"Amanda"})});
+    }else{
+      await sbFetch("call_logs?id=eq."+encodeURIComponent(id),{method:"PATCH",prefer:"return=minimal",body:JSON.stringify({flag_rm:false})});
+    }
+    toast("Flag marked handled ✓","success");
     loadFlagged();
-  }catch(e){console.error(e);}
+  }catch(e){console.error(e);toast("Could not clear flag — "+e.message,"error");}
 }
 
 // ── Proactive 90-day drop-off warning — catches agents BEFORE they officially go inactive,
@@ -4302,6 +4300,40 @@ function jumpToFeedType(actType){
     const sel=document.getElementById("feedTypeFilter");
     if(sel){ sel.value=actType; sel.dispatchEvent(new Event("change")); }
   },50);
+}
+
+
+async function showActivityDetailModal(actType,period){
+  const modal=document.getElementById("coldCallWinsModal");
+  const listEl=document.getElementById("coldCallWinsList");
+  const titleEl=document.getElementById("winsModalTitle");
+  const subEl=document.getElementById("winsModalSub");
+  const labelMap={daily:"today",week:"this week",mtd:"month to date",ytd:"year to date"};
+  if(!modal||!listEl)return;
+  modal.classList.add("open");
+  if(titleEl)titleEl.textContent=actType+" — "+(labelMap[period]||period);
+  if(subEl)subEl.textContent="The exact activity records behind this number. Click an agent name to view their history.";
+  listEl.innerHTML='<div class="no-data">Loading...</div>';
+  try{
+    let rows=((mgmtPeriodData&&mgmtPeriodData[period])||[]).filter(a=>a.act_type===actType);
+    if(!rows.length&&mgmtPeriodBounds&&mgmtPeriodBounds[period]){
+      const b=mgmtPeriodBounds[period];
+      rows=await sbFetch("amanda_activities?select=id,agent_name,act_type,act_date,outcome,notes&act_type=eq."+encodeURIComponent(actType)+"&act_date=gte."+b.start+"&act_date=lte."+b.end+"&order=act_date.desc&limit=2000").catch(()=>[]);
+    }
+    rows=(rows||[]).slice().sort((a,b)=>(b.act_date||"").localeCompare(a.act_date||""));
+    if(!rows.length){listEl.innerHTML='<div class="no-data">No '+actType.toLowerCase()+' records in this period.</div>';return;}
+    listEl.innerHTML='<div style="font-size:11px;color:var(--text-3);margin-bottom:6px">'+rows.length+' record'+(rows.length!==1?'s':'')+'</div>'
+      +rows.map(r=>{
+        const safe=(r.agent_name||"").replace(/'/g,"\\'");
+        const detail=[r.outcome||"",(r.notes||"").trim()].filter(Boolean).join(" · ");
+        return'<div style="padding:10px 0;border-bottom:1px solid var(--border-light)">'
+          +'<div style="display:flex;justify-content:space-between;gap:12px;align-items:flex-start">'
+          +'<button onclick="closeColdCallWinsModal();switchTab(\'history\');document.getElementById(\'historySearch\').value=\''+safe+'\';setTimeout(()=>doSearchHistory(\''+safe+'\'),150)" style="background:none;border:none;padding:0;font-family:inherit;font-size:13px;font-weight:700;color:var(--brand);cursor:pointer;text-align:left">'+properCase(r.agent_name)+'</button>'
+          +'<span style="font-size:11px;color:var(--text-3);white-space:nowrap">'+fmtDate(r.act_date)+'</span></div>'
+          +(detail?'<div style="font-size:11px;color:var(--text-2);margin-top:3px;line-height:1.4">'+detail.substring(0,220)+'</div>':'')
+          +'</div>';
+      }).join("");
+  }catch(e){listEl.innerHTML='<div class="no-data">Could not load — '+e.message+'</div>';}
 }
 
 function renderCtcRow(count,label){
@@ -7014,14 +7046,13 @@ const GOAL_SETTINGS_KEY="rm_goal_settings";
 function getGoalSettings(){
   try{
     const s=JSON.parse(localStorage.getItem(GOAL_SETTINGS_KEY)||"{}");
-    return{target:s.target||200,targetDate:s.targetDate||(new Date().getFullYear()+"-12-31"),currentActive:s.currentActive||null};
-  }catch(e){return{target:200,targetDate:(new Date().getFullYear()+"-12-31"),currentActive:null};}
+    return{target:s.target||200,targetDate:s.targetDate||(new Date().getFullYear()+"-12-31")};
+  }catch(e){return{target:200,targetDate:(new Date().getFullYear()+"-12-31")};}
 }
 function saveGoalSettings(){
   const target=parseInt(document.getElementById("goalTargetCount").value)||200;
   const targetDate=document.getElementById("goalTargetDate").value||(new Date().getFullYear()+"-12-31");
-  const currentActive=document.getElementById("goalCurrentActive")?parseInt(document.getElementById("goalCurrentActive").value)||null:null;
-  try{localStorage.setItem(GOAL_SETTINGS_KEY,JSON.stringify({target,targetDate,currentActive}));}catch(e){}
+  try{localStorage.setItem(GOAL_SETTINGS_KEY,JSON.stringify({target,targetDate}));}catch(e){}
 }
 async function loadGoalPace(){
   const body=document.getElementById("goalPaceBody");
@@ -7033,107 +7064,66 @@ async function loadGoalPace(){
   if(dateInput&&!dateInput.value)dateInput.value=settings.targetDate;
   try{
     const cutoff8wk=new Date();cutoff8wk.setDate(cutoff8wk.getDate()-56);
-    const cutoffNewAgent=new Date();cutoffNewAgent.setDate(cutoffNewAgent.getDate()-120);
-    const[recentMeetings,rcAll]=await Promise.all([
-      sbFetch("amanda_activities?select=agent_name,act_date&act_type=eq.New Realtor Meeting&act_date=gte."+localDateStr(cutoffNewAgent)).catch(()=>[]),
-      sbFetch(RC_TABLE+"?select=agent_name,days_since&status=neq.removed&limit=2000").catch(()=>[])
+    const[recentMeetings,allAgents]=await Promise.all([
+      sbFetch("amanda_activities?select=agent_name,act_date&act_type=eq.New Realtor Meeting&act_date=gte."+localDateStr(cutoff8wk)+"&order=act_date.desc&limit=1000").catch(()=>[]),
+      sbFetch("agent_profiles?select=agent_name,retained,do_not_contact,relationship_status,powerbi_last_seen_at,powerbi_level&limit=3000").catch(()=>[])
     ]);
-    const normalize=s=>(s||"").toLowerCase().trim();
-    // "Active" here means real production, not just "on the list" — the same 90-day threshold
-    // used everywhere else in the app. days_since comes from the real Power BI upload, so this
-    // is measuring actual activity, not just presence in agent_profiles.
-    const activeDaysMap={};
-    (rcAll||[]).forEach(r=>{
-      const n=normalize(r.agent_name);
-      if(n&&typeof r.days_since==="number")activeDaysMap[n]=r.days_since;
-    });
-    const hasRealReconnectData=Object.keys(activeDaysMap).length>0;
-    const computedActive=Object.values(activeDaysMap).filter(d=>d<=90).length;
-    const currentActive=settings.currentActive||computedActive;
 
-    // A meeting only counts as real growth if that agent went on to show actual recent activity
-    // — meeting someone doesn't guarantee they ever send a lead, so a bare meeting count would
-    // overstate growth. This checks the same real days_since data, not just that a meeting happened.
-    const meetingsInWindow=(recentMeetings||[]).filter(m=>m.act_date>=localDateStr(cutoff8wk));
-    const stillRetainedMeetings=meetingsInWindow.filter(m=>{
-      const n=normalize(m.agent_name);
-      const d=activeDaysMap[n];
-      return typeof d==="number"&&d<=90;
+    // EXACT SAME CURRENT-PORTFOLIO DEFINITION AS CORE TEAM PORTFOLIO REVIEW:
+    // latest Power BI snapshot -> retained/RM-active -> exclude inactive and DNC.
+    let latestPowerBiStamp=null;
+    (allAgents||[]).forEach(a=>{
+      if(a.powerbi_last_seen_at&&(!latestPowerBiStamp||new Date(a.powerbi_last_seen_at)>new Date(latestPowerBiStamp)))latestPowerBiStamp=a.powerbi_last_seen_at;
     });
-    const grossAddsPerWeek=stillRetainedMeetings.length/8;
+    const currentPowerBiAgents=latestPowerBiStamp?(allAgents||[]).filter(a=>
+      a.powerbi_last_seen_at&&Math.abs(new Date(a.powerbi_last_seen_at)-new Date(latestPowerBiStamp))<120000
+    ):(allAgents||[]).slice();
+    const rmActivePartners=currentPowerBiAgents.filter(a=>a.retained===true);
+    const managedActive=rmActivePartners.filter(a=>a.do_not_contact!==true&&a.relationship_status!=="inactive");
+    const currentActive=managedActive.length;
+    const managedNames=new Set(managedActive.map(a=>(a.agent_name||"").trim().toLowerCase()).filter(Boolean));
 
-    // Recently met agents who haven't shown up as confirmed active yet — either brand new and
-    // not in any Power BI export at all, or logged but no real lead activity yet. Surfaced
-    // separately rather than folded into "current active," since a meeting alone still isn't
-    // confirmation — this is visibility into the pipeline, not a claim they're already active.
-    const pendingMap={};
-    meetingsInWindow.forEach(m=>{
-      const n=normalize(m.agent_name);
-      if(!n)return;
-      const d=activeDaysMap[n];
-      const isConfirmed=typeof d==="number"&&d<=90;
-      if(!isConfirmed){
-        if(!pendingMap[n]||m.act_date>pendingMap[n].date)pendingMap[n]={name:m.agent_name,date:m.act_date};
-      }
+    // This is a useful conversion signal, NOT true net growth. We label it honestly and do not
+    // use it to create a fake projection because established partners can also fall out of active status.
+    const convertedMeetings=(recentMeetings||[]).filter(m=>managedNames.has((m.agent_name||"").trim().toLowerCase()));
+    const convertedByAgent={};
+    convertedMeetings.forEach(m=>{
+      const n=(m.agent_name||"").trim().toLowerCase();
+      if(n&&(!convertedByAgent[n]||m.act_date>convertedByAgent[n].act_date))convertedByAgent[n]={name:m.agent_name,act_date:m.act_date};
     });
-    const pendingList=Object.values(pendingMap).sort((a,b)=>b.date.localeCompare(a.date));
+    const convertedList=Object.values(convertedByAgent).sort((a,b)=>b.act_date.localeCompare(a.act_date));
+    const conversionPerWeek=convertedList.length/8;
 
     const todayD=new Date();todayD.setHours(0,0,0,0);
     const targetD=new Date(settings.targetDate+"T12:00:00");
     const daysRemaining=Math.max(0,Math.round((targetD-todayD)/86400000));
     const weeksRemaining=Math.max(0.1,daysRemaining/7);
-
-    const gap=settings.target-currentActive;
+    const gap=Math.max(0,settings.target-currentActive);
     const requiredPerWeek=gap/weeksRemaining;
-    const projected=Math.round(currentActive+(grossAddsPerWeek*weeksRemaining));
-    const onPace=projected>=settings.target;
-    const verdictColor=onPace?"var(--success)":projected>=settings.target*0.85?"var(--warning)":"var(--danger)";
 
-    const pendingHtml=pendingList.length?
-      '<div style="padding:10px 14px;border-radius:8px;background:var(--surface-2);margin-bottom:10px">'
-      +'<div style="font-size:12px;font-weight:700;color:var(--text-1)">'+pendingList.length+' recently met, not yet confirmed active</div>'
-      +'<div style="font-size:11px;color:var(--text-3);margin-top:3px;margin-bottom:6px">Logged a New Realtor Meeting in the last 120 days, but no confirmed recent lead activity yet — not counted in "current active" above, this is just visibility into who\'s in the pipeline.</div>'
-      +'<div style="max-height:140px;overflow-y:auto">'
-      +pendingList.map(p=>'<div style="display:flex;justify-content:space-between;padding:3px 0;font-size:11.5px"><span style="color:var(--text-1)">'+properCase(p.name)+'</span><span style="color:var(--text-4)">met '+fmtDate(p.date)+'</span></div>').join("")
-      +'</div></div>'
-      :'';
-
-    const currentActiveInput=
-      '<div style="margin-bottom:10px">'
-      +'<label style="font-size:10px;font-weight:600;color:var(--text-3);text-transform:uppercase;letter-spacing:.4px">Current active agents <span style="font-weight:400;text-transform:none">('+(hasRealReconnectData?"auto-estimated at "+computedActive+" from real Reconnect list activity":"no Reconnect data yet")+' — override if you know the real number)</span></label>'
-      +'<input type="number" id="goalCurrentActive" value="'+currentActive+'" style="width:80px;display:block;margin-top:4px;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:13px;font-family:inherit" onchange="saveGoalSettings();loadGoalPace()">'
-      +'</div>';
-
-    if(!hasRealReconnectData){
-      // Never show a pace verdict built on zero real data — that reads as "you're failing" when
-      // it actually means "nothing's been uploaded yet." Current active (if manually overridden)
-      // still shows honestly; the pace math itself is withheld until there's something real to
-      // measure it against. Recently-met agents still show here even with no Reconnect data —
-      // it's the one real signal available until an upload happens.
-      body.innerHTML=currentActiveInput
-        +'<div style="padding:12px 14px;border-radius:8px;background:var(--warning-bg);margin-bottom:10px">'
-        +'<div style="font-size:13px;font-weight:700;color:var(--warning)">⚠️ No Reconnect data found yet</div>'
-        +'<div style="font-size:12px;color:var(--text-2);margin-top:4px">Pace and projection need real days-since-last-activity data, which only exists once a Power BI export has been uploaded through the Reconnect tab. Upload one there, then come back — this card will fill in with a real number, not a guess.</div>'
-        +'</div>'
-        +pendingHtml;
-      return;
-    }
+    const stampNote=latestPowerBiStamp
+      ?"Using the latest Power BI-stamped portfolio, the same population used on Core Team Portfolio Review."
+      :"No Power BI timestamp was found, so this is using the available agent profile rows. Re-upload the current Power BI file to establish a clean snapshot.";
 
     body.innerHTML=
-      currentActiveInput
-      +'<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:12px">'
-      +'<div style="text-align:center;padding:12px 8px;background:var(--surface-2);border-radius:8px"><div style="font-size:22px;font-weight:700;color:var(--text-1)">'+currentActive+'</div><div style="font-size:10px;color:var(--text-3);margin-top:2px">current active</div></div>'
-      +'<div style="text-align:center;padding:12px 8px;background:var(--surface-2);border-radius:8px"><div style="font-size:22px;font-weight:700;color:'+verdictColor+'">'+projected+'</div><div style="font-size:10px;color:var(--text-3);margin-top:2px">projected by target</div></div>'
+      '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:12px">'
+      +'<div onclick="switchTab(\'contacts\')" title="Open Contacts" style="text-align:center;padding:12px 8px;background:var(--surface-2);border-radius:8px;cursor:pointer"><div style="font-size:22px;font-weight:700;color:var(--text-1)">'+currentActive+'</div><div style="font-size:10px;color:var(--text-3);margin-top:2px">managed active partners</div></div>'
+      +'<div style="text-align:center;padding:12px 8px;background:var(--surface-2);border-radius:8px"><div style="font-size:22px;font-weight:700;color:'+(gap===0?'var(--success)':'var(--danger)')+'">'+gap+'</div><div style="font-size:10px;color:var(--text-3);margin-top:2px">gap to goal</div></div>'
       +'<div style="text-align:center;padding:12px 8px;background:var(--surface-2);border-radius:8px"><div style="font-size:22px;font-weight:700;color:var(--brand)">'+settings.target+'</div><div style="font-size:10px;color:var(--text-3);margin-top:2px">goal</div></div>'
       +'</div>'
-      +'<div style="padding:12px 14px;border-radius:8px;background:'+(onPace?"var(--success-bg)":"var(--danger-bg)")+';margin-bottom:10px">'
-      +'<div style="font-size:13px;font-weight:700;color:'+verdictColor+'">'+(onPace?"✓ On pace to hit "+settings.target:"⚠️ Off pace — projected to land at "+projected+", "+(settings.target-projected)+" short")+'</div>'
-      +'<div style="font-size:12px;color:var(--text-2);margin-top:4px">Currently adding ~'+grossAddsPerWeek.toFixed(1)+' net-new agents/week (new meetings that actually went on to show real activity, trailing 8 weeks). Need '+requiredPerWeek.toFixed(1)+'/week to hit '+settings.target+' by '+fmtDate(settings.targetDate)+' ('+daysRemaining+' days out).</div>'
+      +'<div style="padding:12px 14px;border-radius:8px;background:'+(gap===0?'var(--success-bg)':'var(--brand-light)')+';margin-bottom:10px">'
+      +'<div style="font-size:13px;font-weight:700;color:'+(gap===0?'var(--success)':'var(--brand-dark)')+'">'+(gap===0?'✓ Goal reached':'Need ~'+requiredPerWeek.toFixed(1)+' net-new managed active partners/week to hit '+settings.target)+'</div>'
+      +'<div style="font-size:12px;color:var(--text-2);margin-top:4px">Current: '+currentActive+' · Gap: '+gap+' · '+daysRemaining+' days remaining through '+fmtDate(settings.targetDate)+'.</div>'
       +'</div>'
-      +pendingHtml
-      +'<div style="font-size:10px;color:var(--text-4);line-height:1.5">"Active" and gross-adds pace both use real days-since-last-activity from your Reconnect list (lead, file, contract, or close within 90 days) — not just that a meeting happened. A meeting only counts toward growth if that agent actually went on to show real activity. Treat this as a directional pace check, not an exact forecast, and keep it accurate by uploading your Power BI export to Reconnect regularly.</div>';
+      +'<div style="padding:10px 14px;border-radius:8px;background:var(--surface-2);margin-bottom:10px">'
+      +'<div style="font-size:12px;font-weight:700;color:var(--text-1)">'+convertedList.length+' recent meeting conversion'+(convertedList.length!==1?'s':'')+' still active</div>'
+      +'<div style="font-size:11px;color:var(--text-3);margin-top:3px">Trailing 8 weeks: ~'+conversionPerWeek.toFixed(1)+'/week. This is a conversion signal only — it is NOT labeled net growth and is not used to fake a projection.</div>'
+      +(convertedList.length?'<div style="max-height:120px;overflow-y:auto;margin-top:6px">'+convertedList.map(p=>'<div style="display:flex;justify-content:space-between;padding:3px 0;font-size:11.5px"><span style="color:var(--text-1)">'+properCase(p.name)+'</span><span style="color:var(--text-4)">met '+fmtDate(p.act_date)+'</span></div>').join("")+'</div>':'')
+      +'</div>'
+      +'<div style="font-size:10px;color:var(--text-4);line-height:1.5">'+stampNote+' “Managed active” = current Power BI population that is retained/RM-active, excluding inactive/removed and DNC. The old manual “current active” override has been removed so Amanda and Core Team cannot drift apart.</div>';
   }catch(e){
-    body.innerHTML='<div class="no-data">Unable to load — '+e.message+'</div>';
+    console.error("Goal pace error:",e);
+    body.innerHTML='<div class="no-data">Could not calculate goal pace — '+e.message+'</div>';
   }
 }
 
@@ -7298,13 +7288,18 @@ async function loadManagement(){
     const growthMetricRow=(label,daily,wtd,mtd,ytd,goal,goalPeriod,actType)=>{
       const pct=goal?Math.min(100,Math.round((mtd/goal)*100)):null;
       const pctBadge=pct!==null&&!isMobile?'<span style="font-size:10px;padding:2px 7px;border-radius:20px;font-weight:600;background:'+(pct>=100?"var(--success-bg)":pct>=60?"var(--brand-light)":"var(--danger-bg)")+';color:'+(pct>=100?"var(--success)":pct>=60?"var(--brand)":"var(--danger)")+'">'+pct+'%</span>':"";
-      const clickAttr=actType?' onclick="jumpToFeedType(\''+actType.replace(/'/g,"\\'")+'\')"':"";
-      return'<div'+clickAttr+' style="display:grid;grid-template-columns:'+gridCols+';gap:8px;align-items:center;padding:9px 0;border-bottom:1px solid var(--border-light);font-size:13px'+(actType?';cursor:pointer':'')+'">'
+      const safeType=(actType||"").replace(/'/g,"\\'");
+      const clickStyle='cursor:pointer;text-decoration:underline dotted;text-underline-offset:3px';
+      const cell=(value,period,extra)=>actType
+        ?'<span title="Click to see the records" onclick="event.stopPropagation();showActivityDetailModal(\''+safeType+'\',\''+period+'\')" style="text-align:center;'+clickStyle+(extra||'')+'">'+value+'</span>'
+        :'<span style="text-align:center'+(extra||'')+'">'+value+'</span>';
+      const mtdValue=mtd+(goal?'<span style="font-size:10px;color:var(--text-4);font-weight:400">/'+goal+'</span>':'');
+      return'<div style="display:grid;grid-template-columns:'+gridCols+';gap:8px;align-items:center;padding:9px 0;border-bottom:1px solid var(--border-light);font-size:13px">'
         +'<span style="font-weight:500;color:var(--text-1)">'+label+'</span>'
-        +(isMobile?'':'<span style="text-align:center;color:var(--text-3)">'+daily+'</span>')
-        +'<span style="text-align:center;color:var(--text-2)">'+wtd+'</span>'
-        +'<span style="text-align:center;font-weight:600;color:var(--text-1)">'+mtd+(goal?'<span style="font-size:10px;color:var(--text-4);font-weight:400">/'+goal+'</span>':'')+'</span>'
-        +'<span style="text-align:center;color:var(--text-3)">'+ytd+'</span>'
+        +(isMobile?'':cell(daily,'daily',';color:var(--text-3)'))
+        +cell(wtd,'week',';color:var(--text-2)')
+        +cell(mtdValue,'mtd',';font-weight:600;color:var(--text-1)')
+        +cell(ytd,'ytd',';color:var(--text-3)')
         +(isMobile?'':'<span style="text-align:right">'+pctBadge+'</span>')
         +'</div>';
     };
