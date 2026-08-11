@@ -1,4 +1,4 @@
- <!DOCTYPE html>
+  <!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -1305,7 +1305,7 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI'
           <strong>Look Back</strong> — pick any past date or week and pull up exactly what that day looked like, together.<br><br>
           <strong>Funnel, Growth, Connect Rates, Trends</strong> — the full pipeline from cold call through retained relationship, month-over-month comparisons, and connect-rate quality signals.<br><br>
           <strong>Retention grid</strong> — click "Unique agents touched" to see exactly who's behind that number, not just the count.<br><br>
-          <strong>Duplicate cleanup</strong> — flags and helps merge accidental duplicate contact records.
+          <strong>Duplicate review</strong> — flags possible duplicates for review without auto-deleting relationship records.
         </div>
       </div>
 
@@ -1322,8 +1322,8 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI'
 
 <div class="modal-overlay" id="dupeCleanupModal">
   <div class="modal-box">
-    <div class="modal-header"><span class="modal-title">Clean up duplicate agents</span><button class="modal-close" onclick="closeDupeCleanupModal()">×</button></div>
-    <div class="modal-sub">Grouped by name, ignoring case/spacing. The one with more info filled in is recommended to keep — review and delete the extras. Activity history stays either way.</div>
+    <div class="modal-header"><span class="modal-title">Review duplicate agents</span><button class="modal-close" onclick="closeDupeCleanupModal()">×</button></div>
+    <div class="modal-sub">Grouped by name, ignoring case/spacing. Review only — this tracker will NOT auto-delete profiles because older activities/assignments may still reference the stored agent_name. Use display name for spelling/casing corrections; merge records only through a deliberate data migration.</div>
     <div id="dupeCleanupList" style="margin-top:10px;max-height:60vh;overflow-y:auto">Loading...</div>
     <div style="margin-top:14px"><button class="btn-sm" onclick="closeDupeCleanupModal()">Close</button></div>
   </div>
@@ -1966,7 +1966,7 @@ const NOT_MEANINGFUL_RM_OUTCOMES=["left voicemail","no answer"];
 const NOT_MEANINGFUL_LP_OUTCOMES=["left vm"];
 // Activity types that inherently prove contact happened, regardless of the outcome field —
 // these are all meeting/in-person-style log entries, not attempted-but-missed calls.
-const MEETING_ACT_TYPES=["Partner Meeting","Break Breads","New Agent Meeting"];
+const MEETING_ACT_TYPES=["Partner Meeting","Break Breads","New Realtor Meeting"];
 function isMeaningfulOutcome(outcome,list,actType){
   if(actType&&MEETING_ACT_TYPES.indexOf(actType)>=0)return true;
   const o=(outcome||"").trim().toLowerCase();
@@ -1983,12 +1983,20 @@ const EMOJI={
 };
 const GOALS=[
   {label:"Cold calls",type:"Cold Calls",weekly:125,monthly:500},
-  {label:"New realtor meetings",type:"New Realtor Meeting",weekly:5,monthly:20},
-  {label:"Break breads",type:"Break Breads",weekly:5,monthly:20},
+  // Playbook meeting expectation: 10 New Agent Meetings + 20 Existing Partner Meetings monthly.
+  // Existing Partner Meetings include either a formal Partner Meeting or a Break Bread.
+  {label:"New realtor meetings",type:"New Realtor Meeting",weekly:3,monthly:10},
+  {label:"Existing partner meetings",type:"__existingmeeting__",weekly:5,monthly:20},
   {label:"Agent Talk-to's",type:"__talkto__",weekly:100,monthly:400},
   {label:"Buddy intros received",type:"Buddy Intro Received",weekly:3,monthly:12}
 ];
 const GOAL_THRESHOLD=0.8; // 80% = passing
+
+function countGoalActivity(data,type){
+  if(type==="__talkto__")return cntTalkTo(data);
+  if(type==="__existingmeeting__")return (data||[]).filter(a=>a.act_type==="Partner Meeting"||a.act_type==="Break Breads").length;
+  return (data||[]).filter(a=>a.act_type===type).length;
+}
 const CTC_TYPE="CTC Call";
 // All activity types that count toward the Agent Talk-to goal
 const TALKTO_TYPES=["Agent Talk-to","Active Agent Talk-to","Active Agent Check-in","Reconnect Outreach","CTC Call","Under Contract Call","Birthday Outreach","Holiday Outreach","Agent Appreciation","Market Update","Market Update Call","Sent Market Report","Sent Referral","Co-Marketing Discussion","New Agent Follow-up","Closed Deal Thank You"];
@@ -4315,7 +4323,7 @@ function renderPeriodScorecard(){
     const target=cfg.base==="weekly"
       ?(currentPeriod==="daily"?Math.ceil(g.weekly/5):g.weekly)
       :Math.round(g.monthly*cfg.multiplier);
-    const count=g.type==="__talkto__"?cntTalkTo(data):data.filter(a=>a.act_type===g.type).length;
+    const count=countGoalActivity(data,g.type);
     html+=renderGoalBar(g.label,count,target,target?(count/target)*100:0,g.type);
   });
   html+=renderCtcRow(data.filter(a=>a.act_type===CTC_TYPE).length,label.toLowerCase());
@@ -4539,7 +4547,7 @@ async function loadWeek(){
     if(wlEl) wlEl.textContent=week.label;
     let html="";
     GOALS.forEach(g=>{
-      const count=g.type==="__talkto__"?cntTalkTo(weekActs):weekActs.filter(a=>a.act_type===g.type).length;
+      const count=countGoalActivity(weekActs,g.type);
       html+=renderGoalBar(g.label,count,g.weekly,(count/g.weekly)*100,g.type);
     });
     html+=renderCtcRow(weekActs.filter(a=>a.act_type===CTC_TYPE).length,"this week");
@@ -6421,13 +6429,11 @@ async function writeHealthSnapshots(){
 // (signs of lost trust / competing lender gaining share).
 function computeHealthScore(daysSinceLead,daysAny,threshold,urgentThreshold,competitorRisk){
   if(competitorRisk)return"Red";
-  // Lead-recency now scales by tier, same as touch cadence — an A-tier partner going quiet on
-  // leads gets flagged much sooner than a C-tier one, consistent with the tier-scaling used
-  // everywhere else in this build. Playbook Sec. 14 states this flat (30/60 days), but a flat cutoff
-  // undercuts the point of tiering at all: A-tier partners deserve to be caught earlier.
-  if(daysSinceLead===null||daysSinceLead>=urgentThreshold)return"Red";
+  // Playbook Health uses FLAT lead-recency bands (30d Yellow / 60d Red).
+  // Meaningful-contact cadence remains tier-based and is a separate signal.
+  if(daysSinceLead===null||daysSinceLead>=60)return"Red";
   if(daysAny===null||daysAny>=urgentThreshold)return"Red";
-  if(daysSinceLead>=threshold)return"Yellow";
+  if(daysSinceLead>=30)return"Yellow";
   if(daysAny>=threshold)return"Yellow";
   return"Green";
 }
@@ -7282,13 +7288,13 @@ async function loadManagement(){
 
     const aprilStartMonths=Math.min(12,Math.max(1,new Date().getMonth()-2));
     document.getElementById("danielGrowthGrid").innerHTML=gridHeader
-      +growthMetricRow("New realtor meetings",c(dailyActs,"New Realtor Meeting"),c(weekActs,"New Realtor Meeting"),mtdMeetings,c(ytdActs,"New Realtor Meeting"),20,"MTD","New Realtor Meeting")
+      +growthMetricRow("New realtor meetings",c(dailyActs,"New Realtor Meeting"),c(weekActs,"New Realtor Meeting"),mtdMeetings,c(ytdActs,"New Realtor Meeting"),10,"MTD","New Realtor Meeting")
       +growthMetricRow("Cold calls",c(dailyActs,"Cold Calls"),c(weekActs,"Cold Calls"),c(mtdActs,"Cold Calls"),c(ytdActs,"Cold Calls"),500,"MTD","Cold Calls")
       +growthMetricRow("Buddy intros received",c(dailyActs,"Buddy Intro Received"),c(weekActs,"Buddy Intro Received"),c(mtdActs,"Buddy Intro Received"),c(ytdActs,"Buddy Intro Received"),12,"MTD","Buddy Intro Received")
       +growthMetricRow("Buddy intro asks",c(dailyActs,"Realtor Buddy Referral Ask"),c(weekActs,"Realtor Buddy Referral Ask"),c(mtdActs,"Realtor Buddy Referral Ask"),c(ytdActs,"Realtor Buddy Referral Ask"),null,"MTD","Realtor Buddy Referral Ask")
       +'<div style="margin-top:10px;padding:10px 12px;background:var(--surface-2);border-radius:var(--radius-sm);font-size:12px;color:var(--text-2)">'
       +'On pace for <strong style="color:'+meetingColor+'">'+projectedMeetings+'</strong> new meetings this month '
-      +'<span style="color:var(--text-4)">(goal: 20 · 80% pass = 16)</span>'
+      +'<span style="color:var(--text-4)">(Playbook goal: 10)</span>'
       +'</div>'
       +'<div style="margin-top:6px;font-size:11px;color:var(--text-3)">YTD counts from April (role start). '+aprilStartMonths+' months of data.</div>';
     }catch(e){ console.error("Growth grid render error:",e); }
@@ -7380,7 +7386,7 @@ async function loadManagement(){
         +'<span style="font-size:10px;font-weight:700;color:var(--text-4);text-align:center;text-transform:uppercase;letter-spacing:.5px">Change</span>'
         +'<span style="font-size:10px;font-weight:700;color:var(--text-4);text-align:right;text-transform:uppercase;letter-spacing:.5px">vs Goal</span>'
         +'</div>'
-        +trendRow("New meetings",c(prevActs,"New Realtor Meeting"),mtdMeetings,20)
+        +trendRow("New meetings",c(prevActs,"New Realtor Meeting"),mtdMeetings,10)
         +trendRow("Cold calls",c(prevActs,"Cold Calls"),c(mtdActs,"Cold Calls"),500)
         +trendRow("Agent Talk-to's",cntTalkTo(prevActs),cntTalkTo(mtdActs),400)
         +trendRow("Break breads",c(prevActs,"Break Breads"),c(mtdActs,"Break Breads"),20)
@@ -7458,13 +7464,15 @@ async function loadPortfolioReview(){
   body.innerHTML='<div class="no-data">Loading...</div>';
   try{
     const range=portfolioPeriodRange();
-    const[allAgents,allActs,lpCalls,periodActs,migrations,allPartnerMeetings]=await Promise.all([
+    const monthStart=localDateStr(new Date(new Date().getFullYear(),new Date().getMonth(),1));
+    const[allAgents,allActs,lpCalls,periodActs,migrations,allPartnerMeetings,monthVelocifyLeads]=await Promise.all([
       sbFetch("agent_profiles?select=*&limit=2000").catch(()=>[]),
       sbFetch("amanda_activities?select=agent_name,act_date,outcome,act_type&order=act_date.desc&limit=3000").catch(()=>[]),
       sbFetch("call_logs?select=agent_name,call_date,outcome&order=call_date.desc&limit=2000").catch(()=>[]),
       sbFetch("amanda_activities?select=agent_name,act_type,act_date,outcome,notes&act_date=gte."+range.start+"&limit=3000").catch(()=>[]),
       sbFetch("tier_migrations?select=agent_name,from_tier,to_tier,migration_date&migration_date=gte."+range.start+"&limit=1000").catch(()=>[]),
-      sbFetch("amanda_activities?select=agent_name,act_date&act_type=in.(Partner Meeting,Break Breads)&order=act_date.desc&limit=3000").catch(()=>[])
+      sbFetch("amanda_activities?select=agent_name,act_date&act_type=in.(Partner Meeting,Break Breads)&order=act_date.desc&limit=3000").catch(()=>[]),
+      sbFetch("velocify_leads?date_added=gte."+monthStart+"&select=referral_partner_name,date_added&limit=5000").catch(()=>[])
     ]);
 
     const TIER_TOUCH_THRESHOLD={Channel:14,A:14,B:30,C:60};
@@ -7496,7 +7504,7 @@ async function loadPortfolioReview(){
       // Green partners actual lead time to be reached out to before they cross that line, instead
       // of only surfacing once they're already there.
       const daysToYellowTouch=daysAny===null?null:threshold-daysAny;
-      const daysToYellowLead=daysSinceLead===null?null:threshold-daysSinceLead;
+      const daysToYellowLead=daysSinceLead===null?null:30-daysSinceLead;
       const daysUntilYellow=[daysToYellowTouch,daysToYellowLead].filter(d=>d!==null).length
         ?Math.min(...[daysToYellowTouch,daysToYellowLead].filter(d=>d!==null))
         :null;
@@ -7521,11 +7529,16 @@ async function loadPortfolioReview(){
     active.forEach(a=>{const t=a.tier&&countByTier.hasOwnProperty(a.tier)?a.tier:"None";countByTier[t]++;});
     const totalActive=active.length;
 
-    // 2. Active Agent-to-Lead Ratio — "New Lead Received" activities this period ÷ active partner count
-    const leadsThisPeriod=periodActs.filter(a=>a.act_type==="New Lead Received").length;
-    const ratio=totalActive>0?(leadsThisPeriod/totalActive):0;
-    const ratioLabel=ratio>=1.30?"Elite":ratio>=1.15?"On Target":ratio>=0.90?"Acceptable":"Below Minimum";
-    const ratioColor=ratio>=1.15?"var(--success)":ratio>=0.90?"var(--warning)":"var(--danger)";
+    // 2. Playbook Agent-to-Lead Ratio is MONTHLY. Show MTD actual + projected month-end pace so
+    // an early-month partial numerator is not falsely presented as a full-month failure.
+    const leadsMTD=(monthVelocifyLeads||[]).length;
+    const dayOfMonth=Math.max(1,now.getDate());
+    const daysInMonth=new Date(now.getFullYear(),now.getMonth()+1,0).getDate();
+    const projectedMonthLeads=Math.round((leadsMTD/dayOfMonth)*daysInMonth);
+    const ratioMTD=totalActive>0?(leadsMTD/totalActive):0;
+    const projectedRatio=totalActive>0?(projectedMonthLeads/totalActive):0;
+    const ratioLabel=projectedRatio>=1.30?"Elite pace":projectedRatio>=1.15?"On-target pace":projectedRatio>=0.90?"Acceptable pace":"Below minimum pace";
+    const ratioColor=projectedRatio>=1.15?"var(--success)":projectedRatio>=0.90?"var(--warning)":"var(--danger)";
 
     // 3. Tier Migration Progress this period
     const migCtoB=migrations.filter(m=>m.from_tier==="C"&&m.to_tier==="B").length;
@@ -7549,28 +7562,15 @@ async function loadPortfolioReview(){
     const newMeetingTarget=Math.round(10*range.meetingTargetMult);
     const partnerMeetingTarget=Math.round(20*range.meetingTargetMult);
 
-    // 7. Weighted Scorecard (50/30/20) — playbook gives the category weights, not an exact point
-    // formula, so this is a reasonable composite: migrations this period + progress toward 2026
-    // targets (50%), the ratio vs. its 1.15 target (30%), active count vs. its 200 target (20%).
-    // This is a reference number for the conversation, not a bonus calculation — that's HR policy,
-    // intentionally not modeled here.
-    // migScore now measures actual migration EVENTS only (C→B, B→A, A→Channel this period) —
-    // it previously also folded in A/B count-vs-target, which countScore already measures at its
-    // own 20% weight, silently propping up the "migration" score with data that had nothing to
-    // do with migration activity. 25 points per migration, capped at 100, is a working heuristic
-    // in the absence of a playbook-specified migrations/period target — revisit once real pace
-    // data exists to calibrate against.
-    const migScore=Math.min(100,(migCtoB+migBtoA+migAtoChannel)*25);
-    const ratioScore=Math.min(100,(ratio/1.15)*100);
+    // 7. Weighted Scorecard categories are visible, but the aggregate score is intentionally
+    // paused until leadership defines a real Tier Migration target/normalization. No invented
+    // points-per-migration formula is used.
+    const ratioScore=Math.min(100,(projectedRatio/1.15)*100);
     const countScore=Math.min(100,(totalActive/PF_TARGETS.total)*100);
-    const weighted=Math.round(migScore*0.5+ratioScore*0.3+countScore*0.2);
-    // Components with zero underlying activity are flagged separately from components that are
-    // genuinely at zero performance — a 0 because nobody's logged "New Lead Received" yet reads
-    // very differently from a 0 because leads actually dried up, and blending them into one
-    // number without saying which is misleading.
+    const weighted=null;
     const scoreDataGaps=[];
-    if(migrations.length===0)scoreDataGaps.push("No tier migrations logged yet — Migration score is 0 by default, not necessarily 0 performance.");
-    if(leadsThisPeriod===0)scoreDataGaps.push("No \"New Lead Received\" activity logged yet — Ratio score is 0 by default until that logging starts.");
+    if(migrations.length===0)scoreDataGaps.push("No tier migrations logged yet this period — not scored as a failure.");
+    if(leadsMTD===0)scoreDataGaps.push("No Velocify leads found month-to-date.");
 
     pfDrillData={rows,migrations,missingGrowthOpp,escalation};
 
@@ -7578,17 +7578,20 @@ async function loadPortfolioReview(){
     const FORMAL_CADENCE={Channel:30,A:30,B:60,C:90};
     const lastPartnerMeeting={};
     allPartnerMeetings.forEach(m=>{const n=(m.agent_name||"").trim().toLowerCase();if(n&&!lastPartnerMeeting[n])lastPartnerMeeting[n]=m.act_date;});
+    // Formal cadence applies to Channel/A/B, plus HIGH-POTENTIAL C quarterly. Lower-potential C
+    // are campaign/event/selective-outreach relationships and are not penalized in this denominator.
+    const meetingCadenceEligible=active.filter(a=>a.tier==="Channel"||a.tier==="A"||a.tier==="B"||(a.tier==="C"&&a.high_potential_flag));
     let meetingCompliant=0;
-    const meetingRows=active.map(a=>{
+    const meetingRows=meetingCadenceEligible.map(a=>{
       const key=(a.agent_name||"").trim().toLowerCase();
       const last=lastPartnerMeeting[key];
       const daysSince=last?Math.round((now-new Date(last+"T12:00:00"))/86400000):null;
-      const cadence=FORMAL_CADENCE[a.tier]||90;
+      const cadence=FORMAL_CADENCE[a.tier];
       const compliant=daysSince!==null&&daysSince<=cadence;
       if(compliant)meetingCompliant++;
       return{name:a.agent_name,tier:a.tier,daysSince,cadence,compliant};
     });
-    const meetingCompliancePct=totalActive>0?Math.round((meetingCompliant/totalActive)*100):0;
+    const meetingCompliancePct=meetingCadenceEligible.length>0?Math.round((meetingCompliant/meetingCadenceEligible.length)*100):0;
 
     // ── Existing Partner Meetings by tier this period ──
     const partnerMeetingsByTier={Channel:0,A:0,B:0,C:0};
@@ -7642,16 +7645,20 @@ async function loadPortfolioReview(){
     pfDrillData.proactiveWatch=proactiveWatch;
 
     body.innerHTML=
-      '<div class="card" style="text-align:center;padding:20px">'
-        +'<div style="font-size:11px;font-weight:700;color:var(--text-3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">Weighted Scorecard — '+range.label+'</div>'
-        +'<div style="font-size:38px;font-weight:800;color:var(--brand)">'+weighted+'</div>'
-        +'<div style="font-size:11.5px;color:var(--text-3);margin-top:4px">50% Tier Migration ('+Math.round(migScore)+') · 30% Agent-to-Lead Ratio ('+Math.round(ratioScore)+') · 20% Active Count ('+Math.round(countScore)+')</div>'
-        +'<div style="font-size:10.5px;color:var(--text-4);margin-top:6px">Reference number for the conversation — not a bonus calculation.</div>'
+      '<div class="card" style="padding:20px">'
+        +'<div style="font-size:11px;font-weight:700;color:var(--text-3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">Portfolio Scorecard — '+range.label+'</div>'
+        +'<div style="font-size:20px;font-weight:800;color:var(--brand);margin-bottom:4px">Live components are working</div>'
+        +'<div style="font-size:11.5px;color:var(--text-3);margin-bottom:12px">The 50% / 30% / 20% Playbook categories remain visible, but the single weighted score is paused until leadership defines how Tier Migration is normalized. No invented points-per-migration formula.</div>'
+        +'<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">'
+          +pfStatTile("Projected monthly Agent-to-Lead",projectedRatio.toFixed(2)+" · "+ratioLabel,null)
+          +pfStatTile("Managed Active Partners",totalActive+" / "+PF_TARGETS.total,null)
+          +pfStatTile("Tier migrations — "+range.label,(migCtoB+migBtoA+migAtoChannel+migOther),null)
+        +'</div>'
         +(scoreDataGaps.length?'<div style="text-align:left;background:#FFF7E6;border:1px solid #FFE8A3;border-radius:8px;padding:8px 12px;margin-top:12px;font-size:11px;color:#8A6100;line-height:1.5">⚠️ '+scoreDataGaps.join('<br>⚠️ ')+'</div>':'')
       +'</div>'
 
       +'<div class="card">'
-        +'<div class="card-title" style="font-size:14px">Active Partner Count</div>'
+        +'<div class="card-title" style="font-size:14px">Active Partner Count</div>' 
         +'<div style="display:grid;grid-template-columns:repeat(6,1fr);gap:8px;margin-top:10px">'
           +pfCountTile("Total",totalActive,PF_TARGETS.total,"all")
           +pfCountTile("Channel",countByTier.Channel,null,"Channel")
@@ -7664,10 +7671,10 @@ async function loadPortfolioReview(){
       +'</div>'
 
       +'<div class="card">'
-        +'<div class="card-title" style="font-size:14px">Active Agent-to-Lead Ratio</div>'
-        +'<div style="font-size:12px;color:var(--text-2);margin-bottom:8px">'+leadsThisPeriod+' "New Lead Received" logged ÷ '+totalActive+' active partners</div>'
-        +'<div style="font-size:26px;font-weight:800;color:'+ratioColor+'">'+ratio.toFixed(2)+'<span style="font-size:13px;font-weight:600;margin-left:8px">'+ratioLabel+'</span></div>'
-        +'<div style="font-size:11px;color:var(--text-3);margin-top:4px">Min 0.90 · Target 1.15+ · Elite 1.30+</div>'
+        +'<div class="card-title" style="font-size:14px">Active Agent-to-Lead Ratio — Monthly</div>'
+        +'<div style="font-size:12px;color:var(--text-2);margin-bottom:8px">'+leadsMTD+' Velocify leads MTD ÷ '+totalActive+' managed active partners = <strong>'+ratioMTD.toFixed(2)+'</strong></div>'
+        +'<div style="font-size:26px;font-weight:800;color:'+ratioColor+'">'+projectedRatio.toFixed(2)+'<span style="font-size:13px;font-weight:600;margin-left:8px">'+ratioLabel+'</span></div>'
+        +'<div style="font-size:11px;color:var(--text-3);margin-top:4px">Projected month-end pace: '+projectedMonthLeads+' leads. Min 0.90 · Target 1.15+ · Elite 1.30+</div>'
       +'</div>'
 
       +'<div class="card">'
@@ -7721,9 +7728,9 @@ async function loadPortfolioReview(){
 
       +'<div class="card">'
         +'<div class="card-title" style="font-size:14px">Meeting Cadence Compliance (playbook Sec. 6/8 — formal meetings)</div>'
-        +'<div style="font-size:12px;color:var(--text-2);margin-bottom:8px">Distinct from touch cadence — this checks logged "Partner Meeting" or "Break Breads" activity against each tier\'s formal cadence (Channel/A monthly, B every-other-month, C quarterly).</div>'
+        +'<div style="font-size:12px;color:var(--text-2);margin-bottom:8px">Distinct from touch cadence — this checks logged "Partner Meeting" or "Break Breads" activity against each tier\'s formal cadence (Channel/A monthly, B every-other-month, high-potential C quarterly).</div>'
         +'<div style="font-size:26px;font-weight:800;color:'+(meetingCompliancePct>=80?"var(--success)":meetingCompliancePct>=50?"var(--warning)":"var(--danger)")+'">'+meetingCompliancePct+'%</div>'
-        +'<div style="font-size:11px;color:var(--text-3);margin-top:2px">'+meetingCompliant+' of '+totalActive+' active partners current on formal meeting cadence</div>'
+        +'<div style="font-size:11px;color:var(--text-3);margin-top:2px">'+meetingCompliant+' of '+meetingCadenceEligible.length+' partners who require formal cadence are current</div>'
       +'</div>'
 
       +'<div class="card">'
@@ -7735,6 +7742,15 @@ async function loadPortfolioReview(){
           +pfStatTile("Existing Meetings — Channel",partnerMeetingsByTier.Channel,"meetings:Channel")
           +pfStatTile("Existing Meetings — A",partnerMeetingsByTier.A,"meetings:A")
           +pfStatTile("Existing Meetings — B",partnerMeetingsByTier.B,"meetings:B")
+          +pfStatTile("Existing Meetings — C",partnerMeetingsByTier.C,"meetings:C")
+        +'</div>'
+        +'<div style="font-size:11px;color:var(--text-3);margin-top:12px;margin-bottom:6px">Experience-monitoring follow-ups logged this period (counts only; source denominator is not available in this tracker, so no fake compliance % is shown).</div>'
+        +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">'
+          +pfStatTile("New Lead follow-ups",periodActs.filter(a=>a.act_type==="New Lead Received").length,null)
+          +pfStatTile("Pre-Approval follow-ups",periodActs.filter(a=>a.act_type==="Pre-Approval Issued").length,null)
+          +pfStatTile("Contract follow-ups",periodActs.filter(a=>a.act_type==="New Contract").length,null)
+          +pfStatTile("Clear-to-Close follow-ups",periodActs.filter(a=>a.act_type==="Clear to Close").length,null)
+          +pfStatTile("Service Recovery logged",periodActs.filter(a=>a.act_type==="Service Recovery").length,null)
         +'</div>'
       +'</div>'
 
@@ -8073,7 +8089,7 @@ function renderMgmtPeriod(){
   if(!data.length){document.getElementById("danielGoals").innerHTML='<div class="no-data">No activity logged yet for this period.</div>';return;}
   let html='<div style="font-size:11px;color:#bbb;margin-bottom:14px">'+label+' — '+data.length+' total activities</div>';
   GOALS.forEach(g=>{
-    const target=goalTarget(g),count=g.type==="__talkto__"?cntTalkTo(data):data.filter(a=>a.act_type===g.type).length;
+    const target=goalTarget(g),count=countGoalActivity(data,g.type);
     html+=renderGoalBar(g.label,count,target,target?(count/target)*100:0,g.type);
   });
   html+=renderCtcRow(data.filter(a=>a.act_type===CTC_TYPE).length,label.toLowerCase());
@@ -8760,43 +8776,9 @@ const dupeCompleteness=c=>["phone","email","address","birthday","tier"].filter(k
 function renderDupeCleanupList(){
   const listEl=document.getElementById("dupeCleanupList");
   const dupes=computeDupeGroups();
-  if(!dupes.length){
-    listEl.innerHTML='<div class="no-data">No duplicates found — all clean!</div>';
-    return;
-  }
-  const toDeleteCount=dupes.reduce((sum,g)=>sum+g.length-1,0);
-  let html='<div style="background:var(--surface-2);border-radius:8px;padding:12px 14px;margin-bottom:14px">'
-    +'<div style="font-size:12px;color:var(--text-2);margin-bottom:8px">'+dupes.length+' duplicate name'+(dupes.length!==1?"s":"")+' found — '+toDeleteCount+' record'+(toDeleteCount!==1?"s":"")+' would be removed, keeping whichever profile in each group has the most info filled in. Nothing here touches activity history, only the contact record.</div>'
-    +'<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">'
-    +'<label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text-2);cursor:pointer;font-weight:500;margin-right:4px">'
-    +'<input type="checkbox" id="dupeSelectAllBox" onchange="dupeToggleSelectAll(this.checked)" style="width:15px;height:15px;cursor:pointer">Select all</label>'
-    +'<button id="bulkCleanupBtn" onclick="bulkCleanupAllDuplicates()" style="font-size:12px;font-weight:700;padding:8px 16px;background:var(--danger);color:#fff;border:none;border-radius:8px;cursor:pointer;font-family:inherit">Clean up all '+dupes.length+' at once</button>'
-    +'<button id="bulkCleanupSelectedBtn" onclick="bulkCleanupSelected()" style="font-size:12px;font-weight:700;padding:8px 16px;background:#fff;color:var(--danger);border:1px solid var(--danger);border-radius:8px;cursor:pointer;font-family:inherit" disabled>Clean up selected (<span id="dupeSelectedCount">0</span>)</button>'
-    +'<span id="bulkCleanupProgress" style="font-size:12px;color:var(--text-2)"></span>'
-    +'</div></div>';
-  html+=dupes.map((group,gi)=>{
-    // recommend keeping the row with the most filled-in fields
-    const sorted=[...group].sort((a,b)=>dupeCompleteness(b)-dupeCompleteness(a));
-    const keep=sorted[0],rest=sorted.slice(1);
-    return'<div style="border:1px solid var(--border-light);border-radius:8px;padding:12px;margin-bottom:12px">'
-      +'<div style="font-size:12px;font-weight:700;color:var(--text-1);margin-bottom:8px">"'+escHtml(group[0].agent_name)+'" — '+group.length+' profiles found</div>'
-      +group.map(c=>{
-        const isRecommendedKeep=c===keep;
-        const details=[c.phone?"phone":"",c.email?"email":"",c.tier?"tier "+c.tier:"",c.birthday?"birthday":"",c.do_not_contact?"DNC":""].filter(Boolean).join(", ")||"no extra info";
-        const safeName=c.agent_name.replace(/'/g,"\\'");
-        return'<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-top:1px solid var(--border-light)">'
-          +'<div style="display:flex;align-items:center;gap:8px">'
-          +(isRecommendedKeep?'':'<input type="checkbox" class="dupe-select-box" data-name="'+c.agent_name.replace(/"/g,"&quot;")+'" onchange="updateDupeSelection()" style="width:15px;height:15px;cursor:pointer;flex-shrink:0">')
-          +'<div><span style="font-size:13px;font-weight:600;color:var(--text-1)">'+escHtml(c.agent_name)+'</span>'
-          +(isRecommendedKeep?' <span style="font-size:10px;font-weight:700;color:var(--success);background:var(--success-bg);padding:1px 7px;border-radius:20px">Recommended keep</span>':'')
-          +'<div style="font-size:11px;color:var(--text-3);margin-top:2px">'+details+'</div></div></div>'
-          +(isRecommendedKeep
-            ?'<span style="font-size:11px;color:var(--text-4)">kept</span>'
-            :'<button onclick="deleteDuplicateProfile(\''+safeName+'\',this)" style="font-size:11px;padding:5px 12px;background:var(--danger);color:#fff;border:none;border-radius:6px;cursor:pointer;font-family:inherit">Delete this one</button>')
-          +'</div>';
-      }).join("")
-      +'</div>';
-  }).join("");
+  if(!dupes.length){listEl.innerHTML='<div class="no-data">No duplicates found — all clean!</div>';return;}
+  let html='<div style="background:var(--warning-bg);border:1px solid #FFE69C;border-radius:8px;padding:12px 14px;margin-bottom:14px;font-size:12px;color:#8A6100"><strong>'+dupes.length+' possible duplicate name'+(dupes.length!==1?'s':'')+' found.</strong><br>Review only: no records will be auto-deleted. Use Correct display name for spelling/casing; true duplicate merges need a deliberate migration so history is preserved.</div>';
+  html+=dupes.map(group=>'<div style="border:1px solid var(--border-light);border-radius:8px;padding:12px;margin-bottom:12px"><div style="font-size:12px;font-weight:700;color:var(--text-1);margin-bottom:8px">'+escHtml(properCase(group[0].agent_name))+' — '+group.length+' profiles</div>'+group.map(c=>{const details=[c.agent_name,c.phone||'',c.email||'',c.tier?('tier '+c.tier):'',c.birthday?('birthday '+c.birthday):'',c.relationship_status==='inactive'?'inactive':''].filter(Boolean).join(' · ');return '<div style="padding:7px 0;border-top:1px solid var(--border-light);font-size:11.5px;color:var(--text-2)">'+escHtml(details)+'</div>';}).join('')+'</div>').join('');
   listEl.innerHTML=html;
 }
 
@@ -8812,68 +8794,11 @@ function updateDupeSelection(){
   if(btn)btn.disabled=checked===0;
 }
 
-async function bulkCleanupSelected(){
-  const boxes=document.querySelectorAll(".dupe-select-box:checked");
-  const names=[...boxes].map(b=>b.getAttribute("data-name"));
-  if(!names.length)return;
-  if(!confirm("Delete "+names.length+" selected profile"+(names.length!==1?"s":"")+"? Activity history is never touched — only the contact records you checked. This cannot be undone."))return;
-  const btn=document.getElementById("bulkCleanupSelectedBtn");
-  const progressEl=document.getElementById("bulkCleanupProgress");
-  if(btn)btn.disabled=true;
-  let done=0,failed=0;
-  for(const name of names){
-    if(progressEl)progressEl.textContent="Deleting "+(done+failed+1)+" of "+names.length+"...";
-    try{
-      await sbFetch("agent_profiles?agent_name=eq."+encodeURIComponent(name),{method:"DELETE",prefer:"return=minimal"});
-      done++;
-    }catch(e){failed++;console.error("Selected cleanup failed for",name,e);}
-  }
-  toast(done+" profile"+(done!==1?"s":"")+" deleted"+(failed?", "+failed+" failed":"")+" ✓",failed?"error":"success",4500);
-  await loadContacts();
-  renderDupeCleanupList();
-}
+async function bulkCleanupSelected(){toast("Duplicate cleanup is review-only. No profiles were deleted.","error",5000);}
 
-async function bulkCleanupAllDuplicates(){
-  const dupes=computeDupeGroups();
-  if(!dupes.length)return;
-  const toDelete=[];
-  dupes.forEach(group=>{
-    const sorted=[...group].sort((a,b)=>dupeCompleteness(b)-dupeCompleteness(a));
-    sorted.slice(1).forEach(c=>toDelete.push(c.agent_name));
-  });
-  if(!confirm("Delete "+toDelete.length+" duplicate profile"+(toDelete.length!==1?"s":"")+" across "+dupes.length+" name"+(dupes.length!==1?"s":"")+"? For each group, the profile with the most info filled in is kept automatically. Activity history is never touched — only the extra contact records. This cannot be undone."))return;
-  const btn=document.getElementById("bulkCleanupBtn");
-  const progressEl=document.getElementById("bulkCleanupProgress");
-  if(btn)btn.disabled=true;
-  let done=0,failed=0;
-  for(const name of toDelete){
-    if(progressEl)progressEl.textContent="Deleting "+(done+failed+1)+" of "+toDelete.length+"...";
-    try{
-      await sbFetch("agent_profiles?agent_name=eq."+encodeURIComponent(name),{method:"DELETE",prefer:"return=minimal"});
-      done++;
-    }catch(e){
-      failed++;
-      console.error("Bulk cleanup failed for",name,e);
-    }
-  }
-  toast(done+" duplicate"+(done!==1?"s":"")+" cleaned up"+(failed?", "+failed+" failed — try those individually":"")+" ✓",failed?"error":"success",5000);
-  await loadContacts(); // refetches allContacts + re-renders banner
-  renderDupeCleanupList();
-}
+async function bulkCleanupAllDuplicates(){toast("Duplicate cleanup is review-only. No profiles were deleted.","error",5000);}
 
-async function deleteDuplicateProfile(name,btnEl){
-  if(!confirm('Delete the duplicate profile "'+name+'"? This does not touch any activity history logged under that name — only the contact record. Cannot be undone.'))return;
-  btnEl.disabled=true;btnEl.textContent="Deleting...";
-  try{
-    await sbFetch("agent_profiles?agent_name=eq."+encodeURIComponent(name),{method:"DELETE",prefer:"return=minimal"});
-    toast('Deleted duplicate profile for "'+name+'"',"success");
-    await loadContacts(); // refetches allContacts + re-renders banner
-    renderDupeCleanupList();
-  }catch(e){
-    toast("Delete failed: "+e.message,"error");
-    btnEl.disabled=false;btnEl.textContent="Delete this one";
-  }
-}
+async function deleteDuplicateProfile(name,btnEl){toast("Duplicate cleanup is review-only. No profiles were deleted.","error",5000);}
 
 function filterContacts(){
   const q=(document.getElementById("contactsSearch")?.value||"").toLowerCase();
