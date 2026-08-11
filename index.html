@@ -1,4 +1,4 @@
-  <!DOCTYPE html>
+ <!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -1342,6 +1342,11 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI'
   <div class="modal-box">
     <div class="modal-header"><span class="modal-title">Edit contact info</span><button class="modal-close" onclick="closeContactModal()">×</button></div>
     <div class="modal-sub" id="contactModalName"></div>
+    <div class="field" style="margin-bottom:12px">
+      <label>Correct display name <span style="font-weight:400;color:var(--text-4)">(safe spelling/capitalization correction — does not rename the database record)</span></label>
+      <input type="text" id="contactDisplayName" placeholder="e.g. Jordan Holibaugh">
+      <div style="font-size:11px;color:var(--text-3);margin-top:4px">Use this when a name is misspelled or badly capitalized. Both trackers will show this version; the underlying agent record/history stays connected.</div>
+    </div>
     <div class="field" style="margin-bottom:12px"><label>Phone</label><input type="text" id="contactPhone" placeholder="Phone number"></div>
     <div class="field" style="margin-bottom:12px"><label>Email</label><input type="email" id="contactEmail" placeholder="Email address"></div>
     <div class="field" style="margin-bottom:12px">
@@ -1359,14 +1364,88 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI'
     <details style="margin-bottom:18px;border:0.5px solid var(--border);border-radius:8px;padding:10px 12px;background:var(--surface-2)">
       <summary style="cursor:pointer;font-size:13px;font-weight:600;color:var(--text-1)">▸ Partner notes &amp; playbook fields</summary>
       <div style="margin-top:12px">
-        <div class="field" style="margin-bottom:12px"><label>Next Growth Opportunity</label><textarea id="contactGrowthOpp" placeholder="e.g. convert B to A, host past-client event, introduce to team leader..." rows="2"></textarea></div>
+        <div style="font-size:11.5px;color:var(--text-3);background:#fff;border:0.5px solid var(--border);border-radius:7px;padding:9px 10px;margin-bottom:12px"><strong style="color:var(--text-2)">Use these as conversation prompts, not a checklist.</strong> You do not need to fill out every field on every call. Capture what you naturally learn about their business, frustrations, opportunities, and what we can do next.</div>
+
+        <div class="field" style="margin-bottom:14px">
+          <label>Next Growth Opportunity <span style="font-weight:400;color:var(--text-4)">— What could we help them do next?</span></label>
+          <div class="playbook-choices" style="display:flex;gap:6px;flex-wrap:wrap;margin:6px 0 7px">
+            <button type="button" class="btn-sm" onclick="appendPlaybookChoice('contactGrowthOpp','C → B')">C → B</button>
+            <button type="button" class="btn-sm" onclick="appendPlaybookChoice('contactGrowthOpp','B → A')">B → A</button>
+            <button type="button" class="btn-sm" onclick="appendPlaybookChoice('contactGrowthOpp','A → Channel')">A → Channel</button>
+            <button type="button" class="btn-sm" onclick="appendPlaybookChoice('contactGrowthOpp','Past-client event')">Past-client event</button>
+            <button type="button" class="btn-sm" onclick="appendPlaybookChoice('contactGrowthOpp','Business planning')">Business planning</button>
+            <button type="button" class="btn-sm" onclick="appendPlaybookChoice('contactGrowthOpp','CRM / database strategy')">CRM / database</button>
+            <button type="button" class="btn-sm" onclick="appendPlaybookChoice('contactGrowthOpp','Listing / payment strategy')">Listing/payment strategy</button>
+            <button type="button" class="btn-sm" onclick="appendPlaybookChoice('contactGrowthOpp','Educational event')">Educational event</button>
+            <button type="button" class="btn-sm" onclick="appendPlaybookChoice('contactGrowthOpp','Team-lead introduction')">Team-lead intro</button>
+            <button type="button" class="btn-sm" onclick="appendPlaybookChoice('contactGrowthOpp','Builder opportunity')">Builder opportunity</button>
+            <button type="button" class="btn-sm" onclick="appendPlaybookChoice('contactGrowthOpp','Co-marketing')">Co-marketing</button>
+            <button type="button" class="btn-sm" onclick="appendPlaybookChoice('contactGrowthOpp','Buddy introduction opportunity')">Buddy intro opportunity</button>
+          </div>
+          <textarea id="contactGrowthOpp" placeholder="Click one or more options above, then add any useful detail..." rows="2"></textarea>
+        </div>
         <div class="field" style="margin-bottom:12px"><label>Growth Opportunity Follow-up Deadline</label><input type="date" id="contactGrowthOppDeadline"></div>
         <div class="field" style="margin-bottom:12px"><label>Last Meaningful Conversation</label><input type="date" id="contactLastMeaningfulContact"></div>
         <div class="field" style="margin-bottom:12px"><label>Next Meeting Date</label><input type="date" id="contactNextMeetingDate"></div>
-        <div class="field" style="margin-bottom:12px"><label>Partner Goals</label><textarea id="contactGoals" rows="2"></textarea></div>
-        <div class="field" style="margin-bottom:12px"><label>Partner Pain Points</label><textarea id="contactPainPoints" rows="2"></textarea></div>
-        <div class="field" style="margin-bottom:12px"><label>Referral Leakage Notes</label><textarea id="contactLeakageNotes" rows="2"></textarea></div>
-        <div class="field" style="margin-bottom:12px"><label>Recovery Plan</label><textarea id="contactRecoveryPlan" rows="2"></textarea></div>
+
+        <div class="field" style="margin-bottom:14px">
+          <label>Partner Goals <span style="font-weight:400;color:var(--text-4)">— Ask: “What are you focused on growing right now?”</span></label>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;margin:6px 0 7px">
+            <button type="button" class="btn-sm" onclick="appendPlaybookChoice('contactGoals','More buyers')">More buyers</button>
+            <button type="button" class="btn-sm" onclick="appendPlaybookChoice('contactGoals','More listings')">More listings</button>
+            <button type="button" class="btn-sm" onclick="appendPlaybookChoice('contactGoals','Increase production')">Increase production</button>
+            <button type="button" class="btn-sm" onclick="appendPlaybookChoice('contactGoals','Build / grow a team')">Build team</button>
+            <button type="button" class="btn-sm" onclick="appendPlaybookChoice('contactGoals','Past-client business')">Past-client business</button>
+            <button type="button" class="btn-sm" onclick="appendPlaybookChoice('contactGoals','Higher price point')">Higher price point</button>
+            <button type="button" class="btn-sm" onclick="appendPlaybookChoice('contactGoals','Builder / new construction')">Builder/new construction</button>
+            <button type="button" class="btn-sm" onclick="appendPlaybookChoice('contactGoals','Investment clients')">Investment clients</button>
+            <button type="button" class="btn-sm" onclick="appendPlaybookChoice('contactGoals','Improve lead conversion')">Improve conversion</button>
+          </div>
+          <textarea id="contactGoals" placeholder="Click any that apply, then add the agent's own words/details..." rows="2"></textarea>
+        </div>
+
+        <div class="field" style="margin-bottom:14px">
+          <label>Partner Pain Points <span style="font-weight:400;color:var(--text-4)">— Listen for what is making business harder.</span></label>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;margin:6px 0 7px">
+            <button type="button" class="btn-sm" onclick="appendPlaybookChoice('contactPainPoints','Lead generation')">Lead generation</button>
+            <button type="button" class="btn-sm" onclick="appendPlaybookChoice('contactPainPoints','Lead conversion')">Lead conversion</button>
+            <button type="button" class="btn-sm" onclick="appendPlaybookChoice('contactPainPoints','Payment / affordability concerns')">Payment/affordability</button>
+            <button type="button" class="btn-sm" onclick="appendPlaybookChoice('contactPainPoints','Offer competitiveness')">Offer competitiveness</button>
+            <button type="button" class="btn-sm" onclick="appendPlaybookChoice('contactPainPoints','Communication')">Communication</button>
+            <button type="button" class="btn-sm" onclick="appendPlaybookChoice('contactPainPoints','Pre-approval speed')">Pre-approval speed</button>
+            <button type="button" class="btn-sm" onclick="appendPlaybookChoice('contactPainPoints','Transaction issues')">Transaction issues</button>
+            <button type="button" class="btn-sm" onclick="appendPlaybookChoice('contactPainPoints','Marketing / CRM')">Marketing/CRM</button>
+            <button type="button" class="btn-sm" onclick="appendPlaybookChoice('contactPainPoints','Database follow-up')">Database follow-up</button>
+            <button type="button" class="btn-sm" onclick="appendPlaybookChoice('contactPainPoints','Inventory')">Inventory</button>
+            <button type="button" class="btn-sm" onclick="appendPlaybookChoice('contactPainPoints','Competing lender')">Competing lender</button>
+          </div>
+          <textarea id="contactPainPoints" placeholder="Click any that apply, then note what they actually said..." rows="2"></textarea>
+        </div>
+
+        <div class="field" style="margin-bottom:14px">
+          <label>Referral Leakage <span style="font-weight:400;color:var(--text-4)">— Is business going somewhere else?</span></label>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;margin:6px 0 7px">
+            <button type="button" class="btn-sm" onclick="setPlaybookChoice('contactLeakageNotes','None known')">None known</button>
+            <button type="button" class="btn-sm" onclick="setPlaybookChoice('contactLeakageNotes','Suspected — ')">Suspected</button>
+            <button type="button" class="btn-sm" onclick="setPlaybookChoice('contactLeakageNotes','Confirmed — ')">Confirmed</button>
+            <button type="button" class="btn-sm" onclick="setPlaybookChoice('contactLeakageNotes','Uses another lender sometimes — ')">Uses another lender sometimes</button>
+            <button type="button" class="btn-sm" onclick="setPlaybookChoice('contactLeakageNotes','Lost recent opportunity — ')">Lost recent opportunity</button>
+          </div>
+          <textarea id="contactLeakageNotes" placeholder="What happened, who are they using, and why (if known)?" rows="2"></textarea>
+        </div>
+
+        <div class="field" style="margin-bottom:14px">
+          <label>Recovery Plan <span style="font-weight:400;color:var(--text-4)">— Only use when there is a relationship/service issue to recover.</span></label>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;margin:6px 0 7px">
+            <button type="button" class="btn-sm" onclick="appendPlaybookChoice('contactRecoveryPlan','Service recovery call')">Service recovery call</button>
+            <button type="button" class="btn-sm" onclick="appendPlaybookChoice('contactRecoveryPlan','Schedule partner meeting')">Partner meeting</button>
+            <button type="button" class="btn-sm" onclick="appendPlaybookChoice('contactRecoveryPlan','Leadership outreach')">Leadership outreach</button>
+            <button type="button" class="btn-sm" onclick="appendPlaybookChoice('contactRecoveryPlan','LP follow-up')">LP follow-up</button>
+            <button type="button" class="btn-sm" onclick="appendPlaybookChoice('contactRecoveryPlan','Resolve transaction concern')">Resolve transaction concern</button>
+            <button type="button" class="btn-sm" onclick="appendPlaybookChoice('contactRecoveryPlan','Re-engage relationship')">Re-engage relationship</button>
+          </div>
+          <textarea id="contactRecoveryPlan" placeholder="Plan + owner + next action. Add a follow-up date above/elsewhere when needed." rows="2"></textarea>
+        </div>
         <div class="field" style="margin-bottom:12px"><label>Satisfaction Rating</label><select id="contactSatisfaction"><option value="">Not set</option><option value="5">5 — Thriving, fully supported</option><option value="4">4 — Good, minor gaps</option><option value="3">3 — Neutral</option><option value="2">2 — Some frustration</option><option value="1">1 — At risk of leaving</option></select></div>
         <div style="padding:8px 10px;background:#fff;border-radius:6px;border:0.5px solid var(--border-danger)">
           <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:13px;font-weight:500;color:var(--text-1)">
@@ -1808,6 +1887,7 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI'
 
 <script>
 const SB_URL="https://uclucbdkjqyqdvifyptx.supabase.co";
+var amandaDisplayNames={};
 // ── Display-only name formatting (does NOT touch stored agent_name — matching/identity always
 // uses the raw stored value; see identical helper in Core Team's file) ────────────────────────
 // Only reformats a name that is ENTIRELY uppercase (a strong signal it's raw import data, not
@@ -1838,6 +1918,37 @@ function displayName(raw){
     return lead+core+trail;
   };
   return s.split(/\s+/).map(capPart).join(" ");
+}
+// Prefer a human-corrected shared display_name when one exists; fall back to safe casing.
+function resolvedDisplayName(raw){
+  const key=(raw||"").toString().trim().toLowerCase();
+  if(amandaDisplayNames[key])return amandaDisplayNames[key];
+  try{
+    if(typeof allContacts!=="undefined"&&Array.isArray(allContacts)){
+      const row=allContacts.find(x=>(x.agent_name||"").trim().toLowerCase()===key);
+      if(row&&row.display_name&&row.display_name.trim())return row.display_name.trim();
+    }
+  }catch(e){}
+  return displayName(raw);
+}
+// Guided Playbook helper: quick choices append to the existing shared text fields without
+// replacing any notes Amanda already captured.
+function appendPlaybookChoice(id,label){
+  const el=document.getElementById(id);if(!el)return;
+  const current=(el.value||"").trim();
+  const parts=current?current.split(";").map(x=>x.trim()).filter(Boolean):[];
+  if(!parts.some(x=>x.toLowerCase()===String(label).toLowerCase()))parts.push(label);
+  el.value=parts.join("; ");
+  el.dispatchEvent(new Event("input",{bubbles:true}));
+}
+function setPlaybookChoice(id,prefix){
+  const el=document.getElementById(id);if(!el)return;
+  const current=(el.value||"").trim();
+  if(prefix==="None known"){el.value="None known";}
+  else if(!current||current==="None known"||/^(Suspected|Confirmed|Uses another lender sometimes|Lost recent opportunity)\b/.test(current)){el.value=prefix;}
+  else{el.value=prefix+current;}
+  el.focus();el.setSelectionRange(el.value.length,el.value.length);
+  el.dispatchEvent(new Event("input",{bubbles:true}));
 }
 // ── Meaningful Contact classification (shared definition — see identical config in Core Team's
 // file) ──────────────────────────────────────────────────────────────────────────────────────
@@ -1931,7 +2042,7 @@ function agentMatchKey(raw){
 
 function properCase(str){
   if(!str)return"";
-  return escHtml(displayName(str));
+  return escHtml(resolvedDisplayName(str));
 }
 function escHtml(s){
   return(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#39;");
@@ -2621,7 +2732,7 @@ function applyLockState(){
 
   if(openIntake){
     banner.style.display="flex";
-    banner.innerHTML='<span>🔒 Open checklist: <strong>'+escHtml(openIntake.agent_name)+'</strong> — met '+fmtDate(openIntake.act_date)+'.</span><button class="lock-resume-btn" onclick="switchTab(\'log\')">Resume checklist</button>';
+    banner.innerHTML='<span>🔒 Open checklist: <strong>'+properCase(openIntake.agent_name)+'</strong> — met '+fmtDate(openIntake.act_date)+'.</span><button class="lock-resume-btn" onclick="switchTab(\'log\')">Resume checklist</button>';
     lockedCard.style.display="block";
     document.getElementById("logLockedSub").textContent="Great job logging your meeting with "+properCase(openIntake.agent_name)+"! Before you log anything else, there are a few quick onboarding steps below. These make sure they get set up correctly and nothing falls through the cracks.";
     normalFields.style.display="none";
@@ -2875,7 +2986,16 @@ function clearLogErrorBanner(){
   if(banner)banner.innerHTML="";
 }
 
+async function loadSharedDisplayNames(){
+  try{
+    const rows=await sbFetch("agent_profiles?select=agent_name,display_name&limit=5000");
+    amandaDisplayNames={};
+    (rows||[]).forEach(r=>{if(r.agent_name&&r.display_name)amandaDisplayNames[(r.agent_name||"").trim().toLowerCase()]=r.display_name.trim();});
+  }catch(e){console.warn("Display-name preload failed",e);}
+}
+
 async function init(){
+  loadSharedDisplayNames();
   testConnection();
   flushOfflineQueue();
   updateOfflineBadge();
@@ -4522,7 +4642,7 @@ async function loadWeek(){
       if(needsCtc.length){
         ctcEl.innerHTML='<div style="background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:10px 12px">'
           +'<div class="card-title" style="margin-bottom:10px">CTC Calls Needed ('+needsCtc.length+') <span class="card-sub">closed in last 14d, not yet thanked</span></div>'+
-          needsCtc.map(c=>'<div class="fu-item"><div class="fu-dot" style="background:#9585C0"></div><div class="fu-body"><div class="fu-name">'+escHtml(c.agent_name)+'</div><div class="fu-meta" style="color:#9585C0">Closed '+fmtDate(c.call_date)+'</div></div><button class="btn-sm" style="background:#9585C0;color:#fff;border:none;border-radius:6px;padding:4px 10px;font-size:11px;cursor:pointer;font-family:inherit" onclick="document.getElementById(\'agentInput\').value=\''+c.agent_name.replace(/'/g,"\\'")+'\';document.getElementById(\'activityType\').value=\'CTC Call\';switchTab(\'log\')">Log CTC</button></div>').join("")
+          needsCtc.map(c=>'<div class="fu-item"><div class="fu-dot" style="background:#9585C0"></div><div class="fu-body"><div class="fu-name">'+properCase(c.agent_name)+'</div><div class="fu-meta" style="color:#9585C0">Closed '+fmtDate(c.call_date)+'</div></div><button class="btn-sm" style="background:#9585C0;color:#fff;border:none;border-radius:6px;padding:4px 10px;font-size:11px;cursor:pointer;font-family:inherit" onclick="document.getElementById(\'agentInput\').value=\''+c.agent_name.replace(/'/g,"\\'")+'\';document.getElementById(\'activityType\').value=\'CTC Call\';switchTab(\'log\')">Log CTC</button></div>').join("")
           +'</div>';
         ctcEl.style.display="block";
         addScrollHintIfNeeded("weekCtcTrigger");
@@ -4875,7 +4995,7 @@ async function loadFollowups(){
         '<div class="fu-meta">'+badgeEmoji(f.act_type)+(f.notes?" · "+escHtml(f.notes.substring(0,45)):"")+'</div>'+
         '<div id="fu-edit-'+f.id+'" class="fu-edit-area"><input type="date" id="fu-date-'+f.id+'" value="'+f.follow_up_date+'" style="border:0.5px solid #D9D3C7;border-radius:6px;padding:5px 9px;font-size:12px;margin-right:6px;font-family:inherit"><button class="btn-sm" onclick="saveFollowupDate('+f.id+')">Save</button><button class="btn-sm" onclick="document.getElementById('+"'fu-edit-"+f.id+"'"+').style.display=\'none\'" style="margin-left:4px">Cancel</button></div>'+
         '<div id="fu-log-'+f.id+'" class="fu-inline-log">'+
-          '<div style="font-size:11px;font-weight:600;color:#9585C0;margin-bottom:8px">Log outcome for '+escHtml(f.agent_name)+'</div>'+
+          '<div style="font-size:11px;font-weight:600;color:#9585C0;margin-bottom:8px">Log outcome for '+properCase(f.agent_name)+'</div>'+
           (f.notes?'<div style="font-size:11px;color:var(--text-3);background:var(--surface-2);border-radius:6px;padding:7px 10px;margin-bottom:8px;font-style:italic">Previous note: "'+escHtml(f.notes)+'"</div>':'')+
           '<select id="fu-log-type-'+f.id+'">'+ACT_TYPE_OPTIONS+'</select>'+
           '<div class="inline-row"><select id="fu-log-outcome-'+f.id+'"><option value="">Outcome...</option><option>Positive</option><option>Meeting Scheduled</option><option>Requires follow-up</option><option>Needs manager attention</option><option>Remove / No Further Contact</option></select>'+
@@ -5952,7 +6072,7 @@ function renderRcGroup(list,groupStatus){
       '<div class="rc-agent-top">'+
         (groupStatus!=="removed"?'<input type="checkbox" class="rc-select-box" data-id="'+rid+'" onchange="rcToggleSelect('+rid+',this.checked)" style="margin-right:8px;margin-top:4px;flex-shrink:0">':'')+
         '<div>'+
-          '<div class="rc-agent-name">'+escHtml(r.agent_name)+' '+gradeBadge+' '+daysBadge+contactedBadge+removedBadge+'</div>'+
+          '<div class="rc-agent-name">'+properCase(r.agent_name)+' '+gradeBadge+' '+daysBadge+contactedBadge+removedBadge+'</div>'+
           '<div class="rc-agent-meta">'+
             '<span>Last lead: '+lastInteraction+'</span>'+
             (closesInfo?'<span>'+closesInfo+'</span>':'')+
@@ -5965,7 +6085,7 @@ function renderRcGroup(list,groupStatus){
       '</div>'+
       // Inline log form
       '<div id="rc-log-'+rid+'" class="rc-inline-form">'+
-        '<div style="font-size:11px;font-weight:600;color:#9585C0;margin-bottom:6px">Log outreach — '+escHtml(r.agent_name)+'</div>'+
+        '<div style="font-size:11px;font-weight:600;color:#9585C0;margin-bottom:6px">Log outreach — '+properCase(r.agent_name)+'</div>'+
         '<div style="font-size:11px;color:var(--brand);margin-bottom:8px;font-weight:500">Pull up RETR first — find a recent sale to mention in your opener.</div>'+
         (r.notes?'<div style="font-size:11px;color:var(--text-3);background:var(--surface-2);border-radius:6px;padding:7px 10px;margin-bottom:8px;font-style:italic">Last note: "'+escHtml(r.notes)+'"</div>':'')+
         '<select id="rc-log-type-'+rid+'">'+ACT_TYPE_OPTIONS+'</select>'+
@@ -5981,7 +6101,7 @@ function renderRcGroup(list,groupStatus){
       '</div>'+
       // Remove form
       '<div id="rc-remove-'+rid+'" class="rc-remove-form">'+
-        '<div style="font-size:11px;font-weight:600;color:#B85B00;margin-bottom:8px">Remove '+escHtml(r.agent_name)+' from reconnect list</div>'+
+        '<div style="font-size:11px;font-weight:600;color:#B85B00;margin-bottom:8px">Remove '+properCase(r.agent_name)+' from reconnect list</div>'+
         '<input type="text" id="rc-remove-reason-'+rid+'" placeholder="Reason (optional — e.g. moved, retired, DNC...)" style="width:100%;border:0.5px solid #FFE69C;border-radius:6px;padding:7px 10px;font-size:12px;font-family:inherit;outline:none;box-sizing:border-box;margin-bottom:8px">'+
         '<div style="display:flex;gap:8px">'+
           '<button class="btn-sm" style="background:#A32D2D;color:#fff;border:none;border-radius:6px;padding:6px 12px;cursor:pointer;font-family:inherit;font-size:12px" onclick="rcConfirmRemove('+rid+')">Confirm remove</button>'+
@@ -6652,7 +6772,7 @@ async function doSearchHistory(name){
       
       html+='<div style="background:#EEEBF8;border:0.5px solid #D9D3EE;border-radius:10px;padding:16px;margin-bottom:14px">'
         +'<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px">'
-        +'<div style="font-size:16px;font-weight:500;color:#4E3D8A">'+escHtml(p.agent_name)+'</div>'
+        +'<div style="font-size:16px;font-weight:500;color:#4E3D8A">'+properCase(p.agent_name)+'</div>'
         +'<button onclick="openContactModal(\''+p.agent_name.replace(/'/g,"\\'")+'\''+')" style="padding:4px 12px;background:#fff;color:var(--brand-dark);border:1px solid var(--border);border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit">Edit contact</button>'
         +'</div>'
         +(p.personal_notes||referralCreditForProfile>0?'<div style="background:#fff;border:1px solid #D9D3EE;border-radius:8px;padding:10px 12px;margin-bottom:10px">'
@@ -8219,7 +8339,8 @@ async function deleteAgent(){
 async function openContactModal(name,phone,email,brokerage,birthday){
   editingContactName=name;
   editingContactOriginalName=null;
-  document.getElementById("contactModalName").textContent=name;
+  document.getElementById("contactModalName").textContent=resolvedDisplayName(name);
+  if(document.getElementById("contactDisplayName"))document.getElementById("contactDisplayName").value="";
   // Always check for an existing profile — needed for Save/Delete to target the right row,
   // and to catch possible duplicate rows early. Previously this only ran when the caller
   // passed no phone/email/brokerage/birthday at all, so callers like the Pipeline tab (which
@@ -8236,6 +8357,7 @@ async function openContactModal(name,phone,email,brokerage,birthday){
         editingContactOriginalName=ambiguous?null:p.agent_name;
         phone=p.phone||phone||"";email=p.email||email||"";brokerage=p.address||brokerage||"";birthday=p.birthday||birthday||"";
         personalNotes=p.personal_notes||"";
+        if(document.getElementById("contactDisplayName"))document.getElementById("contactDisplayName").value=p.display_name||"";
         document.getElementById("contactTier").value=p.tier||"";
         document.getElementById("contactDNC").checked=!!(p.do_not_contact);
         if(document.getElementById("contactGrowthOpp"))document.getElementById("contactGrowthOpp").value=p.next_growth_opportunity||"";
@@ -8285,7 +8407,7 @@ async function saveContactModal(){
         }
       }
     }
-    const payload={phone:document.getElementById("contactPhone").value.trim()||null,email:document.getElementById("contactEmail").value.trim()||null,address:combineAddress(document.getElementById("contactStreet").value,document.getElementById("contactCity").value,document.getElementById("contactState").value,document.getElementById("contactZip").value),birthday:birthdayVal,personal_notes:document.getElementById("contactPersonalNotes")?document.getElementById("contactPersonalNotes").value.trim()||null:null,tier:document.getElementById("contactTier").value||null,do_not_contact:document.getElementById("contactDNC").checked};
+    const payload={display_name:document.getElementById("contactDisplayName")?document.getElementById("contactDisplayName").value.trim()||null:null,phone:document.getElementById("contactPhone").value.trim()||null,email:document.getElementById("contactEmail").value.trim()||null,address:combineAddress(document.getElementById("contactStreet").value,document.getElementById("contactCity").value,document.getElementById("contactState").value,document.getElementById("contactZip").value),birthday:birthdayVal,personal_notes:document.getElementById("contactPersonalNotes")?document.getElementById("contactPersonalNotes").value.trim()||null:null,tier:document.getElementById("contactTier").value||null,do_not_contact:document.getElementById("contactDNC").checked};
     if(document.getElementById("contactGrowthOpp"))payload.next_growth_opportunity=document.getElementById("contactGrowthOpp").value.trim()||null;
     if(document.getElementById("contactGrowthOppDeadline"))payload.growth_opportunity_deadline=document.getElementById("contactGrowthOppDeadline").value||null;
     if(document.getElementById("contactLastMeaningfulContact"))payload.last_meaningful_contact_date=document.getElementById("contactLastMeaningfulContact").value||null;
@@ -8316,6 +8438,8 @@ async function saveContactModal(){
       payload.agent_name=editingContactName;
       await sbFetch("agent_profiles",{method:"POST",prefer:"return=minimal",body:JSON.stringify(payload)});
     }
+    const displayKey=((exact&&exact.agent_name)||editingContactName||"").trim().toLowerCase();
+    if(payload.display_name)amandaDisplayNames[displayKey]=payload.display_name;else delete amandaDisplayNames[displayKey];
     toast("Contact updated","success");closeContactModal();if(window._contactSaveCallback){window._contactSaveCallback();window._contactSaveCallback=null;}
     if(document.getElementById("historySearch").value.length>=2)doSearchHistory(document.getElementById("historySearch").value.trim());
   }catch(e){toast("Save failed: "+e.message,"error");}
@@ -8814,13 +8938,14 @@ function renderContacts(list){
   if(!el)return;
   if(!list.length){el.innerHTML='<div class="no-data">No contacts found.</div>';return;}
   el.innerHTML=list.map(c=>{
-    const initials=(c.agent_name||"?").split(" ").map(w=>w[0]).slice(0,2).join("").toUpperCase();
+    const shownName=(c.display_name&&c.display_name.trim())?c.display_name.trim():resolvedDisplayName(c.agent_name);
+    const initials=(shownName||"?").split(" ").map(w=>w[0]).slice(0,2).join("").toUpperCase();
     const hasBday=c.birthday?true:false;
     const sn=(c.agent_name||"").replace(/"/g,"&quot;");
     return'<div class="contact-row">'+
       '<div class="contact-avatar">'+initials+'</div>'+
       '<div class="contact-info">'+
-        '<div class="contact-name" style="display:flex;align-items:center;gap:7px">'+escHtml(properCase(c.agent_name))+tierBadge(c.tier)+'</div>'+
+        '<div class="contact-name" style="display:flex;align-items:center;gap:7px">'+escHtml(shownName)+tierBadge(c.tier)+'</div>'+
         '<div class="contact-meta">'+
           (c.phone?'<span>'+phoneCallLink(c.agent_name,c.phone)+'</span>':'<span style="color:#ffb3b3">No phone</span>')+
           (c.email?'<span>'+escHtml(c.email)+'</span>':'')+
@@ -8841,7 +8966,8 @@ function openContactsEdit(nameOrEl){
   const c=allContacts.find(x=>x.agent_name===name)||{agent_name:name};
   editingContactName=name;
   editingContactOriginalName=c.agent_name||name; // best-effort cache; saveContactModal re-verifies before writing
-  document.getElementById("contactModalName").textContent=name;
+  document.getElementById("contactModalName").textContent=c.display_name||resolvedDisplayName(name);
+  if(document.getElementById("contactDisplayName"))document.getElementById("contactDisplayName").value=c.display_name||"";
   document.getElementById("contactPhone").value=c.phone||"";
   document.getElementById("contactEmail").value=c.email||"";
   applyAddressToFields(c.address||"","contact");
