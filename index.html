@@ -1,4 +1,4 @@
- <!DOCTYPE html>
+  <!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -348,6 +348,11 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI'
 /* ── RESPONSIVE ────────────────────────────────────────────────── */
 @media(max-width:600px){.form-row,.form-row.three,.stat-grid,.pipe-stats,.week-bottom{grid-template-columns:1fr}.view{padding:16px 14px}}
 </style>
+<!-- Realtime pass: loads the Supabase client ONLY for postgres_changes subscriptions below.
+     Everything else in this app still uses the existing sbFetch()/raw-fetch REST calls,
+     unchanged — this is additive, not a rewrite. If this script fails to load (offline, CDN
+     blocked, etc.) the app is unaffected: the existing near-real-time polling still runs. -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js" defer></script>
 </head>
 <body>
 <div class="header">
@@ -468,6 +473,7 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI'
           <option value="New Agent Follow-up">New agent follow-up</option>
           <option value="Co-hosted Event">Co-hosted event</option>
           <option value="Realtor Buddy Referral Ask">Realtor buddy ask</option>
+          <option value="Buddy Intro Received">Buddy intro received</option>
         </select>
         <select id="quickLogContactMethod" style="border:1px solid var(--border);border-radius:var(--radius-sm);padding:9px 11px;font-size:12px;font-family:inherit;color:var(--text-1);outline:none;background:var(--surface)">
           <option value="Call">Call</option>
@@ -601,7 +607,7 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI'
       <!-- Each trigger below gets its own bounded, visually separated box so this card reads as
            distinct sections instead of one continuous scrolling wall -->
       <div id="weekCtcTrigger" style="max-height:220px;overflow-y:auto;margin-top:10px"></div>
-      <div id="buddyAskTrigger" style="max-height:260px;overflow-y:auto;margin-top:10px"></div>
+      <div id="buddyAskTrigger" style="margin-top:10px"></div>
       <div id="deadEndTrigger" style="max-height:260px;overflow-y:auto;margin-top:10px"></div>
       <!-- Follow-ups due -->
       <div id="followupsSectionLabel" style="display:none;font-size:11px;font-weight:700;color:var(--text-3);text-transform:uppercase;letter-spacing:.4px;margin:10px 0 6px;padding-top:8px;border-top:1px solid var(--border-light)">📅 Follow-ups you scheduled</div>
@@ -655,7 +661,7 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI'
               <option>Break Breads</option>
               <option>Market Update</option>
               <option>Co-hosted Event</option>
-              <option>Realtor Buddy Referral Ask</option>
+              <option>Realtor Buddy Referral Ask</option><option>Buddy Intro Received</option>
             </optgroup>
             <optgroup label="Management">
               <option>Agent Talk-to</option>
@@ -753,7 +759,7 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI'
         <select id="feedTypeFilter" onchange="applyFeedFilters()" style="flex:1;padding:8px 11px;border:0.5px solid var(--border);border-radius:8px;font-size:12px;font-family:inherit;color:var(--text-2);background:var(--surface);">
           <option value="all">All types</option>
           <option>Cold Calls</option><option>New Realtor Meeting</option><option>New Agent Follow-up</option><option>Break Breads</option>
-          <option>Market Update</option><option>Co-hosted Event</option><option>Realtor Buddy Referral Ask</option>
+          <option>Market Update</option><option>Co-hosted Event</option><option>Realtor Buddy Referral Ask</option><option>Buddy Intro Received</option>
           <option>Agent Talk-to</option><option>Reconnect Outreach</option>
           <option>CTC Call</option><option>Under Contract Call</option>
           <option>Birthday Outreach</option><option>Holiday Outreach</option><option>Agent Appreciation</option>
@@ -1435,7 +1441,7 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI'
       <tr><td style="padding:5px 8px 5px 0;font-weight:600;white-space:nowrap;vertical-align:top">Agent Appreciation <span style="color:var(--brand);font-weight:400">counts as Talk-to</span></td><td style="padding:5px 0;color:var(--text-2)">Recognizing a top producer or celebrating a milestone.</td></tr>
       <tr><td style="padding:5px 8px 5px 0;font-weight:600;white-space:nowrap;vertical-align:top">Market Update <span style="color:var(--brand);font-weight:400">counts as Talk-to</span></td><td style="padding:5px 0;color:var(--text-2)">Sharing what's happening in the market: inventory, days on market, buyer demand, listing trends. This isn't financing or rates; that stays with the LP team.</td></tr>
       <tr><td style="padding:5px 8px 5px 0;font-weight:600;white-space:nowrap;vertical-align:top">Break Breads <span style="color:var(--brand);font-weight:400">note required, 10+ words</span></td><td style="padding:5px 0;color:var(--text-2)">More than a meal: sitting down with the agent to get real feedback and confirm the relationship is genuinely solid. Its own goal (5/week), separate from Talk-to's. To figure out who's due, check the Break Bread Due List on Snapshot (or the Face Time Tracker on the LP tracker), it shows last touch date per agent across both you and the LPs. Consider bringing the assigned LP along when it makes sense.</td></tr>
-      <tr><td style="padding:5px 8px 5px 0;font-weight:600;white-space:nowrap;vertical-align:top">Realtor Buddy Referral Ask</td><td style="padding:5px 0;color:var(--text-2)">Ask an existing happy agent to introduce you to someone else they know — you're not calling a new person here, you're asking the buddy to make the intro. Own goal (3/week). When the intro leads to an actual new cold call or meeting, tag it with "Referred by" on that new entry so the ask's real result gets tracked, not just that you asked.</td></tr>
+      <tr><td style="padding:5px 8px 5px 0;font-weight:600;white-space:nowrap;vertical-align:top">Realtor Buddy Referral Ask</td><td style="padding:5px 0;color:var(--text-2)">Ask an existing happy agent to introduce you to someone else they know. Log the ask when you make it; do not create a follow-up obligation for that agent. Outcome goal: 3 actual buddy introductions received per week. When an intro arrives, use “Buddy intro received” so the result is tracked separately from the ask.</td></tr>
       <tr><td style="padding:5px 8px 5px 0;font-weight:600;white-space:nowrap;vertical-align:top">Co-hosted Event</td><td style="padding:5px 0;color:var(--text-2)">Hosting something together with the agent.</td></tr>
     </table>
 
@@ -1506,7 +1512,7 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI'
     <div style="background:var(--surface-2);border-radius:var(--radius-sm);padding:10px 12px;margin-bottom:8px;font-size:12.5px;color:var(--text-2);line-height:1.6">
       Subject: Client Name / NEW LEAD — from [Realtor Name] at [Realty Brokerage]<br><br>
       Hello Daniel Sa Team,<br><br>
-      At your earliest convenience, please reach out to my wonderful client(s) [Client Name]. They are looking to purchase [insert all relevant details/goals related to the borrowers and their home search].<br><br>
+      Please reach out to my wonderful client(s) [Client Name] as soon as possible. They are looking to purchase [insert all relevant details/goals related to the borrowers and their home search].<br><br>
       • [Borrower #1]<br>&nbsp;&nbsp;&nbsp;○ Phone:<br>&nbsp;&nbsp;&nbsp;○ Email:<br>
       • [Borrower #2]<br>&nbsp;&nbsp;&nbsp;○ Phone:<br>&nbsp;&nbsp;&nbsp;○ Email:<br><br>
       Please let me know if you have any follow-up questions/concerns in the meantime. Thank you so much!<br><br>
@@ -1515,7 +1521,7 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI'
     <div style="font-size:12.5px;color:var(--text-2);font-weight:600;margin-bottom:4px">Send to Lender — same details, addressed directly:</div>
     <div style="background:var(--surface-2);border-radius:var(--radius-sm);padding:10px 12px;margin-bottom:16px;font-size:12.5px;color:var(--text-2);line-height:1.6">
       Hello Daniel Sa Team,<br><br>
-      At your earliest convenience, please reach out to my wonderful client(s) [Client Name]. They are looking to purchase [insert all relevant details/goals related to the borrowers and their home search].<br><br>
+      Please reach out to my wonderful client(s) [Client Name] as soon as possible. They are looking to purchase [insert all relevant details/goals related to the borrowers and their home search].<br><br>
       • [Borrower #1]<br>&nbsp;&nbsp;&nbsp;○ Phone:<br>&nbsp;&nbsp;&nbsp;○ Email:<br>
       • [Borrower #2]<br>&nbsp;&nbsp;&nbsp;○ Phone:<br>&nbsp;&nbsp;&nbsp;○ Email:<br><br>
       Please let me know if you have any follow-up questions/concerns in the meantime. Thank you so much!
@@ -1801,11 +1807,65 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI'
 
 <script>
 const SB_URL="https://uclucbdkjqyqdvifyptx.supabase.co";
+// ── Display-only name formatting (does NOT touch stored agent_name — matching/identity always
+// uses the raw stored value; see identical helper in Core Team's file) ────────────────────────
+// Only reformats a name that is ENTIRELY uppercase (a strong signal it's raw import data, not
+// something a person typed) — anything already mixed-case is treated as canonical and untouched.
+function displayName(raw){
+  if(!raw)return raw;
+  const s=String(raw).trim();
+  if(!s)return s;
+  // Preserve intentional mixed-case human-entered names exactly (McMahon, de la Rosa, etc.).
+  // Normalize only obvious raw-import casing: ALL CAPS or all lowercase.
+  const letters=s.replace(/[^A-Za-z]/g,"");
+  if(letters && letters!==letters.toUpperCase() && letters!==letters.toLowerCase())return s;
+  const suffixes={"jr":"Jr.","jr.":"Jr.","sr":"Sr.","sr.":"Sr.","ii":"II","iii":"III","iv":"IV","v":"V"};
+  const capPart=part=>{
+    if(!part)return part;
+    const lead=(part.match(/^[^A-Za-z0-9]*/)||[""])[0];
+    const trail=(part.match(/[^A-Za-z0-9.]*$/)||[""])[0];
+    let core=part.slice(lead.length,part.length-trail.length).toLowerCase();
+    if(!core)return part;
+    if(suffixes[core])return lead+suffixes[core]+trail;
+    if(core==="&")return part;
+    if(/^[a-z](\.[a-z])+\.?$/i.test(core))return lead+core.toUpperCase()+trail;
+    if(core.includes("-"))return lead+core.split("-").map(capPart).join("-")+trail;
+    if(core.includes("'"))return lead+core.split("'").map(capPart).join("'")+trail;
+    if(core.startsWith("mc")&&core.length>3)core="Mc"+core.charAt(2).toUpperCase()+core.slice(3);
+    else if(core.startsWith("mac")&&core.length>4)core="Mac"+core.charAt(3).toUpperCase()+core.slice(4);
+    else core=core.charAt(0).toUpperCase()+core.slice(1);
+    return lead+core+trail;
+  };
+  return s.split(/\s+/).map(capPart).join(" ");
+}
+// ── Meaningful Contact classification (shared definition — see identical config in Core Team's
+// file) ──────────────────────────────────────────────────────────────────────────────────────
+// Not every logged activity should count toward "last meaningful contact" for cadence/health
+// purposes — a voicemail, an unanswered call, or an incomplete record isn't the same as an
+// actual conversation. This is the ONE place that decision is made; adjust here rather than in
+// each function that uses it.
+//
+// CORRECTED DEFAULT (was: blank outcome counted as meaningful — flagged as wrong; an incomplete
+// record should not reset the relationship-contact clock): a blank/unset outcome is now NOT
+// meaningful UNLESS the activity type itself proves real contact happened (a logged meeting —
+// Partner Meeting / Break Breads / a held New Agent Meeting — is evidence of contact on its own,
+// independent of whether a separate "outcome" field was also filled in for it).
+const NOT_MEANINGFUL_RM_OUTCOMES=["left voicemail","no answer"];
+const NOT_MEANINGFUL_LP_OUTCOMES=["left vm"];
+// Activity types that inherently prove contact happened, regardless of the outcome field —
+// these are all meeting/in-person-style log entries, not attempted-but-missed calls.
+const MEETING_ACT_TYPES=["Partner Meeting","Break Breads","New Agent Meeting"];
+function isMeaningfulOutcome(outcome,list,actType){
+  if(actType&&MEETING_ACT_TYPES.indexOf(actType)>=0)return true;
+  const o=(outcome||"").trim().toLowerCase();
+  if(!o)return false; // blank/unset outcome no longer counts as meaningful by default
+  return list.indexOf(o)<0;
+}
 const SB_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVjbHVjYmRranF5cWR2aWZ5cHR4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA0OTUyMTMsImV4cCI6MjA5NjA3MTIxM30.VnqWcFT1WLQwCJxSdEIzIgOvETaOQly2IQxht-9uI7E";
 
 const EMOJI={
   "Cold Calls":"🏹","New Realtor Meeting":"🌸","New Agent Follow-up":"🌻","Break Breads":"🤝","Agent Talk-to":"🤙","Agent Talk-to":"📞",
-  "Realtor Buddy Referral Ask":"🌾","CTC Call":"⚡","Under Contract Call":"🏠",  "Market Update":"📊",
+  "Realtor Buddy Referral Ask":"🌾","Buddy Intro Received":"🤝","CTC Call":"⚡","Under Contract Call":"🏠",  "Market Update":"📊",
   "Co-hosted Event":"🎉","CTC Call":"🍰","Birthday Outreach":"🍰",
   "Holiday Outreach":"🎅","Agent Appreciation":"❤️","Reconnect Outreach":"🔁"
 };
@@ -1814,7 +1874,7 @@ const GOALS=[
   {label:"New realtor meetings",type:"New Realtor Meeting",weekly:5,monthly:20},
   {label:"Break breads",type:"Break Breads",weekly:5,monthly:20},
   {label:"Agent Talk-to's",type:"__talkto__",weekly:100,monthly:400},
-  {label:"Realtor buddy asks",type:"Realtor Buddy Referral Ask",weekly:3,monthly:12}
+  {label:"Buddy intros received",type:"Buddy Intro Received",weekly:3,monthly:12}
 ];
 const GOAL_THRESHOLD=0.8; // 80% = passing
 const CTC_TYPE="CTC Call";
@@ -1870,7 +1930,7 @@ function agentMatchKey(raw){
 
 function properCase(str){
   if(!str)return"";
-  return escHtml(str.toLowerCase().replace(/\b\w/g,c=>c.toUpperCase()));
+  return escHtml(displayName(str));
 }
 function escHtml(s){
   return(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#39;");
@@ -1881,7 +1941,7 @@ function toggleDetail(id){
 }
 
 function cntTalkTo(acts){return(acts||[]).filter(function(a){return TALKTO_TYPES.indexOf((a.act_type||"").trim())>=0;}).length;}
-const ACT_TYPE_OPTIONS='<optgroup label="New Relationships"><option>Cold Calls</option><option>New Realtor Meeting</option></optgroup><optgroup label="Relationship Deepening"><option>New Agent Follow-up</option><option>Break Breads</option><option>Market Update</option><option>Co-hosted Event</option><option>Realtor Buddy Referral Ask</option></optgroup><optgroup label="Management"><option>Agent Talk-to</option><option>Reconnect Outreach</option></optgroup><optgroup label="Retention and Referrals"><option>CTC Call</option><option>Under Contract Call</option><option>Birthday Outreach</option><option>Holiday Outreach</option><option>Agent Appreciation</option></optgroup><optgroup label="Playbook — Formal Meetings"><option>Partner Meeting</option></optgroup><optgroup label="Playbook — Experience Monitoring"><option>New Lead Received</option><option>Pre-Approval Issued</option><option>New Contract</option><option>Clear to Close</option></optgroup><optgroup label="Playbook — Service &amp; Feedback"><option>Service Recovery</option><option>Partner Feedback</option></optgroup>';
+const ACT_TYPE_OPTIONS='<optgroup label="New Relationships"><option>Cold Calls</option><option>New Realtor Meeting</option></optgroup><optgroup label="Relationship Deepening"><option>New Agent Follow-up</option><option>Break Breads</option><option>Market Update</option><option>Co-hosted Event</option><option>Realtor Buddy Referral Ask</option><option>Buddy Intro Received</option></optgroup><optgroup label="Management"><option>Agent Talk-to</option><option>Reconnect Outreach</option></optgroup><optgroup label="Retention and Referrals"><option>CTC Call</option><option>Under Contract Call</option><option>Birthday Outreach</option><option>Holiday Outreach</option><option>Agent Appreciation</option></optgroup><optgroup label="Playbook — Formal Meetings"><option>Partner Meeting</option></optgroup><optgroup label="Playbook — Experience Monitoring"><option>New Lead Received</option><option>Pre-Approval Issued</option><option>New Contract</option><option>Clear to Close</option></optgroup><optgroup label="Playbook — Service &amp; Feedback"><option>Service Recovery</option><option>Partner Feedback</option></optgroup>';
 function badgeEmoji(type){return type||"";}
 
 const NEXT_CALL_DAYS={
@@ -3580,15 +3640,18 @@ async function loadContactDataQuality(){
 async function loadQuiet(){
   try{
     const[allAgents,allActs,lpCalls]=await Promise.all([
-      sbFetch("agent_profiles?select=agent_name,retained,tier,do_not_contact&order=agent_name.asc&limit=500").catch(()=>sbFetch("agent_profiles?select=agent_name,retained,tier&order=agent_name.asc&limit=500").catch(()=>[])),
-      sbFetch("amanda_activities?select=agent_name,act_date&order=act_date.desc&limit=2000"),
-      sbFetch("call_logs?select=agent_name,call_date&order=call_date.desc&limit=2000").catch(()=>[])
+      sbFetch("agent_profiles?select=agent_name,retained,tier,do_not_contact,relationship_status&order=agent_name.asc&limit=500").catch(()=>sbFetch("agent_profiles?select=agent_name,retained,tier,do_not_contact&order=agent_name.asc&limit=500").catch(()=>sbFetch("agent_profiles?select=agent_name,retained,tier&order=agent_name.asc&limit=500").catch(()=>[]))),
+      sbFetch("amanda_activities?select=agent_name,act_date,outcome,act_type&order=act_date.desc&limit=2000"),
+      sbFetch("call_logs?select=agent_name,call_date,outcome&order=call_date.desc&limit=2000").catch(()=>[])
     ]);
 
+    // Last MEANINGFUL contact — a voicemail or unanswered call doesn't reset the clock (see the
+    // shared classifier near the top of this file). Rows are already newest-first, so this keeps
+    // the most recent contact that actually counts, not just the most recent log entry.
     const lastSeenRM={};
-    allActs.forEach(a=>{const n=(a.agent_name||"").trim().toLowerCase();if(n&&!lastSeenRM[n])lastSeenRM[n]=a.act_date;});
+    allActs.forEach(a=>{const n=(a.agent_name||"").trim().toLowerCase();if(n&&!lastSeenRM[n]&&isMeaningfulOutcome(a.outcome,NOT_MEANINGFUL_RM_OUTCOMES,a.act_type))lastSeenRM[n]=a.act_date;});
     const lastSeenLP={};
-    lpCalls.forEach(c=>{const n=(c.agent_name||"").trim().toLowerCase();if(n&&!lastSeenLP[n])lastSeenLP[n]=c.call_date;});
+    lpCalls.forEach(c=>{const n=(c.agent_name||"").trim().toLowerCase();if(n&&!lastSeenLP[n]&&isMeaningfulOutcome(c.outcome,NOT_MEANINGFUL_LP_OUTCOMES))lastSeenLP[n]=c.call_date;});
 
     const now=new Date();
     // Cadence scales by tier — an A-tier producer needs checking on far more often than a C-tier
@@ -3596,7 +3659,7 @@ async function loadQuiet(){
     // smart prioritization of limited time.
     const TIER_TOUCH_THRESHOLD={Channel:14,A:14,B:30,C:60};
     const TIER_URGENT_THRESHOLD={Channel:21,A:21,B:45,C:90};
-    const rows=allAgents.filter(a=>a.do_not_contact!==true).map(a=>{
+    const rows=allAgents.filter(a=>a.do_not_contact!==true&&a.relationship_status!=="inactive").map(a=>{
       const name=(a.agent_name||"").trim();if(!name)return null;
       const lookupKey=name.toLowerCase();
       const lastRM=lastSeenRM[lookupKey];
@@ -4015,6 +4078,7 @@ function renderSnapshotStats(acts, period){
   const meetings=(acts||[]).filter(a=>a.act_type==="New Realtor Meeting").length;
   const breakBreads=(acts||[]).filter(a=>a.act_type==="Break Breads").length;
   const buddyAsks=(acts||[]).filter(a=>a.act_type==="Realtor Buddy Referral Ask").length;
+  const buddyIntros=(acts||[]).filter(a=>a.act_type==="Buddy Intro Received").length;
 
   const statCard=(num,goal,label,filterType)=>{
     const pct=goal?Math.round(num/goal*100):0;
@@ -4052,7 +4116,7 @@ function renderSnapshotStats(acts, period){
     statCard(talkTos,g.talkTos,"Realtor Talk-to's","__talkto__")+
     statCard(meetings,g.meetings,"New Realtor Meetings","New Realtor Meeting")+
     statCard(breakBreads,g.breakBreads,"Break Breads","Break Breads")+
-    statCard(buddyAsks,g.buddyAsks,"Realtor Buddy Intros","Realtor Buddy Referral Ask");
+    statCard(buddyIntros,g.buddyAsks,"Buddy Intros · "+buddyAsks+" asks","Buddy Intro Received");
 
   // Update day label
   const dayEl=document.getElementById("snapshotDayLabel");
@@ -4313,7 +4377,7 @@ async function loadWeek(){
     const yearStart=now.getFullYear()+"-04-01";// April — role start date
     const todayStr=today();
     const[weekActs,mtdActs,ytdActs,dailyActs,everMeetings]=await Promise.all([
-      sbFetch("amanda_activities?select=act_type,outcome&act_date=gte."+week.start+"&act_date=lte."+week.end),
+      sbFetch("amanda_activities?select=act_type,outcome,agent_name,notes&act_date=gte."+week.start+"&act_date=lte."+week.end),
       sbFetch("amanda_activities?select=act_type,outcome,agent_name&act_date=gte."+monthStart),
       sbFetch("amanda_activities?select=act_type,outcome&act_date=gte."+yearStart),
       sbFetch("amanda_activities?select=act_type,outcome&act_date=eq."+todayStr),
@@ -4467,55 +4531,28 @@ async function loadWeek(){
     }
   }catch(e){console.warn("CTC trigger:",e);}
 
-  // Buddy referral ask follow-through — same pattern as CTC: flag asks that never got a check-in,
-  // AND show whether asks are actually turning into referrals (tagged via "Referred by:" in notes
-  // on new Cold Calls / New Realtor Meeting entries), not just counting that she asked.
+  // Buddy Intro progress — intentionally NOT a follow-up queue.
+  // We track Amanda's ask activity and the actual intros received as two separate events.
+  // Asking completes the ask; we do not create a reminder to chase that agent later.
   try{
-    const cutoff2=new Date();cutoff2.setDate(cutoff2.getDate()-14);
-    const cutoff2Str=cutoff2.toISOString().split("T")[0];
-    const cutoff90=new Date();cutoff90.setDate(cutoff90.getDate()-90);
-    const cutoff90Str=cutoff90.toISOString().split("T")[0];
-    const[asks,allTouches,allAsks90,referralNotes]=await Promise.all([
-      sbFetch("amanda_activities?select=agent_name,act_date&act_type=eq.Realtor Buddy Referral Ask&act_date=lte."+cutoff2Str+"&order=act_date.desc&limit=50").catch(()=>[]),
-      sbFetch("amanda_activities?select=agent_name,act_date&order=act_date.desc&limit=3000").catch(()=>[]),
-      sbFetch("amanda_activities?select=agent_name&act_type=eq.Realtor Buddy Referral Ask&act_date=gte."+cutoff90Str+"&limit=200").catch(()=>[]),
-      sbFetch("amanda_activities?select=notes&act_type=in.(Cold Calls,New Realtor Meeting)&notes=ilike.*Referred by*&act_date=gte."+cutoff90Str+"&limit=200").catch(()=>[])
-    ]);
-    const normalize2=s=>(s||"").toLowerCase().trim();
-    const askByAgent={};
-    asks.forEach(a=>{const n=normalize2(a.agent_name);if(n&&(!askByAgent[n]||a.act_date>askByAgent[n]))askByAgent[n]=a.act_date;});
-    const lastTouchByAgent={};
-    allTouches.forEach(a=>{const n=normalize2(a.agent_name);if(n&&(!lastTouchByAgent[n]||a.act_date>lastTouchByAgent[n]))lastTouchByAgent[n]=a.act_date;});
-    const needsCheckin=Object.keys(askByAgent).filter(n=>(lastTouchByAgent[n]||"")<=askByAgent[n]);
-
-    // Did the ask actually turn into a referral? Cross-reference against "Referred by:" tags.
-    const referredBuddyNames=new Set();
-    (referralNotes||[]).forEach(r=>{
-      const m=(r.notes||"").match(/Referred by:\s*([^—]+)/i);
-      if(m)referredBuddyNames.add(normalize2(m[1].trim()));
-    });
-    const totalAskedNames=new Set((allAsks90||[]).map(a=>normalize2(a.agent_name)));
-    const successCount=[...totalAskedNames].filter(n=>referredBuddyNames.has(n)).length;
-
+    const buddyAsksWk=(weekActs||[]).filter(a=>a.act_type==="Realtor Buddy Referral Ask").length;
+    const buddyIntrosWk=(weekActs||[]).filter(a=>a.act_type==="Buddy Intro Received").length;
     const buddyEl=document.getElementById("buddyAskTrigger");
     if(buddyEl){
-      let html="";
-      if(totalAskedNames.size>0){
-        html+='<div style="background:var(--surface-2);border-radius:8px;padding:10px 14px;margin-bottom:8px;font-size:12px;color:var(--text-2)">'
-          +'<strong style="color:var(--text-1)">'+successCount+' of '+totalAskedNames.size+'</strong> buddies asked (last 90 days) actually referred someone — tag it with "Referred by" when you log the new cold call to track this.'
-          +'</div>';
-      }
-      if(needsCheckin.length){
-        html+='<div style="background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:10px 12px">'
-          +'<div class="card-title" style="margin-bottom:10px">Buddy Asks — Check In ('+needsCheckin.length+') <span class="card-sub">asked 14+d ago, no follow-up touch since</span></div>'+
-          needsCheckin.map(n=>'<div class="fu-item"><div class="fu-dot" style="background:#9585C0"></div><div class="fu-body"><div class="fu-name">'+properCase(n)+'</div><div class="fu-meta" style="color:#9585C0">Asked '+fmtDate(askByAgent[n])+'</div></div><button class="btn-sm" style="background:#9585C0;color:#fff;border:none;border-radius:6px;padding:4px 10px;font-size:11px;cursor:pointer;font-family:inherit" onclick="document.getElementById(\'agentInput\').value=\''+n.replace(/'/g,"\\'")+'\';switchTab(\'log\')">Check in</button></div>').join("")
-          +'</div>';
-      }
-      buddyEl.innerHTML=html;
-      buddyEl.style.display=html?"block":"none";
-      if(html)addScrollHintIfNeeded("buddyAskTrigger");
+      const pct=Math.min(100,Math.round((buddyIntrosWk/3)*100));
+      const color=buddyIntrosWk>=3?"var(--success)":"var(--brand)";
+      buddyEl.innerHTML='<div style="background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:10px 12px">'
+        +'<div style="display:flex;justify-content:space-between;align-items:center;gap:12px">'
+        +'<div><div class="card-title" style="margin-bottom:2px">Buddy Intros This Week</div>'
+        +'<div class="card-sub">'+buddyAsksWk+' ask'+(buddyAsksWk===1?'':'s')+' made · no agent follow-up debt</div></div>'
+        +'<div style="font-size:20px;font-weight:800;color:'+color+'">'+buddyIntrosWk+' <span style="font-size:12px;font-weight:500;color:var(--text-3)">/ 3</span></div>'
+        +'</div>'
+        +'<div style="height:5px;background:var(--border-light);border-radius:4px;overflow:hidden;margin-top:8px"><div style="height:100%;width:'+pct+'%;background:'+color+'"></div></div>'
+        +'<div style="font-size:10.5px;color:var(--text-3);margin-top:7px">Log an ask when you make it. If that agent later sends an introduction, log “Buddy intro received.” No reminder is created to chase the agent.</div>'
+        +'</div>';
+      buddyEl.style.display="block";
     }
-  }catch(e){console.warn("Buddy ask trigger:",e);}
+  }catch(e){console.warn("Buddy intro progress:",e);}
 
   // ── WENT NOWHERE — no outcome and no plan to follow up ──────────────────────────
   // The general version of the buddy-ask check: any outreach that didn't land (not Positive,
@@ -4525,7 +4562,7 @@ async function loadWeek(){
   try{
     const cutoff3=new Date();cutoff3.setDate(cutoff3.getDate()-14);
     const cutoff3Str=cutoff3.toISOString().split("T")[0];
-    const PURE_GESTURE_TYPES=["Birthday Outreach","Holiday Outreach","Agent Appreciation"];
+    const PURE_GESTURE_TYPES=["Birthday Outreach","Holiday Outreach","Agent Appreciation","Realtor Buddy Referral Ask","Buddy Intro Received"];
     const[weakActs,allTouches2]=await Promise.all([
       sbFetch("amanda_activities?select=id,agent_name,act_type,act_date,outcome&act_date=gte."+cutoff3Str+"&follow_up_date=is.null&order=act_date.desc&limit=100").catch(()=>[]),
       sbFetch("amanda_activities?select=agent_name,act_date&order=act_date.desc&limit=3000").catch(()=>[])
@@ -4573,6 +4610,17 @@ async function initAutocomplete(){
     dncAgentNames=new Set(dedupedAgents.filter(a=>a.do_not_contact).map(a=>a.agent_name));
     prospectNames=prospects.map(p=>p.agent_name).filter(n=>n);
     allAgentNames=agentNames;
+    // "Referred by" (buddy-ask tracking) — was a plain free-text field with no connection to
+    // real agent records, so a typo or slightly different name meant the ask-to-referral match
+    // silently failed. This wires it to a native browser datalist of actual known agent names
+    // instead — she still types freely, but gets real matching suggestions as she types, making
+    // the existing "Referred by:" tag-matching this feeds into actually reliable. Doesn't change
+    // the underlying tracking mechanism/storage — see FINAL_DEPLOYMENT_REVIEW.md for why a
+    // fuller redesign (a real structured link instead of a text tag) wasn't attempted this pass.
+    let dl=document.getElementById("buddyNameOptions");
+    if(!dl){dl=document.createElement("datalist");dl.id="buddyNameOptions";document.body.appendChild(dl);}
+    dl.innerHTML=agentNames.map(n=>'<option value="'+n.replace(/"/g,"&quot;")+'">').join("");
+    ["ccReferredBy","referredByInput"].forEach(id=>{const el=document.getElementById(id);if(el&&!el.getAttribute("list"))el.setAttribute("list","buddyNameOptions");});
   }catch(e){console.error("Autocomplete init error:",e);}
   const input=document.getElementById("agentInput"),list=document.getElementById("acList");
   input.addEventListener("input",()=>{
@@ -5095,7 +5143,8 @@ async function generateWeeklySummary(){
       "   Cold calls: "+(counts["Cold Calls"]||0)+" / 25 goal",
       "   Break breads: "+(counts["Break Breads"]||0),
       "   CTC calls: "+(counts[CTC_TYPE]||0),
-      "   Realtor buddy asks: "+(counts["Realtor Buddy Referral Ask"]||0),
+      "   Buddy intro asks: "+(counts["Realtor Buddy Referral Ask"]||0),
+      "   Buddy intros received: "+(counts["Buddy Intro Received"]||0),
       "   Total logged: "+weekActs.length,
       "",
       ...(aTierNames.size?["🥇 A-TIER COVERAGE (MTD)","   "+aTierTouched+" of "+aTierNames.size+" A-tier agents touched this month",""]:[]),
@@ -5612,6 +5661,7 @@ document.getElementById("quickLogAgent").addEventListener("input",function(){
 
 // ── 🔁 RECONNECT TAB ─────────────────────────────────────────────────────────
 let rcData=[];
+let rcInactiveRosterNames=new Set();
 let rcSelected=new Set();
 
 function rcToggleSelectAll(checked){
@@ -5694,6 +5744,14 @@ async function loadReconnect(){
       sbFetch(RC_TABLE+"?select=*&order=grade.asc.nullslast,days_since.desc&limit=500"),
       sbFetch("call_logs?select=agent_name,call_date,lp&order=call_date.desc&limit=2000").catch(()=>[])
     ]);
+    // Cross-reference against the shared Current Relationship Roster — someone marked inactive
+    // in agent_profiles shouldn't surface in the active Reconnect queue either, even though this
+    // table has its own independent active/contacted/removed lifecycle. Falls back to an empty
+    // set (nothing excluded) if relationship_status doesn't exist yet or the fetch fails.
+    try{
+      const inactiveRows=await sbFetch("agent_profiles?select=agent_name&relationship_status=eq.inactive&limit=5000");
+      rcInactiveRosterNames=new Set(inactiveRows.map(r=>(r.agent_name||"").trim().toLowerCase()));
+    }catch(e){rcInactiveRosterNames=new Set();}
 
     // Build LP last touch map (case-insensitive)
     rcLpLastTouch={};
@@ -5728,7 +5786,9 @@ async function loadReconnect(){
 }
 
 function updateRcSummary(){
-  const active=rcData.filter(r=>r.status==="active"||!r.status);
+  // Current Reconnect totals must exclude agents intentionally removed from the shared
+  // relationship roster. Contacted/removed cycle history remains visible separately.
+  const active=rcData.filter(r=>(r.status==="active"||!r.status)&&!(rcInactiveRosterNames&&rcInactiveRosterNames.has((r.agent_name||"").trim().toLowerCase())));
   const contacted=rcData.filter(r=>r.status==="contacted");
   const removed=rcData.filter(r=>r.status==="removed");
   const abTier=active.filter(r=>r.grade==="A"||r.grade==="B");
@@ -5754,10 +5814,13 @@ function renderReconnect(){
 
   let list=[...rcData];
 
-  // Status filter
-  if(status==="active") list=list.filter(r=>!r.status||r.status==="active");
+  // Status filter. Even in "all", an inactive relationship must not appear as an active
+  // Reconnect recommendation; contacted/removed cycle history remains available.
+  const isRosterInactive=r=>rcInactiveRosterNames&&rcInactiveRosterNames.has((r.agent_name||"").trim().toLowerCase());
+  if(status==="active") list=list.filter(r=>(!r.status||r.status==="active")&&!isRosterInactive(r));
   else if(status==="contacted") list=list.filter(r=>r.status==="contacted");
   else if(status==="removed") list=list.filter(r=>r.status==="removed");
+  else list=list.filter(r=>!((!r.status||r.status==="active")&&isRosterInactive(r)));
 
   // Grade filter
   if(grade!=="all"){
@@ -6191,17 +6254,19 @@ async function writeHealthSnapshots(){
 
   // Fetch everything needed to compute the Health Score for every retained agent
   const[allAgents,allActs,lpCalls]=await Promise.all([
-    sbFetch("agent_profiles?select=agent_name,tier,retained,do_not_contact,latest_lead_date,competitor_risk_flag&limit=2000").catch(()=>[]),
-    sbFetch("amanda_activities?select=agent_name,act_date&order=act_date.desc&limit=3000").catch(()=>[]),
-    sbFetch("call_logs?select=agent_name,call_date&order=call_date.desc&limit=2000").catch(()=>[])
+    sbFetch("agent_profiles?select=agent_name,tier,retained,do_not_contact,relationship_status,latest_lead_date,competitor_risk_flag&limit=2000").catch(()=>sbFetch("agent_profiles?select=agent_name,tier,retained,do_not_contact,latest_lead_date,competitor_risk_flag&limit=2000").catch(()=>[])),
+    sbFetch("amanda_activities?select=agent_name,act_date,outcome,act_type&order=act_date.desc&limit=3000").catch(()=>[]),
+    sbFetch("call_logs?select=agent_name,call_date,outcome&order=call_date.desc&limit=2000").catch(()=>[])
   ]);
 
   const lastSeenRM={};
-  (allActs||[]).forEach(a=>{const n=(a.agent_name||"").trim().toLowerCase();if(n&&!lastSeenRM[n])lastSeenRM[n]=a.act_date;});
+  (allActs||[]).forEach(a=>{const n=(a.agent_name||"").trim().toLowerCase();if(n&&!lastSeenRM[n]&&isMeaningfulOutcome(a.outcome,NOT_MEANINGFUL_RM_OUTCOMES,a.act_type))lastSeenRM[n]=a.act_date;});
   const lastSeenLP={};
-  (lpCalls||[]).forEach(c=>{const n=(c.agent_name||"").trim().toLowerCase();if(n&&!lastSeenLP[n])lastSeenLP[n]=c.call_date;});
+  (lpCalls||[]).forEach(c=>{const n=(c.agent_name||"").trim().toLowerCase();if(n&&!lastSeenLP[n]&&isMeaningfulOutcome(c.outcome,NOT_MEANINGFUL_LP_OUTCOMES))lastSeenLP[n]=c.call_date;});
 
-  const active=(allAgents||[]).filter(a=>a.retained&&a.do_not_contact!==true);
+  // Health Score is a CURRENT-work signal — an inactive/removed relationship shouldn't clutter
+  // it (their history stays intact, just excluded from the active snapshot going forward).
+  const active=(allAgents||[]).filter(a=>a.retained&&a.do_not_contact!==true&&a.relationship_status!=="inactive");
   if(!active.length)return;
 
   const rows=active.map(a=>{
@@ -6286,10 +6351,11 @@ async function syncReconnectDataToContacts(agents){
   // In practice this meant existing agents' production data was never actually updated by this
   // sync — only genuinely brand-new agents were ever created successfully. Now keyed on the
   // real column, agent_name, so updates actually land.
-  const existing=await sbFetch("agent_profiles?select=agent_name,tier&limit=5000").catch(()=>[]);
+  const existing=await sbFetch("agent_profiles?select=agent_name,tier,email,phone,address,birthday&limit=5000").catch(()=>sbFetch("agent_profiles?select=agent_name,tier&limit=5000").catch(()=>[]));
   const existingByName={};
   const existingTierByName={};
-  existing.forEach(e=>{const n=agentMatchKey(e.agent_name);if(n&&!existingByName[n]){existingByName[n]=e.agent_name;existingTierByName[n]=e.tier||null;}});
+  const existingContactByName={};
+  existing.forEach(e=>{const n=agentMatchKey(e.agent_name);if(n&&!existingByName[n]){existingByName[n]=e.agent_name;existingTierByName[n]=e.tier||null;existingContactByName[n]={email:e.email,phone:e.phone,address:e.address,birthday:e.birthday};}});
   let synced=0,created=0;
   for(const a of agents){
     const name=normalizeAgentName(a.agent_name);
@@ -6299,10 +6365,14 @@ async function syncReconnectDataToContacts(agents){
     if(typeof a.closes_past_year==="number")payload.closes_past_year=a.closes_past_year;
     if(a.retained!==null&&a.retained!==undefined)payload.retained=a.retained; // derived from actual lead/close dates in the row mapper above — left unset (untouched) when we couldn't tell
     if(a.last_interaction_date)payload.latest_lead_date=a.last_interaction_date;
-    if(a.email)payload.email=a.email;
-    if(a.phone)payload.phone=a.phone;
-    if(a.address)payload.address=a.address;
-    if(a.birthday)payload.birthday=normalizeBirthdayForImport(a.birthday);
+    // CORRECTED contact-field precedence: only fill a contact field for an EXISTING agent when
+    // the current shared value is blank — never overwrite a human-verified value with a
+    // different nonblank imported one. New agents (no existing row) use the imported value as-is.
+    const existingContactRow=existingContactByName[agentMatchKey(name)]||null;
+    if(a.email&&(!existingContactRow||!existingContactRow.email))payload.email=a.email;
+    if(a.phone&&(!existingContactRow||!existingContactRow.phone))payload.phone=a.phone;
+    if(a.address&&(!existingContactRow||!existingContactRow.address))payload.address=a.address;
+    if(a.birthday&&(!existingContactRow||!existingContactRow.birthday))payload.birthday=normalizeBirthdayForImport(a.birthday);
     if(!Object.keys(payload).length)continue;
     const key=agentMatchKey(name);
     if(payload.tier&&existingTierByName[key]&&payload.tier!==existingTierByName[key]){
@@ -7093,7 +7163,8 @@ async function loadManagement(){
     document.getElementById("danielGrowthGrid").innerHTML=gridHeader
       +growthMetricRow("New realtor meetings",c(dailyActs,"New Realtor Meeting"),c(weekActs,"New Realtor Meeting"),mtdMeetings,c(ytdActs,"New Realtor Meeting"),20,"MTD","New Realtor Meeting")
       +growthMetricRow("Cold calls",c(dailyActs,"Cold Calls"),c(weekActs,"Cold Calls"),c(mtdActs,"Cold Calls"),c(ytdActs,"Cold Calls"),500,"MTD","Cold Calls")
-      +growthMetricRow("Realtor buddy asks",c(dailyActs,"Realtor Buddy Referral Ask"),c(weekActs,"Realtor Buddy Referral Ask"),c(mtdActs,"Realtor Buddy Referral Ask"),c(ytdActs,"Realtor Buddy Referral Ask"),12,"MTD","Realtor Buddy Referral Ask")
+      +growthMetricRow("Buddy intros received",c(dailyActs,"Buddy Intro Received"),c(weekActs,"Buddy Intro Received"),c(mtdActs,"Buddy Intro Received"),c(ytdActs,"Buddy Intro Received"),12,"MTD","Buddy Intro Received")
+      +growthMetricRow("Buddy intro asks",c(dailyActs,"Realtor Buddy Referral Ask"),c(weekActs,"Realtor Buddy Referral Ask"),c(mtdActs,"Realtor Buddy Referral Ask"),c(ytdActs,"Realtor Buddy Referral Ask"),null,"MTD","Realtor Buddy Referral Ask")
       +'<div style="margin-top:10px;padding:10px 12px;background:var(--surface-2);border-radius:var(--radius-sm);font-size:12px;color:var(--text-2)">'
       +'On pace for <strong style="color:'+meetingColor+'">'+projectedMeetings+'</strong> new meetings this month '
       +'<span style="color:var(--text-4)">(goal: 20 · 80% pass = 16)</span>'
@@ -7216,19 +7287,21 @@ async function loadManagement(){
   // ── AT RISK ──────────────────────────────────────────────────────
   try{
     const[agts,acts2,lpCalls2]=await Promise.all([
-      sbFetch("agent_profiles?select=agent_name,retained,tier,do_not_contact&limit=500"),
-      sbFetch("amanda_activities?select=agent_name,act_date&order=act_date.desc&limit=2000"),
-      sbFetch("call_logs?select=agent_name,call_date&order=call_date.desc&limit=2000").catch(()=>[])
+      sbFetch("agent_profiles?select=agent_name,retained,tier,do_not_contact,relationship_status&limit=500").catch(()=>sbFetch("agent_profiles?select=agent_name,retained,tier,do_not_contact&limit=500")),
+      sbFetch("amanda_activities?select=agent_name,act_date,outcome,act_type&order=act_date.desc&limit=2000"),
+      sbFetch("call_logs?select=agent_name,call_date,outcome&order=call_date.desc&limit=2000").catch(()=>[])
     ]);
     const ls={};
-    acts2.forEach(a=>{const n=(a.agent_name||"").trim().toLowerCase();if(n&&!ls[n])ls[n]=a.act_date;});
+    // Use the same meaningful-contact classifier as Going Quiet/Partner Health. A voicemail,
+    // no-answer or blank outcome should not keep someone off the At Risk list.
+    acts2.forEach(a=>{const n=(a.agent_name||"").trim().toLowerCase();if(n&&!ls[n]&&isMeaningfulOutcome(a.outcome,NOT_MEANINGFUL_RM_OUTCOMES,a.act_type))ls[n]=a.act_date;});
     const lsLP={};
-    (lpCalls2||[]).forEach(c=>{const n=(c.agent_name||"").trim().toLowerCase();if(n&&!lsLP[n])lsLP[n]=c.call_date;});
+    (lpCalls2||[]).forEach(c=>{const n=(c.agent_name||"").trim().toLowerCase();if(n&&!lsLP[n]&&isMeaningfulOutcome(c.outcome,NOT_MEANINGFUL_LP_OUTCOMES))lsLP[n]=c.call_date;});
     const now3=new Date();
     // Same tiered cadence as Snapshot — A-tier checked on far more often than C-tier
     const TIER_TOUCH_THRESHOLD2={A:21,B:35,C:60};
     const TIER_URGENT_THRESHOLD2={A:35,B:55,C:90};
-    const quiet=(agts||[]).filter(a=>a.retained&&a.do_not_contact!==true).map(a=>{
+    const quiet=(agts||[]).filter(a=>a.retained&&a.do_not_contact!==true&&a.relationship_status!=="inactive").map(a=>{
       const name=(a.agent_name||"").trim();if(!name)return null;
       const last=ls[name.toLowerCase()];
       const lastLP=lsLP[name.toLowerCase()];
@@ -7266,8 +7339,8 @@ async function loadPortfolioReview(){
     const range=portfolioPeriodRange();
     const[allAgents,allActs,lpCalls,periodActs,migrations,allPartnerMeetings]=await Promise.all([
       sbFetch("agent_profiles?select=*&limit=2000").catch(()=>[]),
-      sbFetch("amanda_activities?select=agent_name,act_date&order=act_date.desc&limit=3000").catch(()=>[]),
-      sbFetch("call_logs?select=agent_name,call_date&order=call_date.desc&limit=2000").catch(()=>[]),
+      sbFetch("amanda_activities?select=agent_name,act_date,outcome,act_type&order=act_date.desc&limit=3000").catch(()=>[]),
+      sbFetch("call_logs?select=agent_name,call_date,outcome&order=call_date.desc&limit=2000").catch(()=>[]),
       sbFetch("amanda_activities?select=agent_name,act_type,act_date,outcome,notes&act_date=gte."+range.start+"&limit=3000").catch(()=>[]),
       sbFetch("tier_migrations?select=agent_name,from_tier,to_tier,migration_date&migration_date=gte."+range.start+"&limit=1000").catch(()=>[]),
       sbFetch("amanda_activities?select=agent_name,act_date&act_type=in.(Partner Meeting,Break Breads)&order=act_date.desc&limit=3000").catch(()=>[])
@@ -7277,11 +7350,11 @@ async function loadPortfolioReview(){
     const TIER_URGENT_THRESHOLD={Channel:21,A:21,B:45,C:90};
     const now=new Date();
     const lastSeenRM={};
-    allActs.forEach(a=>{const n=(a.agent_name||"").trim().toLowerCase();if(n&&!lastSeenRM[n])lastSeenRM[n]=a.act_date;});
+    allActs.forEach(a=>{const n=(a.agent_name||"").trim().toLowerCase();if(n&&!lastSeenRM[n]&&isMeaningfulOutcome(a.outcome,NOT_MEANINGFUL_RM_OUTCOMES,a.act_type))lastSeenRM[n]=a.act_date;});
     const lastSeenLP={};
-    lpCalls.forEach(c=>{const n=(c.agent_name||"").trim().toLowerCase();if(n&&!lastSeenLP[n])lastSeenLP[n]=c.call_date;});
+    lpCalls.forEach(c=>{const n=(c.agent_name||"").trim().toLowerCase();if(n&&!lastSeenLP[n]&&isMeaningfulOutcome(c.outcome,NOT_MEANINGFUL_LP_OUTCOMES))lastSeenLP[n]=c.call_date;});
 
-    const active=(allAgents||[]).filter(a=>a.retained&&a.do_not_contact!==true);
+    const active=(allAgents||[]).filter(a=>a.retained&&a.do_not_contact!==true&&a.relationship_status!=="inactive");
 
     // Per-agent computed rows: touch recency + lead recency + Health Score
     const rows=active.map(a=>{
@@ -8094,8 +8167,11 @@ async function saveNewAgent(){
       return;
     }
     if(exact){
-      await sbFetch("agent_profiles?agent_name=eq."+encodeURIComponent(exact.agent_name),{method:"PATCH",prefer:"return=minimal",body:JSON.stringify(payload)});
-      toast(name+" already existed — updated instead of duplicated ✓","success");
+      // Re-adding an existing profile also reactivates it — deliberately, since this is the
+      // documented "re-add them manually if needed" path after removal. DNC and retained/Active
+      // Partner are left untouched; only roster status changes.
+      await sbFetch("agent_profiles?agent_name=eq."+encodeURIComponent(exact.agent_name),{method:"PATCH",prefer:"return=minimal",body:JSON.stringify(Object.assign({relationship_status:"active"},payload))});
+      toast(name+" already existed — updated and reactivated instead of duplicated ✓","success");
     }else{
       payload.agent_name=name;
       await sbFetch("agent_profiles",{method:"POST",prefer:"return=minimal",body:JSON.stringify(payload)});
@@ -8121,11 +8197,15 @@ async function deleteAgent(){
     }
     if(!exact){
       // No agent_profiles row exists yet (common for Pipeline-only prospects that were
-      // never formally saved as a contact) — create one directly marked as removed,
-      // instead of blocking the user with an error.
-      await sbFetch("agent_profiles",{method:"POST",prefer:"return=minimal",body:JSON.stringify({agent_name:name,retained:false,do_not_contact:true})});
+      // never formally saved as a contact) — create one directly marked inactive, instead of
+      // blocking the user with an error.
+      await sbFetch("agent_profiles",{method:"POST",prefer:"return=minimal",body:JSON.stringify({agent_name:name,relationship_status:"inactive"})});
     }else{
-      await sbFetch("agent_profiles?agent_name=eq."+encodeURIComponent(exact.agent_name),{method:"PATCH",prefer:"return=minimal",body:JSON.stringify({retained:false,do_not_contact:true})});
+      // CORRECTED: this used to also set retained:false and do_not_contact:true, conflating
+      // "removed from active roster" with Active Partner status (which Power BI recalculates
+      // independently from production dates) and with a real, separate DNC decision. Now only
+      // relationship_status changes — DNC and retained are left exactly as they were.
+      await sbFetch("agent_profiles?agent_name=eq."+encodeURIComponent(exact.agent_name),{method:"PATCH",prefer:"return=minimal",body:JSON.stringify({relationship_status:"inactive"})});
     }
     toast(name+" removed from contacts","success");
     closeContactModal();
@@ -8387,11 +8467,15 @@ async function importContactsFile(input){
     // so every existing agent was treated as "not found" below and every repeat import tried to
     // INSERT over an already-existing row, which fails on the agent_name key and was silently
     // counted as "skipped." Now keyed on the real column so existing agents actually get updated.
-    const existing=await sbFetch("agent_profiles?select=agent_name,tier,retained&limit=5000").catch(()=>[]);
+    // Falls back gracefully if relationship_status hasn't been added yet (see
+    // DEPLOY_NOW_SAFE_MIGRATIONS.sql) — never hard-fails the import over a column that might not
+    // exist in this environment yet, the same class of bug this whole engagement started from.
+    const existing=await sbFetch("agent_profiles?select=agent_name,tier,retained,relationship_status,email,phone,address,birthday&limit=5000").catch(()=>sbFetch("agent_profiles?select=agent_name,tier,retained,relationship_status&limit=5000").catch(()=>sbFetch("agent_profiles?select=agent_name,tier,retained&limit=5000").catch(()=>[])));
     const existingByName={};
     const existingTierByName={};
-    const existingRetainedByName={};
-    existing.forEach(e=>{const n=agentMatchKey(e.agent_name);if(n&&!existingByName[n]){existingByName[n]=e.agent_name;existingTierByName[n]=e.tier||null;existingRetainedByName[n]=e.retained;}});
+    const existingRosterStatusByName={};
+    const existingContactByName={};
+    existing.forEach(e=>{const n=agentMatchKey(e.agent_name);if(n&&!existingByName[n]){existingByName[n]=e.agent_name;existingTierByName[n]=e.tier||null;existingRosterStatusByName[n]=e.relationship_status||"active";existingContactByName[n]={email:e.email,phone:e.phone,address:e.address,birthday:e.birthday};}});
 
     let created=0,updated=0,skipped=0;
     const truthy=v=>{const s=(v||"").toString().trim().toLowerCase();return s==="y"||s==="yes"||s==="true"||s==="active"||s==="1";};
@@ -8402,10 +8486,15 @@ async function importContactsFile(input){
       if(!name){skipped++;continue;}
       if(progressEl)progressEl.textContent="Importing "+(i+1)+" of "+raw.length+"...";
       const payload={};
-      if(colMap.email&&row[colMap.email])payload.email=row[colMap.email].toString().trim();
-      if(colMap.phone&&row[colMap.phone])payload.phone=row[colMap.phone].toString().trim();
-      if(colMap.address&&row[colMap.address])payload.address=row[colMap.address].toString().trim();
-      if(colMap.birthday&&row[colMap.birthday])payload.birthday=normalizeBirthdayForImport(row[colMap.birthday]);
+      // CORRECTED contact-field precedence: for an existing agent, an import may only fill a
+      // contact field when the current shared value is blank — a human-verified value is never
+      // silently overwritten by a different nonblank imported value. New agents have nothing to
+      // conflict with, so the imported value is used normally.
+      const existingContactRow=existingContactByName[agentMatchKey(name)]||null;
+      if(colMap.email&&row[colMap.email]&&(!existingContactRow||!existingContactRow.email))payload.email=row[colMap.email].toString().trim();
+      if(colMap.phone&&row[colMap.phone]&&(!existingContactRow||!existingContactRow.phone))payload.phone=row[colMap.phone].toString().trim();
+      if(colMap.address&&row[colMap.address]&&(!existingContactRow||!existingContactRow.address))payload.address=row[colMap.address].toString().trim();
+      if(colMap.birthday&&row[colMap.birthday]&&(!existingContactRow||!existingContactRow.birthday))payload.birthday=normalizeBirthdayForImport(row[colMap.birthday]);
       if(colMap.tier&&row[colMap.tier])payload.tier=row[colMap.tier].toString().trim().toUpperCase();
       if(colMap.dnc&&row[colMap.dnc]!=null)payload.do_not_contact=truthy(row[colMap.dnc]);
       if(colMap.closesPastYear&&row[colMap.closesPastYear]!=null){const n=parseInt(row[colMap.closesPastYear]);if(!isNaN(n))payload.closes_past_year=n;}
@@ -8414,17 +8503,24 @@ async function importContactsFile(input){
       // not something Power BI itself labels.
       if((payload.closes_past_year||0)>=10)payload.tier="Channel";
 
-      // Normalize name to Proper Case — Power BI exports ALL CAPS which looks inconsistent
-      // next to manually-added contacts. Normalize on import so everything is consistent.
-      const rawName=payload.agent_name||"";
-      const normalizedName=rawName.trim().split(/\s+/).map(w=>w?w.charAt(0).toUpperCase()+w.slice(1).toLowerCase():"").join(" ");
-      payload.agent_name=normalizedName;
+      // HOTFIX: this block used to derive the imported name from payload.agent_name — a key that
+      // was NEVER set on payload before this point, so it was always "", producing an empty
+      // normalizedName that then got written as payload.agent_name="" and included in every
+      // existing-agent PATCH below, silently renaming that agent's real canonical agent_name to
+      // a blank string (corrupting the actual primary key and orphaning their history from any
+      // future lookup). The correct normalized name was already computed and available in `name`
+      // (line above, via normalizeAgentName) the whole time — this block never needed to exist.
+      // Removed entirely; `name` is used directly everywhere below instead.
 
-      // Skip agents that were manually deleted — retained===false means intentionally removed.
-      // Their row stays in the DB (so we can distinguish "never imported" from "was deleted")
-      // but the import never brings them back. Only manual re-adding via + Add Agent restores them.
-      const lookupKey=agentMatchKey(normalizedName)||agentMatchKey(rawName);
-      if(existingByName[lookupKey]&&existingRetainedByName[lookupKey]===false)continue;
+      // CORRECTED: this used to skip the entire row for an inactive/removed agent — which meant
+      // their production data (closes, leads, latest dates, tier, Active Partner) never updated
+      // from a real, current Power BI file, even though they were still legitimately present in
+      // it. Removal from the active roster is a relationship-management decision, not a reason
+      // to stop tracking their actual production. This import path never sets
+      // relationship_status anywhere (confirmed — grep the payload-building code above), so an
+      // inactive agent's roster status is safe either way; only the wrongful full-row skip is
+      // removed here.
+      const lookupKey=agentMatchKey(name);
       if(colMap.totalLeadsPastYear&&row[colMap.totalLeadsPastYear]!=null){const n=parseInt(row[colMap.totalLeadsPastYear]);if(!isNaN(n))payload.total_leads_past_year=n;}
       if(colMap.latestLeadDate&&row[colMap.latestLeadDate]){
         const d=parsePowerBIDateCell(row[colMap.latestLeadDate]);
@@ -8466,6 +8562,12 @@ async function importContactsFile(input){
     if(progressEl)progressEl.style.display="none";
     input.value="";
     toast(created+" added, "+updated+" updated"+(skipped?", "+skipped+" skipped":"")+" ✓","success",5000);
+    // Import audit log — additive table (see SAFE_DATABASE_MIGRATIONS.sql). Best-effort: never
+    // blocks the import or its success toast if this fails (e.g. table not migrated in yet).
+    sbFetch("powerbi_import_log",{method:"POST",prefer:"return=minimal",body:JSON.stringify({
+      imported_at:new Date().toISOString(),source_app:"amanda-tracker-bulk-import",
+      rows_processed:raw.length,matched:updated,created:created,updated:updated,skipped:skipped,errors:0
+    })}).catch(e=>console.warn("Import audit log failed (non-critical):",e.message));
     loadContacts();
     initAutocomplete();
   }catch(e){
@@ -8664,6 +8766,42 @@ function filterContacts(){
   renderContacts(list);
 }
 
+async function quickLogBuddyAsk(btn){
+  const name=btn&&btn.dataset?btn.dataset.name:"";
+  if(!name)return;
+  const original=btn.textContent;
+  btn.disabled=true;btn.textContent="Logging…";
+  try{
+    await sbFetch("amanda_activities",{method:"POST",prefer:"return=minimal",body:JSON.stringify({agent_name:name,act_type:"Realtor Buddy Referral Ask",act_date:today(),outcome:"Asked"})});
+    toast("Buddy intro ask logged for "+displayName(name),"success");
+    btn.textContent="Asked ✓";
+    setTimeout(()=>{btn.disabled=false;btn.textContent=original;},1200);
+    loadWeek().catch(()=>{});
+  }catch(e){
+    btn.disabled=false;btn.textContent=original;toast("Could not log buddy ask: "+e.message,"error");
+  }
+}
+
+async function quickLogBuddyIntro(btn){
+  const name=btn&&btn.dataset?btn.dataset.name:"";
+  if(!name)return;
+  const introduced=window.prompt("Who did "+displayName(name)+" introduce you to?\n\nEnter the person's name:","");
+  if(introduced===null)return;
+  const buddyName=String(introduced||"").trim();
+  if(!buddyName){toast("Enter the name of the person who was introduced.","error");return;}
+  const original=btn.textContent;
+  btn.disabled=true;btn.textContent="Logging…";
+  try{
+    await sbFetch("amanda_activities",{method:"POST",prefer:"return=minimal",body:JSON.stringify({agent_name:name,act_type:"Buddy Intro Received",act_date:today(),outcome:"Received",notes:"Buddy introduced: "+buddyName})});
+    toast("Buddy intro received from "+displayName(name)+": "+buddyName,"success");
+    btn.textContent="Intro ✓";
+    setTimeout(()=>{btn.disabled=false;btn.textContent=original;},1200);
+    loadWeek().catch(()=>{});
+  }catch(e){
+    btn.disabled=false;btn.textContent=original;toast("Could not log buddy intro: "+e.message,"error");
+  }
+}
+
 function renderContacts(list){
   const el=document.getElementById("contacts-list");
   if(!el)return;
@@ -8682,7 +8820,11 @@ function renderContacts(list){
           (c.birthday?'<span class="contact-bday">'+formatBirthdayDisplay(c.birthday)+'</span>':'<span style="color:#ffb3b3">No birthday</span>')+
         '</div>'+
       '</div>'+
-      '<button class="btn-sm" onclick="openContactsEdit(this)" data-name="'+c.agent_name.replace(/"/g,'&quot;')+'" style="flex-shrink:0">Edit</button>'+
+      '<div style="display:flex;gap:5px;align-items:center;flex-shrink:0;flex-wrap:wrap;justify-content:flex-end">'+
+        ((c.relationship_status!=="inactive"&&c.do_not_contact!==true)?('<button class="btn-sm" data-name="'+c.agent_name.replace(/"/g,'&quot;')+'" onclick="quickLogBuddyAsk(this)" title="Log that you asked this agent for a buddy introduction">Asked buddy</button>'+
+        '<button class="btn-sm" data-name="'+c.agent_name.replace(/"/g,'&quot;')+'" onclick="quickLogBuddyIntro(this)" title="Log an actual buddy introduction received from this agent">Intro received</button>'):'')+
+        '<button class="btn-sm" onclick="openContactsEdit(this)" data-name="'+c.agent_name.replace(/"/g,'&quot;')+'">Edit</button>'+
+      '</div>'+
     '</div>';
   }).join("");
 }
@@ -8747,6 +8889,36 @@ document.addEventListener("visibilitychange",()=>{
 });
 setInterval(()=>{if(!document.hidden)nearRealtimeRefreshSharedData();},120000);
 
+// ── Realtime subscription (upgrade over polling, added this pass) ──────────────────────────
+// Subscribes to live changes on agent_profiles via Supabase Realtime, so a shared-profile
+// change shows up as soon as it happens instead of waiting for the ~2-minute poll above. This
+// REQUIRES the database owner to have run: ALTER PUBLICATION supabase_realtime ADD TABLE
+// agent_profiles; (see SAFE_DATABASE_MIGRATIONS.sql) — if that hasn't been done, or RLS blocks
+// it, this fails quietly and the polling above keeps working exactly as before. Not verified
+// against the live database from this environment — treat as REQUIRES LIVE MANUAL TEST.
+function initRealtimeSync(){
+  if(typeof window.supabase==="undefined"||!window.supabase.createClient){
+    initRealtimeSync._tries=(initRealtimeSync._tries||0)+1;
+    if(initRealtimeSync._tries<10){setTimeout(initRealtimeSync,500);}
+    else console.warn("Realtime: Supabase SDK didn't load in time — continuing on polling only.");
+    return;
+  }
+  try{
+    const rtClient=window.supabase.createClient(SB_URL,SB_KEY);
+    rtClient.channel("agent_profiles-changes")
+      .on("postgres_changes",{event:"*",schema:"public",table:"agent_profiles"},function(){
+        // Reuses the exact same refresh the polling fallback calls — one refresh path, two
+        // possible triggers (timer or live event), never two different behaviors to keep in sync.
+        nearRealtimeRefreshSharedData();
+      })
+      .subscribe(function(status){
+        if(status==="SUBSCRIBED")console.log("Realtime: subscribed to agent_profiles.");
+        else if(status==="CHANNEL_ERROR"||status==="TIMED_OUT")console.warn("Realtime: agent_profiles subscription unavailable ("+status+") — table may not be in the supabase_realtime publication yet, or RLS is blocking it. Falling back to polling only.");
+      });
+  }catch(e){console.warn("Realtime setup failed (non-critical — falling back to polling):",e.message);}
+}
+initRealtimeSync();
+
 // ── ONE-TIME PROSPECT SEED ────────────────────────────────────────────────────
 (async function seedProspects(){
   const SEED_KEY="prospects_seeded_07_14_2026";
@@ -8782,7 +8954,7 @@ const PAGE_GUIDE_SECTIONS=[
   {id:"dropoffCard",label:"Approaching 90-Day Drop-Off",desc:"Agents about to fall off as active — act now"},
   {id:"zeroProductionCard",label:"Never Converted — Zero Closes",desc:"Retained agents with zero closes — prioritized by who's actually getting leads"},
   {id:"contactDataCard",label:"Contact Info Needs Updating",desc:"Missing email, address, or birthday — also a good reason to call"},
-  {id:"onYourRadarCard",label:"On Your Radar",desc:"LP flags, CTC calls, buddy asks, follow-ups you scheduled"},
+  {id:"onYourRadarCard",label:"On Your Radar",desc:"LP flags, CTC calls, buddy intro progress, follow-ups you scheduled"},
   {id:"atRiskCard",label:"At Risk — Need a Touch",desc:"Retained agents gone quiet — nobody flagged these, the app noticed"}
 ];
 function toggleAppGuide(){
