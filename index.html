@@ -1,4 +1,4 @@
-  <!DOCTYPE html>
+   <!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -1338,9 +1338,10 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI'
   </div>
 </div>
 
-<div class="modal-overlay" id="contactModal">
-  <div class="modal-box">
-    <div class="modal-header"><span class="modal-title" id="contactModalTitle">Edit contact info</span><button class="modal-close" onclick="closeContactModal()">×</button></div>
+<div class="modal-overlay" id="contactModal" onmousedown="if(event.target===this)closeContactModal()">
+  <div class="modal-box" style="max-height:88vh;display:flex;flex-direction:column;overflow:hidden;padding:0">
+    <div class="modal-header" style="flex-shrink:0;padding:24px 26px 6px;margin-bottom:0"><span class="modal-title" id="contactModalTitle">Edit contact info</span><button class="modal-close" onclick="closeContactModal()">×</button></div>
+    <div id="contactModalScrollBody" style="overflow-y:auto;flex:1;padding:10px 26px 24px">
     <div class="modal-sub" id="contactModalName"></div>
     <div class="field" style="margin-bottom:12px">
       <label>Correct display name <span style="font-weight:400;color:var(--text-4)">(safe spelling/capitalization correction — does not rename the database record)</span></label>
@@ -1477,6 +1478,7 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI'
         <button class="btn-sm" onclick="closeContactModal()">Cancel</button>
       </div>
       <button class="btn-sm danger" onclick="deleteAgent()" id="deleteAgentBtn">Delete agent</button>
+    </div>
     </div>
   </div>
 </div>
@@ -4337,8 +4339,12 @@ async function loadBreakBreadDue(){
   const subEl=document.getElementById("breadSub");
   if(!el)return;
   try{
+    // HOTFIX: was select=agent_name,tier,do_not_contact — never selected relationship_status at
+    // all, so a removed/inactive agent (e.g. Kandis Hall) was invisible to the roster-status
+    // check below and kept showing up here as "Never," even though Contacts correctly shows her
+    // as Inactive/removed. Falls back gracefully if relationship_status doesn't exist yet.
     const[profiles,myBreads,lpBreads]=await Promise.all([
-      sbFetch("agent_profiles?select=agent_name,tier,do_not_contact&limit=500").catch(()=>[]),
+      sbFetch("agent_profiles?select=agent_name,tier,do_not_contact,relationship_status&limit=500").catch(()=>sbFetch("agent_profiles?select=agent_name,tier,do_not_contact&limit=500").catch(()=>[])),
       sbFetch("amanda_activities?select=agent_name,act_date&act_type=eq.Break Breads&order=act_date.desc&limit=2000").catch(()=>[]),
       sbFetch("break_breads?select=agent_name,date,logged_by&order=date.desc&limit=2000").catch(()=>[])
     ]);
@@ -4353,7 +4359,11 @@ async function loadBreakBreadDue(){
       if(!lastTouch[n]||b.date>lastTouch[n].date)lastTouch[n]={date:b.date,by:b.logged_by||"LP"};
     });
     const today0=new Date();today0.setHours(0,0,0,0);
-    const rows=profiles.filter(p=>!p.do_not_contact).map(p=>{
+    // Source population = current active managed partners only. Break Bread is a relationship-
+    // management workflow, not a Power BI presence check — an inactive/removed agent is
+    // excluded here even if their DNC flag was never touched (roster status and DNC are
+    // separate, deliberately, per how removal actually works in this app).
+    const rows=profiles.filter(p=>!p.do_not_contact&&(p.relationship_status||"active")!=="inactive").map(p=>{
       const n=normalize(p.agent_name);
       const tier=p.tier||"C";
       const touch=lastTouch[n];
@@ -4723,13 +4733,18 @@ async function loadWeek(){
 let agentNames=[],prospectNames=[],allAgentNames=[],dncAgentNames=new Set();
 async function initAutocomplete(){
   try{
+    // Falls back gracefully if relationship_status doesn't exist yet.
     const[agents,prospects]=await Promise.all([
-      sbFetch("agent_profiles?select=agent_name,do_not_contact&order=agent_name.asc"),
+      sbFetch("agent_profiles?select=agent_name,do_not_contact,relationship_status&order=agent_name.asc").catch(()=>sbFetch("agent_profiles?select=agent_name,do_not_contact&order=agent_name.asc")),
       sbFetch("outreach_prospects?select=agent_name&order=agent_name.asc")
     ]);
-    // Dedupe case/whitespace variants of the same name so autocomplete doesn't show "Cheryl Kinsey" and "CHERYL KINSEY" separately
+    // Dedupe case/whitespace variants of the same name so autocomplete doesn't show "Cheryl Kinsey" and "CHERYL KINSEY" separately.
+    // Inactive/removed agents are excluded from the quick-log suggestion list — this is for
+    // choosing who to log NEW activity against, a current-work action, not a lookup tool (Agent
+    // History / Contacts still let you find someone inactive directly by typing their full name).
     const seen={};
     (agents||[]).forEach(a=>{
+      if((a.relationship_status||"active")==="inactive")return;
       const raw=(a.agent_name||"").trim();
       const n=raw.toLowerCase();
       if(!n)return;
@@ -6449,14 +6464,21 @@ function setPortfolioPeriod(p){
 }
 function portfolioPeriodRange(){
   const now=new Date();
-  if(portfolioPeriod==="week")return{start:weekRange().start,label:"This Week",meetingTargetMult:0.25};
+  // HOTFIX: all three branches used to return only `start`, no `end` — so every consuming query
+  // filtered with `act_date >= start` and no upper bound at all, meaning "This Week"/"This
+  // Month"/"This Quarter" could pull in anything dated after the period too (stale test rows,
+  // anything logged with a future date by mistake), not just what actually happened within the
+  // selected period. Every branch now returns both bounds.
+  if(portfolioPeriod==="week"){const wr=weekRange();return{start:wr.start,end:wr.end,label:"This Week",meetingTargetMult:0.25};}
   if(portfolioPeriod==="quarter"){
     const qStartMonth=Math.floor(now.getMonth()/3)*3;
     const d=new Date(now.getFullYear(),qStartMonth,1);
-    return{start:localDateStr(d),label:"This Quarter",meetingTargetMult:3};
+    const dEnd=new Date(now.getFullYear(),qStartMonth+3,0);
+    return{start:localDateStr(d),end:localDateStr(dEnd),label:"This Quarter",meetingTargetMult:3};
   }
   const d=new Date(now.getFullYear(),now.getMonth(),1);
-  return{start:localDateStr(d),label:"This Month",meetingTargetMult:1};
+  const dEnd=new Date(now.getFullYear(),now.getMonth()+1,0);
+  return{start:localDateStr(d),end:localDateStr(dEnd),label:"This Month",meetingTargetMult:1};
 }
 
 // Playbook Sec. 5 — Weighted Success Scorecard, 50% Tier Migration. Logs every C→B, B→A, A→Channel
@@ -7470,8 +7492,8 @@ async function loadPortfolioReview(){
       sbFetch("agent_profiles?select=*&limit=2000").catch(()=>[]),
       sbFetch("amanda_activities?select=agent_name,act_date,outcome,act_type&order=act_date.desc&limit=3000").catch(()=>[]),
       sbFetch("call_logs?select=agent_name,call_date,outcome&order=call_date.desc&limit=2000").catch(()=>[]),
-      sbFetch("amanda_activities?select=agent_name,act_type,act_date,outcome,notes&act_date=gte."+range.start+"&limit=3000").catch(()=>[]),
-      sbFetch("tier_migrations?select=agent_name,from_tier,to_tier,migration_date&migration_date=gte."+range.start+"&limit=1000").catch(()=>[]),
+      sbFetch("amanda_activities?select=agent_name,act_type,act_date,outcome,notes&act_date=gte."+range.start+"&act_date=lte."+range.end+"&limit=3000").catch(()=>[]),
+      sbFetch("tier_migrations?select=agent_name,from_tier,to_tier,migration_date&migration_date=gte."+range.start+"&migration_date=lte."+range.end+"&limit=1000").catch(()=>[]),
       sbFetch("amanda_activities?select=agent_name,act_date&act_type=in.(Partner Meeting,Break Breads)&order=act_date.desc&limit=3000").catch(()=>[]),
       sbFetch("velocify_leads?date_added=gte."+monthStart+"&select=referral_partner_name,date_added&limit=5000").catch(()=>[])
     ]);
@@ -8323,9 +8345,16 @@ async function saveNewAgent(){
   }catch(e){toast("Failed: "+e.message,"error");}
 }
 async function deleteAgent(){
-  const name=document.getElementById("contactModalName").textContent;
+  // HOTFIX: was reading document.getElementById("contactModalName").textContent — but that field
+  // displays the DISPLAY name (c.display_name || resolvedDisplayName(name)) when a display-name
+  // correction is set, not the canonical stored agent_name. Searching/inserting by the display
+  // string instead of the real key could miss the actual existing record entirely and create a
+  // new orphaned row keyed on the display text — exactly the identity corruption this app has
+  // been careful to avoid everywhere else. Uses the tracked canonical name instead.
+  const name=editingContactOriginalName||editingContactName;
+  const displayLabel=document.getElementById("contactModalName").textContent||name;
   if(!name)return;
-  if(!confirm("Remove "+name+" from contacts? They won't come back on the next import. You can re-add them manually if needed."))return;
+  if(!confirm("Remove "+displayLabel+" from contacts? They won't come back on the next import. You can re-add them manually if needed."))return;
   const btn=document.getElementById("deleteAgentBtn");
   if(btn){if(btn.disabled)return;btn.disabled=true;btn.textContent="Removing...";}
   try{
@@ -8347,7 +8376,7 @@ async function deleteAgent(){
       // relationship_status changes — DNC and retained are left exactly as they were.
       await sbFetch("agent_profiles?agent_name=eq."+encodeURIComponent(exact.agent_name),{method:"PATCH",prefer:"return=minimal",body:JSON.stringify({relationship_status:"inactive"})});
     }
-    toast(name+" removed from contacts","success");
+    toast(displayLabel+" removed from contacts","success");
     closeContactModal();
     loadContacts();
     initAutocomplete();
@@ -8358,6 +8387,10 @@ async function deleteAgent(){
 async function openContactModal(name,phone,email,brokerage,birthday){
   editingContactName=name;
   editingContactOriginalName=null;
+  // Reset scroll position so opening a new agent never starts mid-scroll from whoever was
+  // viewed last — the modal is reused, not recreated, so this doesn't happen automatically.
+  const scrollBody0=document.getElementById("contactModalScrollBody");
+  if(scrollBody0)scrollBody0.scrollTop=0;
   document.getElementById("contactModalName").textContent=resolvedDisplayName(name);
   if(document.getElementById("contactDisplayName"))document.getElementById("contactDisplayName").value="";
   // Always check for an existing profile — needed for Save/Delete to target the right row,
@@ -8912,6 +8945,8 @@ function openContactsEdit(nameOrEl){
   if(titleEl)titleEl.textContent="Edit contact info";
   const playbookDetails=document.getElementById("partnerPlaybookDetails");
   if(playbookDetails)playbookDetails.open=false;
+  const scrollBody0=document.getElementById("contactModalScrollBody");
+  if(scrollBody0)scrollBody0.scrollTop=0;
   const c=allContacts.find(x=>x.agent_name===name)||{agent_name:name};
   editingContactName=name;
   editingContactOriginalName=c.agent_name||name; // best-effort cache; saveContactModal re-verifies before writing
@@ -8954,6 +8989,12 @@ init();
 // This intentionally does NOT force-refresh every tab/dashboard in the app — only the two views
 // most directly tied to shared, cross-tracker data — to keep the change scoped and low-risk.
 var userTyping=false;
+document.addEventListener("keydown",function(e){
+  if(e.key==="Escape"){
+    const cm=document.getElementById("contactModal");
+    if(cm&&cm.classList.contains("open"))closeContactModal();
+  }
+});
 document.addEventListener("focusin",function(e){if(e.target.tagName==="TEXTAREA"||e.target.tagName==="INPUT"){userTyping=true;}});
 document.addEventListener("focusout",function(e){if(e.target.tagName==="TEXTAREA"||e.target.tagName==="INPUT"){userTyping=false;}});
 let _lastNearRealtimeRefresh=Date.now();
