@@ -453,14 +453,14 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI'
     </div>
     <div id="ql-talkto-form">
       <div style="display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap">
-        <div class="ac-wrap" style="flex:1;min-width:160px">
+        <div class="ac-wrap" id="quickLogAgentWrap" style="flex:1;min-width:160px">
           <input type="text" id="quickLogAgent" placeholder="Agent name..." autocomplete="off"
             oninput="quickLogAutoComplete(this.value)"
             style="width:100%;border:1px solid var(--border);border-radius:var(--radius-sm);padding:9px 12px;font-size:13px;font-family:inherit;color:var(--text-1);outline:none"
             onkeydown="if(event.key==='Enter')quickLogSave()">
           <div id="quickLogAcList" class="ac-list"></div>
         </div>
-        <select id="quickLogType" style="border:1px solid var(--border);border-radius:var(--radius-sm);padding:9px 11px;font-size:12px;font-family:inherit;color:var(--text-1);outline:none;background:var(--surface)">
+        <select id="quickLogType" onchange="onQuickLogTypeChange()" style="border:1px solid var(--border);border-radius:var(--radius-sm);padding:9px 11px;font-size:12px;font-family:inherit;color:var(--text-1);outline:none;background:var(--surface)">
           <option value="Agent Talk-to">Talk-to (text/call)</option>
           <option value="Reconnect Outreach">Reconnect outreach</option>
           <option value="CTC Call">CTC call</option>
@@ -490,13 +490,13 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI'
           <option value="Needs manager attention">Needs manager attention</option>
           <option value="Left voicemail">Left voicemail</option>
         </select>
-        <button onclick="quickLogSave()" style="padding:9px 18px;background:var(--brand);color:#fff;border:none;border-radius:var(--radius-sm);font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap">Log it</button>
+        <button id="quickLogSaveBtn" onclick="quickLogSave()" style="padding:9px 18px;background:var(--brand);color:#fff;border:none;border-radius:var(--radius-sm);font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap">Log it</button>
       </div>
       <div id="quickLogFollowupRow" style="display:none;margin-top:8px">
         <label style="font-size:11px;font-weight:600;color:var(--text-2)"><span id="quickLogFollowupLabelText">Follow-up date</span> <span id="quickLogFollowupHint" style="font-weight:400;color:var(--text-4)">(required — a real date, not a junk-drawer)</span></label>
         <input type="date" id="quickLogFollowupDate" style="width:100%;border:1px solid var(--border);border-radius:var(--radius-sm);padding:8px 11px;font-size:13px;font-family:inherit;color:var(--text-1);outline:none;margin-top:4px">
       </div>
-      <div style="margin-top:8px">
+      <div id="quickLogNotesWrap" style="margin-top:8px">
         <div style="display:flex;justify-content:flex-end;margin-bottom:4px">
           <button type="button" onclick="toggleVoiceNote('quickLogNotes',this)" title="Dictate notes" style="font-size:13px;padding:4px 9px;background:var(--surface-2);color:var(--text-2);border:1px solid var(--border);border-radius:6px;cursor:pointer">🎤</button>
         </div>
@@ -504,6 +504,83 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI'
           style="width:100%;border:1px solid var(--border);border-radius:var(--radius-sm);padding:9px 12px;font-size:13px;font-family:inherit;color:var(--text-1);outline:none;resize:vertical;box-sizing:border-box"></textarea>
         <div id="quickLogWordCount" style="font-size:10px;color:var(--text-4);margin-top:3px"></div>
         <div id="quickLogDoubleDialWarn" style="display:none;font-size:11px;color:var(--warning);margin-top:4px;font-weight:600"></div>
+      </div>
+
+      <!-- Dedicated CTC workflow — keeps transaction details, both agent contacts, feedback, and WhatsApp copy together -->
+      <div id="ctcWorkflowPanel" style="display:none;margin-top:12px;border:1px solid var(--border);border-radius:12px;padding:14px;background:var(--surface-2)">
+        <div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start;flex-wrap:wrap;margin-bottom:10px">
+          <div>
+            <div style="font-size:13px;font-weight:800;color:var(--text-1)">Clear to Close workflow</div>
+            <div style="font-size:11px;color:var(--text-4);margin-top:2px">Save both agent contacts, log each call, and create Daniel's WhatsApp update from one place.</div>
+          </div>
+          <button type="button" class="btn-sm" onclick="ctcResetForm()">Clear form</button>
+        </div>
+
+        <div style="margin-bottom:12px;padding:10px;background:var(--surface);border:1px solid var(--border);border-radius:9px">
+          <label style="font-size:11px;font-weight:700;color:var(--text-2)">Paste the CTC alert (optional)</label>
+          <textarea id="ctcPasteSource" rows="3" placeholder="Paste the CTC message here and click Parse..." style="width:100%;box-sizing:border-box;margin-top:5px;border:1px solid var(--border);border-radius:8px;padding:8px 10px;font-size:12px;font-family:inherit;resize:vertical"></textarea>
+          <div style="display:flex;gap:8px;align-items:center;margin-top:6px;flex-wrap:wrap">
+            <button type="button" class="btn-sm" onclick="ctcParsePastedUpdate()">Parse CTC alert</button>
+            <span style="font-size:10px;color:var(--text-4)">Borrower, loan #, property, and agent lines will fill when the pasted format includes them.</span>
+          </div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:8px;margin-bottom:12px">
+          <div><label style="font-size:10px;font-weight:700;color:var(--text-3)">BORROWER / CLIENT</label><input id="ctcBorrower" type="text" placeholder="Khaled Jaber" oninput="ctcUpdatePreview()" style="width:100%;box-sizing:border-box;margin-top:4px;border:1px solid var(--border);border-radius:8px;padding:8px 10px;font-size:12px"></div>
+          <div><label style="font-size:10px;font-weight:700;color:var(--text-3)">LOAN NUMBER</label><input id="ctcLoanNumber" type="text" placeholder="33026068699" oninput="ctcUpdatePreview()" style="width:100%;box-sizing:border-box;margin-top:4px;border:1px solid var(--border);border-radius:8px;padding:8px 10px;font-size:12px"></div>
+          <div style="grid-column:span 2"><label style="font-size:10px;font-weight:700;color:var(--text-3)">PROPERTY ADDRESS</label><input id="ctcProperty" type="text" placeholder="5175 Vinings Blvd, Dublin, OH 43016" oninput="ctcUpdatePreview()" style="width:100%;box-sizing:border-box;margin-top:4px;border:1px solid var(--border);border-radius:8px;padding:8px 10px;font-size:12px"></div>
+        </div>
+
+        <datalist id="ctcAgentOptions"></datalist>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:10px">
+          <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:11px">
+            <div style="font-size:11px;font-weight:800;color:var(--brand);text-transform:uppercase;letter-spacing:.3px;margin-bottom:8px">Buyer agent</div>
+            <div style="display:grid;grid-template-columns:1.4fr 1fr;gap:7px">
+              <input id="ctcBuyerAgent" list="ctcAgentOptions" type="text" placeholder="Buyer agent name" onblur="ctcFillContact('buyer')" oninput="ctcUpdatePreview()" style="border:1px solid var(--border);border-radius:8px;padding:8px 9px;font-size:12px">
+              <input id="ctcBuyerPhone" type="text" placeholder="Phone" oninput="ctcUpdatePreview()" style="border:1px solid var(--border);border-radius:8px;padding:8px 9px;font-size:12px">
+              <input id="ctcBuyerEmail" type="email" placeholder="Email (optional)" style="grid-column:span 2;border:1px solid var(--border);border-radius:8px;padding:8px 9px;font-size:12px">
+              <select id="ctcBuyerOutcome" onchange="ctcToggleMeetingDate('buyer');ctcUpdatePreview()" style="border:1px solid var(--border);border-radius:8px;padding:8px 9px;font-size:12px;background:var(--surface)">
+                <option value="Positive">Talked — positive</option><option value="Needs manager attention">Talked — issue / manager attention</option><option value="Requires follow-up">Requires follow-up</option><option value="Meeting Scheduled">Meeting scheduled</option><option value="Left voicemail">Left voicemail</option><option value="No answer">No answer</option>
+              </select>
+              <select id="ctcBuyerRelationship" onchange="ctcToggleMeetingDate('buyer');ctcUpdatePreview()" style="border:1px solid var(--border);border-radius:8px;padding:8px 9px;font-size:12px;background:var(--surface)">
+                <option value="Unknown">Relationship / opportunity...</option><option value="Already works with NFM">Already works with NFM</option><option value="Interested — follow up">Interested — follow up</option><option value="Meeting scheduled">Meeting scheduled</option><option value="Not interested">Not interested</option><option value="No response">No response</option>
+              </select>
+              <input id="ctcBuyerMeetingDate" type="date" onchange="ctcUpdatePreview()" style="display:none;grid-column:span 2;border:1px solid var(--border);border-radius:8px;padding:8px 9px;font-size:12px">
+              <textarea id="ctcBuyerFeedback" rows="3" placeholder="What did the buyer agent say?" oninput="ctcUpdatePreview()" style="grid-column:span 2;border:1px solid var(--border);border-radius:8px;padding:8px 9px;font-size:12px;font-family:inherit;resize:vertical"></textarea>
+            </div>
+          </div>
+
+          <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:11px">
+            <div style="font-size:11px;font-weight:800;color:var(--brand);text-transform:uppercase;letter-spacing:.3px;margin-bottom:8px">Listing / seller agent</div>
+            <div style="display:grid;grid-template-columns:1.4fr 1fr;gap:7px">
+              <input id="ctcSellerAgent" list="ctcAgentOptions" type="text" placeholder="Listing agent name" onblur="ctcFillContact('seller')" oninput="ctcUpdatePreview()" style="border:1px solid var(--border);border-radius:8px;padding:8px 9px;font-size:12px">
+              <input id="ctcSellerPhone" type="text" placeholder="Phone" oninput="ctcUpdatePreview()" style="border:1px solid var(--border);border-radius:8px;padding:8px 9px;font-size:12px">
+              <input id="ctcSellerEmail" type="email" placeholder="Email (optional)" style="grid-column:span 2;border:1px solid var(--border);border-radius:8px;padding:8px 9px;font-size:12px">
+              <select id="ctcSellerOutcome" onchange="ctcToggleMeetingDate('seller');ctcUpdatePreview()" style="border:1px solid var(--border);border-radius:8px;padding:8px 9px;font-size:12px;background:var(--surface)">
+                <option value="Positive">Talked — positive</option><option value="Needs manager attention">Talked — issue / manager attention</option><option value="Requires follow-up">Requires follow-up</option><option value="Meeting Scheduled">Meeting scheduled</option><option value="Left voicemail">Left voicemail</option><option value="No answer">No answer</option>
+              </select>
+              <select id="ctcSellerRelationship" onchange="ctcToggleMeetingDate('seller');ctcUpdatePreview()" style="border:1px solid var(--border);border-radius:8px;padding:8px 9px;font-size:12px;background:var(--surface)">
+                <option value="Unknown">Relationship / opportunity...</option><option value="Already works with NFM">Already works with NFM</option><option value="Interested — follow up">Interested — follow up</option><option value="Meeting scheduled">Meeting scheduled</option><option value="Not interested">Not interested</option><option value="No response">No response</option>
+              </select>
+              <input id="ctcSellerMeetingDate" type="date" onchange="ctcUpdatePreview()" style="display:none;grid-column:span 2;border:1px solid var(--border);border-radius:8px;padding:8px 9px;font-size:12px">
+              <textarea id="ctcSellerFeedback" rows="3" placeholder="What did the listing agent say? Did you ask for the meeting?" oninput="ctcUpdatePreview()" style="grid-column:span 2;border:1px solid var(--border);border-radius:8px;padding:8px 9px;font-size:12px;font-family:inherit;resize:vertical"></textarea>
+            </div>
+          </div>
+        </div>
+
+        <div style="margin-top:10px;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:11px">
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:6px">
+            <div style="font-size:11px;font-weight:800;color:var(--text-2)">WHATSAPP UPDATE PREVIEW</div>
+            <label style="font-size:10px;color:var(--text-4);display:flex;gap:5px;align-items:center"><input id="ctcIncludeFullLoan" type="checkbox" onchange="ctcUpdatePreview()"> Include full loan # (default is last 4 only)</label>
+          </div>
+          <textarea id="ctcWhatsAppPreview" rows="8" readonly style="width:100%;box-sizing:border-box;border:1px solid var(--border);border-radius:8px;padding:9px 10px;font-size:12px;font-family:inherit;background:var(--surface-2);resize:vertical"></textarea>
+          <div style="display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap;margin-top:8px">
+            <button type="button" class="btn-sm" onclick="ctcCopyWhatsApp()">Copy WhatsApp update</button>
+            <button type="button" class="btn-primary" onclick="saveCtcWorkflow(false)">Save CTC</button>
+            <button type="button" class="btn-primary" onclick="saveCtcWorkflow(true)" style="background:var(--success)">Save + copy WhatsApp</button>
+          </div>
+          <div id="ctcSaveMsg" style="display:none;font-size:11px;color:var(--success);font-weight:700;margin-top:7px;text-align:right"></div>
+        </div>
       </div>
     </div>
     <div id="ql-coldcall-form" style="display:none">
@@ -3014,6 +3091,7 @@ async function init(){
   checkOpenIntake();
   updateNotesRequirementHint();
   document.getElementById("agentInput").addEventListener("input",checkDedupOnInput);
+  onQuickLogTypeChange();
 }
 
 // ── Snooze — lets Priority Touches respect a real decision instead of nagging daily ──
@@ -5750,6 +5828,143 @@ function parseBirthdayMD(str){
   return null;
 }
 
+// ── Dedicated CTC workflow ────────────────────────────────────────────────
+function onQuickLogTypeChange(){
+  const isCtc=(document.getElementById("quickLogType")?.value||"")==="CTC Call";
+  const panel=document.getElementById("ctcWorkflowPanel");
+  if(panel)panel.style.display=isCtc?"block":"none";
+  ["quickLogAgentWrap","quickLogContactMethod","quickLogOutcome","quickLogSaveBtn","quickLogNotesWrap"].forEach(id=>{
+    const el=document.getElementById(id);if(el)el.style.display=isCtc?"none":"";
+  });
+  const fu=document.getElementById("quickLogFollowupRow");if(fu&&isCtc)fu.style.display="none";
+  if(isCtc){ctcRefreshAgentOptions();ctcUpdatePreview();}
+}
+function ctcRefreshAgentOptions(){
+  const dl=document.getElementById("ctcAgentOptions");if(!dl)return;
+  dl.innerHTML=(allAgentNames||[]).map(n=>'<option value="'+String(n).replace(/"/g,"&quot;")+'">').join("");
+}
+function ctcField(id){return(document.getElementById(id)?.value||"").trim();}
+function ctcSet(id,val){const el=document.getElementById(id);if(el&&val!==undefined&&val!==null)el.value=val;}
+function ctcMaskLoan(loan){
+  const clean=String(loan||"").replace(/\s+/g,"");
+  if(!clean)return"";
+  if(document.getElementById("ctcIncludeFullLoan")?.checked)return clean;
+  const last=clean.slice(-4);return last?"ending "+last:"";
+}
+function ctcToggleMeetingDate(role){
+  const cap=role==="buyer"?"Buyer":"Seller";
+  const out=ctcField("ctc"+cap+"Outcome"), rel=ctcField("ctc"+cap+"Relationship");
+  const el=document.getElementById("ctc"+cap+"MeetingDate");
+  if(el)el.style.display=(out==="Meeting Scheduled"||rel==="Meeting scheduled")?"block":"none";
+}
+async function ctcFillContact(role){
+  const cap=role==="buyer"?"Buyer":"Seller";
+  const name=ctcField("ctc"+cap+"Agent");if(!name)return;
+  try{
+    const rows=await sbFetch("agent_profiles?agent_name=ilike."+encodeURIComponent(name)+"&select=agent_name,phone,email&limit=5").catch(()=>[]);
+    if(rows.length===1){
+      if(!ctcField("ctc"+cap+"Phone")&&rows[0].phone)ctcSet("ctc"+cap+"Phone",rows[0].phone);
+      if(!ctcField("ctc"+cap+"Email")&&rows[0].email)ctcSet("ctc"+cap+"Email",rows[0].email);
+      ctcUpdatePreview();
+    }
+  }catch(e){console.warn("CTC contact autofill failed",e);}
+}
+function ctcParsePastedUpdate(){
+  const raw=ctcField("ctcPasteSource");if(!raw){toast("Paste the CTC alert first.","error");return;}
+  const one=raw.replace(/\r/g,"");
+  let m=one.match(/Name\s*:\s*([^\n}]+)/i);if(m)ctcSet("ctcBorrower",m[1].trim());
+  if(!ctcField("ctcBorrower")){m=one.match(/Update\s*:\s*[^\n/]*\/([^:\n]+)\s*:\s*CLEAR\s*TO\s*CLOSE/i);if(m)ctcSet("ctcBorrower",m[1].trim());}
+  m=one.match(/Loan\s*(?:Number|#)\s*:\s*([A-Za-z0-9-]+)/i);if(m)ctcSet("ctcLoanNumber",m[1].trim());
+  m=one.match(/(?:Loan\s*)?Address\s*:\s*([\s\S]*?)(?=\n\s*(?:Buyer\s*Agent|Listing\s*Agent|Seller\s*Agent|Name\s*:|Loan\s*(?:Number|#)\s*:)|$)/i);
+  if(m){const addr=m[1].split("\n").map(s=>s.trim()).filter(Boolean).join(", ").replace(/,\s*,/g,",");if(addr)ctcSet("ctcProperty",addr);}
+  m=one.match(/Buyer\s*Agent\s*:\s*([^\n|]+)(?:\||,)?\s*([^\n]*)/i);if(m){ctcSet("ctcBuyerAgent",m[1].trim());if(m[2])ctcSet("ctcBuyerPhone",m[2].trim());}
+  m=one.match(/(?:Listing|Seller)\s*Agent\s*:\s*([^\n|]+)(?:\||,)?\s*([^\n]*)/i);if(m){ctcSet("ctcSellerAgent",m[1].trim());if(m[2])ctcSet("ctcSellerPhone",m[2].trim());}
+  ctcFillContact("buyer");ctcFillContact("seller");ctcUpdatePreview();toast("CTC alert parsed — double-check the fields before saving.","success",3500);
+}
+function ctcBuildWhatsApp(){
+  const borrower=ctcField("ctcBorrower"),loan=ctcMaskLoan(ctcField("ctcLoanNumber")),property=ctcField("ctcProperty");
+  const ba=ctcField("ctcBuyerAgent"),bp=ctcField("ctcBuyerPhone"),bf=ctcField("ctcBuyerFeedback"),br=ctcField("ctcBuyerRelationship");
+  const sa=ctcField("ctcSellerAgent"),sp=ctcField("ctcSellerPhone"),sf=ctcField("ctcSellerFeedback"),sr=ctcField("ctcSellerRelationship"),smd=ctcField("ctcSellerMeetingDate");
+  const lines=["CLEAR TO CLOSE!"];
+  if(borrower)lines.push("Borrower: "+borrower);
+  if(property)lines.push("Property: "+property);
+  if(loan)lines.push("Loan #: "+loan);
+  lines.push("");lines.push("Buyer Agent: "+(ba||"—")+" | "+(bp||"—"));if(bf)lines.push("Feedback: "+bf);if(br&&br!=="Unknown")lines.push("Relationship: "+br);
+  lines.push("");lines.push("Listing Agent: "+(sa||"—")+" | "+(sp||"—"));if(sf)lines.push("Feedback: "+sf);if(sr&&sr!=="Unknown")lines.push("Opportunity: "+sr+(smd?" — "+fmtDate(smd):""));
+  return lines.join("\n");
+}
+function ctcUpdatePreview(){const el=document.getElementById("ctcWhatsAppPreview");if(el)el.value=ctcBuildWhatsApp();}
+function ctcWhatsAppReady(){return !!(ctcField("ctcBuyerAgent")&&ctcField("ctcBuyerPhone")&&ctcField("ctcSellerAgent")&&ctcField("ctcSellerPhone")&&(ctcField("ctcBorrower")||ctcField("ctcProperty")));}
+async function ctcCopyWhatsApp(){
+  if(!ctcWhatsAppReady()){toast("For WhatsApp, add borrower/property plus BOTH buyer and listing agent names + phone numbers.","error",5000);return false;}
+  const text=ctcBuildWhatsApp();
+  try{await navigator.clipboard.writeText(text);toast("WhatsApp update copied ✓","success");return true;}
+  catch(e){const el=document.getElementById("ctcWhatsAppPreview");if(el){el.focus();el.select();document.execCommand("copy");toast("WhatsApp update copied ✓","success");return true;}return false;}
+}
+async function ctcUpsertContact(name,phone,email){
+  name=(name||"").trim();if(!name)return;
+  const rows=await sbFetch("agent_profiles?agent_name=ilike."+encodeURIComponent(name)+"&select=agent_name&limit=5").catch(()=>[]);
+  if(rows.length>1){console.warn("CTC contact not auto-updated because multiple profiles match",name);return;}
+  const payload={};if(phone)payload.phone=phone;if(email)payload.email=email;
+  if(rows.length===1){if(Object.keys(payload).length)await sbFetch("agent_profiles?agent_name=eq."+encodeURIComponent(rows[0].agent_name),{method:"PATCH",prefer:"return=minimal",body:JSON.stringify(payload)});}
+  else{await sbFetch("agent_profiles",{method:"POST",prefer:"return=minimal",body:JSON.stringify(Object.assign({agent_name:name},payload))});}
+}
+async function ctcSyncOpportunity(name,phone,email,relationship,meetingDate,role){
+  if(!name)return;
+  const shouldPipeline=relationship==="Interested — follow up"||relationship==="Meeting scheduled";
+  if(!shouldPipeline)return;
+  const existing=await sbFetch("outreach_prospects?agent_name=ilike."+encodeURIComponent(name)+"&select=id&limit=5").catch(()=>[]);
+  const payload={phone:phone||null,email:email||null,status:"Requires follow-up",follow_up_date:meetingDate||(localDateStr(new Date(Date.now()+3*86400000))),notes:"Added from CTC "+role+" conversation — "+relationship};
+  if(existing.length===1)await sbFetch("outreach_prospects?id=eq."+existing[0].id,{method:"PATCH",prefer:"return=minimal",body:JSON.stringify(payload)});
+  else if(existing.length===0)await sbFetch("outreach_prospects",{method:"POST",prefer:"return=minimal",body:JSON.stringify(Object.assign({agent_name:name},payload))});
+}
+function ctcActivityNotes(role,feedback,relationship){
+  const borrower=ctcField("ctcBorrower"),property=ctcField("ctcProperty"),loan=ctcField("ctcLoanNumber");
+  const parts=["☎️ CTC",role+" agent"];
+  if(borrower)parts.push("Borrower: "+borrower);if(property)parts.push("Property: "+property);if(loan)parts.push("Loan: ending "+loan.replace(/\s+/g,"").slice(-4));
+  if(feedback)parts.push("Feedback: "+feedback);if(relationship&&relationship!=="Unknown")parts.push("Relationship: "+relationship);
+  return parts.join(" | ");
+}
+async function saveCtcWorkflow(copyAfter){
+  if(openIntake){toast("Finish the open checklist for "+openIntake.agent_name+" first.","error");return;}
+  const borrower=ctcField("ctcBorrower"),property=ctcField("ctcProperty");
+  const sides=[
+    {role:"Buyer",key:"Buyer",name:ctcField("ctcBuyerAgent"),phone:ctcField("ctcBuyerPhone"),email:ctcField("ctcBuyerEmail"),outcome:ctcField("ctcBuyerOutcome"),relationship:ctcField("ctcBuyerRelationship"),meetingDate:ctcField("ctcBuyerMeetingDate"),feedback:ctcField("ctcBuyerFeedback")},
+    {role:"Listing",key:"Seller",name:ctcField("ctcSellerAgent"),phone:ctcField("ctcSellerPhone"),email:ctcField("ctcSellerEmail"),outcome:ctcField("ctcSellerOutcome"),relationship:ctcField("ctcSellerRelationship"),meetingDate:ctcField("ctcSellerMeetingDate"),feedback:ctcField("ctcSellerFeedback")}
+  ];
+  if(!borrower&&!property){toast("Add the borrower or property so this CTC can be identified later.","error");return;}
+  if(copyAfter&&!ctcWhatsAppReady()){toast("To save + copy WhatsApp, add BOTH buyer and listing agent names + phone numbers.","error",5000);return;}
+  const entered=sides.filter(s=>s.name);
+  if(!entered.length){toast("Add at least one buyer or listing agent.","error");return;}
+  for(const s of entered){
+    const answered=!(["No answer","Left voicemail"].includes(s.outcome));
+    if(answered&&!s.feedback){toast("Add what the "+s.role.toLowerCase()+" agent said, or change the outcome to no answer / voicemail.","error");return;}
+    if((s.outcome==="Meeting Scheduled"||s.relationship==="Meeting scheduled")&&!s.meetingDate){toast("Add the meeting date for "+s.name+".","error");return;}
+  }
+  const buttons=document.querySelectorAll('#ctcWorkflowPanel button');buttons.forEach(b=>b.disabled=true);
+  try{
+    for(const s of entered){
+      await ctcUpsertContact(s.name,s.phone,s.email);
+      await clearOldFollowups(s.name);
+      const fu=(s.outcome==="Meeting Scheduled"||s.relationship==="Meeting scheduled")?s.meetingDate:(s.outcome==="Requires follow-up"||s.relationship==="Interested — follow up"?localDateStr(new Date(Date.now()+3*86400000)):null);
+      await sbFetch("amanda_activities",{method:"POST",prefer:"return=minimal",body:JSON.stringify({agent_name:s.name,act_type:"CTC Call",act_date:today(),outcome:s.outcome,notes:ctcActivityNotes(s.role,s.feedback,s.relationship),follow_up_date:fu})});
+      await ctcSyncOpportunity(s.name,s.phone,s.email,s.relationship,s.meetingDate,s.role.toLowerCase()+" agent");
+    }
+    if(copyAfter)await ctcCopyWhatsApp();
+    const msg=document.getElementById("ctcSaveMsg");if(msg){msg.style.display="block";msg.textContent="✓ CTC saved for "+entered.length+" agent"+(entered.length===1?"":"s")+(copyAfter?" + WhatsApp copied":"");}
+    vibrateSaved();
+    loadWeek();loadFeed();loadStartHere();loadContacts?.();loadPipeline?.();initAutocomplete();
+    setTimeout(()=>{if(msg)msg.style.display="none";},5000);
+  }catch(e){toast("CTC save failed: "+e.message,"error");}
+  finally{buttons.forEach(b=>b.disabled=false);}
+}
+function ctcResetForm(){
+  ["ctcPasteSource","ctcBorrower","ctcLoanNumber","ctcProperty","ctcBuyerAgent","ctcBuyerPhone","ctcBuyerEmail","ctcBuyerMeetingDate","ctcBuyerFeedback","ctcSellerAgent","ctcSellerPhone","ctcSellerEmail","ctcSellerMeetingDate","ctcSellerFeedback"].forEach(id=>ctcSet(id,""));
+  ctcSet("ctcBuyerOutcome","Positive");ctcSet("ctcBuyerRelationship","Unknown");ctcSet("ctcSellerOutcome","Positive");ctcSet("ctcSellerRelationship","Unknown");
+  const full=document.getElementById("ctcIncludeFullLoan");if(full)full.checked=false;
+  ctcToggleMeetingDate("buyer");ctcToggleMeetingDate("seller");ctcUpdatePreview();
+}
+
 function toggleQuickLogFollowup(){
   const row=document.getElementById("quickLogFollowupRow");
   const outcome=document.getElementById("quickLogOutcome").value;
@@ -5772,6 +5987,7 @@ function toggleQuickLogFollowup(){
 }
 
 async function quickLogSave(){
+  if((document.getElementById("quickLogType")?.value||"")==="CTC Call"){return saveCtcWorkflow(false);}
   if(openIntake){toast("Finish the open checklist for "+openIntake.agent_name+" first.","error");return;}
   const agentName=(document.getElementById("quickLogAgent").value||"").trim();
   const actType=document.getElementById("quickLogType").value;
