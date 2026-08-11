@@ -1340,7 +1340,7 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI'
 
 <div class="modal-overlay" id="contactModal">
   <div class="modal-box">
-    <div class="modal-header"><span class="modal-title">Edit contact info</span><button class="modal-close" onclick="closeContactModal()">×</button></div>
+    <div class="modal-header"><span class="modal-title" id="contactModalTitle">Edit contact info</span><button class="modal-close" onclick="closeContactModal()">×</button></div>
     <div class="modal-sub" id="contactModalName"></div>
     <div class="field" style="margin-bottom:12px">
       <label>Correct display name <span style="font-weight:400;color:var(--text-4)">(safe spelling/capitalization correction — does not rename the database record)</span></label>
@@ -1361,10 +1361,10 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI'
     <div class="field" style="margin-bottom:12px"><label>Birthday <span style="font-weight:400;color:var(--text-4)">(MM/DD — no year)</span></label><input type="text" id="contactBirthday" placeholder="e.g. 03/14" maxlength="5" oninput="formatBirthdayInput(this)"></div>
     <div class="field" style="margin-bottom:12px"><label>Things to remember <span style="font-weight:400;color:var(--text-4)">(hobbies, kids, what they mentioned last time — shows up right before you talk to them)</span></label><textarea id="contactPersonalNotes" placeholder="e.g. has a golden retriever named Max, daughter starting college in the fall, loves the Buckeyes..." rows="2"></textarea></div>
     <div class="field" style="margin-bottom:12px"><label>Tier</label><select id="contactTier"><option value="">No tier set</option><option value="Channel">Channel (10+ closes)</option><option value="A">A-Tier (4+ closes)</option><option value="B">B-Tier (2–3 closes)</option><option value="C">C-Tier (1 close or lead)</option></select></div>
-    <details style="margin-bottom:18px;border:0.5px solid var(--border);border-radius:8px;padding:10px 12px;background:var(--surface-2)">
-      <summary style="cursor:pointer;font-size:13px;font-weight:600;color:var(--text-1)">▸ Partner notes &amp; playbook fields</summary>
+    <details id="partnerPlaybookDetails" style="margin-bottom:18px;border:0.5px solid var(--border);border-radius:8px;padding:10px 12px;background:var(--surface-2)">
+      <summary style="cursor:pointer;font-size:13px;font-weight:600;color:var(--text-1)">Portfolio &amp; Relationship Notes <span style="font-weight:400;color:var(--text-4)">— goals, health signals, growth &amp; recovery</span></summary>
       <div style="margin-top:12px">
-        <div style="font-size:11.5px;color:var(--text-3);background:#fff;border:0.5px solid var(--border);border-radius:7px;padding:9px 10px;margin-bottom:12px"><strong style="color:var(--text-2)">Use these as conversation prompts, not a checklist.</strong> You do not need to fill out every field on every call. Capture what you naturally learn about their business, frustrations, opportunities, and what we can do next.</div>
+        <div style="font-size:11.5px;color:var(--text-3);background:#fff;border:0.5px solid var(--border);border-radius:7px;padding:9px 10px;margin-bottom:12px"><strong style="color:var(--text-2)">These fields feed Portfolio Review and Partner Health.</strong> Use this section for business/relationship notes: goals, frustrations, growth opportunities, leakage, satisfaction, competitor risk, and recovery. You do not need to fill out every field on every call. <strong>“Things to remember” above is for personal details only.</strong></div>
 
         <div class="field" style="margin-bottom:14px">
           <label>Next Growth Opportunity <span style="font-weight:400;color:var(--text-4)">— What could we help them do next?</span></label>
@@ -1461,6 +1461,7 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI'
           </label>
           <div style="font-size:11px;color:var(--text-3);margin-top:4px;margin-left:26px">Flag agents worth extra time before their production justifies it.</div>
         </div>
+        <div style="display:flex;justify-content:flex-end;margin-top:12px"><button type="button" class="btn-sm" onclick="collapsePortfolioNotes()">Collapse portfolio notes</button></div>
       </div>
     </details>
     <div style="margin-bottom:18px;padding:10px 12px;background:var(--surface-2);border-radius:8px;border:0.5px solid var(--border)">
@@ -7794,9 +7795,11 @@ function pfStatTile(label,value,filterKey){
   +'</div>';
 }
 function pfListRow(rank,name,detail){
+  const safeName=String(name||"").replace(/"/g,"&quot;");
   return '<div style="padding:8px 0;border-bottom:1px solid var(--border-light);display:flex;align-items:center;gap:10px">'
     +(rank?'<span style="font-size:11px;font-weight:700;color:var(--text-4);width:16px;flex-shrink:0">'+rank+'</span>':'')
     +'<div style="flex:1;min-width:0"><div style="font-weight:600;font-size:13px">'+escHtml(properCase(name))+'</div><div style="font-size:11.5px;color:var(--text-3)">'+detail+'</div></div>'
+    +'<button class="btn-sm" data-name="'+safeName+'" onclick="openPortfolioNotes(this)" title="Add or update Portfolio / Partner Health notes">Notes</button>'
   +'</div>';
 }
 function pfCountTile(label,count,target,tierFilter){
@@ -7878,7 +7881,7 @@ function openPortfolioList(key){
     const namesInTier=new Set(pfDrillData.rows.filter(r=>r.tier===t).map(r=>r.name.toLowerCase()));
     items=pfDrillData.partnerMeetingActsByTier.filter(a=>namesInTier.has((a.agent_name||"").toLowerCase())).map(a=>({name:a.agent_name,detail:a.act_date}));
   }
-  listEl.innerHTML=items.length?items.map(i=>'<div style="padding:8px 0;border-bottom:1px solid var(--border-light);display:flex;justify-content:space-between;gap:10px"><span style="font-weight:600;font-size:13px">'+escHtml(properCase(i.name))+'</span><span style="font-size:11.5px;color:var(--text-3)">'+escHtml(i.detail)+'</span></div>').join(""):'<div class="no-data">Nothing here.</div>';
+  listEl.innerHTML=items.length?items.map(i=>{const safeName=String(i.name||"").replace(/"/g,"&quot;");return '<div style="padding:8px 0;border-bottom:1px solid var(--border-light);display:flex;align-items:center;gap:10px"><span style="font-weight:600;font-size:13px;flex:1">'+escHtml(properCase(i.name))+'</span><span style="font-size:11.5px;color:var(--text-3)">'+escHtml(i.detail)+'</span><button class="btn-sm" data-name="'+safeName+'" onclick="closePortfolioListModal();openPortfolioNotes(this)" title="Add or update Portfolio / Partner Health notes">Notes</button></div>'}).join(""):'<div class="no-data">Nothing here.</div>';
   modal.classList.add("open");
 }
 function closePortfolioListModal(){document.getElementById("portfolioListModal").classList.remove("open");}
@@ -8399,7 +8402,7 @@ async function openContactModal(name,phone,email,brokerage,birthday){
   if(document.getElementById("contactPersonalNotes"))document.getElementById("contactPersonalNotes").value=personalNotes;
   document.getElementById("contactModal").classList.add("open");
 }
-function closeContactModal(){document.getElementById("contactModal").classList.remove("open");editingContactName=null;editingContactOriginalName=null;}
+function closeContactModal(){document.getElementById("contactModal").classList.remove("open");const d=document.getElementById("partnerPlaybookDetails");if(d)d.open=false;const t=document.getElementById("contactModalTitle");if(t)t.textContent="Edit contact info";editingContactName=null;editingContactOriginalName=null;}
 async function saveContactModal(){
   if(!editingContactName)return;
   const saveBtn=document.querySelector("#contactModal .btn-primary");
@@ -8880,14 +8883,35 @@ function renderContacts(list){
       '<div style="display:flex;gap:5px;align-items:center;flex-shrink:0;flex-wrap:wrap;justify-content:flex-end">'+
         ((c.relationship_status!=="inactive"&&c.do_not_contact!==true)?('<button class="btn-sm" data-name="'+c.agent_name.replace(/"/g,'&quot;')+'" onclick="quickLogBuddyAsk(this)" title="Log that you asked this agent for a buddy introduction">Asked buddy</button>'+
         '<button class="btn-sm" data-name="'+c.agent_name.replace(/"/g,'&quot;')+'" onclick="quickLogBuddyIntro(this)" title="Log an actual buddy introduction received from this agent">Intro received</button>'):'')+
-        '<button class="btn-sm" onclick="openContactsEdit(this)" data-name="'+c.agent_name.replace(/"/g,'&quot;')+'">Edit</button>'+
+        '<button class="btn-sm" onclick="openPortfolioNotes(this)" data-name="'+c.agent_name.replace(/"/g,'&quot;')+'" title="Open Portfolio Review / Partner Health notes">Portfolio notes</button>'+
+        '<button class="btn-sm" onclick="openContactsEdit(this)" data-name="'+c.agent_name.replace(/"/g,'&quot;')+'">Contact</button>'+
       '</div>'+
     '</div>';
   }).join("");
 }
 
+
+function openPortfolioNotes(nameOrEl){
+  const name=typeof nameOrEl==="string"?nameOrEl:(nameOrEl&&nameOrEl.dataset?nameOrEl.dataset.name:String(nameOrEl));
+  openContactsEdit(name);
+  const titleEl=document.getElementById("contactModalTitle");
+  if(titleEl)titleEl.textContent="Portfolio & Relationship Notes";
+  const details=document.getElementById("partnerPlaybookDetails");
+  if(details){
+    details.open=true;
+    setTimeout(()=>details.scrollIntoView({behavior:"smooth",block:"start"}),60);
+  }
+}
+function collapsePortfolioNotes(){
+  const details=document.getElementById("partnerPlaybookDetails");
+  if(details){details.open=false;details.scrollIntoView({behavior:"smooth",block:"start"});}
+}
 function openContactsEdit(nameOrEl){
   const name=typeof nameOrEl==="string"?nameOrEl:(nameOrEl&&nameOrEl.dataset?nameOrEl.dataset.name:String(nameOrEl));
+  const titleEl=document.getElementById("contactModalTitle");
+  if(titleEl)titleEl.textContent="Edit contact info";
+  const playbookDetails=document.getElementById("partnerPlaybookDetails");
+  if(playbookDetails)playbookDetails.open=false;
   const c=allContacts.find(x=>x.agent_name===name)||{agent_name:name};
   editingContactName=name;
   editingContactOriginalName=c.agent_name||name; // best-effort cache; saveContactModal re-verifies before writing
