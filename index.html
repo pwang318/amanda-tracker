@@ -347,6 +347,21 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI'
 
 /* ── RESPONSIVE ────────────────────────────────────────────────── */
 @media(max-width:600px){.form-row,.form-row.three,.stat-grid,.pipe-stats,.week-bottom{grid-template-columns:1fr}.view{padding:16px 14px}}
+
+/* CTC workflow responsive layout fix */
+#ctcWorkflowPanel{max-width:100%;box-sizing:border-box;overflow:hidden}
+#ctcWorkflowPanel *{box-sizing:border-box}
+#ctcWorkflowPanel .ctc-agent-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;width:100%}
+#ctcWorkflowPanel .ctc-agent-card{min-width:0;width:100%}
+#ctcWorkflowPanel .ctc-agent-fields{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);gap:7px;width:100%}
+#ctcWorkflowPanel input,#ctcWorkflowPanel select,#ctcWorkflowPanel textarea{min-width:0;max-width:100%;width:100%}
+@media(max-width:760px){
+  #ctcWorkflowPanel .ctc-agent-grid{grid-template-columns:1fr}
+}
+@media(max-width:460px){
+  #ctcWorkflowPanel .ctc-agent-fields{grid-template-columns:1fr}
+  #ctcWorkflowPanel .ctc-span-2{grid-column:1!important}
+}
 </style>
 <!-- Realtime pass: loads the Supabase client ONLY for postgres_changes subscriptions below.
      Everything else in this app still uses the existing sbFetch()/raw-fetch REST calls,
@@ -531,38 +546,38 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI'
         </div>
 
         <datalist id="ctcAgentOptions"></datalist>
-        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:10px">
-          <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:11px">
+        <div class="ctc-agent-grid">
+          <div class="ctc-agent-card" style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:11px">
             <div style="font-size:11px;font-weight:800;color:var(--brand);text-transform:uppercase;letter-spacing:.3px;margin-bottom:8px">Buyer agent</div>
-            <div style="display:grid;grid-template-columns:1.4fr 1fr;gap:7px">
+            <div class="ctc-agent-fields">
               <input id="ctcBuyerAgent" list="ctcAgentOptions" type="text" placeholder="Buyer agent name" onblur="ctcFillContact('buyer')" oninput="ctcUpdatePreview()" style="border:1px solid var(--border);border-radius:8px;padding:8px 9px;font-size:12px">
               <input id="ctcBuyerPhone" type="text" placeholder="Phone" oninput="ctcUpdatePreview()" style="border:1px solid var(--border);border-radius:8px;padding:8px 9px;font-size:12px">
-              <input id="ctcBuyerEmail" type="email" placeholder="Email (optional)" style="grid-column:span 2;border:1px solid var(--border);border-radius:8px;padding:8px 9px;font-size:12px">
+              <input class="ctc-span-2" id="ctcBuyerEmail" type="email" placeholder="Email (optional)" style="grid-column:span 2;border:1px solid var(--border);border-radius:8px;padding:8px 9px;font-size:12px">
               <select id="ctcBuyerOutcome" onchange="ctcToggleMeetingDate('buyer');ctcUpdatePreview()" style="border:1px solid var(--border);border-radius:8px;padding:8px 9px;font-size:12px;background:var(--surface)">
                 <option value="Positive">Talked — positive</option><option value="Needs manager attention">Talked — issue / manager attention</option><option value="Requires follow-up">Requires follow-up</option><option value="Meeting Scheduled">Meeting scheduled</option><option value="Left voicemail">Left voicemail</option><option value="No answer">No answer</option>
               </select>
               <select id="ctcBuyerRelationship" onchange="ctcToggleMeetingDate('buyer');ctcUpdatePreview()" style="border:1px solid var(--border);border-radius:8px;padding:8px 9px;font-size:12px;background:var(--surface)">
                 <option value="Unknown">Relationship / opportunity...</option><option value="Already works with NFM">Already works with NFM</option><option value="Interested — follow up">Interested — follow up</option><option value="Meeting scheduled">Meeting scheduled</option><option value="Not interested">Not interested</option><option value="No response">No response</option>
               </select>
-              <input id="ctcBuyerMeetingDate" type="date" onchange="ctcUpdatePreview()" style="display:none;grid-column:span 2;border:1px solid var(--border);border-radius:8px;padding:8px 9px;font-size:12px">
-              <textarea id="ctcBuyerFeedback" rows="3" placeholder="What did the buyer agent say?" oninput="ctcUpdatePreview()" style="grid-column:span 2;border:1px solid var(--border);border-radius:8px;padding:8px 9px;font-size:12px;font-family:inherit;resize:vertical"></textarea>
+              <input class="ctc-span-2" id="ctcBuyerMeetingDate" type="date" onchange="ctcUpdatePreview()" style="display:none;grid-column:span 2;border:1px solid var(--border);border-radius:8px;padding:8px 9px;font-size:12px">
+              <textarea class="ctc-span-2" id="ctcBuyerFeedback" rows="3" placeholder="What did the buyer agent say?" oninput="ctcUpdatePreview()" style="grid-column:span 2;border:1px solid var(--border);border-radius:8px;padding:8px 9px;font-size:12px;font-family:inherit;resize:vertical"></textarea>
             </div>
           </div>
 
-          <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:11px">
+          <div class="ctc-agent-card" style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:11px">
             <div style="font-size:11px;font-weight:800;color:var(--brand);text-transform:uppercase;letter-spacing:.3px;margin-bottom:8px">Listing / seller agent</div>
-            <div style="display:grid;grid-template-columns:1.4fr 1fr;gap:7px">
+            <div class="ctc-agent-fields">
               <input id="ctcSellerAgent" list="ctcAgentOptions" type="text" placeholder="Listing agent name" onblur="ctcFillContact('seller')" oninput="ctcUpdatePreview()" style="border:1px solid var(--border);border-radius:8px;padding:8px 9px;font-size:12px">
               <input id="ctcSellerPhone" type="text" placeholder="Phone" oninput="ctcUpdatePreview()" style="border:1px solid var(--border);border-radius:8px;padding:8px 9px;font-size:12px">
-              <input id="ctcSellerEmail" type="email" placeholder="Email (optional)" style="grid-column:span 2;border:1px solid var(--border);border-radius:8px;padding:8px 9px;font-size:12px">
+              <input class="ctc-span-2" id="ctcSellerEmail" type="email" placeholder="Email (optional)" style="grid-column:span 2;border:1px solid var(--border);border-radius:8px;padding:8px 9px;font-size:12px">
               <select id="ctcSellerOutcome" onchange="ctcToggleMeetingDate('seller');ctcUpdatePreview()" style="border:1px solid var(--border);border-radius:8px;padding:8px 9px;font-size:12px;background:var(--surface)">
                 <option value="Positive">Talked — positive</option><option value="Needs manager attention">Talked — issue / manager attention</option><option value="Requires follow-up">Requires follow-up</option><option value="Meeting Scheduled">Meeting scheduled</option><option value="Left voicemail">Left voicemail</option><option value="No answer">No answer</option>
               </select>
               <select id="ctcSellerRelationship" onchange="ctcToggleMeetingDate('seller');ctcUpdatePreview()" style="border:1px solid var(--border);border-radius:8px;padding:8px 9px;font-size:12px;background:var(--surface)">
                 <option value="Unknown">Relationship / opportunity...</option><option value="Already works with NFM">Already works with NFM</option><option value="Interested — follow up">Interested — follow up</option><option value="Meeting scheduled">Meeting scheduled</option><option value="Not interested">Not interested</option><option value="No response">No response</option>
               </select>
-              <input id="ctcSellerMeetingDate" type="date" onchange="ctcUpdatePreview()" style="display:none;grid-column:span 2;border:1px solid var(--border);border-radius:8px;padding:8px 9px;font-size:12px">
-              <textarea id="ctcSellerFeedback" rows="3" placeholder="What did the listing agent say? Did you ask for the meeting?" oninput="ctcUpdatePreview()" style="grid-column:span 2;border:1px solid var(--border);border-radius:8px;padding:8px 9px;font-size:12px;font-family:inherit;resize:vertical"></textarea>
+              <input class="ctc-span-2" id="ctcSellerMeetingDate" type="date" onchange="ctcUpdatePreview()" style="display:none;grid-column:span 2;border:1px solid var(--border);border-radius:8px;padding:8px 9px;font-size:12px">
+              <textarea class="ctc-span-2" id="ctcSellerFeedback" rows="3" placeholder="What did the listing agent say? Did you ask for the meeting?" oninput="ctcUpdatePreview()" style="grid-column:span 2;border:1px solid var(--border);border-radius:8px;padding:8px 9px;font-size:12px;font-family:inherit;resize:vertical"></textarea>
             </div>
           </div>
         </div>
