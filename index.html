@@ -5452,7 +5452,7 @@ async function showDailyCheckin(viewDateStr){
     const dateObj=new Date(viewDate+"T12:00:00");
     const nextDayStr=localDateStr(new Date(dateObj.getTime()+86400000));
     const[dayActs,escToday,flaggedOpen,fuTomorrow,rcHotRows]=await Promise.all([
-      sbFetch("amanda_activities?select=act_type,agent_name,outcome,notes&act_date=eq."+viewDate),
+      sbFetch("amanda_activities?select=id,act_type,agent_name,outcome,notes,follow_up_date&act_date=eq."+viewDate+"&order=id.asc"),
       sbFetch("amanda_activities?select=agent_name,act_type,notes&outcome=eq.Needs manager attention&act_date=eq."+viewDate).catch(()=>[]),
       sbFetch("call_logs?select=agent_name,lp,note&flag_rm=eq.true&limit=20").catch(()=>[]),
       sbFetch("amanda_activities?select=agent_name,act_type&follow_up_date=eq."+nextDayStr).catch(()=>[]),
@@ -5461,39 +5461,99 @@ async function showDailyCheckin(viewDateStr){
 
     titleEl.textContent="Daily Check-in — "+dateObj.toLocaleDateString("en-US",{weekday:"long",month:"short",day:"numeric"})+(isToday?"":" (past)");
 
+    const activities=dayActs||[];
     const cCounts={};
-    (dayActs||[]).forEach(a=>{cCounts[a.act_type]=(cCounts[a.act_type]||0)+1;});
-    const talkToToday=cntTalkTo(dayActs);
-    const coldCallsToday=(dayActs||[]).filter(a=>a.act_type==="Cold Calls").length;
-    const wins=(dayActs||[]).filter(a=>a.outcome==="Positive"||a.outcome==="Meeting Scheduled");
+    activities.forEach(a=>{cCounts[a.act_type]=(cCounts[a.act_type]||0)+1;});
+    const talkToToday=cntTalkTo(activities);
+    const coldCallsToday=activities.filter(a=>a.act_type==="Cold Calls").length;
+    const newMeetingsHeld=cCounts["New Realtor Meeting"]||0;
+    const breakBreads=cCounts["Break Breads"]||0;
+    const buddyAsks=cCounts["Realtor Buddy Referral Ask"]||0;
+    const wins=activities.filter(a=>a.outcome==="Positive"||a.outcome==="Meeting Scheduled");
     const bestWin=wins.find(w=>w.outcome==="Meeting Scheduled")||wins[0];
 
-    // ── The numbers, actual vs goal, color-coded so it's obvious at a glance ──
-    const numberRow=(label,actual,goal)=>{
+    // Outcomes that explain what actually happened with the activity, not just how many logs exist.
+    const meetingBookings=activities.filter(a=>a.outcome==="Meeting Scheduled");
+    const followUpsSet=activities.filter(a=>a.follow_up_date&&a.outcome!=="Meeting Scheduled");
+    const noConnectAttempts=activities.filter(a=>{
+      const o=(a.outcome||"").trim().toLowerCase();
+      return o==="left voicemail"||o==="no answer";
+    });
+    const meaningfulContacts=activities.filter(a=>isMeaningfulOutcome(a.outcome,NOT_MEANINGFUL_RM_OUTCOMES,a.act_type));
+    const uniqueAgents=new Set(activities.map(a=>agentMatchKey(a.agent_name)).filter(Boolean));
+
+    // ── The numbers: activity goals stay separate from outcomes. ──
+    const numberRow=(label,actual,goal,sub)=>{
       const pct=goal?Math.round(actual/goal*100):0;
       const color=pct>=100?"var(--success)":pct>=80?"var(--brand)":pct>=50?"var(--warning)":"var(--danger)";
       return'<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border-light)">'
-        +'<span style="font-size:13px;color:var(--text-1)">'+label+'</span>'
+        +'<div><span style="font-size:13px;color:var(--text-1)">'+label+'</span>'+(sub?'<div style="font-size:10.5px;color:var(--text-4);margin-top:1px">'+sub+'</div>':'')+'</div>'
         +'<span style="font-size:14px;font-weight:700;color:'+color+'">'+actual+'<span style="font-size:11px;color:var(--text-4);font-weight:400"> / '+goal+'</span></span>'
         +'</div>';
     };
-    const numbersHtml=numberRow("Cold Calls",coldCallsToday,25)
-      +numberRow("Talk-to's",talkToToday,20)
-      +numberRow("New Realtor Meetings",cCounts["New Realtor Meeting"]||0,1)
-      +numberRow("Break Breads",cCounts["Break Breads"]||0,1)
-      +numberRow("Realtor Buddy Asks",cCounts["Realtor Buddy Referral Ask"]||0,1);
+    const numbersHtml=numberRow("Cold Calls",coldCallsToday,25,"attempts logged")
+      +numberRow("Talk-to's",talkToToday,20,"relationship touches logged")
+      +numberRow("New Realtor Meetings HELD",newMeetingsHeld,1,"meetings that actually happened today")
+      +numberRow("Break Breads",breakBreads,1,"held today")
+      +numberRow("Realtor Buddy Asks",buddyAsks,1,"asks made today");
 
-    // ── Still open — things worth actually talking through together ──
+    const miniStat=(label,value,sub)=>'<div style="background:var(--surface-2);border:1px solid var(--border-light);border-radius:8px;padding:9px 10px;min-width:0">'
+      +'<div style="font-size:18px;font-weight:700;color:var(--text-1);line-height:1">'+value+'</div>'
+      +'<div style="font-size:10.5px;font-weight:700;color:var(--text-3);margin-top:4px">'+label+'</div>'
+      +(sub?'<div style="font-size:9.5px;color:var(--text-4);margin-top:2px;line-height:1.25">'+sub+'</div>':'')+'</div>';
+
+    const whereDayWentHtml='<div style="margin:14px 0">'
+      +'<div style="font-size:11px;font-weight:700;color:var(--text-3);text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px">Where the day went <span style="font-weight:400;color:var(--text-4);text-transform:none">— pulled from what was actually logged</span></div>'
+      +'<div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px">'
+      +miniStat("Total activity",activities.length,"all logs")
+      +miniStat("Agents worked",uniqueAgents.size,"unique names")
+      +miniStat("Meaningful contacts",meaningfulContacts.length,"connected / met")
+      +miniStat("No-connect attempts",noConnectAttempts.length,"VM or no answer")
+      +miniStat("Meetings booked",meetingBookings.length,"scheduled today")
+      +miniStat("Follow-ups set",followUpsSet.length,"future follow-up dates")
+      +'</div></div>';
+
+    // Full daily trail: who, what happened, what was documented, and what's next.
+    const activityRows=activities.map((a,i)=>{
+      const outcome=a.outcome||"No outcome entered";
+      const next=a.follow_up_date?(a.outcome==="Meeting Scheduled"?"Meeting: ":"Follow-up: ")+fmtDate(a.follow_up_date):"No next date set";
+      return'<div style="padding:9px 0;border-bottom:1px solid var(--border-light)">'
+        +'<div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start">'
+        +'<div style="font-size:12.5px;font-weight:700;color:var(--text-1)">'+properCase(a.agent_name)+'</div>'
+        +'<div style="font-size:10.5px;color:var(--text-3);text-align:right;white-space:nowrap">'+escHtml(a.act_type||"")+'</div></div>'
+        +'<div style="font-size:11px;color:var(--text-2);margin-top:2px"><strong>Outcome:</strong> '+escHtml(outcome)+'</div>'
+        +(a.notes?'<div style="font-size:11px;color:var(--text-2);margin-top:2px;line-height:1.35"><strong>Notes:</strong> '+escHtml(a.notes)+'</div>':'<div style="font-size:11px;color:var(--danger);margin-top:2px"><strong>Notes:</strong> none logged</div>')
+        +'<div style="font-size:10.5px;color:'+(a.follow_up_date?'var(--brand-dark)':'var(--text-4)')+';margin-top:3px"><strong>Next:</strong> '+escHtml(next)+'</div>'
+        +'</div>';
+    }).join("");
+
+    const activityDetailHtml='<details open style="margin:0 0 14px;border:1px solid var(--border);border-radius:8px;background:#fff;overflow:hidden">'
+      +'<summary style="cursor:pointer;padding:10px 12px;font-size:11px;font-weight:700;color:var(--text-2);text-transform:uppercase;letter-spacing:.35px;background:var(--surface-2)">Activity → Outcome → Next ('+activities.length+')</summary>'
+      +'<div style="padding:0 12px;max-height:260px;overflow-y:auto">'
+      +(activities.length?activityRows:'<div style="padding:12px 0;font-size:12px;color:var(--text-4)">No activity logs for this day.</div>')
+      +'</div></details>';
+
+    // ── Still open — things worth actually talking through together. ──
     const openItems=[
       ...(escToday||[]).map(f=>"⚠️ "+properCase(f.agent_name)+" — "+escHtml(f.act_type)+(f.notes?": "+escHtml(f.notes):"")),
       ...(flaggedOpen&&flaggedOpen.length?["🚩 "+flaggedOpen.length+" open LP flag"+(flaggedOpen.length!==1?"s":"")+" awaiting response"]:[])
     ];
 
-    // ── Tomorrow, auto-populated — follow-ups already due, plus hot/urgent reconnects to prioritize ──
+    // ── Tomorrow, auto-populated — follow-ups already due, plus hot/urgent reconnects to prioritize. ──
     const tomorrowItems=[
       ...(fuTomorrow||[]).map(f=>"📅 "+properCase(f.agent_name)+" — follow-up due"),
       ...(rcHotRows||[]).slice(0,3).map(r=>"🎯 "+properCase(r.agent_name)+(r.grade?" ("+r.grade+"-tier)":"")+" — hot/urgent on Reconnect")
     ];
+
+    const goalGaps=[];
+    if(coldCallsToday<25)goalGaps.push((25-coldCallsToday)+" cold call"+(25-coldCallsToday!==1?"s":"")+" short of daily target");
+    if(talkToToday<20)goalGaps.push((20-talkToToday)+" talk-to"+(20-talkToToday!==1?"'s":"")+" short of daily target");
+    if(newMeetingsHeld<1)goalGaps.push("no new realtor meeting held");
+    if(buddyAsks<1)goalGaps.push("no Realtor Buddy Ask logged");
+    const contextPromptHtml=(goalGaps.length&&isToday)?'<div style="background:#fff8e8;border:1px solid #ead7a2;border-radius:8px;padding:10px 12px;margin-bottom:14px">'
+      +'<div style="font-size:10px;font-weight:700;color:#8a6614;text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px">Needs context before the day closes</div>'
+      +'<div style="font-size:11.5px;color:var(--text-2);line-height:1.45">'+goalGaps.map(g=>'• '+escHtml(g)).join('<br>')+'</div>'
+      +'</div>':'';
 
     const prevDayStr=localDateStr(new Date(dateObj.getTime()-86400000));
     const navHtml='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">'
@@ -5504,16 +5564,26 @@ async function showDailyCheckin(viewDateStr){
 
     body.innerHTML=navHtml+'<div style="font-size:11px;font-weight:700;color:var(--text-3);text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px">Today\'s numbers</div>'
       +numbersHtml
-      +'<div onclick="showTodayWinsDetail()" style="background:var(--success-bg);border-radius:8px;padding:10px 14px;margin:14px 0;cursor:pointer">'
-      +'<div style="font-size:10px;font-weight:700;color:var(--success);text-transform:uppercase;letter-spacing:.4px;margin-bottom:3px">Win today'+(wins.length>1?' <span style="font-weight:400;text-decoration:underline">(tap to see all '+wins.length+')</span>':'')+'</div>'
-      +'<div style="font-size:13px;color:var(--text-1)">'+(bestWin?properCase(bestWin.agent_name)+" — "+bestWin.outcome+(wins.length>1?" (+"+(wins.length-1)+" more)":""):"None logged yet today.")+'</div>'
+      +'<div style="display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid var(--border-light);margin-bottom:2px">'
+      +'<div><span style="font-size:13px;color:var(--text-1);font-weight:600">Meetings Booked Today</span><div style="font-size:10.5px;color:var(--text-4);margin-top:1px">outcome = Meeting Scheduled; separate from meetings held</div></div>'
+      +'<span style="font-size:15px;font-weight:700;color:'+(meetingBookings.length?'var(--success)':'var(--danger)')+'">'+meetingBookings.length+'</span></div>'
+      +whereDayWentHtml
+      +activityDetailHtml
+      +'<div onclick="showTodayWinsDetail()" style="background:var(--success-bg);border-radius:8px;padding:10px 14px;margin:0 0 14px;cursor:'+(wins.length?'pointer':'default')+'">'
+      +'<div style="font-size:10px;font-weight:700;color:var(--success);text-transform:uppercase;letter-spacing:.4px;margin-bottom:3px">Win today'+(wins.length?' <span style="font-weight:400;text-decoration:underline">(tap for notes + next step)</span>':'')+'</div>'
+      +'<div style="font-size:13px;color:var(--text-1)">'+(bestWin?properCase(bestWin.agent_name)+" — "+escHtml(bestWin.outcome)+(wins.length>1?" (+"+(wins.length-1)+" more)":""):"None logged yet today.")+'</div>'
       +'</div>'
       +(openItems.length?'<div style="background:var(--danger-bg);border-radius:8px;padding:10px 14px;margin-bottom:14px">'
         +'<div style="font-size:10px;font-weight:700;color:var(--danger);text-transform:uppercase;letter-spacing:.4px;margin-bottom:5px">Worth discussing</div>'
         +openItems.map(t=>'<div style="font-size:12px;color:var(--text-1);padding:2px 0">'+t+'</div>').join("")
         +'</div>':'')
+      +contextPromptHtml
       +'<div style="margin-bottom:14px">'
-      +'<label style="font-size:11px;font-weight:700;color:var(--text-3);text-transform:uppercase;letter-spacing:.4px">Struggles today <span style="font-weight:400;color:var(--text-4);text-transform:none">— talk it through, jot it down</span></label>'
+      +'<label style="font-size:11px;font-weight:700;color:var(--text-3);text-transform:uppercase;letter-spacing:.4px">Day context <span style="font-weight:400;color:var(--text-4);text-transform:none">— anything important the activity log cannot show</span></label>'
+      +'<textarea id="checkinDayContext" rows="2" placeholder="Example: training, project work, appointment, left early, system issue..." style="width:100%;margin-top:6px;border:1px solid var(--border);border-radius:8px;padding:9px 12px;font-size:13px;font-family:inherit;color:var(--text-1);outline:none;resize:vertical;box-sizing:border-box"></textarea>'
+      +'</div>'
+      +'<div style="margin-bottom:14px">'
+      +'<label style="font-size:11px;font-weight:700;color:var(--text-3);text-transform:uppercase;letter-spacing:.4px">Struggles today <span style="font-weight:400;color:var(--text-4);text-transform:none">— what got in the way of the targets?</span></label>'
       +'<textarea id="checkinStruggles" rows="3" placeholder="What got in the way today?" style="width:100%;margin-top:6px;border:1px solid var(--border);border-radius:8px;padding:9px 12px;font-size:13px;font-family:inherit;color:var(--text-1);outline:none;resize:vertical;box-sizing:border-box"></textarea>'
       +'</div>'
       +'<div style="margin-bottom:14px">'
@@ -5521,34 +5591,54 @@ async function showDailyCheckin(viewDateStr){
       +(tomorrowItems.length?tomorrowItems.map(t=>'<div style="font-size:12px;color:var(--text-1);padding:2px 0">'+t+'</div>').join(""):'<div style="font-size:12px;color:var(--text-4)">Nothing auto-queued — set the priority together below.</div>')
       +'<textarea id="checkinTomorrowNotes" rows="2" placeholder="Anything else for tomorrow, in your own words..." style="width:100%;margin-top:8px;border:1px solid var(--border);border-radius:8px;padding:9px 12px;font-size:13px;font-family:inherit;color:var(--text-1);outline:none;resize:vertical;box-sizing:border-box"></textarea>'
       +'</div>'
-      +'<button onclick="copyDailyCheckin()" style="width:100%;padding:10px;background:var(--brand);color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit">Copy recap (with notes) for the record</button>';
+      +'<button onclick="copyDailyCheckin()" style="width:100%;padding:10px;background:var(--brand);color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit">Copy full recap (activity + outcomes + notes)</button>';
 
-    // Build the REAL plain-text version of everything just rendered above — this is what
-    // actually gets copied. Struggles/tomorrow notes get appended live at copy time since
-    // those are typed after this renders.
+    // Store data used by the wins drill-down and the copy-ready recap.
     dailyCheckinWins=wins;
+    dailyCheckinDayActivities=activities;
+    const plainName=a=>resolvedDisplayName(a.agent_name||"");
     const plainNumbers=[
       "Cold Calls: "+coldCallsToday+"/25",
       "Talk-to's: "+talkToToday+"/20",
-      "New Realtor Meetings: "+(cCounts["New Realtor Meeting"]||0)+"/1",
-      "Break Breads: "+(cCounts["Break Breads"]||0)+"/1",
-      "Realtor Buddy Asks: "+(cCounts["Realtor Buddy Referral Ask"]||0)+"/1"
+      "New Realtor Meetings HELD: "+newMeetingsHeld+"/1",
+      "Break Breads: "+breakBreads+"/1",
+      "Realtor Buddy Asks: "+buddyAsks+"/1",
+      "Meetings Booked Today: "+meetingBookings.length
     ].join("\n");
-    const plainWin=bestWin?properCase(bestWin.agent_name)+" — "+bestWin.outcome+(wins.length>1?" (+"+(wins.length-1)+" more: "+wins.slice(1).map(w=>properCase(w.agent_name)).join(", ")+")":""):"None logged yet today.";
-    const plainOpen=openItems.length?openItems.map(t=>"- "+t.replace(/<[^>]*>/g,"")).join("\n"):"Nothing open right now.";
-    const plainTomorrow=tomorrowItems.length?tomorrowItems.map(t=>"- "+t).join("\n"):"Nothing auto-queued.";
+    const plainWhere=[
+      "Total activity logs: "+activities.length,
+      "Unique agents worked: "+uniqueAgents.size,
+      "Meaningful contacts: "+meaningfulContacts.length,
+      "No-connect attempts (VM/no answer): "+noConnectAttempts.length,
+      "Meetings booked: "+meetingBookings.length,
+      "Follow-ups set: "+followUpsSet.length
+    ].join("\n");
+    const plainActivity=activities.length?activities.map(a=>{
+      const pieces=["- "+plainName(a)+" — "+(a.act_type||"Activity")+" — "+(a.outcome||"No outcome entered")];
+      if(a.notes)pieces.push("  Notes: "+a.notes);
+      else pieces.push("  Notes: none logged");
+      if(a.follow_up_date)pieces.push("  Next: "+(a.outcome==="Meeting Scheduled"?"Meeting ":"Follow-up ")+fmtDate(a.follow_up_date));
+      else pieces.push("  Next: no date set");
+      return pieces.join("\n");
+    }).join("\n"):"No activity logs for this day.";
+    const plainWin=bestWin?plainName(bestWin)+" — "+bestWin.outcome+(wins.length>1?" (+"+(wins.length-1)+" more: "+wins.slice(1).map(plainName).join(", ")+")":""):"None logged yet today.";
+    const plainOpen=openItems.length?openItems.map(t=>"- "+t.replace(/<[^>]*>/g,"").replace(/&amp;/g,"&").replace(/&#39;/g,"'")).join("\n"):"Nothing open right now.";
+    const plainTomorrow=tomorrowItems.length?tomorrowItems.map(t=>"- "+t.replace(/<[^>]*>/g,"").replace(/&amp;/g,"&").replace(/&#39;/g,"'")).join("\n"):"Nothing auto-queued.";
     document.getElementById("checkinModalBody").dataset.plainRecap=[
       "TODAY'S NUMBERS",plainNumbers,
+      "\nWHERE THE DAY WENT",plainWhere,
+      "\nACTIVITY → OUTCOME → NEXT",plainActivity,
       "\nWIN TODAY",plainWin,
       "\nWORTH DISCUSSING",plainOpen,
       "\nTOMORROW'S PLAN (auto-queued)",plainTomorrow
     ].join("\n");
   }catch(e){
-    body.innerHTML='<div class="no-data">Could not load — '+e.message+'</div>';
+    body.innerHTML='<div class="no-data">Could not load — '+escHtml(e.message)+'</div>';
   }
 }
 
 let dailyCheckinWins=[];
+let dailyCheckinDayActivities=[];
 function showTodayWinsDetail(){
   if(!dailyCheckinWins.length)return;
   const modal=document.getElementById("coldCallWinsModal");
@@ -5556,26 +5646,33 @@ function showTodayWinsDetail(){
   const titleEl=document.getElementById("winsModalTitle");
   const subEl=document.getElementById("winsModalSub");
   if(titleEl)titleEl.textContent="Today's wins ("+dailyCheckinWins.length+")";
-  if(subEl)subEl.textContent="Every Positive or Meeting Scheduled outcome logged today.";
-  listEl.innerHTML=dailyCheckinWins.map(w=>'<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border-light)">'
-    +'<div><div style="font-size:13px;font-weight:600;color:var(--text-1)">'+properCase(w.agent_name)+'</div>'
-    +'<div style="font-size:11px;color:var(--text-3)">'+escHtml(w.act_type||"")+'</div></div>'
-    +'<span style="font-size:11px;font-weight:700;color:var(--success)">'+escHtml(w.outcome)+'</span>'
-    +'</div>').join("");
+  if(subEl)subEl.textContent="The actual activity, outcome, notes, and next step behind every win logged today.";
+  listEl.innerHTML=dailyCheckinWins.map(w=>{
+    const next=w.follow_up_date?(w.outcome==="Meeting Scheduled"?"Meeting: ":"Follow-up: ")+fmtDate(w.follow_up_date):"No next date set";
+    return'<div style="padding:10px 0;border-bottom:1px solid var(--border-light)">'
+      +'<div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start"><div><div style="font-size:13px;font-weight:600;color:var(--text-1)">'+properCase(w.agent_name)+'</div>'
+      +'<div style="font-size:11px;color:var(--text-3);margin-top:1px">'+escHtml(w.act_type||"")+'</div></div>'
+      +'<span style="font-size:11px;font-weight:700;color:var(--success);text-align:right">'+escHtml(w.outcome||"")+'</span></div>'
+      +(w.notes?'<div style="font-size:11px;color:var(--text-2);margin-top:5px;line-height:1.4"><strong>Notes:</strong> '+escHtml(w.notes)+'</div>':'<div style="font-size:11px;color:var(--danger);margin-top:5px"><strong>Notes:</strong> none logged</div>')
+      +'<div style="font-size:10.5px;color:'+(w.follow_up_date?'var(--brand-dark)':'var(--text-4)')+';margin-top:4px"><strong>Next:</strong> '+escHtml(next)+'</div>'
+      +'</div>';
+  }).join("");
   modal.classList.add("open");
 }
 
 function copyDailyCheckin(){
+  const dayContext=(document.getElementById("checkinDayContext")?.value||"").trim();
   const struggles=(document.getElementById("checkinStruggles")?.value||"").trim();
   const tomorrowNotes=(document.getElementById("checkinTomorrowNotes")?.value||"").trim();
   const title=document.getElementById("checkinModalTitle").textContent;
-  const plainRecap=document.getElementById("checkinModalBody").dataset.plainRecap||"(numbers, win, and open items reviewed together)";
+  const plainRecap=document.getElementById("checkinModalBody").dataset.plainRecap||"(daily check-in reviewed together)";
   const lines=[title,"",plainRecap];
-  if(struggles)lines.push("\nSTRUGGLES TODAY",struggles);
+  if(dayContext)lines.push("\nDAY CONTEXT",dayContext);
+  if(struggles)lines.push("\nSTRUGGLES / BLOCKERS",struggles);
   if(tomorrowNotes)lines.push("\nTOMORROW'S PLAN (notes)",tomorrowNotes);
   const summary=lines.join("\n");
   navigator.clipboard.writeText(summary).then(()=>{
-    toast("Recap + notes copied for the record","success");
+    toast("Full daily recap copied — activity, outcomes + notes included","success");
   }).catch(()=>{
     toast("Couldn't copy automatically — select the text manually","error");
   });
