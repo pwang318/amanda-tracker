@@ -368,6 +368,10 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI'
      unchanged — this is additive, not a rewrite. If this script fails to load (offline, CDN
      blocked, etc.) the app is unaffected: the existing near-real-time polling still runs. -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js" defer></script>
+
+<style>
+@media(max-width:700px){#rmTeamOperatingCard #rmTeamScorecard>div[style*="grid-template-columns:repeat(3"]{grid-template-columns:1fr!important}#rmTeamOperatingCard #rmTeamScorecard>div[style*="grid-template-columns:1fr 1fr"]{grid-template-columns:1fr!important}#rmTeamOperatingCard #rmTeamScorecard>div[style*="grid-template-columns:1.25fr"]{grid-template-columns:1fr!important}}
+</style>
 </head>
 <body>
 <div class="header">
@@ -439,10 +443,22 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI'
   <!-- PERSONAL SCOREBOARD -->
   <div class="card" id="personalScorecard">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
-      <div class="card-title" style="margin-bottom:0">Your wins this month</div>
+      <div class="card-title" style="margin-bottom:0">Amanda execution this month</div>
       <div style="font-size:11px;color:var(--text-3)" id="personalScorecardSub"></div>
     </div>
     <div id="personalScorecardGrid" style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px"></div>
+  </div>
+
+  <!-- RM TEAM / DIRECTOR OPERATING MODEL -->
+  <div class="card" id="rmTeamOperatingCard">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;margin-bottom:12px">
+      <div>
+        <div class="card-title" style="margin-bottom:2px">RM Team Operating Model</div>
+        <div style="font-size:11px;color:var(--text-3)">One operating system, two roles · team growth + role-specific capacity</div>
+      </div>
+      <div style="font-size:10.5px;color:var(--text-3);background:var(--surface-2);border-radius:20px;padding:5px 10px">20 new meetings / month as a team</div>
+    </div>
+    <div id="rmTeamScorecard"><div class="no-data">Loading team scorecard...</div></div>
   </div>
 
   <!-- Quick Log -->
@@ -731,6 +747,28 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI'
         <div style="font-size:10px;font-weight:700;color:var(--brand);text-transform:uppercase;letter-spacing:.4px;margin-bottom:3px">💭 Remember</div>
         <div id="personalNotesReminderText" style="font-size:12.5px;color:var(--text-1);line-height:1.5"></div>
       </div>
+      <div class="form-row" style="margin-bottom:10px">
+        <div class="field">
+          <label>RM owner</label>
+          <select id="activityOwner" onchange="onActivityOwnerChange()">
+            <option value="Amanda">Amanda — Relationship Manager</option>
+            <option value="Nyny">Nyny — Director / RM Team Lead</option>
+          </select>
+        </div>
+        <div class="field" id="meetingFocusField" style="display:none">
+          <label>Meeting focus</label>
+          <select id="meetingFocus">
+            <option value="Standard">Standard relationship meeting</option>
+            <option value="Current Relationship">Current relationship</option>
+            <option value="A/B Growth">A / B growth</option>
+            <option value="Channel">Channel</option>
+            <option value="Retention / At-Risk">Retention / at-risk</option>
+            <option value="Strategic / Team Lead">Strategic / team lead</option>
+            <option value="Warm Intro / Referral">Warm intro / referral</option>
+          </select>
+        </div>
+      </div>
+      <div id="ownerRoleHint" style="font-size:11px;color:var(--text-3);background:var(--surface-2);border-radius:8px;padding:8px 10px;margin:-2px 0 12px">Amanda owns primary prospecting + direct RM execution. Nyny's new-meeting contribution is strategic/warm/Channel focused; no cold-call quota.</div>
       <div class="form-row">
         <div class="field">
           <label>Agent name</label>
@@ -746,6 +784,12 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI'
               <option>Cold Calls</option>
               <option>New Realtor Meeting</option>
             </optgroup>
+            <optgroup label="Strategic Partner Meetings">
+              <option>Partner Meeting</option>
+              <option>Strategic Partner Meeting</option>
+              <option>Channel Meeting</option>
+              <option>Retention Meeting</option>
+            </optgroup>
             <optgroup label="Relationship Deepening">
               <option>New Agent Follow-up</option>
               <option>Break Breads</option>
@@ -756,6 +800,15 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI'
             <optgroup label="Management">
               <option>Agent Talk-to</option>
               <option>Reconnect Outreach</option>
+            </optgroup>
+            <optgroup label="Director Leadership — does not count as a partner meeting">
+              <option>Amanda Coaching / Development</option>
+              <option>RM Scorecard Review</option>
+              <option>RM Portfolio Review</option>
+              <option>RM Process Improvement</option>
+              <option>Tracker / System Development</option>
+              <option>RM Training</option>
+              <option>RM Leadership Escalation Support</option>
             </optgroup>
             <optgroup label="Retention and Referrals">
               <option>CTC Call</option>
@@ -841,7 +894,7 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI'
     <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:16px">
       <div class="period-toggle" style="margin-bottom:0">
         <button class="ptoggle active" id="fsrc-both" onclick="setFeedSource('both')">Both</button>
-        <button class="ptoggle" id="fsrc-amanda" onclick="setFeedSource('amanda')">RM only</button>
+        <button class="ptoggle" id="fsrc-amanda" onclick="setFeedSource('amanda')">RM Team only</button>
         <button class="ptoggle" id="fsrc-lp" onclick="setFeedSource('lp')">LP only</button>
       </div>
       <input type="text" id="feedSearch" placeholder="Search agent name or notes..." oninput="applyFeedFilters()" style="padding:9px 12px;border:0.5px solid #D9D3C7;border-radius:8px;font-size:13px;font-family:inherit;color:#1a1a2e;outline:none;width:100%">
@@ -2061,7 +2114,7 @@ const NOT_MEANINGFUL_RM_OUTCOMES=["left voicemail","no answer"];
 const NOT_MEANINGFUL_LP_OUTCOMES=["left vm"];
 // Activity types that inherently prove contact happened, regardless of the outcome field —
 // these are all meeting/in-person-style log entries, not attempted-but-missed calls.
-const MEETING_ACT_TYPES=["Partner Meeting","Break Breads","New Realtor Meeting"];
+const MEETING_ACT_TYPES=["Partner Meeting","Break Breads","Strategic Partner Meeting","Channel Meeting","Retention Meeting","New Realtor Meeting"];
 function isMeaningfulOutcome(outcome,list,actType){
   if(actType&&MEETING_ACT_TYPES.indexOf(actType)>=0)return true;
   const o=(outcome||"").trim().toLowerCase();
@@ -2070,18 +2123,86 @@ function isMeaningfulOutcome(outcome,list,actType){
 }
 const SB_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVjbHVjYmRranF5cWR2aWZ5cHR4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA0OTUyMTMsImV4cCI6MjA5NjA3MTIxM30.VnqWcFT1WLQwCJxSdEIzIgOvETaOQly2IQxht-9uI7E";
 
+// ── RM TEAM OPERATING MODEL ────────────────────────────────────────────────
+// The owner/focus metadata is encoded with zero-width characters inside notes so this version
+// works with the CURRENT Supabase schema — no database migration is required. Historical rows
+// without metadata default to Amanda, which preserves the tracker that existed before Nyny was
+// added as a separately measured RM Team Lead contributor.
+const RM_TEAM_GOALS={
+  teamNew:20,
+  amandaNew:12,
+  nynyNew:8,
+  amandaExisting:18,
+  nynyExistingMin:12,
+  nynyExistingMax:17,
+  amandaTotal:30,
+  nynyTotalMin:20,
+  nynyTotalMax:25
+};
+const EXISTING_MEETING_TYPES=["Partner Meeting","Break Breads","Strategic Partner Meeting","Channel Meeting","Retention Meeting"];
+const DIRECTOR_LEADERSHIP_TYPES=["Amanda Coaching / Development","RM Scorecard Review","RM Portfolio Review","RM Process Improvement","Tracker / System Development","RM Training","RM Leadership Escalation Support"];
+const RM_META_START="\u2063\u2063\u2063", RM_META_END="\u2064\u2064\u2064";
+function zwEncode(s){
+  try{
+    const b64=btoa(unescape(encodeURIComponent(s)));let bits="";
+    for(let i=0;i<b64.length;i++)bits+=b64.charCodeAt(i).toString(2).padStart(8,"0");
+    return bits.replace(/0/g,"\u200B").replace(/1/g,"\u200C");
+  }catch(e){return "";}
+}
+function zwDecode(s){
+  try{
+    const bits=String(s||"").replace(/\u200B/g,"0").replace(/\u200C/g,"1");let out="";
+    for(let i=0;i+7<bits.length;i+=8)out+=String.fromCharCode(parseInt(bits.slice(i,i+8),2));
+    return decodeURIComponent(escape(atob(out)));
+  }catch(e){return "";}
+}
+function extractRmMeta(notes){
+  const n=String(notes||"");const a=n.lastIndexOf(RM_META_START);if(a<0)return{owner:"Amanda",focus:""};
+  const b=n.indexOf(RM_META_END,a+RM_META_START.length);if(b<0)return{owner:"Amanda",focus:""};
+  try{const obj=JSON.parse(zwDecode(n.slice(a+RM_META_START.length,b)));return{owner:obj.owner||"Amanda",focus:obj.focus||""};}catch(e){return{owner:"Amanda",focus:""};}
+}
+function stripRmMeta(notes){
+  const n=String(notes||"");const a=n.lastIndexOf(RM_META_START);if(a<0)return n;
+  const b=n.indexOf(RM_META_END,a+RM_META_START.length);if(b<0)return n;
+  return (n.slice(0,a)+n.slice(b+RM_META_END.length)).trim();
+}
+function appendRmMeta(notes,owner,focus){
+  const clean=stripRmMeta(notes||"");
+  const meta=RM_META_START+zwEncode(JSON.stringify({owner:owner||"Amanda",focus:focus||""}))+RM_META_END;
+  return clean+(clean?"\n":"")+meta;
+}
+function getActivityOwner(a){return extractRmMeta(a&&a.notes).owner||"Amanda";}
+function getMeetingFocus(a){return extractRmMeta(a&&a.notes).focus||"";}
+function isExistingMeeting(a){return !!a&&EXISTING_MEETING_TYPES.indexOf(a.act_type)>=0;}
+function isPartnerMeetingActivity(a){return !!a&&(a.act_type==="New Realtor Meeting"||isExistingMeeting(a));}
+function onActivityOwnerChange(){
+  const owner=document.getElementById("activityOwner")?.value||"Amanda";
+  try{localStorage.setItem("rm_activity_owner",owner);}catch(e){}
+  const hint=document.getElementById("ownerRoleHint");
+  if(hint)hint.innerHTML=owner==="Nyny"
+    ?"<strong>Nyny:</strong> strategic/warm/Channel/new-partner meetings + A/B, retention and current relationships. No cold-call quota. Leadership work is logged separately and never counts toward partner meetings."
+    :"<strong>Amanda:</strong> primary prospecting + direct RM execution, including cold calls, new-partner acquisition and assigned-portfolio growth.";
+  toggleMeetingFocusField();toggleIntakeBlock();
+}
+function toggleMeetingFocusField(){
+  const f=document.getElementById("meetingFocusField");if(!f)return;
+  const type=document.getElementById("activityType")?.value||"";
+  f.style.display=(type==="New Realtor Meeting"||EXISTING_MEETING_TYPES.indexOf(type)>=0)?"block":"none";
+}
+
 const EMOJI={
   "Cold Calls":"🏹","New Realtor Meeting":"🌸","New Agent Follow-up":"🌻","Break Breads":"🤝","Agent Talk-to":"🤙","Agent Talk-to":"📞",
   "Realtor Buddy Referral Ask":"🌾","Buddy Intro Received":"🤝","CTC Call":"⚡","Under Contract Call":"🏠",  "Market Update":"📊",
   "Co-hosted Event":"🎉","CTC Call":"🍰","Birthday Outreach":"🍰",
-  "Holiday Outreach":"🎅","Agent Appreciation":"❤️","Reconnect Outreach":"🔁"
+  "Holiday Outreach":"🎅","Agent Appreciation":"❤️","Reconnect Outreach":"🔁",
+  "Partner Meeting":"🤝","Strategic Partner Meeting":"🎯","Channel Meeting":"⭐","Retention Meeting":"🛟",
+  "Amanda Coaching / Development":"🧭","RM Scorecard Review":"📋","RM Portfolio Review":"🔎","RM Process Improvement":"⚙️","Tracker / System Development":"🛠️","RM Training":"🎓","RM Leadership Escalation Support":"🚦"
 };
 const GOALS=[
   {label:"Cold calls",type:"Cold Calls",weekly:125,monthly:500},
-  // Playbook meeting expectation: 10 New Agent Meetings + 20 Existing Partner Meetings monthly.
-  // Existing Partner Meetings include either a formal Partner Meeting or a Break Bread.
-  {label:"New realtor meetings",type:"New Realtor Meeting",weekly:3,monthly:10},
-  {label:"Existing partner meetings",type:"__existingmeeting__",weekly:5,monthly:20},
+  // Amanda execution goals. The RM Team card separately tracks the shared 20-new-meeting goal.
+  {label:"New realtor meetings",type:"New Realtor Meeting",weekly:3,monthly:12},
+  {label:"Existing partner meetings",type:"__existingmeeting__",weekly:5,monthly:18},
   {label:"Agent Talk-to's",type:"__talkto__",weekly:100,monthly:400},
   {label:"Buddy intros received",type:"Buddy Intro Received",weekly:3,monthly:12}
 ];
@@ -2089,14 +2210,14 @@ const GOAL_THRESHOLD=0.8; // 80% = passing
 
 function countGoalActivity(data,type){
   if(type==="__talkto__")return cntTalkTo(data);
-  if(type==="__existingmeeting__")return (data||[]).filter(a=>a.act_type==="Partner Meeting"||a.act_type==="Break Breads").length;
+  if(type==="__existingmeeting__")return (data||[]).filter(a=>isExistingMeeting(a)).length;
   return (data||[]).filter(a=>a.act_type===type).length;
 }
 const CTC_TYPE="CTC Call";
 // All activity types that count toward the Agent Talk-to goal
 const TALKTO_TYPES=["Agent Talk-to","Active Agent Talk-to","Active Agent Check-in","Reconnect Outreach","CTC Call","Under Contract Call","Birthday Outreach","Holiday Outreach","Agent Appreciation","Market Update","Market Update Call","Sent Market Report","Sent Referral","Co-Marketing Discussion","New Agent Follow-up","Closed Deal Thank You"];
 // Activity types that require a minimum 10-word note
-const NOTES_REQUIRED_TYPES=["Agent Talk-to","Reconnect Outreach","CTC Call","Under Contract Call","Birthday Outreach","Break Breads","Partner Meeting","New Lead Received","Pre-Approval Issued","New Contract","Clear to Close","Service Recovery","Partner Feedback"];
+const NOTES_REQUIRED_TYPES=["Agent Talk-to","Reconnect Outreach","CTC Call","Under Contract Call","Birthday Outreach","Break Breads","Partner Meeting","Strategic Partner Meeting","Channel Meeting","Retention Meeting","New Lead Received","Pre-Approval Issued","New Contract","Clear to Close","Service Recovery","Partner Feedback"];
 // Cold Calls: a note is always required, but no word-count minimum — just needs to say
 // something (left VM / texted / double-dialed / etc), not hit a length bar.
 const NOTES_MANDATORY_NO_MIN=["Cold Calls"];
@@ -2156,7 +2277,7 @@ function toggleDetail(id){
 }
 
 function cntTalkTo(acts){return(acts||[]).filter(function(a){return TALKTO_TYPES.indexOf((a.act_type||"").trim())>=0;}).length;}
-const ACT_TYPE_OPTIONS='<optgroup label="New Relationships"><option>Cold Calls</option><option>New Realtor Meeting</option></optgroup><optgroup label="Relationship Deepening"><option>New Agent Follow-up</option><option>Break Breads</option><option>Market Update</option><option>Co-hosted Event</option><option>Realtor Buddy Referral Ask</option><option>Buddy Intro Received</option></optgroup><optgroup label="Management"><option>Agent Talk-to</option><option>Reconnect Outreach</option></optgroup><optgroup label="Retention and Referrals"><option>CTC Call</option><option>Under Contract Call</option><option>Birthday Outreach</option><option>Holiday Outreach</option><option>Agent Appreciation</option></optgroup><optgroup label="Playbook — Formal Meetings"><option>Partner Meeting</option></optgroup><optgroup label="Playbook — Experience Monitoring"><option>New Lead Received</option><option>Pre-Approval Issued</option><option>New Contract</option><option>Clear to Close</option></optgroup><optgroup label="Playbook — Service &amp; Feedback"><option>Service Recovery</option><option>Partner Feedback</option></optgroup>';
+const ACT_TYPE_OPTIONS='<optgroup label="New Relationships"><option>Cold Calls</option><option>New Realtor Meeting</option></optgroup><optgroup label="Relationship Deepening"><option>New Agent Follow-up</option><option>Break Breads</option><option>Partner Meeting</option><option>Strategic Partner Meeting</option><option>Channel Meeting</option><option>Retention Meeting</option><option>Market Update</option><option>Co-hosted Event</option><option>Realtor Buddy Referral Ask</option><option>Buddy Intro Received</option></optgroup><optgroup label="Director Leadership"><option>Amanda Coaching / Development</option><option>RM Scorecard Review</option><option>RM Portfolio Review</option><option>RM Process Improvement</option><option>Tracker / System Development</option><option>RM Training</option><option>RM Leadership Escalation Support</option></optgroup><optgroup label="Management"><option>Agent Talk-to</option><option>Reconnect Outreach</option></optgroup><optgroup label="Retention and Referrals"><option>CTC Call</option><option>Under Contract Call</option><option>Birthday Outreach</option><option>Holiday Outreach</option><option>Agent Appreciation</option></optgroup><optgroup label="Playbook — Formal Meetings"><option>Partner Meeting</option></optgroup><optgroup label="Playbook — Experience Monitoring"><option>New Lead Received</option><option>Pre-Approval Issued</option><option>New Contract</option><option>Clear to Close</option></optgroup><optgroup label="Playbook — Service &amp; Feedback"><option>Service Recovery</option><option>Partner Feedback</option></optgroup>';
 function badgeEmoji(type){return type||"";}
 
 const NEXT_CALL_DAYS={
@@ -2771,7 +2892,8 @@ function parseIntakeNotes(notes){
 function toggleIntakeBlock(){
   const type=document.getElementById("activityType").value;
   const block=document.getElementById("intakeBlock");
-  if(openIntake||type==="New Realtor Meeting"){
+  const owner=document.getElementById("activityOwner")?.value||"Amanda";
+  if(openIntake||(type==="New Realtor Meeting"&&owner==="Amanda")){
     block.classList.add("show");
   }else{
     block.classList.remove("show");
@@ -2883,7 +3005,14 @@ async function completeIntakeChecklist(){
 document.getElementById("activityType").addEventListener("change",function(){
   const outcome=document.getElementById("activityOutcome").value;
   if(outcome==="Requires follow-up")autoSetFollowUp();
+  const ownerSel=document.getElementById("activityOwner");
+  const agentEl=document.getElementById("agentInput");
+  if(DIRECTOR_LEADERSHIP_TYPES.indexOf(this.value)>=0){
+    if(ownerSel){ownerSel.value="Nyny";onActivityOwnerChange();}
+    if(agentEl)agentEl.placeholder="Optional for leadership work — defaults to RM Team";
+  }else if(agentEl){agentEl.placeholder="Start typing...";}
   toggleIntakeBlock();
+  toggleMeetingFocusField();
   updateNotesRequirementHint();
   const referredRow=document.getElementById("referredByRow");
   if(referredRow)referredRow.style.display=(this.value==="Cold Calls"||this.value==="New Realtor Meeting")?"flex":"none";
@@ -3105,6 +3234,10 @@ async function init(){
   loadWeek();loadFollowups();loadFeed();loadManagement();initAutocomplete();loadQuiet();loadFlagged();loadOnboarding();loadStartHere();loadBreakBreadDue();loadDropoffWarning();loadContactDataQuality();loadZeroProduction();
   checkOpenIntake();
   updateNotesRequirementHint();
+  const savedOwner=localStorage.getItem("rm_activity_owner");
+  if(savedOwner&&document.getElementById("activityOwner"))document.getElementById("activityOwner").value=savedOwner;
+  onActivityOwnerChange();
+  loadRmTeamScorecard();
   document.getElementById("agentInput").addEventListener("input",checkDedupOnInput);
   onQuickLogTypeChange();
 }
@@ -4418,7 +4551,7 @@ async function showActivityDetailModal(actType,period){
     listEl.innerHTML='<div style="font-size:11px;color:var(--text-3);margin-bottom:6px">'+rows.length+' record'+(rows.length!==1?'s':'')+'</div>'
       +rows.map(r=>{
         const safe=(r.agent_name||"").replace(/'/g,"\\'");
-        const detail=[r.outcome||"",(r.notes||"").trim()].filter(Boolean).join(" · ");
+        const detail=[r.outcome||"",stripRmMeta(r.notes||"").trim()].filter(Boolean).join(" · ");
         return'<div style="padding:10px 0;border-bottom:1px solid var(--border-light)">'
           +'<div style="display:flex;justify-content:space-between;gap:12px;align-items:flex-start">'
           +'<button onclick="closeColdCallWinsModal();switchTab(\'history\');document.getElementById(\'historySearch\').value=\''+safe+'\';setTimeout(()=>doSearchHistory(\''+safe+'\'),150)" style="background:none;border:none;padding:0;font-family:inherit;font-size:13px;font-weight:700;color:var(--brand);cursor:pointer;text-align:left">'+properCase(r.agent_name)+'</button>'
@@ -4633,7 +4766,57 @@ async function loadOnboarding(){
   }catch(e){console.error("Onboarding error:",e);}
 }
 
+function rmGoalTile(label,value,target,sub){
+  const minTarget=typeof target==="number"?target:(target&&target.min)||0;
+  const pct=minTarget?Math.min(100,Math.round((value/minTarget)*100)):0;
+  const c=pct>=100?"var(--success)":pct>=60?"var(--brand)":"var(--danger)";
+  const targetLabel=typeof target==="number"?target:(target&&target.label)||"";
+  return '<div style="background:var(--surface-2);border-radius:9px;padding:11px 12px">'
+    +'<div style="font-size:10.5px;color:var(--text-3);margin-bottom:4px">'+label+'</div>'
+    +'<div style="font-size:20px;font-weight:800;color:var(--text-1)">'+value+(targetLabel!==""?'<span style="font-size:11px;font-weight:500;color:var(--text-4)"> / '+targetLabel+'</span>':'')+'</div>'
+    +(minTarget?'<div style="height:5px;background:var(--border);border-radius:4px;margin-top:6px;overflow:hidden"><div style="height:100%;width:'+pct+'%;background:'+c+'"></div></div>':'')
+    +(sub?'<div style="font-size:10px;color:var(--text-4);margin-top:5px;line-height:1.35">'+sub+'</div>':'')
+    +'</div>';
+}
+async function loadRmTeamScorecard(){
+  const el=document.getElementById("rmTeamScorecard");if(!el)return;
+  try{
+    const now=new Date();const monthStart=now.getFullYear()+"-"+String(now.getMonth()+1).padStart(2,"0")+"-01";
+    const acts=await sbFetch("amanda_activities?select=agent_name,act_type,act_date,outcome,notes&act_date=gte."+monthStart+"&order=act_date.desc&limit=3000").catch(()=>[]);
+    const mine=owner=>(acts||[]).filter(a=>getActivityOwner(a)===owner);
+    const amanda=mine("Amanda"), nyny=mine("Nyny");
+    const newCount=arr=>arr.filter(a=>a.act_type==="New Realtor Meeting").length;
+    const existingCount=arr=>arr.filter(a=>isExistingMeeting(a)).length;
+    const meetingCount=arr=>arr.filter(a=>isPartnerMeetingActivity(a)).length;
+    const aNew=newCount(amanda),nNew=newCount(nyny),teamNew=aNew+nNew;
+    const aExisting=existingCount(amanda),nExisting=existingCount(nyny);
+    const aTotal=meetingCount(amanda),nTotal=meetingCount(nyny),teamTotal=aTotal+nTotal;
+    const nLeadership=nyny.filter(a=>DIRECTOR_LEADERSHIP_TYPES.indexOf(a.act_type)>=0);
+    const focus={};nyny.filter(a=>isPartnerMeetingActivity(a)).forEach(a=>{const f=getMeetingFocus(a)||"Unclassified";focus[f]=(focus[f]||0)+1;});
+    const focusHtml=Object.keys(focus).length?Object.entries(focus).sort((a,b)=>b[1]-a[1]).map(([k,v])=>'<span style="font-size:10.5px;background:#fff;border:1px solid var(--border);border-radius:20px;padding:4px 8px">'+escHtml(k)+' · <strong>'+v+'</strong></span>').join(""):'<span style="font-size:10.5px;color:var(--text-4)">No Nyny meeting-focus data logged yet.</span>';
+    el.innerHTML=''
+      +'<div style="padding:10px 12px;background:linear-gradient(135deg,#EEEBF8,#F7F5FB);border:1px solid #D9D3EE;border-radius:10px;margin-bottom:12px">'
+        +'<div style="display:flex;justify-content:space-between;gap:12px;align-items:center"><div><div style="font-size:11px;font-weight:700;color:var(--brand);text-transform:uppercase;letter-spacing:.4px">Shared acquisition outcome</div><div style="font-size:12px;color:var(--text-2);margin-top:2px">20 new partner meetings/month across Amanda + Nyny</div></div><div style="font-size:25px;font-weight:800;color:var(--brand)">'+teamNew+' <span style="font-size:12px;font-weight:500;color:var(--text-4)">/ 20</span></div></div>'
+        +'<div style="height:6px;background:#D9D3EE;border-radius:4px;margin-top:8px;overflow:hidden"><div style="height:100%;width:'+Math.min(100,Math.round(teamNew/RM_TEAM_GOALS.teamNew*100))+'%;background:var(--brand)"></div></div>'
+      +'</div>'
+      +'<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-bottom:12px">'
+        +rmGoalTile("Amanda · new",aNew,RM_TEAM_GOALS.amandaNew,"Primary prospecting + direct RM execution")
+        +rmGoalTile("Nyny · new",nNew,RM_TEAM_GOALS.nynyNew,"Strategic, warm intro, Channel + higher-value opportunities; no cold-call quota")
+        +rmGoalTile("RM Team · total partner mtgs",teamTotal,{min:50,label:"50–55"},"Amanda 30+ · Nyny 20–25")
+      +'</div>'
+      +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">'
+       +'<div style="border:1px solid var(--border);border-radius:10px;padding:12px"><div style="font-size:12px;font-weight:700;color:var(--text-1);margin-bottom:8px">Amanda — Relationship Manager</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">'+rmGoalTile("Existing partner mtgs",aExisting,RM_TEAM_GOALS.amandaExisting,"")+rmGoalTile("Total partner mtgs",aTotal,RM_TEAM_GOALS.amandaTotal,"30+ target")+'</div><div style="font-size:10.5px;color:var(--text-4);margin-top:8px">Owns primary outbound/prospecting, assigned portfolio execution, onboarding and routine relationship cadence.</div></div>'
+       +'<div style="border:1px solid var(--border);border-radius:10px;padding:12px"><div style="font-size:12px;font-weight:700;color:var(--text-1);margin-bottom:8px">Nyny — Director / RM Team Lead</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">'+rmGoalTile("Strategic existing mtgs",nExisting,{min:RM_TEAM_GOALS.nynyExistingMin,label:"12–17"},"")+rmGoalTile("Total partner mtgs",nTotal,{min:RM_TEAM_GOALS.nynyTotalMin,label:"20–25"},"")+'</div><div style="font-size:10.5px;color:var(--text-4);margin-top:8px">Current relationships · Channel · A/B growth · retention/at-risk · strategic opportunities · warm introductions.</div></div>'
+      +'</div>'
+      +'<div style="display:grid;grid-template-columns:1.25fr .75fr;gap:10px">'
+       +'<div style="background:var(--surface-2);border-radius:10px;padding:11px 12px"><div style="font-size:11px;font-weight:700;color:var(--text-2);margin-bottom:7px">Nyny meeting mix · month to date</div><div style="display:flex;gap:6px;flex-wrap:wrap">'+focusHtml+'</div></div>'
+       +'<div style="background:var(--surface-2);border-radius:10px;padding:11px 12px"><div style="font-size:11px;font-weight:700;color:var(--text-2)">Director leadership work</div><div style="font-size:24px;font-weight:800;color:var(--brand);margin-top:3px">'+nLeadership.length+'</div><div style="font-size:10px;color:var(--text-4);line-height:1.3">Coaching, scorecard/portfolio review, training, system/process work. Tracked separately — never counted as partner meetings.</div></div>'
+      +'</div>';
+  }catch(e){console.error("RM team scorecard error",e);el.innerHTML='<div class="no-data">Unable to load RM Team scorecard.</div>';}
+}
+
 async function loadWeek(){
+  loadRmTeamScorecard();
   const wl2=document.getElementById("snapshotWeekLabel");
   if(wl2)wl2.textContent=week.label;
   try{
@@ -4643,31 +4826,33 @@ async function loadWeek(){
     const todayStr=today();
     const[weekActs,mtdActs,ytdActs,dailyActs,everMeetings]=await Promise.all([
       sbFetch("amanda_activities?select=act_type,outcome,agent_name,notes&act_date=gte."+week.start+"&act_date=lte."+week.end),
-      sbFetch("amanda_activities?select=act_type,outcome,agent_name&act_date=gte."+monthStart),
-      sbFetch("amanda_activities?select=act_type,outcome&act_date=gte."+yearStart),
-      sbFetch("amanda_activities?select=act_type,outcome&act_date=eq."+todayStr),
+      sbFetch("amanda_activities?select=act_type,outcome,agent_name,notes&act_date=gte."+monthStart),
+      sbFetch("amanda_activities?select=act_type,outcome,agent_name,notes&act_date=gte."+yearStart),
+      sbFetch("amanda_activities?select=act_type,outcome,agent_name,notes&act_date=eq."+todayStr),
       sbFetch("amanda_activities?select=agent_name&act_type=eq.New Realtor Meeting&limit=2000").catch(()=>[])
     ]);
-    periodData={daily:dailyActs,wtd:weekActs,mtd:mtdActs,ytd:ytdActs};
-    renderSnapshotStats(dailyActs,"daily");
+    const amandaOnly=arr=>(arr||[]).filter(a=>getActivityOwner(a)==="Amanda");
+    periodData={daily:amandaOnly(dailyActs),wtd:amandaOnly(weekActs),mtd:amandaOnly(mtdActs),ytd:amandaOnly(ytdActs)};
+    renderSnapshotStats(amandaOnly(dailyActs),"daily");
 
     // Personal scoreboard — MTD wins
     const psGrid=document.getElementById("personalScorecardGrid");
     const psSub=document.getElementById("personalScorecardSub");
     if(psGrid){
-      const mtdMeetings=(mtdActs||[]).filter(a=>a.act_type==="New Realtor Meeting").length;
-      const mtdBreakBreads=(mtdActs||[]).filter(a=>a.act_type==="Break Breads").length;
+      const amandaMtd=(mtdActs||[]).filter(a=>getActivityOwner(a)==="Amanda");
+      const mtdMeetings=amandaMtd.filter(a=>a.act_type==="New Realtor Meeting").length;
+      const mtdBreakBreads=amandaMtd.filter(a=>isExistingMeeting(a)).length;
       // A "win" requires an actual meeting held, not just a promising outcome on the call —
       // a Positive or Meeting Scheduled response alone isn't a win until it's actually happened.
       // Checked against ALL meetings ever held (not just this month), so a call made this month
       // that converts a few weeks later still counts once it actually happens.
       const normalizeWin=s=>(s||"").toLowerCase().trim();
       const everMeetingNames=new Set((everMeetings||[]).map(a=>normalizeWin(a.agent_name)).filter(Boolean));
-      const mtdWins=(mtdActs||[]).filter(a=>a.act_type==="Cold Calls"&&(a.outcome==="Positive"||a.outcome==="Meeting Scheduled")&&everMeetingNames.has(normalizeWin(a.agent_name))).length;
-      const mtdColdCalls=(mtdActs||[]).filter(a=>a.act_type==="Cold Calls").length;
+      const mtdWins=amandaMtd.filter(a=>a.act_type==="Cold Calls"&&(a.outcome==="Positive"||a.outcome==="Meeting Scheduled")&&everMeetingNames.has(normalizeWin(a.agent_name))).length;
+      const mtdColdCalls=amandaMtd.filter(a=>a.act_type==="Cold Calls").length;
       const scoreItems=[
-        {label:"New meetings",val:mtdMeetings,goal:20,color:"var(--brand)",click:"showWinsDetail('meetings')"},
-        {label:"Break breads",val:mtdBreakBreads,goal:20,color:"var(--brand)",click:"showWinsDetail('breadbreaks')"},
+        {label:"New meetings",val:mtdMeetings,goal:RM_TEAM_GOALS.amandaNew,color:"var(--brand)",click:"showWinsDetail('meetings')"},
+        {label:"Existing partner mtgs",val:mtdBreakBreads,goal:RM_TEAM_GOALS.amandaExisting,color:"var(--brand)",click:"showWinsDetail('breadbreaks')"},
         {label:"Cold call wins",val:mtdWins,goal:null,color:"var(--success)",click:"showColdCallWinsDetail()"},
         {label:"Cold calls made",val:mtdColdCalls,goal:500,color:"var(--text-2)"},
       ];
@@ -4682,13 +4867,14 @@ async function loadWeek(){
     const wlEl=document.getElementById("snapshotWeekLabel");
     if(wlEl) wlEl.textContent=week.label;
     let html="";
+    const amandaWeek=(weekActs||[]).filter(a=>getActivityOwner(a)==="Amanda");
     GOALS.forEach(g=>{
-      const count=countGoalActivity(weekActs,g.type);
+      const count=countGoalActivity(amandaWeek,g.type);
       html+=renderGoalBar(g.label,count,g.weekly,(count/g.weekly)*100,g.type);
     });
-    html+=renderCtcRow(weekActs.filter(a=>a.act_type===CTC_TYPE).length,"this week");
+    html+=renderCtcRow(amandaWeek.filter(a=>a.act_type===CTC_TYPE).length,"this week");
     try{
-      const coldCallsWk=weekActs.filter(a=>a.act_type==="Cold Calls");
+      const coldCallsWk=amandaWeek.filter(a=>a.act_type==="Cold Calls");
       const withOutcomeWk=coldCallsWk.filter(a=>a.outcome);
       const connectsWk=withOutcomeWk.filter(a=>["No answer","Left voicemail"].indexOf(a.outcome)<0);
       let statsIntroAdded=false;
@@ -4699,7 +4885,7 @@ async function loadWeek(){
         statsIntroAdded=true;
         html+='<div style="margin-top:6px;padding:8px 10px;background:var(--surface-2,#EEEBF8);border-radius:8px;font-size:11px;color:#666">📶 Cold call connect rate this week: <strong style="color:'+ccolor+'">'+cpct+'%</strong> ('+connectsWk.length+' of '+withOutcomeWk.length+' dials reached a live conversation)</div>';
       }
-      const talkTosWk=weekActs.filter(a=>TALKTO_TYPES.indexOf(a.act_type)>=0);
+      const talkTosWk=amandaWeek.filter(a=>TALKTO_TYPES.indexOf(a.act_type)>=0);
       const withOutcomeTtWk=talkTosWk.filter(a=>a.outcome);
       const connectsTtWk=withOutcomeTtWk.filter(a=>["No answer","Left voicemail"].indexOf(a.outcome)<0);
       if(withOutcomeTtWk.length>0){
@@ -4960,8 +5146,9 @@ async function logActivity(){
     return;
   }
   
-  const agentName=document.getElementById("agentInput").value.trim();
+  let agentName=document.getElementById("agentInput").value.trim();
   const activityType=document.getElementById("activityType").value;
+  if(DIRECTOR_LEADERSHIP_TYPES.indexOf(activityType)>=0&&!agentName)agentName="RM Team";
   const date=document.getElementById("activityDate").value;
   const outcome=document.getElementById("activityOutcome").value;
   const followupDate=document.getElementById("followupDate").value||null;
@@ -5020,14 +5207,18 @@ async function logActivity(){
     return;
   }
   
+  const activityOwner=document.getElementById("activityOwner")?.value||"Amanda";
+  const meetingFocus=document.getElementById("meetingFocus")?.value||"";
+
   // Tag notes with contact method so double-dial / text-followup detection can read it later
   const methodEmoji={Call:"☎️",Text:"📱",Email:"✉️","In Person":"🤝"}[contactMethod]||"☎️";
   if(notes)notes=methodEmoji+" "+notes;
   else if(contactMethod!=="Call")notes=methodEmoji;
+  notes=appendRmMeta(notes,activityOwner,meetingFocus);
 
-  // New Realtor Meeting: ALWAYS save same-day, no matter what — tag as pending or complete
-  // based on the checklist right now. If pending, the app locks until it's finished.
-  const isNewRealtorMeeting=activityType==="New Realtor Meeting";
+  // New Realtor Meeting: ALWAYS save same-day for Amanda's direct RM execution. Nyny's strategic
+  // meetings are counted to the team goal without freezing Amanda's tracker behind her checklist.
+  const isNewRealtorMeeting=activityType==="New Realtor Meeting"&&activityOwner==="Amanda";
   const intakeStates=isNewRealtorMeeting?getIntakeStates():null;
   const intakeComplete=isNewRealtorMeeting?allIntakeDone(intakeStates):true;
   
@@ -7139,7 +7330,7 @@ function renderNetworkFeed(data){
     return'<div class="feed-item"><div class="feed-top"><span class="feed-agent">'+properCase(a.agent_name)+lpLabel+'</span><div class="feed-right"><span class="feed-date">'+fmtDate(a.displayDate)+'</span>'+( isRm?'<button class="btn-sm" onclick="openEditModal('+a.id+')" style="font-size:10px;padding:3px 8px">Edit</button><button class="btn-sm danger" onclick="openConfirm('+a.id+',\''+a.agent_name.replace(/'/g,"\\'") +'\',\''+a.displayType.replace(/'/g,"\\'") +'\')">Delete</button>':'')+'</div></div><span class="feed-badge '+badgeClass+'">'+badgeText+'</span>'+
     (a.outcome?'<div class="feed-outcome">'+escHtml(a.outcome)+'</div>':"")+
     ((isRm?a.follow_up_date:null)?'<div class="feed-fu">Follow-up: '+fmtDate(isRm?a.follow_up_date:null)+'</div>':"")+
-    ((isRm?a.notes:a.note)?'<div class="feed-notes">"'+escHtml(isRm?a.notes:a.note)+'"</div>':"")+
+    ((isRm?a.notes:a.note)?'<div class="feed-notes">"'+escHtml(isRm?stripRmMeta(a.notes):a.note)+'"</div>':"")+
     '</div>'
   }).join("");
 }
@@ -7180,13 +7371,13 @@ function renderFeed(data){
       +'<span class="feed-badge '+(isLP?"lp":a._type===CTC_TYPE?"ctc":"rm")+'">'+badgeEmoji(a._type)+'</span>'
       +(a._outcome?'<div class="feed-outcome">'+escHtml(a._outcome)+'</div>':"")
       +(a.follow_up_date?'<div class="feed-fu">Follow-up: '+fmtDate(a.follow_up_date)+'</div>':"")
-      +(a._note?'<div class="feed-notes">"'+escHtml(a._note)+'"</div>':"")
+      +(a._note?'<div class="feed-notes">"'+escHtml(isLP?a._note:stripRmMeta(a._note))+'"</div>':"")
       +(a.edited_at?'<div class="feed-edited">Last edited: '+fmtDateTime(a.edited_at)+'</div>':"")
       +'</div>';
   }).join("");
 }
 
-let editingActivityId=null,editingActivityType=null;
+let editingActivityId=null,editingActivityType=null,editingActivityMeta=null;
 async function saveNoteFix(id,editId,actType){
   const ta=document.getElementById(editId);
   const msgEl=document.getElementById(editId+"-msg");
@@ -7198,7 +7389,10 @@ async function saveNoteFix(id,editId,actType){
     return;
   }
   try{
-    await sbFetch("amanda_activities?id=eq."+id,{method:"PATCH",prefer:"return=minimal",body:JSON.stringify({notes:newNote,edited_at:new Date().toISOString()})});
+    const existingRow=await sbFetch("amanda_activities?id=eq."+id+"&select=notes&limit=1").catch(()=>[]);
+    const meta=extractRmMeta(existingRow&&existingRow[0]?existingRow[0].notes:"");
+    const savedNote=appendRmMeta(newNote,meta.owner,meta.focus);
+    await sbFetch("amanda_activities?id=eq."+id,{method:"PATCH",prefer:"return=minimal",body:JSON.stringify({notes:savedNote,edited_at:new Date().toISOString()})});
     if(msgEl){msgEl.style.color="var(--success)";msgEl.textContent="Saved ✓";}
     setTimeout(()=>{loadMgmtAccountability();},600);
   }catch(e){
@@ -7210,13 +7404,14 @@ function openEditModal(id){
   const a=allFeedData.find(x=>x.id===id);if(!a)return;
   editingActivityId=id;
   editingActivityType=a.act_type;
-  document.getElementById("editModalAgent").textContent=a.agent_name+" — "+a.act_type;
-  document.getElementById("editNotes").value=a.notes||"";
+  editingActivityMeta=extractRmMeta(a.notes);
+  document.getElementById("editModalAgent").textContent=a.agent_name+" — "+a.act_type+" · "+editingActivityMeta.owner;
+  document.getElementById("editNotes").value=stripRmMeta(a.notes||"");
   document.getElementById("editOutcome").value=a.outcome||"";
   document.getElementById("editFollowupDate").value=a.follow_up_date||"";
   document.getElementById("editModal").classList.add("open");
 }
-function closeEditModal(){document.getElementById("editModal").classList.remove("open");editingActivityId=null;editingActivityType=null;}
+function closeEditModal(){document.getElementById("editModal").classList.remove("open");editingActivityId=null;editingActivityType=null;editingActivityMeta=null;}
 function openActivityGuideModal(){document.getElementById("activityGuideModal").classList.add("open");}
 function closeActivityGuideModal(){document.getElementById("activityGuideModal").classList.remove("open");}
 function openCoachingPlaybookModal(){document.getElementById("coachingPlaybookModal").classList.add("open");}
@@ -7231,7 +7426,7 @@ function openResourcesModal(){document.getElementById("resourcesModal").classLis
 function closeResourcesModal(){document.getElementById("resourcesModal").classList.remove("open");}
 async function saveEditModal(){
   if(!editingActivityId)return;
-  const notes=document.getElementById("editNotes").value.trim()||null;
+  let notes=document.getElementById("editNotes").value.trim()||null;
   if(NOTES_REQUIRED_TYPES.indexOf(editingActivityType)>=0&&countWords(notes)<MIN_NOTE_WORDS){
     toast(editingActivityType+" needs detailed notes — minimum "+MIN_NOTE_WORDS+" words.","error");return;
   }
@@ -7239,6 +7434,7 @@ async function saveEditModal(){
     toast(editingActivityType+" needs a note before saving.","error");return;
   }
   try{
+    if(editingActivityMeta)notes=appendRmMeta(notes,editingActivityMeta.owner,editingActivityMeta.focus);
     await sbFetch("amanda_activities?id=eq."+editingActivityId,{method:"PATCH",prefer:"return=minimal",body:JSON.stringify({notes,outcome:document.getElementById("editOutcome").value||null,follow_up_date:document.getElementById("editFollowupDate").value||null,edited_at:new Date().toISOString()})});
     toast("Updated! 🌸","success");closeEditModal();loadFeed();loadFollowups();loadWeek();
   }catch(e){toast("Save failed: "+e.message,"error");}
@@ -7797,13 +7993,13 @@ async function loadManagement(){
 
     const aprilStartMonths=Math.min(12,Math.max(1,new Date().getMonth()-2));
     document.getElementById("danielGrowthGrid").innerHTML=gridHeader
-      +growthMetricRow("New realtor meetings",c(dailyActs,"New Realtor Meeting"),c(weekActs,"New Realtor Meeting"),mtdMeetings,c(ytdActs,"New Realtor Meeting"),10,"MTD","New Realtor Meeting")
+      +growthMetricRow("New realtor meetings — RM Team",c(dailyActs,"New Realtor Meeting"),c(weekActs,"New Realtor Meeting"),mtdMeetings,c(ytdActs,"New Realtor Meeting"),RM_TEAM_GOALS.teamNew,"MTD","New Realtor Meeting")
       +growthMetricRow("Cold calls",c(dailyActs,"Cold Calls"),c(weekActs,"Cold Calls"),c(mtdActs,"Cold Calls"),c(ytdActs,"Cold Calls"),500,"MTD","Cold Calls")
       +growthMetricRow("Buddy intros received",c(dailyActs,"Buddy Intro Received"),c(weekActs,"Buddy Intro Received"),c(mtdActs,"Buddy Intro Received"),c(ytdActs,"Buddy Intro Received"),12,"MTD","Buddy Intro Received")
       +growthMetricRow("Buddy intro asks",c(dailyActs,"Realtor Buddy Referral Ask"),c(weekActs,"Realtor Buddy Referral Ask"),c(mtdActs,"Realtor Buddy Referral Ask"),c(ytdActs,"Realtor Buddy Referral Ask"),null,"MTD","Realtor Buddy Referral Ask")
       +'<div style="margin-top:10px;padding:10px 12px;background:var(--surface-2);border-radius:var(--radius-sm);font-size:12px;color:var(--text-2)">'
       +'On pace for <strong style="color:'+meetingColor+'">'+projectedMeetings+'</strong> new meetings this month '
-      +'<span style="color:var(--text-4)">(Playbook goal: 10)</span>'
+      +'<span style="color:var(--text-4)">(RM Team goal: 20)</span>'
       +'</div>'
       +'<div style="margin-top:6px;font-size:11px;color:var(--text-3)">YTD counts from April (role start). '+aprilStartMonths+' months of data.</div>';
     }catch(e){ console.error("Growth grid render error:",e); }
@@ -7895,7 +8091,7 @@ async function loadManagement(){
         +'<span style="font-size:10px;font-weight:700;color:var(--text-4);text-align:center;text-transform:uppercase;letter-spacing:.5px">Change</span>'
         +'<span style="font-size:10px;font-weight:700;color:var(--text-4);text-align:right;text-transform:uppercase;letter-spacing:.5px">vs Goal</span>'
         +'</div>'
-        +trendRow("New meetings",c(prevActs,"New Realtor Meeting"),mtdMeetings,10)
+        +trendRow("New meetings",c(prevActs,"New Realtor Meeting"),mtdMeetings,RM_TEAM_GOALS.teamNew)
         +trendRow("Cold calls",c(prevActs,"Cold Calls"),c(mtdActs,"Cold Calls"),500)
         +trendRow("Agent Talk-to's",cntTalkTo(prevActs),cntTalkTo(mtdActs),400)
         +trendRow("Break breads",c(prevActs,"Break Breads"),c(mtdActs,"Break Breads"),20)
@@ -7980,7 +8176,7 @@ async function loadPortfolioReview(){
       sbFetch("call_logs?select=agent_name,call_date,outcome&order=call_date.desc&limit=2000").catch(()=>[]),
       sbFetch("amanda_activities?select=agent_name,act_type,act_date,outcome,notes&act_date=gte."+range.start+"&act_date=lte."+range.end+"&limit=3000").catch(()=>[]),
       sbFetch("tier_migrations?select=agent_name,from_tier,to_tier,migration_date&migration_date=gte."+range.start+"&migration_date=lte."+range.end+"&limit=1000").catch(()=>[]),
-      sbFetch("amanda_activities?select=agent_name,act_date&act_type=in.(Partner Meeting,Break Breads)&order=act_date.desc&limit=3000").catch(()=>[]),
+      sbFetch("amanda_activities?select=agent_name,act_date,act_type&order=act_date.desc&limit=3000").then(rows=>(rows||[]).filter(a=>isExistingMeeting(a))).catch(()=>[]),
       sbFetch("velocify_leads?date_added=gte."+monthStart+"&select=referral_partner_name,date_added&limit=5000").catch(()=>[])
     ]);
 
@@ -8065,11 +8261,11 @@ async function loadPortfolioReview(){
     const channelAndACount=active.filter(a=>a.tier==="Channel"||a.tier==="A").length;
     const growthOppPct=totalActive>0?Math.round(((totalActive-missingGrowthOpp.length)/totalActive)*100):0;
 
-    // 6. Monthly meeting counts vs targets (10 new / 20 existing), scaled to the selected period
+    // 6. Monthly RM Team meeting counts vs targets (20 new / 30 existing minimum), scaled to the selected period
     const newMeetings=periodActs.filter(a=>a.act_type==="New Realtor Meeting").length;
-    const partnerMeetings=periodActs.filter(a=>a.act_type==="Partner Meeting"||a.act_type==="Break Breads").length;
-    const newMeetingTarget=Math.round(10*range.meetingTargetMult);
-    const partnerMeetingTarget=Math.round(20*range.meetingTargetMult);
+    const partnerMeetings=periodActs.filter(a=>isExistingMeeting(a)).length;
+    const newMeetingTarget=Math.round(RM_TEAM_GOALS.teamNew*range.meetingTargetMult);
+    const partnerMeetingTarget=Math.round((RM_TEAM_GOALS.amandaExisting+RM_TEAM_GOALS.nynyExistingMin)*range.meetingTargetMult);
 
     // 7. Weighted Scorecard categories are visible, but the aggregate score is intentionally
     // paused until leadership defines a real Tier Migration target/normalization. No invented
@@ -8106,7 +8302,7 @@ async function loadPortfolioReview(){
     const partnerMeetingsByTier={Channel:0,A:0,B:0,C:0};
     const tierByName={};
     active.forEach(a=>{tierByName[(a.agent_name||"").trim().toLowerCase()]=a.tier;});
-    periodActs.filter(a=>a.act_type==="Partner Meeting"||a.act_type==="Break Breads").forEach(a=>{
+    periodActs.filter(a=>isExistingMeeting(a)).forEach(a=>{
       const t=tierByName[(a.agent_name||"").trim().toLowerCase()];
       if(t&&partnerMeetingsByTier.hasOwnProperty(t))partnerMeetingsByTier[t]++;
     });
@@ -8149,7 +8345,7 @@ async function loadPortfolioReview(){
     pfDrillData.newRealtorMeetingActs=newRealtorMeetingActs;
     pfDrillData.meetingsScheduledActs=periodActs.filter(a=>(a.act_type==="Cold Calls"||a.act_type==="New Realtor Meeting")&&a.outcome==="Meeting Scheduled");
     pfDrillData.convertedActive=active.filter(a=>metThisPeriod.has((a.agent_name||"").trim().toLowerCase()));
-    pfDrillData.partnerMeetingActsByTier=periodActs.filter(a=>a.act_type==="Partner Meeting"||a.act_type==="Break Breads");
+    pfDrillData.partnerMeetingActsByTier=periodActs.filter(a=>isExistingMeeting(a));
     pfDrillData.highPotential=highPotential;
     pfDrillData.proactiveWatch=proactiveWatch;
 
@@ -8236,8 +8432,8 @@ async function loadPortfolioReview(){
       +'</div>'
 
       +'<div class="card">'
-        +'<div class="card-title" style="font-size:14px">Meeting Cadence Compliance (playbook Sec. 6/8 — formal meetings)</div>'
-        +'<div style="font-size:12px;color:var(--text-2);margin-bottom:8px">Distinct from touch cadence — this checks logged "Partner Meeting" or "Break Breads" activity against each tier\'s formal cadence (Channel/A monthly, B every-other-month, high-potential C quarterly).</div>'
+        +'<div class="card-title" style="font-size:14px">Meeting Cadence Compliance — formal partner meetings</div>'
+        +'<div style="font-size:12px;color:var(--text-2);margin-bottom:8px">Distinct from touch cadence — this checks logged existing/strategic partner meeting activity against each tier\'s formal cadence (Channel/A monthly, B every-other-month, high-potential C quarterly).</div>'
         +'<div style="font-size:26px;font-weight:800;color:'+(meetingCompliancePct>=80?"var(--success)":meetingCompliancePct>=50?"var(--warning)":"var(--danger)")+'">'+meetingCompliancePct+'%</div>'
         +'<div style="font-size:11px;color:var(--text-3);margin-top:2px">'+meetingCompliant+' of '+meetingCadenceEligible.length+' partners who require formal cadence are current</div>'
       +'</div>'
@@ -8288,10 +8484,10 @@ async function loadPortfolioReview(){
       +'</div>'
 
       +'<div class="card">'
-        +'<div class="card-title" style="font-size:14px">Monthly Activity Expectations (playbook Sec. 11)</div>'
+        +'<div class="card-title" style="font-size:14px">Monthly RM Team Meeting Expectations</div>'
         +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:8px">'
-          +pfActivityTile("New Agent Meetings",newMeetings,newMeetingTarget,"newmeetings")
-          +pfActivityTile("Existing Partner Meetings",partnerMeetings,partnerMeetingTarget,"partnermeetings")
+          +pfActivityTile("New Partner Meetings — Team",newMeetings,newMeetingTarget,"newmeetings")
+          +pfActivityTile("Existing / Strategic Meetings — Team",partnerMeetings,partnerMeetingTarget,"partnermeetings")
         +'</div>'
       +'</div>';
   }catch(e){console.error(e);body.innerHTML='<div class="no-data">Unable to load Portfolio Review.</div>';}
@@ -8368,11 +8564,11 @@ function openPortfolioList(key){
     items=migList.map(m=>({name:m.agent_name,detail:(m.from_tier||"?")+" → "+(m.to_tier||"?")+" · "+m.migration_date}));
   }else if(key==="newmeetings"){
     title.textContent="New Agent Meetings — this period";
-    sub.textContent="Playbook Sec. 11 — target 10/month.";
+    sub.textContent="RM Team target — 20 new partner meetings/month.";
     items=pfDrillData.newRealtorMeetingActs.map(a=>({name:a.agent_name,detail:a.act_date}));
   }else if(key==="partnermeetings"){
     title.textContent="Existing Partner Meetings — this period";
-    sub.textContent="Playbook Sec. 11 — target 20/month.";
+    sub.textContent="RM Team minimum — 30 existing/strategic partner meetings/month (Amanda 18 + Nyny 12 minimum).";
     items=pfDrillData.partnerMeetingActsByTier.map(a=>({name:a.agent_name,detail:a.act_date}));
   }else if(key==="scheduled"){
     title.textContent="New Meetings Scheduled — this period";
