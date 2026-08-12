@@ -9492,13 +9492,15 @@ function nearRealtimeRefreshSharedData(){
   _lastNearRealtimeRefresh=Date.now();
   loadContacts().catch(()=>{});
   loadQuiet().catch(()=>{});
+  // Cross-tracker shared work: LP flags + LP call activity must refresh too.
+  if(typeof loadFlagged==="function")loadFlagged().catch(()=>{});
 }
 document.addEventListener("visibilitychange",()=>{
   if(!document.hidden&&Date.now()-_lastNearRealtimeRefresh>20000){
     nearRealtimeRefreshSharedData();
   }
 });
-setInterval(()=>{if(!document.hidden)nearRealtimeRefreshSharedData();},120000);
+setInterval(()=>{if(!document.hidden)nearRealtimeRefreshSharedData();},30000);
 
 // ── Realtime subscription (upgrade over polling, added this pass) ──────────────────────────
 // Subscribes to live changes on agent_profiles via Supabase Realtime, so a shared-profile
@@ -9516,15 +9518,21 @@ function initRealtimeSync(){
   }
   try{
     const rtClient=window.supabase.createClient(SB_URL,SB_KEY);
-    rtClient.channel("agent_profiles-changes")
+    rtClient.channel("shared-tracker-changes")
       .on("postgres_changes",{event:"*",schema:"public",table:"agent_profiles"},function(){
-        // Reuses the exact same refresh the polling fallback calls — one refresh path, two
-        // possible triggers (timer or live event), never two different behaviors to keep in sync.
         nearRealtimeRefreshSharedData();
       })
+      .on("postgres_changes",{event:"*",schema:"public",table:"lp_flags"},function(){
+        if(typeof loadFlagged==="function")loadFlagged().catch(()=>{});
+      })
+      .on("postgres_changes",{event:"*",schema:"public",table:"call_logs"},function(){
+        if(typeof loadFlagged==="function")loadFlagged().catch(()=>{});
+        const hv=document.getElementById("historySearch");
+        if(hv&&hv.value.trim().length>=2&&typeof doSearchHistory==="function")doSearchHistory(hv.value.trim());
+      })
       .subscribe(function(status){
-        if(status==="SUBSCRIBED")console.log("Realtime: subscribed to agent_profiles.");
-        else if(status==="CHANNEL_ERROR"||status==="TIMED_OUT")console.warn("Realtime: agent_profiles subscription unavailable ("+status+") — table may not be in the supabase_realtime publication yet, or RLS is blocking it. Falling back to polling only.");
+        if(status==="SUBSCRIBED")console.log("Realtime: subscribed to shared tracker tables (agent_profiles, lp_flags, call_logs).");
+        else if(status==="CHANNEL_ERROR"||status==="TIMED_OUT")console.warn("Realtime: shared tracker subscription unavailable ("+status+") — falling back to 30-second polling.");
       });
   }catch(e){console.warn("Realtime setup failed (non-critical — falling back to polling):",e.message);}
 }
