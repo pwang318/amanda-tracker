@@ -3760,12 +3760,29 @@ async function loadStartHere(){
 
 async function loadQuietCoverage(){
   try{
-    const[allAgents,priorActs,weekActs]=await Promise.all([
-      sbFetch("agent_profiles?select=agent_name,tier&order=agent_name.asc&limit=500"),
+    const[allAgents,priorActs,weekActs,removedReconnect]=await Promise.all([
+      // Coverage must use the CURRENT managed roster, not every historical profile. Pull the
+      // roster-status fields here so someone removed in Contacts cannot quietly reappear in
+      // Daniel/Nyny's At Risk coverage list.
+      sbFetch("agent_profiles?select=agent_name,tier,retained,do_not_contact,relationship_status&order=agent_name.asc&limit=2000")
+        .catch(()=>sbFetch("agent_profiles?select=agent_name,tier,retained,do_not_contact&order=agent_name.asc&limit=2000").catch(()=>[])),
       sbFetch("amanda_activities?select=agent_name,act_date&act_date=lt."+week.start+"&order=act_date.desc&limit=3000"),
-      sbFetch("amanda_activities?select=agent_name&act_date=gte."+week.start+"&act_date=lte."+week.end)
+      sbFetch("amanda_activities?select=agent_name&act_date=gte."+week.start+"&act_date=lte."+week.end),
+      sbFetch(RC_TABLE+"?select=agent_name,status&status=eq.removed&limit=2000").catch(()=>[])
     ]);
     const normalize=s=>(s||"").toLowerCase().trim();
+    const removedKeys=new Set((removedReconnect||[]).map(r=>normalize(r.agent_name)).filter(Boolean));
+    const currentAgents=(allAgents||[]).filter(a=>{
+      const key=normalize(a.agent_name);
+      if(!key)return false;
+      if(a.do_not_contact===true)return false;
+      if((a.relationship_status||"active")==="inactive")return false;
+      if(removedKeys.has(key))return false;
+      // At Risk/Coverage is a retained-partner management metric, not a cleanup list.
+      // Unknown/not-retained profiles should not inflate the denominator or appear as work.
+      if(a.retained!==true)return false;
+      return true;
+    });
     const lastSeenBefore={};
     priorActs.forEach(a=>{
       const n=normalize(a.agent_name);
@@ -3776,7 +3793,7 @@ async function loadQuietCoverage(){
     // Dedupe agent_profiles rows that are the same person with different casing/spacing
     const seenAgents={};
     const tierByName={};
-    allAgents.forEach(a=>{
+    currentAgents.forEach(a=>{
       const raw=(a.agent_name||"").trim();
       const n=normalize(raw);
       if(!n)return;
@@ -4183,11 +4200,13 @@ async function loadContactDataQuality(){
 
 async function loadQuiet(){
   try{
-    const[allAgents,allActs,lpCalls]=await Promise.all([
-      sbFetch("agent_profiles?select=agent_name,retained,tier,do_not_contact,relationship_status&order=agent_name.asc&limit=500").catch(()=>sbFetch("agent_profiles?select=agent_name,retained,tier,do_not_contact&order=agent_name.asc&limit=500").catch(()=>sbFetch("agent_profiles?select=agent_name,retained,tier&order=agent_name.asc&limit=500").catch(()=>[]))),
-      sbFetch("amanda_activities?select=agent_name,act_date,outcome,act_type&order=act_date.desc&limit=2000"),
-      sbFetch("call_logs?select=agent_name,call_date,outcome&order=call_date.desc&limit=2000").catch(()=>[])
+    const[allAgents,allActs,lpCalls,removedReconnect]=await Promise.all([
+      sbFetch("agent_profiles?select=agent_name,retained,tier,do_not_contact,relationship_status&order=agent_name.asc&limit=2000").catch(()=>sbFetch("agent_profiles?select=agent_name,retained,tier,do_not_contact&order=agent_name.asc&limit=2000").catch(()=>sbFetch("agent_profiles?select=agent_name,retained,tier&order=agent_name.asc&limit=2000").catch(()=>[]))),
+      sbFetch("amanda_activities?select=agent_name,act_date,outcome,act_type&order=act_date.desc&limit=3000"),
+      sbFetch("call_logs?select=agent_name,call_date,outcome&order=call_date.desc&limit=3000").catch(()=>[]),
+      sbFetch(RC_TABLE+"?select=agent_name,status&status=eq.removed&limit=2000").catch(()=>[])
     ]);
+    const removedQuietKeys=new Set((removedReconnect||[]).map(r=>(r.agent_name||"").trim().toLowerCase()).filter(Boolean));
 
     // Last MEANINGFUL contact — a voicemail or unanswered call doesn't reset the clock (see the
     // shared classifier near the top of this file). Rows are already newest-first, so this keeps
@@ -4203,7 +4222,7 @@ async function loadQuiet(){
     // smart prioritization of limited time.
     const TIER_TOUCH_THRESHOLD={Channel:14,A:14,B:30,C:60};
     const TIER_URGENT_THRESHOLD={Channel:21,A:21,B:45,C:90};
-    const rows=allAgents.filter(a=>a.do_not_contact!==true&&a.relationship_status!=="inactive").map(a=>{
+    const rows=allAgents.filter(a=>a.do_not_contact!==true&&a.relationship_status!=="inactive"&&!removedQuietKeys.has((a.agent_name||"").trim().toLowerCase())).map(a=>{
       const name=(a.agent_name||"").trim();if(!name)return null;
       const lookupKey=name.toLowerCase();
       const lastRM=lastSeenRM[lookupKey];
@@ -8545,11 +8564,13 @@ async function loadManagement(){
 
   // ── AT RISK ──────────────────────────────────────────────────────
   try{
-    const[agts,acts2,lpCalls2]=await Promise.all([
-      sbFetch("agent_profiles?select=agent_name,retained,tier,do_not_contact,relationship_status&limit=500").catch(()=>sbFetch("agent_profiles?select=agent_name,retained,tier,do_not_contact&limit=500")),
-      sbFetch("amanda_activities?select=agent_name,act_date,outcome,act_type&order=act_date.desc&limit=2000"),
-      sbFetch("call_logs?select=agent_name,call_date,outcome&order=call_date.desc&limit=2000").catch(()=>[])
+    const[agts,acts2,lpCalls2,removedReconnect2]=await Promise.all([
+      sbFetch("agent_profiles?select=agent_name,retained,tier,do_not_contact,relationship_status&limit=2000").catch(()=>sbFetch("agent_profiles?select=agent_name,retained,tier,do_not_contact&limit=2000")),
+      sbFetch("amanda_activities?select=agent_name,act_date,outcome,act_type&order=act_date.desc&limit=3000"),
+      sbFetch("call_logs?select=agent_name,call_date,outcome&order=call_date.desc&limit=3000").catch(()=>[]),
+      sbFetch(RC_TABLE+"?select=agent_name,status&status=eq.removed&limit=2000").catch(()=>[])
     ]);
+    const removedDanielKeys=new Set((removedReconnect2||[]).map(r=>(r.agent_name||"").trim().toLowerCase()).filter(Boolean));
     const ls={};
     // Use the same meaningful-contact classifier as Going Quiet/Partner Health. A voicemail,
     // no-answer or blank outcome should not keep someone off the At Risk list.
@@ -8560,7 +8581,7 @@ async function loadManagement(){
     // Same tiered cadence as Snapshot — A-tier checked on far more often than C-tier
     const TIER_TOUCH_THRESHOLD2={A:21,B:35,C:60};
     const TIER_URGENT_THRESHOLD2={A:35,B:55,C:90};
-    const quiet=(agts||[]).filter(a=>a.retained&&a.do_not_contact!==true&&a.relationship_status!=="inactive").map(a=>{
+    const quiet=(agts||[]).filter(a=>a.retained&&a.do_not_contact!==true&&a.relationship_status!=="inactive"&&!removedDanielKeys.has((a.agent_name||"").trim().toLowerCase())).map(a=>{
       const name=(a.agent_name||"").trim();if(!name)return null;
       const last=ls[name.toLowerCase()];
       const lastLP=lsLP[name.toLowerCase()];
