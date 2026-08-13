@@ -362,6 +362,8 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI'
   #ctcWorkflowPanel .ctc-agent-fields{grid-template-columns:1fr}
   #ctcWorkflowPanel .ctc-span-2{grid-column:1!important}
 }
+
+@media(max-width:760px){.nyny-ql-grid,.nyny-ql-grid-2{grid-template-columns:1fr!important}}
 </style>
 <!-- Realtime pass: loads the Supabase client ONLY for postgres_changes subscriptions below.
      Everything else in this app still uses the existing sbFetch()/raw-fetch REST calls,
@@ -459,6 +461,89 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI'
       <div style="font-size:10.5px;color:var(--text-3);background:var(--surface-2);border-radius:20px;padding:5px 10px">20 new meetings / month as a team</div>
     </div>
     <div id="rmTeamScorecard"><div class="no-data">Loading team scorecard...</div></div>
+  </div>
+
+  <!-- NYNY QUICK LOG -->
+  <div class="card" id="nynyQuickLogCard" style="padding:16px 18px;border:1px solid #CFC7E8;background:linear-gradient(180deg,#FFFFFF 0%,#FBFAFE 100%)">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;margin-bottom:12px">
+      <div>
+        <div class="card-title" style="margin-bottom:2px">Nyny Quick Log · Snapshot</div>
+        <div style="font-size:11px;color:var(--text-3)">Log your partner meetings and Director/RM Team Lead work here without leaving Snapshot.</div>
+      </div>
+      <button type="button" onclick="openNynyFullLog()" style="font-size:11px;font-weight:600;color:var(--brand);background:var(--brand-light);border:1px solid #D8D1EE;border-radius:7px;cursor:pointer;font-family:inherit;padding:6px 10px">Open full log</button>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1.25fr 1fr 1fr;gap:8px;align-items:end" class="nyny-ql-grid">
+      <div class="field" style="margin:0">
+        <label>Activity</label>
+        <select id="nynyQuickType" onchange="nynyQuickTypeChange()">
+          <optgroup label="Partner meetings">
+            <option value="New Realtor Meeting">New partner meeting</option>
+            <option value="Partner Meeting">Existing / current partner meeting</option>
+            <option value="Strategic Partner Meeting">Strategic / team lead meeting</option>
+            <option value="Channel Meeting">Channel meeting</option>
+            <option value="Retention Meeting">Retention / at-risk meeting</option>
+          </optgroup>
+          <optgroup label="Director leadership — not a partner meeting">
+            <option value="Amanda Coaching / Development">Amanda coaching / development</option>
+            <option value="RM Scorecard Review">RM scorecard review</option>
+            <option value="RM Portfolio Review">RM portfolio review</option>
+            <option value="RM Process Improvement">RM process improvement</option>
+            <option value="Tracker / System Development">Tracker / system development</option>
+            <option value="RM Training">RM training</option>
+            <option value="RM Leadership Escalation Support">RM leadership / escalation support</option>
+          </optgroup>
+        </select>
+      </div>
+      <div class="field" id="nynyQuickFocusWrap" style="margin:0">
+        <label>Meeting focus</label>
+        <select id="nynyQuickFocus">
+          <option value="Warm Intro / Referral">Warm intro / referral</option>
+          <option value="Current Relationship">Current relationship</option>
+          <option value="A/B Growth">A / B growth</option>
+          <option value="Channel">Channel</option>
+          <option value="Retention / At-Risk">Retention / at-risk</option>
+          <option value="Strategic / Team Lead">Strategic / team lead</option>
+          <option value="Standard">Standard relationship meeting</option>
+        </select>
+      </div>
+      <div class="field" style="margin:0">
+        <label>Outcome</label>
+        <select id="nynyQuickOutcome" onchange="nynyQuickToggleFollowup()">
+          <option value="Positive">Positive</option>
+          <option value="Meeting Scheduled">Meeting scheduled</option>
+          <option value="Requires follow-up">Requires follow-up</option>
+          <option value="Needs manager attention">Needs attention</option>
+          <option value="Completed">Completed</option>
+        </select>
+      </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1.25fr 1fr;gap:8px;align-items:end;margin-top:8px" class="nyny-ql-grid-2">
+      <div class="field" id="nynyQuickAgentWrap" style="margin:0">
+        <label id="nynyQuickAgentLabel">Agent / partner</label>
+        <div class="ac-wrap">
+          <input type="text" id="nynyQuickAgent" placeholder="Start typing agent name..." autocomplete="off" oninput="nynyQuickAutoComplete(this.value)">
+          <div class="ac-list" id="nynyQuickAcList"></div>
+        </div>
+      </div>
+      <div class="field" id="nynyQuickFollowupWrap" style="display:none;margin:0">
+        <label id="nynyQuickFollowupLabel">Follow-up date</label>
+        <input type="date" id="nynyQuickFollowupDate">
+      </div>
+    </div>
+
+    <div class="field" style="margin:8px 0 0">
+      <label>Notes / outcome <span style="font-weight:400;color:var(--text-4)">(10+ words)</span></label>
+      <textarea id="nynyQuickNotes" rows="2" placeholder="What happened, what matters, and what is the next step?" oninput="nynyQuickWordCount()"></textarea>
+      <div id="nynyQuickWordCount" style="font-size:10px;color:var(--text-4);text-align:right;margin-top:3px"></div>
+    </div>
+
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-top:10px">
+      <div style="font-size:10.5px;color:var(--text-3)">Partner meetings roll into Nyny + RM Team totals. Director leadership stays visible but does not count toward the 20–25 partner-meeting goal.</div>
+      <button type="button" id="nynyQuickSaveBtn" class="btn-primary" onclick="nynyQuickSave()">Log Nyny activity</button>
+    </div>
+    <div id="nynyQuickMsg" style="display:none;font-size:11px;color:var(--success);font-weight:700;margin-top:8px;text-align:right"></div>
   </div>
 
   <!-- Quick Log -->
@@ -703,13 +788,18 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI'
     <div id="contactDataList" style="max-height:300px;overflow-y:auto"></div>
   </div>
 
+  <!-- LP flags belong to the RM workflow: LPs create the signal in the LP tracker; RM owns the response here. -->
+  <div class="card" id="lpFlagInboxCard" style="border:1px solid #bfdbfe">
+    <div class="card-title" style="margin-bottom:4px">🚩 LP Flags — RM Follow-Up <span class="card-sub" id="flaggedSub"></span></div>
+    <div style="font-size:11px;color:var(--text-4);margin-bottom:12px">LPs create the flag from their tracker. Amanda/Nyny own the follow-up here. Log the outreach, respond when needed, then mark it handled — the shared status updates back to the LP tracker automatically.</div>
+    <div id="weekFlagged" style="max-height:320px;overflow-y:auto"><div class="no-data" style="padding:12px">Loading LP flags...</div></div>
+  </div>
+
   <!-- Attention items — 2 col -->
   <div class="week-bottom">
     <div class="card" id="onYourRadarCard">
-      <div class="card-title" style="margin-bottom:4px">On Your Radar <span class="card-sub" id="flaggedSub"></span></div>
-      <div style="font-size:11px;color:var(--text-4);margin-bottom:12px">Items with an explicit action attached: a follow-up date you set, an LP note, or a recent close not yet thanked with a CTC call. This does not check Encompass — check Encompass separately for files currently at CTC.</div>
-      <!-- Flagged by LPs — moved to the top since these are external and time-sensitive -->
-      <div id="weekFlagged" style="max-height:240px;overflow-y:auto"></div>
+      <div class="card-title" style="margin-bottom:4px">On Your Radar</div>
+      <div style="font-size:11px;color:var(--text-4);margin-bottom:12px">Items with an explicit action attached: a follow-up date you set, an upcoming next step, or a recent close not yet thanked with a CTC call. This does not check Encompass — check Encompass separately for files currently at CTC.</div>
       <!-- Each trigger below gets its own bounded, visually separated box so this card reads as
            distinct sections instead of one continuous scrolling wall -->
       <div id="weekCtcTrigger" style="max-height:220px;overflow-y:auto;margin-top:10px"></div>
@@ -1333,6 +1423,9 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI'
         <option value="tier-B">B-tier</option>
         <option value="tier-C">C-tier</option>
         <option value="notier">No tier set</option>
+        <option value="rm-nyny">RM owner: Nyny</option>
+        <option value="rm-amanda">RM owner: Amanda</option>
+        <option value="rm-unassigned">RM owner: Unassigned</option>
         <option value="bday">Has birthday</option>
         <option value="nobday">Missing birthday</option>
         <option value="noaddress">Missing address</option>
@@ -1507,6 +1600,15 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI'
     <div class="field" style="margin-bottom:12px"><label>Birthday <span style="font-weight:400;color:var(--text-4)">(MM/DD — no year)</span></label><input type="text" id="contactBirthday" placeholder="e.g. 03/14" maxlength="5" oninput="formatBirthdayInput(this)"></div>
     <div class="field" style="margin-bottom:12px"><label>Things to remember <span style="font-weight:400;color:var(--text-4)">(hobbies, kids, what they mentioned last time — shows up right before you talk to them)</span></label><textarea id="contactPersonalNotes" placeholder="e.g. has a golden retriever named Max, daughter starting college in the fall, loves the Buckeyes..." rows="2"></textarea></div>
     <div class="field" style="margin-bottom:12px"><label>Tier</label><select id="contactTier"><option value="">No tier set</option><option value="Channel">Channel (10+ closes)</option><option value="A">A-Tier (4+ closes)</option><option value="B">B-Tier (2–3 closes)</option><option value="C">C-Tier (1 close or lead)</option></select></div>
+    <div style="background:#F7F4FC;border:1px solid #D9D3EE;border-radius:9px;padding:11px 12px;margin-bottom:12px">
+      <div style="font-size:11px;font-weight:700;color:var(--brand);text-transform:uppercase;letter-spacing:.45px;margin-bottom:8px">Partner Ownership</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+        <div class="field" style="margin-bottom:0"><label>RM Owner</label><select id="contactRmOwner"><option value="">Unassigned</option><option value="Amanda">Amanda</option><option value="Nyny">Nyny</option></select></div>
+        <div class="field" style="margin-bottom:0"><label>LP Owner</label><select id="contactLpOwner"><option value="">Unassigned</option><option value="Gavin">Gavin</option><option value="Karen">Karen</option><option value="Osgood">Osgood</option><option value="Jordan">Jordan</option><option value="Said">Said</option></select></div>
+      </div>
+      <div style="font-size:10.5px;color:var(--text-3);margin-top:7px">Shared ownership: updates here flow to the LP/Core Team tracker too.</div>
+      <div id="contactOwnershipStatus" style="display:none;font-size:10.5px;margin-top:6px"></div>
+    </div>
     <details id="partnerPlaybookDetails" style="margin-bottom:18px;border:0.5px solid var(--border);border-radius:8px;padding:10px 12px;background:var(--surface-2)">
       <summary style="cursor:pointer;font-size:13px;font-weight:600;color:var(--text-1)">Portfolio &amp; Relationship Notes <span style="font-weight:400;color:var(--text-4)">— goals, health signals, growth &amp; recovery</span></summary>
       <div style="margin-top:12px">
@@ -3672,7 +3774,7 @@ async function loadFlagged(){
     if(sub)sub.textContent=flagged.length?flagged.length+" flag"+(flagged.length!==1?"s":""):"";
 
     if(!flagged.length){
-      document.getElementById("weekFlagged").innerHTML='';
+      document.getElementById("weekFlagged").innerHTML='<div class="no-data" style="padding:14px">No open LP flags — you are caught up.</div>';
       return;
     }
 
@@ -3747,7 +3849,8 @@ function toggleFlagNote(noteId,btnId,fullText,shortText,isShowing){
 async function resolveFlag(source,id){
   try{
     if(source==="lpflag"){
-      await sbFetch("lp_flags?id=eq."+encodeURIComponent(id),{method:"PATCH",prefer:"return=minimal",body:JSON.stringify({resolved:true,resolved_at:new Date().toISOString(),assigned_to:"Amanda"})});
+      const rmOwner=(document.getElementById("activityOwner")?.value||localStorage.getItem("rm_activity_owner")||"Amanda");
+      await sbFetch("lp_flags?id=eq."+encodeURIComponent(id),{method:"PATCH",prefer:"return=minimal",body:JSON.stringify({resolved:true,resolved_at:new Date().toISOString(),assigned_to:rmOwner})});
     }else{
       await sbFetch("call_logs?id=eq."+encodeURIComponent(id),{method:"PATCH",prefer:"return=minimal",body:JSON.stringify({flag_rm:false})});
     }
@@ -4793,7 +4896,7 @@ async function loadRmTeamScorecard(){
     const aTotal=meetingCount(amanda),nTotal=meetingCount(nyny),teamTotal=aTotal+nTotal;
     const nLeadership=nyny.filter(a=>DIRECTOR_LEADERSHIP_TYPES.indexOf(a.act_type)>=0);
     const focus={};nyny.filter(a=>isPartnerMeetingActivity(a)).forEach(a=>{const f=getMeetingFocus(a)||"Unclassified";focus[f]=(focus[f]||0)+1;});
-    const focusHtml=Object.keys(focus).length?Object.entries(focus).sort((a,b)=>b[1]-a[1]).map(([k,v])=>'<span style="font-size:10.5px;background:#fff;border:1px solid var(--border);border-radius:20px;padding:4px 8px">'+escHtml(k)+' · <strong>'+v+'</strong></span>').join(""):'<span style="font-size:10.5px;color:var(--text-4)">No Nyny meeting-focus data logged yet.</span>';
+    const focusHtml=Object.keys(focus).length?Object.entries(focus).sort((a,b)=>b[1]-a[1]).map(([k,v])=>'<span style="font-size:10.5px;background:#fff;border:1px solid var(--border);border-radius:20px;padding:4px 8px">'+escHtml(k)+' · <strong>'+v+'</strong></span>').join(""):'<span style="font-size:10.5px;color:var(--text-4)">No Nyny partner meetings categorized yet. Use Nyny Quick Log below to add your first one.</span>';
     el.innerHTML=''
       +'<div style="padding:10px 12px;background:linear-gradient(135deg,#EEEBF8,#F7F5FB);border:1px solid #D9D3EE;border-radius:10px;margin-bottom:12px">'
         +'<div style="display:flex;justify-content:space-between;gap:12px;align-items:center"><div><div style="font-size:11px;font-weight:700;color:var(--brand);text-transform:uppercase;letter-spacing:.4px">Shared acquisition outcome</div><div style="font-size:12px;color:var(--text-2);margin-top:2px">20 new partner meetings/month across Amanda + Nyny</div></div><div style="font-size:25px;font-weight:800;color:var(--brand)">'+teamNew+' <span style="font-size:12px;font-weight:500;color:var(--text-4)">/ 20</span></div></div>'
@@ -4801,7 +4904,7 @@ async function loadRmTeamScorecard(){
       +'</div>'
       +'<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-bottom:12px">'
         +rmGoalTile("Amanda · new",aNew,RM_TEAM_GOALS.amandaNew,"Primary prospecting + direct RM execution")
-        +rmGoalTile("Nyny · new",nNew,RM_TEAM_GOALS.nynyNew,"Strategic, warm intro, Channel + higher-value opportunities; no cold-call quota")
+        +rmGoalTile("Nyny · new",nNew,RM_TEAM_GOALS.nynyNew,"Strategic, warm intro, Channel + higher-value opportunities")
         +rmGoalTile("RM Team · total partner mtgs",teamTotal,{min:50,label:"50–55"},"Amanda 30+ · Nyny 20–25")
       +'</div>'
       +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">'
@@ -4809,7 +4912,7 @@ async function loadRmTeamScorecard(){
        +'<div style="border:1px solid var(--border);border-radius:10px;padding:12px"><div style="font-size:12px;font-weight:700;color:var(--text-1);margin-bottom:8px">Nyny — Director / RM Team Lead</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">'+rmGoalTile("Strategic existing mtgs",nExisting,{min:RM_TEAM_GOALS.nynyExistingMin,label:"12–17"},"")+rmGoalTile("Total partner mtgs",nTotal,{min:RM_TEAM_GOALS.nynyTotalMin,label:"20–25"},"")+'</div><div style="font-size:10.5px;color:var(--text-4);margin-top:8px">Current relationships · Channel · A/B growth · retention/at-risk · strategic opportunities · warm introductions.</div></div>'
       +'</div>'
       +'<div style="display:grid;grid-template-columns:1.25fr .75fr;gap:10px">'
-       +'<div style="background:var(--surface-2);border-radius:10px;padding:11px 12px"><div style="font-size:11px;font-weight:700;color:var(--text-2);margin-bottom:7px">Nyny meeting mix · month to date</div><div style="display:flex;gap:6px;flex-wrap:wrap">'+focusHtml+'</div></div>'
+       +'<div style="background:var(--surface-2);border-radius:10px;padding:11px 12px"><div style="font-size:11px;font-weight:700;color:var(--text-2);margin-bottom:3px">Nyny partner meeting mix · month to date</div><div style="font-size:10px;color:var(--text-4);line-height:1.35;margin-bottom:7px">Shows what your partner meetings are focused on — Current Relationships, A/B Growth, Channel, Retention, Strategic/Team Lead, or Warm Intro/Referral.</div><div style="display:flex;gap:6px;flex-wrap:wrap">'+focusHtml+'</div></div>'
        +'<div style="background:var(--surface-2);border-radius:10px;padding:11px 12px"><div style="font-size:11px;font-weight:700;color:var(--text-2)">Director leadership work</div><div style="font-size:24px;font-weight:800;color:var(--brand);margin-top:3px">'+nLeadership.length+'</div><div style="font-size:10px;color:var(--text-4);line-height:1.3">Coaching, scorecard/portfolio review, training, system/process work. Tracked separately — never counted as partner meetings.</div></div>'
       +'</div>';
   }catch(e){console.error("RM team scorecard error",e);el.innerHTML='<div class="no-data">Unable to load RM Team scorecard.</div>';}
@@ -6044,6 +6147,112 @@ function copyDailyCheckin(){
 }
 
 
+
+// ── NYNY SNAPSHOT QUICK LOG ───────────────────────────────────────────────────
+function nynyQuickIsLeadership(){
+  const t=document.getElementById("nynyQuickType")?.value||"";
+  return DIRECTOR_LEADERSHIP_TYPES.indexOf(t)>=0;
+}
+function nynyQuickTypeChange(){
+  const type=document.getElementById("nynyQuickType")?.value||"";
+  const leadership=nynyQuickIsLeadership();
+  const focusWrap=document.getElementById("nynyQuickFocusWrap");
+  const agentLabel=document.getElementById("nynyQuickAgentLabel");
+  const agent=document.getElementById("nynyQuickAgent");
+  if(focusWrap)focusWrap.style.display=leadership?"none":"block";
+  if(agentLabel)agentLabel.textContent=leadership?"Person / topic (optional)":"Agent / partner";
+  if(agent)agent.placeholder=leadership?"Optional — e.g. Amanda, RM Team, tracker":"Start typing agent name...";
+  // Helpful defaults based on the meeting type, but Nyny can always change them.
+  const focus=document.getElementById("nynyQuickFocus");
+  if(focus&&!leadership){
+    const defaults={
+      "New Realtor Meeting":"Warm Intro / Referral",
+      "Partner Meeting":"Current Relationship",
+      "Strategic Partner Meeting":"Strategic / Team Lead",
+      "Channel Meeting":"Channel",
+      "Retention Meeting":"Retention / At-Risk"
+    };
+    if(defaults[type])focus.value=defaults[type];
+  }
+}
+function nynyQuickAutoComplete(q){
+  const list=document.getElementById("nynyQuickAcList");if(!list)return;
+  if(!q||q.length<1){list.classList.remove("open");return;}
+  const matches=(allAgentNames||[]).filter(n=>n.toLowerCase().includes(q.toLowerCase())).slice(0,7);
+  if(!matches.length){list.classList.remove("open");return;}
+  list.innerHTML=matches.map(n=>'<div class="ac-item" onclick="document.getElementById(\'nynyQuickAgent\').value=\''+n.replace(/'/g,"\\'")+'\';document.getElementById(\'nynyQuickAcList\').classList.remove(\'open\')">'+n+'</div>').join("");
+  list.classList.add("open");
+}
+function nynyQuickToggleFollowup(){
+  const outcome=document.getElementById("nynyQuickOutcome")?.value||"";
+  const wrap=document.getElementById("nynyQuickFollowupWrap");
+  const label=document.getElementById("nynyQuickFollowupLabel");
+  const input=document.getElementById("nynyQuickFollowupDate");
+  const show=outcome==="Requires follow-up"||outcome==="Meeting Scheduled";
+  if(wrap)wrap.style.display=show?"block":"none";
+  if(label)label.textContent=outcome==="Meeting Scheduled"?"Scheduled for":"Follow-up date";
+  if(show&&input&&!input.value){
+    input.value=localDateStr(new Date(Date.now()+(outcome==="Requires follow-up"?3:1)*86400000));
+  }
+}
+function nynyQuickWordCount(){
+  const notes=(document.getElementById("nynyQuickNotes")?.value||"").trim();
+  const el=document.getElementById("nynyQuickWordCount");if(!el)return;
+  const n=countWords(notes);el.textContent=n? n+" word"+(n===1?"":"s"):"";
+  el.style.color=n>=MIN_NOTE_WORDS?"var(--success)":"var(--text-4)";
+}
+function openNynyFullLog(){
+  const owner=document.getElementById("activityOwner");if(owner)owner.value="Nyny";
+  onActivityOwnerChange();
+  const type=document.getElementById("activityType");if(type)type.value=document.getElementById("nynyQuickType")?.value||"Partner Meeting";
+  const focus=document.getElementById("meetingFocus");if(focus)focus.value=document.getElementById("nynyQuickFocus")?.value||"Current Relationship";
+  const agent=document.getElementById("agentInput");if(agent)agent.value=(document.getElementById("nynyQuickAgent")?.value||"").trim();
+  const outcome=document.getElementById("activityOutcome");if(outcome)outcome.value=document.getElementById("nynyQuickOutcome")?.value||"Positive";
+  const notes=document.getElementById("activityNotes");if(notes)notes.value=(document.getElementById("nynyQuickNotes")?.value||"").trim();
+  toggleMeetingFocusField();switchTab("log");
+}
+async function nynyQuickSave(){
+  const type=document.getElementById("nynyQuickType")?.value||"";
+  const leadership=DIRECTOR_LEADERSHIP_TYPES.indexOf(type)>=0;
+  let agent=(document.getElementById("nynyQuickAgent")?.value||"").trim();
+  const focus=leadership?"":(document.getElementById("nynyQuickFocus")?.value||"");
+  const outcome=document.getElementById("nynyQuickOutcome")?.value||"";
+  let notes=(document.getElementById("nynyQuickNotes")?.value||"").trim();
+  const followup=document.getElementById("nynyQuickFollowupDate")?.value||"";
+  if(!leadership&&!agent){toast("Add the agent / partner name.","error");document.getElementById("nynyQuickAgent")?.focus();return;}
+  if(leadership&&!agent)agent="INTERNAL — RM Leadership";
+  if(!outcome){toast("Select an outcome.","error");return;}
+  if(countWords(notes)<MIN_NOTE_WORDS){toast("Notes need at least "+MIN_NOTE_WORDS+" words.","error");return;}
+  if((outcome==="Requires follow-up"||outcome==="Meeting Scheduled")&&!followup){toast("Add the follow-up / scheduled date.","error");return;}
+  notes=appendRmMeta(notes,"Nyny",focus);
+  const btn=document.getElementById("nynyQuickSaveBtn");if(btn){btn.disabled=true;btn.textContent="Saving...";}
+  try{
+    if(!leadership)await clearOldFollowups(agent);
+    await sbFetch("amanda_activities",{method:"POST",prefer:"return=minimal",body:JSON.stringify({
+      agent_name:agent,act_type:type,act_date:today(),outcome,notes,
+      follow_up_date:(outcome==="Requires follow-up"||outcome==="Meeting Scheduled")?followup:null
+    })});
+    const msg=document.getElementById("nynyQuickMsg");if(msg){msg.style.display="block";msg.textContent="✓ "+(leadership?type:agent+" — "+type)+" logged for Nyny";}
+    vibrateSaved();
+    document.getElementById("nynyQuickAgent").value="";
+    document.getElementById("nynyQuickNotes").value="";
+    document.getElementById("nynyQuickWordCount").textContent="";
+    document.getElementById("nynyQuickFollowupDate").value="";
+    document.getElementById("nynyQuickFollowupWrap").style.display="none";
+    document.getElementById("nynyQuickAcList").classList.remove("open");
+    setTimeout(()=>{if(msg)msg.style.display="none";},3500);
+    loadWeek();loadFeed();loadStartHere();
+  }catch(e){
+    if(isNetworkFailure(e)){
+      queueOffline(agent,type,today(),outcome,notes,(outcome==="Requires follow-up"||outcome==="Meeting Scheduled")?followup:null);
+      document.getElementById("nynyQuickAgent").value="";document.getElementById("nynyQuickNotes").value="";
+      toast("No connection — Nyny activity saved offline and will sync automatically ✓","success",4000);
+    }else toast("Save failed: "+e.message,"error");
+  }finally{if(btn){btn.disabled=false;btn.textContent="Log Nyny activity";}}
+}
+document.addEventListener("click",function(e){
+  if(!e.target.closest("#nynyQuickAgent")&&!e.target.closest("#nynyQuickAcList"))document.getElementById("nynyQuickAcList")?.classList.remove("open");
+});
 
 // ── QUICK LOG ─────────────────────────────────────────────────────────────────
 function switchQuickLogTab(tab){
@@ -7520,7 +7729,8 @@ async function doSearchHistory(name){
       
       html+='<div style="background:#EEEBF8;border:0.5px solid #D9D3EE;border-radius:10px;padding:16px;margin-bottom:14px">'
         +'<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px">'
-        +'<div style="font-size:16px;font-weight:500;color:#4E3D8A">'+properCase(p.agent_name)+'</div>'
+        +'<div><div style="font-size:16px;font-weight:500;color:#4E3D8A">'+properCase(p.agent_name)+'</div>'
+        +(function(){const o=getAgentOwnership(p.agent_name);return '<div style="font-size:10.5px;color:var(--text-3);margin-top:2px">RM: <strong>'+escHtml(o.rm||"Unassigned")+'</strong> · LP: <strong>'+escHtml((o.lp&&o.lp!=="Unassigned")?o.lp:"Unassigned")+'</strong></div>';})()+'</div>'
         +'<button onclick="openContactModal(\''+p.agent_name.replace(/'/g,"\\'")+'\''+')" style="padding:4px 12px;background:#fff;color:var(--brand-dark);border:1px solid var(--border);border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit">Edit contact</button>'
         +'</div>'
         +(p.personal_notes||referralCreditForProfile>0?'<div style="background:#fff;border:1px solid #D9D3EE;border-radius:8px;padding:10px 12px;margin-bottom:10px">'
@@ -9074,6 +9284,7 @@ async function openContactModal(name,phone,email,brokerage,birthday){
   const scrollBody0=document.getElementById("contactModalScrollBody");
   if(scrollBody0)scrollBody0.scrollTop=0;
   document.getElementById("contactModalName").textContent=resolvedDisplayName(name);
+  loadOwnershipIntoContactModal(name).catch(()=>{});
   if(document.getElementById("contactDisplayName"))document.getElementById("contactDisplayName").value="";
   // Always check for an existing profile — needed for Save/Delete to target the right row,
   // and to catch possible duplicate rows early. Previously this only ran when the caller
@@ -9174,7 +9385,8 @@ async function saveContactModal(){
     }
     const displayKey=((exact&&exact.agent_name)||editingContactName||"").trim().toLowerCase();
     if(payload.display_name)amandaDisplayNames[displayKey]=payload.display_name;else delete amandaDisplayNames[displayKey];
-    toast("Contact updated","success");closeContactModal();if(window._contactSaveCallback){window._contactSaveCallback();window._contactSaveCallback=null;}
+    const ownershipOk=await saveAgentOwnership((exact&&exact.agent_name)||editingContactName);
+    toast(ownershipOk?"Contact + ownership updated":"Contact updated — ownership setup still needed",ownershipOk?"success":"error",ownershipOk?3200:5500);closeContactModal();if(window._contactSaveCallback){window._contactSaveCallback();window._contactSaveCallback=null;}
     if(document.getElementById("historySearch").value.length>=2)doSearchHistory(document.getElementById("historySearch").value.trim());
   }catch(e){toast("Save failed: "+e.message,"error");}
   finally{if(saveBtn){saveBtn.disabled=false;saveBtn.textContent="Save changes";}}
@@ -9258,6 +9470,48 @@ function showCalDayDetail(dateStr){
     return'<div class="cal-day-item"><div class="cal-day-dot" style="background:'+dotColor+'"></div><div style="flex:1"><div style="font-size:12px;font-weight:500;color:#1a1a2e">'+escHtml(e.agent_name)+'</div><div style="font-size:11px;color:#aaa">'+badgeEmoji(e.act_type)+" "+(isFollowup?"Follow-up — "+escHtml(e.act_type):escHtml(e.act_type))+(e.outcome?" · "+escHtml(e.outcome):"")+'</div>'+( e.notes?'<div style="font-size:11px;color:#777;font-style:italic;margin-top:2px">"'+escHtml(e.notes.substring(0,80))+'"</div>':"")+'</div></div>';
   }).join("");
   detail.style.display="block";
+}
+
+let agentOwnershipByKey={};
+function ownerKey(name){return (name||"").trim().toLowerCase().replace(/\s+/g," ");}
+function cacheOwnershipRow(r){if(!r||!r.agent_name)return;agentOwnershipByKey[ownerKey(r.agent_name)]={agent_name:r.agent_name,lp:(r.lp&&r.lp!=="__REMOVED__"?r.lp:"")||"",rm:r.rm||"",priority:!!r.priority,added:!!r.added,level:r.level||""};}
+async function loadAgentOwnership(){
+  try{
+    const rows=await sbFetch("agent_assignments?select=*&limit=5000").catch(()=>[]);
+    agentOwnershipByKey={};(rows||[]).forEach(cacheOwnershipRow);
+    return rows||[];
+  }catch(e){return[];}
+}
+function getAgentOwnership(name){return agentOwnershipByKey[ownerKey(name)]||{agent_name:name,lp:"",rm:""};}
+async function loadOwnershipIntoContactModal(name){
+  const rmEl=document.getElementById("contactRmOwner"),lpEl=document.getElementById("contactLpOwner"),st=document.getElementById("contactOwnershipStatus");
+  if(!rmEl||!lpEl)return;
+  let o=getAgentOwnership(name);rmEl.value=o.rm||"";lpEl.value=o.lp||"";
+  try{
+    const rows=await sbFetch("agent_assignments?agent_name=ilike."+encodeURIComponent(name)+"&select=*&limit=5").catch(()=>[]);
+    const exact=(rows||[]).find(r=>ownerKey(r.agent_name)===ownerKey(name))||(rows||[])[0];
+    if(exact){cacheOwnershipRow(exact);o=getAgentOwnership(exact.agent_name);rmEl.value=o.rm||"";lpEl.value=o.lp||"";}
+    if(st){st.style.display="none";st.textContent="";}
+  }catch(e){}
+}
+async function saveAgentOwnership(name){
+  const rmEl=document.getElementById("contactRmOwner"),lpEl=document.getElementById("contactLpOwner"),st=document.getElementById("contactOwnershipStatus");
+  if(!rmEl||!lpEl)return true;
+  const desiredRm=rmEl.value||null,desiredLp=lpEl.value||"Unassigned";
+  try{
+    const rows=await sbFetch("agent_assignments?agent_name=ilike."+encodeURIComponent(name)+"&select=*&limit=5").catch(()=>[]);
+    const exact=(rows||[]).find(r=>ownerKey(r.agent_name)===ownerKey(name))||(rows||[])[0]||{};
+    const payload={agent_name:exact.agent_name||name,lp:desiredLp,rm:desiredRm,priority:!!exact.priority,added:!!exact.added,level:exact.level||"C"};
+    if(exact.closed_past_year!==undefined)payload.closed_past_year=exact.closed_past_year;
+    await sbFetch("agent_assignments?on_conflict=agent_name",{method:"POST",prefer:"resolution=merge-duplicates,return=minimal",body:JSON.stringify(payload)});
+    cacheOwnershipRow(payload);
+    if(st){st.style.display="block";st.style.color="var(--success)";st.textContent="Ownership synced ✓";}
+    return true;
+  }catch(e){
+    console.warn("Ownership save failed:",e);
+    if(st){st.style.display="block";st.style.color="var(--danger)";st.textContent="Contact saved, but RM ownership needs the one-time Supabase ownership setup.";}
+    return false;
+  }
 }
 
 let allContacts=[];
@@ -9441,10 +9695,12 @@ async function loadContacts(){
   if(!el)return;
   el.innerHTML='<div class="no-data">Loading...</div>';
   try{
-    const[profiles,agentList]=await Promise.all([
+    const[profiles,agentList,ownershipRows]=await Promise.all([
       sbFetch("agent_profiles?select=*&order=agent_name.asc&limit=500"),
-      sbFetch("agent_profiles?select=agent_name&order=agent_name.asc&limit=500")
+      sbFetch("agent_profiles?select=agent_name&order=agent_name.asc&limit=500"),
+      sbFetch("agent_assignments?select=*&limit=5000").catch(()=>[])
     ]);
+    agentOwnershipByKey={};(ownershipRows||[]).forEach(cacheOwnershipRow);
     allContacts=profiles||[];
     allAgentNames=(agentList||[]).map(a=>a.agent_name);
     renderContactsDupeBanner(allContacts);
@@ -9534,6 +9790,9 @@ function filterContacts(){
   else if(f==="tier-B")list=list.filter(c=>c.tier==="B");
   else if(f==="tier-C")list=list.filter(c=>c.tier==="C");
   else if(f==="notier")list=list.filter(c=>!c.tier);
+  else if(f==="rm-nyny")list=list.filter(c=>getAgentOwnership(c.agent_name).rm==="Nyny");
+  else if(f==="rm-amanda")list=list.filter(c=>getAgentOwnership(c.agent_name).rm==="Amanda");
+  else if(f==="rm-unassigned")list=list.filter(c=>!getAgentOwnership(c.agent_name).rm);
   else if(f==="bday")list=list.filter(c=>c.birthday);
   else if(f==="nobday")list=list.filter(c=>!c.birthday);
   else if(f==="noaddress")list=list.filter(c=>!c.address);
@@ -9591,6 +9850,7 @@ function renderContacts(list){
       '<div class="contact-avatar">'+initials+'</div>'+
       '<div class="contact-info">'+
         '<div class="contact-name" style="display:flex;align-items:center;gap:7px">'+escHtml(shownName)+tierBadge(c.tier)+'</div>'+
+        (function(){const o=getAgentOwnership(c.agent_name);return '<div style="font-size:10.5px;color:var(--text-3);margin-top:2px"><strong style="color:var(--brand)">RM:</strong> '+escHtml(o.rm||"Unassigned")+' &nbsp;·&nbsp; <strong style="color:var(--text-2)">LP:</strong> '+escHtml((o.lp&&o.lp!=="Unassigned")?o.lp:"Unassigned")+'</div>';})()+
         '<div class="contact-meta">'+
           (c.phone?'<span>'+phoneCallLink(c.agent_name,c.phone)+'</span>':'<span style="color:#ffb3b3">No phone</span>')+
           (c.email?'<span>'+escHtml(c.email)+'</span>':'')+
@@ -9635,6 +9895,7 @@ function openContactsEdit(nameOrEl){
   editingContactName=name;
   editingContactOriginalName=c.agent_name||name; // best-effort cache; saveContactModal re-verifies before writing
   document.getElementById("contactModalName").textContent=c.display_name||resolvedDisplayName(name);
+  loadOwnershipIntoContactModal(name).catch(()=>{});
   if(document.getElementById("contactDisplayName"))document.getElementById("contactDisplayName").value=c.display_name||"";
   document.getElementById("contactPhone").value=c.phone||"";
   document.getElementById("contactEmail").value=c.email||"";
@@ -9686,6 +9947,7 @@ function nearRealtimeRefreshSharedData(){
   if(userTyping)return;
   if(document.querySelector(".modal-overlay.open"))return; // never refetch out from under an open modal
   _lastNearRealtimeRefresh=Date.now();
+  loadAgentOwnership().catch(()=>{});
   loadContacts().catch(()=>{});
   loadQuiet().catch(()=>{});
   // Cross-tracker shared work: LP flags + LP call activity must refresh too.
@@ -9717,6 +9979,9 @@ function initRealtimeSync(){
     rtClient.channel("shared-tracker-changes")
       .on("postgres_changes",{event:"*",schema:"public",table:"agent_profiles"},function(){
         nearRealtimeRefreshSharedData();
+      })
+      .on("postgres_changes",{event:"*",schema:"public",table:"agent_assignments"},function(){
+        loadAgentOwnership().then(()=>{loadContacts().catch(()=>{});});
       })
       .on("postgres_changes",{event:"*",schema:"public",table:"lp_flags"},function(){
         if(typeof loadFlagged==="function")loadFlagged().catch(()=>{});
@@ -9822,5 +10087,7 @@ document.addEventListener("click",function(e){
 });
 setTimeout(updatePageGuideVisibility,500);
 </script>
+
+<script>try{nynyQuickTypeChange();nynyQuickToggleFollowup();}catch(e){}</script>
 </body>
 </html>
