@@ -415,7 +415,10 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI'
   <!-- START HERE -->
   <div class="card" id="startHereOuterCard" style="background:linear-gradient(135deg,#EEEBF8,#DDD8F0);border:1px solid #C8C0E0">
     <div style="display:flex;justify-content:space-between;align-items:center">
-      <div class="card-title" style="font-size:15px;margin-bottom:0">Start Here</div>
+      <div>
+        <div class="card-title" style="font-size:15px;margin-bottom:1px">Amanda — Start Here</div>
+        <div style="font-size:10.5px;color:var(--text-3)">Do the one priority the tracker gives you first. The backlog counts below are inventory — not a list you are expected to clear today.</div>
+      </div>
       <button onclick="showDayWrapUp()" style="font-size:11px;font-weight:600;padding:5px 11px;background:#fff;color:var(--brand-dark);border:1px solid var(--border);border-radius:6px;cursor:pointer;font-family:inherit;white-space:nowrap">Wrap up my day</button>
     </div>
     <div id="startHereCard"><div class="no-data">Loading...</div></div>
@@ -461,6 +464,18 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI'
       <div style="font-size:10.5px;color:var(--text-3);background:var(--surface-2);border-radius:20px;padding:5px 10px">20 new meetings / month as a team</div>
     </div>
     <div id="rmTeamScorecard"><div class="no-data">Loading team scorecard...</div></div>
+  </div>
+
+  <!-- AMANDA COACHING QUEUE FOR NYNY -->
+  <div class="card" id="amandaCoachingQueueCard" style="padding:16px 18px;border:1px solid #E6D7BC;background:linear-gradient(180deg,#FFFFFF 0%,#FFFCF6 100%)">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;margin-bottom:10px">
+      <div>
+        <div class="card-title" style="margin-bottom:2px">Amanda Coaching Queue · for Nyny</div>
+        <div style="font-size:11px;color:var(--text-3)">This turns tracker patterns into coaching topics. One miss is a reminder; repeated misses or meaningful pace gaps become coaching.</div>
+      </div>
+      <div style="font-size:10px;color:#8A6100;background:#FFF5D6;border:1px solid #F0D58A;border-radius:20px;padding:5px 9px">Based on current working goals</div>
+    </div>
+    <div id="amandaCoachingQueue"><div class="no-data">Checking for coaching signals...</div></div>
   </div>
 
   <!-- NYNY QUICK LOG -->
@@ -546,8 +561,15 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI'
     <div id="nynyQuickMsg" style="display:none;font-size:11px;color:var(--success);font-weight:700;margin-top:8px;text-align:right"></div>
   </div>
 
-  <!-- Quick Log -->
+  <!-- AMANDA QUICK LOG -->
   <div class="card" id="quickLogCard" style="padding:16px 18px">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;margin-bottom:10px">
+      <div>
+        <div class="card-title" style="margin-bottom:2px">Amanda Quick Log · Snapshot</div>
+        <div style="font-size:11px;color:var(--text-3)">Daily RM execution: Talk-To, Reconnect, CTC, Break Bread, Birthday, New Agent Follow-Up, and Cold Calls.</div>
+      </div>
+      <button type="button" onclick="switchTab('log')" style="font-size:11px;font-weight:600;color:var(--brand);background:var(--brand-light);border:1px solid #D8D1EE;border-radius:7px;cursor:pointer;font-family:inherit;padding:6px 10px">Open full log</button>
+    </div>
     <div class="offline-queue-badge" style="display:none;align-items:center;gap:6px;background:#EEEBF8;color:#4E3D8A;border-radius:8px;padding:8px 12px;margin-bottom:10px;font-size:12px;font-weight:600"></div>
     <div style="display:flex;align-items:center;justify-content:flex-end;gap:14px;margin-bottom:6px;flex-wrap:wrap">
       <button type="button" onclick="openScheduleModal()" style="font-size:11px;font-weight:600;color:var(--brand);background:none;border:none;cursor:pointer;font-family:inherit;padding:0">Schedule</button>
@@ -3436,21 +3458,22 @@ async function loadStartHere(){
     const cutoff60=new Date();cutoff60.setDate(cutoff60.getDate()-60);
     const monthStart=new Date();monthStart.setDate(1);
 
-    const[dayActs,escOpen,rcHot,coldCalls60,talkTos60,rcAllNames,breadProfiles,myBreads,lpBreads,fuToday,ctcFiles,birthdayAgents,mtdMeetings,fuOverdue,serverSnoozes]=await Promise.all([
-      sbFetch("amanda_activities?select=act_type,outcome,agent_name&act_date=eq."+todayStr).catch(()=>[]),
+    const[dayActs,escOpen,lpFlagsOpen,rcHot,coldCalls60,talkTos60,rcAllNames,breadProfiles,myBreads,lpBreads,fuToday,ctcFiles,birthdayAgents,mtdMeetings,fuOverdue,serverSnoozes]=await Promise.all([
+      sbFetch("amanda_activities?select=act_type,outcome,agent_name,notes&act_date=eq."+todayStr).catch(()=>[]),
       sbFetch("amanda_activities?select=agent_name&outcome=eq.Needs manager attention&act_date=gte."+localDateStr(cutoff7)).catch(()=>[]),
+      sbFetch("lp_flags?resolved=eq.false&select=id,agent_name,lp,note,created_at,assigned_to&order=created_at.asc&limit=100").catch(()=>[]),
       sbFetch(RC_TABLE+"?select=agent_name,status,grade&status=in.(hot,urgent)&limit=100").catch(()=>[]),
-      sbFetch("amanda_activities?select=agent_name,outcome&act_type=eq.Cold Calls&act_date=gte."+localDateStr(cutoff60)+"&limit=1000").catch(()=>[]),
-      sbFetch("amanda_activities?select=agent_name,act_type&act_date=gte."+localDateStr(cutoff60)+"&limit=2000").catch(()=>[]),
+      sbFetch("amanda_activities?select=agent_name,outcome,notes&act_type=eq.Cold Calls&act_date=gte."+localDateStr(cutoff60)+"&limit=1000").catch(()=>[]),
+      sbFetch("amanda_activities?select=agent_name,act_type,notes&act_date=gte."+localDateStr(cutoff60)+"&limit=2000").catch(()=>[]),
       sbFetch(RC_TABLE+"?select=agent_name,status,grade&limit=1000").catch(()=>[]),
       sbFetch("agent_profiles?select=agent_name,tier&limit=500").catch(()=>[]),
       sbFetch("amanda_activities?select=agent_name,act_date&act_type=eq.Break Breads&order=act_date.desc&limit=2000").catch(()=>[]),
       sbFetch("break_breads?select=agent_name,date&order=date.desc&limit=2000").catch(()=>[]),
-      sbFetch("amanda_activities?select=agent_name,act_type&follow_up_date=eq."+todayStr).catch(()=>[]),
+      sbFetch("amanda_activities?select=agent_name,act_type,notes&follow_up_date=eq."+todayStr).catch(()=>[]),
       sbFetch("call_logs?select=agent_name&outcome=ilike.*ctc*&call_date=eq."+todayStr).catch(()=>[]),
       sbFetch("agent_profiles?select=agent_name,birthday&birthday=not.is.null&limit=500").catch(()=>[]),
-      sbFetch("amanda_activities?select=agent_name&act_type=eq.New Realtor Meeting&act_date=gte."+localDateStr(monthStart)).catch(()=>[]),
-      sbFetch("amanda_activities?select=agent_name,follow_up_date&follow_up_date=not.is.null&follow_up_date=lt."+todayStr+"&order=follow_up_date.asc&limit=30").catch(()=>[]),
+      sbFetch("amanda_activities?select=agent_name,notes&act_type=eq.New Realtor Meeting&act_date=gte."+localDateStr(monthStart)).catch(()=>[]),
+      sbFetch("amanda_activities?select=agent_name,follow_up_date,notes&follow_up_date=not.is.null&follow_up_date=lt."+todayStr+"&order=follow_up_date.asc&limit=30").catch(()=>[]),
       sbFetch("snoozes?select=agent_name,snoozed_until&snoozed_until=gte."+todayStr).catch(()=>null)
     ]);
     // Server-side snooze table is optional — she may not have created it yet. When present, merge it into
@@ -3465,13 +3488,21 @@ async function loadStartHere(){
     }
 
     const normalize=s=>(s||"").toLowerCase().trim();
-    const talkToToday=cntTalkTo(dayActs);
-    const coldCallsToday=(dayActs||[]).filter(a=>a.act_type==="Cold Calls").length;
+    // Snapshot "Amanda — Start Here" is Amanda's execution lane. Shared portfolio/risk queues stay
+    // visible, but Nyny's activity must not inflate Amanda's personal pace or clear her follow-ups.
+    const amandaDayActs=(dayActs||[]).filter(a=>getActivityOwner(a)==="Amanda");
+    const amandaColdCalls60=(coldCalls60||[]).filter(a=>getActivityOwner(a)==="Amanda");
+    const amandaTalkTos60=(talkTos60||[]).filter(a=>getActivityOwner(a)==="Amanda");
+    const amandaFuToday=(fuToday||[]).filter(a=>getActivityOwner(a)==="Amanda");
+    const amandaMtdMeetings=(mtdMeetings||[]).filter(a=>getActivityOwner(a)==="Amanda");
+    const amandaFuOverdue=(fuOverdue||[]).filter(a=>getActivityOwner(a)==="Amanda");
+    const talkToToday=cntTalkTo(amandaDayActs);
+    const coldCallsToday=amandaDayActs.filter(a=>a.act_type==="Cold Calls").length;
     const talkToGoal=20,coldCallGoal=25;
 
     // Wins today — cold calls or talk-tos with Positive or Meeting Scheduled
-    const winsToday=(dayActs||[]).filter(a=>a.outcome==="Positive"||a.outcome==="Meeting Scheduled").length;
-    const meetingsToday=(dayActs||[]).filter(a=>a.outcome==="Meeting Scheduled").length;
+    const winsToday=amandaDayActs.filter(a=>a.outcome==="Positive"||a.outcome==="Meeting Scheduled").length;
+    const meetingsToday=amandaDayActs.filter(a=>a.outcome==="Meeting Scheduled").length;
 
     // CTC files today from LP logs
     const ctcCount=(ctcFiles||[]).length;
@@ -3490,7 +3521,7 @@ async function loadStartHere(){
 
     // Stuck cold calls
     const ccByAgent={};
-    (coldCalls60||[]).forEach(a=>{
+    amandaColdCalls60.forEach(a=>{
       const n=normalize(a.agent_name);if(!n)return;
       if(!ccByAgent[n])ccByAgent[n]={count:0,hasWin:false,display:a.agent_name};
       ccByAgent[n].count++;
@@ -3502,7 +3533,7 @@ async function loadStartHere(){
     const reconnectNames=new Set((rcAllNames||[]).filter(a=>a.status!=="removed").map(a=>normalize(a.agent_name)).filter(Boolean));
     const rcActiveCount=(rcAllNames||[]).filter(a=>a.status!=="removed").length;
     const ttByAgent={};
-    (talkTos60||[]).forEach(a=>{
+    amandaTalkTos60.forEach(a=>{
       if(TALKTO_TYPES.indexOf(a.act_type)<0)return;
       const n=normalize(a.agent_name);if(!n)return;
       if(!ttByAgent[n])ttByAgent[n]={count:0,display:a.agent_name};
@@ -3531,8 +3562,8 @@ async function loadStartHere(){
     const reconnectGoalText=rcACount>0
       ?"Start with the "+rcACount+" A-tier agent"+(rcACount!==1?"s":"")+" — these are highest priority. Then work through B/C tier (aim for 5+ today). Log as Reconnect Outreach — counts toward Talk-to goal."
       :"Aim for at least 5 today, B-tier before C-tier. Log as Reconnect Outreach — counts toward Talk-to goal.";
-    const mtdMeetingCount=(mtdMeetings||[]).length;
-    const scheduledToday=(fuToday||[]).length;
+    const mtdMeetingCount=amandaMtdMeetings.length;
+    const scheduledToday=amandaFuToday.length;
 
     // Gifting campaign hint — check if anyone is in week 2 or 3 (value/opportunity)
     const giftingHint=mtdMeetingCount>0?"Use the week-by-week gifting campaign scripts to stay on track. Week 2 = value touch, Week 3 = ask for the business.":"";
@@ -3623,12 +3654,14 @@ async function loadStartHere(){
     }
 
     // ── ONE THING — a single ranked line across everything, so she doesn't have to piece it together ──
-    const fuOverdueCount=(fuOverdue||[]).length;
+    const fuOverdueCount=amandaFuOverdue.length;
     let focusLine="";
-    if(escOpen.length>0){
+    if((lpFlagsOpen||[]).length>0){
+      focusLine="🚩 "+lpFlagsOpen.length+" open LP flag"+(lpFlagsOpen.length!==1?"s":"")+" — handle the oldest handoff first: "+properCase((lpFlagsOpen[0]||{}).agent_name||"General")+".";
+    }else if(escOpen.length>0){
       focusLine="🔴 "+escOpen.length+" escalation"+(escOpen.length!==1?"s":"")+" flagged — start in Management View.";
     }else if(fuOverdueCount>0){
-      focusLine="⏰ "+fuOverdueCount+" overdue follow-up"+(fuOverdueCount!==1?"s":"")+" — start with "+properCase((fuOverdue[0]||{}).agent_name||"")+".";
+      focusLine="⏰ "+fuOverdueCount+" overdue follow-up"+(fuOverdueCount!==1?"s":"")+" — start with "+properCase((amandaFuOverdue[0]||{}).agent_name||"")+".";
     }else if(ctcCount>0){
       focusLine="🟠 "+ctcCount+" file"+(ctcCount!==1?"s":"")+" at CTC today — call both agents before anything else.";
     }else if(rcHotVisible.length>0){
@@ -3641,19 +3674,21 @@ async function loadStartHere(){
       focusLine="✅ Nothing urgent right now — you're caught up.";
     }
     const focusHtml='<div style="background:linear-gradient(135deg,#2D2456,#4E3D8A);border-radius:8px;padding:12px 14px;margin-bottom:10px">'
-      +'<div style="font-size:10px;font-weight:700;color:rgba(255,255,255,.6);text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px">Right now, this matters most</div>'
+      +'<div style="font-size:10px;font-weight:700;color:rgba(255,255,255,.6);text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px">Amanda — do this first</div>'
       +'<div style="font-size:14px;font-weight:600;color:#fff">'+focusLine+'</div>'
-      +'<button onclick="startFocusMode()" style="margin-top:8px;font-size:11px;font-weight:600;padding:5px 12px;background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.3);border-radius:6px;cursor:pointer;font-family:inherit">Don\'t know where to start?</button>'
+      +'<div style="font-size:10.5px;color:rgba(255,255,255,.72);margin-top:5px">Do not scan the backlog first. Finish this, then ask the tracker for the next item.</div>'
+      +'<button onclick="startFocusMode()" style="margin-top:8px;font-size:11px;font-weight:700;padding:6px 12px;background:#fff;color:var(--brand-dark);border:1px solid rgba(255,255,255,.5);border-radius:6px;cursor:pointer;font-family:inherit">Give me ONE thing to do</button>'
       +'</div>';
 
     // ── Build the ranked focus queue for "Don't know where to start?" — one action at a time, no scanning required ──
     // Pulls from EVERYTHING: escalations, overdue follow-ups, CTC, hot reconnects, and follow-ups due today.
     focusQueue=[];
+    (lpFlagsOpen||[]).forEach(f=>focusQueue.push({agent:f.agent_name,reason:"LP flag"+(f.lp?" from "+f.lp:"")+" — explicit handoff waiting for RM response",action:"flag",flagId:f.id,urgency:-1}));
     (escOpen||[]).forEach(e=>focusQueue.push({agent:e.agent_name,reason:"Escalation — needs a resolution today",action:"log",urgency:0}));
-    (fuOverdue||[]).forEach(f=>focusQueue.push({agent:f.agent_name,reason:"Follow-up overdue since "+fmtDate(f.follow_up_date),action:"log",urgency:1}));
+    amandaFuOverdue.forEach(f=>focusQueue.push({agent:f.agent_name,reason:"Follow-up overdue since "+fmtDate(f.follow_up_date),action:"log",urgency:1}));
     (ctcFiles||[]).forEach(c=>focusQueue.push({agent:c.agent_name,reason:"At CTC today — call and use the CTC script",action:"log",urgency:2}));
     rcHotVisible.forEach(a=>focusQueue.push({agent:a.agent_name,reason:(a.grade?a.grade+"-tier — ":"")+"hot/urgent on the Reconnect list",action:"log",urgency:a.grade==="A"?2.5:a.grade==="B"?2.7:3}));
-    (fuToday||[]).forEach(f=>focusQueue.push({agent:f.agent_name,reason:"Follow-up due today",action:"log",urgency:4}));
+    amandaFuToday.forEach(f=>focusQueue.push({agent:f.agent_name,reason:"Follow-up due today",action:"log",urgency:4}));
     focusQueue.sort((a,b)=>a.urgency-b.urgency);
     // de-dupe by agent name, keep the highest-priority reason
     const seenFocus={};
@@ -4257,7 +4292,13 @@ function renderFocusStep(){
   }
   const item=focusQueue[focusIndex];
   const remaining=focusQueue.length-focusIndex;
-  if(item.action==="coldcall"){
+  if(item.action==="flag"){
+    body.innerHTML='<div style="font-size:10px;font-weight:700;color:var(--text-4);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">'+remaining+' left in the queue</div>'
+      +'<div style="font-size:18px;font-weight:700;color:var(--text-1);margin-bottom:6px">'+properCase(item.agent||"LP flag")+'</div>'
+      +'<div style="font-size:13px;color:var(--text-2);margin-bottom:16px">'+item.reason+'</div>'
+      +'<button onclick="openLpFlagInboxFromFocus()" style="width:100%;padding:12px;background:var(--brand);color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;margin-bottom:8px">Open the LP flag</button>'
+      +'<button onclick="focusSkip()" style="width:100%;padding:10px;background:var(--surface-2);color:var(--text-2);border:1px solid var(--border);border-radius:8px;font-size:13px;cursor:pointer;font-family:inherit">Skip, next</button>';
+  }else if(item.action==="coldcall"){
     body.innerHTML='<div style="font-size:10px;font-weight:700;color:var(--text-4);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">'+remaining+' left in the queue</div>'
       +'<div style="font-size:16px;font-weight:700;color:var(--text-1);margin-bottom:6px">Cold call block</div>'
       +'<div style="font-size:13px;color:var(--text-2);margin-bottom:16px">'+item.reason+'</div>'
@@ -4271,6 +4312,11 @@ function renderFocusStep(){
       +'<button onclick="focusDoneAndLog(\''+safeName+'\')" style="width:100%;padding:12px;background:var(--brand);color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;margin-bottom:8px">Done — log it</button>'
       +'<button onclick="focusSkip()" style="width:100%;padding:10px;background:var(--surface-2);color:var(--text-2);border:1px solid var(--border);border-radius:8px;font-size:13px;cursor:pointer;font-family:inherit">Skip, next</button>';
   }
+}
+function openLpFlagInboxFromFocus(){
+  closeFocusModal();
+  switchTab("week");
+  setTimeout(()=>document.getElementById("lpFlagInboxCard")?.scrollIntoView({behavior:"smooth",block:"center"}),180);
 }
 function focusDoneAndLog(name){
   vibrateOk();
@@ -4918,8 +4964,107 @@ async function loadRmTeamScorecard(){
   }catch(e){console.error("RM team scorecard error",e);el.innerHTML='<div class="no-data">Unable to load RM Team scorecard.</div>';}
 }
 
+
+function rmBusinessDayCounts(d){
+  const now=new Date(d||new Date());
+  const y=now.getFullYear(),m=now.getMonth();
+  let elapsed=0,total=0;
+  for(let day=1;day<=new Date(y,m+1,0).getDate();day++){
+    const dt=new Date(y,m,day),wd=dt.getDay();
+    if(wd!==0&&wd!==6){total++;if(day<=now.getDate())elapsed++;}
+  }
+  return{elapsed,total};
+}
+function rmWeekdayElapsed(d){
+  const now=new Date(d||new Date()),wd=now.getDay();
+  if(wd===0)return 5;if(wd===6)return 5;return Math.max(1,wd);
+}
+function coachingSignalCard(item){
+  const tone=item.level==="now"?{bg:"#FFF1EF",border:"#F0B9B2",title:"#A33A2B",badge:"COACH NOW"}:item.level==="review"?{bg:"#FFF9E9",border:"#EBD59C",title:"#8A6100",badge:"REVIEW THIS WEEK"}:{bg:"#EEF8F2",border:"#B9DDC6",title:"#2F6B46",badge:"DOING WELL"};
+  const safeTopic=String(item.topic||"").replace(/\\/g,"\\\\").replace(/'/g,"\\'").replace(/\n/g," ");
+  const safeNote=String(item.note||"").replace(/\\/g,"\\\\").replace(/'/g,"\\'").replace(/\n/g," ");
+  return '<div style="background:'+tone.bg+';border:1px solid '+tone.border+';border-radius:9px;padding:10px 11px">'
+    +'<div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start"><div><div style="font-size:9.5px;font-weight:800;color:'+tone.title+';letter-spacing:.35px">'+tone.badge+'</div><div style="font-size:12px;font-weight:750;color:var(--text-1);margin-top:2px">'+escHtml(item.title)+'</div></div>'
+    +(item.level!=="good"?'<button type="button" onclick="prefillAmandaCoaching(\''+safeTopic+'\',\''+safeNote+'\')" style="font-size:10px;font-weight:700;color:var(--brand-dark);background:#fff;border:1px solid var(--border);border-radius:6px;padding:4px 7px;cursor:pointer;font-family:inherit;white-space:nowrap">Log coaching</button>':'')+'</div>'
+    +'<div style="font-size:10.5px;color:var(--text-2);line-height:1.4;margin-top:5px">'+escHtml(item.detail)+'</div>'
+    +(item.focus?'<div style="font-size:10px;color:var(--text-4);line-height:1.35;margin-top:4px"><strong>Coaching focus:</strong> '+escHtml(item.focus)+'</div>':'')
+    +'</div>';
+}
+function prefillAmandaCoaching(topic,note){
+  const type=document.getElementById("nynyQuickType");if(type)type.value="Amanda Coaching / Development";
+  nynyQuickTypeChange();
+  const agent=document.getElementById("nynyQuickAgent");if(agent)agent.value="Amanda — "+topic;
+  const outcome=document.getElementById("nynyQuickOutcome");if(outcome)outcome.value="Completed";
+  const notes=document.getElementById("nynyQuickNotes");if(notes)notes.value=note;
+  nynyQuickToggleFollowup();nynyQuickWordCount();
+  document.getElementById("nynyQuickLogCard")?.scrollIntoView({behavior:"smooth",block:"center"});
+  setTimeout(()=>document.getElementById("nynyQuickNotes")?.focus(),350);
+}
+async function loadAmandaCoachingQueue(){
+  const el=document.getElementById("amandaCoachingQueue");if(!el)return;
+  try{
+    const now=new Date(),todayStr=today();
+    const monthStart=now.getFullYear()+"-"+String(now.getMonth()+1).padStart(2,"0")+"-01";
+    const seven=new Date(now);seven.setDate(seven.getDate()-6);
+    const [mtd,wtd,overdue,recent,flags]=await Promise.all([
+      sbFetch("amanda_activities?select=agent_name,act_type,act_date,outcome,notes,follow_up_date&act_date=gte."+monthStart+"&limit=3000").catch(()=>[]),
+      sbFetch("amanda_activities?select=agent_name,act_type,act_date,outcome,notes,follow_up_date&act_date=gte."+week.start+"&act_date=lte."+week.end+"&limit=2000").catch(()=>[]),
+      sbFetch("amanda_activities?select=agent_name,act_type,act_date,outcome,notes,follow_up_date&follow_up_date=not.is.null&follow_up_date=lt."+todayStr+"&order=follow_up_date.asc&limit=200").catch(()=>[]),
+      sbFetch("amanda_activities?select=agent_name,act_type,act_date,outcome,notes&act_date=gte."+localDateStr(seven)+"&limit=2000").catch(()=>[]),
+      sbFetch("lp_flags?resolved=eq.false&select=agent_name,assigned_to,created_at&order=created_at.asc&limit=100").catch(()=>[])
+    ]);
+    const amandaOnly=arr=>(arr||[]).filter(a=>getActivityOwner(a)==="Amanda");
+    const amtd=amandaOnly(mtd),awtd=amandaOnly(wtd),aover=amandaOnly(overdue),arecent=amandaOnly(recent);
+    const signals=[];
+    const bd=rmBusinessDayCounts(now),wdElapsed=rmWeekdayElapsed(now);
+    const mtdNew=amtd.filter(a=>a.act_type==="New Realtor Meeting").length;
+    const mtdTotal=amtd.filter(a=>isPartnerMeetingActivity(a)).length;
+    const expectedNew=RM_TEAM_GOALS.amandaNew*(bd.elapsed/Math.max(1,bd.total));
+    const expectedTotal=RM_TEAM_GOALS.amandaTotal*(bd.elapsed/Math.max(1,bd.total));
+    const coldWtd=awtd.filter(a=>a.act_type==="Cold Calls").length;
+    const talksWtd=cntTalkTo(awtd);
+    const expCold=125*(wdElapsed/5),expTalk=100*(wdElapsed/5);
+    const noteIssues=arecent.filter(a=>NOTES_REQUIRED_TYPES.indexOf(a.act_type)>=0&&!noteMeetsBar(a.act_type,a.notes));
+    const oldestOver=aover.length?Math.max(...aover.map(a=>Math.max(1,Math.floor((new Date(todayStr+"T12:00:00")-new Date(a.follow_up_date+"T12:00:00"))/86400000)))):0;
+    const amandaFlags=(flags||[]).filter(f=>!f.assigned_to||String(f.assigned_to).toLowerCase()==="amanda");
+    const agedFlags=amandaFlags.filter(f=>f.created_at&&((now-new Date(f.created_at))/86400000)>=1);
+
+    if(aover.length>=3){signals.push({level:"now",topic:"Follow-up discipline",title:aover.length+" overdue follow-ups",detail:"Oldest is "+oldestOver+" day"+(oldestOver===1?"":"s")+" overdue. This is a pattern worth coaching, not just a reminder.",focus:"Close every conversation with a defined next step and real follow-up date.",note:"Reviewed "+aover.length+" overdue partner follow-ups with Amanda and coached on closing every conversation with a clear next step and follow-up date. We prioritized the oldest items first and agreed to recheck the queue after they are worked."});}
+    else if(aover.length>0){signals.push({level:"review",topic:"Follow-up discipline",title:aover.length+" overdue follow-up"+(aover.length===1?"":"s"),detail:"Worth reviewing before it turns into a pattern.",focus:"Finish the overdue item(s) and make sure future follow-up dates are realistic.",note:"Reviewed the current overdue follow-up items with Amanda and reinforced setting a clear next action and realistic follow-up date after each partner conversation."});}
+
+    if(bd.elapsed>=5&&mtdNew<expectedNew*.7){signals.push({level:"now",topic:"New meeting pace",title:"New meetings are behind pace",detail:mtdNew+" / "+RM_TEAM_GOALS.amandaNew+" this month. Pace through today is about "+expectedNew.toFixed(1)+".",focus:"Prospecting pipeline, meetings scheduled, and what is preventing booked meetings from turning into held meetings.",note:"Reviewed Amanda's new partner meeting pace against the monthly goal and coached on the prospecting pipeline, meetings scheduled, and the specific actions needed to get back on pace this month."});}
+    else if(bd.elapsed>=5&&mtdNew<expectedNew*.9){signals.push({level:"review",topic:"New meeting pace",title:"New meeting pace needs a check-in",detail:mtdNew+" / "+RM_TEAM_GOALS.amandaNew+" this month versus about "+expectedNew.toFixed(1)+" expected by now.",focus:"Look at what is scheduled for the rest of the month before changing strategy.",note:"Reviewed Amanda's new meeting pace and the meetings currently scheduled for the rest of the month. We identified the remaining gap and agreed on the next prospecting priorities."});}
+
+    if(bd.elapsed>=5&&mtdTotal<expectedTotal*.7){signals.push({level:"review",topic:"Partner meeting capacity",title:"Total partner meetings are behind pace",detail:mtdTotal+" / "+RM_TEAM_GOALS.amandaTotal+" this month. Current pace through today is about "+expectedTotal.toFixed(1)+".",focus:"Balance new meetings with existing-partner cadence so acquisition does not crowd out retention.",note:"Reviewed Amanda's total partner meeting pace and coached on balancing new partner acquisition with existing-partner cadence, retention, and scheduled relationship meetings for the remainder of the month."});}
+
+    if(wdElapsed>=2&&coldWtd<expCold*.7){signals.push({level:"review",topic:"Prospecting consistency",title:"Cold-call pace is materially behind",detail:coldWtd+" / 125 this week; expected pace through today is about "+Math.round(expCold)+".",focus:"Protect call blocks and identify what is displacing prospecting time.",note:"Reviewed Amanda's weekly cold-call pace and coached on protecting prospecting blocks, identifying what has displaced call time, and resetting the remaining weekly plan around the highest-value outreach."});}
+    if(wdElapsed>=2&&talksWtd<expTalk*.7){signals.push({level:"review",topic:"Relationship touch pace",title:"Talk-to pace is materially behind",detail:talksWtd+" / 100 this week; expected pace through today is about "+Math.round(expTalk)+".",focus:"Prioritize meaningful partner conversations rather than trying to catch up with low-value activity.",note:"Reviewed Amanda's weekly Talk-To pace and coached on prioritizing meaningful partner conversations, reconnect work, and follow-up activity instead of trying to catch up with low-value touches."});}
+
+    if(noteIssues.length>=3){signals.push({level:"now",topic:"Documentation quality",title:noteIssues.length+" recent activities have incomplete notes",detail:"The tracker cannot support handoffs or coaching if outcome and next step are missing.",focus:"Document what happened, what matters, and what happens next.",note:"Reviewed recent documentation gaps with Amanda and coached on consistently recording what happened, what matters, and the next step so the team has a usable relationship history."});}
+    else if(noteIssues.length>0){signals.push({level:"review",topic:"Documentation quality",title:noteIssues.length+" recent note"+(noteIssues.length===1?" needs":"s need")+" cleanup",detail:"A small miss right now; watch for repetition before treating it as a larger issue.",focus:"Complete notes at the time of the activity.",note:"Reviewed a recent documentation miss with Amanda and reinforced completing the outcome, meaningful notes, and next step at the time the relationship activity is logged."});}
+
+    if(agedFlags.length>=2){signals.push({level:"now",topic:"LP flag response",title:agedFlags.length+" LP flags have been open 24+ hours",detail:"These are explicit handoffs from LPs and should not sit while lower-priority backlog work is being done.",focus:"Respond to LP flags before lower-priority admin cleanup.",note:"Reviewed aged LP flags with Amanda and coached on treating LP-to-RM flags as priority handoffs, responding promptly, documenting the outreach, and closing the loop back to the LP."});}
+
+    const good=[];
+    if(aover.length===0)good.push({level:"good",title:"Follow-up queue is current",detail:"No overdue Amanda follow-ups right now."});
+    if(wdElapsed>=2&&coldWtd>=expCold*.9)good.push({level:"good",title:"Prospecting pace is on track",detail:coldWtd+" cold calls this week versus about "+Math.round(expCold)+" expected by now."});
+    if(wdElapsed>=2&&talksWtd>=expTalk*.9)good.push({level:"good",title:"Relationship touches are on track",detail:talksWtd+" Talk-To's this week versus about "+Math.round(expTalk)+" expected by now."});
+    if(noteIssues.length===0)good.push({level:"good",title:"Recent documentation is clean",detail:"No note-quality issues surfaced in the last 7 days."});
+
+    const nowItems=signals.filter(x=>x.level==="now").slice(0,3),reviewItems=signals.filter(x=>x.level==="review").slice(0,4),goodItems=good.slice(0,3);
+    let html='';
+    if(!nowItems.length&&!reviewItems.length){html+='<div style="background:#EEF8F2;border:1px solid #B9DDC6;border-radius:9px;padding:10px 12px;font-size:11.5px;color:#2F6B46;font-weight:650">No coaching patterns surfaced right now. Keep watching the signals below instead of inventing a coaching problem.</div>';}
+    if(nowItems.length){html+='<div style="font-size:10px;font-weight:800;color:#A33A2B;text-transform:uppercase;letter-spacing:.4px;margin:2px 0 6px">Coach now</div><div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px">'+nowItems.map(coachingSignalCard).join('')+'</div>';}
+    if(reviewItems.length){html+='<div style="font-size:10px;font-weight:800;color:#8A6100;text-transform:uppercase;letter-spacing:.4px;margin:'+(nowItems.length?'11px':'2px')+' 0 6px">Review this week</div><div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px">'+reviewItems.map(coachingSignalCard).join('')+'</div>';}
+    if(goodItems.length){html+='<details style="margin-top:10px"><summary style="cursor:pointer;font-size:10.5px;font-weight:750;color:#2F6B46">What is going well ('+goodItems.length+')</summary><div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;margin-top:7px">'+goodItems.map(coachingSignalCard).join('')+'</div></details>';}
+    html+='<div style="font-size:10px;color:var(--text-4);margin-top:9px;line-height:1.35">The queue recalculates from live tracker behavior. If the pattern improves, it falls off automatically. Use “Log coaching” only when you actually coach it.</div>';
+    el.innerHTML=html;
+  }catch(e){console.error("Amanda coaching queue error",e);el.innerHTML='<div class="no-data">Unable to load coaching signals.</div>';}
+}
+
 async function loadWeek(){
   loadRmTeamScorecard();
+  loadAmandaCoachingQueue();
   const wl2=document.getElementById("snapshotWeekLabel");
   if(wl2)wl2.textContent=week.label;
   try{
@@ -5921,7 +6066,7 @@ async function showDailyCheckin(viewDateStr){
 
     const openWorkHtml=isToday?'<div style="margin:14px 0;padding:12px;background:#F7F5FB;border:1px solid var(--border);border-radius:10px">'
       +'<div style="font-size:11px;font-weight:800;color:var(--brand-dark);text-transform:uppercase;letter-spacing:.45px;margin-bottom:3px">Open work across the tracker</div>'
-      +'<div style="font-size:10.5px;color:var(--text-3);line-height:1.4;margin-bottom:9px">This is not another daily quota. It is the work still available when calls or meetings are light. Counts can overlap.</div>'
+      +'<div style="font-size:10.5px;color:var(--text-3);line-height:1.4;margin-bottom:9px">Inventory only — not today’s to-do list. Do not try to clear these totals. Start with “Amanda — do this first” above, finish one item, then click “Give me ONE thing to do” for the next priority. Counts can overlap.</div>'
       +'<div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px">'
       +backlogTile("Reconnect queue",reconnectOpen.length,reconnectAB.length+" Channel/A/B priority · "+reconnectWorkedToday+" worked today","reconnect",reconnectOpen.length?'var(--warning)':'var(--success)')
       +backlogTile("Follow-ups due",overdueFollowups.length+dueTodayFollowups.length,overdueFollowups.length+" overdue · "+dueTodayFollowups.length+" due today","followups",overdueFollowups.length?'var(--danger)':'var(--text-1)')
@@ -5937,7 +6082,7 @@ async function showDailyCheckin(viewDateStr){
       +backlogTile("Portfolio plans missing",missingGrowthOpp.length,(growthFieldAvailable?missingGrowthPriority.length+" Channel/A priority":"portfolio field unavailable"),"management",missingGrowthPriority.length?'var(--danger)':missingGrowthOpp.length?'var(--warning)':'var(--success)')
       +(openIntake?backlogTile("Onboarding checklist",1,properCase(openIntake.agent_name)+" still open","log","var(--danger)"):"")
       +'</div>'
-      +(priorityQueue.length?'<details open style="margin-top:9px;background:#fff;border:1px solid var(--border-light);border-radius:8px;overflow:hidden"><summary style="cursor:pointer;padding:8px 10px;font-size:10.5px;font-weight:800;color:var(--text-2);text-transform:uppercase;letter-spacing:.35px">If there is open time, start here</summary><div style="padding:4px 10px 8px">'+priorityQueue.slice(0,8).map((p,i)=>'<div style="font-size:11.5px;color:var(--text-1);padding:4px 0;border-bottom:'+(i<Math.min(priorityQueue.length,8)-1?'1px solid var(--border-light)':'none')+'">'+(i+1)+'. '+escHtml(p.text)+'</div>').join("")+'</div></details>':'<div style="font-size:11px;color:var(--success);font-weight:600;margin-top:8px">No backlog priorities surfaced right now.</div>')
+      +(priorityQueue.length?'<details style="margin-top:9px;background:#fff;border:1px solid var(--border-light);border-radius:8px;overflow:hidden"><summary style="cursor:pointer;padding:8px 10px;font-size:10.5px;font-weight:800;color:var(--text-2);text-transform:uppercase;letter-spacing:.35px">Next 3 after the current priority</summary><div style="padding:4px 10px 8px">'+priorityQueue.slice(0,3).map((p,i)=>'<div style="font-size:11.5px;color:var(--text-1);padding:4px 0;border-bottom:'+(i<Math.min(priorityQueue.length,3)-1?'1px solid var(--border-light)':'none')+'">'+(i+1)+'. '+escHtml(p.text)+'</div>').join("")+'<button onclick="startFocusMode()" style="margin-top:7px;font-size:10.5px;font-weight:700;padding:5px 10px;background:var(--brand);color:#fff;border:none;border-radius:6px;cursor:pointer;font-family:inherit">Work the queue one item at a time</button></div></details>':'<div style="font-size:11px;color:var(--success);font-weight:600;margin-top:8px">No backlog priorities surfaced right now.</div>')
       +'</div>':'';
 
     // Full daily trail: who, what happened, what was documented, and what's next.
@@ -10088,6 +10233,6 @@ document.addEventListener("click",function(e){
 setTimeout(updatePageGuideVisibility,500);
 </script>
 
-<script>try{nynyQuickTypeChange();nynyQuickToggleFollowup();}catch(e){}</script>
+<script>try{nynyQuickTypeChange();nynyQuickToggleFollowup();loadAmandaCoachingQueue();}catch(e){}</script>
 </body>
 </html>
