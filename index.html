@@ -1,4 +1,4 @@
-   <!DOCTYPE html>
+  <!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -485,9 +485,12 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI'
     <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;margin-bottom:12px">
       <div>
         <div class="card-title" style="margin-bottom:2px">Nyny Quick Log · Snapshot</div>
-        <div style="font-size:11px;color:var(--text-3)">Log your partner meetings and Director/RM Team Lead work here without leaving Snapshot.</div>
+        <div style="font-size:11px;color:var(--text-3)">Log your partner meetings and Director/RM Team Lead work here. Use Break Bread / Face Time for an in-person visit so it syncs to the Core Team Face Time coverage.</div>
       </div>
-      <button type="button" onclick="openNynyFullLog()" style="font-size:11px;font-weight:600;color:var(--brand);background:var(--brand-light);border:1px solid #D8D1EE;border-radius:7px;cursor:pointer;font-family:inherit;padding:6px 10px">Open full log</button>
+      <div style="display:flex;gap:7px;align-items:center;flex-wrap:wrap">
+        <button type="button" onclick="openRmToLpFlag('Nyny')" style="font-size:11px;font-weight:700;color:#7A4B00;background:#FFF8E8;border:1px solid #E7C66B;border-radius:7px;cursor:pointer;font-family:inherit;padding:6px 10px">🚩 Flag LP</button>
+        <button type="button" onclick="openNynyFullLog()" style="font-size:11px;font-weight:600;color:var(--brand);background:var(--brand-light);border:1px solid #D8D1EE;border-radius:7px;cursor:pointer;font-family:inherit;padding:6px 10px">Open full log</button>
+      </div>
     </div>
 
     <div style="display:grid;grid-template-columns:1.25fr 1fr 1fr;gap:8px;align-items:end" class="nyny-ql-grid">
@@ -497,6 +500,7 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI'
           <optgroup label="Partner meetings">
             <option value="New Realtor Meeting">New partner meeting</option>
             <option value="Partner Meeting">Existing / current partner meeting</option>
+            <option value="Break Breads">Break Bread / Face Time</option>
             <option value="Strategic Partner Meeting">Strategic / team lead meeting</option>
             <option value="Channel Meeting">Channel meeting</option>
             <option value="Retention Meeting">Retention / at-risk meeting</option>
@@ -574,6 +578,7 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI'
     </div>
     <div class="offline-queue-badge" style="display:none;align-items:center;gap:6px;background:#EEEBF8;color:#4E3D8A;border-radius:8px;padding:8px 12px;margin-bottom:10px;font-size:12px;font-weight:600"></div>
     <div style="display:flex;align-items:center;justify-content:flex-end;gap:14px;margin-bottom:6px;flex-wrap:wrap">
+      <button type="button" onclick="openRmToLpFlag('Amanda')" style="font-size:11px;font-weight:700;color:#8A5A00;background:#FFF8E8;border:1px solid #E7C66B;border-radius:6px;cursor:pointer;font-family:inherit;padding:4px 8px">🚩 Flag LP</button>
       <button type="button" onclick="openScheduleModal()" style="font-size:11px;font-weight:600;color:var(--brand);background:none;border:none;cursor:pointer;font-family:inherit;padding:0">Schedule</button>
       <button type="button" onclick="openScriptsModal()" style="font-size:11px;font-weight:600;color:var(--brand);background:none;border:none;cursor:pointer;font-family:inherit;padding:0">Scripts</button>
       <button type="button" onclick="openEncompassModal()" style="font-size:11px;font-weight:600;color:var(--brand);background:none;border:none;cursor:pointer;font-family:inherit;padding:0">Encompass</button>
@@ -781,19 +786,24 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI'
   <!-- Break Bread Due List -->
   <div class="card" id="breadDueCard">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap;gap:8px">
-      <div><span class="card-title">Break Bread Due List</span> <span class="card-sub" id="breadSub"></span></div>
+      <div><span class="card-title">Break Bread / Face Time Due</span> <span class="card-sub" id="breadSub"></span></div>
     </div>
     <div style="background:var(--surface-2);border-radius:var(--radius-sm);padding:9px 12px;margin-bottom:12px;font-size:12px;line-height:1.4;color:var(--text-2)">
-      This combines your Break Bread logs with anything the LPs have logged, so it is one accurate picture. Sorted by who needs it most — start at the top.
+      This is the same shared coverage list the LPs see in Face Time: same active partner population, same cadence, and the same latest in-person visit whether Amanda, Nyny, or an LP logged it.
     </div>
     <div id="breadDueList" style="max-height:360px;overflow-y:auto"><div class="no-data">Loading...</div></div>
   </div>
 
-  <!-- Approaching 90-day drop-off — proactive warning before an agent is officially inactive -->
-  <div class="card" id="dropoffCard" style="display:none;border:1px solid var(--border-danger)">
-    <div class="card-title" style="margin-bottom:4px">⏳ Approaching 90-Day Drop-Off</div>
-    <div style="font-size:11px;color:var(--text-4);margin-bottom:12px">No lead in 90 days and an agent falls off as active per policy. These are getting close — reach out now, before that happens, not after.</div>
-    <div id="dropoffList" style="max-height:280px;overflow-y:auto"></div>
+  <!-- Falling off / reactivation — one place for prevention + win-back -->
+  <div class="card" id="dropoffCard" style="display:none;border:1px solid #D7C9A8">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap;margin-bottom:8px">
+      <div>
+        <div class="card-title" style="margin-bottom:3px">🔁 Falling Off / Reactivation</div>
+        <div style="font-size:11.5px;color:var(--text-3);line-height:1.5">Catch relationships before they leave active rotation, then deliberately work the ones that already fell off. Channel/A/B are prioritized first.</div>
+      </div>
+      <button type="button" class="btn-sm" onclick="switchTab('reconnect')">Open full Reconnect list</button>
+    </div>
+    <div id="dropoffList" style="max-height:390px;overflow-y:auto"></div>
   </div>
 
   <!-- Zero production — retained agents who've never actually closed. Different problem than
@@ -1070,7 +1080,7 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI'
   <div class="card">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
       <div>
-        <div class="card-title" style="margin-bottom:2px">Reconnect List</div>
+        <div class="card-title" style="margin-bottom:2px">Falling Off / Reactivation List</div>
         <div style="font-size:11px;color:#aaa" id="rcUploadMeta">Loading...</div>
       </div>
       <button onclick="loadReconnect()" style="padding:6px 12px;background:#EEEBF8;color:#9585C0;border:0.5px solid #D9D3C7;border-radius:8px;font-size:12px;font-weight:500;cursor:pointer;font-family:inherit">↻ Refresh</button>
@@ -1085,7 +1095,7 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI'
 
   <!-- Outreach tip -->
   <div class="card" style="background:var(--surface-2);padding:10px 16px;margin-bottom:0">
-    <div style="font-size:12.5px;color:var(--text-2);margin-bottom:6px">Before you dial — pull up <button onclick="openScriptsModal()" style="background:none;border:none;color:var(--brand);font-weight:600;cursor:pointer;font-family:inherit;font-size:12.5px;padding:0">Scripts</button> for the cold call opener and objection responses. Goal is a 20-minute meeting.</div>
+    <div style="font-size:12.5px;color:var(--text-2);margin-bottom:6px">Before you dial — pull up <button onclick="openScriptsModal()" style="background:none;border:none;color:var(--brand);font-weight:600;cursor:pointer;font-family:inherit;font-size:12.5px;padding:0">Scripts</button> for the reconnect opener. These are existing relationships, so this is reactivation outreach, not a cold call.</div>
     <div style="font-size:11.5px;color:var(--text-3);margin-bottom:4px">Work top to bottom. Add prospects from your admin call list, then dial in order. Mark DNC or Remove anyone not worth calling again so the list stays clean.</div>
     <div style="font-size:11.5px;color:var(--brand);font-weight:600">Before each call: look them up on RETR. A recent sale mention turns a cold call into a warm one.</div>
   </div>
@@ -1268,6 +1278,41 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI'
       <div style="font-size:10px;color:#6E4B00;background:#FFF3C7;border:1px solid #DDBE65;border-radius:20px;padding:5px 9px">Leadership view</div>
     </div>
     <div id="amandaCoachingQueue"><div class="no-data">Checking for coaching signals...</div></div>
+  </div>
+
+
+  <!-- LP FLAG / RM RESPONSE HISTORY — Management only -->
+  <div class="card" id="rmFlagHistoryCard" style="border:1.5px solid #C8C0E0;background:#FFFFFF">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;margin-bottom:10px">
+      <div>
+        <div class="card-title" style="margin-bottom:2px">LP Flag + RM Response History</div>
+        <div style="font-size:12px;color:var(--text-3);line-height:1.5">All LP → RM flags in one place. Handled items stay visible here after the notification bell clears.</div>
+      </div>
+      <button class="btn-sm" onclick="loadRmFlagResponseHistory()" style="font-size:11.5px;padding:6px 10px">Refresh</button>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:10px">
+      <select id="rmFlagHistoryLp" onchange="renderRmFlagResponseHistory()" style="min-width:125px;padding:7px 9px;border:1px solid var(--border);border-radius:7px;font-size:12px;font-family:inherit;color:var(--text-1);background:#fff">
+        <option value="">All LPs</option><option>Gavin</option><option>Karen</option><option>Osgood</option><option>Jordan</option><option>Said</option><option>Isaak</option>
+      </select>
+      <select id="rmFlagHistoryStatus" onchange="renderRmFlagResponseHistory()" style="min-width:135px;padding:7px 9px;border:1px solid var(--border);border-radius:7px;font-size:12px;font-family:inherit;color:var(--text-1);background:#fff">
+        <option value="">All statuses</option><option value="open">Open</option><option value="handled">Handled</option><option value="replied">Has RM reply</option><option value="no-response">Handled · no reply saved</option>
+      </select>
+      <input id="rmFlagHistorySearch" type="text" placeholder="Search agent or note..." oninput="renderRmFlagResponseHistory()" style="flex:1;min-width:190px;padding:7px 9px;border:1px solid var(--border);border-radius:7px;font-size:12px;font-family:inherit;color:var(--text-1);background:#fff">
+    </div>
+    <div id="rmFlagHistorySummary" style="margin-bottom:8px"></div>
+    <div id="rmFlagHistoryList"><div class="no-data">Loading flag history...</div></div>
+  </div>
+
+  <!-- RM → LP HANDOFF HISTORY — Management only -->
+  <div class="card" id="rmToLpHistoryCard" style="border:1.5px solid #D7C9A8;background:#FFFFFF">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;margin-bottom:10px">
+      <div>
+        <div class="card-title" style="margin-bottom:2px">RM → LP Handoffs</div>
+        <div style="font-size:12px;color:var(--text-3);line-height:1.5">Flags Amanda or Nyny sent to an LP. LP replies and handled status stay here for management visibility.</div>
+      </div>
+      <button class="btn-sm" onclick="loadRmToLpHistory()" style="font-size:11.5px;padding:6px 10px">Refresh</button>
+    </div>
+    <div id="rmToLpHistoryList"><div class="no-data">Loading RM → LP handoffs...</div></div>
   </div>
 
   <!-- GOAL PACE — the number that actually matters: are we going to hit the target by the date, not just "how much activity happened" -->
@@ -1771,9 +1816,25 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI'
         <button class="btn-primary" onclick="saveContactModal()">Save changes</button>
         <button class="btn-sm" onclick="closeContactModal()">Cancel</button>
       </div>
-      <button class="btn-sm danger" onclick="deleteAgent()" id="deleteAgentBtn">Delete agent</button>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:flex-end">
+        <button class="btn-sm" onclick="deleteAgent()" id="deleteAgentBtn">Remove from active</button>
+        <button class="btn-sm danger" onclick="permanentlyHideAgent()" id="permanentHideAgentBtn" title="Use only for a bad spelling or duplicate profile you want gone from the tracker">Delete bad/duplicate</button>
+      </div>
     </div>
     </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="rmToLpFlagModal">
+  <div class="modal-box" style="max-width:520px">
+    <div class="modal-header"><span class="modal-title">Flag LP for Follow-Up</span><button class="modal-close" onclick="closeRmToLpFlag()">×</button></div>
+    <div class="modal-sub" style="margin-bottom:12px">Use this when something from an RM conversation needs the assigned LP's attention. The LP will see it in their Core Team tab and notification bell.</div>
+    <div class="field"><label>Agent</label><input id="rmToLpAgent" type="text" list="rmToLpAgentList" placeholder="Agent name" oninput="rmToLpResolveOwner()"><datalist id="rmToLpAgentList"></datalist></div>
+    <div class="field"><label>LP owner</label><select id="rmToLpOwner"><option value="">Select LP...</option><option>Gavin</option><option>Karen</option><option>Osgood</option><option>Jordan</option><option>Said</option></select><div id="rmToLpOwnerHint" style="font-size:10.5px;color:var(--text-3);margin-top:4px"></div></div>
+    <div class="field"><label>What does the LP need to know / do?</label><textarea id="rmToLpNote" rows="4" placeholder="Example: Agent asked for updated payment options and wants Gavin to call her this afternoon."></textarea></div>
+    <input id="rmToLpCreatedBy" type="hidden" value="Amanda">
+    <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:12px"><button class="btn-sm" onclick="closeRmToLpFlag()">Cancel</button><button class="btn-primary" id="rmToLpSendBtn" onclick="sendRmToLpFlag()">Send to LP</button></div>
+    <div id="rmToLpMsg" style="display:none;font-size:11.5px;font-weight:700;color:var(--success);margin-top:8px;text-align:right"></div>
   </div>
 </div>
 
@@ -2412,6 +2473,11 @@ function normalizeAgentName(raw){
 function agentMatchKey(raw){
   return normalizeAgentName(raw).toLowerCase();
 }
+
+// Permanent-hide marker for bad/duplicate contact rows. We keep the database row as a
+// tombstone so a future Power BI import cannot silently recreate the bad spelling, while
+// hiding it from every normal Contacts/name-cleanup surface.
+const HIDDEN_PROFILE_MARKER="__HIDDEN__";
 
 function properCase(str){
   if(!str)return"";
@@ -3232,7 +3298,8 @@ function updatePlaybookHelper(type){
   }
 }
 function applyThemeTag(){
-  const tag=document.getElementById("themeTagSelect").value;
+  const tagEl=document.getElementById("themeTagSelect");
+  const tag=tagEl?tagEl.value:"";
   const notesEl=document.getElementById("activityNotes");
   if(!tag||!notesEl)return;
   // Strip any existing tag prefix, then apply the new one — keeps re-tagging clean instead of stacking tags.
@@ -3371,7 +3438,7 @@ async function loadSharedDisplayNames(){
   try{
     const rows=await sbFetch("agent_profiles?select=agent_name,display_name&limit=5000");
     amandaDisplayNames={};
-    (rows||[]).forEach(r=>{if(r.agent_name&&r.display_name)amandaDisplayNames[(r.agent_name||"").trim().toLowerCase()]=r.display_name.trim();});
+    (rows||[]).forEach(r=>{if(r.agent_name&&r.display_name&&r.display_name!==HIDDEN_PROFILE_MARKER)amandaDisplayNames[(r.agent_name||"").trim().toLowerCase()]=r.display_name.trim();});
   }catch(e){console.warn("Display-name preload failed",e);}
 }
 
@@ -3965,31 +4032,41 @@ async function resolveFlag(source,id){
 // not after. Policy: no lead in 90 days = falls off as an active agent. This flags the 60-89
 // day window so there's still real runway to act.
 async function loadDropoffWarning(){
-  const card=document.getElementById("dropoffCard");
-  const listEl=document.getElementById("dropoffList");
+  const card=document.getElementById("dropoffCard"),listEl=document.getElementById("dropoffList");
   if(!card||!listEl)return;
   try{
-    const rows=await sbFetch(RC_TABLE+"?select=agent_name,days_since,grade,status&status=neq.removed&limit=1000").catch(()=>[]);
-    const approaching=(rows||[])
-      .filter(r=>typeof r.days_since==="number"&&r.days_since>=60&&r.days_since<90)
-      .sort((a,b)=>b.days_since-a.days_since); // closest to falling off first
-    if(!approaching.length){card.style.display="none";return;}
+    const[rows,assignments]=await Promise.all([
+      sbFetch(RC_TABLE+"?select=agent_name,days_since,grade,status&status=neq.removed&limit=2000").catch(()=>[]),
+      sbFetch("agent_assignments?select=agent_name,lp,rm&limit=5000").catch(()=>[])
+    ]);
+    const key=n=>(n||"").trim().toLowerCase().replace(/\s+/g," ");
+    const owners={};(assignments||[]).forEach(a=>{if(a&&a.agent_name)owners[key(a.agent_name)]={lp:a.lp&&a.lp!=="__REMOVED__"?a.lp:"Unassigned",rm:a.rm||"Unassigned"};});
+    const valid=(rows||[]).filter(r=>typeof r.days_since==="number"&&r.status!=="removed");
+    const tierRank={Channel:0,A:1,B:2,C:3,U:4};
+    const approaching=valid.filter(r=>r.days_since>=60&&r.days_since<90).sort((a,b)=>(tierRank[a.grade]??5)-(tierRank[b.grade]??5)||(b.days_since-a.days_since));
+    const fallen=valid.filter(r=>r.days_since>=90).sort((a,b)=>(tierRank[a.grade]??5)-(tierRank[b.grade]??5)||(b.days_since-a.days_since));
+    if(!approaching.length&&!fallen.length){card.style.display="none";return;}
     card.style.display="block";
-    const titleEl=card.querySelector(".card-title");
-    if(titleEl)titleEl.textContent="⏳ Approaching 90-Day Drop-Off ("+approaching.length+")";
-    listEl.innerHTML=approaching.map(r=>{
+    function rowHtml(r,mode){
+      const own=owners[key(r.agent_name)]||{lp:"Unassigned",rm:"Unassigned"};
+      const safe=String(r.agent_name||"").replace(/'/g,"\\'");
       const daysLeft=90-r.days_since;
-      const urgColor=daysLeft<=10?"var(--danger)":daysLeft<=20?"var(--warning)":"var(--brand)";
-      const safeAgent=(r.agent_name||"").replace(/'/g,"\\'");
-      return'<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border-light)">'
-        +'<div><span style="font-size:13px;font-weight:600;color:var(--text-1)">'+properCase(r.agent_name)+'</span>'
-        +(r.grade?' <span style="font-size:9px;font-weight:700;padding:1px 6px;border-radius:10px;background:var(--surface-2);color:var(--text-2)">'+r.grade+'</span>':'')
-        +'<div style="font-size:11px;color:'+urgColor+';font-weight:600;margin-top:2px">'+daysLeft+' day'+(daysLeft!==1?"s":"")+' left before drop-off ('+r.days_since+'d since last lead)</div></div>'
-        +'<button onclick="document.getElementById(\'agentInput\').value=\''+safeAgent+'\';switchTab(\'log\')" style="font-size:10px;padding:4px 10px;background:var(--brand);color:#fff;border:none;border-radius:6px;cursor:pointer;font-family:inherit;white-space:nowrap">Log outreach</button>'
+      const label=mode==="approaching"?(daysLeft+"d until active-rotation drop-off"):(r.days_since+"d since last lead · reactivate");
+      const color=mode==="approaching"?(daysLeft<=10?"var(--danger)":"var(--warning)"):"var(--danger)";
+      return'<div style="display:grid;grid-template-columns:minmax(175px,1.4fr) minmax(180px,1fr) auto;gap:10px;align-items:center;padding:8px 0;border-top:1px solid var(--border-light)">'
+        +'<div><div style="font-size:13px;font-weight:700;color:var(--text-1)">'+properCase(r.agent_name)+' '+(r.grade?'<span style="font-size:9.5px;background:var(--surface-2);color:var(--text-2);border-radius:999px;padding:2px 6px">'+r.grade+'</span>':'')+'</div><div style="font-size:10.5px;color:var(--text-3);margin-top:2px">LP: '+escHtml(own.lp)+' · RM: '+escHtml(own.rm)+'</div></div>'
+        +'<div style="font-size:11.5px;font-weight:700;color:'+color+'">'+label+'</div>'
+        +'<button onclick="document.getElementById(\'quickLogAgent\').value=\''+safe+'\';document.getElementById(\'quickLogType\').value=\'Reconnect Outreach\';switchQuickLogTab(\'talkto\');window.scrollTo({top:document.getElementById(\'quickLogCard\').offsetTop-20,behavior:\'smooth\'})" style="font-size:10.5px;padding:5px 9px;background:var(--brand);color:#fff;border:none;border-radius:6px;cursor:pointer;font-family:inherit;white-space:nowrap">Log reconnect</button>'
         +'</div>';
-    }).join("");
+    }
+    let html='';
+    html+='<div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-bottom:10px"><div style="background:#FFF8E8;border:1px solid #E7C66B;border-radius:9px;padding:10px 12px"><div style="font-size:10.5px;font-weight:800;color:#7A4B00;text-transform:uppercase;letter-spacing:.04em">Falling off soon</div><div style="font-size:24px;font-weight:800;color:#7A4B00">'+approaching.length+'</div><div style="font-size:10.5px;color:#6C6252">60–89 days since last lead</div></div><div style="background:#FFF3F2;border:1px solid #E6B9B5;border-radius:9px;padding:10px 12px"><div style="font-size:10.5px;font-weight:800;color:#9A3F37;text-transform:uppercase;letter-spacing:.04em">Already off rotation</div><div style="font-size:24px;font-weight:800;color:#9A3F37">'+fallen.length+'</div><div style="font-size:10.5px;color:#6C6252">90+ days · work to reactivate</div></div></div>';
+    if(approaching.length){html+='<div style="font-size:11px;font-weight:800;color:#7A4B00;text-transform:uppercase;letter-spacing:.04em;margin-top:5px">Prevent the drop-off</div>'+approaching.slice(0,8).map(r=>rowHtml(r,"approaching")).join('');}
+    if(fallen.length){html+='<div style="font-size:11px;font-weight:800;color:#9A3F37;text-transform:uppercase;letter-spacing:.04em;margin-top:13px">Reactivate these relationships</div>'+fallen.slice(0,10).map(r=>rowHtml(r,"fallen")).join('');}
+    if(approaching.length>8||fallen.length>10)html+='<div style="font-size:10.5px;color:var(--text-3);margin-top:9px">Open the full Reconnect list for the complete queue and filters.</div>';
+    listEl.innerHTML=html;
     addScrollHintIfNeeded("dropoffList");
-  }catch(e){console.error("Dropoff warning error:",e);card.style.display="none";}
+  }catch(e){console.error("Dropoff/reactivation error:",e);card.style.display="none";}
 }
 
 // ── Contact info gaps — missing data is a data-quality problem AND a legitimate reason to reach
@@ -4006,20 +4083,53 @@ async function loadZeroProduction(){
   const listEl=document.getElementById("zeroProductionList");
   if(!card||!listEl)return;
   try{
-    const rows=await sbFetch("agent_profiles?select=agent_name,tier,do_not_contact,closes_past_year,total_leads_past_year,latest_lead_date&do_not_contact=neq.true&closes_past_year=eq.0&limit=2000").catch(()=>[]);
+    // This card is an ACTION QUEUE, not just a static portfolio classification.
+    // A zero-close agent remains "never converted" until they close, but once Amanda/Nyny
+    // completes a real relationship check-in, remove them from this work queue for 30 days.
+    const COOLDOWN_DAYS=30;
+    const cutoff=new Date();
+    cutoff.setDate(cutoff.getDate()-COOLDOWN_DAYS);
+    const cutoffStr=[cutoff.getFullYear(),String(cutoff.getMonth()+1).padStart(2,"0"),String(cutoff.getDate()).padStart(2,"0")].join("-");
+    const [rows,recentActivity]=await Promise.all([
+      sbFetch("agent_profiles?select=agent_name,tier,do_not_contact,closes_past_year,total_leads_past_year,latest_lead_date&do_not_contact=neq.true&closes_past_year=eq.0&limit=2000").catch(()=>[]),
+      sbFetch("amanda_activities?select=agent_name,act_type,act_date&act_date=gte."+cutoffStr+"&limit=5000").catch(()=>[])
+    ]);
+
+    const key=n=>(n||"").trim().toLowerCase().replace(/\s+/g," ");
+    // Any genuine relationship touch/check-in counts. Exclude prospecting-only and internal
+    // leadership/system work so an unrelated log never clears this queue by accident.
+    const CHECKIN_TYPES=new Set([
+      "Agent Talk-to","Active Agent Talk-to","Active Agent Check-in","Reconnect Outreach",
+      "CTC Call","Under Contract Call","Birthday Outreach","Holiday Outreach","Agent Appreciation",
+      "Market Update","Market Update Call","Sent Market Report","Sent Referral","Co-Marketing Discussion",
+      "New Agent Follow-up","Closed Deal Thank You","Break Breads","Partner Meeting",
+      "Strategic Partner Meeting","Channel Meeting","Retention Meeting","Realtor Buddy Referral Ask"
+    ]);
+    const lastCheckinByAgent={};
+    (recentActivity||[]).forEach(a=>{
+      if(!a||!a.agent_name||!CHECKIN_TYPES.has(a.act_type))return;
+      const k=key(a.agent_name);
+      if(!lastCheckinByAgent[k]||String(a.act_date)>String(lastCheckinByAgent[k]))lastCheckinByAgent[k]=a.act_date;
+    });
+
     const TIER_RANK={A:0,B:1,C:2};
-    const zero=(rows||[]).sort((a,b)=>{
+    const allZero=(rows||[]).sort((a,b)=>{
       const leadDiff=(b.total_leads_past_year||0)-(a.total_leads_past_year||0);
       if(leadDiff!==0)return leadDiff;
       return(TIER_RANK[a.tier]??3)-(TIER_RANK[b.tier]??3);
     });
+    const zero=allZero.filter(a=>!lastCheckinByAgent[key(a.agent_name)]);
+
     if(!zero.length){card.style.display="none";return;}
     card.style.display="block";
     const titleEl=card.querySelector(".card-title");
+    const descEl=card.querySelector(".card-title")?.nextElementSibling;
     const DAILY_CAP=8;
     const showAll=card.dataset.showAll==="true";
     const visible=showAll?zero:zero.slice(0,DAILY_CAP);
-    if(titleEl)titleEl.textContent="🎯 Never Converted — Zero Closes ("+zero.length+")";
+    if(titleEl)titleEl.textContent="🎯 Never Converted — Zero Closes ("+zero.length+" due)";
+    if(descEl)descEl.textContent="Retained relationships with zero closes in the past year. Once a real check-in is logged, that agent comes off this action list for "+COOLDOWN_DAYS+" days so completed work does not keep showing as due.";
+
     listEl.innerHTML=visible.map(a=>{
       const safeAgent=(a.agent_name||"").replace(/'/g,"\\'");
       const tierBadge=a.tier?'<span style="font-size:9px;font-weight:700;padding:1px 6px;border-radius:10px;background:var(--surface-2);color:var(--text-2);margin-left:5px">'+a.tier+'-tier</span>':"";
@@ -4028,13 +4138,13 @@ async function loadZeroProduction(){
       return'<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border-light);gap:8px">'
         +'<div><span style="font-size:13px;font-weight:600;color:var(--text-1)">'+properCase(a.agent_name)+'</span>'+tierBadge
         +'<div style="margin-top:3px;display:flex;align-items:center;gap:6px">'+leadsInfo+lastLead+'</div></div>'
-        +'<button onclick="document.getElementById(\'agentInput\').value=\''+safeAgent+'\';switchTab(\'log\')" style="font-size:10px;padding:4px 10px;background:var(--danger);color:#fff;border:none;border-radius:6px;cursor:pointer;font-family:inherit;white-space:nowrap;flex-shrink:0">Log check-in</button>'
+        +'<button onclick="prefillActivityLog(\''+safeAgent+'\',\'Agent Talk-to\')" style="font-size:10px;padding:4px 10px;background:var(--danger);color:#fff;border:none;border-radius:6px;cursor:pointer;font-family:inherit;white-space:nowrap;flex-shrink:0">Log check-in</button>'
         +'</div>';
     }).join("");
     if(!showAll&&zero.length>DAILY_CAP){
       listEl.innerHTML+='<div style="text-align:center;padding:10px 0 4px">'
         +'<button onclick="this.closest(\'.card\').dataset.showAll=\'true\';loadZeroProduction()" style="font-size:11px;font-weight:600;padding:6px 14px;background:var(--surface-2);color:var(--text-2);border:1px solid var(--border);border-radius:6px;cursor:pointer;font-family:inherit">Show all '+zero.length+' →</button>'
-        +'<div style="font-size:10px;color:var(--text-4);margin-top:4px">Showing today\'s '+DAILY_CAP+', highest-lead-volume first — not hidden, just not all at once</div>'
+        +'<div style="font-size:10px;color:var(--text-4);margin-top:4px">Showing today\'s '+DAILY_CAP+', highest-lead-volume first. Recently completed check-ins are hidden for '+COOLDOWN_DAYS+' days.</div>'
         +'</div>';
     }else if(showAll&&zero.length>DAILY_CAP){
       listEl.innerHTML+='<div style="text-align:center;padding:10px 0 4px">'
@@ -4299,9 +4409,11 @@ async function loadQuiet(){
 
 function switchTab(name){
   const tabOrder=["week","log","pipeline","reconnect","feed","history","calendar","contacts","growth","daniel"];
+  const target=document.getElementById("view-"+name);
+  if(!target){console.warn("Unknown tracker tab:",name);return;}
   document.querySelectorAll(".tab").forEach((t,i)=>t.classList.toggle("active",tabOrder[i]===name));
   document.querySelectorAll(".view").forEach(v=>v.classList.remove("active"));
-  document.getElementById("view-"+name).classList.add("active");
+  target.classList.add("active");
   if(typeof updatePageGuideVisibility==="function")updatePageGuideVisibility();
   if(name==="week")loadStartHere();
   if(name==="pipeline")loadPipeline();
@@ -4313,6 +4425,20 @@ function switchTab(name){
   if(name==="reconnect")loadReconnect();
   if(name==="feed")loadFeed();
   if(name==="daniel")loadManagement();
+}
+
+// One prefill path for every shortcut button that sends someone to Log Activity.
+// Setting select.value programmatically does NOT fire the change event by itself; without this,
+// note requirements/helper fields could still reflect the previously selected activity type.
+function prefillActivityLog(agentName,activityType){
+  const agent=document.getElementById("agentInput");
+  const type=document.getElementById("activityType");
+  if(agent)agent.value=agentName||"";
+  if(type&&activityType){
+    type.value=activityType;
+    type.dispatchEvent(new Event("change",{bubbles:true}));
+  }
+  switchTab("log");
 }
 
 let periodData={mtd:[],ytd:[]},currentPeriod="mtd";
@@ -4809,79 +4935,66 @@ function renderPeriodScorecard(){
   document.getElementById("periodScorecard").innerHTML=html;
 }
 
-const FT_THRESHOLDS_LOCAL={A:[10,14,21],B:[21,30,45],C:[45,60,90]};
+const FT_THRESHOLDS_LOCAL={Channel:[10,14,21],A:[10,14,21],B:[21,30,45],C:[45,60,90]};
 async function loadBreakBreadDue(){
   const el=document.getElementById("breadDueList");
   const subEl=document.getElementById("breadSub");
   if(!el)return;
   try{
-    // HOTFIX: was select=agent_name,tier,do_not_contact — never selected relationship_status at
-    // all, so a removed/inactive agent (e.g. Kandis Hall) was invisible to the roster-status
-    // check below and kept showing up here as "Never," even though Contacts correctly shows her
-    // as Inactive/removed. Falls back gracefully if relationship_status doesn't exist yet.
-    const[profiles,myBreads,lpBreads]=await Promise.all([
-      sbFetch("agent_profiles?select=agent_name,tier,do_not_contact,relationship_status&limit=500").catch(()=>sbFetch("agent_profiles?select=agent_name,tier,do_not_contact&limit=500").catch(()=>[])),
-      sbFetch("amanda_activities?select=agent_name,act_date&act_type=eq.Break Breads&order=act_date.desc&limit=2000").catch(()=>[]),
-      sbFetch("break_breads?select=agent_name,date,logged_by&order=date.desc&limit=2000").catch(()=>[])
+    // Shared source-of-truth with Core Team Face Time: agent_profiles + agent_assignments,
+    // plus the same two visit sources (RM Break Breads + LP/manual break_breads).
+    const[profiles,myBreads,lpBreads,assignments]=await Promise.all([
+      sbFetch("agent_profiles?select=agent_name,tier,retained,do_not_contact,relationship_status&limit=5000").catch(()=>sbFetch("agent_profiles?select=agent_name,tier,do_not_contact,relationship_status&limit=5000").catch(()=>[])),
+      sbFetch("amanda_activities?select=agent_name,act_date,notes&act_type=eq.Break Breads&order=act_date.desc&limit=4000").catch(()=>[]),
+      sbFetch("break_breads?select=agent_name,date,logged_by,notes&order=date.desc&limit=4000").catch(()=>[]),
+      sbFetch("agent_assignments?select=agent_name,lp,rm&limit=5000").catch(()=>[])
     ]);
     const normalize=s=>(s||"").trim().toUpperCase();
+    const owners={};
+    (assignments||[]).forEach(a=>{const k=normalize(a.agent_name);if(k)owners[k]={lp:a.lp&&a.lp!=="__REMOVED__"?a.lp:"",rm:a.rm||"",removed:a.lp==="__REMOVED__"};});
     const lastTouch={};
-    myBreads.forEach(a=>{
+    (myBreads||[]).forEach(a=>{
       const n=normalize(a.agent_name);if(!n)return;
-      if(!lastTouch[n]||a.act_date>lastTouch[n].date)lastTouch[n]={date:a.act_date,by:"You"};
+      const who=getActivityOwner(a)||"Amanda";
+      if(!lastTouch[n]||a.act_date>lastTouch[n].date)lastTouch[n]={date:a.act_date,by:who};
     });
-    lpBreads.forEach(b=>{
+    (lpBreads||[]).forEach(b=>{
       const n=normalize(b.agent_name);if(!n)return;
       if(!lastTouch[n]||b.date>lastTouch[n].date)lastTouch[n]={date:b.date,by:b.logged_by||"LP"};
     });
     const today0=new Date();today0.setHours(0,0,0,0);
-    // Source population = current active managed partners only. Break Bread is a relationship-
-    // management workflow, not a Power BI presence check — an inactive/removed agent is
-    // excluded here even if their DNC flag was never touched (roster status and DNC are
-    // separate, deliberately, per how removal actually works in this app).
-    const rows=profiles.filter(p=>!p.do_not_contact&&(p.relationship_status||"active")!=="inactive").map(p=>{
-      const n=normalize(p.agent_name);
-      const tier=p.tier||"C";
-      const touch=lastTouch[n];
+    const rows=(profiles||[]).filter(p=>{
+      const k=normalize(p.agent_name),own=owners[k]||{};
+      return !!k && !p.do_not_contact && (p.relationship_status||"active")!=="inactive" && p.retained!==false && !own.removed;
+    }).map(p=>{
+      const n=normalize(p.agent_name),tier=p.tier||"C",touch=lastTouch[n],own=owners[n]||{};
       const days=touch?Math.floor((today0-new Date(touch.date+"T12:00:00"))/86400000):null;
       const th=FT_THRESHOLDS_LOCAL[tier]||FT_THRESHOLDS_LOCAL.C;
-      let status;
-      if(days===null)status="critical";
-      else if(days>=th[2])status="critical";
+      let status="ok";
+      if(days===null||days>=th[2])status="critical";
       else if(days>=th[1])status="red";
       else if(days>=th[0])status="warn";
-      else status="ok";
-      return{name:p.agent_name,tier,days,status,by:touch?touch.by:null};
+      return{name:p.agent_name,tier,days,status,by:touch?touch.by:null,lastDate:touch?touch.date:null,lp:own.lp||"Unassigned",rm:own.rm||"Unassigned",target:th[1]};
     }).filter(r=>r.status!=="ok");
-    const order={critical:0,red:1,warn:2};
-    const tierOrder={A:0,B:1,C:2};
+    const order={critical:0,red:1,warn:2},tierOrder={Channel:0,A:1,B:2,C:3};
     rows.sort((a,b)=>{
-      const td=(tierOrder[a.tier]??3)-(tierOrder[b.tier]??3);
-      if(td!==0)return td;
-      const sd=order[a.status]-order[b.status];
-      if(sd!==0)return sd;
-      return(b.days||9999)-(a.days||9999);
+      const td=(tierOrder[a.tier]??4)-(tierOrder[b.tier]??4);if(td!==0)return td;
+      const sd=(order[a.status]??9)-(order[b.status]??9);if(sd!==0)return sd;
+      return (b.days===null?9999:b.days)-(a.days===null?9999:a.days);
     });
-    subEl.textContent=rows.length+" due or overdue";
-    if(!rows.length){
-      el.innerHTML='<div class="no-data">Everyone\'s current. Nice work.</div>';
-    }else{
-      const shown=rows.slice(0,12);
-      const colors={critical:"var(--danger)",red:"var(--danger)",warn:"var(--warning)"};
-      el.innerHTML=shown.map(r=>{
-        const safeName=r.name.replace(/'/g,"\\'");
-        return'<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid var(--border-light);font-size:12.5px;gap:8px">'
-        +'<span style="flex:1;min-width:0"><strong style="color:var(--text-1)">'+properCase(r.name)+'</strong> <span style="color:var(--text-3);font-size:11px">(Tier '+r.tier+')</span></span>'
-        +'<span style="color:'+colors[r.status]+';font-weight:600;white-space:nowrap">'+(r.days===null?"Never":r.days+"d ago")+(r.by?' · logged by '+r.by:'')+'</span>'
-        +'<button onclick="document.getElementById(\'agentInput\').value=\''+safeName+'\';document.getElementById(\'activityType\').value=\'Break Breads\';switchTab(\'log\')" style="padding:4px 10px;background:var(--brand);color:#fff;border:none;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap;flex-shrink:0">Log</button>'
+    if(subEl)subEl.textContent=rows.length+" due or overdue · shared with LP Face Time";
+    if(!rows.length){el.innerHTML='<div class="no-data">Everyone\'s current. Nice work.</div>';return;}
+    const shown=rows.slice(0,18),colors={critical:"var(--danger)",red:"var(--danger)",warn:"var(--warning)"};
+    el.innerHTML=shown.map(r=>{
+      const safeName=String(r.name||"").replace(/'/g,"\\'");
+      const statusText=r.days===null?"No visit recorded":r.days+"d since visit";
+      return'<div style="display:grid;grid-template-columns:minmax(170px,1.3fr) minmax(150px,1fr) auto;gap:10px;align-items:center;padding:8px 0;border-bottom:1px solid var(--border-light);font-size:12.5px">'
+        +'<div><strong style="color:var(--text-1)">'+properCase(r.name)+'</strong> <span style="color:var(--text-3);font-size:10.5px">'+r.tier+'</span><div style="font-size:10.5px;color:var(--text-3);margin-top:2px">LP: '+escHtml(r.lp)+' · RM: '+escHtml(r.rm)+'</div></div>'
+        +'<div><div style="color:'+colors[r.status]+';font-weight:700">'+statusText+'</div>'+(r.by?'<div style="font-size:10.5px;color:var(--text-3);margin-top:2px">Last logged by '+escHtml(r.by)+'</div>':'')+'</div>'
+        +'<button onclick="prefillActivityLog(\''+safeName+'\',\'Break Breads\')" style="padding:5px 10px;background:var(--brand);color:#fff;border:none;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap">Log visit</button>'
         +'</div>';
-      }).join("")
-        +(rows.length>shown.length?'<div style="font-size:11px;color:var(--text-4);margin-top:8px">+'+(rows.length-shown.length)+' more</div>':"");
-    }
-  }catch(e){
-    console.error("Break bread due error:",e);
-    el.innerHTML='<div class="no-data">Unable to load.</div>';
-  }
+    }).join("")+(rows.length>shown.length?'<div style="font-size:11px;color:var(--text-4);margin-top:8px">+'+(rows.length-shown.length)+' more in the same shared Face Time queue</div>':"");
+  }catch(e){console.error("Break bread due error:",e);el.innerHTML='<div class="no-data">Unable to load.</div>';}
 }
 
 async function loadOnboarding(){
@@ -4972,7 +5085,7 @@ async function loadOnboarding(){
           :' — <span style="color:var(--danger)">no note on this entry</span>')+'</div>':"")
         +'</div><div style="text-align:right;flex-shrink:0">'
         +'<div style="font-size:11px;font-weight:600;color:'+dueColor+';margin-bottom:6px">'+dueLabel+'</div>'
-        +(!isDone?'<button onclick="document.getElementById(\'agentInput\').value=\''+safeAgent+'\';document.getElementById(\'activityType\').value=\'Agent Talk-to\';switchTab(\'log\')" style="padding:5px 12px;background:var(--brand);color:#fff;border:none;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit">Log check-in</button>'
+        +(!isDone?'<button onclick="prefillActivityLog(\''+safeAgent+'\',\'Agent Talk-to\')" style="padding:5px 12px;background:var(--brand);color:#fff;border:none;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit">Log check-in</button>'
         :'<button data-agent="'+properCase(name).replace(/"/g,"&quot;")+'" onclick="var n=this.getAttribute(\'data-agent\');switchTab(\'history\');document.getElementById(\'historySearch\').value=n;setTimeout(()=>doSearchHistory(n),150)" style="padding:5px 12px;background:var(--surface-2);color:var(--brand);border:1px solid var(--brand);border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit">View history</button>')
         +'</div></div>';
     });
@@ -5156,18 +5269,23 @@ async function loadWeek(){
   loadRmTeamScorecard();
   const wl2=document.getElementById("snapshotWeekLabel");
   if(wl2)wl2.textContent=week.label;
+  // Keep week activity available to the later Buddy Intro progress block too.
+  // Previously this was block-scoped inside the first try{}, so that section always threw
+  // ReferenceError: weekActs is not defined and quietly failed.
+  let weekActs=[];
   try{
     const now=new Date();
     const monthStart=now.getFullYear()+"-"+String(now.getMonth()+1).padStart(2,"0")+"-01";
     const yearStart=now.getFullYear()+"-04-01";// April — role start date
     const todayStr=today();
-    const[weekActs,mtdActs,ytdActs,dailyActs,everMeetings]=await Promise.all([
+    const[weekActsLoaded,mtdActs,ytdActs,dailyActs,everMeetings]=await Promise.all([
       sbFetch("amanda_activities?select=act_type,outcome,agent_name,notes&act_date=gte."+week.start+"&act_date=lte."+week.end),
       sbFetch("amanda_activities?select=act_type,outcome,agent_name,notes&act_date=gte."+monthStart),
       sbFetch("amanda_activities?select=act_type,outcome,agent_name,notes&act_date=gte."+yearStart),
       sbFetch("amanda_activities?select=act_type,outcome,agent_name,notes&act_date=eq."+todayStr),
       sbFetch("amanda_activities?select=agent_name&act_type=eq.New Realtor Meeting&limit=2000").catch(()=>[])
     ]);
+    weekActs=weekActsLoaded||[];
     const amandaOnly=arr=>(arr||[]).filter(a=>getActivityOwner(a)==="Amanda");
     periodData={daily:amandaOnly(dailyActs),wtd:amandaOnly(weekActs),mtd:amandaOnly(mtdActs),ytd:amandaOnly(ytdActs)};
     renderSnapshotStats(amandaOnly(dailyActs),"daily");
@@ -5309,7 +5427,7 @@ async function loadWeek(){
       if(needsCtc.length){
         ctcEl.innerHTML='<div style="background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:10px 12px">'
           +'<div class="card-title" style="margin-bottom:10px">CTC Calls Needed ('+needsCtc.length+') <span class="card-sub">closed in last 14d, not yet thanked</span></div>'+
-          needsCtc.map(c=>'<div class="fu-item"><div class="fu-dot" style="background:#9585C0"></div><div class="fu-body"><div class="fu-name">'+properCase(c.agent_name)+'</div><div class="fu-meta" style="color:#9585C0">Closed '+fmtDate(c.call_date)+'</div></div><button class="btn-sm" style="background:#9585C0;color:#fff;border:none;border-radius:6px;padding:4px 10px;font-size:11px;cursor:pointer;font-family:inherit" onclick="document.getElementById(\'agentInput\').value=\''+c.agent_name.replace(/'/g,"\\'")+'\';document.getElementById(\'activityType\').value=\'CTC Call\';switchTab(\'log\')">Log CTC</button></div>').join("")
+          needsCtc.map(c=>'<div class="fu-item"><div class="fu-dot" style="background:#9585C0"></div><div class="fu-body"><div class="fu-name">'+properCase(c.agent_name)+'</div><div class="fu-meta" style="color:#9585C0">Closed '+fmtDate(c.call_date)+'</div></div><button class="btn-sm" style="background:#9585C0;color:#fff;border:none;border-radius:6px;padding:4px 10px;font-size:11px;cursor:pointer;font-family:inherit" onclick="prefillActivityLog(\''+c.agent_name.replace(/'/g,"\\'")+'\',\'CTC Call\')">Log CTC</button></div>').join("")
           +'</div>';
         ctcEl.style.display="block";
         addScrollHintIfNeeded("weekCtcTrigger");
@@ -8258,7 +8376,169 @@ async function loadGoalPace(){
   }
 }
 
+
+let rmFlagHistoryRows=[];
+
+function renderRmFlagResponseHistory(){
+  const host=document.getElementById("rmFlagHistoryList");
+  const summary=document.getElementById("rmFlagHistorySummary");
+  if(!host)return;
+  const lp=(document.getElementById("rmFlagHistoryLp")?.value||"").trim();
+  const status=(document.getElementById("rmFlagHistoryStatus")?.value||"").trim();
+  const q=(document.getElementById("rmFlagHistorySearch")?.value||"").trim().toLowerCase();
+  const all=Array.isArray(rmFlagHistoryRows)?rmFlagHistoryRows:[];
+  const rows=all.filter(r=>{
+    if(lp&&String(r.lp||"")!==lp)return false;
+    if(status==="open"&&r.handled)return false;
+    if(status==="handled"&&!r.handled)return false;
+    if(status==="replied"&&!String(r.rm_note||"").trim())return false;
+    if(status==="no-response"&&!(r.handled&&!String(r.rm_note||"").trim()))return false;
+    if(q){
+      const hay=[r.agent_name,r.lp,r.flag_note,r.rm_note,r.rm_note_by,r.outcome].map(v=>String(v||"").toLowerCase()).join(" ");
+      if(!hay.includes(q))return false;
+    }
+    return true;
+  });
+  const open=all.filter(r=>!r.handled).length;
+  const handled=all.filter(r=>r.handled).length;
+  const replied=all.filter(r=>String(r.rm_note||"").trim()).length;
+  const missing=all.filter(r=>r.handled&&!String(r.rm_note||"").trim()).length;
+  if(summary){
+    summary.innerHTML='<div style="display:flex;gap:7px;flex-wrap:wrap">'
+      +'<span style="font-size:11px;font-weight:700;color:#8A5A00;background:#FFF5D8;border:1px solid #E9D090;border-radius:999px;padding:4px 8px">'+open+' open</span>'
+      +'<span style="font-size:11px;font-weight:700;color:#17663A;background:#ECF8F0;border:1px solid #C8E4D1;border-radius:999px;padding:4px 8px">'+handled+' handled</span>'
+      +'<span style="font-size:11px;font-weight:700;color:#4E3D8A;background:#F1EEFA;border:1px solid #D6D0E9;border-radius:999px;padding:4px 8px">'+replied+' with RM reply</span>'
+      +(missing?'<span style="font-size:11px;font-weight:700;color:#6B5E3E;background:#F8F3E7;border:1px solid #E7DCC3;border-radius:999px;padding:4px 8px">'+missing+' handled · no reply saved</span>':'')
+      +'</div>';
+  }
+  if(!rows.length){
+    host.innerHTML='<div class="no-data">No flags match these filters.</div>';
+    return;
+  }
+  const shown=rows.slice(0,60);
+  host.innerHTML='<div style="max-height:520px;overflow-y:auto;padding-right:3px">'+shown.map((r,i)=>{
+    const agent=r.agent_name?properCase(r.agent_name):"General flag";
+    const flag=String(r.flag_note||"").trim();
+    const response=String(r.rm_note||"").trim();
+    const missingResponse=r.handled&&!response;
+    const statusText=missingResponse?"Handled · no reply saved":(r.handled?"Handled":"Open");
+    const statusColor=missingResponse?"#6B5E3E":(r.handled?"#17663A":"#8A5A00");
+    const statusBg=missingResponse?"#F8F3E7":(r.handled?"#ECF8F0":"#FFF5D8");
+    const eventAt=r.rm_note_at||r.handled_at||r.created_at||"";
+    const when=eventAt?fmtDateTime(eventAt):"";
+    const by=String(r.rm_note_by||"").trim();
+    return '<div style="padding:11px 0;'+(i?'border-top:1px solid var(--border-light);':'')+'">'
+      +'<div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start;flex-wrap:wrap">'
+        +'<div><span style="font-size:13px;font-weight:750;color:var(--text-1)">'+escHtml(agent)+'</span>'
+          +(r.lp?' <span style="font-size:10.5px;font-weight:700;color:var(--brand-dark);background:var(--brand-light);border-radius:999px;padding:2px 7px;margin-left:5px">LP · '+escHtml(r.lp)+'</span>':'')
+        +'</div>'
+        +'<span style="font-size:10.5px;font-weight:800;color:'+statusColor+';background:'+statusBg+';border-radius:999px;padding:3px 8px">'+statusText+'</span>'
+      +'</div>'
+      +(flag?'<div style="font-size:12px;color:var(--text-2);margin-top:6px;line-height:1.5"><strong>LP flag:</strong> '+escHtml(flag)+'</div>':'')
+      +(response?'<div style="margin-top:7px;background:#F3F8F3;border:1px solid #CFE5D2;border-radius:8px;padding:8px 10px">'
+          +'<div style="font-size:10.5px;font-weight:800;color:var(--brand-dark);margin-bottom:3px">RM response'+(by?' · '+escHtml(by):'')+(when?' · '+escHtml(when):'')+'</div>'
+          +'<div style="font-size:12.5px;color:#243124;line-height:1.5">'+escHtml(response)+'</div>'
+        +'</div>'
+        :(missingResponse?'<div style="margin-top:7px;background:#FAF7EF;border:1px solid #E7DCC3;border-radius:8px;padding:8px 10px;font-size:12px;color:#5F5874;line-height:1.5">No RM response was recorded before this flag was handled. Older tracker versions could clear a flag before the note successfully saved.'+(when?' <span style="font-size:10.5px;color:var(--text-3)">Handled '+escHtml(when)+'</span>':'')+'</div>':''))
+      +(!response&&!r.handled?'<div style="font-size:11px;color:#8A5A00;margin-top:6px">Awaiting RM response / resolution.</div>':'')
+    +'</div>';
+  }).join("")+'</div>'
+    +(rows.length>60?'<div style="font-size:10.5px;color:var(--text-3);margin-top:8px">Showing the 60 most recent matches. Narrow the filters to see older items.</div>':'');
+}
+
+async function loadRmFlagResponseHistory(){
+  const host=document.getElementById("rmFlagHistoryList");
+  if(!host)return;
+  host.innerHTML='<div class="no-data">Loading flag history...</div>';
+  try{
+    const results=await Promise.all([
+      sbFetch("lp_flags?select=id,agent_name,lp,note,rm_note,rm_note_at,rm_note_by,resolved,resolved_at,created_at,assigned_to&order=created_at.desc&limit=500").catch(()=>[]),
+      sbFetch("call_logs?flag_rm=eq.true&select=id,agent_name,lp,note,rm_note,rm_note_at,flag_rm,call_date,outcome&order=call_date.desc&limit=200").catch(()=>[]),
+      sbFetch("call_logs?rm_note=not.is.null&select=id,agent_name,lp,note,rm_note,rm_note_at,flag_rm,call_date,outcome&order=rm_note_at.desc&limit=300").catch(()=>[])
+    ]);
+    const rows=[];
+    (Array.isArray(results[0])?results[0]:[]).forEach(r=>{
+      rows.push({source:"lpflag",id:r.id,agent_name:r.agent_name||"",lp:r.lp||"",flag_note:r.note||"",rm_note:r.rm_note||"",rm_note_at:r.rm_note_at||"",rm_note_by:r.rm_note_by||r.assigned_to||"",handled:r.resolved===true,handled_at:r.resolved_at||"",created_at:r.created_at||"",outcome:""});
+    });
+    const legacyMap={};
+    function addLegacy(r){
+      if(!r||r.id===undefined||r.id===null)return;
+      const key=String(r.id);
+      const ex=legacyMap[key]||{};
+      legacyMap[key]={source:"call",id:r.id,agent_name:r.agent_name||ex.agent_name||"",lp:r.lp||ex.lp||"",flag_note:r.note||ex.flag_note||"",rm_note:r.rm_note||ex.rm_note||"",rm_note_at:r.rm_note_at||ex.rm_note_at||"",rm_note_by:ex.rm_note_by||"RM",handled:r.flag_rm!==true,handled_at:"",created_at:r.call_date||ex.created_at||"",outcome:r.outcome||ex.outcome||""};
+    }
+    (Array.isArray(results[1])?results[1]:[]).forEach(addLegacy);
+    (Array.isArray(results[2])?results[2]:[]).forEach(addLegacy);
+    Object.keys(legacyMap).forEach(k=>rows.push(legacyMap[k]));
+    rows.sort((a,b)=>String(b.rm_note_at||b.handled_at||b.created_at||"").localeCompare(String(a.rm_note_at||a.handled_at||a.created_at||"")));
+    rmFlagHistoryRows=rows;
+    renderRmFlagResponseHistory();
+  }catch(e){
+    console.error("RM flag history failed",e);
+    host.innerHTML='<div class="no-data" style="color:var(--danger)">Could not load RM flag history. Refresh and try again.</div>';
+  }
+}
+
+
+// ── RM → LP two-way handoff ───────────────────────────────────────────────
+function closeRmToLpFlag(){const m=document.getElementById("rmToLpFlagModal");if(m)m.classList.remove("open");}
+function rmToLpPrefillAgent(createdBy){
+  if(createdBy==="Nyny")return (document.getElementById("nynyQuickAgent")?.value||"").trim();
+  return (document.getElementById("quickLogAgent")?.value||"").trim();
+}
+function openRmToLpFlag(createdBy){
+  const m=document.getElementById("rmToLpFlagModal");if(!m)return;
+  const by=createdBy||"Amanda";document.getElementById("rmToLpCreatedBy").value=by;
+  const agentEl=document.getElementById("rmToLpAgent"),list=document.getElementById("rmToLpAgentList"),note=document.getElementById("rmToLpNote"),msg=document.getElementById("rmToLpMsg");
+  const names=(allContacts||[]).filter(c=>c&&c.agent_name).map(c=>c.agent_name).sort((a,b)=>a.localeCompare(b));
+  if(list)list.innerHTML=names.slice(0,3000).map(n=>'<option value="'+escHtml(n)+'"></option>').join("");
+  if(agentEl)agentEl.value=rmToLpPrefillAgent(by);
+  if(note)note.value="";if(msg){msg.style.display="none";msg.textContent="";}
+  const owner=document.getElementById("rmToLpOwner");if(owner)owner.value="";
+  m.classList.add("open");rmToLpResolveOwner();
+}
+async function rmToLpResolveOwner(){
+  const agent=(document.getElementById("rmToLpAgent")?.value||"").trim(),owner=document.getElementById("rmToLpOwner"),hint=document.getElementById("rmToLpOwnerHint");
+  if(!agent){if(hint)hint.textContent="Start with the agent name and the assigned LP will fill automatically.";return;}
+  let o=getAgentOwnership(agent);
+  if(o&&o.lp&&o.lp!=="Unassigned"){if(owner)owner.value=o.lp;if(hint)hint.textContent="Assigned LP pulled from the shared partner ownership record.";return;}
+  try{
+    const rows=await sbFetch("agent_assignments?agent_name=ilike."+encodeURIComponent(agent)+"&select=agent_name,lp,rm&limit=5").catch(()=>[]);
+    const exact=(rows||[]).find(r=>ownerKey(r.agent_name)===ownerKey(agent))||(rows||[])[0];
+    if(exact&&exact.lp&&exact.lp!=="__REMOVED__"){if(owner)owner.value=exact.lp;if(hint)hint.textContent="Assigned LP: "+exact.lp;}
+    else if(hint)hint.textContent="No LP owner found — choose the correct LP manually.";
+  }catch(e){if(hint)hint.textContent="Could not look up ownership — choose the LP manually.";}
+}
+async function sendRmToLpFlag(){
+  const agent=(document.getElementById("rmToLpAgent")?.value||"").trim(),lp=document.getElementById("rmToLpOwner")?.value||"",note=(document.getElementById("rmToLpNote")?.value||"").trim(),by=document.getElementById("rmToLpCreatedBy")?.value||"Amanda",btn=document.getElementById("rmToLpSendBtn"),msg=document.getElementById("rmToLpMsg");
+  if(!agent){toast("Add the agent name.","error");return;}if(!lp){toast("Choose the LP.","error");return;}if(countWords(note)<3){toast("Add a quick note so the LP knows what needs attention.","error");return;}
+  if(btn){btn.disabled=true;btn.textContent="Sending...";}
+  try{
+    await sbFetch("rm_lp_flags",{method:"POST",prefer:"return=minimal",body:JSON.stringify({agent_name:agent,lp,note,created_by:by,resolved:false})});
+    if(msg){msg.style.display="block";msg.textContent="Sent to "+lp+" ✓";}toast("Flag sent to "+lp+" ✓","success");
+    setTimeout(()=>closeRmToLpFlag(),900);loadRmToLpHistory();
+  }catch(e){toast("Could not send LP flag. Run the RM↔LP handoff SQL setup, then try again.","error",6000);console.error("RM→LP flag failed",e);}
+  finally{if(btn){btn.disabled=false;btn.textContent="Send to LP";}}
+}
+let rmToLpHistoryCache=[];
+async function loadRmToLpHistory(){
+  const host=document.getElementById("rmToLpHistoryList");if(!host)return;
+  host.innerHTML='<div class="no-data">Loading RM → LP handoffs...</div>';
+  try{
+    rmToLpHistoryCache=await sbFetch("rm_lp_flags?select=*&order=created_at.desc&limit=200").catch(()=>[]);
+    const rows=Array.isArray(rmToLpHistoryCache)?rmToLpHistoryCache:[];
+    if(!rows.length){host.innerHTML='<div class="no-data">No RM → LP flags yet.</div>';return;}
+    host.innerHTML='<div style="max-height:360px;overflow-y:auto">'+rows.slice(0,60).map(r=>{
+      const handled=r.resolved===true,status=handled?"Handled":"Open",statusColor=handled?"var(--success)":"var(--warning)";
+      const dt=String(r.created_at||"").slice(0,10),reply=String(r.lp_note||"").trim();
+      return'<div style="padding:9px 0;border-bottom:1px solid var(--border-light)"><div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start"><div><strong>'+properCase(r.agent_name||"General")+'</strong> <span style="font-size:10.5px;color:var(--text-3)">→ '+escHtml(r.lp||"LP")+' · '+escHtml(r.created_by||"RM")+(dt?' · '+fmtDate(dt):'')+'</span></div><span style="font-size:10px;font-weight:800;color:'+statusColor+'">'+status+'</span></div><div style="font-size:12px;color:var(--text-2);margin-top:4px"><strong>RM flag:</strong> '+escHtml(r.note||"")+'</div>'+(reply?'<div style="font-size:12px;color:#315B40;background:#F2F8F3;border:1px solid #D2E5D5;border-radius:7px;padding:7px 9px;margin-top:5px"><strong>LP reply'+(r.lp_note_by?' · '+escHtml(r.lp_note_by):'')+':</strong> '+escHtml(reply)+'</div>':'')+'</div>';
+    }).join("")+'</div>';
+  }catch(e){host.innerHTML='<div class="no-data" style="color:var(--danger)">Could not load RM → LP handoffs.</div>';}
+}
+
 async function loadManagement(){
+  loadRmFlagResponseHistory();
+  loadRmToLpHistory();
   loadAmandaCoachingQueue();
   loadNynyDirectorManagement();
   loadMgmtAccountability();
@@ -8983,6 +9263,7 @@ function openPortfolioList(key){
   const title=document.getElementById("portfolioListModalTitle");
   const sub=document.getElementById("portfolioListModalSub");
   const listEl=document.getElementById("portfolioListModalBody");
+  if(!modal||!title||!sub||!listEl){console.warn("Portfolio drill-down markup is not mounted in this build.");return;}
   let items=[];
   if(key==="escalation"){
     title.textContent="Missing Growth Opportunity — Channel/A";
@@ -9036,7 +9317,7 @@ function openPortfolioList(key){
   listEl.innerHTML=items.length?items.map(i=>{const safeName=String(i.name||"").replace(/"/g,"&quot;");return '<div style="padding:8px 0;border-bottom:1px solid var(--border-light);display:flex;align-items:center;gap:10px"><span style="font-weight:600;font-size:13px;flex:1">'+escHtml(properCase(i.name))+'</span><span style="font-size:11.5px;color:var(--text-3)">'+escHtml(i.detail)+'</span><button class="btn-sm" data-name="'+safeName+'" onclick="closePortfolioListModal();openPortfolioNotes(this)" title="Add or update Portfolio / Partner Health notes">Notes</button></div>'}).join(""):'<div class="no-data">Nothing here.</div>';
   modal.classList.add("open");
 }
-function closePortfolioListModal(){document.getElementById("portfolioListModal").classList.remove("open");}
+function closePortfolioListModal(){const el=document.getElementById("portfolioListModal");if(el)el.classList.remove("open");}
 
 function showMgmtPeriod(p){
   currentMgmtPeriod=p;
@@ -9462,7 +9743,7 @@ async function saveNewAgent(){
       // Re-adding an existing profile also reactivates it — deliberately, since this is the
       // documented "re-add them manually if needed" path after removal. DNC and retained/Active
       // Partner are left untouched; only roster status changes.
-      await sbFetch("agent_profiles?agent_name=eq."+encodeURIComponent(exact.agent_name),{method:"PATCH",prefer:"return=minimal",body:JSON.stringify(Object.assign({relationship_status:"active"},payload))});
+      await sbFetch("agent_profiles?agent_name=eq."+encodeURIComponent(exact.agent_name),{method:"PATCH",prefer:"return=minimal",body:JSON.stringify(Object.assign({relationship_status:"active"},exact.display_name===HIDDEN_PROFILE_MARKER?{display_name:null}:{},payload))});
       toast(name+" already existed — updated and reactivated instead of duplicated ✓","success");
     }else{
       payload.agent_name=name;
@@ -9484,7 +9765,7 @@ async function deleteAgent(){
   const name=editingContactOriginalName||editingContactName;
   const displayLabel=document.getElementById("contactModalName").textContent||name;
   if(!name)return;
-  if(!confirm("Remove "+displayLabel+" from contacts? They won't come back on the next import. You can re-add them manually if needed."))return;
+  if(!confirm("Remove "+displayLabel+" from the active roster? Their history will be preserved and they will remain available under Inactive / removed."))return;
   const btn=document.getElementById("deleteAgentBtn");
   if(btn){if(btn.disabled)return;btn.disabled=true;btn.textContent="Removing...";}
   try{
@@ -9506,12 +9787,42 @@ async function deleteAgent(){
       // relationship_status changes — DNC and retained are left exactly as they were.
       await sbFetch("agent_profiles?agent_name=eq."+encodeURIComponent(exact.agent_name),{method:"PATCH",prefer:"return=minimal",body:JSON.stringify({relationship_status:"inactive"})});
     }
-    toast(displayLabel+" removed from contacts","success");
+    toast(displayLabel+" removed from the active roster","success");
     closeContactModal();
     loadContacts();
     initAutocomplete();
   }catch(e){toast("Remove failed: "+e.message,"error");}
-  finally{if(btn){btn.disabled=false;btn.textContent="Delete agent";}}
+  finally{if(btn){btn.disabled=false;btn.textContent="Remove from active";}}
+}
+
+async function permanentlyHideAgent(){
+  const name=editingContactOriginalName||editingContactName;
+  const displayLabel=document.getElementById("contactModalName").textContent||name;
+  if(!name)return;
+  if(!confirm("Permanently hide "+displayLabel+" from the tracker? Use this only for a misspelling or duplicate profile. The row is preserved behind the scenes so future imports cannot recreate the bad record."))return;
+  const btn=document.getElementById("permanentHideAgentBtn");
+  if(btn){if(btn.disabled)return;btn.disabled=true;btn.textContent="Deleting...";}
+  try{
+    const{matches,exact,ambiguous}=await findAgentProfileByName(name);
+    if(ambiguous){
+      toast(matches.length+" contacts match this name — not deleted. Open the exact profile you want to remove first.","error",6000);
+      return;
+    }
+    if(!exact){
+      await sbFetch("agent_profiles",{method:"POST",prefer:"return=minimal",body:JSON.stringify({agent_name:name,relationship_status:"inactive",display_name:HIDDEN_PROFILE_MARKER})});
+    }else{
+      await sbFetch("agent_profiles?agent_name=eq."+encodeURIComponent(exact.agent_name),{method:"PATCH",prefer:"return=minimal",body:JSON.stringify({relationship_status:"inactive",display_name:HIDDEN_PROFILE_MARKER})});
+    }
+    // Ownership can safely remain in the shared assignment table; the hidden profile no longer
+    // appears in active/inactive contact lists or name-cleanup, and keeping the row is what
+    // prevents a future import from resurrecting the bad spelling.
+    toast(displayLabel+" permanently hidden from the tracker ✓","success");
+    closeContactModal();
+    await loadSharedDisplayNames();
+    loadContacts();
+    initAutocomplete();
+  }catch(e){toast("Delete failed: "+e.message,"error");}
+  finally{if(btn){btn.disabled=false;btn.textContent="Delete bad/duplicate";}}
 }
 
 async function openContactModal(name,phone,email,brokerage,birthday){
@@ -9939,8 +10250,8 @@ async function loadContacts(){
       sbFetch("agent_assignments?select=*&limit=5000").catch(()=>[])
     ]);
     agentOwnershipByKey={};(ownershipRows||[]).forEach(cacheOwnershipRow);
-    allContacts=profiles||[];
-    allAgentNames=(agentList||[]).map(a=>a.agent_name);
+    allContacts=(profiles||[]).filter(p=>p.display_name!==HIDDEN_PROFILE_MARKER);
+    allAgentNames=(allContacts||[]).map(a=>a.agent_name);
     renderContactsDupeBanner(allContacts);
     filterContacts();
   }catch(e){el.innerHTML='<div class="no-data">Unable to load contacts.</div>';}
@@ -9958,7 +10269,7 @@ function nameEditDistance(a,b){
   return prev[n];
 }
 function possibleSpellingPairs(contacts){
-  const rows=(contacts||[]).filter(c=>c.agent_name).slice(0,700),pairs=[],seen=new Set();
+  const rows=(contacts||[]).filter(c=>c.agent_name&&c.display_name!==HIDDEN_PROFILE_MARKER).slice(0,700),pairs=[],seen=new Set();
   for(let i=0;i<rows.length;i++)for(let j=i+1;j<rows.length;j++){
     const a=normalizeAgentName(rows[i].agent_name),b=normalizeAgentName(rows[j].agent_name);
     const ka=agentMatchKey(a),kb=agentMatchKey(b);if(!ka||!kb||ka===kb)continue;
@@ -9977,7 +10288,7 @@ function renderContactsDupeBanner(contacts){
   const el=document.getElementById("contactsDupeBanner");
   if(!el)return;
   const byName={};
-  (contacts||[]).forEach(c=>{
+  (contacts||[]).filter(c=>c.display_name!==HIDDEN_PROFILE_MARKER).forEach(c=>{
     const raw=(c.agent_name||"").trim();
     const n=agentMatchKey(raw);
     if(!n)return;
@@ -10009,7 +10320,7 @@ function closeDupeCleanupModal(){document.getElementById("dupeCleanupModal").cla
 
 function computeDupeGroups(){
   const byName={};
-  (allContacts||[]).forEach(c=>{
+  (allContacts||[]).filter(c=>c.display_name!==HIDDEN_PROFILE_MARKER).forEach(c=>{
     const n=agentMatchKey(c.agent_name);
     if(!n)return;
     if(!byName[n])byName[n]=[];
@@ -10057,10 +10368,10 @@ async function deleteDuplicateProfile(name,btnEl){toast("Duplicate cleanup is re
 function filterContacts(){
   const q=(document.getElementById("contactsSearch")?.value||"").toLowerCase();
   const f=document.getElementById("contactsFilter")?.value||"all";
-  // Contacts defaults to the CURRENT relationship roster. "Delete agent" is intentionally
-  // non-destructive: it sets relationship_status=inactive so history/production remain intact.
-  // Inactive records stay available through the dedicated filter instead of continuing to
-  // appear in the everyday contact list after removal.
+  // Contacts defaults to the CURRENT relationship roster. "Remove from active" is non-destructive:
+  // it sets relationship_status=inactive so history/production remain intact. The separate
+  // "Delete bad/duplicate" action applies HIDDEN_PROFILE_MARKER, which is omitted from Contacts
+  // and name-cleanup but intentionally leaves a tombstone row so imports cannot recreate it.
   let list=allContacts;
   if(f==="inactive") list=list.filter(c=>c.relationship_status==="inactive");
   else list=list.filter(c=>c.relationship_status!=="inactive");
@@ -10232,6 +10543,8 @@ function nearRealtimeRefreshSharedData(){
   loadQuiet().catch(()=>{});
   // Cross-tracker shared work: LP flags + LP call activity must refresh too.
   if(typeof loadFlagged==="function")loadFlagged().catch(()=>{});
+  const mv=document.getElementById("view-daniel");
+  if(mv&&mv.classList.contains("active")&&typeof loadRmFlagResponseHistory==="function")loadRmFlagResponseHistory().catch(()=>{});
 }
 document.addEventListener("visibilitychange",()=>{
   if(!document.hidden&&Date.now()-_lastNearRealtimeRefresh>20000){
@@ -10265,9 +10578,17 @@ function initRealtimeSync(){
       })
       .on("postgres_changes",{event:"*",schema:"public",table:"lp_flags"},function(){
         if(typeof loadFlagged==="function")loadFlagged().catch(()=>{});
+        const mv=document.getElementById("view-daniel");
+        if(mv&&mv.classList.contains("active")&&typeof loadRmFlagResponseHistory==="function")loadRmFlagResponseHistory().catch(()=>{});
+      })
+      .on("postgres_changes",{event:"*",schema:"public",table:"rm_lp_flags"},function(){
+        const mv=document.getElementById("view-daniel");
+        if(mv&&mv.classList.contains("active")&&typeof loadRmToLpHistory==="function")loadRmToLpHistory().catch(()=>{});
       })
       .on("postgres_changes",{event:"*",schema:"public",table:"call_logs"},function(){
         if(typeof loadFlagged==="function")loadFlagged().catch(()=>{});
+        const mv=document.getElementById("view-daniel");
+        if(mv&&mv.classList.contains("active")&&typeof loadRmFlagResponseHistory==="function")loadRmFlagResponseHistory().catch(()=>{});
         const hv=document.getElementById("historySearch");
         if(hv&&hv.value.trim().length>=2&&typeof doSearchHistory==="function")doSearchHistory(hv.value.trim());
       })
