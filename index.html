@@ -406,7 +406,7 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI'
 @media(max-width:900px){.v21-plan-grid{grid-template-columns:1fr!important}.v21-block-grid{grid-template-columns:1fr 1fr!important}}
 @media(max-width:560px){.v21-block-grid{grid-template-columns:1fr!important}}
 </style>
-<!-- v31: Amanda Workflow · clean wording + mandatory transaction calls + named acquisition + retention -->
+<!-- v34: Partner Health live in daily workflows · Skillset wording · clickable help/tips | v33: workflow guardrails · role-safe transaction completion · escalation-first · calm carry-forward -->
 </head>
 <body>
 <div class="header">
@@ -461,9 +461,9 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI'
     <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;margin-bottom:9px">
       <div>
         <div class="card-title" style="font-size:16px;margin-bottom:2px">Amanda’s Workflow</div>
-        <div style="font-size:11.5px;color:var(--text-3);max-width:780px;line-height:1.45">Your day, in order. Must-do New Contract / CTC calls come first, then relationship calls and new-agent calls. Add only real meetings or unavailable time; the Workflow adjusts the rest automatically.</div>
+        <div style="font-size:11.5px;color:var(--text-3);max-width:780px;line-height:1.45">This is your home base for the day. <strong>Workflow = what to do. Quick Log = record it. Scripts + Skillset Training = what to say.</strong> Urgent escalations come first, then must-do New Contract / CTC calls, relationship calls and named new-agent calls.</div>
       </div>
-      <div style="display:flex;gap:7px;align-items:center;flex-wrap:wrap"><button type="button" onclick="openScriptsModal()" style="font-size:10.5px;font-weight:700;color:var(--brand-dark);background:#fff;border:1px solid var(--border);border-radius:7px;cursor:pointer;font-family:inherit;padding:5px 9px">Scripts + Skillset</button><div id="v22AmandaSnapshotCapacity" style="font-size:10.5px;color:var(--brand-dark);background:var(--brand-light);border:1px solid var(--border);border-radius:20px;padding:5px 9px">Building today…</div></div>
+      <div style="display:flex;gap:7px;align-items:center;flex-wrap:wrap"><button type="button" onclick="openPartnerHealthHelp()" title="See Workflow priorities and Partner Health rules" style="font-size:10.5px;font-weight:700;color:var(--text-2);background:#fff;border:1px solid var(--border);border-radius:7px;cursor:pointer;font-family:inherit;padding:5px 9px">How this works</button><button type="button" onclick="openScriptsModal()" style="font-size:10.5px;font-weight:700;color:var(--brand-dark);background:#fff;border:1px solid var(--border);border-radius:7px;cursor:pointer;font-family:inherit;padding:5px 9px" title="Open scripts, objections, transaction-call talk tracks, and practice tips">Scripts + Skillset Training</button><div id="v22AmandaSnapshotCapacity" style="font-size:10.5px;color:var(--brand-dark);background:var(--brand-light);border:1px solid var(--border);border-radius:20px;padding:5px 9px">Building today…</div></div>
     </div>
     <details id="v23AmandaAddTimeDetails" style="margin:2px 0 10px;background:var(--surface-2);border:1px solid var(--border-light);border-radius:8px;padding:0 9px">
       <summary style="cursor:pointer;padding:8px 1px;font-size:10.5px;font-weight:750;color:var(--brand-dark)">+ Add meeting / blocked time</summary>
@@ -471,14 +471,15 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI'
         <div class="field" style="margin:0"><label>Meeting / block</label><input id="v23AmandaBlockTitle" type="text" placeholder="Agent meeting, huddle, appointment..." maxlength="120"></div>
         <div class="field" style="margin:0"><label>Start</label><input id="v23AmandaBlockStart" type="time"></div>
         <div class="field" style="margin:0"><label>End</label><input id="v23AmandaBlockEnd" type="time"></div>
-        <div class="field" style="margin:0"><label>Type</label><select id="v23AmandaBlockType"><option>New Realtor meeting</option><option>Break Bread</option><option>Partner meeting</option><option>Strategic partner meeting</option><option>Channel meeting</option><option>Retention meeting</option><option>Internal / team</option><option>Scripts + Skillset</option><option>Unavailable</option></select></div>
+        <div class="field" style="margin:0"><label>Type</label><select id="v23AmandaBlockType"><option>New Realtor meeting</option><option>Break Bread</option><option>Partner meeting</option><option>Strategic partner meeting</option><option>Channel meeting</option><option>Retention meeting</option><option>Internal / team</option><option>Skillset training</option><option>Unavailable</option></select></div>
         <button onclick="v23AddAmandaSnapshotBlock()" class="btn-primary" style="height:36px;white-space:nowrap">Add</button>
       </div>
       <div style="font-size:9.5px;color:var(--text-4);padding:0 0 9px">Choose the actual meeting type and add only real meetings or unavailable time. Amanda’s Workflow will adjust automatically.</div>
     </details>
     <details id="wp30TxnIntakeDetails" style="margin:2px 0 10px;background:#FFF9EF;border:1px solid #E9D7A9;border-radius:8px;padding:0 9px">
       <summary style="cursor:pointer;padding:8px 1px;font-size:10.5px;font-weight:750;color:#75520A">+ Add New Contract / CTC</summary>
-      <div style="font-size:10px;color:#7A6A45;line-height:1.4;margin:0 0 8px">When a New Contract or CTC comes in, add the buyer agent and listing agent here once. Their required calls will stay at the top of Amanda’s Workflow until completed.</div>
+      <div style="font-size:10px;color:#7A6A45;line-height:1.4;margin:0 0 8px">When a New Contract or CTC comes in, add it <strong>once</strong>. Buyer and listing calls are tracked separately and stay open until each required call is completed.</div>
+      <div id="wp33ActiveTxnTriggers" style="display:none;margin:0 0 8px;background:#fff;border:1px solid #E7C98A;border-radius:7px;padding:7px 8px;font-size:9.8px;color:#7A6A45"></div>
       <div style="display:grid;grid-template-columns:1.05fr 1.25fr 1.25fr 1.5fr auto;gap:7px;align-items:end;padding:2px 0 10px" class="v21-block-grid">
         <div class="field" style="margin:0"><label>Milestone</label><select id="wp30TxnStage"><option value="New Contract">New contract</option><option value="Clear to Close">Clear to close</option></select></div>
         <div class="field" style="margin:0"><label>Buyer agent</label><input id="wp30TxnBuyerAgent" type="text" placeholder="Buyer agent"></div>
@@ -505,7 +506,7 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI'
       </div>
       <div style="display:flex;gap:7px;align-items:center;flex-wrap:wrap;justify-content:flex-end">
         <button type="button" onclick="openRmToLpFlag('Amanda')" style="font-size:11px;font-weight:700;color:#8A5A00;background:#FFF8E8;border:1px solid #E7C66B;border-radius:7px;cursor:pointer;font-family:inherit;padding:6px 10px">🚩 Flag LP</button>
-        <button type="button" onclick="openScriptsModal()" style="font-size:11px;font-weight:700;color:var(--brand);background:#fff;border:1px solid var(--border);border-radius:7px;cursor:pointer;font-family:inherit;padding:6px 10px">Scripts + Skillset</button>
+        <button type="button" onclick="openScriptsModal()" style="font-size:11px;font-weight:700;color:var(--brand);background:#fff;border:1px solid var(--border);border-radius:7px;cursor:pointer;font-family:inherit;padding:6px 10px" title="Open scripts, objections, transaction-call talk tracks, and practice tips">Scripts + Skillset Training</button>
         <details style="position:relative">
           <summary style="list-style:none;font-size:11px;font-weight:600;color:var(--brand);background:#fff;border:1px solid var(--border);border-radius:7px;cursor:pointer;font-family:inherit;padding:6px 10px;user-select:none">Tools ▾</summary>
           <div style="position:absolute;right:0;top:36px;z-index:30;width:190px;background:var(--surface);border:1px solid var(--border);border-radius:9px;box-shadow:0 8px 24px rgba(36,28,64,.12);padding:6px;display:grid;gap:3px">
@@ -586,6 +587,9 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI'
         <label style="font-size:11px;font-weight:600;color:var(--text-2)"><span id="quickLogFollowupLabelText">Follow-up date</span> <span id="quickLogFollowupHint" style="font-weight:400;color:var(--text-4)">(required — a real date, not a junk-drawer)</span></label>
         <input type="date" id="quickLogFollowupDate" style="width:100%;border:1px solid var(--border);border-radius:var(--radius-sm);padding:8px 11px;font-size:13px;font-family:inherit;color:var(--text-1);outline:none;margin-top:4px">
       </div>
+      <div id="quickLogTxnTextRow" style="display:none;margin-top:8px;background:#FFF8E8;border:1px solid #E7C98A;border-radius:8px;padding:8px 10px">
+        <label style="display:flex;gap:8px;align-items:flex-start;font-size:11px;color:#75520A;cursor:pointer"><input type="checkbox" id="quickLogTxnTextSent" style="margin-top:2px"> <span><strong>Follow-up text sent</strong><br><span style="font-weight:400">For a must-do Under Contract / CTC call, voicemail or no answer does not finish the task until the follow-up text is sent.</span></span></label>
+      </div>
       <div id="quickLogNotesWrap" style="margin-top:9px">
         <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:4px">
           <label style="font-size:11px;font-weight:600;color:var(--text-2)">Notes <span style="font-weight:400;color:var(--text-4)">(10+ words)</span></label>
@@ -629,13 +633,14 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI'
               <input id="ctcBuyerAgent" list="ctcAgentOptions" type="text" placeholder="Buyer agent name" onblur="ctcFillContact('buyer')" oninput="ctcUpdatePreview()" style="border:1px solid var(--border);border-radius:8px;padding:8px 9px;font-size:12px">
               <input id="ctcBuyerPhone" type="text" placeholder="Phone" oninput="ctcUpdatePreview()" style="border:1px solid var(--border);border-radius:8px;padding:8px 9px;font-size:12px">
               <input class="ctc-span-2" id="ctcBuyerEmail" type="email" placeholder="Email (optional)" style="grid-column:span 2;border:1px solid var(--border);border-radius:8px;padding:8px 9px;font-size:12px">
-              <select id="ctcBuyerOutcome" onchange="ctcToggleMeetingDate('buyer');ctcUpdatePreview()" style="border:1px solid var(--border);border-radius:8px;padding:8px 9px;font-size:12px;background:var(--surface)">
+              <select id="ctcBuyerOutcome" onchange="ctcToggleMeetingDate('buyer');wp33ToggleCtcText('buyer');ctcUpdatePreview()" style="border:1px solid var(--border);border-radius:8px;padding:8px 9px;font-size:12px;background:var(--surface)">
                 <option value="Positive">Talked — positive</option><option value="Needs manager attention">Talked — issue / manager attention</option><option value="Requires follow-up">Requires follow-up</option><option value="Meeting Scheduled">Meeting scheduled</option><option value="Left voicemail">Left voicemail</option><option value="No answer">No answer</option>
               </select>
               <select id="ctcBuyerRelationship" onchange="ctcToggleMeetingDate('buyer');ctcUpdatePreview()" style="border:1px solid var(--border);border-radius:8px;padding:8px 9px;font-size:12px;background:var(--surface)">
                 <option value="Unknown">Relationship / opportunity...</option><option value="Already works with NFM">Already works with NFM</option><option value="Interested — follow up">Interested — follow up</option><option value="Meeting scheduled">Meeting scheduled</option><option value="Not interested">Not interested</option><option value="No response">No response</option>
               </select>
               <input class="ctc-span-2" id="ctcBuyerMeetingDate" type="date" onchange="ctcUpdatePreview()" style="display:none;grid-column:span 2;border:1px solid var(--border);border-radius:8px;padding:8px 9px;font-size:12px">
+              <label id="ctcBuyerTextWrap" class="ctc-span-2" style="display:none;grid-column:span 2;font-size:10.5px;color:#75520A;background:#FFF8E8;border:1px solid #E7C98A;border-radius:7px;padding:7px 8px"><input type="checkbox" id="ctcBuyerTextSent"> Follow-up text sent after voicemail / no answer</label>
               <textarea class="ctc-span-2" id="ctcBuyerFeedback" rows="3" placeholder="What did the buyer agent say?" oninput="ctcUpdatePreview()" style="grid-column:span 2;border:1px solid var(--border);border-radius:8px;padding:8px 9px;font-size:12px;font-family:inherit;resize:vertical"></textarea>
             </div>
           </div>
@@ -646,13 +651,14 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI'
               <input id="ctcSellerAgent" list="ctcAgentOptions" type="text" placeholder="Listing agent name" onblur="ctcFillContact('seller')" oninput="ctcUpdatePreview()" style="border:1px solid var(--border);border-radius:8px;padding:8px 9px;font-size:12px">
               <input id="ctcSellerPhone" type="text" placeholder="Phone" oninput="ctcUpdatePreview()" style="border:1px solid var(--border);border-radius:8px;padding:8px 9px;font-size:12px">
               <input class="ctc-span-2" id="ctcSellerEmail" type="email" placeholder="Email (optional)" style="grid-column:span 2;border:1px solid var(--border);border-radius:8px;padding:8px 9px;font-size:12px">
-              <select id="ctcSellerOutcome" onchange="ctcToggleMeetingDate('seller');ctcUpdatePreview()" style="border:1px solid var(--border);border-radius:8px;padding:8px 9px;font-size:12px;background:var(--surface)">
+              <select id="ctcSellerOutcome" onchange="ctcToggleMeetingDate('seller');wp33ToggleCtcText('seller');ctcUpdatePreview()" style="border:1px solid var(--border);border-radius:8px;padding:8px 9px;font-size:12px;background:var(--surface)">
                 <option value="Positive">Talked — positive</option><option value="Needs manager attention">Talked — issue / manager attention</option><option value="Requires follow-up">Requires follow-up</option><option value="Meeting Scheduled">Meeting scheduled</option><option value="Left voicemail">Left voicemail</option><option value="No answer">No answer</option>
               </select>
               <select id="ctcSellerRelationship" onchange="ctcToggleMeetingDate('seller');ctcUpdatePreview()" style="border:1px solid var(--border);border-radius:8px;padding:8px 9px;font-size:12px;background:var(--surface)">
                 <option value="Unknown">Relationship / opportunity...</option><option value="Already works with NFM">Already works with NFM</option><option value="Interested — follow up">Interested — follow up</option><option value="Meeting scheduled">Meeting scheduled</option><option value="Not interested">Not interested</option><option value="No response">No response</option>
               </select>
               <input class="ctc-span-2" id="ctcSellerMeetingDate" type="date" onchange="ctcUpdatePreview()" style="display:none;grid-column:span 2;border:1px solid var(--border);border-radius:8px;padding:8px 9px;font-size:12px">
+              <label id="ctcSellerTextWrap" class="ctc-span-2" style="display:none;grid-column:span 2;font-size:10.5px;color:#75520A;background:#FFF8E8;border:1px solid #E7C98A;border-radius:7px;padding:7px 8px"><input type="checkbox" id="ctcSellerTextSent"> Follow-up text sent after voicemail / no answer</label>
               <textarea class="ctc-span-2" id="ctcSellerFeedback" rows="3" placeholder="What did the listing agent say? Did you ask for the meeting?" oninput="ctcUpdatePreview()" style="grid-column:span 2;border:1px solid var(--border);border-radius:8px;padding:8px 9px;font-size:12px;font-family:inherit;resize:vertical"></textarea>
             </div>
           </div>
@@ -749,7 +755,7 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI'
       <div><span class="card-title">Gifting Campaign Follow-Up</span> <span class="card-sub" id="onboardingSub"></span></div>
     </div>
     <div style="background:var(--surface-2);border-radius:var(--radius-sm);padding:9px 12px;margin-bottom:12px;font-size:12px;line-height:1.4;color:var(--text-2)">
-      <strong>Every agent in the gifting campaign needs a call once a week</strong> for their first 4 weeks after the meeting. Use the week-by-week scripts in Scripts + Skillset.
+      <strong>Every agent in the gifting campaign needs a call once a week</strong> for their first 4 weeks after the meeting. Use the week-by-week scripts in Scripts + Skillset Training.
     </div>
     <div id="onboardingList" style="max-height:320px;overflow-y:auto"></div>
   </div>
@@ -970,7 +976,7 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI'
         <label class="intake-check"><input type="checkbox" id="intakeListreports" onchange="updateIntakeProgress()"> Added agent to ListReports</label>
         <label class="intake-check"><input type="checkbox" id="intakeTotalExpert" onchange="updateIntakeProgress()"> Added agent to Total Expert</label>
         <label class="intake-check"><input type="checkbox" id="intakeGroupText" onchange="updateIntakeProgress()"> Sent follow-up group text introducing Nyny</label>
-        <label class="intake-check"><input type="checkbox" id="intakeReferralAsk" onchange="updateIntakeProgress()"> Asked for the opportunity, walked through how they'll refer clients to us (see How to Refer in Scripts + Skillset), and CC'd the Loan Partner</label>
+        <label class="intake-check"><input type="checkbox" id="intakeReferralAsk" onchange="updateIntakeProgress()"> Asked for the opportunity, walked through how they'll refer clients to us (see How to Refer in Scripts + Skillset Training), and CC'd the Loan Partner</label>
         <div id="intakeProgress" style="font-size:11px;color:#B85B00;margin-top:6px;font-weight:500">0 of 7 complete</div>
       </div>
     </div>
@@ -1067,7 +1073,7 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI'
 
   <!-- Outreach tip -->
   <div class="card" style="background:var(--surface-2);padding:10px 16px;margin-bottom:0">
-    <div style="font-size:12.5px;color:var(--text-2);margin-bottom:6px">Before you dial — pull up <button onclick="openScriptsModal()" style="background:none;border:none;color:var(--brand);font-weight:600;cursor:pointer;font-family:inherit;font-size:12.5px;padding:0">Scripts + Skillset</button> for the reconnect opener. These are existing relationships, so this is reactivation outreach, not a cold call.</div>
+    <div style="font-size:12.5px;color:var(--text-2);margin-bottom:6px">Before you dial — pull up <button onclick="openScriptsModal()" style="background:none;border:none;color:var(--brand);font-weight:600;cursor:pointer;font-family:inherit;font-size:12.5px;padding:0" title="Open scripts, objections, transaction-call talk tracks, and practice tips">Scripts + Skillset Training</button> for the reconnect opener. These are existing relationships, so this is reactivation outreach, not a cold call.</div>
     <div style="font-size:11.5px;color:var(--text-3);margin-bottom:4px">Work top to bottom. Add prospects from your admin call list, then dial in order. Mark DNC or Remove anyone not worth calling again so the list stays clean.</div>
     <div style="font-size:11.5px;color:var(--brand);font-weight:600">Before each call: look them up on RETR. A recent sale mention turns a cold call into a warm one.</div>
   </div>
@@ -1969,7 +1975,7 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI'
     <table style="width:100%;border-collapse:collapse;font-size:12.5px;margin-bottom:16px">
       <tr><td style="padding:5px 8px 5px 0;font-weight:600;white-space:nowrap;vertical-align:top">New Agent Follow-up <span style="color:var(--brand);font-weight:400">counts as Talk-to</span></td><td style="padding:5px 0;color:var(--text-2)">Checking in and helping a newly met agent get set up on HomeBot, ListReports, and Total Expert, moving them toward that first lead.</td></tr>
       <tr><td style="padding:5px 8px 5px 0;font-weight:600;white-space:nowrap;vertical-align:top">Onboarding checklist</td><td style="padding:5px 0;color:var(--text-2)">The 7 quick tasks (Retained Report, Sa Team email, HomeBot, ListReports, Total Expert, group text, asking for the opportunity + referral language + LP CC'd). Complete these the same day as the meeting.</td></tr>
-      <tr><td style="padding:5px 8px 5px 0;font-weight:600;white-space:nowrap;vertical-align:top">Gifting campaign</td><td style="padding:5px 0;color:var(--text-2)">Every agent in this program needs a call once a week for their first 4 weeks. This is one of the most important parts of the role. Tracked on Snapshot, which follows the Ascend 4-Week Conversion Playbook: break the ice, a value touch, an opportunity call, then accountability follow-up.</td></tr>
+      <tr><td style="padding:5px 8px 5px 0;font-weight:600;white-space:nowrap;vertical-align:top">Gifting campaign</td><td style="padding:5px 0;color:var(--text-2)">Every agent in this program needs a call once a week for their first 4 weeks. This is one of the most important parts of the role. Tracked on Snapshot, which follows the 4-Week Conversion Skillset: break the ice, a value touch, an opportunity call, then accountability follow-up.</td></tr>
     </table>
 
     <div style="font-size:12px;font-weight:700;color:var(--brand);text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px">3 · If They Go Quiet: Reconnect 🔁</div>
@@ -1999,7 +2005,7 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI'
 <div class="modal-overlay" id="coachingPlaybookModal">
   <div class="modal-box" style="max-width:660px;max-height:85vh;overflow-y:auto">
     <div class="modal-header"><span class="modal-title">Agent Strategy</span><button class="modal-close" onclick="closeCoachingPlaybookModal()">×</button></div>
-    <div class="modal-sub" style="margin-bottom:18px">From Ascend Coaching. Talking points and frameworks for actual agent conversations.</div>
+    <div class="modal-sub" style="margin-bottom:18px">Skillset Training: talking points and frameworks for actual agent conversations.</div>
 
     <div style="font-size:12px;font-weight:700;color:var(--brand);text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px">The How to Refer System</div>
     <div style="font-size:12.5px;color:var(--text-2);margin-bottom:8px">Don't just ask for leads. Install the referral language. The agent needs the exact text, email path, and buyer expectations, not a vague ask.</div>
@@ -2039,6 +2045,21 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI'
     <div style="font-size:12.5px;color:var(--text-2);margin-bottom:14px">Relationship actions: relevant humor, family milestones, events with partners, agent introductions.</div>
 
     <button class="btn-sm" onclick="closeCoachingPlaybookModal()" style="margin-top:8px">Close</button>
+  </div>
+</div>
+
+<div class="modal-overlay" id="partnerHealthHelpModal">
+  <div class="modal-box" style="max-width:620px;max-height:85vh;overflow-y:auto">
+    <div class="modal-header"><span class="modal-title">Partner Health — What It Means</span><button class="modal-close" onclick="closePartnerHealthHelp()">×</button></div>
+    <div class="modal-sub" style="margin-bottom:14px">Partner Health is now an action signal, not just a report. Red and Yellow partners feed the daily Workflow so the portfolio gets worked before relationships quietly slip.</div>
+    <div style="display:grid;gap:9px">
+      <div style="border-left:4px solid var(--success);background:#F4FBF7;border-radius:8px;padding:10px 12px"><strong>Green</strong><div style="font-size:12px;color:var(--text-2);margin-top:3px">Relationship is on cadence, recent business is healthy, and there is no active competitor-risk flag. Maintain the normal relationship plan.</div></div>
+      <div style="border-left:4px solid var(--warning);background:#FFFBF0;border-radius:8px;padding:10px 12px"><strong>Yellow</strong><div style="font-size:12px;color:var(--text-2);margin-top:3px">A warning signal: business or meaningful contact is getting stale. Reconnect, identify what changed, document the next growth move, and schedule the next meaningful touch.</div></div>
+      <div style="border-left:4px solid var(--danger);background:#FFF6F5;border-radius:8px;padding:10px 12px"><strong>Red</strong><div style="font-size:12px;color:var(--text-2);margin-top:3px">Needs action now: major lapse in business/contact cadence or competitor risk. Make a meaningful relationship move, document what is happening, and escalate when needed.</div></div>
+    </div>
+    <div style="margin-top:14px;background:var(--surface-2);border-radius:8px;padding:10px 12px;font-size:12px;color:var(--text-2)"><strong>Daily priority:</strong> urgent escalation → must-do transaction calls → Red Partner Health → overdue follow-ups → Yellow Partner Health / relationship work → new-agent calls.</div>
+    <div style="margin-top:9px;font-size:11.5px;color:var(--text-3)">Health is calculated from recent lead activity, meaningful relationship contact, tier cadence, and competitor-risk signals. Click any Partner Health tile in Portfolio Review to see the actual names.</div>
+    <button class="btn-primary" onclick="closePartnerHealthHelp()" style="margin-top:14px">Got it</button>
   </div>
 </div>
 
@@ -2086,7 +2107,7 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI'
     </div>
 
     <div style="background:var(--surface-2);border-radius:var(--radius-sm);padding:10px 12px;font-size:12.5px;color:var(--text-2);margin-bottom:16px">
-      <strong style="color:var(--text-1)">Practice note from leadership:</strong> These scripts — along with objection handling and value proposition scenarios — are available in Join Ascend. You have login access. Please practice for 10 minutes before starting calls each day and share your feedback on how it's going.
+      <strong style="color:var(--text-1)">Practice note from leadership:</strong> These scripts, objection handling, and value proposition scenarios live here in Skillset Training. Practice for 10 minutes before starting new-agent calls and use the talk tracks during live work.
     </div>
 
 
@@ -2306,13 +2327,13 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI'
     </details>
     <details class="skillset-topic" style="margin-bottom:10px;border:1px solid var(--border);border-radius:11px;background:var(--surface);overflow:hidden">
       <summary style="cursor:pointer;list-style:none;padding:12px 14px;background:var(--surface-2);display:flex;justify-content:space-between;gap:12px;align-items:center">
-        <span><strong style="font-size:13px;color:var(--text-1)">Ascend Skillset</strong><span style="display:block;font-size:10.5px;color:var(--text-3);font-weight:400;margin-top:2px">Scoreboard, same-day execution, role play, commitment close and the value rule.</span></span>
+        <span><strong style="font-size:13px;color:var(--text-1)">Skillset Training</strong><span style="display:block;font-size:10.5px;color:var(--text-3);font-weight:400;margin-top:2px">Scoreboard, same-day execution, role play, commitment close and the value rule.</span></span>
         <span style="font-size:14px;color:var(--brand)">＋</span>
       </summary>
       <div style="padding:14px 14px 2px">
-    <!-- Ascend Coaching training framework — added from team coaching materials -->
+    <!-- Skillset Training framework — added from team coaching materials -->
     <div style="margin:20px 0 14px;border-top:1px solid var(--border-light);padding-top:18px">
-      <div style="font-size:11px;font-weight:800;color:var(--brand);text-transform:uppercase;letter-spacing:.6px;margin-bottom:5px">Ascend Coaching · Listing Agent → Retained Partner</div>
+      <div style="font-size:11px;font-weight:800;color:var(--brand);text-transform:uppercase;letter-spacing:.6px;margin-bottom:5px">Skillset Training · Listing Agent → Retained Partner</div>
       <div style="font-size:17px;font-weight:750;color:var(--text-1);margin-bottom:5px">The scoreboard</div>
       <div style="font-size:12.5px;color:var(--text-2);line-height:1.5;margin-bottom:12px">The primary leading indicator is <strong style="color:var(--text-1)">retained Realtor meetings</strong>. Every transaction with an eligible listing agent should create a deliberate path toward a meeting and, ultimately, an active referral relationship.</div>
 
@@ -2386,7 +2407,7 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI'
       <tr><td style="padding:5px 8px 5px 0;font-weight:600;white-space:nowrap;vertical-align:top">12:30–1:00 PM</td><td style="padding:5px 0;color:var(--text-2)">Cold call block 2 (~12–13 calls).</td></tr>
       <tr><td style="padding:5px 8px 5px 0;font-weight:600;white-space:nowrap;vertical-align:top">Tue 1:00</td><td style="padding:5px 0;color:var(--text-2)">Level 10 training.</td></tr>
       <tr><td style="padding:5px 8px 5px 0;font-weight:600;white-space:nowrap;vertical-align:top">Mon 2:30–3:30</td><td style="padding:5px 0;color:var(--text-2)">Skillset.</td></tr>
-      <tr style="border-bottom:1px solid var(--border-light)"><td style="padding:5px 8px 5px 0;font-weight:600;white-space:nowrap;vertical-align:top">Before calls, daily</td><td style="padding:5px 0;color:var(--text-2)">10 minutes of Ascend scripting practice before starting cold calls. Share feedback on how it is going.</td></tr>
+      <tr style="border-bottom:1px solid var(--border-light)"><td style="padding:5px 8px 5px 0;font-weight:600;white-space:nowrap;vertical-align:top">Before calls, daily</td><td style="padding:5px 0;color:var(--text-2)">10 minutes of script and objection practice before starting new-agent calls. Use the live scripts in Skillset Training.</td></tr>
       <tr style="border-bottom:1px solid var(--border-light)"><td style="padding:5px 8px 5px 0;font-weight:600;white-space:nowrap;vertical-align:top">4:00–4:30, weekly</td><td style="padding:5px 0;color:var(--text-2)">30-minute 1:1 with your manager once a week. Review the week, cover any questions, work through anything that needs attention. Other days, use this time for self-directed practice or follow-ups.</td></tr>
       <tr><td style="padding:5px 8px 5px 0;font-weight:600;white-space:nowrap;vertical-align:top">4:45 PM, daily</td><td style="padding:5px 0;color:var(--text-2)">5-minute check-in with your manager, in person or on Teams. Go over the day, make sure we are on track, cover any questions or agent feedback. Followed by a brief email recap.</td></tr>
     </table>
@@ -2603,6 +2624,8 @@ function appendRmMeta(notes,owner,focus){
 function getActivityOwner(a){return extractRmMeta(a&&a.notes).owner||"Amanda";}
 function getMeetingFocus(a){return extractRmMeta(a&&a.notes).focus||"";}
 function isExistingMeeting(a){return !!a&&EXISTING_MEETING_TYPES.indexOf(a.act_type)>=0;}
+// Scorecard rule: ONLY logged held-meeting activities count. rm_day_blocks reserve capacity only.
+// Break Breads are one existing-partner meeting inside the total partner-meeting count; never add them again on top.
 function isPartnerMeetingActivity(a){return !!a&&(a.act_type==="New Realtor Meeting"||isExistingMeeting(a));}
 function onActivityOwnerChange(){
   const owner=document.getElementById("activityOwner")?.value||"Amanda";
@@ -4023,7 +4046,7 @@ async function loadStartHere(){
       html+='<div style="margin-top:10px;background:var(--surface-2);border-radius:8px;padding:10px 12px;font-size:12px;color:var(--text-2)">'+scheduledToday+' follow-up'+(scheduledToday!==1?"s":"")+" scheduled for today. Open Scripts + Skillset before the call if you need the talk track.</div>";
     }
     if(giftingHint){
-      html+='<div style="margin-top:8px;background:var(--surface-2);border-radius:8px;padding:10px 12px;font-size:12px;color:var(--text-2)">'+giftingHint+' See Scripts + Skillset for the full week-by-week scripts.</div>';
+      html+='<div style="margin-top:8px;background:var(--surface-2);border-radius:8px;padding:10px 12px;font-size:12px;color:var(--text-2)">'+giftingHint+' See Scripts + Skillset Training for the full week-by-week scripts.</div>';
     }
     if(stuckColdCalls.length){
       html+='<div style="margin-top:8px;background:var(--surface-2);border-radius:8px;padding:10px 12px">'
@@ -5518,7 +5541,7 @@ async function loadWeek(){
     if(psGrid){
       const amandaMtd=(mtdActs||[]).filter(a=>getActivityOwner(a)==="Amanda");
       const mtdMeetings=amandaMtd.filter(a=>a.act_type==="New Realtor Meeting").length;
-      const mtdBreakBreads=amandaMtd.filter(a=>isExistingMeeting(a)).length;
+      const mtdExistingMeetings=amandaMtd.filter(a=>isExistingMeeting(a)).length;
       // A "win" requires an actual meeting held, not just a promising outcome on the call —
       // a Positive or Meeting Scheduled response alone isn't a win until it's actually happened.
       // Checked against ALL meetings ever held (not just this month), so a call made this month
@@ -5529,7 +5552,7 @@ async function loadWeek(){
       const mtdColdCalls=amandaMtd.filter(a=>a.act_type==="Cold Calls").length;
       const scoreItems=[
         {label:"New meetings",val:mtdMeetings,goal:RM_TEAM_GOALS.amandaNew,color:"var(--brand)",click:"showWinsDetail('meetings')"},
-        {label:"Existing partner mtgs",val:mtdBreakBreads,goal:RM_TEAM_GOALS.amandaExisting,color:"var(--brand)",click:"showWinsDetail('breadbreaks')"},
+        {label:"Existing partner mtgs",val:mtdExistingMeetings,goal:RM_TEAM_GOALS.amandaExisting,color:"var(--brand)",click:"showWinsDetail('breadbreaks')"},
         {label:"Cold call wins",val:mtdWins,goal:null,color:"var(--success)",click:"showColdCallWinsDetail()"},
         {label:"Cold calls made",val:mtdColdCalls,goal:500,color:"var(--text-2)"},
       ];
@@ -7096,6 +7119,7 @@ function onQuickLogTypeChange(){
     const el=document.getElementById(id);if(el)el.style.display=isCtc?"none":"";
   });
   const fu=document.getElementById("quickLogFollowupRow");if(fu&&isCtc)fu.style.display="none";
+  wp33ToggleQuickTxnText();
   if(isCtc){ctcRefreshAgentOptions();ctcUpdatePreview();}
 }
 function ctcRefreshAgentOptions(){
@@ -7180,8 +7204,8 @@ async function saveCtcWorkflow(copyAfter){
   if(openIntake){toast("Finish the open checklist for "+openIntake.agent_name+" first.","error");return;}
   const borrower=ctcField("ctcBorrower"),property=ctcField("ctcProperty");
   const sides=[
-    {role:"Buyer",key:"Buyer",name:ctcField("ctcBuyerAgent"),phone:ctcField("ctcBuyerPhone"),email:ctcField("ctcBuyerEmail"),outcome:ctcField("ctcBuyerOutcome"),relationship:ctcField("ctcBuyerRelationship"),meetingDate:ctcField("ctcBuyerMeetingDate"),feedback:ctcField("ctcBuyerFeedback")},
-    {role:"Listing",key:"Seller",name:ctcField("ctcSellerAgent"),phone:ctcField("ctcSellerPhone"),email:ctcField("ctcSellerEmail"),outcome:ctcField("ctcSellerOutcome"),relationship:ctcField("ctcSellerRelationship"),meetingDate:ctcField("ctcSellerMeetingDate"),feedback:ctcField("ctcSellerFeedback")}
+    {role:"Buyer",key:"Buyer",name:ctcField("ctcBuyerAgent"),phone:ctcField("ctcBuyerPhone"),email:ctcField("ctcBuyerEmail"),outcome:ctcField("ctcBuyerOutcome"),relationship:ctcField("ctcBuyerRelationship"),meetingDate:ctcField("ctcBuyerMeetingDate"),feedback:ctcField("ctcBuyerFeedback"),textSent:!!document.getElementById("ctcBuyerTextSent")?.checked},
+    {role:"Listing",key:"Seller",name:ctcField("ctcSellerAgent"),phone:ctcField("ctcSellerPhone"),email:ctcField("ctcSellerEmail"),outcome:ctcField("ctcSellerOutcome"),relationship:ctcField("ctcSellerRelationship"),meetingDate:ctcField("ctcSellerMeetingDate"),feedback:ctcField("ctcSellerFeedback"),textSent:!!document.getElementById("ctcSellerTextSent")?.checked}
   ];
   if(!borrower&&!property){toast("Add the borrower or property so this CTC can be identified later.","error");return;}
   if(copyAfter&&!ctcWhatsAppReady()){toast("To save + copy WhatsApp, add BOTH buyer and listing agent names + phone numbers.","error",5000);return;}
@@ -7190,6 +7214,7 @@ async function saveCtcWorkflow(copyAfter){
   for(const s of entered){
     const answered=!(["No answer","Left voicemail"].includes(s.outcome));
     if(answered&&!s.feedback){toast("Add what the "+s.role.toLowerCase()+" agent said, or change the outcome to no answer / voicemail.","error");return;}
+    if(!answered&&!s.textSent){toast("Send the follow-up text to the "+s.role.toLowerCase()+" agent and check ‘Follow-up text sent’ before finishing the CTC task.","error",5000);return;}
     if((s.outcome==="Meeting Scheduled"||s.relationship==="Meeting scheduled")&&!s.meetingDate){toast("Add the meeting date for "+s.name+".","error");return;}
   }
   const buttons=document.querySelectorAll('#ctcWorkflowPanel button');buttons.forEach(b=>b.disabled=true);
@@ -7198,7 +7223,9 @@ async function saveCtcWorkflow(copyAfter){
       await ctcUpsertContact(s.name,s.phone,s.email);
       await clearOldFollowups(s.name);
       const fu=(s.outcome==="Meeting Scheduled"||s.relationship==="Meeting scheduled")?s.meetingDate:(s.outcome==="Requires follow-up"||s.relationship==="Interested — follow up"?localDateStr(new Date(Date.now()+3*86400000)):null);
-      await sbFetch("amanda_activities",{method:"POST",prefer:"return=minimal",body:JSON.stringify({agent_name:s.name,act_type:"CTC Call",act_date:today(),outcome:s.outcome,notes:ctcActivityNotes(s.role,s.feedback,s.relationship),follow_up_date:fu})});
+      const tx=wp33CurrentTxnContext(s.name,"CTC Call",s.role);
+      const ctcNotes=wp33TxnMeta(ctcActivityNotes(s.role,s.feedback,s.relationship),s.role,tx.txnId,s.textSent);
+      await sbFetch("amanda_activities",{method:"POST",prefer:"return=minimal",body:JSON.stringify({agent_name:s.name,act_type:"CTC Call",act_date:today(),outcome:s.outcome,notes:ctcNotes,follow_up_date:fu})});
       await ctcSyncOpportunity(s.name,s.phone,s.email,s.relationship,s.meetingDate,s.role.toLowerCase()+" agent");
     }
     if(copyAfter)await ctcCopyWhatsApp();
@@ -7212,7 +7239,8 @@ async function saveCtcWorkflow(copyAfter){
 function ctcResetForm(){
   ["ctcPasteSource","ctcBorrower","ctcProperty","ctcBuyerAgent","ctcBuyerPhone","ctcBuyerEmail","ctcBuyerMeetingDate","ctcBuyerFeedback","ctcSellerAgent","ctcSellerPhone","ctcSellerEmail","ctcSellerMeetingDate","ctcSellerFeedback"].forEach(id=>ctcSet(id,""));
   ctcSet("ctcBuyerOutcome","Positive");ctcSet("ctcBuyerRelationship","Unknown");ctcSet("ctcSellerOutcome","Positive");ctcSet("ctcSellerRelationship","Unknown");
-  ctcToggleMeetingDate("buyer");ctcToggleMeetingDate("seller");ctcUpdatePreview();
+  ["ctcBuyerTextSent","ctcSellerTextSent"].forEach(id=>{const el=document.getElementById(id);if(el)el.checked=false;});
+  ctcToggleMeetingDate("buyer");ctcToggleMeetingDate("seller");wp33ToggleCtcText("buyer");wp33ToggleCtcText("seller");ctcUpdatePreview();
 }
 
 function toggleQuickLogFollowup(){
@@ -7234,6 +7262,7 @@ function toggleQuickLogFollowup(){
   }else{
     row.style.display="none";
   }
+  wp33ToggleQuickTxnText();
 }
 
 async function quickLogSave(){
@@ -7252,6 +7281,9 @@ async function quickLogSave(){
   if(outcome==="Meeting Scheduled"&&!followupDate){toast("Add the date it’s scheduled for so the meeting is tracked.","error");return;}
   const methodEmoji={Call:"☎️",Text:"📱",Email:"✉️"}[contactMethod]||"☎️";
   notes=methodEmoji+" "+notes;
+  const txnCtx=(actType==="Under Contract Call"||actType==="CTC Call")?wp33CurrentTxnContext(agentName,actType,null):null;
+  const txnTextSent=!!document.getElementById("quickLogTxnTextSent")?.checked;
+  if(txnCtx){if((outcome==="No answer"||outcome==="Left voicemail")&&!txnTextSent){toast("Send the follow-up text and check ‘Follow-up text sent’ before finishing this must-do transaction call.","error",5000);return;}notes=wp33TxnMeta(notes,txnCtx.role,txnCtx.txnId,txnTextSent);}
   const btn=document.querySelector('[onclick="quickLogSave()"]');
   if(btn){btn.disabled=true;btn.textContent="Saving...";}
   try{
@@ -7259,6 +7291,9 @@ async function quickLogSave(){
     // stays flagged forever even after she's logged something new with them.
     await clearOldFollowups(agentName);
     await sbFetch("amanda_activities",{method:"POST",prefer:"return=minimal",body:JSON.stringify({agent_name:agentName,act_type:actType,act_date:today(),outcome,notes,follow_up_date:(outcome==="Requires follow-up"||outcome==="Meeting Scheduled")?followupDate:null})});
+    if(txnCtx&&String(txnCtx.role).toLowerCase()==="listing")await wp33SyncListingOpportunity(agentName,outcome,followupDate,notes).catch(()=>{});
+    if(txnCtx)window._wp33TxnContext=null;
+    const cb33=document.getElementById("quickLogTxnTextSent");if(cb33)cb33.checked=false;wp33ToggleQuickTxnText();
     const msg=document.getElementById("quickLogMsg");
     msg.style.display="block";
     msg.textContent="✓ "+agentName+" — "+actType+" logged";
@@ -8202,6 +8237,8 @@ function openCoachingPlaybookModal(){document.getElementById("coachingPlaybookMo
 function closeCoachingPlaybookModal(){document.getElementById("coachingPlaybookModal").classList.remove("open");}
 function openScriptsModal(){document.getElementById("scriptsModal").classList.add("open");}
 function closeScriptsModal(){document.getElementById("scriptsModal").classList.remove("open");}
+function openPartnerHealthHelp(){const m=document.getElementById("partnerHealthHelpModal");if(m)m.classList.add("open");}
+function closePartnerHealthHelp(){const m=document.getElementById("partnerHealthHelpModal");if(m)m.classList.remove("open");}
 function openScheduleModal(){document.getElementById("scheduleModal").classList.add("open");}
 function closeScheduleModal(){document.getElementById("scheduleModal").classList.remove("open");}
 function openEncompassModal(){document.getElementById("encompassModal").classList.add("open");}
@@ -9351,7 +9388,7 @@ async function loadPortfolioReview(){
       +'</div>'
 
       +'<div class="card">'
-        +'<div class="card-title" style="font-size:14px">Partner Health (playbook Sec. 14)</div>'
+        +'<div style="display:flex;justify-content:space-between;gap:8px;align-items:center;flex-wrap:wrap"><div class="card-title" style="font-size:14px">Partner Health</div><button class="btn-sm" onclick="openPartnerHealthHelp()" title="See health rules and recommended actions">How health works</button></div><div style="font-size:11.5px;color:var(--text-3);margin:4px 0 8px">Now active in daily Workflow prioritization. Red and Yellow partners are routed to the correct RM owner automatically; click a health tile below to see the names.</div>'
         +'<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px;margin-bottom:12px">'
           +pfHealthTile("Green",healthCounts.Green,"var(--success)")
           +pfHealthTile("Yellow",healthCounts.Yellow,"var(--warning)")
@@ -9468,7 +9505,7 @@ function pfMigTile(label,count,filterKey){
     +'<div style="font-size:10.5px;color:var(--text-3);margin-top:2px">'+label+'</div></div>';
 }
 function pfHealthTile(label,count,color){
-  return '<div onclick="openPortfolioList(\'health:'+label+'\')" style="cursor:pointer;text-align:center;background:var(--surface-2);border-radius:8px;padding:10px 6px;border-bottom:3px solid '+color+'">'
+  return '<div onclick="openPortfolioList(\'health:'+label+'\')" title="Open the '+label+' Partner Health list" style="cursor:pointer;text-align:center;background:var(--surface-2);border-radius:8px;padding:10px 6px;border-bottom:3px solid '+color+'">'
     +'<div style="font-size:20px;font-weight:800;color:'+color+'">'+count+'</div>'
     +'<div style="font-size:10.5px;color:var(--text-3);margin-top:2px">'+label+'</div></div>';
 }
@@ -11256,6 +11293,19 @@ function wp18FallbackRows(candidates,w){return wp18QueueRows(candidates,w).map((
 function wp30TxnCallType(stage){return stage==="Clear to Close"?"CTC Call":"Under Contract Call";}
 function wp30TxnRole(notes){const m=String(notes||"").match(/\[TXN_ROLE:([^\]]+)\]/i);return m?m[1].trim():"Agent";}
 function wp30TxnRef(notes){const m=String(notes||"").match(/\[TXN_REF:([^\]]*)\]/i);return m?m[1].trim():"";}
+function wp33TxnId(notes){const m=String(notes||"").match(/\[TXN_ID:([^\]]+)\]/i);return m?m[1].trim():"";}
+function wp33TxnTextSent(notes){return /\[TXN_TEXT_SENT:Y\]/i.test(String(notes||""));}
+function wp33TxnSafeToken(s){return String(s||"").toLowerCase().trim().replace(/[^a-z0-9]+/g,"-").replace(/^-+|-+$/g,"").slice(0,80);}
+function wp33MakeTxnId(stage,ref,buyer,listing,date){const base=ref?wp33TxnSafeToken(ref):wp33TxnSafeToken((buyer||"")+"-"+(listing||""));return wp33TxnSafeToken(stage)+"-"+(base||"transaction");}
+function wp33TxnMeta(notes,role,txnId,textSent){let out=String(notes||"");if(role&&!/\[TXN_ROLE:/i.test(out))out+=" [TXN_ROLE:"+role+"]";if(txnId&&!/\[TXN_ID:/i.test(out))out+=" [TXN_ID:"+txnId+"]";if(textSent&&!/\[TXN_TEXT_SENT:Y\]/i.test(out))out+=" [TXN_TEXT_SENT:Y]";return out.trim();}
+function wp33CallCompletesTrigger(c,t,role){
+  if(!c||wp18Key(c.agent_name)!==wp18Key(t.agent_name)||c.act_type!==wp30TxnCallType(t.act_type)||c.act_date<t.act_date)return false;
+  const tr=String(role||wp30TxnRole(t.notes)||"Agent"),cr=String(wp30TxnRole(c.notes)||"Agent");
+  if(tr!=="Agent"&&cr.toLowerCase()!==tr.toLowerCase())return false;
+  const tid=wp33TxnId(t.notes),cid=wp33TxnId(c.notes);if(tid&&cid!==tid)return false;
+  if(["No answer","Left voicemail"].includes(c.outcome)&&!wp33TxnTextSent(c.notes))return false;
+  return true;
+}
 function wp30TxnProfile(name,data){return(data&&data.profileMap&&data.profileMap[wp18Key(name)])||{};}
 function wp30TxnOwner(name,data){
   const p=wp30TxnProfile(name,data);
@@ -11275,17 +11325,18 @@ function wp30BuildTransactionTasks(data,date,owner){
   (data&&data.contractSignals||[]).forEach(r=>{if(r&&r.agent_name&&r.call_date&&r.call_date<=date)triggers.push({agent_name:r.agent_name,act_type:"New Contract",act_date:r.call_date,notes:"[TXN_ROLE:Agent] Shared new-contract signal from LP activity",_synthetic:true});});
   const latest={};
   triggers.forEach(t=>{
-    const role=wp30TxnRole(t.notes),k=t.act_type+"|"+wp18Key(t.agent_name)+"|"+role.toLowerCase();
+    const role=wp30TxnRole(t.notes),tid=wp33TxnId(t.notes),k=(tid||t.act_type+"|"+wp18Key(t.agent_name))+"|"+role.toLowerCase();
     if(!latest[k]||String(t.act_date)>String(latest[k].act_date))latest[k]=t;
   });
   const out=[];
   Object.values(latest).forEach(t=>{
     const callType=wp30TxnCallType(t.act_type),name=String(t.agent_name||"").trim();
-    const done=calls.some(c=>wp18Key(c.agent_name)===wp18Key(name)&&c.act_type===callType&&c.act_date>=t.act_date&&c.act_date<=date);
+    const role=wp30TxnRole(t.notes);
+    const done=calls.some(c=>c.act_date<=date&&wp33CallCompletesTrigger(c,t,role));
     if(done)return;
     const resolved=wp30TxnOwner(name,data);if(resolved!==owner)return;
-    const role=wp30TxnRole(t.notes),ref=wp30TxnRef(t.notes);
-    out.push({kind:"transaction",minutes:callType==="CTC Call"?8:10,owner:resolved,name,txn:{stage:t.act_type,callType,role,ref,triggerDate:t.act_date,synthetic:!!t._synthetic},title:(callType==="CTC Call"?"CTC Call":"Under Contract Call")+" · "+resolvedDisplayName(name),why:(t.act_type==="Clear to Close"?"Clear to close":"New contract")+" · "+role.toLowerCase()+" agent"+(ref?" · "+ref:"")});
+    const ref=wp30TxnRef(t.notes),txnId=wp33TxnId(t.notes);
+    out.push({kind:"transaction",minutes:callType==="CTC Call"?8:10,owner:resolved,name,txn:{stage:t.act_type,callType,role,ref,txnId,triggerDate:t.act_date,synthetic:!!t._synthetic},title:(callType==="CTC Call"?"CTC Call":"Under Contract Call")+" · "+resolvedDisplayName(name),why:(t.act_type==="Clear to Close"?"Clear to close":"New contract")+" · "+role.toLowerCase()+" agent"+(ref?" · "+ref:"")});
   });
   out.sort((a,b)=>{const ap=a.txn.callType==="CTC Call"?0:1,bp=b.txn.callType==="CTC Call"?0:1;return ap-bp||String(a.txn.triggerDate).localeCompare(String(b.txn.triggerDate))||String(a.name).localeCompare(String(b.name));});
   return out;
@@ -11298,8 +11349,9 @@ function wp30OpenTransactionTraining(){
     if(target)target.scrollIntoView({behavior:"smooth",block:"start"});
   },80);
 }
-function wp30OpenTransactionTask(name,callType,role,owner){
+function wp30OpenTransactionTask(name,callType,role,owner,txnId){
   owner=owner||"Amanda";
+  window._wp33TxnContext={name:name||"",callType:callType||"",role:role||"Agent",txnId:txnId||""};
   if(owner!=="Amanda"){wpOpenLog(name,owner,callType);return;}
   if(callType==="CTC Call"&&(role==="Buyer"||role==="Listing")){
     switchQuickLogTab("talkto");
@@ -11321,22 +11373,23 @@ function wp30TransactionRow(t,isFirst,date){
     +'<div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start"><div style="min-width:0;flex:1">'
     +'<div style="display:flex;gap:5px;align-items:center;flex-wrap:wrap"><span style="font-size:11.5px;font-weight:800;color:var(--text-1)">'+v21Esc(t.name)+'</span>'
     +'<span style="font-size:8.5px;font-weight:850;padding:2px 6px;border-radius:10px;background:#7A5600;color:#fff">MUST DO</span>'+(isFirst?'<span style="font-size:8.5px;font-weight:850;padding:2px 6px;border-radius:10px;background:var(--brand);color:#fff">NEXT UP</span>':'')+'</div>'
-    +'<div style="font-size:10px;color:var(--text-3);line-height:1.35;margin-top:2px"><strong style="color:#75520A">'+(isCtc?'CTC call':'Under Contract call')+'</strong> · '+v21Esc(role)+' agent'+(ref?' · '+v21Esc(ref):'')+'</div></div>'
-    +'<span style="display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end"><button onclick="wp30OpenTransactionTask(\''+safe+'\',\''+wpJs(x.callType||'Under Contract Call')+'\',\''+wpJs(role)+'\',\''+wpJs(t.owner||'Amanda')+'\')" style="font-size:9px;padding:5px 8px;background:#7A5600;color:#fff;border:0;border-radius:6px;cursor:pointer">Start call</button><button onclick="wp30OpenTransactionTraining()" style="font-size:9px;padding:5px 8px;background:#fff;color:#75520A;border:1px solid #D9C18B;border-radius:6px;cursor:pointer">Script</button></span></div></div>';
+    +'<div style="font-size:10px;color:var(--text-3);line-height:1.35;margin-top:2px"><strong style="color:#75520A">'+(isCtc?'CTC call':'Under Contract call')+'</strong> · '+v21Esc(role)+' agent'+(ref?' · '+v21Esc(ref):'')+(String(role).toLowerCase()==='listing'?' · <strong>ask for the meeting if they are not a current partner</strong>':'')+'</div></div>'
+    +'<span style="display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end"><button onclick="wp30OpenTransactionTask(\''+safe+'\',\''+wpJs(x.callType||'Under Contract Call')+'\',\''+wpJs(role)+'\',\''+wpJs(t.owner||'Amanda')+'\',\''+wpJs(x.txnId||'')+'\')" style="font-size:9px;padding:5px 8px;background:#7A5600;color:#fff;border:0;border-radius:6px;cursor:pointer" title="Open the correct logging workflow for this call">Start call</button><button onclick="wp30OpenTransactionTraining()" style="font-size:9px;padding:5px 8px;background:#fff;color:#75520A;border:1px solid #D9C18B;border-radius:6px;cursor:pointer" title="Open the transaction-call script and tips">Script</button></span></div></div>';
 }
 async function wp30SaveTransactionTrigger(){
   const stage=document.getElementById("wp30TxnStage")?.value||"New Contract",buyer=(document.getElementById("wp30TxnBuyerAgent")?.value||"").trim(),listing=(document.getElementById("wp30TxnListingAgent")?.value||"").trim();
   const rawRef=(document.getElementById("wp30TxnRef")?.value||"").trim(),ref=rawRef.replace(/[\]\r\n]/g," ").slice(0,140),entries=[];
   if(buyer)entries.push({name:buyer,role:"Buyer"});if(listing&&wp18Key(listing)!==wp18Key(buyer))entries.push({name:listing,role:"Listing"});
   if(!entries.length){toast("Add the buyer agent, listing agent, or both.","error");return;}
-  const callType=wp30TxnCallType(stage),td=today();let added=0;
+  const callType=wp30TxnCallType(stage),td=today(),txnId=wp33MakeTxnId(stage,ref,buyer,listing,td);let added=0;
   try{
     for(const e of entries){
-      const existing=await sbFetch("amanda_activities?agent_name=eq."+encodeURIComponent(e.name)+"&act_type=eq."+encodeURIComponent(stage)+"&act_date=eq."+td+"&select=id,notes&limit=20").catch(()=>[]);
-      if((existing||[]).some(r=>wp30TxnRole(r.notes)===e.role))continue;
+      const cut=new Date();cut.setDate(cut.getDate()-45);
+      const existing=await sbFetch("amanda_activities?agent_name=eq."+encodeURIComponent(e.name)+"&act_type=eq."+encodeURIComponent(stage)+"&act_date=gte."+wpDateStr(cut)+"&select=id,notes,act_date&limit=100").catch(()=>[]);
+      if((existing||[]).some(r=>wp30TxnRole(r.notes)===e.role&&wp33TxnId(r.notes)===txnId))continue;
       const o=getAgentOwnership(e.name),p=(allContacts||[]).find(c=>wp18Key(c.agent_name)===wp18Key(e.name))||{};
       const owner=wp18StrategicNynyMatch(e.name,p)?"Nyny":((o&&o.rm==="Nyny")?"Nyny":"Amanda");
-      let notes="[TXN_TRIGGER][TXN_ROLE:"+e.role+"]"+(ref?"[TXN_REF:"+ref+"]":"")+" Mandatory "+stage+" transaction call trigger for the "+e.role.toLowerCase()+" agent. Complete the required "+callType+" and log the outcome in the RM tracker.";
+      let notes="[TXN_TRIGGER][TXN_ROLE:"+e.role+"][TXN_ID:"+txnId+"]"+(ref?"[TXN_REF:"+ref+"]":"")+" Mandatory "+stage+" transaction call trigger for the "+e.role.toLowerCase()+" agent. Complete the required "+callType+" and log the outcome in the RM tracker.";
       try{notes=appendRmMeta(notes,owner,stage==="Clear to Close"?"Current Relationship":"Current Relationship");}catch(err){}
       await sbFetch("amanda_activities",{method:"POST",prefer:"return=minimal",body:JSON.stringify({agent_name:e.name,act_type:stage,act_date:td,outcome:"Requires follow-up",notes,follow_up_date:null})});added++;
     }
@@ -11344,9 +11397,45 @@ async function wp30SaveTransactionTrigger(){
     const d=document.getElementById("wp30TxnIntakeDetails");if(d)d.open=false;
     _wp18Cache=null;_wp18CacheAt=0;
     await v23LoadAmandaSnapshot(true);if(v21Date()===today())setTimeout(()=>v21LoadDailyPlan(true),40);
-    toast(added?(added+" mandatory transaction call"+(added!==1?"s":"")+" added to the Workflow ✓"):("Those transaction calls are already in today’s Workflow."),"success",3600);
+    toast(added?(added+" mandatory transaction call"+(added!==1?"s":"")+" added to the Workflow ✓"):("Already added — no duplicate transaction calls were created."),"success",3600);
   }catch(e){toast("Could not add transaction calls: "+e.message,"error",5500);}
 }
+
+
+// v33 workflow guardrails ------------------------------------------------------
+function wp33CurrentTxnContext(name,callType,role){
+  const direct=window._wp33TxnContext||{};
+  if(wp18Key(direct.name)===wp18Key(name)&&direct.callType===callType&&(!role||String(direct.role).toLowerCase()===String(role).toLowerCase()))return direct;
+  const data=_wp18Cache||{},triggers=(data.transactionActs||[]).filter(t=>(t.act_type==="New Contract"||t.act_type==="Clear to Close")&&wp18Key(t.agent_name)===wp18Key(name)&&wp30TxnCallType(t.act_type)===callType);
+  const exact=triggers.filter(t=>!role||String(wp30TxnRole(t.notes)).toLowerCase()===String(role).toLowerCase()).sort((a,b)=>String(b.act_date).localeCompare(String(a.act_date)))[0];
+  return exact?{name,callType,role:wp30TxnRole(exact.notes),txnId:wp33TxnId(exact.notes)}:{name,callType,role:role||"Agent",txnId:""};
+}
+function wp33ToggleQuickTxnText(){
+  const type=document.getElementById("quickLogType")?.value||"",out=document.getElementById("quickLogOutcome")?.value||"",row=document.getElementById("quickLogTxnTextRow");
+  if(row)row.style.display=((type==="Under Contract Call"||type==="CTC Call")&&(out==="No answer"||out==="Left voicemail"))?"block":"none";
+  if(row&&row.style.display==="none"){const cb=document.getElementById("quickLogTxnTextSent");if(cb)cb.checked=false;}
+}
+function wp33ToggleCtcText(role){const cap=role==="buyer"?"Buyer":"Seller",out=ctcField("ctc"+cap+"Outcome"),wrap=document.getElementById("ctc"+cap+"TextWrap");if(wrap)wrap.style.display=(out==="No answer"||out==="Left voicemail")?"block":"none";if(wrap&&wrap.style.display==="none"){const cb=document.getElementById("ctc"+cap+"TextSent");if(cb)cb.checked=false;}}
+async function wp33SyncListingOpportunity(name,outcome,followupDate,notes){
+  if(!name||!(outcome==="Meeting Scheduled"||outcome==="Requires follow-up"))return;
+  const existing=await sbFetch("outreach_prospects?agent_name=ilike."+encodeURIComponent(name)+"&select=id&limit=5").catch(()=>[]);
+  const payload={status:"Requires follow-up",follow_up_date:followupDate||(localDateStr(new Date(Date.now()+3*86400000))),notes:"Listing-agent opportunity from mandatory transaction call. "+stripRmMeta(notes||"")};
+  if(existing.length===1)await sbFetch("outreach_prospects?id=eq."+existing[0].id,{method:"PATCH",prefer:"return=minimal",body:JSON.stringify(payload)});
+  else if(existing.length===0)await sbFetch("outreach_prospects",{method:"POST",prefer:"return=minimal",body:JSON.stringify(Object.assign({agent_name:name},payload))});
+}
+function wp33RenderActiveTxnTriggers(data,date){
+  const el=document.getElementById("wp33ActiveTxnTriggers");if(!el)return;
+  const open=[...wp30BuildTransactionTasks(data,date,"Amanda"),...wp30BuildTransactionTasks(data,date,"Nyny")];
+  if(!open.length){el.style.display="none";el.innerHTML="";return;}
+  el.style.display="block";el.innerHTML='<strong>Already open:</strong> '+open.slice(0,8).map(t=>v21Esc((t.txn?.stage||"Transaction")+" · "+t.name+" · "+(t.txn?.role||"Agent"))).join(" &nbsp;|&nbsp; ")+(open.length>8?' &nbsp;+ '+(open.length-8)+' more':'');
+}
+function wp33BuildEscalationTasks(data,owner){
+  const rows=[...(data.openLpFlags||[]),...(data.legacyRmFlags||[])],seen=new Set(),out=[];
+  rows.forEach(r=>{const name=String(r.agent_name||"").trim();if(!name)return;const resolved=wp30TxnOwner(name,data);if(resolved!==owner)return;const k=wp18Key(name);if(seen.has(k))return;seen.add(k);out.push({kind:"escalation",minutes:12,owner:resolved,name,title:"Urgent escalation · "+resolvedDisplayName(name),why:(r.note||"LP / transaction issue needs RM attention today").slice(0,180)});});
+  return out;
+}
+function wp33OpenEscalation(name,owner){wpOpenLog(name,owner||"Amanda","Agent Talk-to");setTimeout(()=>{const o=document.getElementById("quickLogOutcome");if(o){o.value="Needs manager attention";toggleQuickLogFollowup();}},120);}
+function wp33EscalationRow(t,isFirst){const safe=wpJs(t.name||"");return '<div style="padding:8px;border-bottom:1px solid #F1D4CF;'+(isFirst?'background:#FFF3F2;border:1px solid #F1D4CF;border-radius:8px;margin:5px 0;':'')+'"><div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start"><div><div style="font-size:11.5px;font-weight:800;color:#9B4A40">'+v21Esc(t.name)+' <span style="font-size:8.5px;background:#9B4A40;color:#fff;border-radius:10px;padding:2px 6px">URGENT</span>'+(isFirst?' <span style="font-size:8.5px;background:var(--brand);color:#fff;border-radius:10px;padding:2px 6px">NEXT UP</span>':'')+'</div><div style="font-size:10px;color:#8C5A54;margin-top:2px">'+v21Esc(t.why||"Needs RM attention today")+'</div></div><button onclick="wp33OpenEscalation(\''+safe+'\',\''+wpJs(t.owner||'Amanda')+'\')" style="font-size:9px;padding:5px 8px;background:#9B4A40;color:#fff;border:0;border-radius:6px;cursor:pointer">Handle</button></div></div>';}
 
 // v29 acquisition call sheet ---------------------------------------------------
 // Uses the real Outreach Pipeline as the source of new-agent calls. It never invents
@@ -11422,11 +11511,12 @@ async function wp18FetchData(force){
   if(_wp18Loading)return _wp18Loading;
   _wp18Loading=(async()=>{
     const w=wpWeek();let profiles=[];
-    try{profiles=await sbFetch("agent_profiles?select=agent_name,tier,retained,relationship_status,do_not_contact,email,phone,brokerage,address,birthday,next_growth_opportunity,growth_opportunity_deadline,last_meaningful_contact_date,next_meeting_date,competitor_risk_flag,high_potential_flag&limit=5000");}
+    try{profiles=await sbFetch("agent_profiles?select=agent_name,tier,retained,relationship_status,do_not_contact,email,phone,brokerage,address,birthday,next_growth_opportunity,growth_opportunity_deadline,last_meaningful_contact_date,next_meeting_date,latest_lead_date,competitor_risk_flag,high_potential_flag&limit=5000");}
     catch(e){profiles=await sbFetch("agent_profiles?select=agent_name,tier,retained,do_not_contact,email,phone,address,birthday&limit=5000").catch(()=>[]);}
     const prospectCut=new Date();prospectCut.setDate(prospectCut.getDate()-120);const prospectStart=wpDateStr(prospectCut);
     const txnCut=new Date();txnCut.setDate(txnCut.getDate()-45);const txnStart=wpDateStr(txnCut);
-    const [assignments,reconnect,followups,weekActs,prospects,prospectActs,transactionActs,ctcSignals,contractSignals]=await Promise.all([
+    const healthCut=new Date();healthCut.setDate(healthCut.getDate()-365);const healthStart=wpDateStr(healthCut);
+    const [assignments,reconnect,followups,weekActs,prospects,prospectActs,transactionActs,ctcSignals,contractSignals,openLpFlags,legacyRmFlags,healthActs,healthLpCalls]=await Promise.all([
       sbFetch("agent_assignments?select=agent_name,lp,rm,priority,level&limit=5000").catch(()=>[]),
       sbFetch(RC_TABLE+"?select=agent_name,status,grade,days_since,contacted_at&limit=5000").catch(()=>sbFetch(RC_TABLE+"?select=agent_name,status,grade,contacted_at&limit=5000").catch(()=>[])),
       sbFetch("amanda_activities?select=agent_name,follow_up_date,act_date,notes,outcome,act_type&follow_up_date=not.is.null&follow_up_date=lte."+w.end+"&order=follow_up_date.asc&limit=2000").catch(()=>[]),
@@ -11435,7 +11525,11 @@ async function wp18FetchData(force){
       sbFetch("amanda_activities?select=agent_name,act_type,act_date,outcome,follow_up_date&act_type=in.(Cold Calls,New Realtor Meeting)&act_date=gte."+prospectStart+"&order=act_date.desc&limit=5000").catch(()=>[]),
       sbFetch("amanda_activities?select=id,agent_name,act_type,act_date,outcome,notes&act_type=in.(New Contract,Clear to Close,Under Contract Call,CTC Call)&act_date=gte."+txnStart+"&order=act_date.desc&limit=5000").catch(()=>[]),
       sbFetch("call_logs?select=agent_name,call_date,outcome&outcome=ilike.*ctc*&call_date=gte."+txnStart+"&limit=1000").catch(()=>[]),
-      sbFetch("call_logs?select=agent_name,call_date,outcome&outcome=ilike.*contract*&call_date=gte."+txnStart+"&limit=1000").catch(()=>[])
+      sbFetch("call_logs?select=agent_name,call_date,outcome&outcome=ilike.*contract*&call_date=gte."+txnStart+"&limit=1000").catch(()=>[]),
+      sbFetch("lp_flags?resolved=eq.false&select=id,agent_name,lp,note,assigned_to,created_at&order=created_at.asc&limit=500").catch(()=>[]),
+      sbFetch("call_logs?flag_rm=eq.true&select=id,agent_name,lp,note,call_date&limit=500").catch(()=>[]),
+      sbFetch("amanda_activities?select=agent_name,act_date,outcome,act_type&act_date=gte."+healthStart+"&order=act_date.desc&limit=6000").catch(()=>[]),
+      sbFetch("call_logs?select=agent_name,call_date,outcome&call_date=gte."+healthStart+"&order=call_date.desc&limit=4000").catch(()=>[])
     ]);
     const candidates=wp18BuildCandidates(profiles,assignments,reconnect,followups,w);
     const prospectPool=wp29BuildProspectPool(prospects,profiles,assignments,prospectActs,candidates);
@@ -11451,7 +11545,7 @@ async function wp18FetchData(force){
     if(queue.supported)qrows=await wp29RemoveProspectRowsFromRelationshipQueue(qrows);
     if(queue.supported)await wp18SyncWorked(qrows,touched);
     const items=wp18RowsToItems(qrows,candidates.pmap),activeProfiles=(profiles||[]).filter(wp18IsActive),complete=activeProfiles.filter(p=>wpMissing(p).length===0).length;
-    const data={w,touched,profiles:activeProfiles,profileMap:candidates.pmap,ownerRecords,complete,queueSupported:queue.supported,queueRows:qrows,amanda:items.filter(x=>x.owner==="Amanda"),nyny:items.filter(x=>x.owner==="Nyny"),prospectPool,transactionActs:transactionActs||[],ctcSignals:ctcSignals||[],contractSignals:contractSignals||[]};
+    const data={w,touched,profiles:activeProfiles,profileMap:candidates.pmap,ownerRecords,complete,queueSupported:queue.supported,queueRows:qrows,amanda:items.filter(x=>x.owner==="Amanda"),nyny:items.filter(x=>x.owner==="Nyny"),prospectPool,transactionActs:transactionActs||[],ctcSignals:ctcSignals||[],contractSignals:contractSignals||[],openLpFlags:openLpFlags||[],legacyRmFlags:legacyRmFlags||[],healthActs:healthActs||[],healthLpCalls:healthLpCalls||[]};
     _wp18Cache=data;_wp18CacheAt=Date.now();return data;
   })();
   try{return await _wp18Loading;}finally{_wp18Loading=null;}
@@ -11475,7 +11569,7 @@ function wp18AgentRow(item,data,carry){
       +'<div style="min-width:0;flex:1"><div style="display:flex;gap:5px;align-items:center;flex-wrap:wrap"><span style="font-size:12.5px;font-weight:750;color:var(--text-1)">'+escHtml(resolvedDisplayName(item.name))+'</span>'+tierBadge+strategicBadge+(carry?'<span style="font-size:9px;font-weight:800;color:#9A6A12">CARRYOVER</span>':'')+wp18StatusHtml(item,worked)+'</div>'
       +'<div style="font-size:10.5px;color:var(--text-3);margin-top:2px;line-height:1.35">'+escHtml((item.reasons&&item.reasons[0])||"Relationship touch")+'</div>'+miss+'</div>'
       +'<div style="display:flex;gap:5px;flex-shrink:0;flex-wrap:wrap;justify-content:flex-end">'
-        +(worked?'':'<button onclick="wpOpenLog(\''+safe+'\',\''+owner+'\',\''+wpJs(item.type||"Talk-to (text/call)")+'\')" style="font-size:9.5px;padding:5px 8px;background:var(--brand);color:#fff;border:0;border-radius:6px;cursor:pointer;font-family:inherit">Log touch</button>')
+        +(worked?'':'<button onclick="wpOpenLog(\''+safe+'\',\''+owner+'\',\''+wpJs(item.type||"Talk-to (text/call)")+'\')" style="font-size:9.5px;padding:5px 8px;background:var(--brand);color:#fff;border:0;border-radius:6px;cursor:pointer;font-family:inherit" title="Record the call, text, meeting outcome, and next step">Log touch</button>')
         +(missing.length?'<button onclick="wpOpenContact(\''+safe+'\')" style="font-size:9.5px;padding:5px 8px;background:#fff;color:#A45100;border:1px solid #E7C98A;border-radius:6px;cursor:pointer;font-family:inherit">Update info</button>':'')
       +'</div></div></div>';
 }
@@ -11604,19 +11698,20 @@ function v22OpenDirectorTask(type){
 }
 function v22TierPill(tier){if(!tier)return"";const bg=tier==="Channel"?"#E8EEF9":tier==="A"?"#FFF3C4":tier==="B"?"#EEF1F3":"#F6E9DD",fg=tier==="Channel"?"#1E3A8A":tier==="A"?"#6B4A00":tier==="B"?"#44515A":"#7A4A22";return '<span style="font-size:9px;font-weight:850;padding:2px 6px;border-radius:10px;background:'+bg+';color:'+fg+';white-space:nowrap">'+v21Esc(tier)+'</span>';}
 function v21PlanTaskRow(t,isFirst,date){
+  if(t&&t.kind==="escalation")return wp33EscalationRow(t,isFirst,date);
   if(t&&t.kind==="transaction")return wp30TransactionRow(t,isFirst,date);
   const safe=t.item?wpJs(t.item.name):"",owner=t.owner||"",tier=t.item&&t.item.profile?(t.item.profile.tier||t.item.queue&&t.item.queue.tier||""):"";
-  const strategic=t.item?wp18StrategicLabel(t.item.name,t.item.profile||{}):"";
+  const strategic=t.item?wp18StrategicLabel(t.item.name,t.item.profile||{}):"",health=t.kind==="health"?(t.health||""):"";
   let actions="";
   if(t.item){
-    actions='<span style="display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end"><button onclick="wpOpenLog(\''+safe+'\',\''+wpJs(owner)+'\',\''+wpJs(t.item.type||"Talk-to (text/call)")+'\')" style="font-size:9px;padding:4px 7px;background:var(--brand);color:#fff;border:0;border-radius:5px;cursor:pointer">Log touch</button>'+(wpMissing(t.item.profile||{}).length?'<button onclick="wpOpenContact(\''+safe+'\')" style="font-size:9px;padding:4px 7px;background:#fff;color:#A45100;border:1px solid #E7C98A;border-radius:5px;cursor:pointer">Update info</button>':'')+'</span>';
+    actions='<span style="display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end"><button onclick="wpOpenLog(\''+safe+'\',\''+wpJs(owner)+'\',\''+wpJs(t.item.type||"Talk-to (text/call)")+'\')" style="font-size:9px;padding:4px 7px;background:var(--brand);color:#fff;border:0;border-radius:5px;cursor:pointer" title="Record the call, text, meeting outcome, and next step">Log touch</button>'+(wpMissing(t.item.profile||{}).length?'<button onclick="wpOpenContact(\''+safe+'\')" title="Update missing phone, email, address, or birthday" style="font-size:9px;padding:4px 7px;background:#fff;color:#A45100;border:1px solid #E7C98A;border-radius:5px;cursor:pointer">Update info</button>':'')+(t.kind==="health"?'<button onclick="openPartnerHealthHelp()" title="Why this partner is in today’s Workflow" style="font-size:9px;padding:4px 7px;background:#fff;color:#8A4A3E;border:1px solid #D8BDB5;border-radius:5px;cursor:pointer">Why?</button>':'')+'</span>';
   }else if(t.logType){actions='<button onclick="v22OpenDirectorTask(\''+wpJs(t.logType)+'\')" style="font-size:9px;padding:4px 7px;background:#fff;color:var(--brand-dark);border:1px solid #C8C0E0;border-radius:5px;cursor:pointer">Log done</button>';}
-  else if(t.kind==="skill"&&t.simpleKey){actions='<span style="display:flex;gap:4px;flex-wrap:wrap"><button onclick="openScriptsModal()" style="font-size:9px;padding:4px 7px;background:#fff;color:var(--brand-dark);border:1px solid #C8C0E0;border-radius:5px;cursor:pointer">Open Skillset</button><button onclick="v22MarkSimpleTask(\''+wpJs(date)+'\',\''+wpJs(owner)+'\',\''+wpJs(t.simpleKey)+'\')" style="font-size:9px;padding:4px 7px;background:#fff;color:#557565;border:1px solid #B8D8C7;border-radius:5px;cursor:pointer">Done</button></span>';}
+  else if(t.kind==="skill"&&t.simpleKey){actions='<span style="display:flex;gap:4px;flex-wrap:wrap"><button onclick="openScriptsModal()" style="font-size:9px;padding:4px 7px;background:#fff;color:var(--brand-dark);border:1px solid #C8C0E0;border-radius:5px;cursor:pointer" title="Open scripts, objections, and practice tips">Open Skillset Training</button><button onclick="v22MarkSimpleTask(\''+wpJs(date)+'\',\''+wpJs(owner)+'\',\''+wpJs(t.simpleKey)+'\')" style="font-size:9px;padding:4px 7px;background:#fff;color:#557565;border:1px solid #B8D8C7;border-radius:5px;cursor:pointer">Done</button></span>';}
   else if(t.simpleKey){actions='<button onclick="v22MarkSimpleTask(\''+wpJs(date)+'\',\''+wpJs(owner)+'\',\''+wpJs(t.simpleKey)+'\')" style="font-size:9px;padding:4px 7px;background:#fff;color:#557565;border:1px solid #B8D8C7;border-radius:5px;cursor:pointer">Done</button>';}
   const showExactTime=owner!=="Amanda";
   const main=t.item?(showExactTime?(v21Time(t.start)+'–'+v21Time(t.end)+' · '+v21Esc(resolvedDisplayName(t.item.name))):v21Esc(resolvedDisplayName(t.item.name))):(showExactTime?(v21Time(t.start)+'–'+v21Time(t.end)+' · '+v21Esc(t.title)):v21Esc(t.title));
   const sub=t.item?(v21Esc(t.title.split(" · ")[0])+" · "+v21Esc(t.why||"")):v21Esc(t.why||"");
-  return '<div style="padding:8px 8px;border-bottom:1px solid var(--border-light);'+(isFirst?'background:#F4F1FA;border:1px solid #D8D1EE;border-radius:8px;margin:5px 0;':'')+'"><div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start"><div style="min-width:0;flex:1"><div style="display:flex;gap:5px;align-items:center;flex-wrap:wrap"><div style="font-size:11.5px;font-weight:780;color:var(--text-1)">'+main+'</div>'+v22TierPill(tier)+(strategic?'<span style="font-size:8.5px;font-weight:800;padding:2px 6px;border-radius:10px;background:#E8F5EE;color:#245B43">'+v21Esc(strategic)+'</span>':'')+(isFirst?'<span style="font-size:8.5px;font-weight:850;padding:2px 6px;border-radius:10px;background:var(--brand);color:#fff">NEXT UP</span>':'')+'</div><div style="font-size:10px;color:var(--text-3);line-height:1.35;margin-top:2px">'+sub+'</div></div>'+actions+'</div></div>';
+  return '<div style="padding:8px 8px;border-bottom:1px solid var(--border-light);'+(isFirst?'background:#F4F1FA;border:1px solid #D8D1EE;border-radius:8px;margin:5px 0;':'')+'"><div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start"><div style="min-width:0;flex:1"><div style="display:flex;gap:5px;align-items:center;flex-wrap:wrap"><div style="font-size:11.5px;font-weight:780;color:var(--text-1)">'+main+'</div>'+v22TierPill(tier)+(health?'<span style="font-size:8.5px;font-weight:850;padding:2px 6px;border-radius:10px;background:'+(health==="Red"?'#FDEBEB':'#FFF4D6')+';color:'+(health==="Red"?'#A32D2D':'#8A5A00')+'">'+health+' HEALTH</span>':'')+(strategic?'<span style="font-size:8.5px;font-weight:800;padding:2px 6px;border-radius:10px;background:#E8F5EE;color:#245B43">'+v21Esc(strategic)+'</span>':'')+(isFirst?'<span style="font-size:8.5px;font-weight:850;padding:2px 6px;border-radius:10px;background:var(--brand);color:#fff">NEXT UP</span>':'')+'</div><div style="font-size:10px;color:var(--text-3);line-height:1.35;margin-top:2px">'+sub+'</div></div>'+actions+'</div></div>';
 }
 function v29OpenProspect(name,phone){
   switchQuickLogTab("coldcall");
@@ -11635,18 +11730,29 @@ function v29ProspectRow(t,isFirst){
   return '<div style="display:flex;justify-content:space-between;gap:8px;align-items:center;padding:6px 0;border-bottom:1px solid var(--border-light)">'
     +'<div style="min-width:0;flex:1"><div style="display:flex;gap:5px;align-items:center;flex-wrap:wrap"><span style="font-size:11.5px;font-weight:760;color:var(--text-1)">'+v21Esc(t.name||p.name||"")+'</span>'+org+(isFirst?'<span style="font-size:8.5px;font-weight:850;padding:2px 6px;border-radius:10px;background:var(--brand);color:#fff">NEXT UP</span>':'')+'</div>'
     +'<div style="font-size:9.8px;color:var(--text-3);margin-top:1px">'+v21Esc(p.reason||"Ready for prospecting")+(phone?' · '+v21Esc(phone):'')+'</div></div>'
-    +'<button onclick="v29OpenProspect(\''+safe+'\',\''+wpJs(phone)+'\')" style="font-size:9.5px;padding:5px 8px;background:var(--brand);color:#fff;border:0;border-radius:6px;cursor:pointer;font-family:inherit;white-space:nowrap">Start call</button></div>';
+    +'<button onclick="v29OpenProspect(\''+safe+'\',\''+wpJs(phone)+'\')" style="font-size:9.5px;padding:5px 8px;background:var(--brand);color:#fff;border:0;border-radius:6px;cursor:pointer;font-family:inherit;white-space:nowrap" title="Open the correct logging workflow for this call">Start call</button></div>';
 }
 function v29RenderAmandaTasks(planned,date,stats){
   if(!(planned||[]).length)return '<div style="font-size:11px;color:var(--text-3);padding:8px 0">Workflow is clear. Anything unfinished will carry forward automatically.</div>';
   let html='',i=0,globalIndex=0;
   while(i<planned.length){
     const t=planned[i];
+    if(t.kind==="escalation"){
+      const group=[];while(i<planned.length&&planned[i].kind==="escalation"){group.push(planned[i]);i++;}
+      html+='<div style="margin:7px 0 9px;border:1px solid #F1D4CF;border-radius:9px;background:#FFFAFA;overflow:hidden"><div style="padding:8px 10px;background:#FFF3F2;border-bottom:1px solid #F1D4CF;display:flex;justify-content:space-between;gap:8px"><div><div style="font-size:11px;font-weight:850;color:#9B4A40;text-transform:uppercase">Urgent / escalation</div><div style="font-size:10px;color:#8C5A54;margin-top:2px">True escalations are the only work that comes before transaction calls.</div></div><div style="font-size:10px;font-weight:800;color:#9B4A40">'+group.length+' open</div></div><div style="padding:2px 10px 4px">'+group.map((x,gi)=>wp33EscalationRow(x,globalIndex===0&&gi===0)).join("")+'</div></div>';
+      globalIndex+=group.length;continue;
+    }
     if(t.kind==="transaction"){
       const group=[];while(i<planned.length&&planned[i].kind==="transaction"){group.push(planned[i]);i++;}
       html+='<div style="margin:7px 0 9px;border:1px solid #E7C98A;border-radius:9px;background:#FFFDF8;overflow:hidden">'
         +'<div style="padding:8px 10px;background:#FFF8E8;border-bottom:1px solid #E7C98A;display:flex;justify-content:space-between;gap:8px;align-items:center;flex-wrap:wrap"><div><div style="font-size:11px;font-weight:850;color:#75520A;text-transform:uppercase;letter-spacing:.35px">Must-do transaction calls</div><div style="font-size:10px;color:#7A6A45;margin-top:2px">New Contract + CTC calls come first. They count toward Talk-To and automatically reduce the rest of today’s call list.</div></div><div style="font-size:10px;font-weight:800;color:#75520A">'+group.length+' open</div></div>'
         +'<div style="padding:2px 10px 4px">'+group.map((x,gi)=>wp30TransactionRow(x,globalIndex===0&&gi===0,date)).join("")+'</div></div>';
+      globalIndex+=group.length;continue;
+    }
+    if(t.kind==="health"){
+      const group=[];while(i<planned.length&&planned[i].kind==="health"){group.push(planned[i]);i++;}
+      const reds=group.filter(x=>x.health==="Red").length,yellows=group.length-reds;
+      html+='<div style="margin:7px 0 9px;border:1px solid #E7D8D3;border-radius:9px;background:#FFFCFB;overflow:hidden"><div style="padding:8px 10px;background:#FFF7F4;border-bottom:1px solid #E7D8D3;display:flex;justify-content:space-between;gap:8px;align-items:center;flex-wrap:wrap"><div><div style="font-size:11px;font-weight:850;color:#8A4A3E;text-transform:uppercase;letter-spacing:.35px">Partner Health attention</div><div style="font-size:10px;color:#7A625D;margin-top:2px">Red partners need a meaningful relationship move now. Yellow partners are early warnings — work them before they become Red.</div></div><button onclick="openPartnerHealthHelp()" title="See how Partner Health is calculated and what to do" style="font-size:9px;padding:5px 8px;background:#fff;color:#8A4A3E;border:1px solid #D8BDB5;border-radius:6px;cursor:pointer">What does this mean?</button></div><div style="padding:2px 10px 4px">'+group.map((x,gi)=>v21PlanTaskRow(x,globalIndex===0&&gi===0,date)).join("")+'</div></div>';
       globalIndex+=group.length;continue;
     }
     if(t.kind!=="prospect"){
@@ -11666,15 +11772,63 @@ function v29RenderAmandaTasks(planned,date,stats){
   return html;
 }
 
+// v34 — Partner Health is operational, not just reporting. Red/Yellow retained partners
+// now feed the daily plan using the same health definition as Portfolio Review.
+function wp34DaysBetween(from,to){if(!from||!to)return null;const a=new Date(String(from).slice(0,10)+"T12:00:00"),b=new Date(String(to).slice(0,10)+"T12:00:00");if(isNaN(a)||isNaN(b))return null;return Math.max(0,Math.round((b-a)/86400000));}
+function wp34HealthState(data,date){
+  const rmLast={},lpLast={};
+  (data.healthActs||[]).forEach(a=>{const k=wp18Key(a.agent_name);if(!k||rmLast[k]||!isMeaningfulOutcome(a.outcome,NOT_MEANINGFUL_RM_OUTCOMES,a.act_type))return;rmLast[k]=a.act_date;});
+  (data.healthLpCalls||[]).forEach(a=>{const k=wp18Key(a.agent_name);if(!k||lpLast[k]||!isMeaningfulOutcome(a.outcome,NOT_MEANINGFUL_LP_OUTCOMES))return;lpLast[k]=a.call_date;});
+  const touch={Channel:14,A:14,B:30,C:60},urgent={Channel:21,A:21,B:45,C:90},out={};
+  (data.profiles||[]).forEach(p=>{
+    if(!p||!p.agent_name||p.retained!==true||p.do_not_contact===true||p.relationship_status==="inactive")return;
+    const k=wp18Key(p.agent_name),lastRM=rmLast[k]||p.last_meaningful_contact_date||null,lastLP=lpLast[k]||null;
+    const dr=wp34DaysBetween(lastRM,date),dl=wp34DaysBetween(lastLP,date),daysAny=(dr===null&&dl===null)?null:Math.min(dr===null?99999:dr,dl===null?99999:dl);
+    const daysLead=wp34DaysBetween(p.latest_lead_date,date),tier=p.tier||"";
+    const health=computeHealthScore(daysLead,daysAny,touch[tier]||14,urgent[tier]||21,!!p.competitor_risk_flag);
+    let why=health+" Partner Health";
+    if(p.competitor_risk_flag)why+=" · competitor risk flagged";
+    else if(daysLead===null||daysLead>=60)why+=" · no recent business";
+    else if(daysAny===null||daysAny>=(urgent[tier]||21))why+=" · relationship touch overdue";
+    else if(daysLead>=30)why+=" · business slowing";
+    else if(daysAny>=(touch[tier]||14))why+=" · touch cadence due";
+    out[k]={health,why,daysAny,daysLead,profile:p};
+  });
+  data.partnerHealth=out;return out;
+}
+function wp34HealthOwner(name,p,data){
+  if(wp18StrategicNynyMatch(name,p))return "Nyny";
+  const rec=data&&data.ownerRecords?data.ownerRecords[wp18Key(name)]:null;
+  if(rec&&rec.rms&&rec.rms.size===1)return Array.from(rec.rms)[0];
+  if(p&&p.tier==="Channel")return "Nyny";
+  return "Amanda";
+}
+function wp34BuildHealthTasks(data,date,owner,excludeKeys){
+  const map=wp34HealthState(data,date),rows=[];excludeKeys=excludeKeys||new Set();
+  Object.entries(map).forEach(([k,h])=>{
+    if(!h||!(h.health==="Red"||h.health==="Yellow")||excludeKeys.has(k))return;
+    const p=h.profile||{},name=p.agent_name;if(wp34HealthOwner(name,p,data)!==owner)return;
+    const tier=p.tier||"";let score=(h.health==="Red"?3000:1800)+(tier==="Channel"?400:tier==="A"?300:tier==="B"?180:60);
+    if(h.daysAny!==null)score+=Math.min(h.daysAny,180);
+    const item={name,profile:p,owner,score,reasons:[h.why],type:"Agent Talk-to",source:"Partner Health",queue:null,_health:h.health};
+    rows.push({kind:"health",minutes:owner==="Nyny"?15:12,owner,name,item,title:(h.health==="Red"?"Partner Health RED":"Partner Health YELLOW")+" · "+resolvedDisplayName(name),why:h.why,health:h.health});
+  });
+  rows.sort((a,b)=>(a.health===b.health?0:(a.health==="Red"?-1:1))||(b.item.score-a.item.score));
+  return rows.slice(0,owner==="Amanda"?5:3);
+}
 function v21BuildTasks(owner,items,data,acts,monthActs,date,freeMinutes){
   const ownerActs=(acts||[]).filter(a=>getActivityOwner(a)===owner),partnerToday=ownerActs.filter(a=>isPartnerMeetingActivity(a)).length;
   const monthOwner=(monthActs||[]).filter(a=>getActivityOwner(a)===owner),monthPartner=monthOwner.filter(a=>isPartnerMeetingActivity(a)).length,monthNew=monthOwner.filter(a=>a.act_type==="New Realtor Meeting").length;
-  const q=v21UniqueItems(items,data,date,owner,freeMinutes),tasks=[];
+  let q=v21UniqueItems(items,data,date,owner,freeMinutes),tasks=[];
+  const escalationTasks=wp33BuildEscalationTasks(data,owner);escalationTasks.forEach(t=>tasks.push(t));
   const transactionTasks=wp30BuildTransactionTasks(data,date,owner);transactionTasks.forEach(t=>tasks.push(t));
+  const protectedKeys=new Set(escalationTasks.concat(transactionTasks).map(t=>wp18Key(t.name)));
+  const healthTasks=wp34BuildHealthTasks(data,date,owner,protectedKeys);healthTasks.forEach(t=>tasks.push(t));
+  const healthKeys=new Set(healthTasks.map(t=>wp18Key(t.name)));q=q.filter(x=>!healthKeys.has(wp18Key(x.name)));
   if(owner==="Amanda"){
     const coldDone=ownerActs.filter(a=>a.act_type==="Cold Calls").length;
-    const transactionMinutes=transactionTasks.reduce((n,t)=>n+(t.minutes||0),0);
-    const prospectTarget=wp29ProspectingTarget(Math.max(0,freeMinutes-transactionMinutes)),prospectNeeded=Math.max(0,prospectTarget-coldDone);
+    const protectedMinutes=escalationTasks.concat(transactionTasks,healthTasks).reduce((n,t)=>n+(t.minutes||0),0);
+    const prospectTarget=wp29ProspectingTarget(Math.max(0,freeMinutes-protectedMinutes)),prospectNeeded=Math.max(0,prospectTarget-coldDone);
     const calledToday=new Set(ownerActs.filter(a=>a.act_type==="Cold Calls").map(a=>wp18Key(a.agent_name)));
     const relationshipToday=new Set(q.map(x=>wp18Key(x.name)));
     const ready=(data.prospectPool||[]).filter(p=>!calledToday.has(wp18Key(p.name))&&!relationshipToday.has(wp18Key(p.name))).slice(0,prospectNeeded);
@@ -11683,7 +11837,7 @@ function v21BuildTasks(owner,items,data,acts,monthActs,date,freeMinutes){
     q.forEach(x=>tasks.push(v21AgentTask(x,data,owner)));
     ready.forEach(p=>tasks.push(v29ProspectTask(p)));
     if(freeMinutes>=120&&!v22SimpleTaskDone(date,"Amanda","wrap"))tasks.push({kind:"wrap",minutes:15,owner,title:"Notes + tomorrow setup",why:"Finish documentation, follow-up dates and any contact-info cleanup left open.",simpleKey:"wrap"});
-    return{tasks,stats:{partnerToday,monthPartner,monthNew,coldDone,coldLeft:Math.max(0,25-coldDone),transactionOpen:transactionTasks.length,prospectTarget,prospectNeeded,prospectReady:ready.length,prospectGap},target:"30+ partner mtgs · ~10 new / 20 existing"};
+    return{tasks,stats:{partnerToday,monthPartner,monthNew,coldDone,coldLeft:Math.max(0,25-coldDone),escalationOpen:escalationTasks.length,transactionOpen:transactionTasks.length,healthRed:healthTasks.filter(t=>t.health==="Red").length,healthYellow:healthTasks.filter(t=>t.health==="Yellow").length,prospectTarget,prospectNeeded,prospectReady:ready.length,prospectGap},target:"30+ partner mtgs · ~10 new / 20 existing"};
   }
   q.forEach(x=>tasks.push(v21AgentTask(x,data,owner)));
   const dow=new Date(date+"T12:00:00").getDay(),types=new Set(ownerActs.map(a=>a.act_type));
@@ -11693,7 +11847,7 @@ function v21BuildTasks(owner,items,data,acts,monthActs,date,freeMinutes){
   if(dow===3&&!types.has("RM Training"))tasks.push({kind:"leadership",minutes:30,owner,title:"Amanda skillset development",why:"Role play / best-practice coaching tied to live execution patterns.",logType:"RM Training"});
   if(dow===5&&!types.has("RM Process Improvement"))tasks.push({kind:"leadership",minutes:30,owner,title:"RM operating system review",why:"Capture what worked, what broke and what should improve in the tracker/process.",logType:"RM Process Improvement"});
   if(freeMinutes>=180&&!types.has("Tracker / System Development"))tasks.push({kind:"system",minutes:30,owner,title:"Protected system / process work",why:"Tracker methodology and RM operating-system improvement are part of Director production, not leftover work.",logType:"Tracker / System Development"});
-  return{tasks,stats:{partnerToday,monthPartner,monthNew,leadershipToday,transactionOpen:transactionTasks.length},target:"20–25 partner mtgs + leadership/system capacity"};
+  return{tasks,stats:{partnerToday,monthPartner,monthNew,leadershipToday,escalationOpen:escalationTasks.length,transactionOpen:transactionTasks.length,healthRed:healthTasks.filter(t=>t.health==="Red").length,healthYellow:healthTasks.filter(t=>t.health==="Yellow").length},target:"20–25 partner mtgs + leadership/system capacity"};
 }
 function v32IsPartnerMeetingBlock(type){return ["New Realtor meeting","Break Bread","Partner meeting","Strategic partner meeting","Channel meeting","Retention meeting"].includes(String(type||""));}
 function v21RenderOwner(owner,hostId,capId,blocks,items,data,acts,monthActs,scheduledActs,date){
@@ -11716,7 +11870,7 @@ function v21RenderOwner(owner,hostId,capId,blocks,items,data,acts,monthActs,sche
     // warning that surfaced ordinary follow-ups (and stale historical ownership) as meetings.
     const relOpen=alloc.planned.filter(x=>x.kind==="agent").length,prosOpen=alloc.planned.filter(x=>x.kind==="prospect").length;
     html+='<div style="background:var(--surface-2);border:1px solid var(--border-light);border-radius:9px;padding:8px 10px;margin-bottom:8px;font-size:10.5px;color:var(--text-3);line-height:1.45">'
-      +'<strong style="color:var(--text-2)">Today:</strong> '+(st.transactionOpen?('<strong style="color:#75520A">'+st.transactionOpen+' mandatory transaction call'+(st.transactionOpen!==1?'s':'')+' first</strong> · '):'')+st.partnerToday+' partner meeting'+(st.partnerToday!==1?'s':'')+' logged · '+st.coldDone+' prospecting calls complete · <strong style="color:var(--text-2)">'+relOpen+' relationship call'+(relOpen!==1?'s':'')+' + '+prosOpen+' new-agent call'+(prosOpen!==1?'s':'')+' in today’s Workflow</strong><br>'
+      +'<strong style="color:var(--text-2)">Today:</strong> '+(st.escalationOpen?('<strong style="color:#9B4A40">'+st.escalationOpen+' urgent escalation'+(st.escalationOpen!==1?'s':'')+' first</strong> · '):'')+(st.transactionOpen?('<strong style="color:#75520A">'+st.transactionOpen+' must-do transaction call'+(st.transactionOpen!==1?'s':'')+' next</strong> · '):'')+((st.healthRed||st.healthYellow)?('<strong style="color:#8A4A3E">Partner Health: '+(st.healthRed||0)+' red · '+(st.healthYellow||0)+' yellow</strong> · '):'')+st.partnerToday+' partner meeting'+(st.partnerToday!==1?'s':'')+' logged · '+st.coldDone+' prospecting calls complete · <strong style="color:var(--text-2)">'+relOpen+' relationship call'+(relOpen!==1?'s':'')+' + '+prosOpen+' new-agent call'+(prosOpen!==1?'s':'')+' in today’s Workflow</strong><br>'
       +'<span>New-agent calls today: '+st.prospectTarget+' based on the time available after must-do transaction calls and meetings. Open-day standard is 25. · '+pace+'</span>'
       +'</div>';
     if((blocks||[]).length){
@@ -11725,7 +11879,7 @@ function v21RenderOwner(owner,hostId,capId,blocks,items,data,acts,monthActs,sche
   }else{
     html+='<div style="font-size:10px;color:var(--text-3);margin-bottom:5px"><strong style="color:var(--text-2)">Role pace:</strong> '+pace+'</div>';
     html+='<div style="font-size:10px;font-weight:800;color:var(--text-3);text-transform:uppercase;letter-spacing:.4px;margin-top:8px">Today’s commitments</div>'+v21BlockList(blocks);
-    html+='<div style="font-size:10px;color:var(--text-3);background:#EEF8F2;border-radius:7px;padding:6px 8px;margin-bottom:7px">Today logged: '+st.partnerToday+' partner meeting'+(st.partnerToday!==1?'s':'')+'. Your capacity intentionally includes Amanda development, execution consistency, portfolio health and system work.</div>';
+    html+='<div style="font-size:10px;color:var(--text-3);background:#EEF8F2;border-radius:7px;padding:6px 8px;margin-bottom:7px">Today logged: '+st.partnerToday+' partner meeting'+(st.partnerToday!==1?'s':'')+'. Your capacity intentionally includes Amanda development, execution consistency, portfolio health and system work. <button onclick="openPartnerHealthHelp()" style="border:0;background:none;color:var(--brand);font-weight:700;cursor:pointer;padding:0">Partner Health help</button></div>';
   }
 
   html+='<div style="font-size:10px;font-weight:800;color:var(--text-3);text-transform:uppercase;letter-spacing:.4px;margin:9px 0 2px">'+(owner==="Amanda"?"Work top to bottom":"Recommended order + time")+'</div>';
@@ -11734,6 +11888,7 @@ function v21RenderOwner(owner,hostId,capId,blocks,items,data,acts,monthActs,sche
     if(owner==="Amanda"){const carry=alloc.overflow.filter(x=>x.kind!=="prospect");if(carry.length)html+='<div style="margin-top:8px;background:var(--surface-2);border:1px solid var(--border-light);border-radius:8px;padding:8px;font-size:10px;color:var(--text-3)"><strong style="color:var(--text-2)">Already handled for you:</strong> '+carry.length+' lower-priority item'+(carry.length!==1?"s":"")+' can carry forward automatically. No cramming.</div>';}
     else html+='<div style="margin-top:8px;background:#FFF8E8;border:1px solid #E7C98A;border-radius:8px;padding:8px"><div style="font-size:10px;font-weight:800;color:#8A5D00">CAPACITY OVERFLOW · '+alloc.overflow.length+'</div><div style="font-size:10px;color:#7A5600;margin-top:3px">Do not cram these in. Re-prioritize, move a flexible block, or let the queue carry the agent forward: '+alloc.overflow.slice(0,5).map(x=>v21Esc(x.title)).join(" · ")+(alloc.overflow.length>5?' · +'+(alloc.overflow.length-5)+' more':'')+'</div></div>';
   }
+  if(owner==="Amanda"){const unfinished=alloc.planned.filter(x=>!["skill","wrap"].includes(x.kind)).length+alloc.overflow.filter(x=>x.kind!=="prospect").length;html+='<div style="margin-top:8px;padding:7px 9px;border-radius:8px;background:#F4F1FA;color:var(--text-3);font-size:10px"><strong style="color:var(--brand-dark)">'+unfinished+' open item'+(unfinished!==1?'s':'')+' right now.</strong> Anything not completed today carries forward automatically.</div>';wp33RenderActiveTxnTriggers(data,date);}
   host.innerHTML=html;
 }
 
