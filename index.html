@@ -471,10 +471,10 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI'
         <div class="field" style="margin:0"><label>Meeting / block</label><input id="v23AmandaBlockTitle" type="text" placeholder="Agent meeting, huddle, appointment..." maxlength="120"></div>
         <div class="field" style="margin:0"><label>Start</label><input id="v23AmandaBlockStart" type="time"></div>
         <div class="field" style="margin:0"><label>End</label><input id="v23AmandaBlockEnd" type="time"></div>
-        <div class="field" style="margin:0"><label>Type</label><select id="v23AmandaBlockType"><option>Partner meeting</option><option>Internal / team</option><option>Skillset training</option><option>Unavailable</option></select></div>
+        <div class="field" style="margin:0"><label>Type</label><select id="v23AmandaBlockType"><option>New Realtor meeting</option><option>Break Bread</option><option>Partner meeting</option><option>Strategic partner meeting</option><option>Channel meeting</option><option>Retention meeting</option><option>Internal / team</option><option>Scripts + Skillset</option><option>Unavailable</option></select></div>
         <button onclick="v23AddAmandaSnapshotBlock()" class="btn-primary" style="height:36px;white-space:nowrap">Add</button>
       </div>
-      <div style="font-size:9.5px;color:var(--text-4);padding:0 0 9px">Add only real meetings or unavailable time. Amanda’s Workflow will adjust automatically.</div>
+      <div style="font-size:9.5px;color:var(--text-4);padding:0 0 9px">Choose the actual meeting type and add only real meetings or unavailable time. Amanda’s Workflow will adjust automatically.</div>
     </details>
     <details id="wp30TxnIntakeDetails" style="margin:2px 0 10px;background:#FFF9EF;border:1px solid #E9D7A9;border-radius:8px;padding:0 9px">
       <summary style="cursor:pointer;padding:8px 1px;font-size:10.5px;font-weight:750;color:#75520A">+ Add New Contract / CTC</summary>
@@ -1200,10 +1200,10 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI'
         <div class="field" style="margin:0"><label>Meeting / block</label><input id="v21BlockTitle" type="text" placeholder="Agent meeting, huddle, appointment..." maxlength="120"></div>
         <div class="field" style="margin:0"><label>Start</label><input id="v21BlockStart" type="time"></div>
         <div class="field" style="margin:0"><label>End</label><input id="v21BlockEnd" type="time"></div>
-        <div class="field" style="margin:0"><label>Type</label><select id="v21BlockType"><option>Partner meeting</option><option>Internal / team</option><option>Coaching</option><option>Leadership / system</option><option>Unavailable</option></select></div>
+        <div class="field" style="margin:0"><label>Type</label><select id="v21BlockType"><option>New Realtor meeting</option><option>Break Bread</option><option>Partner meeting</option><option>Strategic partner meeting</option><option>Channel meeting</option><option>Retention meeting</option><option>Internal / team</option><option>Coaching</option><option>Leadership / system</option><option>Unavailable</option></select></div>
         <button onclick="v21AddBlock()" class="btn-primary" style="height:36px;white-space:nowrap">Add block</button>
       </div>
-      <div style="font-size:10px;color:var(--text-4);margin-top:7px">Scheduling a block reserves capacity only. After a partner meeting happens, still log the meeting so it counts toward the scorecard.</div>
+      <div style="font-size:10px;color:var(--text-4);margin-top:7px">Choose the meeting type so the day is sized correctly. This only blocks the time; after the meeting happens, still log the actual meeting so it counts toward the scorecard.</div>
     </div>
 
     <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-bottom:10px" class="v22-morning-steps"><div style="padding:8px 9px;border-radius:8px;background:#F4F1FA;border:1px solid #D8D1EE;font-size:10.5px;color:var(--text-2)"><strong style="color:var(--brand-dark)">1 · Add meetings</strong><br>Block the real time you cannot use for outreach.</div><div style="padding:8px 9px;border-radius:8px;background:#F4F1FA;border:1px solid #D8D1EE;font-size:10.5px;color:var(--text-2)"><strong style="color:var(--brand-dark)">2 · Work NEXT UP</strong><br>Use the exact agent, tier, reason and time shown.</div><div style="padding:8px 9px;border-radius:8px;background:#F4F1FA;border:1px solid #D8D1EE;font-size:10.5px;color:var(--text-2)"><strong style="color:var(--brand-dark)">3 · Log it</strong><br>The completed item clears and the plan refreshes.</div></div>
@@ -11695,13 +11695,14 @@ function v21BuildTasks(owner,items,data,acts,monthActs,date,freeMinutes){
   if(freeMinutes>=180&&!types.has("Tracker / System Development"))tasks.push({kind:"system",minutes:30,owner,title:"Protected system / process work",why:"Tracker methodology and RM operating-system improvement are part of Director production, not leftover work.",logType:"Tracker / System Development"});
   return{tasks,stats:{partnerToday,monthPartner,monthNew,leadershipToday,transactionOpen:transactionTasks.length},target:"20–25 partner mtgs + leadership/system capacity"};
 }
+function v32IsPartnerMeetingBlock(type){return ["New Realtor meeting","Break Bread","Partner meeting","Strategic partner meeting","Channel meeting","Retention meeting"].includes(String(type||""));}
 function v21RenderOwner(owner,hostId,capId,blocks,items,data,acts,monthActs,scheduledActs,date){
   const host=document.getElementById(hostId),cap=document.getElementById(capId);if(!host)return;
   const busy=v21MergedBusy(blocks),busyMin=busy.reduce((n,x)=>n+x[1]-x[0],0),free=v21Free(blocks),freeMin=480-busyMin;
   const build=v21BuildTasks(owner,items,data,acts,monthActs,date,freeMin),alloc=v21Allocate(build.tasks,free);
   if(cap){
     if(owner==="Amanda"){
-      const pm=(blocks||[]).filter(b=>(b.block_type||"")==="Partner meeting").length;
+      const pm=(blocks||[]).filter(b=>v32IsPartnerMeetingBlock(b.block_type)).length;
       const other=Math.max(0,(blocks||[]).length-pm);
       cap.textContent=pm?(pm+" meeting"+(pm!==1?"s":"")+" · workflow adjusted"):(other?(other+" block"+(other!==1?"s":"")+" · workflow adjusted"):"Workflow ready");
     }else cap.textContent=v21DurationLabel(freeMin)+" open · "+v21DurationLabel(busyMin)+" blocked";
