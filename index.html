@@ -406,6 +406,7 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI'
 @media(max-width:900px){.v21-plan-grid{grid-template-columns:1fr!important}.v21-block-grid{grid-template-columns:1fr 1fr!important}}
 @media(max-width:560px){.v21-block-grid{grid-template-columns:1fr!important}}
 </style>
+<!-- v31: Amanda Workflow · clean wording + mandatory transaction calls + named acquisition + retention -->
 </head>
 <body>
 <div class="header">
@@ -444,7 +445,7 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI'
   </div>
 
   <!-- START HERE -->
-  <div class="card" id="startHereOuterCard" style="background:linear-gradient(135deg,#EEEBF8,#DDD8F0);border:1px solid #C8C0E0">
+  <div class="card" id="startHereOuterCard" style="display:none;background:linear-gradient(135deg,#EEEBF8,#DDD8F0);border:1px solid #C8C0E0">
     <div style="display:flex;justify-content:space-between;align-items:center">
       <div>
         <div class="card-title" style="font-size:15px;margin-bottom:1px">Amanda — Start Here</div>
@@ -459,13 +460,13 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI'
   <div class="card" id="weeklyCallPlanCard" style="border:1.5px solid #BFB4DB;background:#fff">
     <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;margin-bottom:9px">
       <div>
-        <div class="card-title" style="font-size:15px;margin-bottom:2px">Amanda · Today’s Plan</div>
-        <div style="font-size:11px;color:var(--text-3);max-width:780px">Your realistic workday: meetings first, then the highest-value agent work and prospecting that fits the time left. Exact agent names are locked so Nyny never receives the same person.</div>
+        <div class="card-title" style="font-size:16px;margin-bottom:2px">Amanda’s Workflow</div>
+        <div style="font-size:11.5px;color:var(--text-3);max-width:780px;line-height:1.45">Your day, in order. Must-do New Contract / CTC calls come first, then relationship calls and new-agent calls. Add only real meetings or unavailable time; the Workflow adjusts the rest automatically.</div>
       </div>
-      <div id="v22AmandaSnapshotCapacity" style="font-size:10.5px;color:var(--brand-dark);background:var(--brand-light);border:1px solid var(--border);border-radius:20px;padding:5px 9px">Calculating today…</div>
+      <div style="display:flex;gap:7px;align-items:center;flex-wrap:wrap"><button type="button" onclick="openScriptsModal()" style="font-size:10.5px;font-weight:700;color:var(--brand-dark);background:#fff;border:1px solid var(--border);border-radius:7px;cursor:pointer;font-family:inherit;padding:5px 9px">Scripts + Skillset</button><div id="v22AmandaSnapshotCapacity" style="font-size:10.5px;color:var(--brand-dark);background:var(--brand-light);border:1px solid var(--border);border-radius:20px;padding:5px 9px">Building today…</div></div>
     </div>
     <details id="v23AmandaAddTimeDetails" style="margin:2px 0 10px;background:var(--surface-2);border:1px solid var(--border-light);border-radius:8px;padding:0 9px">
-      <summary style="cursor:pointer;padding:8px 1px;font-size:10.5px;font-weight:750;color:var(--brand-dark)">+ Add today’s meeting / blocked time</summary>
+      <summary style="cursor:pointer;padding:8px 1px;font-size:10.5px;font-weight:750;color:var(--brand-dark)">+ Add meeting / blocked time</summary>
       <div class="v21-block-grid" style="display:grid;grid-template-columns:1.7fr .8fr .8fr 1fr auto;gap:7px;align-items:end;padding:2px 0 10px">
         <div class="field" style="margin:0"><label>Meeting / block</label><input id="v23AmandaBlockTitle" type="text" placeholder="Agent meeting, huddle, appointment..." maxlength="120"></div>
         <div class="field" style="margin:0"><label>Start</label><input id="v23AmandaBlockStart" type="time"></div>
@@ -473,68 +474,48 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI'
         <div class="field" style="margin:0"><label>Type</label><select id="v23AmandaBlockType"><option>Partner meeting</option><option>Internal / team</option><option>Skillset training</option><option>Unavailable</option></select></div>
         <button onclick="v23AddAmandaSnapshotBlock()" class="btn-primary" style="height:36px;white-space:nowrap">Add</button>
       </div>
-      <div style="font-size:9.5px;color:var(--text-4);padding:0 0 9px">Add the real time first. Amanda’s plan will automatically rebuild around what is left in the day.</div>
+      <div style="font-size:9.5px;color:var(--text-4);padding:0 0 9px">Add only real meetings or unavailable time. Amanda’s Workflow will adjust automatically.</div>
     </details>
-    <div id="v22AmandaSnapshotPlan"><div class="no-data">Building Amanda’s day…</div></div>
+    <details id="wp30TxnIntakeDetails" style="margin:2px 0 10px;background:#FFF9EF;border:1px solid #E9D7A9;border-radius:8px;padding:0 9px">
+      <summary style="cursor:pointer;padding:8px 1px;font-size:10.5px;font-weight:750;color:#75520A">+ Add New Contract / CTC</summary>
+      <div style="font-size:10px;color:#7A6A45;line-height:1.4;margin:0 0 8px">When a New Contract or CTC comes in, add the buyer agent and listing agent here once. Their required calls will stay at the top of Amanda’s Workflow until completed.</div>
+      <div style="display:grid;grid-template-columns:1.05fr 1.25fr 1.25fr 1.5fr auto;gap:7px;align-items:end;padding:2px 0 10px" class="v21-block-grid">
+        <div class="field" style="margin:0"><label>Milestone</label><select id="wp30TxnStage"><option value="New Contract">New contract</option><option value="Clear to Close">Clear to close</option></select></div>
+        <div class="field" style="margin:0"><label>Buyer agent</label><input id="wp30TxnBuyerAgent" type="text" placeholder="Buyer agent"></div>
+        <div class="field" style="margin:0"><label>Listing agent</label><input id="wp30TxnListingAgent" type="text" placeholder="Listing agent"></div>
+        <div class="field" style="margin:0"><label>Client / property <span style="font-weight:400;color:var(--text-4)">(optional)</span></label><input id="wp30TxnRef" type="text" placeholder="Buyer or property"></div>
+        <button type="button" onclick="wp30SaveTransactionTrigger()" class="btn-primary" style="height:36px;white-space:nowrap">Add calls</button>
+      </div>
+    </details>
+    <div id="v22AmandaSnapshotPlan"><div class="no-data">Building Amanda’s Workflow…</div></div>
     <details style="margin-top:10px;border-top:1px solid var(--border-light);padding-top:7px">
-      <summary style="cursor:pointer;font-size:11px;font-weight:750;color:var(--text-2)">See locked agent assignment list + full week</summary>
+      <summary style="cursor:pointer;font-size:11px;font-weight:750;color:var(--text-2)">Optional: see full week + assignment details</summary>
       <div style="font-size:10.5px;color:var(--text-3);background:var(--surface-2);border-radius:8px;padding:8px 10px;margin:8px 0"><strong style="color:var(--text-2)">Two-part finish:</strong> work/log the relationship touch and confirm phone, email, home mailing address and birthday. Missing info stays flagged without duplicating the call.</div>
       <div style="display:flex;justify-content:flex-end;margin-bottom:6px"><div id="weeklyCallPlanPace" style="font-size:10px;color:var(--brand-dark);background:var(--brand-light);border:1px solid var(--border);border-radius:20px;padding:4px 8px">Building week…</div></div>
       <div id="weeklyCallPlan"><div class="no-data">Building Amanda's locked agent list...</div></div>
     </details>
   </div>
 
-  <!-- SNAPSHOT SCORECARD -->
-
-  <!-- Today's scorecard -->
-  <div class="card">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
-      <div>
-        <div style="font-size:16px;font-weight:700;color:var(--text-1)" id="snapshotDayLabel">Today</div>
-        <div style="font-size:11px;color:var(--text-3);margin-top:2px" id="snapshotWeekLabel"></div>
-      </div>
-      <div class="period-toggle" style="margin-bottom:0">
-        <button class="ptoggle active" id="btn-daily" onclick="showPeriod('daily')">Today</button>
-        <button class="ptoggle" id="btn-wtd" onclick="showPeriod('wtd')">WTD</button>
-        <button class="ptoggle" id="btn-mtd" onclick="showPeriod('mtd')">MTD</button>
-        <button class="ptoggle" id="btn-ytd" onclick="showPeriod('ytd')">YTD</button>
-      </div>
-    </div>
-    <div id="snapshotStats" style="display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:16px"></div>
-    <div id="weekGoalBars" style="display:none"></div>
-    <div id="periodScorecard" style="display:none"></div>
-  </div>
-
-  <!-- PERSONAL SCOREBOARD -->
-  
-
-  <!-- RM TEAM / DIRECTOR OPERATING MODEL -->
-  
-
-  <!-- NYNY QUICK LOG -->
-  
-
   <!-- AMANDA QUICK LOG -->
   <div class="card" id="quickLogCard" style="padding:16px 18px">
     <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;margin-bottom:10px">
       <div style="min-width:240px;flex:1">
         <div class="card-title" style="margin-bottom:2px">Amanda Quick Log · Snapshot</div>
-        <div style="font-size:11px;color:var(--text-3)">Log today's RM activity here. Use the full log only when you need a detailed workflow.</div>
+        <div style="font-size:11px;color:var(--text-3)">Log work as you complete it. Amanda’s Workflow updates from what you log, so keep activity current throughout the day.</div>
       </div>
       <div style="display:flex;gap:7px;align-items:center;flex-wrap:wrap;justify-content:flex-end">
         <button type="button" onclick="openRmToLpFlag('Amanda')" style="font-size:11px;font-weight:700;color:#8A5A00;background:#FFF8E8;border:1px solid #E7C66B;border-radius:7px;cursor:pointer;font-family:inherit;padding:6px 10px">🚩 Flag LP</button>
-        <button type="button" onclick="openScheduleModal()" style="font-size:11px;font-weight:600;color:var(--brand);background:#fff;border:1px solid var(--border);border-radius:7px;cursor:pointer;font-family:inherit;padding:6px 10px">Schedule</button>
+        <button type="button" onclick="openScriptsModal()" style="font-size:11px;font-weight:700;color:var(--brand);background:#fff;border:1px solid var(--border);border-radius:7px;cursor:pointer;font-family:inherit;padding:6px 10px">Scripts + Skillset</button>
         <details style="position:relative">
-          <summary style="list-style:none;font-size:11px;font-weight:600;color:var(--brand);background:#fff;border:1px solid var(--border);border-radius:7px;cursor:pointer;font-family:inherit;padding:6px 10px;user-select:none">Tools &amp; resources ▾</summary>
+          <summary style="list-style:none;font-size:11px;font-weight:600;color:var(--brand);background:#fff;border:1px solid var(--border);border-radius:7px;cursor:pointer;font-family:inherit;padding:6px 10px;user-select:none">Tools ▾</summary>
           <div style="position:absolute;right:0;top:36px;z-index:30;width:190px;background:var(--surface);border:1px solid var(--border);border-radius:9px;box-shadow:0 8px 24px rgba(36,28,64,.12);padding:6px;display:grid;gap:3px">
-            <button type="button" onclick="openScriptsModal()" style="text-align:left;font-size:11px;font-weight:600;color:var(--text-2);background:none;border:none;border-radius:6px;cursor:pointer;font-family:inherit;padding:8px 9px">Skillset Training</button>
             <button type="button" onclick="openEncompassModal()" style="text-align:left;font-size:11px;font-weight:600;color:var(--text-2);background:none;border:none;border-radius:6px;cursor:pointer;font-family:inherit;padding:8px 9px">Encompass</button>
             <button type="button" onclick="openResourcesModal()" style="text-align:left;font-size:11px;font-weight:600;color:var(--text-2);background:none;border:none;border-radius:6px;cursor:pointer;font-family:inherit;padding:8px 9px">Resources</button>
             <button type="button" onclick="openCoachingPlaybookModal()" style="text-align:left;font-size:11px;font-weight:600;color:var(--text-2);background:none;border:none;border-radius:6px;cursor:pointer;font-family:inherit;padding:8px 9px">Agent Strategy</button>
             <button type="button" onclick="openActivityGuideModal()" style="text-align:left;font-size:11px;font-weight:600;color:var(--text-2);background:none;border:none;border-radius:6px;cursor:pointer;font-family:inherit;padding:8px 9px">Activity Guide</button>
           </div>
         </details>
-        <button type="button" onclick="switchTab('log')" style="font-size:11px;font-weight:600;color:var(--brand);background:var(--brand-light);border:1px solid #D8D1EE;border-radius:7px;cursor:pointer;font-family:inherit;padding:6px 10px">Open full log</button>
+        <button type="button" onclick="switchTab('log')" style="font-size:11px;font-weight:600;color:var(--brand);background:var(--brand-light);border:1px solid #D8D1EE;border-radius:7px;cursor:pointer;font-family:inherit;padding:6px 10px">Full activity log</button>
       </div>
     </div>
     <div class="offline-queue-badge" style="display:none;align-items:center;gap:6px;background:#EEEBF8;color:#4E3D8A;border-radius:8px;padding:8px 12px;margin-bottom:10px;font-size:12px;font-weight:600"></div>
@@ -728,6 +709,28 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI'
     <div id="quickLogMsg" style="display:none;margin-top:8px;font-size:12px;color:var(--success);font-weight:500"></div>
   </div>
 
+
+  <!-- SNAPSHOT SCORECARD -->
+
+  <!-- Today's scorecard -->
+  <div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+      <div>
+        <div style="font-size:16px;font-weight:700;color:var(--text-1)" id="snapshotDayLabel">Today’s Progress</div>
+        <div style="font-size:11px;color:var(--text-3);margin-top:2px" id="snapshotWeekLabel"></div>
+      </div>
+      <div class="period-toggle" style="margin-bottom:0">
+        <button class="ptoggle active" id="btn-daily" onclick="showPeriod('daily')">Today</button>
+        <button class="ptoggle" id="btn-wtd" onclick="showPeriod('wtd')">WTD</button>
+        <button class="ptoggle" id="btn-mtd" onclick="showPeriod('mtd')">MTD</button>
+        <button class="ptoggle" id="btn-ytd" onclick="showPeriod('ytd')">YTD</button>
+      </div>
+    </div>
+    <div id="snapshotStats" style="display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:16px"></div>
+    <div id="weekGoalBars" style="display:none"></div>
+    <div id="periodScorecard" style="display:none"></div>
+  </div>
+
   <!-- URGENT ONLY: LP handoffs stay visible on Snapshot -->
 <div class="card" id="lpFlagInboxCard" style="border:1px solid #bfdbfe">
     <div class="card-title" style="margin-bottom:4px">🚩 LP Flags — RM Follow-Up <span class="card-sub" id="flaggedSub"></span></div>
@@ -738,7 +741,7 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI'
   <!-- Onboarding tracker -->
     <details id="secondaryWorkQueues" style="margin-bottom:14px;border:1px solid var(--border);border-radius:12px;background:var(--surface);overflow:hidden">
     <summary style="cursor:pointer;list-style:none;padding:13px 16px;font-size:13px;font-weight:700;color:var(--text-1);display:flex;align-items:center;justify-content:space-between;gap:10px;background:var(--surface-2)">
-      <span>More Work Queues</span><span style="font-size:10.5px;font-weight:500;color:var(--text-3)">Use after today's assigned agents</span>
+      <span>Extra reference queues</span><span style="font-size:10.5px;font-weight:500;color:var(--text-3)">Only if Amanda’s Workflow is complete</span>
     </summary>
     <div style="padding:12px 12px 2px">
 <div class="card" id="onboardingCard" style="display:none">
@@ -746,7 +749,7 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI'
       <div><span class="card-title">Gifting Campaign Follow-Up</span> <span class="card-sub" id="onboardingSub"></span></div>
     </div>
     <div style="background:var(--surface-2);border-radius:var(--radius-sm);padding:9px 12px;margin-bottom:12px;font-size:12px;line-height:1.4;color:var(--text-2)">
-      <strong>Every agent in the gifting campaign needs a call once a week</strong> for their first 4 weeks after the meeting. Use the week-by-week scripts in Skillset Training.
+      <strong>Every agent in the gifting campaign needs a call once a week</strong> for their first 4 weeks after the meeting. Use the week-by-week scripts in Scripts + Skillset.
     </div>
     <div id="onboardingList" style="max-height:320px;overflow-y:auto"></div>
   </div>
@@ -967,7 +970,7 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI'
         <label class="intake-check"><input type="checkbox" id="intakeListreports" onchange="updateIntakeProgress()"> Added agent to ListReports</label>
         <label class="intake-check"><input type="checkbox" id="intakeTotalExpert" onchange="updateIntakeProgress()"> Added agent to Total Expert</label>
         <label class="intake-check"><input type="checkbox" id="intakeGroupText" onchange="updateIntakeProgress()"> Sent follow-up group text introducing Nyny</label>
-        <label class="intake-check"><input type="checkbox" id="intakeReferralAsk" onchange="updateIntakeProgress()"> Asked for the opportunity, walked through how they'll refer clients to us (see How to Refer in Skillset Training), and CC'd the Loan Partner</label>
+        <label class="intake-check"><input type="checkbox" id="intakeReferralAsk" onchange="updateIntakeProgress()"> Asked for the opportunity, walked through how they'll refer clients to us (see How to Refer in Scripts + Skillset), and CC'd the Loan Partner</label>
         <div id="intakeProgress" style="font-size:11px;color:#B85B00;margin-top:6px;font-weight:500">0 of 7 complete</div>
       </div>
     </div>
@@ -1064,7 +1067,7 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI'
 
   <!-- Outreach tip -->
   <div class="card" style="background:var(--surface-2);padding:10px 16px;margin-bottom:0">
-    <div style="font-size:12.5px;color:var(--text-2);margin-bottom:6px">Before you dial — pull up <button onclick="openScriptsModal()" style="background:none;border:none;color:var(--brand);font-weight:600;cursor:pointer;font-family:inherit;font-size:12.5px;padding:0">Skillset Training</button> for the reconnect opener. These are existing relationships, so this is reactivation outreach, not a cold call.</div>
+    <div style="font-size:12.5px;color:var(--text-2);margin-bottom:6px">Before you dial — pull up <button onclick="openScriptsModal()" style="background:none;border:none;color:var(--brand);font-weight:600;cursor:pointer;font-family:inherit;font-size:12.5px;padding:0">Scripts + Skillset</button> for the reconnect opener. These are existing relationships, so this is reactivation outreach, not a cold call.</div>
     <div style="font-size:11.5px;color:var(--text-3);margin-bottom:4px">Work top to bottom. Add prospects from your admin call list, then dial in order. Mark DNC or Remove anyone not worth calling again so the list stays clean.</div>
     <div style="font-size:11.5px;color:var(--brand);font-weight:600">Before each call: look them up on RETR. A recent sale mention turns a cold call into a warm one.</div>
   </div>
@@ -1210,8 +1213,8 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI'
       <div id="v21NynyDayPlan"><div class="no-data">Building your plan...</div></div>
     </div>
     <details id="v23AmandaMgmtToday" style="margin-top:10px;border:1px solid #D8D1EE;border-radius:9px;background:#FCFBFF;padding:0 11px">
-      <summary style="cursor:pointer;padding:10px 1px;font-size:11.5px;font-weight:750;color:var(--brand-dark);display:flex;justify-content:space-between;align-items:center;gap:8px"><span>Amanda · Today at a glance</span><span id="v21AmandaCapacity" style="font-size:9.5px;font-weight:700;color:var(--brand-dark);background:var(--brand-light);border-radius:20px;padding:4px 8px">Calculating...</span></summary>
-      <div style="font-size:10px;color:var(--text-3);margin:-2px 0 7px">Open only when you need to coach, adjust capacity, or see exactly what Amanda is working. Amanda sees her full day on Snapshot.</div>
+      <summary style="cursor:pointer;padding:10px 1px;font-size:11.5px;font-weight:750;color:var(--brand-dark);display:flex;justify-content:space-between;align-items:center;gap:8px"><span>Amanda’s Workflow · at a glance</span><span id="v21AmandaCapacity" style="font-size:9.5px;font-weight:700;color:var(--brand-dark);background:var(--brand-light);border-radius:20px;padding:4px 8px">Calculating...</span></summary>
+      <div style="font-size:10px;color:var(--text-3);margin:-2px 0 7px">Open only when you need to coach, adjust capacity, or see exactly what Amanda is working. Amanda sees her full Workflow on Snapshot.</div>
       <div id="v21AmandaDayPlan" style="padding-bottom:10px"><div class="no-data">Building Amanda's plan...</div></div>
     </details>
   </div>
@@ -1268,7 +1271,7 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI'
       </div>
       <div style="display:flex;gap:7px;align-items:center;flex-wrap:wrap">
         <button type="button" onclick="openRmToLpFlag('Nyny')" style="font-size:11px;font-weight:700;color:#7A4B00;background:#FFF8E8;border:1px solid #E7C66B;border-radius:7px;cursor:pointer;font-family:inherit;padding:6px 10px">🚩 Flag LP</button>
-        <button type="button" onclick="openNynyFullLog()" style="font-size:11px;font-weight:600;color:var(--brand);background:var(--brand-light);border:1px solid #D8D1EE;border-radius:7px;cursor:pointer;font-family:inherit;padding:6px 10px">Open full log</button>
+        <button type="button" onclick="openNynyFullLog()" style="font-size:11px;font-weight:600;color:var(--brand);background:var(--brand-light);border:1px solid #D8D1EE;border-radius:7px;cursor:pointer;font-family:inherit;padding:6px 10px">Full activity log</button>
       </div>
     </div>
 
@@ -1610,7 +1613,7 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI'
         <button onclick="openAddAgentModal()" style="padding:8px 14px;background:var(--brand);color:#fff;border:none;border-radius:var(--radius-sm);font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap">+ Add agent</button>
       </div>
     </div>
-    <div style="font-size:11px;color:var(--text-3);margin:-8px 0 14px">Upload a .csv or .xlsx with columns for name, email, phone, address, birthday, tier, and production data (closed past year, total leads, latest lead date) — column names are flexible, including a straight Power BI/Velocify export. Existing agents get updated (blank cells never overwrite data that's already there); new names get added. Names are matched case-insensitively, so this also catches near-duplicates automatically.<br><span style="color:var(--text-4)">Core Team Tracker is the primary place to upload the weekly Power BI export — it updates the same shared contacts. Use this if you need Contacts current here before that's run.</span></div>
+    <div style="font-size:11px;color:var(--text-3);margin:-8px 0 14px">Upload a .csv or .xlsx with columns for name, email, phone, brokerage/team/company, home address, birthday, tier, and production data (closed past year, total leads, latest lead date) — column names are flexible, including a straight Power BI/Velocify export. Existing agents get updated (blank cells never overwrite data that's already there); new names get added. Names are matched case-insensitively, so this also catches near-duplicates automatically.<br><span style="color:var(--text-4)">Core Team Tracker is the primary place to upload the weekly Power BI export — it updates the same shared contacts. Use this if you need Contacts current here before that's run.</span></div>
     <div id="contactsImportProgress" style="display:none;font-size:12px;color:var(--brand);margin-bottom:10px">Importing...</div>
     <div style="display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap">
       <input type="text" id="contactsSearch" placeholder="Search by name, phone, email or birthday..." oninput="filterContacts()" style="flex:1;min-width:180px;padding:9px 11px;border:0.5px solid #D9D3C7;border-radius:8px;font-size:13px;font-family:inherit;color:#1a1a2e;outline:none">
@@ -1655,6 +1658,7 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI'
     <div class="field" style="margin-bottom:12px"><label>Agent name *</label><input type="text" id="addAgentName" placeholder="Full name"></div>
     <div class="field" style="margin-bottom:12px"><label>Phone</label><input type="text" id="addAgentPhone" placeholder="Phone number"></div>
     <div class="field" style="margin-bottom:12px"><label>Email</label><input type="email" id="addAgentEmail" placeholder="Email address"></div>
+    <div class="field" style="margin-bottom:12px"><label>Brokerage / Team / Company</label><input type="text" id="addAgentBrokerage" placeholder="e.g. Rockford Homes, Sam Cooper Team, Thrive"></div>
     <div class="field" style="margin-bottom:12px">
       <label>Home Address <span style="font-weight:400;color:var(--text-4)">(for gifts and mail)</span></label>
       <input type="text" id="addAgentStreet" placeholder="Street address" style="margin-bottom:6px">
@@ -1782,6 +1786,7 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI'
     </div>
     <div class="field" style="margin-bottom:12px"><label>Phone</label><input type="text" id="contactPhone" placeholder="Phone number"></div>
     <div class="field" style="margin-bottom:12px"><label>Email</label><input type="email" id="contactEmail" placeholder="Email address"></div>
+    <div class="field" style="margin-bottom:12px"><label>Brokerage / Team / Company</label><input type="text" id="contactBrokerage" placeholder="e.g. Rockford Homes, Sam Cooper Team, Thrive"><div style="font-size:10.5px;color:var(--text-3);margin-top:4px">Strategic-account routing uses this field. Rockford, Sam Cooper Team and Thrive route to Nyny automatically.</div></div>
     <div class="field" style="margin-bottom:12px">
       <label>Home Address <span style="font-weight:400;color:var(--text-4)">(for gifts and mail)</span></label>
       <input type="text" id="contactStreet" placeholder="Street address" style="margin-bottom:6px">
@@ -1975,8 +1980,8 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI'
     <table style="width:100%;border-collapse:collapse;font-size:12.5px;margin-bottom:16px">
       <tr><td style="padding:5px 8px 5px 0;font-weight:600;white-space:nowrap;vertical-align:top">Agent Talk-to <span style="color:var(--brand);font-weight:400">counts as Talk-to</span></td><td style="padding:5px 0;color:var(--text-2)">A proactive check-in with an agent who's currently active and sending business.</td></tr>
       <tr><td style="padding:5px 8px 5px 0;font-weight:600;white-space:nowrap;vertical-align:top">Reconnect Outreach <span style="color:var(--brand);font-weight:400">counts as Talk-to</span></td><td style="padding:5px 0;color:var(--text-2)">The right type for re-engaging someone from the Reconnect list. It's not a Cold Call since you already know them, but a regular Agent Talk-to isn't quite right either since they haven't sent a lead in 90+ days.</td></tr>
-      <tr><td style="padding:5px 8px 5px 0;font-weight:600;white-space:nowrap;vertical-align:top">CTC Call <span style="color:var(--brand);font-weight:400">counts as Talk-to</span></td><td style="padding:5px 0;color:var(--text-2)">Process: call the agent, leave a voicemail if no answer, then follow up with a text. Script is in Skillset Training. Get feedback from <strong>both</strong> the buyer's agent and the listing agent. Share that feedback on WhatsApp with the team in real-time, proactively, the way Daniel does, proactively. Check Encompass for the CTC milestone  Always ask the listing agent for a meeting if they don't already work with us; a closing is a natural door-opener. If there's a closing issue or poor feedback, set the outcome to "Needs manager attention" so it surfaces for the team.</td></tr>
-      <tr><td style="padding:5px 8px 5px 0;font-weight:600;white-space:nowrap;vertical-align:top">Under Contract Call <span style="color:var(--brand);font-weight:400">counts as Talk-to, note required</span></td><td style="padding:5px 0;color:var(--text-2)">First call to the listing agent as soon as a deal you're the buyer's lender on goes under contract. Script is in Skillset Training.</td></tr>
+      <tr><td style="padding:5px 8px 5px 0;font-weight:600;white-space:nowrap;vertical-align:top">CTC Call <span style="color:var(--brand);font-weight:400">counts as Talk-to</span></td><td style="padding:5px 0;color:var(--text-2)">Process: call the agent, leave a voicemail if no answer, then follow up with a text. Script is in Scripts + Skillset. Get feedback from <strong>both</strong> the buyer's agent and the listing agent. Share that feedback on WhatsApp with the team in real-time, proactively, the way Daniel does, proactively. Check Encompass for the CTC milestone  Always ask the listing agent for a meeting if they don't already work with us; a closing is a natural door-opener. If there's a closing issue or poor feedback, set the outcome to "Needs manager attention" so it surfaces for the team.</td></tr>
+      <tr><td style="padding:5px 8px 5px 0;font-weight:600;white-space:nowrap;vertical-align:top">Under Contract Call <span style="color:var(--brand);font-weight:400">counts as Talk-to, note required</span></td><td style="padding:5px 0;color:var(--text-2)">First call to the listing agent as soon as a deal you're the buyer's lender on goes under contract. Script is in Scripts + Skillset.</td></tr>
       <tr><td style="padding:5px 8px 5px 0;font-weight:600;white-space:nowrap;vertical-align:top">Birthday / Holiday Outreach <span style="color:var(--brand);font-weight:400">counts as Talk-to</span></td><td style="padding:5px 0;color:var(--text-2)">A personal touch: wish the agent a happy birthday or happy holidays. When the birthday alert shows on Snapshot, send a text, give a quick call, or both. If the agent is a top producer, let the team know so they can wish them well too. When you are on a call with any agent, check if their birthday is on file — a lot of data is missing. If you do not have it, ask and add it to their contact so you never miss it.</td></tr>
       <tr><td style="padding:5px 8px 5px 0;font-weight:600;white-space:nowrap;vertical-align:top">Agent Appreciation <span style="color:var(--brand);font-weight:400">counts as Talk-to</span></td><td style="padding:5px 0;color:var(--text-2)">Recognizing a top producer or celebrating a milestone.</td></tr>
       <tr><td style="padding:5px 8px 5px 0;font-weight:600;white-space:nowrap;vertical-align:top">Market Update <span style="color:var(--brand);font-weight:400">counts as Talk-to</span></td><td style="padding:5px 0;color:var(--text-2)">Sharing what's happening in the market: inventory, days on market, buyer demand, listing trends. This isn't financing or rates; that stays with the LP team.</td></tr>
@@ -2039,8 +2044,8 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI'
 
 <div class="modal-overlay" id="scriptsModal">
   <div class="modal-box" style="max-width:660px;max-height:85vh;overflow-y:auto">
-    <div class="modal-header"><span class="modal-title">Skillset Training</span><button class="modal-close" onclick="closeScriptsModal()">×</button></div>
-    <div class="modal-sub" style="margin-bottom:18px">Choose the skill you are working on. Each topic keeps the script, purpose, objection handling and follow-up together so you can practice quickly before the call.</div>
+    <div class="modal-header"><span class="modal-title">Scripts + Skillset</span><button class="modal-close" onclick="closeScriptsModal()">×</button></div>
+    <div class="modal-sub" style="margin-bottom:18px">Choose what you need for the call. Scripts, talk tracks, objection handling and follow-up guidance are organized by situation.</div>
 
     <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:7px;margin-bottom:14px">
       <div style="padding:8px 10px;border-radius:8px;background:#EEEBF8;color:var(--brand-dark);font-size:10.5px;font-weight:700">1 · Prospect & book</div>
@@ -4015,10 +4020,10 @@ async function loadStartHere(){
       +'</div>').join("");
 
     if(scheduledToday>0){
-      html+='<div style="margin-top:10px;background:var(--surface-2);border-radius:8px;padding:10px 12px;font-size:12px;color:var(--text-2)">'+scheduledToday+' follow-up'+(scheduledToday!==1?"s":"")+" scheduled for today. Take a minute to review Skillset Training before the call.</div>";
+      html+='<div style="margin-top:10px;background:var(--surface-2);border-radius:8px;padding:10px 12px;font-size:12px;color:var(--text-2)">'+scheduledToday+' follow-up'+(scheduledToday!==1?"s":"")+" scheduled for today. Open Scripts + Skillset before the call if you need the talk track.</div>";
     }
     if(giftingHint){
-      html+='<div style="margin-top:8px;background:var(--surface-2);border-radius:8px;padding:10px 12px;font-size:12px;color:var(--text-2)">'+giftingHint+' See Skillset Training for the full week-by-week scripts.</div>';
+      html+='<div style="margin-top:8px;background:var(--surface-2);border-radius:8px;padding:10px 12px;font-size:12px;color:var(--text-2)">'+giftingHint+' See Scripts + Skillset for the full week-by-week scripts.</div>';
     }
     if(stuckColdCalls.length){
       html+='<div style="margin-top:8px;background:var(--surface-2);border-radius:8px;padding:10px 12px">'
@@ -4133,10 +4138,13 @@ async function loadFlagged(){
     const sub=document.getElementById("flaggedSub");
     if(sub)sub.textContent=flagged.length?flagged.length+" flag"+(flagged.length!==1?"s":""):"";
 
+    const flagCard=document.getElementById("lpFlagInboxCard");
     if(!flagged.length){
+      if(flagCard)flagCard.style.display="none";
       document.getElementById("weekFlagged").innerHTML='<div class="no-data" style="padding:14px">No open LP flags — you are caught up.</div>';
       return;
     }
+    if(flagCard)flagCard.style.display="block";
 
     let html='<div style="font-size:11px;font-weight:700;color:var(--danger);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;padding-top:8px;border-top:1px solid var(--border-light)">🚩 Flagged by LPs — action needed</div>';
     html+=flagged.map(f=>{
@@ -6927,6 +6935,7 @@ async function ccSave(){
     document.getElementById('ccAcList').classList.remove('open');
     setTimeout(()=>{if(msg)msg.style.display='none';},3000);
     loadWeek();loadStartHere();
+    try{_wp18Cache=null;_wp18CacheAt=0;setTimeout(()=>v23LoadAmandaSnapshot(true),80);}catch(e){}
   }catch(e){
     toast("Save failed: "+e.message,"error");
   }finally{
@@ -9922,6 +9931,7 @@ function openAddAgentModal(){
   document.getElementById("addAgentName").value="";
   document.getElementById("addAgentPhone").value="";
   document.getElementById("addAgentEmail").value="";
+  if(document.getElementById("addAgentBrokerage"))document.getElementById("addAgentBrokerage").value="";
   applyAddressToFields("","addAgent");
   document.getElementById("addAgentBirthday").value="";
   document.getElementById("addAgentTier").value="";
@@ -9942,6 +9952,7 @@ async function saveNewAgent(){
     const payload={
       phone:document.getElementById("addAgentPhone").value.trim()||null,
       email:document.getElementById("addAgentEmail").value.trim()||null,
+      brokerage:document.getElementById("addAgentBrokerage")?document.getElementById("addAgentBrokerage").value.trim()||null:null,
       address:combineAddress(document.getElementById("addAgentStreet").value,document.getElementById("addAgentCity").value,document.getElementById("addAgentState").value,document.getElementById("addAgentZip").value),
       birthday:birthdayVal||null,
       tier:document.getElementById("addAgentTier").value||null
@@ -9958,17 +9969,57 @@ async function saveNewAgent(){
       // documented "re-add them manually if needed" path after removal. DNC and retained/Active
       // Partner are left untouched; only roster status changes.
       await sbFetch("agent_profiles?agent_name=eq."+encodeURIComponent(exact.agent_name),{method:"PATCH",prefer:"return=minimal",body:JSON.stringify(Object.assign({relationship_status:"active"},exact.display_name===HIDDEN_PROFILE_MARKER?{display_name:null}:{},payload))});
-      toast(name+" already existed — updated and reactivated instead of duplicated ✓","success");
+      // If this person had previously been removed in either tracker, clear Core Team's removal
+      // sentinel so reactivation is shared too. The old LP is not guessed; it returns Unassigned.
+      await clearSharedRemovalMarker(exact.agent_name).catch(()=>{});
+      toast(name+" already existed — updated and reactivated across both trackers ✓","success");
     }else{
       payload.agent_name=name;
       await sbFetch("agent_profiles",{method:"POST",prefer:"return=minimal",body:JSON.stringify(payload)});
       toast(name+" added to contacts ✓","success");
     }
+    if(typeof wp18EnsureStrategicOwnership==="function")await wp18EnsureStrategicOwnership((exact&&exact.agent_name)||name,payload).catch(()=>{});
     closeAddAgentModal();
     loadContacts();
     initAutocomplete();
   }catch(e){toast("Failed: "+e.message,"error");}
 }
+// v26: one removal must disappear from BOTH RM + Core Team workflows.
+// relationship_status=inactive is the authoritative shared roster signal. The additional writes
+// below mirror Core Team's legacy removal marker and immediately clear active work queues so an
+// agent cannot linger on today's plan until the next weekly rebuild. Historical activity is kept.
+async function removeAgentAcrossSharedTrackers(canonicalName){
+  const key=wp18Key(canonicalName);
+  const safeName=encodeURIComponent(canonicalName);
+  const jobs=[];
+  // Core Team legacy/current roster marker. Preserve RM ownership/history; only LP sentinel changes.
+  jobs.push((async()=>{
+    const rows=await sbFetch("agent_assignments?agent_name=ilike."+safeName+"&select=*&limit=10").catch(()=>[]);
+    const matches=(rows||[]).filter(r=>wp18Key(r.agent_name)===key);
+    if(matches.length){
+      await Promise.all(matches.map(r=>sbFetch("agent_assignments?agent_name=eq."+encodeURIComponent(r.agent_name),{method:"PATCH",prefer:"return=minimal",body:JSON.stringify({lp:"__REMOVED__"})}).catch(()=>{})));
+    }else{
+      await sbFetch("agent_assignments",{method:"POST",prefer:"return=minimal",body:JSON.stringify({agent_name:canonicalName,lp:"__REMOVED__",priority:false,added:false,level:"C"})}).catch(()=>{});
+    }
+  })());
+  // Current/future workflow only. Historical calls/meetings/notes are intentionally preserved.
+  jobs.push(sbFetch("rm_work_queue?agent_key=eq."+encodeURIComponent(key),{method:"DELETE",prefer:"return=minimal"}).catch(()=>{}));
+  jobs.push(sbFetch("reconnect_agents?agent_name=ilike."+safeName,{method:"PATCH",prefer:"return=minimal",body:JSON.stringify({status:"removed"})}).catch(()=>{}));
+  jobs.push(sbFetch("outreach_prospects?agent_name=ilike."+safeName,{method:"DELETE",prefer:"return=minimal"}).catch(()=>{}));
+  jobs.push(sbFetch("amanda_activities?agent_name=ilike."+safeName+"&follow_up_date=not.is.null",{method:"PATCH",prefer:"return=minimal",body:JSON.stringify({follow_up_date:null})}).catch(()=>{}));
+  await Promise.all(jobs);
+  try{delete agentOwnershipByKey[ownerKey(canonicalName)];}catch(e){}
+  try{_wp18Cache=null;_wp18CacheAt=0;}catch(e){}
+}
+
+async function clearSharedRemovalMarker(canonicalName){
+  const key=wp18Key(canonicalName),safeName=encodeURIComponent(canonicalName);
+  const rows=await sbFetch("agent_assignments?agent_name=ilike."+safeName+"&select=agent_name,lp&limit=10").catch(()=>[]);
+  await Promise.all((rows||[]).filter(r=>wp18Key(r.agent_name)===key&&r.lp==="__REMOVED__").map(r=>
+    sbFetch("agent_assignments?agent_name=eq."+encodeURIComponent(r.agent_name),{method:"PATCH",prefer:"return=minimal",body:JSON.stringify({lp:"Unassigned"})}).catch(()=>{})
+  ));
+}
+
 async function deleteAgent(){
   // HOTFIX: was reading document.getElementById("contactModalName").textContent — but that field
   // displays the DISPLAY name (c.display_name || resolvedDisplayName(name)) when a display-name
@@ -9979,7 +10030,7 @@ async function deleteAgent(){
   const name=editingContactOriginalName||editingContactName;
   const displayLabel=document.getElementById("contactModalName").textContent||name;
   if(!name)return;
-  if(!confirm("Remove "+displayLabel+" from the active roster? Their history will be preserved and they will remain available under Inactive / removed."))return;
+  if(!confirm("Remove "+displayLabel+" from BOTH the RM Tracker and Core Team Tracker? They will disappear from active rosters, assignments, daily queues, reconnect/prospecting and future follow-ups. Historical activity will be preserved."))return;
   const btn=document.getElementById("deleteAgentBtn");
   if(btn){if(btn.disabled)return;btn.disabled=true;btn.textContent="Removing...";}
   try{
@@ -10001,10 +10052,14 @@ async function deleteAgent(){
       // relationship_status changes — DNC and retained are left exactly as they were.
       await sbFetch("agent_profiles?agent_name=eq."+encodeURIComponent(exact.agent_name),{method:"PATCH",prefer:"return=minimal",body:JSON.stringify({relationship_status:"inactive"})});
     }
-    toast(displayLabel+" removed from the active roster","success");
+    const removedCanonical=(exact&&exact.agent_name)||name;
+    await removeAgentAcrossSharedTrackers(removedCanonical);
+    toast(displayLabel+" removed across RM + Core Team ✓","success");
     closeContactModal();
     loadContacts();
     initAutocomplete();
+    if(typeof loadWeeklyWorkPlans==="function")loadWeeklyWorkPlans(true);
+    if(typeof v21LoadDailyPlan==="function")v21LoadDailyPlan(true);
   }catch(e){toast("Remove failed: "+e.message,"error");}
   finally{if(btn){btn.disabled=false;btn.textContent="Remove from active";}}
 }
@@ -10063,7 +10118,9 @@ async function openContactModal(name,phone,email,brokerage,birthday){
       const p=exact||(profiles&&profiles[0]);
       if(p){
         editingContactOriginalName=ambiguous?null:p.agent_name;
-        phone=p.phone||phone||"";email=p.email||email||"";brokerage=p.address||brokerage||"";birthday=p.birthday||birthday||"";
+        phone=p.phone||phone||"";email=p.email||email||"";birthday=p.birthday||birthday||"";
+        var contactHomeAddress=p.address||"";
+        var contactOrg=p.brokerage||brokerage||"";
         personalNotes=p.personal_notes||"";
         if(document.getElementById("contactDisplayName"))document.getElementById("contactDisplayName").value=p.display_name||"";
         document.getElementById("contactTier").value=p.tier||"";
@@ -10083,7 +10140,8 @@ async function openContactModal(name,phone,email,brokerage,birthday){
     }catch(e){}
   }
   document.getElementById("contactPhone").value=phone||"";document.getElementById("contactEmail").value=email||"";
-  applyAddressToFields(brokerage||"","contact");
+  if(document.getElementById("contactBrokerage"))document.getElementById("contactBrokerage").value=(typeof contactOrg!=="undefined"?contactOrg:(brokerage||""));
+  applyAddressToFields((typeof contactHomeAddress!=="undefined"?contactHomeAddress:""),"contact");
   // Normalize whatever's stored (MM/DD, MM-DD from the Core Team app, or "Month D" from a Power
   // BI import) to MM/DD for display, so the field always shows the format Save expects — and a
   // save the user doesn't touch never gets blocked by a format Save didn't write in the first place.
@@ -10115,7 +10173,7 @@ async function saveContactModal(){
         }
       }
     }
-    const payload={display_name:document.getElementById("contactDisplayName")?document.getElementById("contactDisplayName").value.trim()||null:null,phone:document.getElementById("contactPhone").value.trim()||null,email:document.getElementById("contactEmail").value.trim()||null,address:combineAddress(document.getElementById("contactStreet").value,document.getElementById("contactCity").value,document.getElementById("contactState").value,document.getElementById("contactZip").value),birthday:birthdayVal,personal_notes:document.getElementById("contactPersonalNotes")?document.getElementById("contactPersonalNotes").value.trim()||null:null,tier:document.getElementById("contactTier").value||null,do_not_contact:document.getElementById("contactDNC").checked};
+    const payload={display_name:document.getElementById("contactDisplayName")?document.getElementById("contactDisplayName").value.trim()||null:null,phone:document.getElementById("contactPhone").value.trim()||null,email:document.getElementById("contactEmail").value.trim()||null,brokerage:document.getElementById("contactBrokerage")?document.getElementById("contactBrokerage").value.trim()||null:null,address:combineAddress(document.getElementById("contactStreet").value,document.getElementById("contactCity").value,document.getElementById("contactState").value,document.getElementById("contactZip").value),birthday:birthdayVal,personal_notes:document.getElementById("contactPersonalNotes")?document.getElementById("contactPersonalNotes").value.trim()||null:null,tier:document.getElementById("contactTier").value||null,do_not_contact:document.getElementById("contactDNC").checked};
     if(document.getElementById("contactGrowthOpp"))payload.next_growth_opportunity=document.getElementById("contactGrowthOpp").value.trim()||null;
     if(document.getElementById("contactGrowthOppDeadline"))payload.growth_opportunity_deadline=document.getElementById("contactGrowthOppDeadline").value||null;
     if(document.getElementById("contactLastMeaningfulContact"))payload.last_meaningful_contact_date=document.getElementById("contactLastMeaningfulContact").value||null;
@@ -10146,9 +10204,14 @@ async function saveContactModal(){
       payload.agent_name=editingContactName;
       await sbFetch("agent_profiles",{method:"POST",prefer:"return=minimal",body:JSON.stringify(payload)});
     }
-    const displayKey=((exact&&exact.agent_name)||editingContactName||"").trim().toLowerCase();
+    const savedAgentName=(exact&&exact.agent_name)||editingContactName;
+    const displayKey=(savedAgentName||"").trim().toLowerCase();
     if(payload.display_name)amandaDisplayNames[displayKey]=payload.display_name;else delete amandaDisplayNames[displayKey];
-    const ownershipOk=await saveAgentOwnership((exact&&exact.agent_name)||editingContactName);
+    // Strategic-account rules override a stale/manual Amanda assignment.
+    if(typeof wp18StrategicNynyMatch==="function"&&wp18StrategicNynyMatch(savedAgentName,payload)){
+      const rmEl=document.getElementById("contactRmOwner");if(rmEl)rmEl.value="Nyny";
+    }
+    const ownershipOk=await saveAgentOwnership(savedAgentName);
     toast(ownershipOk?"Contact + ownership updated":"Contact updated — ownership setup still needed",ownershipOk?"success":"error",ownershipOk?3200:5500);closeContactModal();if(window._contactSaveCallback){window._contactSaveCallback();window._contactSaveCallback=null;}
     if(document.getElementById("historySearch").value.length>=2)doSearchHistory(document.getElementById("historySearch").value.trim());
   }catch(e){toast("Save failed: "+e.message,"error");}
@@ -10251,19 +10314,30 @@ async function loadOwnershipIntoContactModal(name){
   if(!rmEl||!lpEl)return;
   let o=getAgentOwnership(name);rmEl.value=o.rm||"";lpEl.value=o.lp||"";
   try{
-    const rows=await sbFetch("agent_assignments?agent_name=ilike."+encodeURIComponent(name)+"&select=*&limit=5").catch(()=>[]);
+    const [rows,profiles]=await Promise.all([
+      sbFetch("agent_assignments?agent_name=ilike."+encodeURIComponent(name)+"&select=*&limit=5").catch(()=>[]),
+      sbFetch("agent_profiles?agent_name=ilike."+encodeURIComponent(name)+"&select=agent_name,brokerage,email,tier&limit=5").catch(()=>[])
+    ]);
     const exact=(rows||[]).find(r=>ownerKey(r.agent_name)===ownerKey(name))||(rows||[])[0];
     if(exact){cacheOwnershipRow(exact);o=getAgentOwnership(exact.agent_name);rmEl.value=o.rm||"";lpEl.value=o.lp||"";}
-    if(st){st.style.display="none";st.textContent="";}
+    const p=(profiles||[]).find(r=>ownerKey(r.agent_name)===ownerKey(name))||(profiles||[])[0]||{};
+    const strategic=(typeof wp18StrategicNynyRule==="function")?wp18StrategicNynyRule(name,p):null;
+    if(strategic){rmEl.value="Nyny";if(st){st.style.display="block";st.style.color="#245B43";st.textContent="Strategic ownership: "+strategic.label+" → Nyny";}}
+    else if(st){st.style.display="none";st.textContent="";}
   }catch(e){}
 }
 async function saveAgentOwnership(name){
   const rmEl=document.getElementById("contactRmOwner"),lpEl=document.getElementById("contactLpOwner"),st=document.getElementById("contactOwnershipStatus");
   if(!rmEl||!lpEl)return true;
-  const desiredRm=rmEl.value||null,desiredLp=lpEl.value||"Unassigned";
+  let desiredRm=rmEl.value||null;const desiredLp=lpEl.value||"Unassigned";
   try{
-    const rows=await sbFetch("agent_assignments?agent_name=ilike."+encodeURIComponent(name)+"&select=*&limit=5").catch(()=>[]);
+    const [rows,profiles]=await Promise.all([
+      sbFetch("agent_assignments?agent_name=ilike."+encodeURIComponent(name)+"&select=*&limit=5").catch(()=>[]),
+      sbFetch("agent_profiles?agent_name=ilike."+encodeURIComponent(name)+"&select=agent_name,brokerage,email,tier&limit=5").catch(()=>[])
+    ]);
     const exact=(rows||[]).find(r=>ownerKey(r.agent_name)===ownerKey(name))||(rows||[])[0]||{};
+    const p=(profiles||[]).find(r=>ownerKey(r.agent_name)===ownerKey(name))||(profiles||[])[0]||{};
+    if(typeof wp18StrategicNynyMatch==="function"&&wp18StrategicNynyMatch(name,p)){desiredRm="Nyny";rmEl.value="Nyny";}
     const payload={agent_name:exact.agent_name||name,lp:desiredLp,rm:desiredRm,priority:!!exact.priority,added:!!exact.added,level:exact.level||"C"};
     if(exact.closed_past_year!==undefined)payload.closed_past_year=exact.closed_past_year;
     await sbFetch("agent_assignments?on_conflict=agent_name",{method:"POST",prefer:"resolution=merge-duplicates,return=minimal",body:JSON.stringify(payload)});
@@ -10306,7 +10380,8 @@ async function importContactsFile(input){
       name:["agent name","name","agent","full name"],
       email:["email","email address","e-mail"],
       phone:["phone","cell phone","phone number","cell","mobile"],
-      address:["address","home address","brokerage","mailing address"],
+      brokerage:["brokerage","company","team","office","organization","brokerage / team / company"],
+      address:["address","home address","mailing address","home mailing address"],
       birthday:["birthday","dob","date of birth","bday"],
       tier:["tier","grade","level"],
       retained:["retained","active","is active","status"],
@@ -10346,12 +10421,12 @@ async function importContactsFile(input){
     // Falls back gracefully if relationship_status hasn't been added yet (see
     // DEPLOY_NOW_SAFE_MIGRATIONS.sql) — never hard-fails the import over a column that might not
     // exist in this environment yet, the same class of bug this whole engagement started from.
-    const existing=await sbFetch("agent_profiles?select=agent_name,tier,retained,relationship_status,email,phone,address,birthday&limit=5000").catch(()=>sbFetch("agent_profiles?select=agent_name,tier,retained,relationship_status&limit=5000").catch(()=>sbFetch("agent_profiles?select=agent_name,tier,retained&limit=5000").catch(()=>[])));
+    const existing=await sbFetch("agent_profiles?select=agent_name,tier,retained,relationship_status,email,phone,brokerage,address,birthday&limit=5000").catch(()=>sbFetch("agent_profiles?select=agent_name,tier,retained,relationship_status,email,phone,address,birthday&limit=5000").catch(()=>sbFetch("agent_profiles?select=agent_name,tier,retained,relationship_status&limit=5000").catch(()=>[])));
     const existingByName={};
     const existingTierByName={};
     const existingRosterStatusByName={};
     const existingContactByName={};
-    existing.forEach(e=>{const n=agentMatchKey(e.agent_name);if(n&&!existingByName[n]){existingByName[n]=e.agent_name;existingTierByName[n]=e.tier||null;existingRosterStatusByName[n]=e.relationship_status||"active";existingContactByName[n]={email:e.email,phone:e.phone,address:e.address,birthday:e.birthday};}});
+    existing.forEach(e=>{const n=agentMatchKey(e.agent_name);if(n&&!existingByName[n]){existingByName[n]=e.agent_name;existingTierByName[n]=e.tier||null;existingRosterStatusByName[n]=e.relationship_status||"active";existingContactByName[n]={email:e.email,phone:e.phone,brokerage:e.brokerage,address:e.address,birthday:e.birthday};}});
 
     let created=0,updated=0,skipped=0;
     const truthy=v=>{const s=(v||"").toString().trim().toLowerCase();return s==="y"||s==="yes"||s==="true"||s==="active"||s==="1";};
@@ -10369,6 +10444,7 @@ async function importContactsFile(input){
       const existingContactRow=existingContactByName[agentMatchKey(name)]||null;
       if(colMap.email&&row[colMap.email]&&(!existingContactRow||!existingContactRow.email))payload.email=row[colMap.email].toString().trim();
       if(colMap.phone&&row[colMap.phone]&&(!existingContactRow||!existingContactRow.phone))payload.phone=row[colMap.phone].toString().trim();
+      if(colMap.brokerage&&row[colMap.brokerage]&&(!existingContactRow||!existingContactRow.brokerage))payload.brokerage=row[colMap.brokerage].toString().trim();
       if(colMap.address&&row[colMap.address]&&(!existingContactRow||!existingContactRow.address))payload.address=row[colMap.address].toString().trim();
       if(colMap.birthday&&row[colMap.birthday]&&(!existingContactRow||!existingContactRow.birthday))payload.birthday=normalizeBirthdayForImport(row[colMap.birthday]);
       if(colMap.tier&&row[colMap.tier])payload.tier=row[colMap.tier].toString().trim().toUpperCase();
@@ -10674,6 +10750,7 @@ function renderContacts(list){
       '<div class="contact-info">'+
         '<div class="contact-name" style="display:flex;align-items:center;gap:7px">'+escHtml(shownName)+tierBadge(c.tier)+'</div>'+
         (function(){const o=getAgentOwnership(c.agent_name);return '<div style="font-size:10.5px;color:var(--text-3);margin-top:2px"><strong style="color:var(--brand)">RM:</strong> '+escHtml(o.rm||"Unassigned")+' &nbsp;·&nbsp; <strong style="color:var(--text-2)">LP:</strong> '+escHtml((o.lp&&o.lp!=="Unassigned")?o.lp:"Unassigned")+'</div>';})()+
+        (c.brokerage?'<div style="font-size:10.5px;color:var(--text-3);margin-top:2px">'+escHtml(c.brokerage)+'</div>':'')+
         '<div class="contact-meta">'+
           (c.phone?'<span>'+phoneCallLink(c.agent_name,c.phone)+'</span>':'<span style="color:#ffb3b3">No phone</span>')+
           (c.email?'<span>'+escHtml(c.email)+'</span>':'')+
@@ -10722,6 +10799,7 @@ function openContactsEdit(nameOrEl){
   if(document.getElementById("contactDisplayName"))document.getElementById("contactDisplayName").value=c.display_name||"";
   document.getElementById("contactPhone").value=c.phone||"";
   document.getElementById("contactEmail").value=c.email||"";
+  if(document.getElementById("contactBrokerage"))document.getElementById("contactBrokerage").value=c.brokerage||"";
   applyAddressToFields(c.address||"","contact");
   document.getElementById("contactBirthday").value=c.birthday?formatBirthdayDisplay(c.birthday):"";
   if(document.getElementById("contactPersonalNotes"))document.getElementById("contactPersonalNotes").value=c.personal_notes||"";
@@ -10875,7 +10953,7 @@ function wpDayLabel(i){return["Monday","Tuesday","Wednesday","Thursday","Friday"
 </script>
 
 <!-- Page Guide — floating index so nothing on Snapshot gets missed just because someone didn't scroll -->
-<div id="pageGuideBtn" onclick="togglePageGuide()" style="display:none;position:fixed;bottom:20px;right:20px;z-index:998;background:var(--brand);color:#fff;border-radius:24px;padding:10px 16px;font-size:12px;font-weight:700;cursor:pointer;box-shadow:var(--shadow-lg);font-family:inherit;display:flex;align-items:center;gap:6px">
+<div id="pageGuideBtn" onclick="togglePageGuide()" style="display:none !important;position:fixed;bottom:20px;right:20px;z-index:998;background:var(--brand);color:#fff;border-radius:24px;padding:10px 16px;font-size:12px;font-weight:700;cursor:pointer;box-shadow:var(--shadow-lg);font-family:inherit;align-items:center;gap:6px">
   📍 <span>Page Guide</span>
 </div>
 <div id="pageGuidePanel" style="display:none;position:fixed;bottom:70px;right:20px;z-index:999;background:#fff;border-radius:12px;box-shadow:var(--shadow-lg);border:1px solid var(--border);width:280px;max-height:70vh;overflow-y:auto;padding:6px">
@@ -10886,7 +10964,7 @@ function wpDayLabel(i){return["Monday","Tuesday","Wednesday","Thursday","Friday"
 <script>
 const PAGE_GUIDE_SECTIONS=[
   {id:"startHereOuterCard",label:"Start Here",desc:"What matters most right now + your daily checklist"},
-  {id:"weeklyCallPlanCard",label:"Amanda · Today’s Plan",desc:"Capacity-aware daily order + locked agent assignments"},
+  {id:"weeklyCallPlanCard",label:"Amanda’s Workflow",desc:"Today’s prioritized work, adjusted around real meetings"},
   {id:"personalScorecard",label:"Your Wins This Month",desc:"Meetings, break breads, cold call wins — tap any number"},
   {id:"quickLogCard",label:"Quick Log",desc:"Fast entry for calls & talk-to's"},
   {id:"onboardingCard",label:"Gifting Campaign Follow-Up",desc:"New agents in their first 4 weeks"},
@@ -10964,6 +11042,40 @@ let _wp18Cache=null,_wp18CacheAt=0,_wp18Loading=null;
 function wp18Key(s){return String(s||"").trim().toLowerCase().replace(/\s+/g," ");}
 function wp18DayDate(w,idx){const d=new Date(w.mon);d.setDate(d.getDate()+idx);return wpDateStr(d);}
 function wp18IsActive(p){return !p||Object.keys(p).length===0||(p.do_not_contact!==true&&p.relationship_status!=="inactive");}
+
+// Director-owned strategic relationships. Organization matching uses the dedicated
+// Brokerage / Team / Company field; explicit names protect known relationships even
+// when that field has not been populated yet.
+const WP25_NYNY_STRATEGIC_NAMES=new Set(["lyndsay myers","micah myers","morgan stone","ian temple","brian pol"]);
+const WP25_NYNY_STRATEGIC_ORGS=[
+  {key:"rockford",label:"Rockford"},
+  {key:"sam cooper",label:"Sam Cooper Team"},
+  {key:"thrive",label:"Thrive"}
+];
+function wp18StrategicNynyRule(name,p){
+  const nk=wp18Key(name);
+  if(WP25_NYNY_STRATEGIC_NAMES.has(nk))return{label:"Nyny-owned relationship",kind:"person"};
+  const org=String((p&&p.brokerage)||"").trim().toLowerCase();
+  for(const r of WP25_NYNY_STRATEGIC_ORGS)if(org.includes(r.key))return{label:r.label,kind:"organization"};
+  // Rockford email addresses are also a reliable fallback while brokerage data is being cleaned.
+  const email=String((p&&p.email)||"").trim().toLowerCase();
+  if(email.includes("rockfordhomes"))return{label:"Rockford",kind:"organization"};
+  return null;
+}
+function wp18StrategicNynyMatch(name,p){return !!wp18StrategicNynyRule(name,p);}
+function wp18StrategicLabel(name,p){const r=wp18StrategicNynyRule(name,p);return r?r.label:"";}
+async function wp18EnsureStrategicOwnership(name,p){
+  if(!wp18StrategicNynyMatch(name,p))return false;
+  try{
+    const rows=await sbFetch("agent_assignments?agent_name=ilike."+encodeURIComponent(name)+"&select=agent_name,lp,rm,priority,added,level,closed_past_year&limit=5").catch(()=>[]);
+    const exact=(rows||[]).find(r=>wp18Key(r.agent_name)===wp18Key(name))||(rows||[])[0]||{};
+    const payload={agent_name:exact.agent_name||name,lp:(exact.lp&&exact.lp!=="__REMOVED__")?exact.lp:"Unassigned",rm:"Nyny",priority:!!exact.priority,added:!!exact.added,level:exact.level||((p&&p.tier)||"C")};
+    if(exact.closed_past_year!==undefined)payload.closed_past_year=exact.closed_past_year;
+    await sbFetch("agent_assignments?on_conflict=agent_name",{method:"POST",prefer:"resolution=merge-duplicates,return=minimal",body:JSON.stringify(payload)});
+    cacheOwnershipRow(payload);
+    return true;
+  }catch(e){console.warn("Strategic ownership sync failed:",e);return false;}
+}
 function wp18OwnerRecord(assignments){
   const by={};
   (assignments||[]).forEach(r=>{
@@ -10976,6 +11088,8 @@ function wp18OwnerRecord(assignments){
   return by;
 }
 function wp18ResolveOwner(name,p,owners,activityOwner){
+  // Strategic organization/person rules intentionally override stale assignment rows.
+  if(wp18StrategicNynyMatch(name,p))return"Nyny";
   const rec=owners[wp18Key(name)];
   if(rec&&rec.rms&&rec.rms.size===1)return Array.from(rec.rms)[0];
   if(rec&&rec.rms&&rec.rms.size>1){
@@ -11005,6 +11119,9 @@ function wp18BuildCandidates(profiles,assignments,reconnect,followups,w){
   const owners=wp18OwnerRecord(assignments),map={};
 
   (followups||[]).forEach(f=>{
+    // Cold-call follow-ups are acquisition work. v29 routes them through the named
+    // prospecting call sheet so they do not consume Amanda's retained-relationship slots.
+    if(f&&f.act_type==="Cold Calls")return;
     const p=pmap[wp18Key(f.agent_name)]||{};if(!wp18IsActive(p))return;
     const activityOwner=getActivityOwner(f),owner=wp18ResolveOwner(f.agent_name,p,owners,activityOwner),due=f.follow_up_date||w.start;
     const overdue=due<today(),days=overdue?Math.max(0,Math.round((new Date(today()+"T12:00:00")-new Date(due+"T12:00:00"))/86400000)):0;
@@ -11029,8 +11146,10 @@ function wp18BuildCandidates(profiles,assignments,reconnect,followups,w){
       // After priority backlog, missing data itself becomes productive cleanup inventory.
       if(missing.length>=2){score+=80;reasons.push("Record needs cleanup");}
     }else{
+      const strategicLabel=wp18StrategicLabel(p.agent_name,p);
       score=tier==="Channel"?1050:tier==="A"?850:tier==="B"?640:0;
-      if(tier==="Channel")reasons.push("Channel relationship");else if(tier==="A"||tier==="B")reasons.push(tier+" growth relationship");
+      if(strategicLabel){score=Math.max(score,1150);reasons.push("Strategic account · "+strategicLabel);}
+      else if(tier==="Channel")reasons.push("Channel relationship");else if(tier==="A"||tier==="B")reasons.push(tier+" growth relationship");
       if(p.competitor_risk_flag){score+=460;reasons.unshift("Retention / competitor risk");}
       if(p.high_potential_flag){score+=300;reasons.push("High potential");}
       if(p.next_growth_opportunity){score+=260;reasons.push("Growth opportunity");}
@@ -11086,12 +11205,21 @@ function wp18IncrementalQueueRows(candidates,w,existingRows){
   });
   return adds;
 }
+async function wp18ReconcileStrategicQueueRows(rows,candidates){
+  const nynyKeys=new Set((candidates.nyny||[]).map(x=>wp18Key(x.name)));
+  const changes=(rows||[]).filter(r=>r&&r.id&&r.owner!=="Nyny"&&nynyKeys.has(wp18Key(r.agent_name)));
+  if(!changes.length)return rows||[];
+  await Promise.all(changes.map(r=>sbFetch("rm_work_queue?id=eq."+r.id,{method:"PATCH",prefer:"return=minimal",body:JSON.stringify({owner:"Nyny"})}).catch(()=>{})));
+  changes.forEach(r=>{r.owner="Nyny";});
+  return rows||[];
+}
 async function wp18LoadOrCreateQueue(candidates,w){
   let rows=[];
   try{
     rows=await sbFetch("rm_work_queue?week_start=eq."+w.start+"&select=id,week_start,work_date,owner,agent_name,agent_key,tier,source,reason,priority_score,activity_type,status,completed_at&order=work_date.asc,priority_score.desc&limit=500");
   }catch(e){return{supported:false,rows:[]};}
   rows=wp18DedupeRows(rows||[]);
+  rows=await wp18ReconcileStrategicQueueRows(rows,candidates);
   let createRows=[];
   if(!rows.length)createRows=wp18QueueRows(candidates,w);
   else createRows=wp18IncrementalQueueRows(candidates,w,rows);
@@ -11101,6 +11229,7 @@ async function wp18LoadOrCreateQueue(candidates,w){
     }catch(e){console.warn("Weekly queue sync failed; keeping the existing locked plan:",e);}
     rows=await sbFetch("rm_work_queue?week_start=eq."+w.start+"&select=id,week_start,work_date,owner,agent_name,agent_key,tier,source,reason,priority_score,activity_type,status,completed_at&order=work_date.asc,priority_score.desc&limit=500").catch(()=>rows);
     rows=wp18DedupeRows(rows||[]);
+    rows=await wp18ReconcileStrategicQueueRows(rows,candidates);
   }
   return{supported:true,rows:rows||[]};
 }
@@ -11119,27 +11248,210 @@ function wp18RowsToItems(rows,pmap){
 }
 function wp18FallbackRows(candidates,w){return wp18QueueRows(candidates,w).map((r,i)=>({...r,id:"fallback-"+i}));}
 
+// v30 mandatory transaction calls ---------------------------------------------
+// Current tracker architecture does not have a direct Encompass feed. Transaction
+// alerts are stored as the existing Playbook activity types (New Contract / Clear to
+// Close), so no new SQL/table is required. The corresponding Under Contract / CTC
+// call remains in the Workflow until Amanda (or the resolved RM owner) logs it.
+function wp30TxnCallType(stage){return stage==="Clear to Close"?"CTC Call":"Under Contract Call";}
+function wp30TxnRole(notes){const m=String(notes||"").match(/\[TXN_ROLE:([^\]]+)\]/i);return m?m[1].trim():"Agent";}
+function wp30TxnRef(notes){const m=String(notes||"").match(/\[TXN_REF:([^\]]*)\]/i);return m?m[1].trim():"";}
+function wp30TxnProfile(name,data){return(data&&data.profileMap&&data.profileMap[wp18Key(name)])||{};}
+function wp30TxnOwner(name,data){
+  const p=wp30TxnProfile(name,data);
+  if(wp18StrategicNynyMatch(name,p))return"Nyny";
+  const rec=data&&data.ownerRecords?data.ownerRecords[wp18Key(name)]:null;
+  if(rec&&rec.rms&&rec.rms.size===1)return Array.from(rec.rms)[0];
+  if(p&&p.tier==="Channel")return"Nyny";
+  return"Amanda";
+}
+function wp30BuildTransactionTasks(data,date,owner){
+  const rows=(data&&data.transactionActs||[]).filter(a=>a&&a.agent_name&&a.act_date&&a.act_date<=date);
+  const calls=rows.filter(a=>a.act_type==="Under Contract Call"||a.act_type==="CTC Call");
+  const triggers=rows.filter(a=>a.act_type==="New Contract"||a.act_type==="Clear to Close").slice();
+  // Best-effort shared LP signals already used elsewhere in this tracker. Formal alerts added
+  // through the Workflow are preferred because they preserve buyer/listing role + transaction ref.
+  (data&&data.ctcSignals||[]).forEach(r=>{if(r&&r.agent_name&&r.call_date&&r.call_date<=date)triggers.push({agent_name:r.agent_name,act_type:"Clear to Close",act_date:r.call_date,notes:"[TXN_ROLE:Agent] Shared CTC signal from LP activity",_synthetic:true});});
+  (data&&data.contractSignals||[]).forEach(r=>{if(r&&r.agent_name&&r.call_date&&r.call_date<=date)triggers.push({agent_name:r.agent_name,act_type:"New Contract",act_date:r.call_date,notes:"[TXN_ROLE:Agent] Shared new-contract signal from LP activity",_synthetic:true});});
+  const latest={};
+  triggers.forEach(t=>{
+    const role=wp30TxnRole(t.notes),k=t.act_type+"|"+wp18Key(t.agent_name)+"|"+role.toLowerCase();
+    if(!latest[k]||String(t.act_date)>String(latest[k].act_date))latest[k]=t;
+  });
+  const out=[];
+  Object.values(latest).forEach(t=>{
+    const callType=wp30TxnCallType(t.act_type),name=String(t.agent_name||"").trim();
+    const done=calls.some(c=>wp18Key(c.agent_name)===wp18Key(name)&&c.act_type===callType&&c.act_date>=t.act_date&&c.act_date<=date);
+    if(done)return;
+    const resolved=wp30TxnOwner(name,data);if(resolved!==owner)return;
+    const role=wp30TxnRole(t.notes),ref=wp30TxnRef(t.notes);
+    out.push({kind:"transaction",minutes:callType==="CTC Call"?8:10,owner:resolved,name,txn:{stage:t.act_type,callType,role,ref,triggerDate:t.act_date,synthetic:!!t._synthetic},title:(callType==="CTC Call"?"CTC Call":"Under Contract Call")+" · "+resolvedDisplayName(name),why:(t.act_type==="Clear to Close"?"Clear to close":"New contract")+" · "+role.toLowerCase()+" agent"+(ref?" · "+ref:"")});
+  });
+  out.sort((a,b)=>{const ap=a.txn.callType==="CTC Call"?0:1,bp=b.txn.callType==="CTC Call"?0:1;return ap-bp||String(a.txn.triggerDate).localeCompare(String(b.txn.triggerDate))||String(a.name).localeCompare(String(b.name));});
+  return out;
+}
+function wp30OpenTransactionTraining(){
+  openScriptsModal();
+  setTimeout(()=>{
+    const topics=[...document.querySelectorAll("#scriptsModal .skillset-topic")];
+    let target=null;topics.forEach(d=>{const isTxn=(d.querySelector("summary")?.textContent||"").includes("Transaction Calls");d.open=isTxn;if(isTxn)target=d;});
+    if(target)target.scrollIntoView({behavior:"smooth",block:"start"});
+  },80);
+}
+function wp30OpenTransactionTask(name,callType,role,owner){
+  owner=owner||"Amanda";
+  if(owner!=="Amanda"){wpOpenLog(name,owner,callType);return;}
+  if(callType==="CTC Call"&&(role==="Buyer"||role==="Listing")){
+    switchQuickLogTab("talkto");
+    const type=document.getElementById("quickLogType");if(type){type.value="CTC Call";type.dispatchEvent(new Event("change",{bubbles:true}));}
+    const cap=role==="Buyer"?"Buyer":"Seller";const el=document.getElementById("ctc"+cap+"Agent");if(el)el.value=name||"";
+    try{ctcFillContact(role==="Buyer"?"buyer":"seller");ctcUpdatePreview();}catch(e){}
+    const card=document.getElementById("quickLogCard");if(card)card.scrollIntoView({behavior:"smooth",block:"start"});
+    return;
+  }
+  switchQuickLogTab("talkto");
+  const agent=document.getElementById("quickLogAgent"),type=document.getElementById("quickLogType"),method=document.getElementById("quickLogContactMethod");
+  if(agent)agent.value=name||"";if(type){type.value=callType;type.dispatchEvent(new Event("change",{bubbles:true}));}if(method)method.value="Call";
+  const card=document.getElementById("quickLogCard");if(card)card.scrollIntoView({behavior:"smooth",block:"start"});
+  setTimeout(()=>{const n=document.getElementById("quickLogNotes");if(n&&n.style.display!=="none")n.focus();},220);
+}
+function wp30TransactionRow(t,isFirst,date){
+  const x=t.txn||{},safe=wpJs(t.name||""),role=x.role||"Agent",ref=x.ref||"",isCtc=x.callType==="CTC Call";
+  return '<div style="padding:8px 8px;border-bottom:1px solid #EEE2C4;'+(isFirst?'background:#FFF8E8;border:1px solid #E7C98A;border-radius:8px;margin:5px 0;':'')+'">'
+    +'<div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start"><div style="min-width:0;flex:1">'
+    +'<div style="display:flex;gap:5px;align-items:center;flex-wrap:wrap"><span style="font-size:11.5px;font-weight:800;color:var(--text-1)">'+v21Esc(t.name)+'</span>'
+    +'<span style="font-size:8.5px;font-weight:850;padding:2px 6px;border-radius:10px;background:#7A5600;color:#fff">MUST DO</span>'+(isFirst?'<span style="font-size:8.5px;font-weight:850;padding:2px 6px;border-radius:10px;background:var(--brand);color:#fff">NEXT UP</span>':'')+'</div>'
+    +'<div style="font-size:10px;color:var(--text-3);line-height:1.35;margin-top:2px"><strong style="color:#75520A">'+(isCtc?'CTC call':'Under Contract call')+'</strong> · '+v21Esc(role)+' agent'+(ref?' · '+v21Esc(ref):'')+'</div></div>'
+    +'<span style="display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end"><button onclick="wp30OpenTransactionTask(\''+safe+'\',\''+wpJs(x.callType||'Under Contract Call')+'\',\''+wpJs(role)+'\',\''+wpJs(t.owner||'Amanda')+'\')" style="font-size:9px;padding:5px 8px;background:#7A5600;color:#fff;border:0;border-radius:6px;cursor:pointer">Start call</button><button onclick="wp30OpenTransactionTraining()" style="font-size:9px;padding:5px 8px;background:#fff;color:#75520A;border:1px solid #D9C18B;border-radius:6px;cursor:pointer">Script</button></span></div></div>';
+}
+async function wp30SaveTransactionTrigger(){
+  const stage=document.getElementById("wp30TxnStage")?.value||"New Contract",buyer=(document.getElementById("wp30TxnBuyerAgent")?.value||"").trim(),listing=(document.getElementById("wp30TxnListingAgent")?.value||"").trim();
+  const rawRef=(document.getElementById("wp30TxnRef")?.value||"").trim(),ref=rawRef.replace(/[\]\r\n]/g," ").slice(0,140),entries=[];
+  if(buyer)entries.push({name:buyer,role:"Buyer"});if(listing&&wp18Key(listing)!==wp18Key(buyer))entries.push({name:listing,role:"Listing"});
+  if(!entries.length){toast("Add the buyer agent, listing agent, or both.","error");return;}
+  const callType=wp30TxnCallType(stage),td=today();let added=0;
+  try{
+    for(const e of entries){
+      const existing=await sbFetch("amanda_activities?agent_name=eq."+encodeURIComponent(e.name)+"&act_type=eq."+encodeURIComponent(stage)+"&act_date=eq."+td+"&select=id,notes&limit=20").catch(()=>[]);
+      if((existing||[]).some(r=>wp30TxnRole(r.notes)===e.role))continue;
+      const o=getAgentOwnership(e.name),p=(allContacts||[]).find(c=>wp18Key(c.agent_name)===wp18Key(e.name))||{};
+      const owner=wp18StrategicNynyMatch(e.name,p)?"Nyny":((o&&o.rm==="Nyny")?"Nyny":"Amanda");
+      let notes="[TXN_TRIGGER][TXN_ROLE:"+e.role+"]"+(ref?"[TXN_REF:"+ref+"]":"")+" Mandatory "+stage+" transaction call trigger for the "+e.role.toLowerCase()+" agent. Complete the required "+callType+" and log the outcome in the RM tracker.";
+      try{notes=appendRmMeta(notes,owner,stage==="Clear to Close"?"Current Relationship":"Current Relationship");}catch(err){}
+      await sbFetch("amanda_activities",{method:"POST",prefer:"return=minimal",body:JSON.stringify({agent_name:e.name,act_type:stage,act_date:td,outcome:"Requires follow-up",notes,follow_up_date:null})});added++;
+    }
+    ["wp30TxnBuyerAgent","wp30TxnListingAgent","wp30TxnRef"].forEach(id=>{const el=document.getElementById(id);if(el)el.value="";});
+    const d=document.getElementById("wp30TxnIntakeDetails");if(d)d.open=false;
+    _wp18Cache=null;_wp18CacheAt=0;
+    await v23LoadAmandaSnapshot(true);if(v21Date()===today())setTimeout(()=>v21LoadDailyPlan(true),40);
+    toast(added?(added+" mandatory transaction call"+(added!==1?"s":"")+" added to the Workflow ✓"):("Those transaction calls are already in today’s Workflow."),"success",3600);
+  }catch(e){toast("Could not add transaction calls: "+e.message,"error",5500);}
+}
+
+// v29 acquisition call sheet ---------------------------------------------------
+// Uses the real Outreach Pipeline as the source of new-agent calls. It never invents
+// people. Due prospect follow-ups rank first, then untouched prospects, then older
+// attempts that are outside the cooldown. Current/retained relationships, DNC/inactive
+// profiles, NFM prospects, and Nyny-owned strategic accounts are excluded.
+function wp29DaysBetween(a,b){
+  if(!a||!b)return 0;
+  return Math.max(0,Math.round((new Date(b+"T12:00:00")-new Date(a+"T12:00:00"))/86400000));
+}
+function wp29BuildProspectPool(prospects,profiles,assignments,prospectActs,candidates){
+  const pmap={};(profiles||[]).forEach(p=>{const k=wp18Key(p.agent_name);if(k&&!pmap[k])pmap[k]=p;});
+  const amap={};(assignments||[]).forEach(a=>{const k=wp18Key(a.agent_name);if(k&&!amap[k])amap[k]=a;});
+  const relationshipKeys=new Set((candidates&&candidates.all||[]).map(x=>wp18Key(x.name)));
+  const hist={};
+  (prospectActs||[]).forEach(a=>{
+    const k=wp18Key(a.agent_name);if(!k)return;
+    if(!hist[k])hist[k]=[];
+    hist[k].push(a);
+  });
+  Object.values(hist).forEach(rows=>rows.sort((a,b)=>String(b.act_date||"").localeCompare(String(a.act_date||""))));
+  const td=today(),out=[];
+  (prospects||[]).forEach(pr=>{
+    const name=String(pr.agent_name||"").trim(),k=wp18Key(name);if(!k)return;
+    if((pr.status||"Requires follow-up")!=="Requires follow-up")return;
+    const p=pmap[k]||{},a=amap[k]||{};
+    if(p.do_not_contact===true||p.relationship_status==="inactive"||p.retained===true)return;
+    if(wp18StrategicNynyMatch(name,Object.keys(p).length?p:pr))return;
+    if(relationshipKeys.has(k))return;
+    // A real shared owner/LP assignment is a strong signal this is not a cold prospect anymore.
+    if(a.rm==="Amanda"||a.rm==="Nyny"||(a.lp&&a.lp!=="Unassigned"&&a.lp!=="__REMOVED__"))return;
+    const rows=hist[k]||[],lastCold=rows.find(x=>x.act_type==="Cold Calls"),hadMeeting=rows.some(x=>x.act_type==="New Realtor Meeting");
+    if(hadMeeting)return;
+    if(lastCold&&(lastCold.outcome==="Meeting Scheduled"||lastCold.outcome==="Remove / No Further Contact"))return;
+    if(lastCold&&lastCold.act_date===td)return;
+    const fu=pr.follow_up_date?String(pr.follow_up_date).slice(0,10):"";
+    if(fu&&fu>td)return; // honor explicit future follow-up dates; do not call early
+    const daysSince=lastCold&&lastCold.act_date?wp29DaysBetween(lastCold.act_date,td):null;
+    if(lastCold&&!fu&&daysSince!==null&&daysSince<3)return; // avoid hammering the same prospect daily
+    if(!pr.phone)return; // the call sheet is intentionally call-ready; missing-phone rows stay in Pipeline for cleanup
+    let score=0,reason="";
+    if(fu&&fu<td){const od=wp29DaysBetween(fu,td);score=2200+Math.min(od,120);reason="Prospect follow-up overdue"+(od?" · "+od+"d":"");}
+    else if(fu===td){score=2100;reason="Prospect follow-up due today";}
+    else if(!lastCold){score=1500;reason="New prospect · first outreach";}
+    else{score=1000+Math.min(daysSince||0,180);reason="Prospecting follow-up"+(daysSince!==null?" · last attempt "+daysSince+"d ago":"");}
+    if(pr.brokerage)score+=35;
+    out.push({name,phone:pr.phone||"",email:pr.email||"",brokerage:pr.brokerage||"",follow_up_date:fu||null,notes:pr.notes||"",score,reason,lastColdDate:lastCold&&lastCold.act_date||null,lastColdOutcome:lastCold&&lastCold.outcome||""});
+  });
+  out.sort((a,b)=>b.score-a.score||String(a.name).localeCompare(String(b.name)));
+  return out;
+}
+function wp29ProspectingTarget(freeMinutes){
+  // Standard open-day goal remains 25. Meeting-heavy days intentionally shrink the
+  // named acquisition list so meetings count as production instead of creating overload.
+  if(freeMinutes>=450)return 25;
+  if(freeMinutes>=420)return 23;
+  if(freeMinutes>=360)return 18;
+  if(freeMinutes>=300)return 15;
+  if(freeMinutes>=240)return 12;
+  if(freeMinutes>=180)return 8;
+  return 5;
+}
+async function wp29RemoveProspectRowsFromRelationshipQueue(rows){
+  const stale=(rows||[]).filter(r=>r&&r.id&&r.owner==="Amanda"&&r.activity_type==="Cold Calls"&&r.status!=="worked"&&r.status!=="complete");
+  if(!stale.length)return rows||[];
+  await Promise.all(stale.map(r=>sbFetch("rm_work_queue?id=eq."+encodeURIComponent(r.id),{method:"DELETE",prefer:"return=minimal"}).catch(()=>{})));
+  const ids=new Set(stale.map(r=>String(r.id)));
+  return (rows||[]).filter(r=>!ids.has(String(r.id)));
+}
+
 async function wp18FetchData(force){
   if(!force&&_wp18Cache&&Date.now()-_wp18CacheAt<30000)return _wp18Cache;
   if(_wp18Loading)return _wp18Loading;
   _wp18Loading=(async()=>{
     const w=wpWeek();let profiles=[];
-    try{profiles=await sbFetch("agent_profiles?select=agent_name,tier,retained,relationship_status,do_not_contact,email,phone,address,birthday,next_growth_opportunity,growth_opportunity_deadline,last_meaningful_contact_date,next_meeting_date,competitor_risk_flag,high_potential_flag&limit=5000");}
+    try{profiles=await sbFetch("agent_profiles?select=agent_name,tier,retained,relationship_status,do_not_contact,email,phone,brokerage,address,birthday,next_growth_opportunity,growth_opportunity_deadline,last_meaningful_contact_date,next_meeting_date,competitor_risk_flag,high_potential_flag&limit=5000");}
     catch(e){profiles=await sbFetch("agent_profiles?select=agent_name,tier,retained,do_not_contact,email,phone,address,birthday&limit=5000").catch(()=>[]);}
-    const [assignments,reconnect,followups,weekActs]=await Promise.all([
-      sbFetch("agent_assignments?select=agent_name,rm,priority,level&limit=5000").catch(()=>[]),
+    const prospectCut=new Date();prospectCut.setDate(prospectCut.getDate()-120);const prospectStart=wpDateStr(prospectCut);
+    const txnCut=new Date();txnCut.setDate(txnCut.getDate()-45);const txnStart=wpDateStr(txnCut);
+    const [assignments,reconnect,followups,weekActs,prospects,prospectActs,transactionActs,ctcSignals,contractSignals]=await Promise.all([
+      sbFetch("agent_assignments?select=agent_name,lp,rm,priority,level&limit=5000").catch(()=>[]),
       sbFetch(RC_TABLE+"?select=agent_name,status,grade,days_since,contacted_at&limit=5000").catch(()=>sbFetch(RC_TABLE+"?select=agent_name,status,grade,contacted_at&limit=5000").catch(()=>[])),
       sbFetch("amanda_activities?select=agent_name,follow_up_date,act_date,notes,outcome,act_type&follow_up_date=not.is.null&follow_up_date=lte."+w.end+"&order=follow_up_date.asc&limit=2000").catch(()=>[]),
-      sbFetch("amanda_activities?select=agent_name,act_date,notes,outcome,act_type&act_date=gte."+w.start+"&order=act_date.desc&limit=5000").catch(()=>[])
+      sbFetch("amanda_activities?select=agent_name,act_date,notes,outcome,act_type&act_date=gte."+w.start+"&order=act_date.desc&limit=5000").catch(()=>[]),
+      sbFetch("outreach_prospects?select=id,agent_name,brokerage,phone,email,status,follow_up_date,notes&limit=5000").catch(()=>[]),
+      sbFetch("amanda_activities?select=agent_name,act_type,act_date,outcome,follow_up_date&act_type=in.(Cold Calls,New Realtor Meeting)&act_date=gte."+prospectStart+"&order=act_date.desc&limit=5000").catch(()=>[]),
+      sbFetch("amanda_activities?select=id,agent_name,act_type,act_date,outcome,notes&act_type=in.(New Contract,Clear to Close,Under Contract Call,CTC Call)&act_date=gte."+txnStart+"&order=act_date.desc&limit=5000").catch(()=>[]),
+      sbFetch("call_logs?select=agent_name,call_date,outcome&outcome=ilike.*ctc*&call_date=gte."+txnStart+"&limit=1000").catch(()=>[]),
+      sbFetch("call_logs?select=agent_name,call_date,outcome&outcome=ilike.*contract*&call_date=gte."+txnStart+"&limit=1000").catch(()=>[])
     ]);
-    const touched={Amanda:new Set(),Nyny:new Set()};
-    (weekActs||[]).forEach(a=>{const o=getActivityOwner(a);if(touched[o])touched[o].add(wp18Key(a.agent_name));});
     const candidates=wp18BuildCandidates(profiles,assignments,reconnect,followups,w);
+    const prospectPool=wp29BuildProspectPool(prospects,profiles,assignments,prospectActs,candidates);
+    const ownerRecords=wp18OwnerRecord(assignments);
+    const touched={Amanda:new Set(),Nyny:new Set()};
+    (weekActs||[]).forEach(a=>{
+      const p=candidates.pmap[wp18Key(a.agent_name)]||{};
+      const o=wp18StrategicNynyMatch(a.agent_name,p)?"Nyny":getActivityOwner(a);
+      if(touched[o])touched[o].add(wp18Key(a.agent_name));
+    });
     const queue=await wp18LoadOrCreateQueue(candidates,w);
     let qrows=queue.supported?queue.rows:wp18FallbackRows(candidates,w);
+    if(queue.supported)qrows=await wp29RemoveProspectRowsFromRelationshipQueue(qrows);
     if(queue.supported)await wp18SyncWorked(qrows,touched);
     const items=wp18RowsToItems(qrows,candidates.pmap),activeProfiles=(profiles||[]).filter(wp18IsActive),complete=activeProfiles.filter(p=>wpMissing(p).length===0).length;
-    const data={w,touched,profiles:activeProfiles,complete,queueSupported:queue.supported,queueRows:qrows,amanda:items.filter(x=>x.owner==="Amanda"),nyny:items.filter(x=>x.owner==="Nyny")};
+    const data={w,touched,profiles:activeProfiles,profileMap:candidates.pmap,ownerRecords,complete,queueSupported:queue.supported,queueRows:qrows,amanda:items.filter(x=>x.owner==="Amanda"),nyny:items.filter(x=>x.owner==="Nyny"),prospectPool,transactionActs:transactionActs||[],ctcSignals:ctcSignals||[],contractSignals:contractSignals||[]};
     _wp18Cache=data;_wp18CacheAt=Date.now();return data;
   })();
   try{return await _wp18Loading;}finally{_wp18Loading=null;}
@@ -11154,12 +11466,13 @@ function wp18StatusHtml(item,worked){
   return'';
 }
 function wp18AgentRow(item,data,carry){
-  const p=item.profile||{},missing=wpMissing(p),worked=wp18Worked(item,data),safe=wpJs(item.name),owner=wpJs(item.owner),tier=p.tier||item.queue&&item.queue.tier||"";
+  const p=item.profile||{},missing=wpMissing(p),worked=wp18Worked(item,data),safe=wpJs(item.name),owner=wpJs(item.owner),tier=p.tier||item.queue&&item.queue.tier||"",strategic=wp18StrategicLabel(item.name,p);
   const tierBadge=tier?'<span style="font-size:9px;font-weight:800;padding:2px 6px;border-radius:9px;background:var(--brand-light);color:var(--brand-dark)">'+escHtml(tier)+'</span>':'';
+  const strategicBadge=strategic?'<span style="font-size:9px;font-weight:800;padding:2px 6px;border-radius:9px;background:#E8F5EE;color:#245B43">'+escHtml(strategic)+'</span>':'';
   const miss=missing.length?'<div style="margin-top:5px;display:flex;gap:4px;flex-wrap:wrap">'+missing.map(x=>'<span style="font-size:9px;font-weight:700;padding:2px 6px;border-radius:9px;background:#FFF3E0;color:#A45100">missing '+escHtml(x)+'</span>').join("")+'</div>':'<div style="font-size:9.5px;color:#557565;margin-top:4px">Contact record complete ✓</div>';
   return '<div style="padding:9px 0;border-bottom:1px solid var(--border-light);opacity:'+(worked?'.76':'1')+'">'
     +'<div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start">'
-      +'<div style="min-width:0;flex:1"><div style="display:flex;gap:5px;align-items:center;flex-wrap:wrap"><span style="font-size:12.5px;font-weight:750;color:var(--text-1)">'+escHtml(resolvedDisplayName(item.name))+'</span>'+tierBadge+(carry?'<span style="font-size:9px;font-weight:800;color:#9A6A12">CARRYOVER</span>':'')+wp18StatusHtml(item,worked)+'</div>'
+      +'<div style="min-width:0;flex:1"><div style="display:flex;gap:5px;align-items:center;flex-wrap:wrap"><span style="font-size:12.5px;font-weight:750;color:var(--text-1)">'+escHtml(resolvedDisplayName(item.name))+'</span>'+tierBadge+strategicBadge+(carry?'<span style="font-size:9px;font-weight:800;color:#9A6A12">CARRYOVER</span>':'')+wp18StatusHtml(item,worked)+'</div>'
       +'<div style="font-size:10.5px;color:var(--text-3);margin-top:2px;line-height:1.35">'+escHtml((item.reasons&&item.reasons[0])||"Relationship touch")+'</div>'+miss+'</div>'
       +'<div style="display:flex;gap:5px;flex-shrink:0;flex-wrap:wrap;justify-content:flex-end">'
         +(worked?'':'<button onclick="wpOpenLog(\''+safe+'\',\''+owner+'\',\''+wpJs(item.type||"Talk-to (text/call)")+'\')" style="font-size:9.5px;padding:5px 8px;background:var(--brand);color:#fff;border:0;border-radius:6px;cursor:pointer;font-family:inherit">Log touch</button>')
@@ -11202,9 +11515,9 @@ try{const _v22LoadStartHere=loadStartHere;loadStartHere=async function(){const r
 </script>
 <script>
 // ─────────────────────────────────────────────────────────────────────────────
-// v22 EASY DAILY OPERATING SYSTEM
-// Converts the locked weekly agent queue + actual schedule blocks into a realistic
-// day plan. It never reassigns agents between Amanda and Nyny.
+// v27 AMANDA WORKFLOW · CAPACITY-AWARE + CALM UI
+// Converts the locked weekly agent queue + actual schedule blocks into Amanda’s calm,
+// ordered Workflow and Nyny’s Director plan. It never reassigns agents between Amanda and Nyny.
 // ─────────────────────────────────────────────────────────────────────────────
 let _v21BlocksSupported=null,_v21PlanLoading=false;
 function v21Date(){return (document.getElementById("v21PlanDate")&&document.getElementById("v21PlanDate").value)||today();}
@@ -11291,28 +11604,86 @@ function v22OpenDirectorTask(type){
 }
 function v22TierPill(tier){if(!tier)return"";const bg=tier==="Channel"?"#E8EEF9":tier==="A"?"#FFF3C4":tier==="B"?"#EEF1F3":"#F6E9DD",fg=tier==="Channel"?"#1E3A8A":tier==="A"?"#6B4A00":tier==="B"?"#44515A":"#7A4A22";return '<span style="font-size:9px;font-weight:850;padding:2px 6px;border-radius:10px;background:'+bg+';color:'+fg+';white-space:nowrap">'+v21Esc(tier)+'</span>';}
 function v21PlanTaskRow(t,isFirst,date){
+  if(t&&t.kind==="transaction")return wp30TransactionRow(t,isFirst,date);
   const safe=t.item?wpJs(t.item.name):"",owner=t.owner||"",tier=t.item&&t.item.profile?(t.item.profile.tier||t.item.queue&&t.item.queue.tier||""):"";
+  const strategic=t.item?wp18StrategicLabel(t.item.name,t.item.profile||{}):"";
   let actions="";
   if(t.item){
     actions='<span style="display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end"><button onclick="wpOpenLog(\''+safe+'\',\''+wpJs(owner)+'\',\''+wpJs(t.item.type||"Talk-to (text/call)")+'\')" style="font-size:9px;padding:4px 7px;background:var(--brand);color:#fff;border:0;border-radius:5px;cursor:pointer">Log touch</button>'+(wpMissing(t.item.profile||{}).length?'<button onclick="wpOpenContact(\''+safe+'\')" style="font-size:9px;padding:4px 7px;background:#fff;color:#A45100;border:1px solid #E7C98A;border-radius:5px;cursor:pointer">Update info</button>':'')+'</span>';
   }else if(t.logType){actions='<button onclick="v22OpenDirectorTask(\''+wpJs(t.logType)+'\')" style="font-size:9px;padding:4px 7px;background:#fff;color:var(--brand-dark);border:1px solid #C8C0E0;border-radius:5px;cursor:pointer">Log done</button>';}
   else if(t.kind==="skill"&&t.simpleKey){actions='<span style="display:flex;gap:4px;flex-wrap:wrap"><button onclick="openScriptsModal()" style="font-size:9px;padding:4px 7px;background:#fff;color:var(--brand-dark);border:1px solid #C8C0E0;border-radius:5px;cursor:pointer">Open Skillset</button><button onclick="v22MarkSimpleTask(\''+wpJs(date)+'\',\''+wpJs(owner)+'\',\''+wpJs(t.simpleKey)+'\')" style="font-size:9px;padding:4px 7px;background:#fff;color:#557565;border:1px solid #B8D8C7;border-radius:5px;cursor:pointer">Done</button></span>';}
   else if(t.simpleKey){actions='<button onclick="v22MarkSimpleTask(\''+wpJs(date)+'\',\''+wpJs(owner)+'\',\''+wpJs(t.simpleKey)+'\')" style="font-size:9px;padding:4px 7px;background:#fff;color:#557565;border:1px solid #B8D8C7;border-radius:5px;cursor:pointer">Done</button>';}
-  const main=t.item?(v21Time(t.start)+'–'+v21Time(t.end)+' · '+v21Esc(resolvedDisplayName(t.item.name))):v21Time(t.start)+'–'+v21Time(t.end)+' · '+v21Esc(t.title);
+  const showExactTime=owner!=="Amanda";
+  const main=t.item?(showExactTime?(v21Time(t.start)+'–'+v21Time(t.end)+' · '+v21Esc(resolvedDisplayName(t.item.name))):v21Esc(resolvedDisplayName(t.item.name))):(showExactTime?(v21Time(t.start)+'–'+v21Time(t.end)+' · '+v21Esc(t.title)):v21Esc(t.title));
   const sub=t.item?(v21Esc(t.title.split(" · ")[0])+" · "+v21Esc(t.why||"")):v21Esc(t.why||"");
-  return '<div style="padding:8px 8px;border-bottom:1px solid var(--border-light);'+(isFirst?'background:#F4F1FA;border:1px solid #D8D1EE;border-radius:8px;margin:5px 0;':'')+'"><div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start"><div style="min-width:0;flex:1"><div style="display:flex;gap:5px;align-items:center;flex-wrap:wrap"><div style="font-size:11.5px;font-weight:780;color:var(--text-1)">'+main+'</div>'+v22TierPill(tier)+(isFirst?'<span style="font-size:8.5px;font-weight:850;padding:2px 6px;border-radius:10px;background:var(--brand);color:#fff">NEXT UP</span>':'')+'</div><div style="font-size:10px;color:var(--text-3);line-height:1.35;margin-top:2px">'+sub+'</div></div>'+actions+'</div></div>';
+  return '<div style="padding:8px 8px;border-bottom:1px solid var(--border-light);'+(isFirst?'background:#F4F1FA;border:1px solid #D8D1EE;border-radius:8px;margin:5px 0;':'')+'"><div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start"><div style="min-width:0;flex:1"><div style="display:flex;gap:5px;align-items:center;flex-wrap:wrap"><div style="font-size:11.5px;font-weight:780;color:var(--text-1)">'+main+'</div>'+v22TierPill(tier)+(strategic?'<span style="font-size:8.5px;font-weight:800;padding:2px 6px;border-radius:10px;background:#E8F5EE;color:#245B43">'+v21Esc(strategic)+'</span>':'')+(isFirst?'<span style="font-size:8.5px;font-weight:850;padding:2px 6px;border-radius:10px;background:var(--brand);color:#fff">NEXT UP</span>':'')+'</div><div style="font-size:10px;color:var(--text-3);line-height:1.35;margin-top:2px">'+sub+'</div></div>'+actions+'</div></div>';
 }
+function v29OpenProspect(name,phone){
+  switchQuickLogTab("coldcall");
+  const n=document.getElementById("ccName"),p=document.getElementById("ccPhone");
+  if(n)n.value=name||"";if(p)p.value=phone||"";
+  try{checkDoubleDial(name,"ccDoubleDialWarn");}catch(e){}
+  const card=document.getElementById("quickLogCard");if(card)card.scrollIntoView({behavior:"smooth",block:"start"});
+  setTimeout(()=>{const notes=document.getElementById("ccNotes");if(notes)notes.focus();},250);
+}
+function v29ProspectTask(pr){
+  return{kind:"prospect",minutes:4,owner:"Amanda",name:pr.name,prospect:pr,title:"New meeting prospect · "+pr.name,why:pr.reason||"Prospecting",simpleKey:null};
+}
+function v29ProspectRow(t,isFirst){
+  const p=t.prospect||{},safe=wpJs(t.name||p.name||""),phone=String(p.phone||"");
+  const org=p.brokerage?'<span style="font-size:9px;color:var(--text-4)">'+v21Esc(p.brokerage)+'</span>':'';
+  return '<div style="display:flex;justify-content:space-between;gap:8px;align-items:center;padding:6px 0;border-bottom:1px solid var(--border-light)">'
+    +'<div style="min-width:0;flex:1"><div style="display:flex;gap:5px;align-items:center;flex-wrap:wrap"><span style="font-size:11.5px;font-weight:760;color:var(--text-1)">'+v21Esc(t.name||p.name||"")+'</span>'+org+(isFirst?'<span style="font-size:8.5px;font-weight:850;padding:2px 6px;border-radius:10px;background:var(--brand);color:#fff">NEXT UP</span>':'')+'</div>'
+    +'<div style="font-size:9.8px;color:var(--text-3);margin-top:1px">'+v21Esc(p.reason||"Ready for prospecting")+(phone?' · '+v21Esc(phone):'')+'</div></div>'
+    +'<button onclick="v29OpenProspect(\''+safe+'\',\''+wpJs(phone)+'\')" style="font-size:9.5px;padding:5px 8px;background:var(--brand);color:#fff;border:0;border-radius:6px;cursor:pointer;font-family:inherit;white-space:nowrap">Start call</button></div>';
+}
+function v29RenderAmandaTasks(planned,date,stats){
+  if(!(planned||[]).length)return '<div style="font-size:11px;color:var(--text-3);padding:8px 0">Workflow is clear. Anything unfinished will carry forward automatically.</div>';
+  let html='',i=0,globalIndex=0;
+  while(i<planned.length){
+    const t=planned[i];
+    if(t.kind==="transaction"){
+      const group=[];while(i<planned.length&&planned[i].kind==="transaction"){group.push(planned[i]);i++;}
+      html+='<div style="margin:7px 0 9px;border:1px solid #E7C98A;border-radius:9px;background:#FFFDF8;overflow:hidden">'
+        +'<div style="padding:8px 10px;background:#FFF8E8;border-bottom:1px solid #E7C98A;display:flex;justify-content:space-between;gap:8px;align-items:center;flex-wrap:wrap"><div><div style="font-size:11px;font-weight:850;color:#75520A;text-transform:uppercase;letter-spacing:.35px">Must-do transaction calls</div><div style="font-size:10px;color:#7A6A45;margin-top:2px">New Contract + CTC calls come first. They count toward Talk-To and automatically reduce the rest of today’s call list.</div></div><div style="font-size:10px;font-weight:800;color:#75520A">'+group.length+' open</div></div>'
+        +'<div style="padding:2px 10px 4px">'+group.map((x,gi)=>wp30TransactionRow(x,globalIndex===0&&gi===0,date)).join("")+'</div></div>';
+      globalIndex+=group.length;continue;
+    }
+    if(t.kind!=="prospect"){
+      html+=v21PlanTaskRow(t,globalIndex===0,date);globalIndex++;i++;continue;
+    }
+    const group=[];while(i<planned.length&&planned[i].kind==="prospect"){group.push(planned[i]);i++;}
+    html+='<div style="margin:9px 0 7px;border:1px solid #D9D3EE;border-radius:9px;background:#FBFAFD;overflow:hidden">'
+      +'<div style="padding:8px 10px;background:#F4F1FA;border-bottom:1px solid #E5E0F0;display:flex;justify-content:space-between;gap:8px;align-items:center;flex-wrap:wrap">'
+      +'<div><div style="font-size:11px;font-weight:850;color:var(--brand-dark);text-transform:uppercase;letter-spacing:.35px">New meeting prospecting</div><div style="font-size:10px;color:var(--text-3);margin-top:2px">Call these exact names in order. Goal: create new Realtor meetings.</div></div>'
+      +'<div style="font-size:10px;font-weight:750;color:var(--text-2)">'+group.length+' call-ready name'+(group.length!==1?'s':'')+' left today</div></div>'
+      +'<div style="padding:2px 10px 4px">'+group.map((x,gi)=>v29ProspectRow(x,globalIndex===0&&gi===0)).join("")+'</div></div>';
+    globalIndex+=group.length;
+  }
+  if(stats&&stats.prospectGap>0){
+    html+='<div style="margin-top:7px;background:#FFF8E8;border:1px solid #E7C98A;border-radius:8px;padding:8px 10px;font-size:10px;color:#7A5600"><strong>Prospecting list needs '+stats.prospectGap+' more call-ready name'+(stats.prospectGap!==1?'s':'')+'.</strong> The Workflow will never invent people. Add prospects/phone numbers in Pipeline and they will flow into this list automatically. <button onclick="switchTab(\'pipeline\')" style="border:0;background:none;color:var(--brand);font-weight:800;font-size:10px;cursor:pointer;padding:0 2px">Open Pipeline</button></div>';
+  }
+  return html;
+}
+
 function v21BuildTasks(owner,items,data,acts,monthActs,date,freeMinutes){
   const ownerActs=(acts||[]).filter(a=>getActivityOwner(a)===owner),partnerToday=ownerActs.filter(a=>isPartnerMeetingActivity(a)).length;
   const monthOwner=(monthActs||[]).filter(a=>getActivityOwner(a)===owner),monthPartner=monthOwner.filter(a=>isPartnerMeetingActivity(a)).length,monthNew=monthOwner.filter(a=>a.act_type==="New Realtor Meeting").length;
   const q=v21UniqueItems(items,data,date,owner,freeMinutes),tasks=[];
+  const transactionTasks=wp30BuildTransactionTasks(data,date,owner);transactionTasks.forEach(t=>tasks.push(t));
   if(owner==="Amanda"){
-    const coldDone=ownerActs.filter(a=>a.act_type==="Cold Calls").length,coldLeft=Math.max(0,25-coldDone);
-    if(coldLeft>0&&!v22SimpleTaskDone(date,"Amanda","skillset"))tasks.push({kind:"skill",minutes:10,owner,title:"Skillset warm-up",why:"10 minutes of scripting / objection practice before prospecting.",simpleKey:"skillset"});
+    const coldDone=ownerActs.filter(a=>a.act_type==="Cold Calls").length;
+    const transactionMinutes=transactionTasks.reduce((n,t)=>n+(t.minutes||0),0);
+    const prospectTarget=wp29ProspectingTarget(Math.max(0,freeMinutes-transactionMinutes)),prospectNeeded=Math.max(0,prospectTarget-coldDone);
+    const calledToday=new Set(ownerActs.filter(a=>a.act_type==="Cold Calls").map(a=>wp18Key(a.agent_name)));
+    const relationshipToday=new Set(q.map(x=>wp18Key(x.name)));
+    const ready=(data.prospectPool||[]).filter(p=>!calledToday.has(wp18Key(p.name))&&!relationshipToday.has(wp18Key(p.name))).slice(0,prospectNeeded);
+    const prospectGap=Math.max(0,prospectNeeded-ready.length);
+    if(prospectNeeded>0&&!v22SimpleTaskDone(date,"Amanda","skillset"))tasks.push({kind:"skill",minutes:10,owner,title:"Script warm-up",why:"Quick script / objection practice before new-agent calls.",simpleKey:"skillset"});
     q.forEach(x=>tasks.push(v21AgentTask(x,data,owner)));
-    if(coldLeft>0){const first=Math.min(13,coldLeft),second=Math.max(0,coldLeft-first);tasks.push({kind:"cold",minutes:30,owner,title:"Prospecting block · "+first+" cold calls",why:"Direct RM execution. Goal is meetings, not dials for the sake of dials."});if(second)tasks.push({kind:"cold",minutes:30,owner,title:"Prospecting block · "+second+" cold calls",why:"Second focused block; move qualified conversations toward a meeting."});}
+    ready.forEach(p=>tasks.push(v29ProspectTask(p)));
     if(freeMinutes>=120&&!v22SimpleTaskDone(date,"Amanda","wrap"))tasks.push({kind:"wrap",minutes:15,owner,title:"Notes + tomorrow setup",why:"Finish documentation, follow-up dates and any contact-info cleanup left open.",simpleKey:"wrap"});
-    return{tasks,stats:{partnerToday,monthPartner,monthNew,coldDone,coldLeft},target:"30+ partner mtgs · ~10 new / 20 existing"};
+    return{tasks,stats:{partnerToday,monthPartner,monthNew,coldDone,coldLeft:Math.max(0,25-coldDone),transactionOpen:transactionTasks.length,prospectTarget,prospectNeeded,prospectReady:ready.length,prospectGap},target:"30+ partner mtgs · ~10 new / 20 existing"};
   }
   q.forEach(x=>tasks.push(v21AgentTask(x,data,owner)));
   const dow=new Date(date+"T12:00:00").getDay(),types=new Set(ownerActs.map(a=>a.act_type));
@@ -11322,30 +11693,49 @@ function v21BuildTasks(owner,items,data,acts,monthActs,date,freeMinutes){
   if(dow===3&&!types.has("RM Training"))tasks.push({kind:"leadership",minutes:30,owner,title:"Amanda skillset development",why:"Role play / best-practice coaching tied to live execution patterns.",logType:"RM Training"});
   if(dow===5&&!types.has("RM Process Improvement"))tasks.push({kind:"leadership",minutes:30,owner,title:"RM operating system review",why:"Capture what worked, what broke and what should improve in the tracker/process.",logType:"RM Process Improvement"});
   if(freeMinutes>=180&&!types.has("Tracker / System Development"))tasks.push({kind:"system",minutes:30,owner,title:"Protected system / process work",why:"Tracker methodology and RM operating-system improvement are part of Director production, not leftover work.",logType:"Tracker / System Development"});
-  return{tasks,stats:{partnerToday,monthPartner,monthNew,leadershipToday},target:"20–25 partner mtgs + leadership/system capacity"};
+  return{tasks,stats:{partnerToday,monthPartner,monthNew,leadershipToday,transactionOpen:transactionTasks.length},target:"20–25 partner mtgs + leadership/system capacity"};
 }
 function v21RenderOwner(owner,hostId,capId,blocks,items,data,acts,monthActs,scheduledActs,date){
   const host=document.getElementById(hostId),cap=document.getElementById(capId);if(!host)return;
   const busy=v21MergedBusy(blocks),busyMin=busy.reduce((n,x)=>n+x[1]-x[0],0),free=v21Free(blocks),freeMin=480-busyMin;
   const build=v21BuildTasks(owner,items,data,acts,monthActs,date,freeMin),alloc=v21Allocate(build.tasks,free);
-  if(cap)cap.textContent=v21DurationLabel(freeMin)+" open · "+v21DurationLabel(busyMin)+" blocked";
+  if(cap){
+    if(owner==="Amanda"){
+      const pm=(blocks||[]).filter(b=>(b.block_type||"")==="Partner meeting").length;
+      const other=Math.max(0,(blocks||[]).length-pm);
+      cap.textContent=pm?(pm+" meeting"+(pm!==1?"s":"")+" · workflow adjusted"):(other?(other+" block"+(other!==1?"s":"")+" · workflow adjusted"):"Workflow ready");
+    }else cap.textContent=v21DurationLabel(freeMin)+" open · "+v21DurationLabel(busyMin)+" blocked";
+  }
   const st=build.stats,pace=owner==="Amanda"?(st.monthPartner+" / 30+ partner mtgs MTD · "+st.monthNew+" / ~10 new"):(st.monthPartner+" / 20–25 partner mtgs MTD · leadership protected");
-  let html='<div style="font-size:10px;color:var(--text-3);margin-bottom:5px"><strong style="color:var(--text-2)">Role pace:</strong> '+pace+'</div>';
-  const scheduledForOwner=(scheduledActs||[]).filter(a=>getActivityOwner(a)===owner);
-  const blockText=(blocks||[]).map(b=>wp18Key(b.title)).join(" | ");
-  const unTimed=scheduledForOwner.filter(a=>{const k=wp18Key(a.agent_name);return k&&blockText.indexOf(k)<0;});
-  if(unTimed.length)html+='<div style="background:#FFF8E8;border:1px solid #E7C98A;border-radius:8px;padding:7px 8px;margin:7px 0;font-size:10px;color:#7A5600"><strong>Scheduled meeting needs a time:</strong> '+unTimed.slice(0,5).map(a=>v21Esc(resolvedDisplayName(a.agent_name))).join(" · ")+(unTimed.length>5?' · +'+(unTimed.length-5)+' more':'')+'. Add the start/end above so today’s capacity is accurate.</div>';
-  html+='<div style="font-size:10px;font-weight:800;color:var(--text-3);text-transform:uppercase;letter-spacing:.4px;margin-top:8px">Committed time</div>'+v21BlockList(blocks);
+  let html="";
+
   if(owner==="Amanda"){
-    const partnerBlocks=(blocks||[]).filter(b=>(b.block_type||"")==="Partner meeting").length;
-    const mode=partnerBlocks===0&&freeMin>=360?"Open-capacity day · extra locked backlog names may be pulled forward so you can clear more while you have the time.":partnerBlocks>=2?"Meeting-heavy day · partner meetings are protected first; work only the highest-value outreach that fits around them.":"Balanced day · meetings are protected first, then assigned agents and prospecting fill the remaining time.";
-    html+='<div style="font-size:10px;color:var(--text-3);background:var(--surface-2);border-radius:7px;padding:6px 8px;margin-bottom:7px">Today logged: '+st.partnerToday+' partner meeting'+(st.partnerToday!==1?'s':'')+' · '+st.coldDone+' / 25 cold calls.<br><strong style="color:var(--text-2)">Capacity mode:</strong> '+mode+'</div>';
-  }else html+='<div style="font-size:10px;color:var(--text-3);background:#EEF8F2;border-radius:7px;padding:6px 8px;margin-bottom:7px">Today logged: '+st.partnerToday+' partner meeting'+(st.partnerToday!==1?'s':'')+'. Your capacity intentionally includes Amanda development, execution consistency, portfolio health and system work.</div>';
-  html+='<div style="font-size:10px;font-weight:800;color:var(--text-3);text-transform:uppercase;letter-spacing:.4px;margin:9px 0 2px">Recommended order + time</div>';
-  html+=alloc.planned.length?alloc.planned.map((t,i)=>v21PlanTaskRow(t,i===0,date)).join(""):'<div style="font-size:11px;color:var(--text-3);padding:8px 0">You are clear for the flexible work that fits today. Any unfinished assigned agents will carry forward automatically.</div>';
-  if(alloc.overflow.length)html+='<div style="margin-top:8px;background:#FFF8E8;border:1px solid #E7C98A;border-radius:8px;padding:8px"><div style="font-size:10px;font-weight:800;color:#8A5D00">CAPACITY OVERFLOW · '+alloc.overflow.length+'</div><div style="font-size:10px;color:#7A5600;margin-top:3px">Do not cram these in. Re-prioritize, move a flexible block, or let the queue carry the agent forward: '+alloc.overflow.slice(0,5).map(x=>v21Esc(x.title)).join(" · ")+(alloc.overflow.length>5?' · +'+(alloc.overflow.length-5)+' more':'')+'</div></div>';
+    // IMPORTANT: follow-up dates are NOT treated as scheduled meetings. Only blocks Amanda
+    // explicitly enters affect today's capacity. This removes the old false "add meeting time"
+    // warning that surfaced ordinary follow-ups (and stale historical ownership) as meetings.
+    const relOpen=alloc.planned.filter(x=>x.kind==="agent").length,prosOpen=alloc.planned.filter(x=>x.kind==="prospect").length;
+    html+='<div style="background:var(--surface-2);border:1px solid var(--border-light);border-radius:9px;padding:8px 10px;margin-bottom:8px;font-size:10.5px;color:var(--text-3);line-height:1.45">'
+      +'<strong style="color:var(--text-2)">Today:</strong> '+(st.transactionOpen?('<strong style="color:#75520A">'+st.transactionOpen+' mandatory transaction call'+(st.transactionOpen!==1?'s':'')+' first</strong> · '):'')+st.partnerToday+' partner meeting'+(st.partnerToday!==1?'s':'')+' logged · '+st.coldDone+' prospecting calls complete · <strong style="color:var(--text-2)">'+relOpen+' relationship call'+(relOpen!==1?'s':'')+' + '+prosOpen+' new-agent call'+(prosOpen!==1?'s':'')+' in today’s Workflow</strong><br>'
+      +'<span>New-agent calls today: '+st.prospectTarget+' based on the time available after must-do transaction calls and meetings. Open-day standard is 25. · '+pace+'</span>'
+      +'</div>';
+    if((blocks||[]).length){
+      html+='<details style="margin:0 0 8px;border:1px solid var(--border-light);border-radius:8px;background:#fff"><summary style="cursor:pointer;padding:7px 9px;font-size:10.5px;font-weight:700;color:var(--text-2)">Today’s meetings / blocked time · '+blocks.length+'</summary><div style="padding:0 9px 4px">'+v21BlockList(blocks)+'</div></details>';
+    }
+  }else{
+    html+='<div style="font-size:10px;color:var(--text-3);margin-bottom:5px"><strong style="color:var(--text-2)">Role pace:</strong> '+pace+'</div>';
+    html+='<div style="font-size:10px;font-weight:800;color:var(--text-3);text-transform:uppercase;letter-spacing:.4px;margin-top:8px">Today’s commitments</div>'+v21BlockList(blocks);
+    html+='<div style="font-size:10px;color:var(--text-3);background:#EEF8F2;border-radius:7px;padding:6px 8px;margin-bottom:7px">Today logged: '+st.partnerToday+' partner meeting'+(st.partnerToday!==1?'s':'')+'. Your capacity intentionally includes Amanda development, execution consistency, portfolio health and system work.</div>';
+  }
+
+  html+='<div style="font-size:10px;font-weight:800;color:var(--text-3);text-transform:uppercase;letter-spacing:.4px;margin:9px 0 2px">'+(owner==="Amanda"?"Work top to bottom":"Recommended order + time")+'</div>';
+  html+=owner==="Amanda"?v29RenderAmandaTasks(alloc.planned,date,st):(alloc.planned.length?alloc.planned.map((t,i)=>v21PlanTaskRow(t,i===0,date)).join(""):'<div style="font-size:11px;color:var(--text-3);padding:8px 0">You are clear for the flexible work that fits today. Any unfinished assigned agents will carry forward automatically.</div>');
+  if(alloc.overflow.length){
+    if(owner==="Amanda"){const carry=alloc.overflow.filter(x=>x.kind!=="prospect");if(carry.length)html+='<div style="margin-top:8px;background:var(--surface-2);border:1px solid var(--border-light);border-radius:8px;padding:8px;font-size:10px;color:var(--text-3)"><strong style="color:var(--text-2)">Already handled for you:</strong> '+carry.length+' lower-priority item'+(carry.length!==1?"s":"")+' can carry forward automatically. No cramming.</div>';}
+    else html+='<div style="margin-top:8px;background:#FFF8E8;border:1px solid #E7C98A;border-radius:8px;padding:8px"><div style="font-size:10px;font-weight:800;color:#8A5D00">CAPACITY OVERFLOW · '+alloc.overflow.length+'</div><div style="font-size:10px;color:#7A5600;margin-top:3px">Do not cram these in. Re-prioritize, move a flexible block, or let the queue carry the agent forward: '+alloc.overflow.slice(0,5).map(x=>v21Esc(x.title)).join(" · ")+(alloc.overflow.length>5?' · +'+(alloc.overflow.length-5)+' more':'')+'</div></div>';
+  }
   host.innerHTML=html;
 }
+
 async function v21LoadDailyPlan(force){
   if(_v21PlanLoading)return;_v21PlanLoading=true;
   try{
@@ -11363,7 +11753,7 @@ async function v21LoadDailyPlan(force){
     v21RenderOwner("Amanda","v21AmandaDayPlan","v21AmandaCapacity",ab,data.amanda,data,acts,monthActs,scheduledActs,date);
     // Snapshot is Amanda's TODAY workspace. Never let Nyny's Management date selector change Amanda's Snapshot to a past/future day.
     if(date===today()&&document.getElementById("v22AmandaSnapshotPlan"))v21RenderOwner("Amanda","v22AmandaSnapshotPlan","v22AmandaSnapshotCapacity",ab,data.amanda,data,acts,monthActs,scheduledActs,date);
-  }catch(e){console.error("v21 daily plan error",e);const s=document.getElementById("v21DailyPlanStatus");if(s)s.innerHTML='<div style="font-size:11px;color:var(--danger)">Unable to build the daily operating plan. Refresh and try again.</div>';
+  }catch(e){console.error("v21 daily plan error",e);const s=document.getElementById("v21DailyPlanStatus");if(s)s.innerHTML='<div style="font-size:11px;color:var(--danger)">Unable to build today’s Workflow. Refresh and try again.</div>';
   }finally{_v21PlanLoading=false;}
 }
 async function v23SaveBlockPayload(payload){
@@ -11397,7 +11787,7 @@ async function v23LoadAmandaSnapshot(force){
     ]);
     const ab=(blocks||[]).filter(b=>b.owner==="Amanda");
     v21RenderOwner("Amanda","v22AmandaSnapshotPlan","v22AmandaSnapshotCapacity",ab,data.amanda,data,acts,monthActs,scheduledActs,date);
-  }catch(e){console.error("Amanda snapshot plan error",e);host.innerHTML='<div class="no-data" style="color:var(--danger)">Unable to build today’s plan. Refresh and try again.</div>';}
+  }catch(e){console.error("Amanda Workflow error",e);host.innerHTML='<div class="no-data" style="color:var(--danger)">Unable to build Amanda’s Workflow. Refresh and try again.</div>';}
 }
 function v21Init(){const d=document.getElementById("v21PlanDate");if(d&&!d.value)d.value=today();v21LoadDailyPlan(true);v23LoadAmandaSnapshot(true);}
 // Refresh the correct role workspace whenever its tab is opened.
