@@ -660,7 +660,7 @@ input:focus,select:focus,textarea:focus{outline:none!important;border-color:#8D7
 </style>
 </head>
 <body>
-<div id="rmBuildBadge" style="position:fixed;right:10px;bottom:8px;z-index:9999;font-size:10px;padding:3px 6px;border-radius:6px;background:rgba(91,68,152,.12);color:#5B4498;pointer-events:none">Build v64.0</div>
+<div id="rmBuildBadge" style="position:fixed;right:10px;bottom:8px;z-index:9999;font-size:10px;padding:3px 6px;border-radius:6px;background:rgba(91,68,152,.12);color:#5B4498;pointer-events:none">Build v65.0</div>
 <div class="header">
   <div class="brand-wrap">
     <span class="brand-chip">RM TRACKER</span>
@@ -6993,7 +6993,8 @@ async function showDailyCheckin(viewDateStr){
   try{
     const dateObj=new Date(viewDate+"T12:00:00");
     const nextDayStr=localDateStr(new Date(dateObj.getTime()+86400000));
-    const[dayActs,escToday,flaggedOpen,fuTomorrow,rcHotRows,rcBacklog,contactBacklog,openFollowups,healthActs,healthLpCalls,lpBreakBreads,ctcFilesToday]=await Promise.all([
+    const dailyLeadCut=new Date(dateObj);dailyLeadCut.setFullYear(dailyLeadCut.getFullYear()-1);
+    const[dayActs,escToday,flaggedOpen,fuTomorrow,rcHotRows,rcBacklog,contactBacklog,openFollowups,healthActs,healthLpCalls,lpBreakBreads,ctcFilesToday,dailyLiveLeadRows]=await Promise.all([
       sbFetch("amanda_activities?select=id,act_type,agent_name,outcome,notes,follow_up_date&act_date=eq."+viewDate+"&order=id.asc"),
       sbFetch("amanda_activities?select=agent_name,act_type,notes&outcome=eq.Needs manager attention&act_date=eq."+viewDate).catch(()=>[]),
       sbFetch("call_logs?select=agent_name,lp,note&flag_rm=eq.true&limit=100").catch(()=>[]),
@@ -7005,8 +7006,10 @@ async function showDailyCheckin(viewDateStr){
       sbFetch("amanda_activities?select=agent_name,act_date,outcome,act_type,notes&order=act_date.desc&limit=3000").catch(()=>[]),
       sbFetch("call_logs?select=agent_name,call_date,outcome&order=call_date.desc&limit=2000").catch(()=>[]),
       sbFetch("break_breads?select=agent_name,date,logged_by&order=date.desc&limit=2000").catch(()=>[]),
-      sbFetch("call_logs?select=agent_name,outcome&outcome=ilike.*ctc*&call_date=eq."+viewDate+"&limit=100").catch(()=>[])
+      sbFetch("call_logs?select=agent_name,outcome&outcome=ilike.*ctc*&call_date=eq."+viewDate+"&limit=100").catch(()=>[]),
+      sbFetch("velocify_leads?select=referral_partner_name,date_added&date_added=gte."+localDateStr(dailyLeadCut)+"&date_added=lte."+viewDate+"&order=date_added.desc&limit=5000").catch(()=>[])
     ]);
+    const dailyLiveLeadMap=buildLatestLeadMap(dailyLiveLeadRows);
 
     titleEl.textContent="Daily Check-in — "+dateObj.toLocaleDateString("en-US",{weekday:"long",month:"short",day:"numeric"})+(isToday?"":" (past)");
 
@@ -7102,7 +7105,8 @@ async function showDailyCheckin(viewDateStr){
       const daysRM=rm?Math.max(0,Math.round((healthNow-new Date(rm+"T12:00:00"))/86400000)):null;
       const daysLP=lp?Math.max(0,Math.round((healthNow-new Date(lp+"T12:00:00"))/86400000)):null;
       const daysAny=(daysRM===null&&daysLP===null)?null:Math.min(daysRM===null?Infinity:daysRM,daysLP===null?Infinity:daysLP);
-      const daysLead=a.latest_lead_date?Math.max(0,Math.round((healthNow-new Date(a.latest_lead_date+"T12:00:00"))/86400000)):null;
+      const bestLead=bestHealthLeadDate(a,dailyLiveLeadMap);
+      const daysLead=bestLead?Math.max(0,Math.round((healthNow-new Date(bestLead+"T12:00:00"))/86400000)):null;
       const tier=a.tier||null;
       const health=computeHealthScore(daysLead,daysAny,touchThreshold[tier]||14,urgentThreshold[tier]||21,!!a.competitor_risk_flag);
       return{agent_name:a.agent_name,tier,health,daysAny,daysLead};
@@ -8737,11 +8741,14 @@ async function writeHealthSnapshots(){
   const TIER_URGENT_THRESHOLD={Channel:21,A:21,B:45,C:90};
 
   // Fetch everything needed to compute the Health Score for every retained agent
-  const[allAgents,allActs,lpCalls]=await Promise.all([
+  const leadCut=new Date(now);leadCut.setFullYear(leadCut.getFullYear()-1);
+  const[allAgents,allActs,lpCalls,liveLeadRows]=await Promise.all([
     sbFetch("agent_profiles?select=agent_name,tier,retained,do_not_contact,relationship_status,latest_lead_date,competitor_risk_flag&limit=2000").catch(()=>sbFetch("agent_profiles?select=agent_name,tier,retained,do_not_contact,latest_lead_date,competitor_risk_flag&limit=2000").catch(()=>[])),
     sbFetch("amanda_activities?select=agent_name,act_date,outcome,act_type&order=act_date.desc&limit=3000").catch(()=>[]),
-    sbFetch("call_logs?select=agent_name,call_date,outcome&order=call_date.desc&limit=2000").catch(()=>[])
+    sbFetch("call_logs?select=agent_name,call_date,outcome&order=call_date.desc&limit=2000").catch(()=>[]),
+    sbFetch("velocify_leads?select=referral_partner_name,date_added&date_added=gte."+localDateStr(leadCut)+"&order=date_added.desc&limit=5000").catch(()=>[])
   ]);
+  const liveLeadMap=buildLatestLeadMap(liveLeadRows);
 
   const lastSeenRM={};
   (allActs||[]).forEach(a=>{const n=(a.agent_name||"").trim().toLowerCase();if(n&&!lastSeenRM[n]&&isMeaningfulOutcome(a.outcome,NOT_MEANINGFUL_RM_OUTCOMES,a.act_type))lastSeenRM[n]=a.act_date;});
@@ -8762,7 +8769,8 @@ async function writeHealthSnapshots(){
     const tier=a.tier||null;
     const threshold=TIER_TOUCH_THRESHOLD[tier]||14;
     const urgent=TIER_URGENT_THRESHOLD[tier]||21;
-    const daysSinceLead=a.latest_lead_date?Math.round((now-new Date(a.latest_lead_date+"T12:00:00"))/86400000):null;
+    const bestLead=bestHealthLeadDate(a,liveLeadMap);
+    const daysSinceLead=bestLead?Math.round((now-new Date(bestLead+"T12:00:00"))/86400000):null;
     const health=computeHealthScore(daysSinceLead,daysAny,threshold,urgent,!!a.competitor_risk_flag);
     return{agent_name:a.agent_name,tier:tier||null,health_score:health,snapshot_date:snapshotDate};
   });
@@ -8791,6 +8799,21 @@ function computeHealthScore(daysSinceLead,daysAny,threshold,urgentThreshold,comp
   if(daysSinceLead>=30)return"Yellow";
   if(daysAny>=threshold)return"Yellow";
   return"Green";
+}
+function buildLatestLeadMap(rows){
+  const out={};
+  (rows||[]).forEach(l=>{
+    const k=String(l.referral_partner_name||l.agent_name||"").trim().toLowerCase();
+    const d=String(l.date_added||l.latest_lead_date||"").slice(0,10);
+    if(k&&d&&(!out[k]||d>out[k]))out[k]=d;
+  });
+  return out;
+}
+function bestHealthLeadDate(profile,leadMap){
+  const key=String(profile&&profile.agent_name||"").trim().toLowerCase();
+  const live=leadMap&&leadMap[key]?String(leadMap[key]).slice(0,10):"";
+  const stored=profile&&profile.latest_lead_date?String(profile.latest_lead_date).slice(0,10):"";
+  return live&&stored?(live>stored?live:stored):(live||stored||null);
 }
 let portfolioPeriod="month";
 function setPortfolioPeriod(p){
@@ -12522,7 +12545,7 @@ async function wp18FetchData(force){
     const prospectCut=new Date();prospectCut.setDate(prospectCut.getDate()-120);const prospectStart=wpDateStr(prospectCut);
     const txnCut=new Date();txnCut.setDate(txnCut.getDate()-45);const txnStart=wpDateStr(txnCut);
     const healthCut=new Date();healthCut.setDate(healthCut.getDate()-365);const healthStart=wpDateStr(healthCut);
-    const [assignments,reconnect,followups,weekActs,prospects,prospectActs,transactionActs,ctcSignals,contractSignals,openLpFlags,legacyRmFlags,healthActs,healthLpCalls]=await Promise.all([
+    const [assignments,reconnect,followups,weekActs,prospects,prospectActs,transactionActs,ctcSignals,contractSignals,openLpFlags,legacyRmFlags,healthActs,healthLpCalls,healthLeadRows]=await Promise.all([
       sbFetch("agent_assignments?select=agent_name,lp,rm,priority,level&limit=5000").catch(()=>[]),
       sbFetch(RC_TABLE+"?select=agent_name,status,grade,days_since,contacted_at&limit=5000").catch(()=>sbFetch(RC_TABLE+"?select=agent_name,status,grade,contacted_at&limit=5000").catch(()=>[])),
       sbFetch("amanda_activities?select=agent_name,follow_up_date,act_date,notes,outcome,act_type&follow_up_date=not.is.null&follow_up_date=lte."+w.end+"&order=follow_up_date.asc&limit=2000").catch(()=>[]),
@@ -12535,7 +12558,8 @@ async function wp18FetchData(force){
       sbFetch("lp_flags?resolved=eq.false&select=id,agent_name,lp,note,assigned_to,created_at&order=created_at.asc&limit=500").catch(()=>[]),
       sbFetch("call_logs?flag_rm=eq.true&select=id,agent_name,lp,note,call_date&limit=500").catch(()=>[]),
       sbFetch("amanda_activities?select=agent_name,act_date,outcome,act_type&act_date=gte."+healthStart+"&order=act_date.desc&limit=6000").catch(()=>[]),
-      sbFetch("call_logs?select=agent_name,call_date,outcome&call_date=gte."+healthStart+"&order=call_date.desc&limit=4000").catch(()=>[])
+      sbFetch("call_logs?select=agent_name,call_date,outcome&call_date=gte."+healthStart+"&order=call_date.desc&limit=4000").catch(()=>[]),
+      sbFetch("velocify_leads?select=referral_partner_name,date_added&date_added=gte."+healthStart+"&order=date_added.desc&limit=5000").catch(()=>[])
     ]);
     const candidates=wp18BuildCandidates(profiles,assignments,reconnect,followups,w);
     const prospectPool=wp29BuildProspectPool(prospects,profiles,assignments,prospectActs,candidates);
@@ -12548,7 +12572,7 @@ async function wp18FetchData(force){
     if(queue.supported)qrows=await wp29RemoveProspectRowsFromRelationshipQueue(qrows);
     if(queue.supported)await wp18SyncWorked(qrows,touched);
     const items=wp18RowsToItems(qrows,candidates.pmap),activeProfiles=(profiles||[]).filter(wp18IsActive),complete=activeProfiles.filter(p=>wpMissing(p).length===0).length;
-    const data={w,touched,profiles:activeProfiles,profileMap:candidates.pmap,ownerRecords,complete,queueSupported:queue.supported,queueRows:qrows,amanda:items.filter(x=>x.owner==="Amanda"),nyny:items.filter(x=>x.owner==="Nyny"),prospectPool,transactionActs:transactionActs||[],ctcSignals:ctcSignals||[],contractSignals:contractSignals||[],openLpFlags:openLpFlags||[],legacyRmFlags:legacyRmFlags||[],healthActs:healthActs||[],healthLpCalls:healthLpCalls||[]};
+    const data={w,touched,profiles:activeProfiles,profileMap:candidates.pmap,ownerRecords,complete,queueSupported:queue.supported,queueRows:qrows,amanda:items.filter(x=>x.owner==="Amanda"),nyny:items.filter(x=>x.owner==="Nyny"),prospectPool,transactionActs:transactionActs||[],ctcSignals:ctcSignals||[],contractSignals:contractSignals||[],openLpFlags:openLpFlags||[],legacyRmFlags:legacyRmFlags||[],healthActs:healthActs||[],healthLpCalls:healthLpCalls||[],healthLeadMap:buildLatestLeadMap(healthLeadRows||[])};
     _wp18Cache=data;_wp18CacheAt=Date.now();return data;
   })();
   try{return await _wp18Loading;}finally{_wp18Loading=null;}
@@ -12824,7 +12848,7 @@ function wp34HealthState(data,date){
     if(!p||!p.agent_name||p.retained!==true||p.do_not_contact===true||p.relationship_status==="inactive")return;
     const k=wp18Key(p.agent_name),lastRM=rmLast[k]||p.last_meaningful_contact_date||null,lastLP=lpLast[k]||null;
     const dr=wp34DaysBetween(lastRM,date),dl=wp34DaysBetween(lastLP,date),daysAny=(dr===null&&dl===null)?null:Math.min(dr===null?99999:dr,dl===null?99999:dl);
-    const daysLead=wp34DaysBetween(p.latest_lead_date,date),tier=p.tier||"";
+    const daysLead=wp34DaysBetween(bestHealthLeadDate(p,data.healthLeadMap||{}),date),tier=p.tier||"";
     const health=computeHealthScore(daysLead,daysAny,touch[tier]||14,urgent[tier]||21,!!p.competitor_risk_flag);
     let why=health+" Partner Health";
     if(p.competitor_risk_flag)why+=" · competitor risk flagged";
@@ -13163,7 +13187,7 @@ function runV47NavigationCheck(){
 }
 setTimeout(runV47NavigationCheck,0);
 </script>
-<script>console.log("RM Tracker Build v64.0 · instant task refresh + linked handoff completion");</script>
+<script>console.log("RM Tracker Build v65.0 · instant task refresh + linked handoff completion");</script>
 <script>setTimeout(function(){try{loadRmNurtureToday();}catch(e){}},1200);</script>
 </body>
 </html>
