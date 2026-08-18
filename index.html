@@ -660,7 +660,7 @@ input:focus,select:focus,textarea:focus{outline:none!important;border-color:#8D7
 </style>
 </head>
 <body>
-<div id="rmBuildBadge" style="position:fixed;right:10px;bottom:8px;z-index:9999;font-size:10px;padding:3px 6px;border-radius:6px;background:rgba(91,68,152,.12);color:#5B4498;pointer-events:none">Build v65.0</div>
+<div id="rmBuildBadge" style="position:fixed;right:10px;bottom:8px;z-index:9999;font-size:10px;padding:3px 6px;border-radius:6px;background:rgba(91,68,152,.12);color:#5B4498;pointer-events:none">Build v66.0</div>
 <div class="header">
   <div class="brand-wrap">
     <span class="brand-chip">RM TRACKER</span>
@@ -8800,18 +8800,27 @@ function computeHealthScore(daysSinceLead,daysAny,threshold,urgentThreshold,comp
   if(daysAny>=threshold)return"Yellow";
   return"Green";
 }
+function healthNameKey(name){
+  // Normalize cross-system Realtor names so Velocify "SHAYNE BOYD" matches profile "Shayne D. Boyd".
+  // Removes punctuation, collapses whitespace and ignores standalone middle initials only.
+  const parts=String(name||"").toLowerCase().replace(/[^a-z0-9\s]/g," ").replace(/\s+/g," ").trim().split(" ").filter(Boolean);
+  return parts.filter((part,idx)=>!(part.length===1&&idx>0&&idx<parts.length-1)).join(" ");
+}
 function buildLatestLeadMap(rows){
   const out={};
   (rows||[]).forEach(l=>{
-    const k=String(l.referral_partner_name||l.agent_name||"").trim().toLowerCase();
+    const raw=String(l.referral_partner_name||l.agent_name||"").trim();
+    const keys=[raw.toLowerCase(),healthNameKey(raw)].filter(Boolean);
     const d=String(l.date_added||l.latest_lead_date||"").slice(0,10);
-    if(k&&d&&(!out[k]||d>out[k]))out[k]=d;
+    keys.forEach(k=>{if(k&&d&&(!out[k]||d>out[k]))out[k]=d;});
   });
   return out;
 }
 function bestHealthLeadDate(profile,leadMap){
-  const key=String(profile&&profile.agent_name||"").trim().toLowerCase();
-  const live=leadMap&&leadMap[key]?String(leadMap[key]).slice(0,10):"";
+  const raw=String(profile&&profile.agent_name||"").trim();
+  const exact=raw.toLowerCase(),normalized=healthNameKey(raw);
+  const liveRaw=(leadMap&&(leadMap[exact]||leadMap[normalized]))||"";
+  const live=liveRaw?String(liveRaw).slice(0,10):"";
   const stored=profile&&profile.latest_lead_date?String(profile.latest_lead_date).slice(0,10):"";
   return live&&stored?(live>stored?live:stored):(live||stored||null);
 }
@@ -10081,12 +10090,15 @@ async function loadPortfolioReview(){
     // Real last lead date comes from Velocify when available; agent_profiles.latest_lead_date is the
     // fallback. This mirrors the LP Tracker and prevents a stale import timestamp from changing Health.
     const lastLeadDateByAgent={};
-    (allVelocifyLeads||[]).forEach(l=>{const n=(l.referral_partner_name||"").trim().toLowerCase();if(n&&(!lastLeadDateByAgent[n]||l.date_added>lastLeadDateByAgent[n]))lastLeadDateByAgent[n]=l.date_added;});
+    (allVelocifyLeads||[]).forEach(l=>{
+      const raw=(l.referral_partner_name||"").trim(),d=l.date_added;
+      [raw.toLowerCase(),healthNameKey(raw)].filter(Boolean).forEach(n=>{if(n&&d&&(!lastLeadDateByAgent[n]||d>lastLeadDateByAgent[n]))lastLeadDateByAgent[n]=d;});
+    });
 
     // Per-agent computed rows: touch recency + lead recency + Health Score
     const rows=active.map(a=>{
       const name=(a.agent_name||"").trim();
-      const key=name.toLowerCase();
+      const key=name.toLowerCase(),healthKey=healthNameKey(name);
       const lastRM=lastSeenRM[key],lastLP=lastSeenLP[key];
       const daysRM=lastRM?Math.round((now-new Date(lastRM+"T12:00:00"))/86400000):null;
       const daysLP=lastLP?Math.round((now-new Date(lastLP+"T12:00:00"))/86400000):null;
@@ -10094,7 +10106,7 @@ async function loadPortfolioReview(){
       const tier=a.tier||null;
       const threshold=TIER_TOUCH_THRESHOLD[tier]||14;
       const urgentThreshold=TIER_URGENT_THRESHOLD[tier]||21;
-      const velocifyLead=lastLeadDateByAgent[key],profileLead=a.latest_lead_date;
+      const velocifyLead=lastLeadDateByAgent[key]||lastLeadDateByAgent[healthKey],profileLead=a.latest_lead_date;
       const bestLead=velocifyLead&&profileLead?(velocifyLead>profileLead?velocifyLead:profileLead):(velocifyLead||profileLead);
       const daysSinceLead=bestLead?Math.round((now-new Date(bestLead+"T12:00:00"))/86400000):null;
       const health=computeHealthScore(daysSinceLead,daysAny,threshold,urgentThreshold,!!a.competitor_risk_flag);
@@ -13187,7 +13199,7 @@ function runV47NavigationCheck(){
 }
 setTimeout(runV47NavigationCheck,0);
 </script>
-<script>console.log("RM Tracker Build v65.0 · instant task refresh + linked handoff completion");</script>
+<script>console.log("RM Tracker Build v66.0 · instant task refresh + linked handoff completion");</script>
 <script>setTimeout(function(){try{loadRmNurtureToday();}catch(e){}},1200);</script>
 </body>
 </html>
