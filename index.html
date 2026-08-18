@@ -656,11 +656,11 @@ input:focus,select:focus,textarea:focus{outline:none!important;border-color:#8D7
 .rm-mgmt-jump-label{font-size:8.5px;font-weight:900;letter-spacing:.8px;color:#988AAE;padding:0 3px}
 .rm-mgmt-jumpbar button{font-size:10.5px;font-weight:700;color:var(--brand-dark);background:#fff;border:1px solid #DED6EB;border-radius:7px;padding:6px 9px;cursor:pointer;font-family:inherit}
 .rm-mgmt-jumpbar button:hover{background:#F1EDF8;border-color:#CDBFE0}
-@media(max-width:760px){.learn-grid,.learn-grid-secondary{grid-template-columns:1fr}.director-nav-badge{display:none}.rm-mgmt-jumpbar{overflow-x:auto;flex-wrap:nowrap}.rm-mgmt-jumpbar button{white-space:nowrap}}
+@media(max-width:760px){#quickLogAttendeesRow,#nynyQuickParticipation{grid-template-columns:1fr!important}#editModal>div>div[style*="grid-template-columns:1.2fr"]{grid-template-columns:1fr!important}.learn-grid,.learn-grid-secondary{grid-template-columns:1fr}.director-nav-badge{display:none}.rm-mgmt-jumpbar{overflow-x:auto;flex-wrap:nowrap}.rm-mgmt-jumpbar button{white-space:nowrap}}
 </style>
 </head>
 <body>
-<div id="rmBuildBadge" style="position:fixed;right:10px;bottom:8px;z-index:9999;font-size:10px;padding:3px 6px;border-radius:6px;background:rgba(91,68,152,.12);color:#5B4498;pointer-events:none">Build v54.0</div>
+<div id="rmBuildBadge" style="position:fixed;right:10px;bottom:8px;z-index:9999;font-size:10px;padding:3px 6px;border-radius:6px;background:rgba(91,68,152,.12);color:#5B4498;pointer-events:none">Build v59.0</div>
 <div class="header">
   <div class="brand-wrap">
     <span class="brand-chip">RM TRACKER</span>
@@ -761,7 +761,7 @@ input:focus,select:focus,textarea:focus{outline:none!important;border-color:#8D7
         <div class="field" style="margin:0"><label>Listing agent</label><input id="wp30TxnListingAgent" type="text" placeholder="Listing agent"></div>
         <div class="field" style="margin:0"><label>Client / borrower</label><input id="wp30TxnClient" type="text" placeholder="Client name"></div>
         <div class="field" style="margin:0"><label>Property address</label><input id="wp30TxnProperty" type="text" placeholder="Property address"></div>
-        <button type="button" onclick="wp30SaveTransactionTrigger()" class="btn-primary" style="height:36px;white-space:nowrap">Add calls</button>
+        <button id="wp30TxnAddBtn" type="button" onclick="wp30SaveTransactionTrigger()" class="btn-primary" style="height:36px;white-space:nowrap">Add calls</button>
       </div>
     </details>
     <div id="v22AmandaSnapshotPlan"><div class="no-data">Building Amanda’s Workflow…</div></div>
@@ -794,7 +794,7 @@ input:focus,select:focus,textarea:focus{outline:none!important;border-color:#8D7
       </div>
     </div>
     <div class="offline-queue-badge" style="display:none;align-items:center;gap:6px;background:#EEEBF8;color:#4E3D8A;border-radius:8px;padding:8px 12px;margin-bottom:10px;font-size:12px;font-weight:600"></div>
-    <div style="font-size:11px;color:var(--text-2);background:#F8F6FC;border:1px solid #DDD6EF;border-radius:8px;padding:8px 10px;margin-bottom:10px"><strong>Meaningful partner call = relationship intelligence.</strong> If you connect with a retained partner, the tracker will require the business update, needs/pain point, lender leakage, relationship rating, and a dated next move before saving.</div>
+    <div style="font-size:11px;color:var(--text-2);background:#F8F6FC;border:1px solid #DDD6EF;border-radius:8px;padding:8px 10px;margin-bottom:10px"><strong>Connected with a current partner?</strong> Log the call right here as <strong>Agent Talk-To</strong>. Once you select the partner and choose a real connection outcome, the <strong>Partner Check-In opens automatically</strong> before the activity saves. Complete the business update, pain point, lender leakage, relationship rating, and dated next move there.</div>
     <div style="display:flex;gap:0;margin-bottom:12px;background:var(--surface-2);border-radius:var(--radius-sm);padding:3px">
       <button id="ql-tab-talkto" onclick="switchQuickLogTab('talkto')"
         style="flex:1;padding:7px;border:none;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;background:var(--brand);color:#fff;transition:all .15s">
@@ -864,6 +864,11 @@ input:focus,select:focus,textarea:focus{outline:none!important;border-color:#8D7
       </div>
       <div id="quickLogTxnTextRow" style="display:none;margin-top:8px;background:#FFF8E8;border:1px solid #E7C98A;border-radius:8px;padding:8px 10px">
         <label style="display:flex;gap:8px;align-items:flex-start;font-size:11px;color:#75520A;cursor:pointer"><input type="checkbox" id="quickLogTxnTextSent" style="margin-top:2px"> <span><strong>Follow-up text sent</strong><br><span style="font-weight:400">For a must-do Under Contract / CTC call, voicemail or no answer does not finish the task until the follow-up text is sent.</span></span></label>
+      </div>
+      <div id="quickLogAttendeesRow" style="margin-top:8px;display:grid;grid-template-columns:1.15fr 1fr 1fr;gap:8px;align-items:end">
+        <div><label style="font-size:11px;font-weight:600;color:var(--text-2)">RM(s) involved</label><div style="display:flex;gap:12px;align-items:center;min-height:36px;padding:7px 9px;background:var(--surface-2);border:1px solid var(--border);border-radius:8px"><label style="font-size:11px;font-weight:600;display:flex;gap:5px;align-items:center"><input type="checkbox" id="quickRmAmanda" checked> Amanda</label><label style="font-size:11px;font-weight:600;display:flex;gap:5px;align-items:center"><input type="checkbox" id="quickRmNyny"> Nyny</label></div></div>
+        <div><label style="font-size:11px;font-weight:600;color:var(--text-2)">LP Attendee <span style="font-weight:400;color:var(--text-4)">(optional)</span></label><select id="quickLpAttendee" style="width:100%;border:1px solid var(--border);border-radius:8px;padding:8px 9px;background:var(--surface)"><option value="">None</option><option>Gavin</option><option>Karen</option><option>Osgood</option><option>Jordan</option><option>Said</option></select></div>
+        <div><label style="font-size:11px;font-weight:600;color:var(--text-2)">Next Step Owner</label><select id="quickNextStepOwner" style="width:100%;border:1px solid var(--border);border-radius:8px;padding:8px 9px;background:var(--surface)"><option value="">None yet</option><option>Amanda</option><option>Nyny</option><option>Gavin</option><option>Karen</option><option>Osgood</option><option>Jordan</option><option>Said</option></select></div>
       </div>
       <div id="quickLogNotesWrap" style="margin-top:9px">
         <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:4px">
@@ -1128,11 +1133,12 @@ input:focus,select:focus,textarea:focus{outline:none!important;border-color:#8D7
       </div>
       <div class="form-row" style="margin-bottom:10px">
         <div class="field">
-          <label>RM owner</label>
-          <select id="activityOwner" onchange="onActivityOwnerChange()">
-            <option value="Amanda">Amanda — Relationship Manager</option>
-            <option value="Nyny">Nyny — Director / RM Team Lead</option>
-          </select>
+          <label>RM(s) involved</label>
+          <div style="display:flex;gap:14px;align-items:center;min-height:37px;padding:8px 10px;background:var(--surface-2);border:1px solid var(--border);border-radius:8px">
+            <label style="display:flex;gap:6px;align-items:center;font-size:12px;font-weight:600;cursor:pointer"><input type="checkbox" id="activityRmAmanda" checked onchange="syncActivityParticipants()"> Amanda</label>
+            <label style="display:flex;gap:6px;align-items:center;font-size:12px;font-weight:600;cursor:pointer"><input type="checkbox" id="activityRmNyny" onchange="syncActivityParticipants()"> Nyny</label>
+          </div>
+          <select id="activityOwner" onchange="onActivityOwnerChange()" style="display:none"><option value="Amanda">Amanda</option><option value="Nyny">Nyny</option></select>
         </div>
         <div class="field" id="meetingFocusField" style="display:none">
           <label>Meeting focus</label>
@@ -1147,12 +1153,17 @@ input:focus,select:focus,textarea:focus{outline:none!important;border-color:#8D7
           </select>
         </div>
       </div>
-      <div id="ownerRoleHint" style="font-size:11px;color:var(--text-3);background:var(--surface-2);border-radius:8px;padding:8px 10px;margin:-2px 0 12px">Amanda owns primary prospecting + direct RM execution. Nyny's new-meeting contribution is strategic/warm/Channel focused; no cold-call quota.</div>
+      <div id="ownerRoleHint" style="font-size:11px;color:var(--text-3);background:var(--surface-2);border-radius:8px;padding:8px 10px;margin:-2px 0 12px"><strong>Check every RM who actually participated.</strong> Amanda + Nyny = one joint meeting, credited to both individually but counted once for the RM Team. Attendance never changes Relationship Owner.</div>
+      <div class="form-row" style="margin-bottom:10px">
+        <div class="field"><label>LP Attendee <span style="font-weight:400;color:var(--text-4)">(optional)</span></label><select id="activityLpAttendee"><option value="">None</option><option>Gavin</option><option>Karen</option><option>Osgood</option><option>Jordan</option><option>Said</option></select></div>
+        <div class="field"><label>Next Step Owner <span style="font-weight:400;color:var(--text-4)">(required when follow-up is needed)</span></label><select id="activityNextStepOwner"><option value="">None yet</option><option>Amanda</option><option>Nyny</option><option>Gavin</option><option>Karen</option><option>Osgood</option><option>Jordan</option><option>Said</option></select></div>
+      </div>
+      <div id="activityRelationshipOwnerHint" style="font-size:10.5px;color:var(--text-3);margin:-3px 0 10px">Relationship Owner stays separate from attendance.</div>
       <div class="form-row">
         <div class="field">
           <label>Agent name</label>
           <div class="ac-wrap">
-            <input type="text" id="agentInput" placeholder="Start typing..." autocomplete="off">
+            <input type="text" id="agentInput" placeholder="Start typing..." autocomplete="off" oninput="updateActivityRelationshipOwnerHint(this.value)">
             <div class="ac-list" id="acList"></div>
           </div>
         </div>
@@ -1345,6 +1356,11 @@ input:focus,select:focus,textarea:focus{outline:none!important;border-color:#8D7
     <div class="modal-sub" id="editModalAgent"></div>
     <div class="field" style="margin-bottom:12px"><label>Outcome</label><select id="editOutcome"><option value="">Select outcome...</option><option>Positive</option><option>Meeting Scheduled</option><option>Requires follow-up</option><option>Needs manager attention</option><option>Remove / No Further Contact</option></select></div>
     <div class="field" style="margin-bottom:12px"><label>Follow-up date</label><input type="date" id="editFollowupDate"></div>
+    <div style="display:grid;grid-template-columns:1.2fr 1fr 1fr;gap:8px;margin-bottom:12px">
+      <div class="field"><label>RM(s) involved</label><div style="display:flex;gap:12px;padding:8px 9px;background:var(--surface-2);border:1px solid var(--border);border-radius:8px"><label style="font-size:11px"><input type="checkbox" id="editRmAmanda"> Amanda</label><label style="font-size:11px"><input type="checkbox" id="editRmNyny"> Nyny</label></div></div>
+      <div class="field"><label>LP Attendee</label><select id="editLpAttendee"><option value="">None</option><option>Gavin</option><option>Karen</option><option>Osgood</option><option>Jordan</option><option>Said</option></select></div>
+      <div class="field"><label>Next Step Owner</label><select id="editNextStepOwner"><option value="">None yet</option><option>Amanda</option><option>Nyny</option><option>Gavin</option><option>Karen</option><option>Osgood</option><option>Jordan</option><option>Said</option></select></div>
+    </div>
     <div class="field" style="margin-bottom:18px"><label>Notes</label><textarea id="editNotes" placeholder="Update notes..."></textarea><button type="button" onclick="document.getElementById('editNotes').value=''" style="margin-top:5px;padding:4px 10px;background:var(--surface-2);color:var(--text-2);border:1px solid var(--border);border-radius:6px;font-size:11px;cursor:pointer;font-family:inherit">Clear note</button></div>
     <div style="display:flex;gap:10px">
       <button class="btn-primary" onclick="saveEditModal()">Save changes</button>
@@ -1478,7 +1494,7 @@ input:focus,select:focus,textarea:focus{outline:none!important;border-color:#8D7
     </div>
     <div class="form-row one"><div class="field"><label>Notes</label><textarea id="np-notes" placeholder="Notes, touch history, next steps..."></textarea></div></div>
     <div style="display:flex;gap:10px">
-      <button class="btn-primary" onclick="saveProspect()">Save prospect</button>
+      <button id="saveProspectBtn" class="btn-primary" onclick="saveProspect()">Save prospect</button>
       <button class="btn-sm" onclick="toggleAddForm(false)">Cancel</button>
     </div>
   </div>
@@ -1694,6 +1710,7 @@ input:focus,select:focus,textarea:focus{outline:none!important;border-color:#8D7
           <div class="ac-list" id="nynyQuickAcList"></div>
         </div>
       </div>
+      <div id="nynyQuickParticipation" style="grid-column:1/-1;display:grid;grid-template-columns:1.15fr 1fr 1fr;gap:8px;align-items:end;margin-top:2px"><div><label style="font-size:11px;font-weight:600;color:var(--text-2)">RM(s) involved</label><div style="display:flex;gap:12px;align-items:center;min-height:36px;padding:7px 9px;background:var(--surface-2);border:1px solid var(--border);border-radius:8px"><label style="font-size:11px;font-weight:600"><input type="checkbox" id="nynyRmNyny" checked> Nyny</label><label style="font-size:11px;font-weight:600"><input type="checkbox" id="nynyRmAmanda"> Amanda</label></div></div><div><label style="font-size:11px;font-weight:600;color:var(--text-2)">LP Attendee</label><select id="nynyLpAttendee" style="width:100%;border:1px solid var(--border);border-radius:8px;padding:8px 9px;background:var(--surface)"><option value="">None</option><option>Gavin</option><option>Karen</option><option>Osgood</option><option>Jordan</option><option>Said</option></select></div><div><label style="font-size:11px;font-weight:600;color:var(--text-2)">Next Step Owner</label><select id="nynyNextStepOwner" style="width:100%;border:1px solid var(--border);border-radius:8px;padding:8px 9px;background:var(--surface)"><option value="">None yet</option><option>Amanda</option><option>Nyny</option><option>Gavin</option><option>Karen</option><option>Osgood</option><option>Jordan</option><option>Said</option></select></div></div>
       <div class="field" id="nynyQuickFollowupWrap" style="display:none;margin:0">
         <label id="nynyQuickFollowupLabel">Follow-up date</label>
         <input type="date" id="nynyQuickFollowupDate">
@@ -1868,7 +1885,7 @@ input:focus,select:focus,textarea:focus{outline:none!important;border-color:#8D7
   </div>
 
   <div id="danielEscalationCard" class="card" style="display:none">
-    <div class="card-title">Agent Escalations <span class="card-sub">3+ unanswered attempts across 2+ channels, no response in 10 days</span></div>
+    <div class="card-title">Agent Escalations <span class="card-sub">3+ unanswered outreach days across 2+ channels within 10 days</span></div>
     <div id="danielEscalation" style="max-height:300px;overflow-y:auto"><div class="no-data">Loading...</div></div>
   </div>
 
@@ -1970,7 +1987,7 @@ input:focus,select:focus,textarea:focus{outline:none!important;border-color:#8D7
 <div id="view-contacts" class="view">
   <div class="card">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
-      <div class="card-title" style="margin-bottom:0">Agent contacts <span class="card-sub">Keep phone, email, address, birthday, tier and ownership current</span></div>
+      <div class="card-title" style="margin-bottom:0">Agent contacts <span class="card-sub">Keep phone, email, address, birthday, tier and ownership current · activity never reassigns ownership</span></div>
       <div style="display:flex;gap:8px">
         <input type="file" id="contactsImportFile" accept=".csv,.xlsx" style="display:none" onchange="importContactsFile(this)">
         <button onclick="document.getElementById('contactsImportFile').click()" style="padding:8px 14px;background:var(--surface-2);color:var(--text-2);border:1px solid var(--border);border-radius:var(--radius-sm);font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap">📥 Bulk import</button>
@@ -2035,7 +2052,7 @@ input:focus,select:focus,textarea:focus{outline:none!important;border-color:#8D7
     <div class="field" style="margin-bottom:12px"><label>Birthday <span style="font-weight:400;color:var(--text-4)">(MM/DD — no year)</span></label><input type="text" id="addAgentBirthday" placeholder="e.g. 03/14" maxlength="5" oninput="formatBirthdayInput(this)"></div>
     <div class="field" style="margin-bottom:18px"><label>Tier</label><select id="addAgentTier"><option value="">No tier set</option><option value="A">A-Tier</option><option value="B">B-Tier</option><option value="C">C-Tier</option></select></div>
     <div style="display:flex;gap:10px">
-      <button class="btn-primary" onclick="saveNewAgent()">Add agent</button>
+      <button id="saveNewAgentBtn" class="btn-primary" onclick="saveNewAgent()">Add agent</button>
       <button class="btn-sm" onclick="closeAddAgentModal()">Cancel</button>
     </div>
   </div>
@@ -2285,8 +2302,8 @@ input:focus,select:focus,textarea:focus{outline:none!important;border-color:#8D7
 
 <div class="modal-overlay" id="wp37PartnerCheckinModal">
   <div class="modal-box" style="max-width:700px;max-height:90vh;overflow-y:auto">
-    <div class="modal-header"><span class="modal-title">Partner Check-In — Don’t Waste the Touch</span><button class="modal-close" onclick="wp37CancelPartnerCheckin()">×</button></div>
-    <div class="modal-sub" style="margin-bottom:10px">A real partner conversation should leave us knowing more than “they’re doing good.” Capture what matters while it’s fresh. These answers update Portfolio + Partner Health.</div>
+    <div class="modal-header"><span class="modal-title">Partner Check-In — Complete Before Saving</span><button class="modal-close" onclick="wp37CancelPartnerCheckin()">×</button></div>
+    <div class="modal-sub" style="margin-bottom:10px"><strong>This is where you log the relationship intelligence.</strong> It opened automatically because you marked a real connection with a retained partner. Complete these fields, then click <strong>Save touch + update portfolio</strong>; the original activity will finish saving automatically.</div>
     <div id="wp37CheckinAgent" style="font-size:14px;font-weight:800;color:var(--brand-dark);margin-bottom:10px"></div>
     <div style="background:var(--brand-light);border:1px solid #D8D1EE;border-radius:9px;padding:10px 12px;margin-bottom:12px;font-size:11.5px;color:var(--text-2);line-height:1.5">
       <strong>Use these naturally — not like an interview.</strong><br>
@@ -2463,7 +2480,7 @@ input:focus,select:focus,textarea:focus{outline:none!important;border-color:#8D7
       <option value="Other">Other</option>
     </select></div>
     <div class="field" style="margin-bottom:12px"><label>Optional note</label><input id="prospectExcludeNote" type="text" placeholder="Example: Justin works through his wife; he only handles listings."></div>
-    <div style="display:flex;gap:8px;justify-content:flex-end"><button class="btn-sm" onclick="closeProspectExcludeModal()">Cancel</button><button class="btn-primary" onclick="saveProspectExclude()">Remove + replace</button></div>
+    <div style="display:flex;gap:8px;justify-content:flex-end"><button class="btn-sm" onclick="closeProspectExcludeModal()">Cancel</button><button id="prospectExcludeSaveBtn" class="btn-primary" onclick="saveProspectExclude()">Remove + replace</button></div>
   </div>
 </div>
 
@@ -2992,22 +3009,33 @@ function zwDecode(s){
   }catch(e){return "";}
 }
 function extractRmMeta(notes){
-  const n=String(notes||"");const a=n.lastIndexOf(RM_META_START);if(a<0)return{owner:"Amanda",focus:""};
-  const b=n.indexOf(RM_META_END,a+RM_META_START.length);if(b<0)return{owner:"Amanda",focus:""};
-  try{const obj=JSON.parse(zwDecode(n.slice(a+RM_META_START.length,b)));return{owner:obj.owner||"Amanda",focus:obj.focus||""};}catch(e){return{owner:"Amanda",focus:""};}
+  const n=String(notes||""),fallback={owner:"Amanda",focus:"",attendees:"",rmAttendees:["Amanda"],lpAttendees:[],nextStepOwner:""};
+  const a=n.lastIndexOf(RM_META_START);if(a<0)return fallback;
+  const b=n.indexOf(RM_META_END,a+RM_META_START.length);if(b<0)return fallback;
+  try{
+    const obj=JSON.parse(zwDecode(n.slice(a+RM_META_START.length,b)))||{};const owner=obj.owner||"Amanda";
+    let rm=Array.isArray(obj.rmAttendees)?obj.rmAttendees.filter(x=>x==="Amanda"||x==="Nyny"):[];let lp=Array.isArray(obj.lpAttendees)?obj.lpAttendees.filter(Boolean):[];
+    const legacy=String(obj.attendees||"").split(/[,;+]/).map(x=>x.trim()).filter(Boolean);if(!rm.length)rm=[owner];
+    legacy.forEach(x=>{if((x==="Amanda"||x==="Nyny")&&!rm.includes(x))rm.push(x);else if(["Gavin","Karen","Osgood","Jordan","Said"].includes(x)&&!lp.includes(x))lp.push(x);});
+    return{owner,focus:obj.focus||"",attendees:obj.attendees||"",rmAttendees:rm,lpAttendees:lp,nextStepOwner:obj.nextStepOwner||""};
+  }catch(e){return fallback;}
 }
-function stripRmMeta(notes){
-  const n=String(notes||"");const a=n.lastIndexOf(RM_META_START);if(a<0)return n;
-  const b=n.indexOf(RM_META_END,a+RM_META_START.length);if(b<0)return n;
-  return (n.slice(0,a)+n.slice(b+RM_META_END.length)).trim();
-}
-function appendRmMeta(notes,owner,focus){
-  const clean=stripRmMeta(notes||"");
-  const meta=RM_META_START+zwEncode(JSON.stringify({owner:owner||"Amanda",focus:focus||""}))+RM_META_END;
-  return clean+(clean?"\n":"")+meta;
+function stripRmMeta(notes){const n=String(notes||"");const a=n.lastIndexOf(RM_META_START);if(a<0)return n;const b=n.indexOf(RM_META_END,a+RM_META_START.length);if(b<0)return n;return(n.slice(0,a)+n.slice(b+RM_META_END.length)).trim();}
+function appendRmMeta(notes,owner,focus,attendees,rmAttendees,lpAttendees,nextStepOwner){
+  const clean=stripRmMeta(notes||"");let rms=Array.isArray(rmAttendees)?rmAttendees.filter(x=>x==="Amanda"||x==="Nyny"):[];if(!rms.length)rms=[owner||"Amanda"];
+  const lps=Array.isArray(lpAttendees)?lpAttendees.filter(Boolean):[];const legacy=(attendees||"").trim();
+  const meta=RM_META_START+zwEncode(JSON.stringify({owner:owner||rms[0]||"Amanda",focus:focus||"",attendees:legacy,rmAttendees:rms,lpAttendees:lps,nextStepOwner:nextStepOwner||""}))+RM_META_END;return clean+(clean?"\n":"")+meta;
 }
 function getActivityOwner(a){return extractRmMeta(a&&a.notes).owner||"Amanda";}
 function getMeetingFocus(a){return extractRmMeta(a&&a.notes).focus||"";}
+function getActivityAttendees(a){return extractRmMeta(a&&a.notes).attendees||"";}
+function getRmAttendees(a){return extractRmMeta(a&&a.notes).rmAttendees||[getActivityOwner(a)];}
+function getLpAttendees(a){return extractRmMeta(a&&a.notes).lpAttendees||[];}
+function getNextStepOwner(a){return extractRmMeta(a&&a.notes).nextStepOwner||"";}
+function activityCreditsPerson(a,name){return getRmAttendees(a).includes(name);}
+function syncActivityParticipants(){const a=!!document.getElementById("activityRmAmanda")?.checked,n=!!document.getElementById("activityRmNyny")?.checked;if(!a&&!n){document.getElementById("activityRmAmanda").checked=true;return syncActivityParticipants();}const owner=document.getElementById("activityOwner");if(owner)owner.value=(!a&&n)?"Nyny":"Amanda";try{localStorage.setItem("rm_activity_owner",owner?.value||"Amanda");}catch(e){}const hint=document.getElementById("ownerRoleHint");if(hint)hint.innerHTML=(a&&n?"<strong>Joint RM activity:</strong> Amanda + Nyny both receive individual attendance credit. The RM Team counts the meeting once.":"<strong>RM involved:</strong> "+(n?"Nyny":"Amanda")+". Attendance never changes Relationship Owner.");}
+function onActivityOwnerChange(){const owner=document.getElementById("activityOwner")?.value||"Amanda";const a=document.getElementById("activityRmAmanda"),n=document.getElementById("activityRmNyny");if(a&&n){a.checked=owner==="Amanda";n.checked=owner==="Nyny";}syncActivityParticipants();toggleMeetingFocusField();toggleIntakeBlock();}
+function updateActivityRelationshipOwnerHint(name){const el=document.getElementById("activityRelationshipOwnerHint");if(!el)return;const target=String(name||document.getElementById("agentInput")?.value||"").trim();if(!target){el.textContent="Relationship Owner stays separate from attendance.";return;}const own=getAgentOwnership(target);el.innerHTML="<strong>Current Relationship Owner:</strong> "+escHtml(own.rm||"Unassigned")+" · Logging this activity will not change ownership.";}
 function isExistingMeeting(a){return !!a&&EXISTING_MEETING_TYPES.indexOf(a.act_type)>=0;}
 // Scorecard rule: ONLY logged held-meeting activities count. rm_day_blocks reserve capacity only.
 // Break Breads are one existing-partner meeting inside the total partner-meeting count; never add them again on top.
@@ -3016,9 +3044,7 @@ function onActivityOwnerChange(){
   const owner=document.getElementById("activityOwner")?.value||"Amanda";
   try{localStorage.setItem("rm_activity_owner",owner);}catch(e){}
   const hint=document.getElementById("ownerRoleHint");
-  if(hint)hint.innerHTML=owner==="Nyny"
-    ?"<strong>Nyny:</strong> strategic/warm/Channel/new-partner meetings + A/B, retention and current relationships. No cold-call quota. Leadership work is logged separately and never counts toward partner meetings."
-    :"<strong>Amanda:</strong> primary prospecting + direct RM execution, including cold calls, new-partner acquisition and assigned-portfolio growth.";
+  if(hint)hint.innerHTML="<strong>RM(s): "+owner+".</strong> This credits the activity to the person who actually did the work. It does <strong>not</strong> change the agent’s Relationship Owner; use Contacts / Ownership only when you intentionally reassign the relationship.";
   toggleMeetingFocusField();toggleIntakeBlock();
 }
 function toggleMeetingFocusField(){
@@ -3619,6 +3645,7 @@ async function sbFetch(path,options={}){
   }finally{clearTimeout(timer);}
 }
 
+// v56.0: Partner Check-In guidance + critical save-path hardening; CTC/feed/schema fixes retained.
 // v54.0: CTC activity clarity + completed-task refresh + reset-form labeling; brokerage hard-fix retained.
 // v52: schema-safe agent_profiles writes. Brokerage is never sent to agent_profiles; live DB has no brokerage column.
 // v50: schema-safe agent_profiles writes.
@@ -4041,17 +4068,22 @@ document.getElementById("ccNotes").addEventListener("input",function(){
 // Looks at today's already-logged activities for this agent and warns if this
 // would be another contact attempt on top of an existing voicemail / no-answer.
 const VM_OUTCOMES=["Left voicemail","No answer"];
-// Escalation rule: 3+ unanswered attempts, across 2+ different contact methods,
+// Escalation rule: unanswered outreach on 3+ separate days, across 2+ contact methods,
 // within a 10-day window, with no positive contact in that window = flag for
 // escalation to a manager/teammate rather than another call from the RM.
 const ESCALATION_MIN_ATTEMPTS=3;
 const ESCALATION_WINDOW_DAYS=10;
-function noteChannel(notes){
-  if(/📱/.test(notes||""))return"Text";
-  if(/✉️/.test(notes||""))return"Email";
-  if(/🤝/.test(notes||""))return"In Person";
-  return"Call";
+function noteChannels(notes){
+  const s=String(notes||"");
+  const out=[];
+  if(/🤝/.test(s))out.push("In Person");
+  if(/✉️/.test(s))out.push("Email");
+  if(/📱|\[TXN_TEXT_SENT:Y\]|follow-up text sent|follow up text sent/i.test(s))out.push("Text");
+  // Transaction-call records are calls unless explicitly logged as only text/email/in-person.
+  if(!/🤝/.test(s)&&!/✉️/.test(s))out.unshift("Call");
+  return [...new Set(out)];
 }
+function noteChannel(notes){return noteChannels(notes)[0]||"Call";}
 async function checkDoubleDial(agentName,warnElId){
   const warnEl=document.getElementById(warnElId);
   if(!warnEl)return;
@@ -4167,7 +4199,8 @@ function updateOfflineBadge(){
   badges.forEach(b=>{
     if(q.length>0){
       b.style.display="flex";
-      b.textContent="📴 "+q.length+" saved offline — will sync automatically";
+      const attention=q.filter(x=>x&&x.sync_error).length;
+      b.textContent=attention?("⚠️ "+q.length+" queued · "+attention+" need attention — no entries discarded"):("📴 "+q.length+" saved offline — will sync automatically");
     }else{
       b.style.display="none";
     }
@@ -4177,25 +4210,42 @@ async function flushOfflineQueue(){
   const q=getOfflineQueue();
   if(!q.length)return;
   const remaining=[];
-  let synced=0;
+  let synced=0,alreadyThere=0,needsAttention=0;
   for(const item of q){
     try{
       const{id,queued_at,...payload}=item;
+      // A browser can lose the response after Supabase already committed the save. Before replaying
+      // an offline item, check whether the exact activity is already there so reconnect cannot create
+      // a duplicate. Notes include RM performer/attendee metadata, so exact note matching is useful here.
+      let exists=false;
+      try{
+        const rows=await sbFetch("amanda_activities?agent_name=ilike."+encodeURIComponent(payload.agent_name)+"&act_type=eq."+encodeURIComponent(payload.act_type)+"&act_date=eq."+payload.act_date+"&select=agent_name,act_type,act_date,outcome,notes,follow_up_date&limit=20");
+        exists=(rows||[]).some(r=>String(r.outcome||"")===String(payload.outcome||"")&&String(r.notes||"")===String(payload.notes||"")&&String(r.follow_up_date||"")===String(payload.follow_up_date||""));
+      }catch(checkErr){
+        if(isNetworkFailure(checkErr))throw checkErr;
+        console.warn("Offline duplicate check failed; keeping item queued rather than risking a duplicate:",checkErr);
+        remaining.push(Object.assign({},item,{sync_error:checkErr.message||"Could not verify before sync"}));needsAttention++;continue;
+      }
+      if(exists){alreadyThere++;continue;}
       await sbFetch("amanda_activities",{method:"POST",prefer:"return=minimal",body:JSON.stringify(payload)});
       synced++;
     }catch(e){
-      if(isNetworkFailure(e)){remaining.push(item);} // still offline, keep it queued
-      // a real server error on retry — drop it rather than get stuck forever; it'll show in
-      // the toast count discrepancy so it's not silent
+      // Never silently discard unsynced work. Network failures stay queued automatically; server/schema
+      // errors stay queued with the error attached so Amanda can retry after the underlying issue is fixed.
+      remaining.push(Object.assign({},item,{sync_error:e&&e.message?e.message:"Sync failed"}));
+      if(!isNetworkFailure(e))needsAttention++;
     }
   }
   setOfflineQueue(remaining);
   updateOfflineBadge();
-  if(synced>0){
-    toast(synced+" offline "+(synced===1?"entry":"entries")+" synced ✓","success");
+  if(synced>0||alreadyThere>0){
+    const bits=[];if(synced)bits.push(synced+" synced");if(alreadyThere)bits.push(alreadyThere+" already saved (duplicate skipped)");
+    toast("Offline activity: "+bits.join(" · ")+" ✓","success",4500);
     loadWeek();loadFeed();loadStartHere();
   }
+  if(needsAttention>0)toast(needsAttention+" offline "+(needsAttention===1?"entry needs":"entries need")+" attention and remain safely queued — nothing was discarded.","error",6500);
 }
+
 window.addEventListener("online",flushOfflineQueue);
 
 const SNOOZE_KEY="rm_snoozed_agents";
@@ -4263,12 +4313,12 @@ async function loadStartHere(){
     const normalize=s=>(s||"").toLowerCase().trim();
     // Snapshot "Amanda — Start Here" is Amanda's execution lane. Shared portfolio/risk queues stay
     // visible, but Nyny's activity must not inflate Amanda's personal pace or clear her follow-ups.
-    const amandaDayActs=(dayActs||[]).filter(a=>getActivityOwner(a)==="Amanda");
-    const amandaColdCalls60=(coldCalls60||[]).filter(a=>getActivityOwner(a)==="Amanda");
-    const amandaTalkTos60=(talkTos60||[]).filter(a=>getActivityOwner(a)==="Amanda");
-    const amandaFuToday=(fuToday||[]).filter(a=>getActivityOwner(a)==="Amanda");
-    const amandaMtdMeetings=(mtdMeetings||[]).filter(a=>getActivityOwner(a)==="Amanda");
-    const amandaFuOverdue=(fuOverdue||[]).filter(a=>getActivityOwner(a)==="Amanda");
+    const amandaDayActs=(dayActs||[]).filter(a=>activityCreditsPerson(a,"Amanda"));
+    const amandaColdCalls60=(coldCalls60||[]).filter(a=>activityCreditsPerson(a,"Amanda"));
+    const amandaTalkTos60=(talkTos60||[]).filter(a=>activityCreditsPerson(a,"Amanda"));
+    const amandaFuToday=(fuToday||[]).filter(a=>activityCreditsPerson(a,"Amanda"));
+    const amandaMtdMeetings=(mtdMeetings||[]).filter(a=>activityCreditsPerson(a,"Amanda"));
+    const amandaFuOverdue=(fuOverdue||[]).filter(a=>activityCreditsPerson(a,"Amanda"));
     const talkToToday=cntTalkTo(amandaDayActs);
     const coldCallsToday=amandaDayActs.filter(a=>a.act_type==="Cold Calls").length;
     const talkToGoal=20,coldCallGoal=25;
@@ -5242,7 +5292,7 @@ async function showDayWrapUp(targetDateStr){
   body.innerHTML="Loading...";
   try{
     const fetches=[
-      sbFetch("amanda_activities?select=act_type,outcome,agent_name&act_date=eq."+viewDate)
+      sbFetch("amanda_activities?select=act_type,outcome,agent_name,notes&act_date=eq."+viewDate)
     ];
     if(isToday){
       fetches.push(
@@ -5250,12 +5300,13 @@ async function showDayWrapUp(targetDateStr){
         sbFetch("amanda_activities?select=agent_name&outcome=eq.Needs manager attention&act_date=gte."+todayStr).catch(()=>[])
       );
     }
-    const[dayActs,openFu,escToday]=await Promise.all(fetches);
+    const[dayActsRaw,openFu,escToday]=await Promise.all(fetches);
+    const dayActs=(dayActsRaw||[]).filter(a=>!isInternalTxnTrigger(a));
     const counts={};
-    (dayActs||[]).forEach(a=>{counts[a.act_type]=(counts[a.act_type]||0)+1;});
-    const totalLogged=(dayActs||[]).length;
-    const uniqAgentsToday=new Set((dayActs||[]).map(a=>(a.agent_name||"").toLowerCase().trim()).filter(Boolean)).size;
-    const wins=(dayActs||[]).filter(a=>a.outcome==="Positive"||a.outcome==="Meeting Scheduled");
+    dayActs.forEach(a=>{counts[a.act_type]=(counts[a.act_type]||0)+1;});
+    const totalLogged=dayActs.length;
+    const uniqAgentsToday=new Set(dayActs.map(a=>(a.agent_name||"").toLowerCase().trim()).filter(Boolean)).size;
+    const wins=dayActs.filter(a=>a.outcome==="Positive"||a.outcome==="Meeting Scheduled");
     const bestWin=wins.find(w=>w.outcome==="Meeting Scheduled")||wins[0];
 
     const dateObj=new Date(viewDate+"T12:00:00");
@@ -5640,7 +5691,7 @@ async function loadBreakBreadDue(){
     const lastTouch={};
     (myBreads||[]).forEach(a=>{
       const n=normalize(a.agent_name);if(!n)return;
-      const who=getActivityOwner(a)||"Amanda";
+      const who=(getRmAttendees(a)||[getActivityOwner(a)||"Amanda"]).join(" + ");
       if(!lastTouch[n]||a.act_date>lastTouch[n].date)lastTouch[n]={date:a.act_date,by:who};
     });
     (lpBreads||[]).forEach(b=>{
@@ -5799,14 +5850,14 @@ async function loadRmTeamScorecard(){
   try{
     const now=new Date();const monthStart=now.getFullYear()+"-"+String(now.getMonth()+1).padStart(2,"0")+"-01";
     const acts=await sbFetch("amanda_activities?select=agent_name,act_type,act_date,outcome,notes&act_date=gte."+monthStart+"&order=act_date.desc&limit=3000").catch(()=>[]);
-    const mine=owner=>(acts||[]).filter(a=>getActivityOwner(a)===owner);
+    const mine=owner=>(acts||[]).filter(a=>activityCreditsPerson(a,owner));
     const amanda=mine("Amanda"), nyny=mine("Nyny");
     const newCount=arr=>arr.filter(a=>a.act_type==="New Realtor Meeting").length;
     const existingCount=arr=>arr.filter(a=>isExistingMeeting(a)).length;
     const meetingCount=arr=>arr.filter(a=>isPartnerMeetingActivity(a)).length;
-    const aNew=newCount(amanda),nNew=newCount(nyny),teamNew=aNew+nNew;
+    const aNew=newCount(amanda),nNew=newCount(nyny),teamNew=newCount(acts||[]);
     const aExisting=existingCount(amanda),nExisting=existingCount(nyny);
-    const aTotal=meetingCount(amanda),nTotal=meetingCount(nyny),teamTotal=aTotal+nTotal;
+    const aTotal=meetingCount(amanda),nTotal=meetingCount(nyny),teamTotal=meetingCount(acts||[]);
     const nLeadership=nyny.filter(a=>DIRECTOR_LEADERSHIP_TYPES.indexOf(a.act_type)>=0);
     const focus={};nyny.filter(a=>isPartnerMeetingActivity(a)).forEach(a=>{const f=getMeetingFocus(a)||"Unclassified";focus[f]=(focus[f]||0)+1;});
     const focusHtml=Object.keys(focus).length?Object.entries(focus).sort((a,b)=>b[1]-a[1]).map(([k,v])=>'<span style="font-size:10.5px;background:#fff;border:1px solid var(--border);border-radius:20px;padding:4px 8px">'+escHtml(k)+' · <strong>'+v+'</strong></span>').join(""):'<span style="font-size:10.5px;color:var(--text-4)">No Nyny partner meetings categorized yet. Use Nyny Quick Log on Snapshot to add your first one.</span>';
@@ -5868,7 +5919,7 @@ async function loadNynyDirectorManagement(){
   try{
     const now=new Date();const monthStart=now.getFullYear()+"-"+String(now.getMonth()+1).padStart(2,"0")+"-01";
     const acts=await sbFetch("amanda_activities?select=agent_name,act_type,act_date,outcome,notes&act_date=gte."+monthStart+"&order=act_date.desc&limit=3000").catch(()=>[]);
-    const mine=(acts||[]).filter(a=>getActivityOwner(a)==="Nyny");
+    const mine=(acts||[]).filter(a=>activityCreditsPerson(a,"Nyny"));
     const partner=mine.filter(a=>isPartnerMeetingActivity(a));
     const leadership=mine.filter(a=>DIRECTOR_LEADERSHIP_TYPES.indexOf(a.act_type)>=0);
     const newMtgs=partner.filter(a=>a.act_type==="New Realtor Meeting").length;
@@ -5901,7 +5952,7 @@ async function loadAmandaCoachingQueue(){
       sbFetch("amanda_activities?select=agent_name,act_type,act_date,outcome,notes&act_date=gte."+localDateStr(seven)+"&limit=2000").catch(()=>[]),
       sbFetch("lp_flags?resolved=eq.false&select=agent_name,assigned_to,created_at&order=created_at.asc&limit=100").catch(()=>[])
     ]);
-    const amandaOnly=arr=>(arr||[]).filter(a=>getActivityOwner(a)==="Amanda");
+    const amandaOnly=arr=>(arr||[]).filter(a=>activityCreditsPerson(a,"Amanda"));
     const amtd=amandaOnly(mtd),awtd=amandaOnly(wtd),aover=amandaOnly(overdue),arecent=amandaOnly(recent);
     const signals=[];
     const bd=rmBusinessDayCounts(now),wdElapsed=rmWeekdayElapsed(now);
@@ -5971,7 +6022,7 @@ async function loadWeek(){
       sbFetch("amanda_activities?select=agent_name&act_type=eq.New Realtor Meeting&limit=2000").catch(()=>[])
     ]);
     weekActs=weekActsLoaded||[];
-    const amandaOnly=arr=>(arr||[]).filter(a=>getActivityOwner(a)==="Amanda");
+    const amandaOnly=arr=>(arr||[]).filter(a=>activityCreditsPerson(a,"Amanda"));
     periodData={daily:amandaOnly(dailyActs),wtd:amandaOnly(weekActs),mtd:amandaOnly(mtdActs),ytd:amandaOnly(ytdActs)};
     renderSnapshotStats(amandaOnly(dailyActs),"daily");
 
@@ -5979,7 +6030,7 @@ async function loadWeek(){
     const psGrid=document.getElementById("personalScorecardGrid");
     const psSub=document.getElementById("personalScorecardSub");
     if(psGrid){
-      const amandaMtd=(mtdActs||[]).filter(a=>getActivityOwner(a)==="Amanda");
+      const amandaMtd=(mtdActs||[]).filter(a=>activityCreditsPerson(a,"Amanda"));
       const mtdMeetings=amandaMtd.filter(a=>a.act_type==="New Realtor Meeting").length;
       const mtdExistingMeetings=amandaMtd.filter(a=>isExistingMeeting(a)).length;
       // A "win" requires an actual meeting held, not just a promising outcome on the call —
@@ -6007,7 +6058,7 @@ async function loadWeek(){
     const wlEl=document.getElementById("snapshotWeekLabel");
     if(wlEl) wlEl.textContent=week.label;
     let html="";
-    const amandaWeek=(weekActs||[]).filter(a=>getActivityOwner(a)==="Amanda");
+    const amandaWeek=(weekActs||[]).filter(a=>activityCreditsPerson(a,"Amanda"));
     GOALS.forEach(g=>{
       const count=countGoalActivity(amandaWeek,g.type);
       html+=renderGoalBar(g.label,count,g.weekly,(count/g.weekly)*100,g.type);
@@ -6347,15 +6398,25 @@ async function logActivity(){
     return;
   }
   
-  const activityOwner=document.getElementById("activityOwner")?.value||"Amanda";
+  const rmAttendees=[document.getElementById("activityRmAmanda")?.checked?"Amanda":"",document.getElementById("activityRmNyny")?.checked?"Nyny":""].filter(Boolean);
+  if(!rmAttendees.length){toast("Select at least one RM involved.","error");return;}
+  const activityOwner=rmAttendees.length===1?rmAttendees[0]:(document.getElementById("activityOwner")?.value||rmAttendees[0]);
   const meetingFocus=document.getElementById("meetingFocus")?.value||"";
-  if(!(await wp37GatePartnerTouch(agentName,activityType,outcome,activityOwner,"full")))return;
+  const lpAttendee=(document.getElementById("activityLpAttendee")?.value||"").trim();
+  const nextStepOwner=(document.getElementById("activityNextStepOwner")?.value||"").trim();
+  if((outcome==="Requires follow-up"||outcome==="Meeting Scheduled")&&!nextStepOwner){toast("Choose who owns the next step before saving.","error");return;}
+  if(window._rmFullGateBusy)return;
+  window._rmFullGateBusy=true;
+  let gateOk=false;
+  try{gateOk=await wp37GatePartnerTouch(agentName,activityType,outcome,activityOwner,"full");}
+  finally{window._rmFullGateBusy=false;}
+  if(!gateOk)return;
 
   // Tag notes with contact method so double-dial / text-followup detection can read it later
   const methodEmoji={Call:"☎️",Text:"📱",Email:"✉️","In Person":"🤝"}[contactMethod]||"☎️";
   if(notes)notes=methodEmoji+" "+notes;
   else if(contactMethod!=="Call")notes=methodEmoji;
-  notes=appendRmMeta(notes,activityOwner,meetingFocus);
+  notes=appendRmMeta(notes,activityOwner,meetingFocus,"",rmAttendees,lpAttendee?[lpAttendee]:[],nextStepOwner);
 
   // New Realtor Meeting: ALWAYS save same-day for Amanda's direct RM execution. Nyny's strategic
   // meetings are counted to the team goal without freezing Amanda's tracker behind her checklist.
@@ -6363,12 +6424,18 @@ async function logActivity(){
   const intakeStates=isNewRealtorMeeting?getIntakeStates():null;
   const intakeComplete=isNewRealtorMeeting?allIntakeDone(intakeStates):true;
   
+  // Lock the Save button BEFORE the async duplicate check so a fast double-tap cannot start
+  // two parallel saves before the button is disabled.
+  const btn=document.getElementById("logBtn");
+  if(btn.disabled)return;
+  btn.disabled=true;btn.textContent="Checking...";
+
   // DUPLICATE DETECTION: Check if same agent/type/date already logged
   try{
     const existing=await sbFetch("amanda_activities?agent_name=ilike."+encodeURIComponent(agentName)+"&act_type=eq."+encodeURIComponent(activityType)+"&act_date=eq."+date+"&limit=1");
     if(existing.length>0){
-      const proceed=confirm("⚠️ Already logged "+activityType+" for "+agentName+" on "+date+".\n\nLog another?");
-      if(!proceed)return;
+      const proceed=confirm("⚠️ "+activityType+" is already logged for "+agentName+" on "+date+".\n\nIf this is the SAME meeting, cancel and edit the existing record to add RM/LP attendees instead of creating a duplicate.\n\nLog a separate activity anyway?");
+      if(!proceed){btn.disabled=false;btn.textContent="Log activity";return;}
     }
   }catch(e){
     console.warn("Duplicate check failed (non-critical):",e);
@@ -6379,8 +6446,7 @@ async function logActivity(){
     finalNotes=intakeComplete?(notes?COMPLETE_TAG+"\n\n"+notes:COMPLETE_TAG):buildPendingNotes(intakeStates,notes);
   }
   
-  const btn=document.getElementById("logBtn");
-  btn.disabled=true;btn.textContent="Saving...";
+  btn.textContent="Saving...";
   
   try{
     // Clear existing follow-up dates for this agent before saving new activity
@@ -6393,6 +6459,7 @@ async function logActivity(){
     document.getElementById("activityOutcome").value="";
     document.getElementById("followupDate").value="";
     document.getElementById("activityNotes").value="";
+    if(document.getElementById("activityRmAmanda"))document.getElementById("activityRmAmanda").checked=true;if(document.getElementById("activityRmNyny"))document.getElementById("activityRmNyny").checked=false;if(document.getElementById("activityLpAttendee"))document.getElementById("activityLpAttendee").value="";if(document.getElementById("activityNextStepOwner"))document.getElementById("activityNextStepOwner").value="";syncActivityParticipants();updateActivityRelationshipOwnerHint("");
     if(document.getElementById("referredByInput"))document.getElementById("referredByInput").value="";
     document.getElementById("followupRow").classList.remove("show");
     document.getElementById("doubleDialWarn").style.display="none";
@@ -6427,6 +6494,7 @@ async function logActivity(){
       document.getElementById("activityDate").value=today();
       document.getElementById("activityOutcome").value="";
       document.getElementById("activityNotes").value="";
+      if(document.getElementById("activityRmAmanda"))document.getElementById("activityRmAmanda").checked=true;if(document.getElementById("activityRmNyny"))document.getElementById("activityRmNyny").checked=false;if(document.getElementById("activityLpAttendee"))document.getElementById("activityLpAttendee").value="";if(document.getElementById("activityNextStepOwner"))document.getElementById("activityNextStepOwner").value="";syncActivityParticipants();updateActivityRelationshipOwnerHint("");
       toast("No connection — saved offline, will sync automatically ✓","success",4000);
     }else if(msg.includes("permission")||msg.includes("policy")||msg.includes("RLS")){
       showLogErrorBanner("Write permission denied – check RLS policy on amanda_activities table");
@@ -6512,13 +6580,20 @@ async function loadFollowups(){
 
 function toggleFuEdit(id){const el=document.getElementById("fu-edit-"+id);el.style.display=el.style.display==="none"?"block":"none";}
 
+
+const _rmSaveLocks=new Set();
+function rmAcquireSaveLock(key){if(_rmSaveLocks.has(key))return false;_rmSaveLocks.add(key);return true;}
+function rmReleaseSaveLock(key){_rmSaveLocks.delete(key);}
+
 async function saveFollowupDate(id){
+  const lockKey="followup-date:"+id;if(!rmAcquireSaveLock(lockKey))return;
   const d=document.getElementById("fu-date-"+id).value;
-  if(!d){toast("Please select a date.","error");return;}
+  if(!d){toast("Please select a date.","error");rmReleaseSaveLock(lockKey);return;}
   try{
     await sbFetch("amanda_activities?id=eq."+id,{method:"PATCH",prefer:"return=minimal",body:JSON.stringify({follow_up_date:d})});
     toast("Follow-up date updated","success");loadFollowups();loadWeek();
   }catch(e){toast("Save failed: "+e.message,"error");}
+  finally{rmReleaseSaveLock(lockKey);}
 }
 
 // ── FEATURE 1: Log directly from follow-ups ──────────────────────────────────
@@ -6534,14 +6609,15 @@ function toggleFuHandled(id){
 }
 async function saveInlineLog(id,agentName,origDate){
   if(openIntake){toast("Finish the open checklist for "+openIntake.agent_name+" first.","error");return;}
+  const lockKey="inline-followup:"+id;if(!rmAcquireSaveLock(lockKey))return;
   const actType=document.getElementById("fu-log-type-"+id).value;
   const outcome=document.getElementById("fu-log-outcome-"+id).value;
   const newFu=document.getElementById("fu-log-newfu-"+id).value||null;
   const notes=document.getElementById("fu-log-notes-"+id).value.trim()||null;
-  if(!outcome){toast("Select an outcome first.","error");return;}
-  if(outcome==="Requires follow-up"&&!newFu){toast("Set a new follow-up date.","error");return;}
-  if(NOTES_REQUIRED_TYPES.indexOf(actType)>=0&&countWords(notes)<MIN_NOTE_WORDS){toast(actType+" needs detailed notes — minimum "+MIN_NOTE_WORDS+" words.","error");return;}
-  if(NOTES_MANDATORY_NO_MIN.indexOf(actType)>=0&&countWords(notes)<1){toast(actType+" needs a note before saving.","error");return;}
+  if(!outcome){toast("Select an outcome first.","error");rmReleaseSaveLock(lockKey);return;}
+  if(outcome==="Requires follow-up"&&!newFu){toast("Set a new follow-up date.","error");rmReleaseSaveLock(lockKey);return;}
+  if(NOTES_REQUIRED_TYPES.indexOf(actType)>=0&&countWords(notes)<MIN_NOTE_WORDS){toast(actType+" needs detailed notes — minimum "+MIN_NOTE_WORDS+" words.","error");rmReleaseSaveLock(lockKey);return;}
+  if(NOTES_MANDATORY_NO_MIN.indexOf(actType)>=0&&countWords(notes)<1){toast(actType+" needs a note before saving.","error");rmReleaseSaveLock(lockKey);return;}
   try{
     await Promise.all([
       sbFetch("amanda_activities",{method:"POST",body:JSON.stringify({agent_name:agentName,act_type:actType,act_date:today(),outcome,follow_up_date:newFu,notes})}),
@@ -6550,18 +6626,21 @@ async function saveInlineLog(id,agentName,origDate){
     toast("Logged + follow-up cleared for "+agentName+" ✓","success");
     loadFollowups();loadWeek();loadFeed();
   }catch(e){toast("Save failed: "+e.message,"error");}
+  finally{rmReleaseSaveLock(lockKey);}
 }
 
 // ── FEATURE 5: Mark as handled with optional note ─────────────────────────────
 async function confirmMarkHandled(id,agentName){
+  const lockKey="followup-handled:"+id;if(!rmAcquireSaveLock(lockKey))return;
   const note=document.getElementById("fu-handled-notes-"+id).value.trim()||null;
-  if(countWords(note)<MIN_NOTE_WORDS){toast("Add a note before clearing this — minimum "+MIN_NOTE_WORDS+" words.","error");return;}
+  if(countWords(note)<MIN_NOTE_WORDS){toast("Add a note before clearing this — minimum "+MIN_NOTE_WORDS+" words.","error");rmReleaseSaveLock(lockKey);return;}
   try{
     const patchPayload={follow_up_date:null,edited_at:new Date().toISOString(),notes:note};
     await sbFetch("amanda_activities?id=eq."+id,{method:"PATCH",prefer:"return=minimal",body:JSON.stringify(patchPayload)});
     toast(agentName+" marked as handled ✓","success");
     loadFollowups();loadWeek();loadFeed();
   }catch(e){toast("Failed: "+e.message,"error");}
+  finally{rmReleaseSaveLock(lockKey);}
 }
 // Old no-note path — now blocked. Kept only so nothing breaks if it's still referenced somewhere;
 // wire "Mark as handled" buttons to confirmMarkHandled instead, which enforces the note requirement.
@@ -7240,8 +7319,7 @@ function nynyQuickWordCount(){
   el.style.color=n>=MIN_NOTE_WORDS?"var(--success)":"var(--text-4)";
 }
 function openNynyFullLog(){
-  const owner=document.getElementById("activityOwner");if(owner)owner.value="Nyny";
-  onActivityOwnerChange();
+  const owner=document.getElementById("activityOwner");if(owner)owner.value="Nyny";if(document.getElementById("activityRmAmanda"))document.getElementById("activityRmAmanda").checked=false;if(document.getElementById("activityRmNyny"))document.getElementById("activityRmNyny").checked=true;syncActivityParticipants();
   const type=document.getElementById("activityType");if(type)type.value=document.getElementById("nynyQuickType")?.value||"Partner Meeting";
   const focus=document.getElementById("meetingFocus");if(focus)focus.value=document.getElementById("nynyQuickFocus")?.value||"Current Relationship";
   const agent=document.getElementById("agentInput");if(agent)agent.value=(document.getElementById("nynyQuickAgent")?.value||"").trim();
@@ -7262,7 +7340,7 @@ async function nynyQuickSave(){
   if(!outcome){toast("Select an outcome.","error");return;}
   if(countWords(notes)<MIN_NOTE_WORDS){toast("Notes need at least "+MIN_NOTE_WORDS+" words.","error");return;}
   if((outcome==="Requires follow-up"||outcome==="Meeting Scheduled")&&!followup){toast("Add the follow-up / scheduled date.","error");return;}
-  notes=appendRmMeta(notes,"Nyny",focus);
+    const nynyRms=[document.getElementById("nynyRmNyny")?.checked?"Nyny":"",document.getElementById("nynyRmAmanda")?.checked?"Amanda":""].filter(Boolean);if(!leadership&&!nynyRms.length){toast("Select at least one RM involved.","error");return;}const nynyLp=(document.getElementById("nynyLpAttendee")?.value||"").trim(),nynyNext=(document.getElementById("nynyNextStepOwner")?.value||"").trim();if((outcome==="Requires follow-up"||outcome==="Meeting Scheduled")&&!nynyNext){toast("Choose who owns the next step before saving.","error");return;}notes=appendRmMeta(notes,"Nyny",focus,"",leadership?["Nyny"]:(nynyRms.length?nynyRms:["Nyny"]),nynyLp?[nynyLp]:[],nynyNext);
   const btn=document.getElementById("nynyQuickSaveBtn");if(btn){btn.disabled=true;btn.textContent="Saving...";}
   try{
     if(!leadership)await clearOldFollowups(agent);
@@ -7276,7 +7354,7 @@ async function nynyQuickSave(){
     document.getElementById("nynyQuickNotes").value="";
     document.getElementById("nynyQuickWordCount").textContent="";
     document.getElementById("nynyQuickFollowupDate").value="";
-    document.getElementById("nynyQuickFollowupWrap").style.display="none";
+    document.getElementById("nynyQuickFollowupWrap").style.display="none";if(document.getElementById("nynyRmNyny"))document.getElementById("nynyRmNyny").checked=true;if(document.getElementById("nynyRmAmanda"))document.getElementById("nynyRmAmanda").checked=false;if(document.getElementById("nynyLpAttendee"))document.getElementById("nynyLpAttendee").value="";if(document.getElementById("nynyNextStepOwner"))document.getElementById("nynyNextStepOwner").value="";
     document.getElementById("nynyQuickAcList").classList.remove("open");
     setTimeout(()=>{if(msg)msg.style.display="none";},3500);
     loadWeek();loadFeed();loadStartHere();
@@ -7344,25 +7422,23 @@ async function ccSave(){
       agent_name:name, act_type:"Cold Calls", act_date:today(), outcome, notes, follow_up_date:outcome==="Requires follow-up"?new Date(Date.now()+3*86400000).toISOString().split("T")[0]:(outcome==="Meeting Scheduled"?scheduledDate:null)
     })});
 
-    // 2. Check if already in prospects or agents
-    const [existingProspect, existingAgent] = await Promise.all([
-      sbFetch("outreach_prospects?agent_name=ilike."+encodeURIComponent(name)+"&select=id&limit=1").catch(()=>[]),
-      // agent_profiles has no id column — this is a pure existence check, so select the real
-      // key (agent_name) instead. The old select=id here always failed silently (column doesn't
-      // exist) and was swallowed by .catch(()=>[]), making the app think an agent already in
-      // agent_profiles was NOT there — which could add them to outreach_prospects as if new.
-      sbFetch("agent_profiles?agent_name=ilike."+encodeURIComponent(name)+"&select=agent_name&limit=1").catch(()=>[])
-    ]);
-
-    // 3. Add to pipeline if not already there
+    // 2–3. Pipeline sync is SECONDARY to the actual call log. If this lookup/update fails,
+    // the call is still saved; do not tell Amanda "Save failed" and tempt her to log it twice.
+    let existingProspect=[],existingAgent=[],pipelineSyncOk=true;
     const isDNC = outcome === "Remove / No Further Contact";
-    if(!existingProspect.length && !existingAgent.length){
-      await sbFetch("outreach_prospects",{method:"POST",prefer:"return=minimal",body:JSON.stringify({
-        agent_name:name, phone, status: isDNC ? "DNC" : "Requires follow-up",
-        notes:"Added via cold call log"
-      })});
-    } else if(existingProspect.length && isDNC){
-      await sbFetch("outreach_prospects?id=eq."+existingProspect[0].id,{method:"PATCH",prefer:"return=minimal",body:JSON.stringify({status:"DNC"})});
+    try{
+      [existingProspect,existingAgent]=await Promise.all([
+        sbFetch("outreach_prospects?agent_name=ilike."+encodeURIComponent(name)+"&select=id&limit=1"),
+        sbFetch("agent_profiles?agent_name=ilike."+encodeURIComponent(name)+"&select=agent_name&limit=1")
+      ]);
+      if(!existingProspect.length&&!existingAgent.length){
+        await sbFetch("outreach_prospects",{method:"POST",prefer:"return=minimal",body:JSON.stringify({agent_name:name,phone,status:isDNC?"DNC":"Requires follow-up",notes:"Added via cold call log"})});
+      }else if(existingProspect.length&&isDNC){
+        await sbFetch("outreach_prospects?id=eq."+existingProspect[0].id,{method:"PATCH",prefer:"return=minimal",body:JSON.stringify({status:"DNC"})});
+      }
+    }catch(syncErr){
+      pipelineSyncOk=false;
+      console.warn("Cold call saved but pipeline sync failed:",syncErr);
     }
 
     const msg = document.getElementById('quickLogMsg');
@@ -7387,6 +7463,10 @@ async function ccSave(){
     } else {
       msg.style.color='var(--success)';
       msg.textContent = '✓ '+name+' — logged & added to pipeline';
+    }
+    if(!pipelineSyncOk){
+      msg.style.color='var(--warning)';
+      msg.textContent='✓ '+name+' — call saved. Pipeline sync could not finish; do NOT log the call again. Refresh Pipeline and retry the profile/pipeline update if needed.';
     }
     document.getElementById('ccName').value='';
     document.getElementById('ccPhone').value='';
@@ -7574,16 +7654,14 @@ function wp37CancelPartnerCheckin(){
 }
 async function wp37NeedsPartnerCheckin(agentName,actType,outcome,owner){
   if(wp37PartnerGateBypass||owner!=="Amanda"||!agentName||WP37_SKIP_TYPES.has(actType)||!WP37_MEANINGFUL_OUTCOMES.has(outcome))return false;
-  try{
-    const rows=await sbFetch("agent_profiles?agent_name=ilike."+encodeURIComponent(agentName)+"&select=agent_name,retained,relationship_status,do_not_contact,tier,partner_goals,partner_pain_points,referral_leakage_notes,next_growth_opportunity,growth_opportunity_deadline,satisfaction_rating,competitor_risk_flag&limit=5").catch(()=>[]);
-    if(rows.length!==1)return false;
-    const p=rows[0];
-    return p.retained===true&&p.relationship_status!=="inactive"&&p.do_not_contact!==true;
-  }catch(e){return false;}
+  const rows=await sbFetch("agent_profiles?agent_name=ilike."+encodeURIComponent(agentName)+"&select=agent_name,retained,relationship_status,do_not_contact,tier,partner_goals,partner_pain_points,referral_leakage_notes,next_growth_opportunity,growth_opportunity_deadline,satisfaction_rating,competitor_risk_flag&limit=5");
+  if(rows.length!==1)return false;
+  const p=rows[0];
+  return p.retained===true&&p.relationship_status!=="inactive"&&p.do_not_contact!==true;
 }
 async function wp37OpenPartnerCheckin(agentName,resumeKind){
   wp37ClearCheckin();
-  const title=document.getElementById("wp37CheckinAgent");if(title)title.textContent=properCase(agentName)+" · relationship intelligence required";
+  const title=document.getElementById("wp37CheckinAgent");if(title)title.textContent=properCase(agentName)+" · complete Partner Check-In, then save the touch";
   try{
     const rows=await sbFetch("agent_profiles?agent_name=ilike."+encodeURIComponent(agentName)+"&select=agent_name,partner_goals,partner_pain_points,referral_leakage_notes,next_growth_opportunity,growth_opportunity_deadline,satisfaction_rating,competitor_risk_flag&limit=5").catch(()=>[]);
     if(rows.length===1){
@@ -7598,9 +7676,14 @@ async function wp37OpenPartnerCheckin(agentName,resumeKind){
   document.getElementById("wp37PartnerCheckinModal")?.classList.add("open");
 }
 async function wp37GatePartnerTouch(agentName,actType,outcome,owner,resumeKind){
-  if(!(await wp37NeedsPartnerCheckin(agentName,actType,outcome,owner)))return true;
-  await wp37OpenPartnerCheckin(agentName,resumeKind);
-  return false;
+  try{
+    if(!(await wp37NeedsPartnerCheckin(agentName,actType,outcome,owner)))return true;
+    await wp37OpenPartnerCheckin(agentName,resumeKind);
+    return false;
+  }catch(e){
+    toast("Could not verify this partner profile, so nothing was saved. Check your connection and retry. "+(e&&e.message?e.message:""),"error",6000);
+    return false;
+  }
 }
 async function wp37SavePartnerCheckin(){
   if(!wp37PendingPartnerSave)return;
@@ -7621,8 +7704,9 @@ async function wp37SavePartnerCheckin(){
   const btn=document.getElementById("wp37SaveBtn");if(btn){btn.disabled=true;btn.textContent="Updating portfolio...";}
   try{
     const n=wp37PendingPartnerSave.agentName;
-    const rows=await sbFetch("agent_profiles?agent_name=ilike."+encodeURIComponent(n)+"&select=agent_name&limit=5").catch(()=>[]);
-    if(rows.length!==1){toast("Could not safely match one partner profile. Clean up the duplicate/name first.","error",5000);return;}
+    const match=await findAgentProfileByName(n);
+    if(match.ambiguous){toast(match.matches.length+" partner profiles match this name. Clean up the duplicate before saving this touch.","error",6000);return;}
+    if(!match.exact){toast("Partner profile not found. Open Contacts and save this partner first, then retry the touch.","error",6000);return;}
     const leakageNote=leakage+(leakageDetail?" — "+leakageDetail:"");
     const payload={
       partner_goals:goals,
@@ -7634,7 +7718,7 @@ async function wp37SavePartnerCheckin(){
       satisfaction_rating:parseInt(sat),
       competitor_risk_flag:leakage.startsWith("Yes")||parseInt(sat)<=2
     };
-    await sbProfileWrite("agent_profiles?agent_name=eq."+encodeURIComponent(rows[0].agent_name),"PATCH",payload);
+    await sbProfileWrite("agent_profiles?agent_name=eq."+encodeURIComponent(match.exact.agent_name),"PATCH",payload);
     const pending={...wp37PendingPartnerSave};
     document.getElementById("wp37PartnerCheckinModal")?.classList.remove("open");
     wp37PendingPartnerSave=null;
@@ -7776,8 +7860,14 @@ async function saveCtcWorkflow(copyAfter){
       await clearOldFollowups(s.name);
       const fu=(s.outcome==="Meeting Scheduled"||s.relationship==="Meeting scheduled")?s.meetingDate:(s.outcome==="Requires follow-up"||s.relationship==="Interested — follow up"?localDateStr(new Date(Date.now()+3*86400000)):null);
       const tx=wp33CurrentTxnContext(s.name,"CTC Call",s.role);
-      const ctcNotes=wp33TxnMeta(ctcActivityNotes(s.role,s.feedback,s.relationship,s.outcome,s.textSent),s.role,tx.txnId,s.textSent);
-      await sbFetch("amanda_activities",{method:"POST",prefer:"return=minimal",body:JSON.stringify({agent_name:s.name,act_type:"CTC Call",act_date:today(),outcome:s.outcome,notes:ctcNotes,follow_up_date:fu})});
+      const fallbackTxnId=wp33MakeTxnId("Clear to Close",[borrower,property].filter(Boolean).join(" · "),ctcField("ctcBuyerAgent"),ctcField("ctcSellerAgent"),today());
+      const effectiveTxnId=tx.txnId||fallbackTxnId;
+      const ctcNotes=wp33TxnMeta(ctcActivityNotes(s.role,s.feedback,s.relationship,s.outcome,s.textSent),s.role,effectiveTxnId,s.textSent);
+      // Retry-safe CTC save: if one side saved and a later step failed, clicking Save again must
+      // not create a second CTC Call for the same transaction + role.
+      const existingCalls=await sbFetch("amanda_activities?agent_name=eq."+encodeURIComponent(s.name)+"&act_type=eq."+encodeURIComponent("CTC Call")+"&act_date=gte."+today()+"&select=id,notes,outcome,act_date&limit=100");
+      const alreadySaved=(existingCalls||[]).some(r=>wp33TxnId(r.notes)===effectiveTxnId&&String(wp30TxnRole(r.notes)||"").toLowerCase()===s.role.toLowerCase());
+      if(!alreadySaved)await sbFetch("amanda_activities",{method:"POST",prefer:"return=minimal",body:JSON.stringify({agent_name:s.name,act_type:"CTC Call",act_date:today(),outcome:s.outcome,notes:ctcNotes,follow_up_date:fu})});
       await ctcSyncOpportunity(s.name,s.phone,s.email,s.relationship,s.meetingDate,s.role.toLowerCase()+" agent");
     }
     if(copyAfter)await ctcCopyWhatsApp();
@@ -7839,15 +7929,39 @@ async function quickLogSave(){
   const followupDate=document.getElementById("quickLogFollowupDate")?document.getElementById("quickLogFollowupDate").value:"";
   if(outcome==="Requires follow-up"&&!followupDate){toast("Set a real follow-up date — not a junk-drawer.","error");return;}
   if(outcome==="Meeting Scheduled"&&!followupDate){toast("Add the date it’s scheduled for so the meeting is tracked.","error");return;}
-  if(!(await wp37GatePartnerTouch(agentName,actType,outcome,"Amanda","quick")))return;
+  if(window._rmQuickGateBusy)return;
+  window._rmQuickGateBusy=true;
+  let gateOk=false;
+  try{gateOk=await wp37GatePartnerTouch(agentName,actType,outcome,"Amanda","quick");}
+  finally{window._rmQuickGateBusy=false;}
+  if(!gateOk)return;
   const methodEmoji={Call:"☎️",Text:"📱",Email:"✉️"}[contactMethod]||"☎️";
   notes=methodEmoji+" "+notes;
   const txnCtx=(actType==="Under Contract Call"||actType==="CTC Call")?wp33CurrentTxnContext(agentName,actType,null):null;
   const txnTextSent=!!document.getElementById("quickLogTxnTextSent")?.checked;
   if(txnCtx){if((outcome==="No answer"||outcome==="Left voicemail")&&!txnTextSent){toast("Send the follow-up text and check ‘Follow-up text sent’ before finishing this must-do transaction call.","error",5000);return;}notes=wp33TxnMeta(notes,txnCtx.role,txnCtx.txnId,txnTextSent);}
+  const quickRm=[document.getElementById("quickRmAmanda")?.checked?"Amanda":"",document.getElementById("quickRmNyny")?.checked?"Nyny":""].filter(Boolean);
+  if(!quickRm.length){toast("Select at least one RM involved.","error");return;}
+  const quickLp=(document.getElementById("quickLpAttendee")?.value||"").trim();const quickNext=(document.getElementById("quickNextStepOwner")?.value||"").trim();
+  if((outcome==="Requires follow-up"||outcome==="Meeting Scheduled")&&!quickNext){toast("Choose who owns the next step before saving.","error");return;}
+  notes=appendRmMeta(notes,"Amanda","","",quickRm,quickLp?[quickLp]:[],quickNext);
   const btn=document.querySelector('[onclick="quickLogSave()"]');
-  if(btn){btn.disabled=true;btn.textContent="Saving...";}
+  if(btn){if(btn.disabled)return;btn.disabled=true;btn.textContent="Checking...";}
   try{
+    // Quick Log now gets the same duplicate protection as Full Log. This is especially important
+    // for shared-team meetings: one meeting should be logged once, with teammates in Also attended,
+    // rather than Amanda/Nyny/Jordan each creating a separate copy of the same event.
+    try{
+      const existing=await sbFetch("amanda_activities?agent_name=ilike."+encodeURIComponent(agentName)+"&act_type=eq."+encodeURIComponent(actType)+"&act_date=eq."+today()+"&select=agent_name,act_type,act_date,notes&limit=5");
+      if((existing||[]).some(a=>!isInternalTxnTrigger(a))){
+        const proceed=confirm("⚠️ "+actType+" is already logged for "+agentName+" today.\n\nIf this was the SAME meeting/touch, cancel and edit the existing activity to add attendees instead of creating a duplicate.\n\nLog another separate activity anyway?");
+        if(!proceed)return;
+      }
+    }catch(e){
+      if(isNetworkFailure(e))throw e;
+      console.warn("Quick Log duplicate check could not run:",e);
+    }
+    if(btn)btn.textContent="Saving...";
     // Clear any existing follow-up dates for this agent — otherwise an old overdue follow-up
     // stays flagged forever even after she's logged something new with them.
     await clearOldFollowups(agentName);
@@ -7866,6 +7980,7 @@ async function quickLogSave(){
     document.getElementById("quickLogFollowupRow").style.display="none";
     if(document.getElementById("quickLogFollowupDate"))document.getElementById("quickLogFollowupDate").value="";
     if(document.getElementById("quickLogNotes"))document.getElementById("quickLogNotes").value="";
+    if(document.getElementById("quickRmAmanda"))document.getElementById("quickRmAmanda").checked=true;if(document.getElementById("quickRmNyny"))document.getElementById("quickRmNyny").checked=false;if(document.getElementById("quickLpAttendee"))document.getElementById("quickLpAttendee").value="";if(document.getElementById("quickNextStepOwner"))document.getElementById("quickNextStepOwner").value="";
     if(document.getElementById("quickLogWordCount"))document.getElementById("quickLogWordCount").textContent="";
     if(document.getElementById("quickLogDoubleDialWarn"))document.getElementById("quickLogDoubleDialWarn").style.display="none";
     document.getElementById("quickLogAcList").classList.remove("open");
@@ -8649,20 +8764,23 @@ async function loadFeed(){
   if(status){status.textContent="Loading…";status.style.color="var(--text-3)";}
   const results=await Promise.allSettled([
     sbFetch("amanda_activities?select=*&order=act_date.desc&limit=1500"),
-    sbFetch("call_logs?select=agent_name,call_date,outcome,note,lp&order=call_date.desc&limit=1500")
+    sbFetch("call_logs?select=agent_name,call_date,outcome,note,lp&order=call_date.desc&limit=1500"),
+    sbFetch("agent_assignments?select=agent_name,rm,lp&limit=5000").catch(()=>[])
   ]);
   const rmActs=results[0].status==="fulfilled"?(results[0].value||[]):[];
   const lpActs=results[1].status==="fulfilled"?(results[1].value||[]):[];
+  const feedOwnership=results[2]&&results[2].status==="fulfilled"?(results[2].value||[]):[];
+  (feedOwnership||[]).forEach(cacheOwnershipRow);
   const rm=(rmActs||[]).map(a=>({...a,_source:'amanda',_date:a.act_date,_type:a.act_type,_note:a.notes,_outcome:a.outcome,_agent:a.agent_name,_lp:null})).filter(a=>!isInternalTxnTrigger(a));
   const lp=(lpActs||[]).map(c=>({...c,_source:'lp',_date:c.call_date,_type:'LP Call',_note:c.note,_outcome:c.outcome,_agent:c.agent_name,_lp:c.lp}));
   allFeedData=[...rm,...lp].sort((a,b)=>(b._date||'').localeCompare(a._date||''));
-  if(results.every(r=>r.status==="rejected")){
+  if(results.slice(0,2).every(r=>r.status==="rejected")){
     if(list)list.innerHTML='<div class="no-data">Activity could not load. <button class="btn-sm" onclick="loadFeed()" style="margin-left:6px">Try again</button></div>';
     if(status){status.textContent="Load failed";status.style.color="var(--danger)";}
     return;
   }
   applyFeedFilters();
-  if(status){const partial=results.some(r=>r.status==="rejected");status.textContent=(partial?"Partial · ":"")+allFeedData.length+" activities · updated "+new Date().toLocaleTimeString("en-US",{hour:"numeric",minute:"2-digit"});status.style.color=partial?"var(--warning)":"var(--text-3)";}
+  if(status){const partial=results.slice(0,2).some(r=>r.status==="rejected");status.textContent=(partial?"Partial · ":"")+allFeedData.length+" activities · updated "+new Date().toLocaleTimeString("en-US",{hour:"numeric",minute:"2-digit"});status.style.color=partial?"var(--warning)":"var(--text-3)";}
 }
 
 
@@ -8672,15 +8790,16 @@ async function loadNetwork(){
       sbFetch("amanda_activities?select=*&order=act_date.desc&limit=500"),
       sbFetch("call_logs?select=*&order=call_date.desc&limit=500")
     ]);
+    const humanRmActs=(rmActs||[]).filter(a=>!/\[TXN_TRIGGER\]/i.test(String(a.notes||"")));
     allNetworkData=[
-      ...(rmActs||[]).filter(a=>!/\[TXN_TRIGGER\]/i.test(String(a.notes||""))).map(a=>({...a,source:"RM",displayDate:a.act_date,displayType:a.act_type})),
+      ...humanRmActs.map(a=>({...a,source:"RM",displayDate:a.act_date,displayType:a.act_type})),
       ...(lpActs||[]).map(c=>({...c,source:"LP",displayDate:c.call_date,displayType:"LP Call"}))
     ].sort((a,b)=>(b.displayDate||"").localeCompare(a.displayDate||""));
     
-    // Update stats
-    const rmCount=(rmActs||[]).length;
+    // Update stats — system transaction triggers are workflow plumbing, not human RM activity.
+    const rmCount=humanRmActs.length;
     const lpCount=(lpActs||[]).length;
-    const agentNames=new Set([...(rmActs||[]).map(a=>a.agent_name),...(lpActs||[]).map(c=>c.agent_name)]);
+    const agentNames=new Set([...humanRmActs.map(a=>a.agent_name),...(lpActs||[]).map(c=>c.agent_name)]);
     document.getElementById("networkTotalRm").textContent=rmCount;
     document.getElementById("networkTotalLp").textContent=lpCount;
     document.getElementById("networkTotalAgents").textContent=agentNames.size;
@@ -8760,6 +8879,7 @@ function renderFeed(data){
       )
       +'</div></div>'
       +'<span class="feed-badge '+(isLP?"lp":a._type===CTC_TYPE?"ctc":"rm")+'">'+badgeEmoji(a._type)+'</span>'
+      +(!isLP?(function(){const meta=extractRmMeta(a._note||""),own=getAgentOwnership(agentName),rms=(meta.rmAttendees||[meta.owner||"Amanda"]).join(" + "),lps=(meta.lpAttendees||[]).join(", "),shared=(meta.rmAttendees||[]).length>1||((meta.rmAttendees||[meta.owner]).length&&own.rm&&!(meta.rmAttendees||[meta.owner]).includes(own.rm));return '<div style="font-size:10.5px;color:var(--text-3);margin-top:4px"><strong>RM(s):</strong> '+escHtml(rms)+' &nbsp;·&nbsp; <strong>Current owner:</strong> '+escHtml(own.rm||"Unassigned")+(lps?' &nbsp;·&nbsp; <strong>LP:</strong> '+escHtml(lps):'')+(meta.nextStepOwner?' &nbsp;·&nbsp; <strong>Next:</strong> '+escHtml(meta.nextStepOwner):'')+(shared?' &nbsp;·&nbsp; <span style="font-weight:700;color:var(--brand)">Shared coverage</span>':'')+'</div>';})():"")
       +(a._outcome?'<div class="feed-outcome">'+escHtml(a._outcome)+'</div>':"")
       +(a.follow_up_date?'<div class="feed-fu">Follow-up: '+fmtDate(a.follow_up_date)+'</div>':"")
       +(a._note?'<div class="feed-notes">"'+escHtml(isLP?a._note:stripRmMeta(a._note))+'"</div>':"")
@@ -8782,7 +8902,7 @@ async function saveNoteFix(id,editId,actType){
   try{
     const existingRow=await sbFetch("amanda_activities?id=eq."+id+"&select=notes&limit=1").catch(()=>[]);
     const meta=extractRmMeta(existingRow&&existingRow[0]?existingRow[0].notes:"");
-    const savedNote=appendRmMeta(newNote,meta.owner,meta.focus);
+    const savedNote=appendRmMeta(newNote,meta.owner,meta.focus,meta.attendees,meta.rmAttendees,meta.lpAttendees,meta.nextStepOwner);
     await sbFetch("amanda_activities?id=eq."+id,{method:"PATCH",prefer:"return=minimal",body:JSON.stringify({notes:savedNote,edited_at:new Date().toISOString()})});
     if(msgEl){msgEl.style.color="var(--success)";msgEl.textContent="Saved ✓";}
     setTimeout(()=>{loadMgmtAccountability();},600);
@@ -8796,10 +8916,10 @@ function openEditModal(id){
   editingActivityId=id;
   editingActivityType=a.act_type;
   editingActivityMeta=extractRmMeta(a.notes);
-  document.getElementById("editModalAgent").textContent=a.agent_name+" — "+a.act_type+" · "+editingActivityMeta.owner;
+  document.getElementById("editModalAgent").textContent=a.agent_name+" — "+a.act_type;
   document.getElementById("editNotes").value=stripRmMeta(a.notes||"");
   document.getElementById("editOutcome").value=a.outcome||"";
-  document.getElementById("editFollowupDate").value=a.follow_up_date||"";
+  document.getElementById("editFollowupDate").value=a.follow_up_date||"";const er=editingActivityMeta.rmAttendees||[editingActivityMeta.owner||"Amanda"];document.getElementById("editRmAmanda").checked=er.includes("Amanda");document.getElementById("editRmNyny").checked=er.includes("Nyny");document.getElementById("editLpAttendee").value=(editingActivityMeta.lpAttendees&&editingActivityMeta.lpAttendees[0])||"";document.getElementById("editNextStepOwner").value=editingActivityMeta.nextStepOwner||"";
   document.getElementById("editModal").classList.add("open");
 }
 function closeEditModal(){document.getElementById("editModal").classList.remove("open");editingActivityId=null;editingActivityType=null;editingActivityMeta=null;}
@@ -8827,7 +8947,7 @@ async function saveEditModal(){
     toast(editingActivityType+" needs a note before saving.","error");return;
   }
   try{
-    if(editingActivityMeta)notes=appendRmMeta(notes,editingActivityMeta.owner,editingActivityMeta.focus);
+    if(editingActivityMeta){const rms=[document.getElementById("editRmAmanda")?.checked?"Amanda":"",document.getElementById("editRmNyny")?.checked?"Nyny":""].filter(Boolean);if(!rms.length){toast("Select at least one RM involved.","error");return;}const lp=document.getElementById("editLpAttendee")?.value||"",next=document.getElementById("editNextStepOwner")?.value||"";notes=appendRmMeta(notes,rms[0],editingActivityMeta.focus,"",rms,lp?[lp]:[],next);}
     await sbFetch("amanda_activities?id=eq."+editingActivityId,{method:"PATCH",prefer:"return=minimal",body:JSON.stringify({notes,outcome:document.getElementById("editOutcome").value||null,follow_up_date:document.getElementById("editFollowupDate").value||null,edited_at:new Date().toISOString()})});
     toast("Updated! 🌸","success");closeEditModal();loadFeed();loadFollowups();loadWeek();
   }catch(e){toast("Save failed: "+e.message,"error");}
@@ -8904,12 +9024,14 @@ async function doSearchHistory(name){
     const historyResults=await Promise.allSettled([
       sbFetch("agent_profiles?agent_name=ilike.*"+encodeURIComponent(name)+"*&limit=3"),
       sbFetch("amanda_activities?agent_name=ilike.*"+encodeURIComponent(name)+"*&order=act_date.desc&limit=5000"),
-      sbFetch("call_logs?agent_name=ilike.*"+encodeURIComponent(name)+"*&order=call_date.desc&limit=5000")
+      sbFetch("call_logs?agent_name=ilike.*"+encodeURIComponent(name)+"*&order=call_date.desc&limit=5000"),
+      sbFetch("agent_assignments?agent_name=ilike.*"+encodeURIComponent(name)+"*&select=agent_name,rm,lp&limit=20").catch(()=>[])
     ]);
     const profiles=historyResults[0].status==="fulfilled"?(historyResults[0].value||[]):[];
     const activities=(historyResults[1].status==="fulfilled"?(historyResults[1].value||[]):[]).filter(a=>!/\[TXN_TRIGGER\]/i.test(String(a.notes||"")));
     const callLogs=historyResults[2].status==="fulfilled"?(historyResults[2].value||[]):[];
-    if(historyResults.every(r=>r.status==="rejected")){
+    const historyOwnership=historyResults[3]&&historyResults[3].status==="fulfilled"?(historyResults[3].value||[]):[];(historyOwnership||[]).forEach(cacheOwnershipRow);
+    if(historyResults.slice(0,3).every(r=>r.status==="rejected")){
       document.getElementById("historyResult").innerHTML='<div class="no-data">Agent history could not load. <button class="btn-sm" onclick="doSearchHistory(decodeURIComponent(\''+encodeURIComponent(name)+'\'))" style="margin-left:6px">Try again</button></div>';
       return;
     }
@@ -8967,7 +9089,7 @@ async function doSearchHistory(name){
         '</div></div>';
     }
     const items=[
-      ...activities.map(a=>({id:a.id,date:a.act_date,source:"RM",agent:a.agent_name,type:a.act_type,outcome:a.outcome,notes:a.notes,fu:a.follow_up_date})),
+      ...activities.map(a=>({id:a.id,date:a.act_date,source:"RM",agent:a.agent_name,type:a.act_type,outcome:a.outcome,notes:a.notes,fu:a.follow_up_date,meta:extractRmMeta(a.notes)})),
       ...callLogs.map(c=>({id:c.id,date:c.call_date,source:"LP",agent:c.agent_name,type:"LP Call",outcome:c.outcome,notes:c.note,lp:c.lp}))
     ].sort((a,b)=>(b.date||"").localeCompare(a.date||""));
     if(!items.length&&!profiles.length){html+='<div class="no-data">No contact history found for "'+name+'".</div>';}
@@ -8976,9 +9098,10 @@ async function doSearchHistory(name){
       html+=items.map(item=>{
         const isCtc=item.type===CTC_TYPE,isLp=item.source==="LP";
         return'<div class="feed-item"><div class="feed-top"><span class="feed-agent">'+( isLp?escHtml(item.lp||"LP")+" → "+escHtml(item.agent):escHtml(item.agent))+'</span><div class="feed-right"><span class="feed-date">'+fmtDate(item.date)+'</span>'+( isLp?'':'<button class="btn-sm" onclick="openEditModal('+item.id+')" style="font-size:10px;padding:3px 8px">Edit</button><button class="btn-sm danger" onclick="openConfirm('+item.id+',\''+item.agent.replace(/'/g,"\\'") +'\',\''+item.type.replace(/'/g,"\\'") +'\')">Delete</button>')+'</div></div><span class="feed-badge '+( isLp?"lp":isCtc?"ctc":"rm")+'">'+badgeEmoji(item.type)+'</span>'+
+        (!isLp?(function(){const own=getAgentOwnership(item.agent),m=item.meta||extractRmMeta(item.notes||""),rms=(m.rmAttendees||[m.owner||"Amanda"]).join(" + "),lps=(m.lpAttendees||[]).join(", "),shared=(m.rmAttendees||[]).length>1||((m.rmAttendees||[m.owner]).length&&own.rm&&!(m.rmAttendees||[m.owner]).includes(own.rm));return '<div style="font-size:10.5px;color:var(--text-3);margin-top:4px"><strong>RM(s):</strong> '+escHtml(rms)+' &nbsp;·&nbsp; <strong>Current owner:</strong> '+escHtml(own.rm||"Unassigned")+(lps?' &nbsp;·&nbsp; <strong>LP:</strong> '+escHtml(lps):'')+(m.nextStepOwner?' &nbsp;·&nbsp; <strong>Next:</strong> '+escHtml(m.nextStepOwner):'')+(shared?' &nbsp;·&nbsp; <span style="font-weight:700;color:var(--brand)">Shared coverage</span>':'')+'</div>';})():"")+
         (item.outcome?'<div class="feed-outcome">'+escHtml(item.outcome)+'</div>':"")+
         (item.fu?'<div class="feed-fu">Follow-up: '+fmtDate(item.fu)+'</div>':"")+
-        (item.notes?'<div class="feed-notes">"'+escHtml(item.notes)+'"</div>':"")+
+        (item.notes?'<div class="feed-notes">"'+escHtml(isLp?item.notes:stripRmMeta(item.notes))+'"</div>':"")+
         (item.edited_at?'<div class="feed-edited">Last edited: '+fmtDateTime(item.edited_at)+'</div>':"")+
       '</div>';
     }).join("");
@@ -9125,7 +9248,7 @@ async function loadMgmtAccountability(){
       if(gotThrough)return;
       const unanswered=list.filter(a=>VM_OUTCOMES.indexOf(a.outcome)>=0);
       const uniqueDays=[...new Set(unanswered.map(a=>a.act_date))];
-      const channelsUsed=[...new Set(unanswered.map(a=>noteChannel(a.notes)))];
+      const channelsUsed=[...new Set(unanswered.flatMap(a=>noteChannels(a.notes)))];
       if(uniqueDays.length>=ESCALATION_MIN_ATTEMPTS&&channelsUsed.length>=2){
         escalations.push({name:n,attempts:uniqueDays.length,channels:channelsUsed,lastDate:unanswered[unanswered.length-1].act_date});
       }
@@ -9143,9 +9266,9 @@ async function loadMgmtAccountability(){
           return'<div style="padding:10px 0;border-bottom:1px solid var(--border-light)">'
             +'<div style="display:flex;justify-content:space-between;align-items:center">'
             +'<span style="font-weight:600;font-size:13px;color:var(--text-1)">'+properCase(e.name)+'</span>'
-            +'<span style="font-size:10px;font-weight:700;color:var(--danger)">'+e.attempts+' unanswered attempts</span>'
+            +'<span style="font-size:10px;font-weight:700;color:var(--danger)">'+e.attempts+' unanswered outreach days</span>'
             +'</div>'
-            +'<div style="font-size:11px;color:var(--text-3);margin-top:3px">Tried via '+e.channels.join(", ")+' · last attempt '+fmtDate(e.lastDate)+' · no response in '+ESCALATION_WINDOW_DAYS+' days</div>'
+            +'<div style="font-size:11px;color:var(--text-3);margin-top:3px">Tried via '+e.channels.join(", ")+' · last attempt '+fmtDate(e.lastDate)+' · 3+ unanswered outreach days inside '+ESCALATION_WINDOW_DAYS+' days</div>'
             +'<button class="btn-sm" style="margin-top:6px;font-size:10px;padding:4px 10px" data-agent="'+properCase(e.name).replace(/"/g,"&quot;")+'" onclick="var n=this.getAttribute(\'data-agent\');switchTab(\'history\');document.getElementById(\'historySearch\').value=n;setTimeout(()=>doSearchHistory(n),150)">View history</button>'
             +'</div>';
         }).join("");
@@ -10579,12 +10702,14 @@ function editProspect(id){
 async function saveProspect(){
   const name=document.getElementById("np-name").value.trim();
   if(!name){toast("Please enter a name.","error");return;}
+  const btn=document.getElementById("saveProspectBtn");if(btn){if(btn.disabled)return;btn.disabled=true;btn.textContent="Saving...";}
   const payload={agent_name:name,brokerage:document.getElementById("np-brokerage").value.trim()||null,phone:document.getElementById("np-phone").value.trim()||null,email:document.getElementById("np-email").value.trim()||null,status:document.getElementById("np-status").value,follow_up_date:document.getElementById("np-followup").value||null,notes:document.getElementById("np-notes").value.trim()||null};
   try{
     if(editingProspectId){await sbFetch("outreach_prospects?id=eq."+editingProspectId,{method:"PATCH",prefer:"return=minimal",body:JSON.stringify(payload)});toast("Prospect updated","success");}
     else{await sbFetch("outreach_prospects",{method:"POST",prefer:"return=minimal",body:JSON.stringify(payload)});toast("Prospect added","success");}
     toggleAddForm(false);loadPipeline();initAutocomplete();
   }catch(e){toast("Save failed: "+e.message,"error");}
+  finally{if(btn){btn.disabled=false;btn.textContent="Save prospect";}}
 }
 async function unmarkDNC(id){
   try{await sbFetch("outreach_prospects?id=eq."+id,{method:"PATCH",prefer:"return=minimal",body:JSON.stringify({status:"Requires follow-up"})});toast("Reactivated","success");loadPipeline();}
@@ -10621,9 +10746,11 @@ function closeAddAgentModal(){
 async function saveNewAgent(){
   const name=(document.getElementById("addAgentName").value||"").trim();
   if(!name){toast("Enter the agent name.","error");return;}
+  const btn=document.getElementById("saveNewAgentBtn");if(btn){if(btn.disabled)return;btn.disabled=true;btn.textContent="Saving...";}
   const birthdayVal=document.getElementById("addAgentBirthday").value.trim();
   if(birthdayVal&&!isValidBirthdayFormat(birthdayVal)){
     toast("Birthday needs to be MM/DD, like 03/14 — no year, no month name.","error");
+    if(btn){btn.disabled=false;btn.textContent="Add agent";}
     return;
   }
   try{
@@ -10660,6 +10787,7 @@ async function saveNewAgent(){
     loadContacts();
     initAutocomplete();
   }catch(e){toast("Failed: "+e.message,"error");}
+  finally{if(btn){btn.disabled=false;btn.textContent="Add agent";}}
 }
 // v26: one removal must disappear from BOTH RM + Core Team workflows.
 // relationship_status=inactive is the authoritative shared roster signal. The additional writes
@@ -10992,8 +11120,8 @@ async function loadOwnershipIntoContactModal(name){
   let o=getAgentOwnership(name);rmEl.value=o.rm||"";lpEl.value=o.lp||"";
   try{
     const [rows,profiles]=await Promise.all([
-      sbFetch("agent_assignments?agent_name=ilike."+encodeURIComponent(name)+"&select=*&limit=5").catch(()=>[]),
-      sbFetch("agent_profiles?agent_name=ilike."+encodeURIComponent(name)+"&select=agent_name,email,tier&limit=5").catch(()=>[])
+      sbFetch("agent_assignments?agent_name=ilike."+encodeURIComponent(name)+"&select=*&limit=5"),
+      sbFetch("agent_profiles?agent_name=ilike."+encodeURIComponent(name)+"&select=agent_name,email,tier&limit=5")
     ]);
     const exact=(rows||[]).find(r=>ownerKey(r.agent_name)===ownerKey(name))||(rows||[])[0];
     if(exact){cacheOwnershipRow(exact);o=getAgentOwnership(exact.agent_name);rmEl.value=o.rm||"";lpEl.value=o.lp||"";}
@@ -11009,8 +11137,8 @@ async function saveAgentOwnership(name){
   let desiredRm=rmEl.value||null;const desiredLp=lpEl.value||"Unassigned";
   try{
     const [rows,profiles]=await Promise.all([
-      sbFetch("agent_assignments?agent_name=ilike."+encodeURIComponent(name)+"&select=*&limit=5").catch(()=>[]),
-      sbFetch("agent_profiles?agent_name=ilike."+encodeURIComponent(name)+"&select=agent_name,email,tier&limit=5").catch(()=>[])
+      sbFetch("agent_assignments?agent_name=ilike."+encodeURIComponent(name)+"&select=*&limit=5"),
+      sbFetch("agent_profiles?agent_name=ilike."+encodeURIComponent(name)+"&select=agent_name,email,tier&limit=5")
     ]);
     const exact=(rows||[]).find(r=>ownerKey(r.agent_name)===ownerKey(name))||(rows||[])[0]||{};
     const p=(profiles||[]).find(r=>ownerKey(r.agent_name)===ownerKey(name))||(profiles||[])[0]||{};
@@ -11773,7 +11901,7 @@ function wp18ResolveOwner(name,p,owners,activityOwner){
     return (p&&p.tier==="Channel")?"Nyny":"Amanda";
   }
   if(p&&p.tier==="Channel")return"Nyny";
-  if(activityOwner==="Nyny"&&p&&(p.tier==="A"||p.tier==="B"||p.high_potential_flag||p.competitor_risk_flag))return"Nyny";
+  // Activity performer never changes relationship ownership. Ownership comes only from assignment + strategic rules.
   return"Amanda";
 }
 function wp18Add(map,name,p,owner,score,reason,type,source,dueDate){
@@ -12063,17 +12191,18 @@ function wp30TransactionRow(t,isFirst,date){
     +'<span style="display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end"><button onclick="wp30OpenTransactionTask(\''+safe+'\',\''+wpJs(x.callType||'Under Contract Call')+'\',\''+wpJs(role)+'\',\''+wpJs(t.owner||'Amanda')+'\',\''+wpJs(x.txnId||'')+'\')" style="font-size:9px;padding:5px 8px;background:#7A5600;color:#fff;border:0;border-radius:6px;cursor:pointer" title="Open the correct logging workflow for this call">Start call</button><button onclick="wp30OpenTransactionTraining()" style="font-size:9px;padding:5px 8px;background:#fff;color:#75520A;border:1px solid #D9C18B;border-radius:6px;cursor:pointer" title="Open the transaction-call script and tips">Script</button></span></div></div>';
 }
 async function wp30SaveTransactionTrigger(){
+  const btn=document.getElementById("wp30TxnAddBtn");if(btn){if(btn.disabled)return;btn.disabled=true;btn.textContent="Adding...";}
   const stage=document.getElementById("wp30TxnStage")?.value||"New Contract",buyer=(document.getElementById("wp30TxnBuyerAgent")?.value||"").trim(),listing=(document.getElementById("wp30TxnListingAgent")?.value||"").trim();
   const cleanTxnMeta=s=>String(s||"").replace(/[\]\r\n]/g," ").trim().slice(0,180);
   const client=cleanTxnMeta(document.getElementById("wp30TxnClient")?.value||""),property=cleanTxnMeta(document.getElementById("wp30TxnProperty")?.value||"");
   const ref=[client,property].filter(Boolean).join(" · ").slice(0,180),entries=[];
   if(buyer)entries.push({name:buyer,role:"Buyer"});if(listing&&wp18Key(listing)!==wp18Key(buyer))entries.push({name:listing,role:"Listing"});
-  if(!entries.length){toast("Add the buyer agent, listing agent, or both.","error");return;}
+  if(!entries.length){toast("Add the buyer agent, listing agent, or both.","error");if(btn){btn.disabled=false;btn.textContent="Add calls";}return;}
   const callType=wp30TxnCallType(stage),td=today(),txnId=wp33MakeTxnId(stage,ref,buyer,listing,td);let added=0;
   try{
     for(const e of entries){
       const cut=new Date();cut.setDate(cut.getDate()-45);
-      const existing=await sbFetch("amanda_activities?agent_name=eq."+encodeURIComponent(e.name)+"&act_type=eq."+encodeURIComponent(stage)+"&act_date=gte."+wpDateStr(cut)+"&select=id,notes,act_date&limit=100").catch(()=>[]);
+      const existing=await sbFetch("amanda_activities?agent_name=eq."+encodeURIComponent(e.name)+"&act_type=eq."+encodeURIComponent(stage)+"&act_date=gte."+wpDateStr(cut)+"&select=id,notes,act_date&limit=100");
       if((existing||[]).some(r=>wp30TxnRole(r.notes)===e.role&&wp33TxnId(r.notes)===txnId))continue;
       const o=getAgentOwnership(e.name),p=(allContacts||[]).find(c=>wp18Key(c.agent_name)===wp18Key(e.name))||{};
       const owner=wp18StrategicNynyMatch(e.name,p)?"Nyny":((o&&o.rm==="Nyny")?"Nyny":"Amanda");
@@ -12087,6 +12216,7 @@ async function wp30SaveTransactionTrigger(){
     await v23LoadAmandaSnapshot(true);if(v21Date()===today())setTimeout(()=>v21LoadDailyPlan(true),40);
     toast(added?(added+" mandatory transaction call"+(added!==1?"s":"")+" added to the Workflow ✓"):("Already added — no duplicate transaction calls were created."),"success",3600);
   }catch(e){toast("Could not add transaction calls: "+e.message,"error",5500);}
+  finally{if(btn){btn.disabled=false;btn.textContent="Add calls";}}
 }
 
 
@@ -12426,9 +12556,10 @@ function closeProspectExcludeModal(){const m=document.getElementById("prospectEx
 async function saveProspectExclude(){
   const name=v40ExcludeProspect.name,id=v40ExcludeProspect.id,reason=document.getElementById("prospectExcludeReason")?.value||"Not a fit for prospecting",detail=(document.getElementById("prospectExcludeNote")?.value||"").trim();
   if(!name){toast("Prospect name is missing.","error");return;}
+  const btn=document.getElementById("prospectExcludeSaveBtn");if(btn){if(btn.disabled)return;btn.disabled=true;btn.textContent="Removing...";}
   try{
     let rows=[];
-    if(id)rows=[{id}];else rows=await sbFetch("outreach_prospects?agent_name=ilike."+encodeURIComponent(name)+"&select=id,notes&limit=5").catch(()=>[]);
+    if(id)rows=[{id}];else rows=await sbFetch("outreach_prospects?agent_name=ilike."+encodeURIComponent(name)+"&select=id,notes&limit=5");
     if(rows.length!==1){toast(rows.length?"Multiple prospect records match — update this person in Pipeline.":"Prospect record not found.","error");return;}
     let existingNotes=rows[0].notes||"";
     if(!existingNotes){const full=await sbFetch("outreach_prospects?id=eq."+rows[0].id+"&select=notes&limit=1").catch(()=>[]);existingNotes=full[0]?.notes||"";}
@@ -12442,6 +12573,7 @@ async function saveProspectExclude(){
     try{if(typeof v23LoadAmandaSnapshot==="function")await v23LoadAmandaSnapshot(true);}catch(e){}
     try{if(typeof v21LoadDailyPlan==="function"&&v21Date()===today())await v21LoadDailyPlan(true);}catch(e){}
   }catch(e){toast("Could not remove prospect: "+e.message,"error");}
+  finally{if(btn){btn.disabled=false;btn.textContent="Remove + replace";}}
 }
 function v29ProspectRow(t,isFirst){
   const p=t.prospect||{},safe=wpJs(t.name||p.name||""),phone=String(p.phone||"");
@@ -12536,8 +12668,8 @@ function wp34BuildHealthTasks(data,date,owner,excludeKeys){
   return rows.slice(0,owner==="Amanda"?5:3);
 }
 function v21BuildTasks(owner,items,data,acts,monthActs,date,freeMinutes){
-  const ownerActs=(acts||[]).filter(a=>getActivityOwner(a)===owner),partnerToday=ownerActs.filter(a=>isPartnerMeetingActivity(a)).length;
-  const monthOwner=(monthActs||[]).filter(a=>getActivityOwner(a)===owner),monthPartner=monthOwner.filter(a=>isPartnerMeetingActivity(a)).length,monthNew=monthOwner.filter(a=>a.act_type==="New Realtor Meeting").length;
+  const ownerActs=(acts||[]).filter(a=>activityCreditsPerson(a,owner)),partnerToday=ownerActs.filter(a=>isPartnerMeetingActivity(a)).length;
+  const monthOwner=(monthActs||[]).filter(a=>activityCreditsPerson(a,owner)),monthPartner=monthOwner.filter(a=>isPartnerMeetingActivity(a)).length,monthNew=monthOwner.filter(a=>a.act_type==="New Realtor Meeting").length;
   let q=v21UniqueItems(items,data,date,owner,freeMinutes),tasks=[];
   const escalationTasks=wp33BuildEscalationTasks(data,owner);escalationTasks.forEach(t=>tasks.push(t));
   const transactionTasks=wp30BuildTransactionTasks(data,date,owner);transactionTasks.forEach(t=>tasks.push(t));
@@ -12825,6 +12957,6 @@ function runV47NavigationCheck(){
 }
 setTimeout(runV47NavigationCheck,0);
 </script>
-<script>console.log("RM Tracker Build v54.0 · transaction trigger feed cleanup");</script>
+<script>console.log("RM Tracker Build v59.0 · ownership/activity separation + save-path hardening");</script>
 </body>
 </html>
