@@ -1,6 +1,9 @@
    <!DOCTYPE html>
 <html lang="en">
 <head>
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>RM Tracker</title>
@@ -657,6 +660,7 @@ input:focus,select:focus,textarea:focus{outline:none!important;border-color:#8D7
 </style>
 </head>
 <body>
+<div id="rmBuildBadge" style="position:fixed;right:10px;bottom:8px;z-index:9999;font-size:10px;padding:3px 6px;border-radius:6px;background:rgba(91,68,152,.12);color:#5B4498;pointer-events:none">Build v53.0</div>
 <div class="header">
   <div class="brand-wrap">
     <span class="brand-chip">RM TRACKER</span>
@@ -880,7 +884,7 @@ input:focus,select:focus,textarea:focus{outline:none!important;border-color:#8D7
             <div style="font-size:15px;font-weight:850;color:var(--text-1)">Clear to Close workflow</div>
             <div style="font-size:11px;color:var(--text-3);margin-top:2px">Everything for this CTC lives here: file details, both agents, call outcomes, feedback, and Daniel's WhatsApp update.</div>
           </div>
-          <button type="button" class="btn-sm" onclick="ctcResetForm()">Clear form</button>
+          <div style="text-align:right"><button type="button" class="btn-sm" onclick="ctcResetForm()">Reset form</button><div style="font-size:9px;color:var(--text-4);margin-top:3px">Resets fields only — does not complete the call.</div></div>
         </div>
         <div id="ctcLoadedContext" style="display:none;margin:0 0 10px;padding:8px 10px;background:#EEF8F2;border:1px solid #BFD8C8;border-radius:8px;font-size:10.5px;color:#2F6847;font-weight:700"></div>
 
@@ -3567,31 +3571,56 @@ const week=weekRange();
 document.getElementById("weekPill").textContent=week.label;
 document.getElementById("activityDate").value=today();
 
-// ENHANCED sbFetch with better error handling
+// ENHANCED sbFetch with timeout, better errors, and schema-safe agent_profiles reads.
 async function sbFetch(path,options={}){
+  const originalPath=path;
+  const originalOptions={...options};
+  const controller=new AbortController();
+  const timer=setTimeout(()=>controller.abort(),12000);
   const headers={"apikey":SB_KEY,"Authorization":"Bearer "+SB_KEY,"Content-Type":"application/json","Prefer":options.prefer||"return=representation",...options.headers};
   delete options.headers;delete options.prefer;
-  const res=await fetch(SB_URL+"/rest/v1/"+path,{headers,...options});
-  const text=await res.text();
-  let body;
-  try{body=text?JSON.parse(text):{};}catch(e){body={error:"Parse error",raw:text};}
-  if(!res.ok){
-    const errMsg=body?.message||body?.error||body?.hint||body?.raw||"HTTP "+res.status;
-    const err=new Error(errMsg);
-    err.status=res.status;
-    err.body=body;
-    console.error("SB Error:",{path,status:res.status,message:errMsg,body});
+  if(!options.signal)options.signal=controller.signal;
+  try{
+    const res=await fetch(SB_URL+"/rest/v1/"+path,{headers,...options});
+    const text=await res.text();
+    let body;
+    try{body=text?JSON.parse(text):{};}catch(e){body={error:"Parse error",raw:text};}
+    if(!res.ok){
+      const errMsg=body?.message||body?.error||body?.hint||body?.raw||"HTTP "+res.status;
+      const err=new Error(errMsg);err.status=res.status;err.body=body;
+      // If a GET explicitly selects an optional agent_profiles column that the live DB lacks,
+      // remove only that selected column and retry. This prevents silent blank screens when
+      // UI code gets ahead of the database schema. Filters are NOT rewritten.
+      const method=String(options.method||"GET").toUpperCase();
+      const missing=missingAgentProfileColumn(err);
+      if(method==="GET"&&String(path).startsWith("agent_profiles?")&&missing&&/[?&]select=/.test(path)){
+        const parts=path.split("?");const qs=new URLSearchParams(parts.slice(1).join("?"));
+        const sel=qs.get("select");
+        if(sel&&sel!=="*"){
+          const cols=sel.split(",").filter(c=>c&&c!==missing);
+          if(cols.length&&cols.length<sel.split(",").length){
+            qs.set("select",cols.join(","));
+            console.warn("agent_profiles schema does not include selected field '"+missing+"'; read retried without it.");
+            clearTimeout(timer);
+            return sbFetch(parts[0]+"?"+qs.toString(),originalOptions);
+          }
+        }
+      }
+      console.error("SB Error:",{path,status:res.status,message:errMsg,body});
+      throw err;
+    }
+    if(Array.isArray(body) && String(path||"").startsWith("amanda_activities")){
+      body=body.filter(r=>String(r&&r.agent_name||"").trim().toUpperCase()!=="__TEST__");
+    }
+    return body;
+  }catch(err){
+    if(err&&err.name==="AbortError")throw new Error("Connection timed out. Please retry.");
     throw err;
-  }
-  // Legacy builds used agent_name=__TEST__ for a write-based connection check. If its
-  // cleanup DELETE was interrupted, those fake rows remained in the real activity table.
-  // Never allow that internal sentinel to appear in feeds, histories, scorecards or counts.
-  if(Array.isArray(body) && String(path||"").startsWith("amanda_activities")){
-    body=body.filter(r=>String(r&&r.agent_name||"").trim().toUpperCase()!=="__TEST__");
-  }
-  return body;
+  }finally{clearTimeout(timer);}
 }
 
+// v53.0: CTC activity clarity + completed-task refresh + reset-form labeling; brokerage hard-fix retained.
+// v52: schema-safe agent_profiles writes. Brokerage is never sent to agent_profiles; live DB has no brokerage column.
 // v50: schema-safe agent_profiles writes.
 // If the live Supabase schema does not include an optional UI field (for example brokerage),
 // retry the same save without only that unsupported field instead of failing the whole contact save.
@@ -7670,15 +7699,24 @@ function ctcParsePastedUpdate(){
   m=one.match(/(?:Listing|Seller)\s*Agent\s*:\s*([^\n|]+)(?:\||,)?\s*([^\n]*)/i);if(m){ctcSet("ctcSellerAgent",m[1].trim());if(m[2])ctcSet("ctcSellerPhone",m[2].trim());}
   ctcFillContact("buyer");ctcFillContact("seller");ctcUpdatePreview();toast("CTC alert parsed — double-check the fields before saving.","success",3500);
 }
+function ctcContactStatus(outcome,textSent){
+  if(outcome==="Left voicemail")return textSent?"Left voicemail + follow-up text sent":"Left voicemail";
+  if(outcome==="No answer")return textSent?"No answer + follow-up text sent":"No answer";
+  if(outcome==="Positive")return"Talked — positive";
+  if(outcome==="Needs manager attention")return"Talked — issue / manager attention";
+  if(outcome==="Requires follow-up")return"Requires follow-up";
+  if(outcome==="Meeting Scheduled")return"Meeting scheduled";
+  return outcome||"";
+}
 function ctcBuildWhatsApp(){
   const borrower=ctcField("ctcBorrower"),property=ctcField("ctcProperty");
-  const ba=ctcField("ctcBuyerAgent"),bp=ctcField("ctcBuyerPhone"),bf=ctcField("ctcBuyerFeedback"),br=ctcField("ctcBuyerRelationship");
-  const sa=ctcField("ctcSellerAgent"),sp=ctcField("ctcSellerPhone"),sf=ctcField("ctcSellerFeedback"),sr=ctcField("ctcSellerRelationship"),smd=ctcField("ctcSellerMeetingDate");
+  const ba=ctcField("ctcBuyerAgent"),bp=ctcField("ctcBuyerPhone"),bf=ctcField("ctcBuyerFeedback"),br=ctcField("ctcBuyerRelationship"),bo=ctcField("ctcBuyerOutcome"),bt=!!document.getElementById("ctcBuyerTextSent")?.checked;
+  const sa=ctcField("ctcSellerAgent"),sp=ctcField("ctcSellerPhone"),sf=ctcField("ctcSellerFeedback"),sr=ctcField("ctcSellerRelationship"),smd=ctcField("ctcSellerMeetingDate"),so=ctcField("ctcSellerOutcome"),st=!!document.getElementById("ctcSellerTextSent")?.checked;
   const lines=["CLEAR TO CLOSE!"];
   if(borrower)lines.push("Client: "+borrower);
   if(property)lines.push("Property: "+property);
-  lines.push("");lines.push("Buyer Agent: "+(ba||"—")+" | "+(bp||"—"));if(bf)lines.push("Feedback: "+bf);if(br&&br!=="Unknown")lines.push("Relationship: "+br);
-  lines.push("");lines.push("Listing Agent: "+(sa||"—")+" | "+(sp||"—"));if(sf)lines.push("Feedback: "+sf);if(sr&&sr!=="Unknown")lines.push("Opportunity: "+sr+(smd?" — "+fmtDate(smd):""));
+  lines.push("");lines.push("Buyer Agent: "+(ba||"—")+" | "+(bp||"—"));if(ba&&ctcContactStatus(bo,bt))lines.push("Contact: "+ctcContactStatus(bo,bt));if(bf)lines.push("Feedback: "+bf);if(br&&br!=="Unknown")lines.push("Relationship: "+br);
+  lines.push("");lines.push("Listing Agent: "+(sa||"—")+" | "+(sp||"—"));if(sa&&ctcContactStatus(so,st))lines.push("Contact: "+ctcContactStatus(so,st));if(sf)lines.push("Feedback: "+sf);if(sr&&sr!=="Unknown")lines.push("Opportunity: "+sr+(smd?" — "+fmtDate(smd):""));
   return lines.join("\n");
 }
 function ctcUpdatePreview(){const el=document.getElementById("ctcWhatsAppPreview");if(el)el.value=ctcBuildWhatsApp();}
@@ -7706,10 +7744,11 @@ async function ctcSyncOpportunity(name,phone,email,relationship,meetingDate,role
   if(existing.length===1)await sbFetch("outreach_prospects?id=eq."+existing[0].id,{method:"PATCH",prefer:"return=minimal",body:JSON.stringify(payload)});
   else if(existing.length===0)await sbFetch("outreach_prospects",{method:"POST",prefer:"return=minimal",body:JSON.stringify(Object.assign({agent_name:name},payload))});
 }
-function ctcActivityNotes(role,feedback,relationship){
+function ctcActivityNotes(role,feedback,relationship,outcome,textSent){
   const borrower=ctcField("ctcBorrower"),property=ctcField("ctcProperty");
   const parts=["☎️ CTC",role+" agent"];
   if(borrower)parts.push("Client: "+borrower);if(property)parts.push("Property: "+property);
+  const contact=ctcContactStatus(outcome,textSent);if(contact)parts.push("Contact: "+contact);
   if(feedback)parts.push("Feedback: "+feedback);if(relationship&&relationship!=="Unknown")parts.push("Relationship: "+relationship);
   return parts.join(" | ");
 }
@@ -7737,14 +7776,21 @@ async function saveCtcWorkflow(copyAfter){
       await clearOldFollowups(s.name);
       const fu=(s.outcome==="Meeting Scheduled"||s.relationship==="Meeting scheduled")?s.meetingDate:(s.outcome==="Requires follow-up"||s.relationship==="Interested — follow up"?localDateStr(new Date(Date.now()+3*86400000)):null);
       const tx=wp33CurrentTxnContext(s.name,"CTC Call",s.role);
-      const ctcNotes=wp33TxnMeta(ctcActivityNotes(s.role,s.feedback,s.relationship),s.role,tx.txnId,s.textSent);
+      const ctcNotes=wp33TxnMeta(ctcActivityNotes(s.role,s.feedback,s.relationship,s.outcome,s.textSent),s.role,tx.txnId,s.textSent);
       await sbFetch("amanda_activities",{method:"POST",prefer:"return=minimal",body:JSON.stringify({agent_name:s.name,act_type:"CTC Call",act_date:today(),outcome:s.outcome,notes:ctcNotes,follow_up_date:fu})});
       await ctcSyncOpportunity(s.name,s.phone,s.email,s.relationship,s.meetingDate,s.role.toLowerCase()+" agent");
     }
     if(copyAfter)await ctcCopyWhatsApp();
-    const msg=document.getElementById("ctcSaveMsg");if(msg){msg.style.display="block";msg.textContent="✓ CTC saved for "+entered.length+" agent"+(entered.length===1?"":"s")+(copyAfter?" + WhatsApp copied":"");}
+    const savedCount=entered.length;
+    window._wp33TxnContext=null;
+    try{_wp18Cache=null;_wp18CacheAt=0;}catch(e){}
+    ctcResetForm();
+    const msg=document.getElementById("ctcSaveMsg");if(msg){msg.style.display="block";msg.textContent="✓ CTC saved for "+savedCount+" agent"+(savedCount===1?"":"s")+(copyAfter?" + WhatsApp copied":"")+" · completed call(s) cleared from workflow";}
     vibrateSaved();
-    loadWeek();loadFeed();loadStartHere();loadContacts?.();loadPipeline?.();initAutocomplete();
+    loadWeek();loadFeed();loadContacts?.();loadPipeline?.();initAutocomplete();
+    try{await loadStartHere();}catch(e){}
+    try{await loadWeeklyWorkPlans(true);}catch(e){}
+    try{await v23LoadAmandaSnapshot(true);}catch(e){}
     setTimeout(()=>{if(msg)msg.style.display="none";},5000);
   }catch(e){toast("CTC save failed: "+e.message,"error");}
   finally{buttons.forEach(b=>b.disabled=false);}
@@ -10581,7 +10627,6 @@ async function saveNewAgent(){
     const payload={
       phone:document.getElementById("addAgentPhone").value.trim()||null,
       email:document.getElementById("addAgentEmail").value.trim()||null,
-      brokerage:document.getElementById("addAgentBrokerage")?document.getElementById("addAgentBrokerage").value.trim()||null:null,
       address:combineAddress(document.getElementById("addAgentStreet").value,document.getElementById("addAgentCity").value,document.getElementById("addAgentState").value,document.getElementById("addAgentZip").value),
       birthday:birthdayVal||null,
       tier:document.getElementById("addAgentTier").value||null
@@ -10673,13 +10718,13 @@ async function deleteAgent(){
       // No agent_profiles row exists yet (common for Pipeline-only prospects that were
       // never formally saved as a contact) — create one directly marked inactive, instead of
       // blocking the user with an error.
-      await sbFetch("agent_profiles",{method:"POST",prefer:"return=minimal",body:JSON.stringify({agent_name:name,relationship_status:"inactive"})});
+      await sbProfileWrite("agent_profiles","POST",{agent_name:name,relationship_status:"inactive"});
     }else{
       // CORRECTED: this used to also set retained:false and do_not_contact:true, conflating
       // "removed from active roster" with Active Partner status (which Power BI recalculates
       // independently from production dates) and with a real, separate DNC decision. Now only
       // relationship_status changes — DNC and retained are left exactly as they were.
-      await sbFetch("agent_profiles?agent_name=eq."+encodeURIComponent(exact.agent_name),{method:"PATCH",prefer:"return=minimal",body:JSON.stringify({relationship_status:"inactive"})});
+      await sbProfileWrite("agent_profiles?agent_name=eq."+encodeURIComponent(exact.agent_name),"PATCH",{relationship_status:"inactive"});
     }
     const removedCanonical=(exact&&exact.agent_name)||name;
     await removeAgentAcrossSharedTrackers(removedCanonical);
@@ -10707,9 +10752,9 @@ async function permanentlyHideAgent(){
       return;
     }
     if(!exact){
-      await sbFetch("agent_profiles",{method:"POST",prefer:"return=minimal",body:JSON.stringify({agent_name:name,relationship_status:"inactive",display_name:HIDDEN_PROFILE_MARKER})});
+      await sbProfileWrite("agent_profiles","POST",{agent_name:name,relationship_status:"inactive",display_name:HIDDEN_PROFILE_MARKER});
     }else{
-      await sbFetch("agent_profiles?agent_name=eq."+encodeURIComponent(exact.agent_name),{method:"PATCH",prefer:"return=minimal",body:JSON.stringify({relationship_status:"inactive",display_name:HIDDEN_PROFILE_MARKER})});
+      await sbProfileWrite("agent_profiles?agent_name=eq."+encodeURIComponent(exact.agent_name),"PATCH",{relationship_status:"inactive",display_name:HIDDEN_PROFILE_MARKER});
     }
     // Ownership can safely remain in the shared assignment table; the hidden profile no longer
     // appears in active/inactive contact lists or name-cleanup, and keeping the row is what
@@ -10802,7 +10847,7 @@ async function saveContactModal(){
         }
       }
     }
-    const payload={display_name:document.getElementById("contactDisplayName")?document.getElementById("contactDisplayName").value.trim()||null:null,phone:document.getElementById("contactPhone").value.trim()||null,email:document.getElementById("contactEmail").value.trim()||null,brokerage:document.getElementById("contactBrokerage")?document.getElementById("contactBrokerage").value.trim()||null:null,address:combineAddress(document.getElementById("contactStreet").value,document.getElementById("contactCity").value,document.getElementById("contactState").value,document.getElementById("contactZip").value),birthday:birthdayVal,personal_notes:document.getElementById("contactPersonalNotes")?document.getElementById("contactPersonalNotes").value.trim()||null:null,tier:document.getElementById("contactTier").value||null,do_not_contact:document.getElementById("contactDNC").checked};
+    const payload={display_name:document.getElementById("contactDisplayName")?document.getElementById("contactDisplayName").value.trim()||null:null,phone:document.getElementById("contactPhone").value.trim()||null,email:document.getElementById("contactEmail").value.trim()||null,address:combineAddress(document.getElementById("contactStreet").value,document.getElementById("contactCity").value,document.getElementById("contactState").value,document.getElementById("contactZip").value),birthday:birthdayVal,personal_notes:document.getElementById("contactPersonalNotes")?document.getElementById("contactPersonalNotes").value.trim()||null:null,tier:document.getElementById("contactTier").value||null,do_not_contact:document.getElementById("contactDNC").checked};
     if(document.getElementById("contactGrowthOpp"))payload.next_growth_opportunity=document.getElementById("contactGrowthOpp").value.trim()||null;
     if(document.getElementById("contactGrowthOppDeadline"))payload.growth_opportunity_deadline=document.getElementById("contactGrowthOppDeadline").value||null;
     if(document.getElementById("contactLastMeaningfulContact"))payload.last_meaningful_contact_date=document.getElementById("contactLastMeaningfulContact").value||null;
@@ -10945,7 +10990,7 @@ async function loadOwnershipIntoContactModal(name){
   try{
     const [rows,profiles]=await Promise.all([
       sbFetch("agent_assignments?agent_name=ilike."+encodeURIComponent(name)+"&select=*&limit=5").catch(()=>[]),
-      sbFetch("agent_profiles?agent_name=ilike."+encodeURIComponent(name)+"&select=agent_name,brokerage,email,tier&limit=5").catch(()=>[])
+      sbFetch("agent_profiles?agent_name=ilike."+encodeURIComponent(name)+"&select=agent_name,email,tier&limit=5").catch(()=>[])
     ]);
     const exact=(rows||[]).find(r=>ownerKey(r.agent_name)===ownerKey(name))||(rows||[])[0];
     if(exact){cacheOwnershipRow(exact);o=getAgentOwnership(exact.agent_name);rmEl.value=o.rm||"";lpEl.value=o.lp||"";}
@@ -10962,7 +11007,7 @@ async function saveAgentOwnership(name){
   try{
     const [rows,profiles]=await Promise.all([
       sbFetch("agent_assignments?agent_name=ilike."+encodeURIComponent(name)+"&select=*&limit=5").catch(()=>[]),
-      sbFetch("agent_profiles?agent_name=ilike."+encodeURIComponent(name)+"&select=agent_name,brokerage,email,tier&limit=5").catch(()=>[])
+      sbFetch("agent_profiles?agent_name=ilike."+encodeURIComponent(name)+"&select=agent_name,email,tier&limit=5").catch(()=>[])
     ]);
     const exact=(rows||[]).find(r=>ownerKey(r.agent_name)===ownerKey(name))||(rows||[])[0]||{};
     const p=(profiles||[]).find(r=>ownerKey(r.agent_name)===ownerKey(name))||(profiles||[])[0]||{};
@@ -11050,7 +11095,7 @@ async function importContactsFile(input){
     // Falls back gracefully if relationship_status hasn't been added yet (see
     // DEPLOY_NOW_SAFE_MIGRATIONS.sql) — never hard-fails the import over a column that might not
     // exist in this environment yet, the same class of bug this whole engagement started from.
-    const existing=await sbFetch("agent_profiles?select=agent_name,tier,retained,relationship_status,email,phone,brokerage,address,birthday&limit=5000").catch(()=>sbFetch("agent_profiles?select=agent_name,tier,retained,relationship_status,email,phone,address,birthday&limit=5000").catch(()=>sbFetch("agent_profiles?select=agent_name,tier,retained,relationship_status&limit=5000").catch(()=>[])));
+    const existing=await sbFetch("agent_profiles?select=agent_name,tier,retained,relationship_status,email,phone,address,birthday&limit=5000").catch(()=>sbFetch("agent_profiles?select=agent_name,tier,retained,relationship_status,email,phone,address,birthday&limit=5000").catch(()=>sbFetch("agent_profiles?select=agent_name,tier,retained,relationship_status&limit=5000").catch(()=>[])));
     const existingByName={};
     const existingTierByName={};
     const existingRosterStatusByName={};
@@ -11073,7 +11118,6 @@ async function importContactsFile(input){
       const existingContactRow=existingContactByName[agentMatchKey(name)]||null;
       if(colMap.email&&row[colMap.email]&&(!existingContactRow||!existingContactRow.email))payload.email=row[colMap.email].toString().trim();
       if(colMap.phone&&row[colMap.phone]&&(!existingContactRow||!existingContactRow.phone))payload.phone=row[colMap.phone].toString().trim();
-      if(colMap.brokerage&&row[colMap.brokerage]&&(!existingContactRow||!existingContactRow.brokerage))payload.brokerage=row[colMap.brokerage].toString().trim();
       if(colMap.address&&row[colMap.address]&&(!existingContactRow||!existingContactRow.address))payload.address=row[colMap.address].toString().trim();
       if(colMap.birthday&&row[colMap.birthday]&&(!existingContactRow||!existingContactRow.birthday))payload.birthday=normalizeBirthdayForImport(row[colMap.birthday]);
       if(colMap.tier&&row[colMap.tier])payload.tier=row[colMap.tier].toString().trim().toUpperCase();
@@ -12152,7 +12196,7 @@ async function wp18FetchData(force){
   if(_wp18Loading)return _wp18Loading;
   _wp18Loading=(async()=>{
     const w=wpWeek();let profiles=[];
-    try{profiles=await sbFetch("agent_profiles?select=agent_name,tier,retained,relationship_status,do_not_contact,email,phone,brokerage,address,birthday,next_growth_opportunity,growth_opportunity_deadline,last_meaningful_contact_date,next_meeting_date,latest_lead_date,competitor_risk_flag,high_potential_flag&limit=5000");}
+    try{profiles=await sbFetch("agent_profiles?select=agent_name,tier,retained,relationship_status,do_not_contact,email,phone,address,birthday,next_growth_opportunity,growth_opportunity_deadline,last_meaningful_contact_date,next_meeting_date,latest_lead_date,competitor_risk_flag,high_potential_flag&limit=5000");}
     catch(e){profiles=await sbFetch("agent_profiles?select=agent_name,tier,retained,do_not_contact,email,phone,address,birthday&limit=5000").catch(()=>[]);}
     const prospectCut=new Date();prospectCut.setDate(prospectCut.getDate()-120);const prospectStart=wpDateStr(prospectCut);
     const txnCut=new Date();txnCut.setDate(txnCut.getDate()-45);const txnStart=wpDateStr(txnCut);
