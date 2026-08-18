@@ -3592,6 +3592,33 @@ async function sbFetch(path,options={}){
   return body;
 }
 
+// v50: schema-safe agent_profiles writes.
+// If the live Supabase schema does not include an optional UI field (for example brokerage),
+// retry the same save without only that unsupported field instead of failing the whole contact save.
+function missingAgentProfileColumn(err){
+  var msg=String((err&&err.message)||"");
+  var m=msg.match(/Could not find the [\'\"]([^\'\"]+)[\'\"] column of [\'\"]agent_profiles[\'\"]/i)
+      ||msg.match(/column [\'\"]?([^\'\"\s]+)[\'\"]? of relation [\'\"]agent_profiles[\'\"] does not exist/i)
+      ||msg.match(/column [\'\"]?([^\'\"\s]+)[\'\"]? does not exist/i);
+  return m&&m[1]?m[1]:null;
+}
+async function sbProfileWrite(path,method,payload){
+  var body=Object.assign({},payload||{});
+  var removed=[];
+  for(var attempt=0;attempt<12;attempt++){
+    try{
+      return await sbFetch(path,{method:method,prefer:"return=minimal",body:JSON.stringify(body)});
+    }catch(err){
+      var col=missingAgentProfileColumn(err);
+      if(!col || !(col in body) || col==="agent_name")throw err;
+      removed.push(col);
+      delete body[col];
+      console.warn("agent_profiles schema does not include optional field '"+col+"'; save retried without it.");
+    }
+  }
+  throw new Error("Could not save contact after removing unsupported profile fields: "+removed.join(", "));
+}
+
 let _legacyTestCleanupStarted=false;
 async function cleanupLegacyConnectionTests(){
   if(_legacyTestCleanupStarted)return;_legacyTestCleanupStarted=true;
@@ -7578,7 +7605,7 @@ async function wp37SavePartnerCheckin(){
       satisfaction_rating:parseInt(sat),
       competitor_risk_flag:leakage.startsWith("Yes")||parseInt(sat)<=2
     };
-    await sbFetch("agent_profiles?agent_name=eq."+encodeURIComponent(rows[0].agent_name),{method:"PATCH",prefer:"return=minimal",body:JSON.stringify(payload)});
+    await sbProfileWrite("agent_profiles?agent_name=eq."+encodeURIComponent(rows[0].agent_name),"PATCH",payload);
     const pending={...wp37PendingPartnerSave};
     document.getElementById("wp37PartnerCheckinModal")?.classList.remove("open");
     wp37PendingPartnerSave=null;
@@ -7667,8 +7694,8 @@ async function ctcUpsertContact(name,phone,email){
   const rows=await sbFetch("agent_profiles?agent_name=ilike."+encodeURIComponent(name)+"&select=agent_name&limit=5").catch(()=>[]);
   if(rows.length>1){console.warn("CTC contact not auto-updated because multiple profiles match",name);return;}
   const payload={};if(phone)payload.phone=phone;if(email)payload.email=email;
-  if(rows.length===1){if(Object.keys(payload).length)await sbFetch("agent_profiles?agent_name=eq."+encodeURIComponent(rows[0].agent_name),{method:"PATCH",prefer:"return=minimal",body:JSON.stringify(payload)});}
-  else{await sbFetch("agent_profiles",{method:"POST",prefer:"return=minimal",body:JSON.stringify(Object.assign({agent_name:name},payload))});}
+  if(rows.length===1){if(Object.keys(payload).length)await sbProfileWrite("agent_profiles?agent_name=eq."+encodeURIComponent(rows[0].agent_name),"PATCH",payload);}
+  else{await sbProfileWrite("agent_profiles","POST",Object.assign({agent_name:name},payload));}
 }
 async function ctcSyncOpportunity(name,phone,email,relationship,meetingDate,role){
   if(!name)return;
@@ -8551,11 +8578,11 @@ async function syncReconnectDataToContacts(agents){
     }
     try{
       if(existingByName[key]){
-        await sbFetch("agent_profiles?agent_name=eq."+encodeURIComponent(existingByName[key]),{method:"PATCH",prefer:"return=minimal",body:JSON.stringify(payload)});
+        await sbProfileWrite("agent_profiles?agent_name=eq."+encodeURIComponent(existingByName[key]),"PATCH",payload);
         synced++;
       }else{
         payload.agent_name=name;
-        await sbFetch("agent_profiles",{method:"POST",prefer:"return=minimal",body:JSON.stringify(payload)});
+        await sbProfileWrite("agent_profiles","POST",payload);
         existingByName[key]=name;
         created++;
       }
@@ -10570,14 +10597,14 @@ async function saveNewAgent(){
       // Re-adding an existing profile also reactivates it — deliberately, since this is the
       // documented "re-add them manually if needed" path after removal. DNC and retained/Active
       // Partner are left untouched; only roster status changes.
-      await sbFetch("agent_profiles?agent_name=eq."+encodeURIComponent(exact.agent_name),{method:"PATCH",prefer:"return=minimal",body:JSON.stringify(Object.assign({relationship_status:"active"},exact.display_name===HIDDEN_PROFILE_MARKER?{display_name:null}:{},payload))});
+      await sbProfileWrite("agent_profiles?agent_name=eq."+encodeURIComponent(exact.agent_name),"PATCH",Object.assign({relationship_status:"active"},exact.display_name===HIDDEN_PROFILE_MARKER?{display_name:null}:{},payload));
       // If this person had previously been removed in either tracker, clear Core Team's removal
       // sentinel so reactivation is shared too. The old LP is not guessed; it returns Unassigned.
       await clearSharedRemovalMarker(exact.agent_name).catch(()=>{});
       toast(name+" already existed — updated and reactivated across both trackers ✓","success");
     }else{
       payload.agent_name=name;
-      await sbFetch("agent_profiles",{method:"POST",prefer:"return=minimal",body:JSON.stringify(payload)});
+      await sbProfileWrite("agent_profiles","POST",payload);
       toast(name+" added to contacts ✓","success");
     }
     if(typeof wp18EnsureStrategicOwnership==="function")await wp18EnsureStrategicOwnership((exact&&exact.agent_name)||name,payload).catch(()=>{});
@@ -10800,11 +10827,11 @@ async function saveContactModal(){
       // Existing row — PATCH by its exact stored name. Do NOT include agent_name in the
       // payload: this modal never edits the name field, so there's nothing to rename, and
       // omitting it means a save can never accidentally rewrite the key into a collision.
-      await sbFetch("agent_profiles?agent_name=eq."+encodeURIComponent(exact.agent_name),{method:"PATCH",prefer:"return=minimal",body:JSON.stringify(payload)});
+      await sbProfileWrite("agent_profiles?agent_name=eq."+encodeURIComponent(exact.agent_name),"PATCH",payload);
     }else{
       // Genuinely new — insert exactly one row.
       payload.agent_name=editingContactName;
-      await sbFetch("agent_profiles",{method:"POST",prefer:"return=minimal",body:JSON.stringify(payload)});
+      await sbProfileWrite("agent_profiles","POST",payload);
     }
     const savedAgentName=(exact&&exact.agent_name)||editingContactName;
     const displayKey=(savedAgentName||"").trim().toLowerCase();
@@ -11101,12 +11128,12 @@ async function importContactsFile(input){
       try{
         if(existingByName[key]){
           if(Object.keys(payload).length){
-            await sbFetch("agent_profiles?agent_name=eq."+encodeURIComponent(existingByName[key]),{method:"PATCH",prefer:"return=minimal",body:JSON.stringify(payload)});
+            await sbProfileWrite("agent_profiles?agent_name=eq."+encodeURIComponent(existingByName[key]),"PATCH",payload);
             updated++;
           }
         }else{
           payload.agent_name=name;
-          await sbFetch("agent_profiles",{method:"POST",prefer:"return=minimal",body:JSON.stringify(payload)});
+          await sbProfileWrite("agent_profiles","POST",payload);
           existingByName[key]=name; // prevent dupes if the same name appears twice in one file
           created++;
         }
