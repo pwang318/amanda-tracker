@@ -1,4 +1,4 @@
-   <!DOCTYPE html>
+  <!DOCTYPE html>
 <html lang="en">
 <head>
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
@@ -660,7 +660,7 @@ input:focus,select:focus,textarea:focus{outline:none!important;border-color:#8D7
 </style>
 </head>
 <body>
-<div id="rmBuildBadge" style="position:fixed;right:10px;bottom:8px;z-index:9999;font-size:10px;padding:3px 6px;border-radius:6px;background:rgba(91,68,152,.12);color:#5B4498;pointer-events:none">Build v68.0</div>
+<div id="rmBuildBadge" style="position:fixed;right:10px;bottom:8px;z-index:9999;font-size:10px;padding:3px 6px;border-radius:6px;background:rgba(91,68,152,.12);color:#5B4498;pointer-events:none">Build v69.0</div>
 <div class="header">
   <div class="brand-wrap">
     <span class="brand-chip">RM TRACKER</span>
@@ -2994,6 +2994,20 @@ function isMeaningfulOutcome(outcome,list,actType){
   const o=(outcome||"").trim().toLowerCase();
   if(!o)return false; // blank/unset outcome no longer counts as meaningful by default
   return list.indexOf(o)<0;
+}
+// v69: Amanda Daily Check-in metrics must measure Amanda's actual partner-facing work.
+// Internal transaction triggers and Director-only leadership records are valid system/team records,
+// but they are not Amanda relationship contacts and must not inflate her activity or contact totals.
+function isAmandaDailyActivity(a){
+  if(!a||isInternalTxnTrigger(a))return false;
+  const rms=(typeof getRmAttendees==="function"?getRmAttendees(a):[typeof getActivityOwner==="function"?getActivityOwner(a):"Amanda"])||[];
+  if(rms.indexOf("Amanda")<0)return false;
+  if(typeof DIRECTOR_LEADERSHIP_TYPES!=="undefined"&&DIRECTOR_LEADERSHIP_TYPES.indexOf(a.act_type)>=0)return false;
+  if((a.agent_name||"").trim().toLowerCase()==="rm tracker")return false;
+  return true;
+}
+function isMeaningfulAmandaContact(a){
+  return isAmandaDailyActivity(a)&&isMeaningfulOutcome(a.outcome,NOT_MEANINGFUL_RM_OUTCOMES,a.act_type);
 }
 const SB_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVjbHVjYmRranF5cWR2aWZ5cHR4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA0OTUyMTMsImV4cCI6MjA5NjA3MTIxM30.VnqWcFT1WLQwCJxSdEIzIgOvETaOQly2IQxht-9uI7E";
 
@@ -7015,7 +7029,7 @@ async function showDailyCheckin(viewDateStr){
 
     titleEl.textContent="Daily Check-in — "+dateObj.toLocaleDateString("en-US",{weekday:"long",month:"short",day:"numeric"})+(isToday?"":" (past)");
 
-    const activities=dayActs||[];
+    const activities=(dayActs||[]).filter(isAmandaDailyActivity);
     const cCounts={};
     activities.forEach(a=>{cCounts[a.act_type]=(cCounts[a.act_type]||0)+1;});
     const talkToToday=cntTalkTo(activities);
@@ -7033,7 +7047,7 @@ async function showDailyCheckin(viewDateStr){
       const o=(a.outcome||"").trim().toLowerCase();
       return o==="left voicemail"||o==="no answer";
     });
-    const meaningfulContacts=activities.filter(a=>isMeaningfulOutcome(a.outcome,NOT_MEANINGFUL_RM_OUTCOMES,a.act_type));
+    const meaningfulContacts=activities.filter(isMeaningfulAmandaContact);
     const uniqueAgents=new Set(activities.map(a=>agentMatchKey(a.agent_name)).filter(Boolean));
 
     // ── The numbers: activity goals stay separate from outcomes. ──
@@ -7061,7 +7075,7 @@ async function showDailyCheckin(viewDateStr){
       +'<div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px">'
       +miniStat("Total activity",activities.length,"all logs")
       +miniStat("Agents worked",uniqueAgents.size,"unique names")
-      +miniStat("Meaningful contacts",meaningfulContacts.length,"connected / met")
+      +miniStat("Meaningful contacts",meaningfulContacts.length,"Amanda live conversations / meetings")
       +miniStat("No-connect attempts",noConnectAttempts.length,"VM or no answer")
       +miniStat("Meetings booked",meetingBookings.length,"scheduled today")
       +miniStat("Follow-ups set",followUpsSet.length,"future follow-up dates")
@@ -13209,7 +13223,7 @@ function runV47NavigationCheck(){
 }
 setTimeout(runV47NavigationCheck,0);
 </script>
-<script>console.log("RM Tracker Build v68.0 · instant task refresh + linked handoff completion");</script>
+<script>console.log("RM Tracker Build v69.0 · instant task refresh + linked handoff completion");</script>
 <script>setTimeout(function(){try{loadRmNurtureToday();}catch(e){}},1200);</script>
 </body>
 </html>
