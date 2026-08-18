@@ -660,7 +660,7 @@ input:focus,select:focus,textarea:focus{outline:none!important;border-color:#8D7
 </style>
 </head>
 <body>
-<div id="rmBuildBadge" style="position:fixed;right:10px;bottom:8px;z-index:9999;font-size:10px;padding:3px 6px;border-radius:6px;background:rgba(91,68,152,.12);color:#5B4498;pointer-events:none">Build v66.0</div>
+<div id="rmBuildBadge" style="position:fixed;right:10px;bottom:8px;z-index:9999;font-size:10px;padding:3px 6px;border-radius:6px;background:rgba(91,68,152,.12);color:#5B4498;pointer-events:none">Build v68.0</div>
 <div class="header">
   <div class="brand-wrap">
     <span class="brand-chip">RM TRACKER</span>
@@ -2485,7 +2485,7 @@ input:focus,select:focus,textarea:focus{outline:none!important;border-color:#8D7
     </div>
     <div style="margin-top:14px;background:var(--surface-2);border-radius:8px;padding:10px 12px;font-size:12px;color:var(--text-2)"><strong>Daily priority:</strong> urgent escalation → must-do transaction calls → Red Partner Health → overdue follow-ups → Yellow Partner Health / relationship work → new-agent calls.</div>
     <div style="margin-top:9px;font-size:11.5px;color:var(--text-3)"><strong>Today's task vs. health status:</strong> once you log a relationship-work attempt today, that person comes off Today's Partner Health work list immediately — even if you only reached voicemail/no answer. Their underlying Red/Yellow health can remain until a meaningful live connection or business signal actually improves it. This prevents duplicate work without falsely turning the relationship Green.</div>
-    <div style="margin-top:7px;font-size:11.5px;color:var(--text-3)">Health is calculated from recent lead activity, meaningful relationship contact, tier cadence, and competitor-risk signals. Click any Partner Health tile in Portfolio Review to see the actual names.</div>
+    <div style="margin-top:7px;font-size:11.5px;color:var(--text-3)">Health is calculated from recent lead activity, meaningful relationship contact, tier cadence, and competitor-risk signals. A partner who sent a lead within the last 14 days is suppressed from Today’s Partner Health work list because that lead is current engagement; an explicit competitor-risk flag can still keep them actionable. Click any Partner Health tile in Portfolio Review to see the actual names.</div>
     <button class="btn-primary" onclick="closePartnerHealthHelp()" style="margin-top:14px">Got it</button>
   </div>
 </div>
@@ -4661,6 +4661,7 @@ async function loadQuietCoverage(){
 // v64: shared RM Nurture / LP outreach pause. RM controls status once; LP rotation consumes the same Supabase fields.
 // v63: task-state integrity audit — qualifying work, role credit, follow-up sequencing and universal refresh hardened.
 // v62: Partner Health daily tasks clear after any qualifying same-day relationship-work attempt; health score remains honest.
+// v68: Recent lead (0–14 days) suppresses Today Partner Health task unless competitor risk is flagged.
 // v61: one live-state refresh path after any completed task. This prevents stale cards from
 // lingering until a full page reload and keeps Today, LP Flags, Management and the work plan aligned.
 let _rmLiveRefreshPromise=null;
@@ -6994,7 +6995,7 @@ async function showDailyCheckin(viewDateStr){
     const dateObj=new Date(viewDate+"T12:00:00");
     const nextDayStr=localDateStr(new Date(dateObj.getTime()+86400000));
     const dailyLeadCut=new Date(dateObj);dailyLeadCut.setFullYear(dailyLeadCut.getFullYear()-1);
-    const[dayActs,escToday,flaggedOpen,fuTomorrow,rcHotRows,rcBacklog,contactBacklog,openFollowups,healthActs,healthLpCalls,lpBreakBreads,ctcFilesToday,dailyLiveLeadRows]=await Promise.all([
+    const[dayActs,escToday,flaggedOpen,fuTomorrow,rcHotRows,rcBacklog,contactBacklog,openFollowups,healthActs,healthLpCalls,lpBreakBreads,ctcFilesToday,dailyLiveLeadRows,dailyReceivedLeadRows]=await Promise.all([
       sbFetch("amanda_activities?select=id,act_type,agent_name,outcome,notes,follow_up_date&act_date=eq."+viewDate+"&order=id.asc"),
       sbFetch("amanda_activities?select=agent_name,act_type,notes&outcome=eq.Needs manager attention&act_date=eq."+viewDate).catch(()=>[]),
       sbFetch("call_logs?select=agent_name,lp,note&flag_rm=eq.true&limit=100").catch(()=>[]),
@@ -7007,9 +7008,10 @@ async function showDailyCheckin(viewDateStr){
       sbFetch("call_logs?select=agent_name,call_date,outcome&order=call_date.desc&limit=2000").catch(()=>[]),
       sbFetch("break_breads?select=agent_name,date,logged_by&order=date.desc&limit=2000").catch(()=>[]),
       sbFetch("call_logs?select=agent_name,outcome&outcome=ilike.*ctc*&call_date=eq."+viewDate+"&limit=100").catch(()=>[]),
-      sbFetch("velocify_leads?select=referral_partner_name,date_added&date_added=gte."+localDateStr(dailyLeadCut)+"&date_added=lte."+viewDate+"&order=date_added.desc&limit=5000").catch(()=>[])
+      sbFetch("velocify_leads?select=referral_partner_name,date_added&date_added=gte."+localDateStr(dailyLeadCut)+"&date_added=lte."+viewDate+"&order=date_added.desc&limit=5000").catch(()=>[]),
+      sbFetch("received_leads?select=agent_name,logged_date&logged_date=gte."+localDateStr(dailyLeadCut)+"&logged_date=lte."+viewDate+"&order=logged_date.desc&limit=5000").catch(()=>[])
     ]);
-    const dailyLiveLeadMap=buildLatestLeadMap(dailyLiveLeadRows);
+    const dailyLiveLeadMap=buildLatestLeadMap([...(dailyLiveLeadRows||[]),...(dailyReceivedLeadRows||[])]);
 
     titleEl.textContent="Daily Check-in — "+dateObj.toLocaleDateString("en-US",{weekday:"long",month:"short",day:"numeric"})+(isToday?"":" (past)");
 
@@ -8742,13 +8744,14 @@ async function writeHealthSnapshots(){
 
   // Fetch everything needed to compute the Health Score for every retained agent
   const leadCut=new Date(now);leadCut.setFullYear(leadCut.getFullYear()-1);
-  const[allAgents,allActs,lpCalls,liveLeadRows]=await Promise.all([
+  const[allAgents,allActs,lpCalls,liveLeadRows,receivedLeadRows]=await Promise.all([
     sbFetch("agent_profiles?select=agent_name,tier,retained,do_not_contact,relationship_status,latest_lead_date,competitor_risk_flag&limit=2000").catch(()=>sbFetch("agent_profiles?select=agent_name,tier,retained,do_not_contact,latest_lead_date,competitor_risk_flag&limit=2000").catch(()=>[])),
     sbFetch("amanda_activities?select=agent_name,act_date,outcome,act_type&order=act_date.desc&limit=3000").catch(()=>[]),
     sbFetch("call_logs?select=agent_name,call_date,outcome&order=call_date.desc&limit=2000").catch(()=>[]),
-    sbFetch("velocify_leads?select=referral_partner_name,date_added&date_added=gte."+localDateStr(leadCut)+"&order=date_added.desc&limit=5000").catch(()=>[])
+    sbFetch("velocify_leads?select=referral_partner_name,date_added&date_added=gte."+localDateStr(leadCut)+"&order=date_added.desc&limit=5000").catch(()=>[]),
+    sbFetch("received_leads?select=agent_name,logged_date&logged_date=gte."+localDateStr(leadCut)+"&order=logged_date.desc&limit=5000").catch(()=>[])
   ]);
-  const liveLeadMap=buildLatestLeadMap(liveLeadRows);
+  const liveLeadMap=buildLatestLeadMap([...(liveLeadRows||[]),...(receivedLeadRows||[])]);
 
   const lastSeenRM={};
   (allActs||[]).forEach(a=>{const n=(a.agent_name||"").trim().toLowerCase();if(n&&!lastSeenRM[n]&&isMeaningfulOutcome(a.outcome,NOT_MEANINGFUL_RM_OUTCOMES,a.act_type))lastSeenRM[n]=a.act_date;});
@@ -8806,12 +8809,13 @@ function healthNameKey(name){
   const parts=String(name||"").toLowerCase().replace(/[^a-z0-9\s]/g," ").replace(/\s+/g," ").trim().split(" ").filter(Boolean);
   return parts.filter((part,idx)=>!(part.length===1&&idx>0&&idx<parts.length-1)).join(" ");
 }
+// v68: recent-lead operational suppression — a lead within 14 days removes Partner Health from Today unless competitor risk is explicitly flagged. v67 lead-source reconciliation retained.
 function buildLatestLeadMap(rows){
   const out={};
   (rows||[]).forEach(l=>{
     const raw=String(l.referral_partner_name||l.agent_name||"").trim();
     const keys=[raw.toLowerCase(),healthNameKey(raw)].filter(Boolean);
-    const d=String(l.date_added||l.latest_lead_date||"").slice(0,10);
+    const d=String(l.date_added||l.latest_lead_date||l.logged_date||"").slice(0,10);
     keys.forEach(k=>{if(k&&d&&(!out[k]||d>out[k]))out[k]=d;});
   });
   return out;
@@ -10054,7 +10058,7 @@ async function loadPortfolioReview(){
     const range=portfolioPeriodRange();
     const monthStart=localDateStr(new Date(new Date().getFullYear(),new Date().getMonth(),1));
     const trailingLeadStart=localDateStr(new Date(new Date().setFullYear(new Date().getFullYear()-1)));
-    const[allAgents,allActs,lpCalls,periodActs,migrationsRaw,allPartnerMeetings,monthVelocifyLeads,allVelocifyLeads]=await Promise.all([
+    const[allAgents,allActs,lpCalls,periodActs,migrationsRaw,allPartnerMeetings,monthVelocifyLeads,allVelocifyLeads,allReceivedLeads]=await Promise.all([
       sbFetch("agent_profiles?select=*&limit=2000").catch(()=>[]),
       sbFetch("amanda_activities?select=agent_name,act_date,outcome,act_type&order=act_date.desc&limit=3000").catch(()=>[]),
       sbFetch("call_logs?select=agent_name,call_date,outcome&order=call_date.desc&limit=3000").catch(()=>[]),
@@ -10062,7 +10066,8 @@ async function loadPortfolioReview(){
       sbFetch("tier_migrations?select=agent_name,from_tier,to_tier,migration_date&migration_date=gte."+range.start+"&migration_date=lte."+range.end+"&limit=1000").catch(()=>[]),
       sbFetch("amanda_activities?select=agent_name,act_date,act_type&order=act_date.desc&limit=3000").then(rows=>(rows||[]).filter(a=>isExistingMeeting(a))).catch(()=>[]),
       sbFetch("velocify_leads?date_added=gte."+monthStart+"&select=referral_partner_name,date_added&limit=5000").catch(()=>[]),
-      sbFetch("velocify_leads?select=referral_partner_name,date_added&order=date_added.desc&limit=5000&date_added=gte."+trailingLeadStart).catch(()=>[])
+      sbFetch("velocify_leads?select=referral_partner_name,date_added&order=date_added.desc&limit=5000&date_added=gte."+trailingLeadStart).catch(()=>[]),
+      sbFetch("received_leads?select=agent_name,logged_date&logged_date=gte."+trailingLeadStart+"&order=logged_date.desc&limit=5000").catch(()=>[])
     ]);
 
     const TIER_TOUCH_THRESHOLD={Channel:14,A:14,B:30,C:60};
@@ -10090,8 +10095,8 @@ async function loadPortfolioReview(){
     // Real last lead date comes from Velocify when available; agent_profiles.latest_lead_date is the
     // fallback. This mirrors the LP Tracker and prevents a stale import timestamp from changing Health.
     const lastLeadDateByAgent={};
-    (allVelocifyLeads||[]).forEach(l=>{
-      const raw=(l.referral_partner_name||"").trim(),d=l.date_added;
+    ([...(allVelocifyLeads||[]),...(allReceivedLeads||[])]).forEach(l=>{
+      const raw=(l.referral_partner_name||l.agent_name||"").trim(),d=l.date_added||l.logged_date;
       [raw.toLowerCase(),healthNameKey(raw)].filter(Boolean).forEach(n=>{if(n&&d&&(!lastLeadDateByAgent[n]||d>lastLeadDateByAgent[n]))lastLeadDateByAgent[n]=d;});
     });
 
@@ -12557,7 +12562,7 @@ async function wp18FetchData(force){
     const prospectCut=new Date();prospectCut.setDate(prospectCut.getDate()-120);const prospectStart=wpDateStr(prospectCut);
     const txnCut=new Date();txnCut.setDate(txnCut.getDate()-45);const txnStart=wpDateStr(txnCut);
     const healthCut=new Date();healthCut.setDate(healthCut.getDate()-365);const healthStart=wpDateStr(healthCut);
-    const [assignments,reconnect,followups,weekActs,prospects,prospectActs,transactionActs,ctcSignals,contractSignals,openLpFlags,legacyRmFlags,healthActs,healthLpCalls,healthLeadRows]=await Promise.all([
+    const [assignments,reconnect,followups,weekActs,prospects,prospectActs,transactionActs,ctcSignals,contractSignals,openLpFlags,legacyRmFlags,healthActs,healthLpCalls,healthLeadRows,receivedLeadRows]=await Promise.all([
       sbFetch("agent_assignments?select=agent_name,lp,rm,priority,level&limit=5000").catch(()=>[]),
       sbFetch(RC_TABLE+"?select=agent_name,status,grade,days_since,contacted_at&limit=5000").catch(()=>sbFetch(RC_TABLE+"?select=agent_name,status,grade,contacted_at&limit=5000").catch(()=>[])),
       sbFetch("amanda_activities?select=agent_name,follow_up_date,act_date,notes,outcome,act_type&follow_up_date=not.is.null&follow_up_date=lte."+w.end+"&order=follow_up_date.asc&limit=2000").catch(()=>[]),
@@ -12571,7 +12576,8 @@ async function wp18FetchData(force){
       sbFetch("call_logs?flag_rm=eq.true&select=id,agent_name,lp,note,call_date&limit=500").catch(()=>[]),
       sbFetch("amanda_activities?select=agent_name,act_date,outcome,act_type&act_date=gte."+healthStart+"&order=act_date.desc&limit=6000").catch(()=>[]),
       sbFetch("call_logs?select=agent_name,call_date,outcome&call_date=gte."+healthStart+"&order=call_date.desc&limit=4000").catch(()=>[]),
-      sbFetch("velocify_leads?select=referral_partner_name,date_added&date_added=gte."+healthStart+"&order=date_added.desc&limit=5000").catch(()=>[])
+      sbFetch("velocify_leads?select=referral_partner_name,date_added&date_added=gte."+healthStart+"&order=date_added.desc&limit=5000").catch(()=>[]),
+      sbFetch("received_leads?select=agent_name,logged_date&logged_date=gte."+healthStart+"&order=logged_date.desc&limit=5000").catch(()=>[])
     ]);
     const candidates=wp18BuildCandidates(profiles,assignments,reconnect,followups,w);
     const prospectPool=wp29BuildProspectPool(prospects,profiles,assignments,prospectActs,candidates);
@@ -12584,7 +12590,7 @@ async function wp18FetchData(force){
     if(queue.supported)qrows=await wp29RemoveProspectRowsFromRelationshipQueue(qrows);
     if(queue.supported)await wp18SyncWorked(qrows,touched);
     const items=wp18RowsToItems(qrows,candidates.pmap),activeProfiles=(profiles||[]).filter(wp18IsActive),complete=activeProfiles.filter(p=>wpMissing(p).length===0).length;
-    const data={w,touched,profiles:activeProfiles,profileMap:candidates.pmap,ownerRecords,complete,queueSupported:queue.supported,queueRows:qrows,amanda:items.filter(x=>x.owner==="Amanda"),nyny:items.filter(x=>x.owner==="Nyny"),prospectPool,transactionActs:transactionActs||[],ctcSignals:ctcSignals||[],contractSignals:contractSignals||[],openLpFlags:openLpFlags||[],legacyRmFlags:legacyRmFlags||[],healthActs:healthActs||[],healthLpCalls:healthLpCalls||[],healthLeadMap:buildLatestLeadMap(healthLeadRows||[])};
+    const data={w,touched,profiles:activeProfiles,profileMap:candidates.pmap,ownerRecords,complete,queueSupported:queue.supported,queueRows:qrows,amanda:items.filter(x=>x.owner==="Amanda"),nyny:items.filter(x=>x.owner==="Nyny"),prospectPool,transactionActs:transactionActs||[],ctcSignals:ctcSignals||[],contractSignals:contractSignals||[],openLpFlags:openLpFlags||[],legacyRmFlags:legacyRmFlags||[],healthActs:healthActs||[],healthLpCalls:healthLpCalls||[],healthLeadMap:buildLatestLeadMap([...(healthLeadRows||[]),...(receivedLeadRows||[])])};
     _wp18Cache=data;_wp18CacheAt=Date.now();return data;
   })();
   try{return await _wp18Loading;}finally{_wp18Loading=null;}
@@ -12896,6 +12902,10 @@ function wp34BuildHealthTasks(data,date,owner,excludeKeys){
   Object.entries(map).forEach(([k,h])=>{
     if(!h||!(h.health==="Red"||h.health==="Yellow")||excludeKeys.has(k))return;
     const p=h.profile||{},name=p.agent_name;if(wp34HealthOwner(name,p,data)!==owner)return;
+    // v68: A fresh lead is a current-business signal. Do not tell Amanda to work Partner Health
+    // immediately after the agent just sent business. Competitor-risk remains the only override.
+    // This changes the DAILY WORK TASK only; Portfolio can still show the underlying health score.
+    if(h.daysLead!==null&&h.daysLead<=14&&!p.competitor_risk_flag)return;
     // Daily task completion is intentionally separate from the underlying health score.
     // Any real relationship-work attempt logged today (including VM/no-answer) clears TODAY'S
     // Partner Health task so Amanda is never told to repeat the same outreach. The partner can
@@ -13199,7 +13209,7 @@ function runV47NavigationCheck(){
 }
 setTimeout(runV47NavigationCheck,0);
 </script>
-<script>console.log("RM Tracker Build v66.0 · instant task refresh + linked handoff completion");</script>
+<script>console.log("RM Tracker Build v68.0 · instant task refresh + linked handoff completion");</script>
 <script>setTimeout(function(){try{loadRmNurtureToday();}catch(e){}},1200);</script>
 </body>
 </html>
