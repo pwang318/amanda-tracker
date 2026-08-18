@@ -660,7 +660,7 @@ input:focus,select:focus,textarea:focus{outline:none!important;border-color:#8D7
 </style>
 </head>
 <body>
-<div id="rmBuildBadge" style="position:fixed;right:10px;bottom:8px;z-index:9999;font-size:10px;padding:3px 6px;border-radius:6px;background:rgba(91,68,152,.12);color:#5B4498;pointer-events:none">Build v59.0</div>
+<div id="rmBuildBadge" style="position:fixed;right:10px;bottom:8px;z-index:9999;font-size:10px;padding:3px 6px;border-radius:6px;background:rgba(91,68,152,.12);color:#5B4498;pointer-events:none">Build v63.0</div>
 <div class="header">
   <div class="brand-wrap">
     <span class="brand-chip">RM TRACKER</span>
@@ -2460,7 +2460,8 @@ input:focus,select:focus,textarea:focus{outline:none!important;border-color:#8D7
       <div style="border-left:4px solid var(--danger);background:#FFF6F5;border-radius:8px;padding:10px 12px"><strong>Red</strong><div style="font-size:12px;color:var(--text-2);margin-top:3px">Needs action now: major lapse in business/contact cadence or competitor risk. Make a meaningful relationship move, document what is happening, and escalate when needed.</div></div>
     </div>
     <div style="margin-top:14px;background:var(--surface-2);border-radius:8px;padding:10px 12px;font-size:12px;color:var(--text-2)"><strong>Daily priority:</strong> urgent escalation → must-do transaction calls → Red Partner Health → overdue follow-ups → Yellow Partner Health / relationship work → new-agent calls.</div>
-    <div style="margin-top:9px;font-size:11.5px;color:var(--text-3)">Health is calculated from recent lead activity, meaningful relationship contact, tier cadence, and competitor-risk signals. Click any Partner Health tile in Portfolio Review to see the actual names.</div>
+    <div style="margin-top:9px;font-size:11.5px;color:var(--text-3)"><strong>Today's task vs. health status:</strong> once you log a relationship-work attempt today, that person comes off Today's Partner Health work list immediately — even if you only reached voicemail/no answer. Their underlying Red/Yellow health can remain until a meaningful live connection or business signal actually improves it. This prevents duplicate work without falsely turning the relationship Green.</div>
+    <div style="margin-top:7px;font-size:11.5px;color:var(--text-3)">Health is calculated from recent lead activity, meaningful relationship contact, tier cadence, and competitor-risk signals. Click any Partner Health tile in Portfolio Review to see the actual names.</div>
     <button class="btn-primary" onclick="closePartnerHealthHelp()" style="margin-top:14px">Got it</button>
   </div>
 </div>
@@ -3934,7 +3935,7 @@ async function completeIntakeChecklist(){
     openIntake=null;
     resetIntakeChecklist();
     applyLockState();
-    loadWeek();loadFollowups();loadFeed();loadManagement();loadOnboarding();loadQuiet();loadFlagged();loadStartHere();loadDropoffWarning();loadContactDataQuality();loadZeroProduction();
+    await rmRefreshAfterMutation("activity saved");
   }catch(e){
     console.error("Complete checklist error:",e);
     toast("Save failed: "+(e.message||"Unknown error"),"error");
@@ -4241,7 +4242,7 @@ async function flushOfflineQueue(){
   if(synced>0||alreadyThere>0){
     const bits=[];if(synced)bits.push(synced+" synced");if(alreadyThere)bits.push(alreadyThere+" already saved (duplicate skipped)");
     toast("Offline activity: "+bits.join(" · ")+" ✓","success",4500);
-    loadWeek();loadFeed();loadStartHere();
+    await rmRefreshAfterMutation("quick activity saved");
   }
   if(needsAttention>0)toast(needsAttention+" offline "+(needsAttention===1?"entry needs":"entries need")+" attention and remain safely queued — nothing was discarded.","error",6500);
 }
@@ -4632,6 +4633,58 @@ async function loadQuietCoverage(){
   }
 }
 
+
+// v63: task-state integrity audit — qualifying work, role credit, follow-up sequencing and universal refresh hardened.
+// v62: Partner Health daily tasks clear after any qualifying same-day relationship-work attempt; health score remains honest.
+// v61: one live-state refresh path after any completed task. This prevents stale cards from
+// lingering until a full page reload and keeps Today, LP Flags, Management and the work plan aligned.
+let _rmLiveRefreshPromise=null;
+async function rmRefreshAfterMutation(reason){
+  _wp18Cache=null;_wp18CacheAt=0;
+  if(_rmLiveRefreshPromise)return _rmLiveRefreshPromise;
+  _rmLiveRefreshPromise=(async()=>{
+    const jobs=[];
+    const add=(fn,...args)=>{try{if(typeof fn==="function")jobs.push(Promise.resolve(fn(...args)));}catch(e){console.warn("Refresh step failed to start",e);}};
+    add(loadFlagged);add(loadWeek);add(loadFollowups);add(loadStartHere);add(loadFeed);
+    add(loadManagement);add(loadWeeklyWorkPlans,true);add(v23LoadAmandaSnapshot,true);
+    add(loadOnboarding);add(loadQuiet);add(loadDropoffWarning);add(loadContactDataQuality);add(loadZeroProduction);
+    await Promise.allSettled(jobs);
+    try{if(typeof v21LoadDailyPlan==="function")await v21LoadDailyPlan(true);}catch(e){console.warn("Daily plan refresh failed",e);}
+    console.log("RM live state refreshed",reason||"");
+  })().finally(()=>{_rmLiveRefreshPromise=null;});
+  return _rmLiveRefreshPromise;
+}
+
+// When outreach is started from an LP handoff, remember the exact handoff. After a successful
+// activity save, that handoff can be closed automatically instead of making the RM do two saves.
+window._activeLpFlagContext=null;
+function openFlagOutreach(source,id,agent){
+  window._activeLpFlagContext={source:String(source||""),id:String(id||""),agent:String(agent||"")};
+  const input=document.getElementById("agentInput");if(input)input.value=agent||"";
+  switchTab("log");
+  setTimeout(()=>{try{document.getElementById("activityType")?.focus();}catch(e){}},80);
+}
+async function completeActiveFlagAfterActivity(agentName){
+  const ctx=window._activeLpFlagContext;
+  if(!ctx||!ctx.id)return false;
+  if(ctx.agent&&wp18Key(ctx.agent)!==wp18Key(agentName))return false;
+  try{
+    if(ctx.source==="lpflag"){
+      const rmOwner=(document.getElementById("activityOwner")?.value||localStorage.getItem("rm_activity_owner")||"Amanda");
+      await sbFetch("lp_flags?id=eq."+encodeURIComponent(ctx.id),{method:"PATCH",prefer:"return=minimal",body:JSON.stringify({resolved:true,resolved_at:new Date().toISOString(),assigned_to:rmOwner})});
+    }else{
+      await sbFetch("call_logs?id=eq."+encodeURIComponent(ctx.id),{method:"PATCH",prefer:"return=minimal",body:JSON.stringify({flag_rm:false})});
+    }
+    window._activeLpFlagContext=null;
+    toast("Outreach logged and LP handoff cleared ✓","success",3200);
+    return true;
+  }catch(e){
+    console.warn("Activity saved but linked LP handoff could not auto-clear",e);
+    toast("Activity saved. LP handoff still needs Mark handled.","error",4200);
+    return false;
+  }
+}
+
 async function loadFlagged(){
   try{
     const[legacyFlags,standaloneFlags]=await Promise.all([
@@ -4690,7 +4743,7 @@ async function loadFlagged(){
           +'<button onclick="document.getElementById(\'flag-reply-'+f._flagSource+'-'+String(f.id).replace(/'/g,"\\'")+'\').style.display=\'none\'" style="padding:7px 10px;background:#fff;color:var(--text-2);border:1px solid var(--border);border-radius:6px;font-size:12px;cursor:pointer;font-family:inherit">Cancel</button>'
           +'<span id="flag-send-status-'+f._flagSource+'-'+escHtml(String(f.id))+'" style="font-size:11px;color:var(--text-3)"></span></div></div>'
         +'<div style="display:flex;gap:8px;flex-wrap:wrap">'
-        +(f.agent_name?'<button onclick="document.getElementById(\'agentInput\').value=\''+safeAgent+'\';switchTab(\'log\')" style="flex:1;min-width:110px;padding:7px;background:var(--brand);color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">Log outreach</button>':'')
+        +(f.agent_name?'<button onclick="openFlagOutreach('+jsSource+','+jsId+','+JSON.stringify(f.agent_name||"").replace(/"/g,'&quot;')+')" style="flex:1;min-width:110px;padding:7px;background:var(--brand);color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">Log outreach</button>':'')
         +'<button onclick="var p=document.getElementById(\'flag-reply-'+f._flagSource+'-'+String(f.id).replace(/'/g,"\\'")+'\');p.style.display=\'block\';document.getElementById(\'flag-reply-text-'+f._flagSource+'-'+String(f.id).replace(/'/g,"\\'")+'\').focus()" style="padding:7px 14px;background:#fff;color:var(--brand);border:1px solid var(--brand);border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">'+(hasReply?"Edit reply":"Reply to LP")+'</button>'
         +'<button onclick="resolveFlag(\''+f._flagSource+'\',\''+String(f.id).replace(/'/g,"\\'")+'\')" style="padding:7px 14px;background:#fff;color:var(--text-2);border:1px solid var(--border);border-radius:6px;font-size:12px;cursor:pointer;font-family:inherit">Mark handled</button>'
         +'</div></div>';
@@ -4750,6 +4803,9 @@ function toggleFlagNote(noteId,btnId,fullText,shortText,isShowing){
 }
 
 async function resolveFlag(source,id){
+  const card=document.getElementById("flag-card-"+source+"-"+id);
+  const oldDisplay=card?card.style.display:"";
+  if(card)card.style.display="none"; // instant feedback while Supabase saves
   try{
     if(source==="lpflag"){
       const rmOwner=(document.getElementById("activityOwner")?.value||localStorage.getItem("rm_activity_owner")||"Amanda");
@@ -4757,9 +4813,13 @@ async function resolveFlag(source,id){
     }else{
       await sbFetch("call_logs?id=eq."+encodeURIComponent(id),{method:"PATCH",prefer:"return=minimal",body:JSON.stringify({flag_rm:false})});
     }
+    if(window._activeLpFlagContext&&String(window._activeLpFlagContext.id)===String(id))window._activeLpFlagContext=null;
     toast("Flag marked handled ✓","success");
-    loadFlagged();
-  }catch(e){console.error(e);toast("Could not clear flag — "+e.message,"error");}
+    await rmRefreshAfterMutation("LP flag handled");
+  }catch(e){
+    if(card)card.style.display=oldDisplay;
+    console.error(e);toast("Could not clear flag — "+e.message,"error");
+  }
 }
 
 // ── Proactive 90-day drop-off warning — catches agents BEFORE they officially go inactive,
@@ -6452,6 +6512,7 @@ async function logActivity(){
     // Clear existing follow-up dates for this agent before saving new activity
     await clearOldFollowups(agentName);
     const inserted=await sbFetch("amanda_activities",{method:"POST",body:JSON.stringify({agent_name:agentName,act_type:activityType,act_date:date,outcome,follow_up_date:followupDate,notes:finalNotes})});
+    await completeActiveFlagAfterActivity(agentName);
     
     document.getElementById("agentInput").value="";
     document.getElementById("activityType").selectedIndex=0;
@@ -6483,7 +6544,7 @@ async function logActivity(){
     }
     applyLockState();
     initAutocomplete();
-    loadWeek();loadFollowups();loadFeed();loadManagement();loadOnboarding();loadQuiet();loadFlagged();loadStartHere();loadDropoffWarning();loadContactDataQuality();loadZeroProduction();
+    await rmRefreshAfterMutation("activity saved");
   }catch(e){
     const msg=e.message||"Unknown error";
     console.error("Log error:",e);
@@ -6591,7 +6652,7 @@ async function saveFollowupDate(id){
   if(!d){toast("Please select a date.","error");rmReleaseSaveLock(lockKey);return;}
   try{
     await sbFetch("amanda_activities?id=eq."+id,{method:"PATCH",prefer:"return=minimal",body:JSON.stringify({follow_up_date:d})});
-    toast("Follow-up date updated","success");loadFollowups();loadWeek();
+    toast("Follow-up date updated","success");await rmRefreshAfterMutation("follow-up date changed");
   }catch(e){toast("Save failed: "+e.message,"error");}
   finally{rmReleaseSaveLock(lockKey);}
 }
@@ -6614,17 +6675,23 @@ async function saveInlineLog(id,agentName,origDate){
   const outcome=document.getElementById("fu-log-outcome-"+id).value;
   const newFu=document.getElementById("fu-log-newfu-"+id).value||null;
   const notes=document.getElementById("fu-log-notes-"+id).value.trim()||null;
+  const actDate=today();
   if(!outcome){toast("Select an outcome first.","error");rmReleaseSaveLock(lockKey);return;}
   if(outcome==="Requires follow-up"&&!newFu){toast("Set a new follow-up date.","error");rmReleaseSaveLock(lockKey);return;}
   if(NOTES_REQUIRED_TYPES.indexOf(actType)>=0&&countWords(notes)<MIN_NOTE_WORDS){toast(actType+" needs detailed notes — minimum "+MIN_NOTE_WORDS+" words.","error");rmReleaseSaveLock(lockKey);return;}
   if(NOTES_MANDATORY_NO_MIN.indexOf(actType)>=0&&countWords(notes)<1){toast(actType+" needs a note before saving.","error");rmReleaseSaveLock(lockKey);return;}
   try{
-    await Promise.all([
-      sbFetch("amanda_activities",{method:"POST",body:JSON.stringify({agent_name:agentName,act_type:actType,act_date:today(),outcome,follow_up_date:newFu,notes})}),
-      sbFetch("amanda_activities?id=eq."+id,{method:"PATCH",prefer:"return=minimal",body:JSON.stringify({follow_up_date:null,edited_at:new Date().toISOString()})})
-    ]);
+    // v63: save the NEW work first. Only clear the OLD follow-up after the new activity is
+    // confirmed. This prevents a transient error from deleting the task without preserving work.
+    const dupe=await sbFetch("amanda_activities?agent_name=eq."+encodeURIComponent(agentName)+"&act_type=eq."+encodeURIComponent(actType)+"&act_date=eq."+actDate+"&select=id,outcome,notes&limit=20").catch(()=>[]);
+    const noteKey=String(notes||"").trim().toLowerCase();
+    const existing=(dupe||[]).find(r=>String(r.outcome||"")===outcome&&String(r.notes||"").trim().toLowerCase()===noteKey);
+    if(!existing){
+      await sbFetch("amanda_activities",{method:"POST",body:JSON.stringify({agent_name:agentName,act_type:actType,act_date:actDate,outcome,follow_up_date:newFu,notes})});
+    }
+    await sbFetch("amanda_activities?id=eq."+id,{method:"PATCH",prefer:"return=minimal",body:JSON.stringify({follow_up_date:null,edited_at:new Date().toISOString()})});
     toast("Logged + follow-up cleared for "+agentName+" ✓","success");
-    loadFollowups();loadWeek();loadFeed();
+    await rmRefreshAfterMutation("inline follow-up completed");
   }catch(e){toast("Save failed: "+e.message,"error");}
   finally{rmReleaseSaveLock(lockKey);}
 }
@@ -6638,7 +6705,7 @@ async function confirmMarkHandled(id,agentName){
     const patchPayload={follow_up_date:null,edited_at:new Date().toISOString(),notes:note};
     await sbFetch("amanda_activities?id=eq."+id,{method:"PATCH",prefer:"return=minimal",body:JSON.stringify(patchPayload)});
     toast(agentName+" marked as handled ✓","success");
-    loadFollowups();loadWeek();loadFeed();
+    await rmRefreshAfterMutation("follow-up marked handled");
   }catch(e){toast("Failed: "+e.message,"error");}
   finally{rmReleaseSaveLock(lockKey);}
 }
@@ -7357,7 +7424,7 @@ async function nynyQuickSave(){
     document.getElementById("nynyQuickFollowupWrap").style.display="none";if(document.getElementById("nynyRmNyny"))document.getElementById("nynyRmNyny").checked=true;if(document.getElementById("nynyRmAmanda"))document.getElementById("nynyRmAmanda").checked=false;if(document.getElementById("nynyLpAttendee"))document.getElementById("nynyLpAttendee").value="";if(document.getElementById("nynyNextStepOwner"))document.getElementById("nynyNextStepOwner").value="";
     document.getElementById("nynyQuickAcList").classList.remove("open");
     setTimeout(()=>{if(msg)msg.style.display="none";},3500);
-    loadWeek();loadFeed();loadStartHere();
+    await rmRefreshAfterMutation("quick activity saved");
   }catch(e){
     if(isNetworkFailure(e)){
       queueOffline(agent,type,today(),outcome,notes,(outcome==="Requires follow-up"||outcome==="Meeting Scheduled")?followup:null);
@@ -7966,6 +8033,7 @@ async function quickLogSave(){
     // stays flagged forever even after she's logged something new with them.
     await clearOldFollowups(agentName);
     await sbFetch("amanda_activities",{method:"POST",prefer:"return=minimal",body:JSON.stringify({agent_name:agentName,act_type:actType,act_date:today(),outcome,notes,follow_up_date:(outcome==="Requires follow-up"||outcome==="Meeting Scheduled")?followupDate:null})});
+    await completeActiveFlagAfterActivity(agentName);
     if(txnCtx&&String(txnCtx.role).toLowerCase()==="listing")await wp33SyncListingOpportunity(agentName,outcome,followupDate,notes).catch(()=>{});
     if(txnCtx)window._wp33TxnContext=null;
     const cb33=document.getElementById("quickLogTxnTextSent");if(cb33)cb33.checked=false;wp33ToggleQuickTxnText();
@@ -12037,11 +12105,36 @@ async function wp18LoadOrCreateQueue(candidates,w){
   }
   return{supported:true,rows:rows||[]};
 }
+function wp63QualifyingRelationshipWork(a){
+  if(!a||!a.agent_name||!a.act_date)return false;
+  if(typeof isInternalTxnTrigger==="function"&&isInternalTxnTrigger(a))return false;
+  const t=String(a.act_type||"").trim();
+  // Only genuine partner/reconnect relationship work can satisfy the weekly relationship queue.
+  // Admin, transaction triggers, cold prospecting and internal leadership work must never clear it.
+  return (typeof TALKTO_TYPES!=="undefined"&&TALKTO_TYPES.indexOf(t)>=0)
+    || t==="Reconnect Outreach"
+    || t==="Break Breads"
+    || (typeof isPartnerMeetingActivity==="function"&&isPartnerMeetingActivity(a));
+}
+function wp63BuildWorkedDates(weekActs){
+  const out={Amanda:{},Nyny:{}};
+  (weekActs||[]).forEach(a=>{
+    if(!wp63QualifyingRelationshipWork(a))return;
+    ["Amanda","Nyny"].forEach(person=>{
+      if(typeof activityCreditsPerson==="function"&&!activityCreditsPerson(a,person))return;
+      const k=wp18Key(a.agent_name),d=String(a.act_date||"").slice(0,10);if(!k||!d)return;
+      if(!out[person][k]||d>out[person][k])out[person][k]=d;
+    });
+  });
+  return out;
+}
 async function wp18SyncWorked(rows,touched){
   const changes=[];
   (rows||[]).forEach(r=>{
     if(r.status==="worked"||r.status==="complete")return;
-    const set=touched[r.owner];if(set&&set.has(wp18Key(r.agent_name)))changes.push(r);
+    const d=touched&&touched[r.owner]&&touched[r.owner][wp18Key(r.agent_name)];
+    // A prior activity cannot satisfy a task created for a later work date.
+    if(d&&(!r.work_date||d>=String(r.work_date).slice(0,10)))changes.push(r);
   });
   if(!changes.length)return;
   await Promise.all(changes.map(r=>sbFetch("rm_work_queue?id=eq."+r.id,{method:"PATCH",prefer:"return=minimal",body:JSON.stringify({status:"worked",completed_at:new Date().toISOString()})}).catch(()=>{})));
@@ -12252,8 +12345,25 @@ function wp33BuildEscalationTasks(data,owner){
   rows.forEach(r=>{const name=String(r.agent_name||"").trim();if(!name)return;const resolved=wp30TxnOwner(name,data);if(resolved!==owner)return;const k=wp18Key(name);if(seen.has(k))return;seen.add(k);out.push({kind:"escalation",minutes:12,owner:resolved,name,title:"Urgent escalation · "+resolvedDisplayName(name),why:(r.note||"LP / transaction issue needs RM attention today").slice(0,180)});});
   return out;
 }
-function wp33OpenEscalation(name,owner){wpOpenLog(name,owner||"Amanda","Agent Talk-to");setTimeout(()=>{const o=document.getElementById("quickLogOutcome");if(o){o.value="Needs manager attention";toggleQuickLogFollowup();}},120);}
-function wp33EscalationRow(t,isFirst){const safe=wpJs(t.name||"");return '<div style="padding:8px;border-bottom:1px solid #F1D4CF;'+(isFirst?'background:#FFF3F2;border:1px solid #F1D4CF;border-radius:8px;margin:5px 0;':'')+'"><div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start"><div><div style="font-size:11.5px;font-weight:800;color:#9B4A40">'+v21Esc(t.name)+' <span style="font-size:8.5px;background:#9B4A40;color:#fff;border-radius:10px;padding:2px 6px">URGENT</span>'+(isFirst?' <span style="font-size:8.5px;background:var(--brand);color:#fff;border-radius:10px;padding:2px 6px">NEXT UP</span>':'')+'</div><div style="font-size:10px;color:#8C5A54;margin-top:2px">'+v21Esc(t.why||"Needs RM attention today")+'</div></div><button onclick="wp33OpenEscalation(\''+safe+'\',\''+wpJs(t.owner||'Amanda')+'\')" style="font-size:9px;padding:5px 8px;background:#9B4A40;color:#fff;border:0;border-radius:6px;cursor:pointer">Handle</button></div></div>';}
+async function wp33OpenEscalation(name,owner){
+  // An LP → RM escalation is a handoff to review/respond to, not an activity to log yet.
+  // Open the actual LP Flag inbox so Nyny can read the LP note, reply, resolve, or then log outreach if she does work.
+  switchTab("week");
+  try{await loadFlagged();}catch(e){console.warn("Could not refresh LP flags before opening handoff",e);}
+  setTimeout(()=>{
+    const host=document.getElementById("weekFlagged"),targetName=String(name||"").trim().toLowerCase();
+    let target=null;
+    if(host&&targetName){
+      target=Array.from(host.children||[]).find(el=>String(el.textContent||"").toLowerCase().includes(targetName))||null;
+    }
+    const dest=target||document.getElementById("lpFlagInboxCard");
+    if(dest){dest.scrollIntoView({behavior:"smooth",block:"center"});
+      if(target){const old=target.style.boxShadow;target.style.boxShadow="0 0 0 3px rgba(155,74,64,.22)";setTimeout(()=>{target.style.boxShadow=old||"";},2200);}
+    }
+    if(!target&&name)toast("Opened LP Flag inbox. Find "+name+" to review the handoff.","success",3000);
+  },180);
+}
+function wp33EscalationRow(t,isFirst){const safe=wpJs(t.name||"");return '<div style="padding:8px;border-bottom:1px solid #F1D4CF;'+(isFirst?'background:#FFF3F2;border:1px solid #F1D4CF;border-radius:8px;margin:5px 0;':'')+'"><div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start"><div><div style="font-size:11.5px;font-weight:800;color:#9B4A40">'+v21Esc(t.name)+' <span style="font-size:8.5px;background:#9B4A40;color:#fff;border-radius:10px;padding:2px 6px">URGENT</span>'+(isFirst?' <span style="font-size:8.5px;background:var(--brand);color:#fff;border-radius:10px;padding:2px 6px">NEXT UP</span>':'')+'</div><div style="font-size:10px;color:#8C5A54;margin-top:2px">'+v21Esc(t.why||"Needs RM attention today")+'</div></div><button onclick="wp33OpenEscalation(\''+safe+'\',\''+wpJs(t.owner||'Amanda')+'\')" title="Open the LP handoff to review, reply, or resolve it" style="font-size:9px;padding:5px 8px;background:#9B4A40;color:#fff;border:0;border-radius:6px;cursor:pointer">Open handoff</button></div></div>';}
 
 // v29 acquisition call sheet ---------------------------------------------------
 // Uses the real Outreach Pipeline as the source of new-agent calls. It never invents
@@ -12352,12 +12462,9 @@ async function wp18FetchData(force){
     const candidates=wp18BuildCandidates(profiles,assignments,reconnect,followups,w);
     const prospectPool=wp29BuildProspectPool(prospects,profiles,assignments,prospectActs,candidates);
     const ownerRecords=wp18OwnerRecord(assignments);
-    const touched={Amanda:new Set(),Nyny:new Set()};
-    (weekActs||[]).forEach(a=>{
-      const p=candidates.pmap[wp18Key(a.agent_name)]||{};
-      const o=wp18StrategicNynyMatch(a.agent_name,p)?"Nyny":getActivityOwner(a);
-      if(touched[o])touched[o].add(wp18Key(a.agent_name));
-    });
+    // v63: completion credit follows RM attendee(s), never relationship ownership or strategic routing.
+    // Store the latest qualifying work date per person+agent so Monday work cannot clear a Thursday task.
+    const touched=wp63BuildWorkedDates(weekActs||[]);
     const queue=await wp18LoadOrCreateQueue(candidates,w);
     let qrows=queue.supported?queue.rows:wp18FallbackRows(candidates,w);
     if(queue.supported)qrows=await wp29RemoveProspectRowsFromRelationshipQueue(qrows);
@@ -12369,7 +12476,11 @@ async function wp18FetchData(force){
   try{return await _wp18Loading;}finally{_wp18Loading=null;}
 }
 
-function wp18Worked(item,data){return !!(item.queue&&item.queue.status==="worked")||!!(data.touched[item.owner]&&data.touched[item.owner].has(wp18Key(item.name)));}
+function wp18Worked(item,data){
+  if(item.queue&&(item.queue.status==="worked"||item.queue.status==="complete"))return true;
+  const d=data&&data.touched&&data.touched[item.owner]&&data.touched[item.owner][wp18Key(item.name)];
+  return !!(d&&(!item.queue||!item.queue.work_date||d>=String(item.queue.work_date).slice(0,10)));
+}
 function wp18StatusHtml(item,worked){
   const missing=wpMissing(item.profile||{}),clean=!missing.length;
   if(worked&&clean)return'<span style="font-size:9px;font-weight:800;color:var(--success)">DONE ✓</span>';
@@ -12654,11 +12765,28 @@ function wp34HealthOwner(name,p,data){
   if(p&&p.tier==="Channel")return "Nyny";
   return "Amanda";
 }
+function wp62HealthAttemptedToday(name,data,date,owner){
+  const key=wp18Key(name);
+  return (data&&data.healthActs||[]).some(a=>{
+    if(wp18Key(a.agent_name)!==key||String(a.act_date||"").slice(0,10)!==date)return false;
+    if(typeof isInternalTxnTrigger==="function"&&isInternalTxnTrigger(a))return false;
+    const type=String(a.act_type||"").trim();
+    const relationshipWork=(typeof TALKTO_TYPES!=="undefined"&&TALKTO_TYPES.indexOf(type)>=0)||(typeof isPartnerMeetingActivity==="function"&&isPartnerMeetingActivity(a))||type==="Break Breads";
+    if(!relationshipWork)return false;
+    if(typeof activityCreditsPerson==="function")return activityCreditsPerson(a,owner);
+    return (typeof getActivityOwner==="function"?getActivityOwner(a):"Amanda")===owner;
+  });
+}
 function wp34BuildHealthTasks(data,date,owner,excludeKeys){
   const map=wp34HealthState(data,date),rows=[];excludeKeys=excludeKeys||new Set();
   Object.entries(map).forEach(([k,h])=>{
     if(!h||!(h.health==="Red"||h.health==="Yellow")||excludeKeys.has(k))return;
     const p=h.profile||{},name=p.agent_name;if(wp34HealthOwner(name,p,data)!==owner)return;
+    // Daily task completion is intentionally separate from the underlying health score.
+    // Any real relationship-work attempt logged today (including VM/no-answer) clears TODAY'S
+    // Partner Health task so Amanda is never told to repeat the same outreach. The partner can
+    // remain Red/Yellow in Portfolio until there is a meaningful live connection/business signal.
+    if(wp62HealthAttemptedToday(name,data,date,owner))return;
     const tier=p.tier||"";let score=(h.health==="Red"?3000:1800)+(tier==="Channel"?400:tier==="A"?300:tier==="B"?180:60);
     if(h.daysAny!==null)score+=Math.min(h.daysAny,180);
     const item={name,profile:p,owner,score,reasons:[h.why],type:"Agent Talk-to",source:"Partner Health",queue:null,_health:h.health};
@@ -12957,6 +13085,6 @@ function runV47NavigationCheck(){
 }
 setTimeout(runV47NavigationCheck,0);
 </script>
-<script>console.log("RM Tracker Build v59.0 · ownership/activity separation + save-path hardening");</script>
+<script>console.log("RM Tracker Build v63.0 · instant task refresh + linked handoff completion");</script>
 </body>
 </html>
