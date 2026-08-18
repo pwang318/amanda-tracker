@@ -660,7 +660,7 @@ input:focus,select:focus,textarea:focus{outline:none!important;border-color:#8D7
 </style>
 </head>
 <body>
-<div id="rmBuildBadge" style="position:fixed;right:10px;bottom:8px;z-index:9999;font-size:10px;padding:3px 6px;border-radius:6px;background:rgba(91,68,152,.12);color:#5B4498;pointer-events:none">Build v63.0</div>
+<div id="rmBuildBadge" style="position:fixed;right:10px;bottom:8px;z-index:9999;font-size:10px;padding:3px 6px;border-radius:6px;background:rgba(91,68,152,.12);color:#5B4498;pointer-events:none">Build v64.0</div>
 <div class="header">
   <div class="brand-wrap">
     <span class="brand-chip">RM TRACKER</span>
@@ -764,6 +764,10 @@ input:focus,select:focus,textarea:focus{outline:none!important;border-color:#8D7
         <button id="wp30TxnAddBtn" type="button" onclick="wp30SaveTransactionTrigger()" class="btn-primary" style="height:36px;white-space:nowrap">Add calls</button>
       </div>
     </details>
+    <div id="rmNurtureTodayCard" style="display:none;border:1px solid #E8D5A8;border-left:4px solid #C18B2D;border-radius:9px;background:#FFFDF7;padding:10px 12px;margin:8px 0 10px">
+      <div style="font-size:11px;font-weight:800;color:#8A5A00;text-transform:uppercase;letter-spacing:.4px;margin-bottom:5px">RM Nurture due</div>
+      <div id="rmNurtureTodayList"></div>
+    </div>
     <div id="v22AmandaSnapshotPlan"><div class="no-data">Building Amanda’s Workflow…</div></div>
     <details style="margin-top:10px;border-top:1px solid var(--border-light);padding-top:7px">
       <summary style="cursor:pointer;font-size:11px;font-weight:750;color:var(--text-2)">Optional: see full week + assignment details</summary>
@@ -1396,6 +1400,11 @@ input:focus,select:focus,textarea:focus{outline:none!important;border-color:#8D7
       <div class="rc-stat"><div class="rc-stat-num" id="rc-contacted" style="color:#4E3D8A">0</div><div class="rc-stat-label">Contacted this cycle</div></div>
       <div class="rc-stat"><div class="rc-stat-num" id="rc-removed" style="color:#999">0</div><div class="rc-stat-label">Removed / no engage</div></div>
     </div>
+  </div>
+
+  <div class="card" id="rmNurtureCard" style="display:none;border-left:4px solid #C18B2D">
+    <div style="display:flex;justify-content:space-between;gap:10px;align-items:center;margin-bottom:10px"><div><div class="card-title" style="margin-bottom:2px">RM Nurture</div><div style="font-size:11px;color:var(--text-3)">Agents intentionally paused from LP recurring outreach. They stay in the relationship book and come back here for the RM check-in date you chose.</div></div><button class="btn-sm" onclick="loadRmNurtureQueue()">Refresh</button></div>
+    <div id="rmNurtureList"><div class="no-data">Loading...</div></div>
   </div>
 
   <!-- Outreach tip -->
@@ -2175,6 +2184,21 @@ input:focus,select:focus,textarea:focus{outline:none!important;border-color:#8D7
       </div>
       <div style="font-size:10.5px;color:var(--text-3);margin-top:7px">Shared ownership: updates here flow to the LP/Core Team tracker too.</div>
       <div id="contactOwnershipStatus" style="display:none;font-size:10.5px;margin-top:6px"></div>
+    </div>
+    <div style="background:#FFF9EC;border:1px solid #E8D5A8;border-radius:9px;padding:11px 12px;margin-bottom:12px">
+      <div style="font-size:11px;font-weight:700;color:#8A5A00;text-transform:uppercase;letter-spacing:.45px;margin-bottom:8px">LP Outreach Status</div>
+      <div class="field" style="margin-bottom:8px">
+        <label>Should this agent stay in the LP recurring call rotation?</label>
+        <select id="contactLpOutreachStatus" onchange="toggleContactNurtureFields()">
+          <option value="active">Active rotation — LP keeps normal relationship outreach</option>
+          <option value="nurture">RM Nurture — pause LP recurring outreach</option>
+        </select>
+      </div>
+      <div id="contactNurtureFields" style="display:none">
+        <div class="field" style="margin-bottom:8px"><label>Why are we pausing LP outreach?</label><select id="contactNurtureReason"><option value="">Choose reason...</option><option>Part-time agent</option><option>Primarily uses another lender</option><option>Low opportunity right now</option><option>Agent requested less contact</option><option>Relationship being handled by RM</option><option>Other</option></select></div>
+        <div class="field" style="margin-bottom:0"><label>Next RM check-in</label><input type="date" id="contactNextRmFollowup"></div>
+      </div>
+      <div style="font-size:10.5px;color:#7A6847;margin-top:7px"><strong>RM Nurture does not remove the agent.</strong> History, ownership and profile stay intact. It only removes them from LP recurring call/connection/Face Time queues until RM turns normal outreach back on.</div>
     </div>
     <details id="partnerPlaybookDetails" style="margin-bottom:18px;border:0.5px solid var(--border);border-radius:8px;padding:10px 12px;background:var(--surface-2)">
       <summary style="cursor:pointer;font-size:13px;font-weight:600;color:var(--text-1)">Portfolio &amp; Relationship Notes <span style="font-weight:400;color:var(--text-4)">— goals, health signals, growth &amp; recovery</span></summary>
@@ -4634,6 +4658,7 @@ async function loadQuietCoverage(){
 }
 
 
+// v64: shared RM Nurture / LP outreach pause. RM controls status once; LP rotation consumes the same Supabase fields.
 // v63: task-state integrity audit — qualifying work, role credit, follow-up sequencing and universal refresh hardened.
 // v62: Partner Health daily tasks clear after any qualifying same-day relationship-work attempt; health score remains honest.
 // v61: one live-state refresh path after any completed task. This prevents stale cards from
@@ -4647,7 +4672,7 @@ async function rmRefreshAfterMutation(reason){
     const add=(fn,...args)=>{try{if(typeof fn==="function")jobs.push(Promise.resolve(fn(...args)));}catch(e){console.warn("Refresh step failed to start",e);}};
     add(loadFlagged);add(loadWeek);add(loadFollowups);add(loadStartHere);add(loadFeed);
     add(loadManagement);add(loadWeeklyWorkPlans,true);add(v23LoadAmandaSnapshot,true);
-    add(loadOnboarding);add(loadQuiet);add(loadDropoffWarning);add(loadContactDataQuality);add(loadZeroProduction);
+    add(loadOnboarding);add(loadQuiet);add(loadDropoffWarning);add(loadContactDataQuality);add(loadZeroProduction);add(loadRmNurtureQueue);add(loadRmNurtureToday);
     await Promise.allSettled(jobs);
     try{if(typeof v21LoadDailyPlan==="function")await v21LoadDailyPlan(true);}catch(e){console.warn("Daily plan refresh failed",e);}
     console.log("RM live state refreshed",reason||"");
@@ -5202,6 +5227,43 @@ async function loadQuiet(){
   }
 }
 
+function toggleContactNurtureFields(){
+  const status=document.getElementById("contactLpOutreachStatus");
+  const wrap=document.getElementById("contactNurtureFields");
+  if(wrap)wrap.style.display=status&&status.value==="nurture"?"block":"none";
+}
+function rmNurtureAttr(v){return String(v==null?"":v).replace(/&/g,"&amp;").replace(/"/g,"&quot;").replace(/</g,"&lt;").replace(/>/g,"&gt;");}
+function rmNurtureLog(btn){const a=btn&&btn.getAttribute("data-agent");if(a)prefillActivityLog(a,"Agent Talk-to");}
+function rmNurtureEdit(btn){const a=btn&&btn.getAttribute("data-agent");if(a)openContactModal(a);}
+async function loadRmNurtureQueue(){
+  const card=document.getElementById("rmNurtureCard"),el=document.getElementById("rmNurtureList");if(!card||!el)return;
+  try{
+    const rows=await sbFetch("agent_profiles?lp_outreach_status=eq.nurture&select=agent_name,tier,nurture_reason,next_rm_followup,relationship_status,do_not_contact&order=next_rm_followup.asc&limit=500").catch(()=>[]);
+    const list=(rows||[]).filter(r=>r.relationship_status!=="inactive"&&r.do_not_contact!==true);
+    if(!list.length){card.style.display="none";el.innerHTML="";return;}
+    card.style.display="block";
+    const t=today();
+    el.innerHTML=list.map(r=>{
+      const due=r.next_rm_followup||"",overdue=!!due&&due<t,todayDue=due===t;
+      const dueTxt=due?(todayDue?"Due today":overdue?"Overdue · "+due:"Next · "+due):"No date set";
+      const a=rmNurtureAttr(r.agent_name||"");
+      return '<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:9px 0;border-bottom:1px solid var(--border-light)"><div style="flex:1;min-width:220px"><div style="font-size:13px;font-weight:700">'+escHtml(resolvedDisplayName(r.agent_name))+' <span style="font-size:10px;padding:2px 7px;border-radius:10px;background:#FFF2D6;color:#8A5A00">RM NURTURE</span></div><div style="font-size:11px;color:var(--text-3);margin-top:2px">'+escHtml(r.nurture_reason||"RM-directed light-touch relationship")+' · <strong style="color:'+(overdue?'#A32D2D':todayDue?'#8A5A00':'var(--text-2)')+'">'+escHtml(dueTxt)+'</strong></div></div><button class="btn-sm" data-agent="'+a+'" onclick="rmNurtureLog(this)">Log check-in</button><button class="btn-sm" data-agent="'+a+'" onclick="rmNurtureEdit(this)">Edit</button></div>';
+    }).join("");
+  }catch(e){card.style.display="block";el.innerHTML='<div class="no-data">Could not load RM Nurture: '+escHtml(e.message||String(e))+'</div>';}
+}
+async function loadRmNurtureToday(){
+  const card=document.getElementById("rmNurtureTodayCard"),el=document.getElementById("rmNurtureTodayList");if(!card||!el)return;
+  try{
+    const t=today();
+    const rows=await sbFetch("agent_profiles?lp_outreach_status=eq.nurture&next_rm_followup=lte."+t+"&select=agent_name,nurture_reason,next_rm_followup,relationship_status,do_not_contact&order=next_rm_followup.asc&limit=100").catch(()=>[]);
+    const list=(rows||[]).filter(r=>r.relationship_status!=="inactive"&&r.do_not_contact!==true);
+    if(!list.length){card.style.display="none";el.innerHTML="";return;}
+    card.style.display="block";
+    el.innerHTML=list.map(r=>{const a=rmNurtureAttr(r.agent_name||"");const overdue=(r.next_rm_followup||"")<t;return '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:6px 0;border-bottom:1px solid #F1E4C8"><div style="flex:1;min-width:200px"><strong>'+escHtml(resolvedDisplayName(r.agent_name))+'</strong><div style="font-size:10.5px;color:var(--text-3)">'+escHtml(r.nurture_reason||"Light-touch RM follow-up")+' · <span style="color:'+(overdue?'#A32D2D':'#8A5A00')+'">'+(overdue?'Overdue':'Due today')+'</span></div></div><button class="btn-sm" data-agent="'+a+'" onclick="rmNurtureLog(this)">Log check-in</button><button class="btn-sm" data-agent="'+a+'" onclick="rmNurtureEdit(this)">Reschedule / edit</button></div>';}).join("");
+  }catch(e){card.style.display="none";}
+}
+
+
 function switchTab(name){
   const target=document.getElementById("view-"+name);
   if(!target){console.warn("Unknown tracker tab:",name);return;}
@@ -5209,14 +5271,14 @@ function switchTab(name){
   document.querySelectorAll(".view").forEach(v=>v.classList.remove("active"));
   target.classList.add("active");
   if(typeof updatePageGuideVisibility==="function")updatePageGuideVisibility();
-  if(name==="week")loadStartHere();
+  if(name==="week"){loadStartHere();loadRmNurtureToday();}
   if(name==="pipeline")loadPipeline();
     if(name==="contacts")loadContacts();
   if(name==="growth")loadAgentGrowth();
   if(name==="portfolio")loadPortfolioReview();
   
   
-  if(name==="reconnect")loadReconnect();
+  if(name==="reconnect"){loadReconnect();loadRmNurtureQueue();}
   if(name==="feed")loadFeed();
   if(name==="history")loadHistoryLanding();
   if(name==="daniel")loadManagement();
@@ -11009,6 +11071,9 @@ async function openContactModal(name,phone,email,brokerage,birthday){
         if(document.getElementById("contactSatisfaction"))document.getElementById("contactSatisfaction").value=p.satisfaction_rating||"";
         if(document.getElementById("contactCompetitorRisk"))document.getElementById("contactCompetitorRisk").checked=!!(p.competitor_risk_flag);
         if(document.getElementById("contactHighPotential"))document.getElementById("contactHighPotential").checked=!!(p.high_potential_flag);
+        if(document.getElementById("contactLpOutreachStatus"))document.getElementById("contactLpOutreachStatus").value=p.lp_outreach_status||"active";
+        if(document.getElementById("contactNurtureReason"))document.getElementById("contactNurtureReason").value=p.nurture_reason||"";
+        if(document.getElementById("contactNextRmFollowup"))document.getElementById("contactNextRmFollowup").value=p.next_rm_followup||"";
       }
     }catch(e){}
   }
@@ -11020,6 +11085,8 @@ async function openContactModal(name,phone,email,brokerage,birthday){
   // save the user doesn't touch never gets blocked by a format Save didn't write in the first place.
   document.getElementById("contactBirthday").value=birthday?formatBirthdayDisplay(birthday):"";
   if(document.getElementById("contactPersonalNotes"))document.getElementById("contactPersonalNotes").value=personalNotes;
+  if(document.getElementById("contactLpOutreachStatus")&&!document.getElementById("contactLpOutreachStatus").value)document.getElementById("contactLpOutreachStatus").value="active";
+  toggleContactNurtureFields();
   document.getElementById("contactModal").classList.add("open");
 }
 function closeContactModal(){document.getElementById("contactModal").classList.remove("open");const d=document.getElementById("partnerPlaybookDetails");if(d)d.open=false;const t=document.getElementById("contactModalTitle");if(t)t.textContent="Edit contact info";editingContactName=null;editingContactOriginalName=null;}
@@ -11058,6 +11125,15 @@ async function saveContactModal(){
     if(document.getElementById("contactSatisfaction"))payload.satisfaction_rating=document.getElementById("contactSatisfaction").value?parseInt(document.getElementById("contactSatisfaction").value):null;
     if(document.getElementById("contactCompetitorRisk"))payload.competitor_risk_flag=document.getElementById("contactCompetitorRisk").checked;
     if(document.getElementById("contactHighPotential"))payload.high_potential_flag=document.getElementById("contactHighPotential").checked;
+    const lpOutreachStatus=document.getElementById("contactLpOutreachStatus")?document.getElementById("contactLpOutreachStatus").value:"active";
+    const nurtureReason=document.getElementById("contactNurtureReason")?document.getElementById("contactNurtureReason").value.trim():"";
+    const nextRmFollowup=document.getElementById("contactNextRmFollowup")?document.getElementById("contactNextRmFollowup").value:"";
+    if(lpOutreachStatus==="nurture"&&!nextRmFollowup){toast("Choose the next RM check-in date before pausing LP outreach.","error");return;}
+    payload.lp_outreach_status=lpOutreachStatus||"active";
+    payload.nurture_reason=lpOutreachStatus==="nurture"?(nurtureReason||null):null;
+    payload.next_rm_followup=lpOutreachStatus==="nurture"?(nextRmFollowup||null):null;
+    payload.nurture_updated_at=new Date().toISOString();
+    payload.nurture_updated_by="RM Tracker";
 
     // agent_profiles has no id column — agent_name IS the key. Re-check right before writing
     // (not just at modal-open time) so stale state from a long-open modal can't cause a write
@@ -11086,6 +11162,8 @@ async function saveContactModal(){
     }
     const ownershipOk=await saveAgentOwnership(savedAgentName);
     toast(ownershipOk?"Contact + ownership updated":"Contact updated — ownership setup still needed",ownershipOk?"success":"error",ownershipOk?3200:5500);closeContactModal();if(window._contactSaveCallback){window._contactSaveCallback();window._contactSaveCallback=null;}
+    if(typeof rmRefreshAfterMutation==="function")rmRefreshAfterMutation("contact / LP outreach status updated");
+    if(typeof loadRmNurtureQueue==="function")loadRmNurtureQueue();
     if(document.getElementById("historySearch").value.length>=2)doSearchHistory(document.getElementById("historySearch").value.trim());
   }catch(e){toast("Save failed: "+e.message,"error");}
   finally{if(saveBtn){saveBtn.disabled=false;saveBtn.textContent="Save changes";}}
@@ -13085,6 +13163,7 @@ function runV47NavigationCheck(){
 }
 setTimeout(runV47NavigationCheck,0);
 </script>
-<script>console.log("RM Tracker Build v63.0 · instant task refresh + linked handoff completion");</script>
+<script>console.log("RM Tracker Build v64.0 · instant task refresh + linked handoff completion");</script>
+<script>setTimeout(function(){try{loadRmNurtureToday();}catch(e){}},1200);</script>
 </body>
 </html>
