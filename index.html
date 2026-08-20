@@ -1,4 +1,4 @@
- <!DOCTYPE html>
+  <!DOCTYPE html>
 <!-- v140: fixes Step 2 transaction renderer race; saved/open CTC and New Contract tasks are no longer erased after successful distribution -->
 <!-- v137: Amanda daily snapshot restored + audit fixes; current operating goals aligned, responsive snapshot, duplicate activity icons corrected -->
 <!-- v139: save/log integrity audit; preserve follow-ups until confirmed save, harden offline replay, Face Time and handled-note history -->
@@ -912,7 +912,7 @@ html,body,button,input,select,textarea{font-family:var(--rm-native-font)!importa
 .v106-pipeline-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}.v106-stage{border:1px solid #D7DFD8;border-radius:12px;background:#fff;overflow:hidden}.v106-stage-head{padding:10px 11px;background:#F4F7F4;border-bottom:1px solid #DDE5DE}.v106-stage-head b{font-size:12px;color:#29463A}.v106-stage-head small{display:block;font-size:9.8px;color:#718077;margin-top:2px}.v106-candidate{padding:9px 10px;border-bottom:1px solid #EDF1EE}.v106-candidate:last-child{border-bottom:0}.v106-candidate-name{font-size:11.5px;font-weight:800;color:#26352D}.v106-candidate-why{font-size:9.8px;color:#69766E;line-height:1.4;margin-top:3px}.v106-actions{display:flex;gap:5px;flex-wrap:wrap;margin-top:6px}.v106-actions button{font:700 9.5px Arial,Helvetica,sans-serif;padding:5px 7px;border-radius:6px;cursor:pointer;border:1px solid #C8D4CB;background:#fff;color:#385547}.v106-actions button.primary{background:#557565;color:#fff;border-color:#557565}
 @media(max-width:900px){.v106-goal-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.v106-pipeline-grid{grid-template-columns:1fr}}
 </style>
-<div id="rmBuildBadge" style="position:fixed;right:10px;bottom:8px;z-index:9999;font-size:10px;padding:3px 6px;border-radius:6px;background:rgba(91,68,152,.12);color:#5B4498;pointer-events:none">Build v142 · CTC Popup + Pace Fixed</div>
+
 <div class="header">
 <div class="brand-wrap">
 <span class="brand-chip">RM TRACKER</span>
@@ -16194,13 +16194,91 @@ console.log('RM Tracker Build v141.0 · known open transaction fallback seeded')
   document.addEventListener('visibilitychange',function(){if(!document.hidden){v144SyncFromScorecard();setTimeout(v144RefreshCount,100);}});
   setInterval(v144SyncFromScorecard,5000);
 
-  // Keep the visible build marker honest.
-  document.addEventListener('DOMContentLoaded',function(){
-    document.querySelectorAll('*').forEach(function(el){
-      if(el.children.length===0 && /Build v\d+/i.test(el.textContent||''))el.textContent=(el.textContent||'').replace(/Build v\d+(?:\.\d+)?/i,'Build v144');
-    });
-  },{once:true});
   console.log('RM Tracker Build v144.0 · Step 5 meeting count synchronized with shared RM Team scorecard');
+})();
+</script>
+
+
+<!-- Internal build metadata retained in source only; no version/build badge is rendered to users. -->
+<!-- v145 C→B RESILIENT RENDER · 2026-08-20 -->
+<script id="v145-ctob-resilient">
+(function(){
+  const STORE='rm_v145_ctob_last_good';
+  let timer=null, busy=false;
+  function key(n){return String(n||'').trim().toLowerCase().replace(/\s+/g,' ');}
+  function getStored(){
+    try{const x=JSON.parse(localStorage.getItem(STORE)||'null');return x&&Array.isArray(x.rows)?x:null;}catch(e){return null;}
+  }
+  function saveStored(rows){
+    try{localStorage.setItem(STORE,JSON.stringify({saved_at:new Date().toISOString(),rows:rows.map(c=>({
+      name:c.name||'',owner:c.owner||'Amanda',score:Number(c.score||0),reasons:Array.isArray(c.reasons)?c.reasons:[],away:Number(c.away||0),closes:Number(c.closes||0),leads:Number(c.leads||0),next:c.next||'B',tier:c.tier||'C',
+      profile:c.profile||{}
+    }))}));}catch(e){}
+  }
+  function storedCandidates(){const x=getStored();return x?x.rows:[];}
+  function task(c){
+    const why=(typeof v106CandidateWhy==='function')?v106CandidateWhy(c):((c.closes||0)+' rolling-12 closes · growth opportunity');
+    const item={name:c.name,profile:c.profile||{},owner:'Amanda',score:c.score||0,reasons:['Tier growth C → B · '+why],type:'Agent Talk-to',source:'Tier Growth',queue:null};
+    return {kind:'tier_growth',minutes:15,owner:'Amanda',name:c.name,item:item,title:'C → B growth · '+(typeof resolvedDisplayName==='function'?resolvedDisplayName(c.name):c.name),why:why+' · Next best move: uncover the next buyer/opportunity and book Face Time or a meeting.',growth:c};
+  }
+  function renderRows(rows,stale){
+    const host=document.getElementById('v113GrowthHost');if(!host)return false;
+    rows=(rows||[]).filter(c=>c&&c.name&&String(c.owner||'Amanda')==='Amanda').slice(0,5);
+    if(!rows.length)return false;
+    const cards=rows.map(c=>{
+      const t=task(c);
+      return typeof v112GrowthCard==='function'?v112GrowthCard(t):'<div class="v112-growth-card"><strong>'+escHtml(c.name)+'</strong><div>'+escHtml(t.why)+'</div></div>';
+    }).join('');
+    host.innerHTML='<div class="v112-growth" data-v145-growth="1"><div class="v112-growth-head"><div><b>C → B Growth Opportunities</b><small>Best Amanda-owned C relationships with evidence to move up.'+(stale?' Showing the last good list while live data refreshes.':'')+'</small></div><span style="font-size:9.5px;font-weight:850;color:#2F6847">'+rows.length+' focus relationship'+(rows.length!==1?'s':'')+'</span></div><div class="v112-growth-grid">'+cards+'</div></div>';
+    try{if(typeof v136DecorateGrowthReviewButtons==='function')v136DecorateGrowthReviewButtons();}catch(e){}
+    return true;
+  }
+  function currentCandidates(){
+    try{
+      const data=window._wp18Cache;
+      if(data&&typeof v106BuildTierGrowth==='function'){
+        const built=v106BuildTierGrowth(data||{}),rows=((built&&built.stages&&built.stages.cToB)||[]).filter(c=>c&&c.owner==='Amanda').slice(0,5);
+        if(rows.length)return rows;
+      }
+    }catch(e){console.warn('v145 cached C→B build',e);}
+    return [];
+  }
+  async function withTimeout(p,ms){return Promise.race([p,new Promise((_,rej)=>setTimeout(()=>rej(new Error('C→B refresh timeout')),ms))]);}
+  async function refresh(force){
+    const host=document.getElementById('v113GrowthHost');if(!host||busy)return;
+    // Never blank a known-good list while fetching.
+    const cached=currentCandidates();
+    if(cached.length){renderRows(cached,false);saveStored(cached);}else{const stored=storedCandidates();if(stored.length)renderRows(stored,true);}
+    if(typeof wp18FetchData!=='function'||typeof v106BuildTierGrowth!=='function')return;
+    busy=true;
+    try{
+      const data=await withTimeout(wp18FetchData(force===true),8000);
+      const built=v106BuildTierGrowth(data||{});
+      const rows=((built&&built.stages&&built.stages.cToB)||[]).filter(c=>c&&c.owner==='Amanda').slice(0,5);
+      if(rows.length){saveStored(rows);renderRows(rows,false);}
+      else if(!host.querySelector('.v112-growth-card')){
+        host.innerHTML='<div class="v113-body-empty" data-v145-growth="1">No strong C → B candidate is ready right now.</div>';
+      }
+    }catch(e){
+      console.warn('v145 C→B refresh',e);
+      // Keep any existing/last-good cards. Only show one clean status if there is truly nothing to show.
+      if(!host.querySelector('.v112-growth-card')){
+        const stored=storedCandidates();
+        if(stored.length)renderRows(stored,true);
+        else host.innerHTML='<div class="v113-body-empty" data-v145-growth="1">C → B opportunities are refreshing. Use Refresh if this remains blank.</div>';
+      }
+    }finally{busy=false;}
+  }
+  function schedule(force){clearTimeout(timer);timer=setTimeout(()=>refresh(force),120);}
+  // Replace the older destructive visibility helper with the resilient one.
+  window.v134EnsureGrowthVisible=function(force){return refresh(force);};
+  window.v145RefreshCtoB=refresh;
+  const oldBuild=window.v113BuildTodayLayout;
+  if(typeof oldBuild==='function')window.v113BuildTodayLayout=function(){const r=oldBuild.apply(this,arguments);setTimeout(()=>schedule(false),80);return r;};
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>{setTimeout(()=>schedule(false),550);setTimeout(()=>schedule(true),2200);},{once:true});
+  else{setTimeout(()=>schedule(false),120);setTimeout(()=>schedule(true),1800);}
+  window.addEventListener('pageshow',()=>setTimeout(()=>schedule(false),180));
+  console.log('RM Tracker Build v145 · C→B resilient last-good render');
 })();
 </script>
 </body>
