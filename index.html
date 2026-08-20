@@ -912,7 +912,7 @@ html,body,button,input,select,textarea{font-family:var(--rm-native-font)!importa
 .v106-pipeline-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}.v106-stage{border:1px solid #D7DFD8;border-radius:12px;background:#fff;overflow:hidden}.v106-stage-head{padding:10px 11px;background:#F4F7F4;border-bottom:1px solid #DDE5DE}.v106-stage-head b{font-size:12px;color:#29463A}.v106-stage-head small{display:block;font-size:9.8px;color:#718077;margin-top:2px}.v106-candidate{padding:9px 10px;border-bottom:1px solid #EDF1EE}.v106-candidate:last-child{border-bottom:0}.v106-candidate-name{font-size:11.5px;font-weight:800;color:#26352D}.v106-candidate-why{font-size:9.8px;color:#69766E;line-height:1.4;margin-top:3px}.v106-actions{display:flex;gap:5px;flex-wrap:wrap;margin-top:6px}.v106-actions button{font:700 9.5px Arial,Helvetica,sans-serif;padding:5px 7px;border-radius:6px;cursor:pointer;border:1px solid #C8D4CB;background:#fff;color:#385547}.v106-actions button.primary{background:#557565;color:#fff;border-color:#557565}
 @media(max-width:900px){.v106-goal-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.v106-pipeline-grid{grid-template-columns:1fr}}
 </style>
-<div id="rmBuildBadge" style="position:fixed;right:10px;bottom:8px;z-index:9999;font-size:10px;padding:3px 6px;border-radius:6px;background:rgba(91,68,152,.12);color:#5B4498;pointer-events:none">Build v134 · Mobile Safe</div>
+<div id="rmBuildBadge" style="position:fixed;right:10px;bottom:8px;z-index:9999;font-size:10px;padding:3px 6px;border-radius:6px;background:rgba(91,68,152,.12);color:#5B4498;pointer-events:none">Build v141 · Transactions Preseeded</div>
 <div class="header">
 <div class="brand-wrap">
 <span class="brand-chip">RM TRACKER</span>
@@ -15892,6 +15892,74 @@ console.log('RM Tracker Build v136.0 · Amanda simplicity pass · execution firs
   });
 })();
 console.log('RM Tracker Build v140.0 · transaction renderer race fixed');
+</script>
+
+
+<script id="v141-preseed-known-open-transactions">
+(function(){
+  const SEEDS=[
+    {name:'Haifa Brunney',stage:'Clear to Close',callType:'CTC Call',role:'Buyer'},
+    {name:'James Brandt',stage:'Clear to Close',callType:'CTC Call',role:'Listing'},
+    {name:'Jennifer Hochmiller',stage:'Clear to Close',callType:'CTC Call',role:'Listing'},
+    {name:'Megan Lynch',stage:'Clear to Close',callType:'CTC Call',role:'Buyer'},
+    {name:'Chris Reed',stage:'New Contract',callType:'Under Contract Call',role:'Buyer'}
+  ];
+  const TRIGGER_DATE='2026-08-20';
+  function k(s){return String(s||'').trim().toLowerCase().replace(/\s+/g,' ');}
+  function escapeHtml(s){return String(s||'').replace(/[&<>\"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;'}[c]||c;});}
+  function jsq(s){return String(s||'').replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/\r?\n/g,' ');}
+  function seedCompleted(seed){
+    try{
+      const rows=(window._wp18Cache&&Array.isArray(window._wp18Cache.transactionActs))?window._wp18Cache.transactionActs:[];
+      return rows.some(function(r){
+        if(k(r.agent_name)!==k(seed.name)||String(r.act_type||'')!==seed.callType||String(r.act_date||'')<TRIGGER_DATE)return false;
+        const rr=(typeof wp30TxnRole==='function'?wp30TxnRole(r.notes):'Agent');
+        if(seed.role&&seed.role!=='Agent'&&String(rr||'').toLowerCase()!==seed.role.toLowerCase())return false;
+        const outcome=String(r.outcome||'').toLowerCase();
+        if((outcome==='no answer'||outcome==='left voicemail')&&!(typeof wp33TxnTextSent==='function'&&wp33TxnTextSent(r.notes)))return false;
+        return true;
+      });
+    }catch(e){return false;}
+  }
+  function liveCardExists(host,seed){
+    if(!host)return false;
+    const name=k(seed.name);
+    return Array.from(host.querySelectorAll('.v112-urgent')).some(function(card){
+      if(card.classList.contains('v141-seeded-transactions'))return false;
+      return k(card.textContent).includes(name);
+    });
+  }
+  function row(seed){
+    const safe=jsq(seed.name),label=seed.callType==='CTC Call'?'CTC CALL':'NEW CONTRACT',why=seed.callType==='CTC Call'?'Clear to close · '+seed.role.toLowerCase()+' agent':'New contract · '+seed.role.toLowerCase()+' agent';
+    return '<div class="v141-seed-row" data-v141-agent="'+escapeHtml(seed.name)+'" style="padding:10px 12px;border:1px solid #E8C7C2;border-left:4px solid #B94E45;background:#FFF8F7;border-radius:9px;margin:6px 0">'
+      +'<div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start;flex-wrap:wrap">'
+      +'<div style="min-width:220px;flex:1"><div style="display:flex;align-items:center;gap:7px;flex-wrap:wrap"><span style="font-size:8.5px;font-weight:900;letter-spacing:.35px;background:#B94E45;color:#fff;border-radius:10px;padding:2px 7px">'+label+'</span><strong style="font-size:12.5px;color:var(--text-1)">'+escapeHtml(seed.name)+'</strong><span style="font-size:9.5px;color:#7B5560">'+escapeHtml(seed.role)+' agent</span></div>'
+      +'<div style="font-size:10.5px;color:#7A4C46;margin-top:4px">'+escapeHtml(why)+' · mandatory transaction call</div></div>'
+      +'<button type="button" onclick="wp30OpenTransactionTask(\''+safe+'\',\''+jsq(seed.callType)+'\',\''+jsq(seed.role)+'\',\'Amanda\',\'\')" style="background:#6A48B8;color:#fff;border:0;border-radius:8px;padding:7px 11px;font-size:10px;font-weight:800;cursor:pointer">Start call</button>'
+      +'</div></div>';
+  }
+  function ensure(){
+    const host=document.getElementById('v113UrgentHost');if(!host)return;
+    const needed=SEEDS.filter(function(s){return !seedCompleted(s)&&!liveCardExists(host,s);});
+    let box=host.querySelector('.v141-seeded-transactions');
+    if(!needed.length){if(box)box.remove();return;}
+    if(!box){box=document.createElement('div');box.className='v112-urgent v141-seeded-transactions';box.dataset.v141Fallback='1';}
+    box.innerHTML='<div style="font-size:9px;font-weight:900;letter-spacing:.45px;color:#93443D;margin:2px 0 4px">OPEN TRANSACTION CALLS</div>'+needed.map(row).join('');
+    Array.from(host.querySelectorAll('.v113-body-empty')).forEach(function(n){n.remove();});
+    const intake=host.querySelector('#wp30TxnIntakeDetails');
+    if(intake&&intake.nextSibling)host.insertBefore(box,intake.nextSibling);else host.appendChild(box);
+  }
+  window.v141EnsureKnownTransactions=ensure;
+  const oldDist=window.v113DistributeSmart;
+  if(typeof oldDist==='function')window.v113DistributeSmart=function(){const r=oldDist.apply(this,arguments);setTimeout(ensure,0);return r;};
+  const oldSnap=window.v23LoadAmandaSnapshot;
+  if(typeof oldSnap==='function')window.v23LoadAmandaSnapshot=async function(){const r=await oldSnap.apply(this,arguments);setTimeout(ensure,0);return r;};
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',function(){setTimeout(ensure,650);setTimeout(ensure,1800);},{once:true});
+  else{setTimeout(ensure,100);setTimeout(ensure,1200);}
+  document.addEventListener('visibilitychange',function(){if(!document.hidden)setTimeout(ensure,120);});
+  setInterval(ensure,4000);
+})();
+console.log('RM Tracker Build v141.0 · known open transaction fallback seeded');
 </script>
 
 </body>
