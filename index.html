@@ -13038,9 +13038,21 @@ function v21BuildTasks(owner,items,data,acts,monthActs,date,freeMinutes){
     // v100 order: urgent escalation → mandatory transaction → priority health → due/warm
     // relationship work → new-meeting acquisition → routine health maintenance.
     priorityHealth.forEach(t=>tasks.push(t));
+    // BUGFIX (2026-08-20): C -> B growth candidates were being pushed after the full relationship
+    // queue, so on any day where that queue filled the remaining time budget, real growth candidates
+    // got bumped to overflow entirely and the panel showed a misleading "no candidate" message.
+    // Reserve a small guaranteed slot (up to 2 of the highest-scored candidates) ahead of the bulk
+    // relationship queue so growth work isn't crowded out completely. Any additional candidates
+    // beyond the reserved slice still get a chance after the queue, same as before, if there's room.
+    const growthExclude=new Set(protectedKeys);healthKeys.forEach(k=>growthExclude.add(k));
+    const tierGrowthTasks=v106AmandaGrowthTasks(data,growthExclude);
+    const growthReserved=tierGrowthTasks.slice(0,2),growthRest=tierGrowthTasks.slice(2);
+    const reservedKeys=new Set(growthReserved.map(t=>wp18Key(t.name)));
+    q=q.filter(x=>!reservedKeys.has(wp18Key(x.name)));
+    growthReserved.forEach(t=>tasks.push(t));
     q.forEach(x=>tasks.push(v21AgentTask(x,data,owner)));
-    const growthExclude=new Set(protectedKeys);healthKeys.forEach(k=>growthExclude.add(k));q.forEach(x=>growthExclude.add(wp18Key(x.name)));
-    const tierGrowthTasks=v106AmandaGrowthTasks(data,growthExclude);tierGrowthTasks.forEach(t=>tasks.push(t));
+    const qKeys=new Set(q.map(x=>wp18Key(x.name)));
+    growthRest.filter(t=>!qKeys.has(wp18Key(t.name))).forEach(t=>tasks.push(t));
     if(prospectNeeded>0&&!v22SimpleTaskDone(date,"Amanda","skillset"))tasks.push({kind:"skill",minutes:10,owner,title:"New-meeting script warm-up",why:"Quick practice immediately before the new Realtor meeting push.",simpleKey:"skillset"});
     ready.forEach(p=>tasks.push(v29ProspectTask(p)));
     maintenanceHealth.forEach(t=>tasks.push(t));
@@ -13063,6 +13075,18 @@ function v21RenderOwner(owner,hostId,capId,blocks,items,data,acts,monthActs,sche
   const host=document.getElementById(hostId),cap=document.getElementById(capId);if(!host)return;
   const busy=v21MergedBusy(blocks),busyMin=busy.reduce((n,x)=>n+x[1]-x[0],0),free=v21Free(blocks),freeMin=480-busyMin;
   const build=v21BuildTasks(owner,items,data,acts,monthActs,date,freeMin),alloc=v21Allocate(build.tasks,free);
+  // BUGFIX (2026-08-20): tier_growth candidates are real (v106AmandaGrowthTasks already found and
+  // scored them) but were being silently dropped from Step 7 whenever today's time budget filled up
+  // with higher-priority work first (v21Allocate pushes anything that doesn't fit into overflow, and
+  // only alloc.planned reaches the growth renderer). The "No strong C → B candidate" fallback then
+  // quoted the pre-allocation diagnostic (totalC/ownedByAmanda/excludedDupe) as if it explained zero
+  // results, which was misleading — the candidates existed, they just didn't fit today's clock. Track
+  // whether that happened so the message can say so instead of implying there's nothing to work.
+  if(owner==="Amanda"&&window._v106GrowthDiag){
+    const overflowedGrowth=(alloc.overflow||[]).filter(t=>t.kind==="tier_growth").length;
+    window._v106GrowthDiag.overflowed=overflowedGrowth;
+    window._v106GrowthDiag.plannedShown=(alloc.planned||[]).filter(t=>t.kind==="tier_growth").length;
+  }
   if(cap){
     if(owner==="Amanda"){
       const pm=(blocks||[]).filter(b=>v32IsPartnerMeetingBlock(b.block_type)).length;
@@ -14006,7 +14030,18 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
     Array.from(src.children).forEach(function(n){var target=null;if(n.classList.contains('v112-urgent'))target=urgent;else if(n.classList.contains('v112-health')||n.classList.contains('v112-smart-columns'))target=smart;else if(n.classList.contains('v112-growth'))target=growth;else if(n.classList.contains('v112-maintenance'))target=maint;if(target){n.dataset.v113Distributed='1';target.appendChild(n);}});
     if(!urgent.querySelector('[data-v113-distributed="1"]')){var em=el('div','v113-body-empty','Nothing urgent right now.');em.dataset.v113Distributed='1';urgent.insertBefore(em,urgent.firstChild);}
     if(!smart.querySelector('[data-v113-distributed="1"]')){var sm=el('div','v113-body-empty','Nothing due in Smart Relationship Work right now.');sm.dataset.v113Distributed='1';smart.appendChild(sm);}
-    if(!growth.querySelector('[data-v113-distributed="1"]')){var gDiag=window._v106GrowthDiag,gMsg='No strong C → B candidate is ready right now.';if(gDiag)gMsg+=' ('+gDiag.totalC+' C-tier total · '+gDiag.ownedByAmanda+' owned by Amanda · '+gDiag.excludedDupe+' already shown elsewhere in today\'s Workflow)';var gm=el('div','v113-body-empty',gMsg);gm.dataset.v113Distributed='1';growth.appendChild(gm);}
+    if(!growth.querySelector('[data-v113-distributed="1"]')){
+      var gDiag=window._v106GrowthDiag,gMsg;
+      // BUGFIX (2026-08-20): distinguish "no real candidates" from "candidates exist but today's
+      // time budget is full" — these got conflated into one misleading empty-state message before.
+      if(gDiag&&gDiag.overflowed>0){
+        gMsg=gDiag.overflowed+' C → B growth candidate'+(gDiag.overflowed!==1?'s':'')+' ready, but today\'s schedule is full — higher-priority work filled the available time. They will carry forward automatically.';
+      }else{
+        gMsg='No strong C → B candidate is ready right now.';
+        if(gDiag)gMsg+=' ('+gDiag.totalC+' C-tier total · '+gDiag.ownedByAmanda+' owned by Amanda · '+gDiag.excludedDupe+' already shown elsewhere in today\'s Workflow)';
+      }
+      var gm=el('div','v113-body-empty',gMsg);gm.dataset.v113Distributed='1';growth.appendChild(gm);
+    }
     if(!maint.querySelector('[data-v113-distributed="1"]')){var mm=el('div','v113-body-empty','Nothing in Maintenance needs attention right now.');mm.dataset.v113Distributed='1';maint.appendChild(mm);}
   }
   window.v113BuildTodayLayout=build;window.v113DistributeSmart=distribute;
