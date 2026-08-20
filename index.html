@@ -15469,6 +15469,13 @@ console.log('RM Tracker Build v134 · mobile-safe Today fallback');
     return {kind:'tier_growth',minutes:15,owner:'Amanda',name:c.name,item:item,title:'C → B growth · '+(typeof resolvedDisplayName==='function'?resolvedDisplayName(c.name):c.name),why:(typeof v106CandidateWhy==='function'?v106CandidateWhy(c):'Growth opportunity')+' · Next best move: uncover the next buyer/opportunity and book Face Time or a meeting.',growth:c};
   }
   async function v134EnsureGrowthVisible(force){
+    // v146: v134 used to keep a private scheduled copy of this loader alive even after
+    // newer C→B renderers replaced window.v134EnsureGrowthVisible. That private copy could
+    // overwrite a good Step 7 render with the old "could not load" message. Once the
+    // resilient v145 loader exists, delegate to it and never run the legacy renderer again.
+    if(typeof window.v145RefreshCtoB==='function' && window.v145RefreshCtoB!==v134EnsureGrowthVisible){
+      return window.v145RefreshCtoB(force===true);
+    }
     var host=document.getElementById('v113GrowthHost');
     if(!host||typeof wp18FetchData!=='function'||typeof v106BuildTierGrowth!=='function')return;
     try{
@@ -15486,7 +15493,11 @@ console.log('RM Tracker Build v134 · mobile-safe Today fallback');
       host.innerHTML='<div class="v112-growth" data-v134-growth="1"><div class="v112-growth-head"><div><b>C → B Growth Opportunities</b><small>Best Amanda-owned C relationships with evidence to move up.</small></div><span style="font-size:9.5px;font-weight:850;color:#2F6847">'+rows.length+' focus relationship'+(rows.length!==1?'s':'')+'</span></div><div class="v112-growth-grid">'+cards+'</div></div>';
     }catch(e){
       console.warn('v134 C→B visibility',e);
-      if(!host.querySelector('.v112-growth-card'))host.innerHTML='<div class="v113-body-empty" data-v134-growth="1">C → B names could not load right now. Retry the tracker refresh.</div>';
+      // v146: legacy loader must never replace Step 7 with an error state. The resilient
+      // renderer will show cached/live candidates or a single neutral refreshing state.
+      if(!host.querySelector('.v112-growth-card') && typeof window.v145RefreshCtoB!=='function'){
+        host.innerHTML='<div class="v113-body-empty" data-v134-growth="1">C → B opportunities are refreshing.</div>';
+      }
     }
   }
   function scheduleGrowth(force){clearTimeout(V134_GROWTH_TIMER);V134_GROWTH_TIMER=setTimeout(function(){v134EnsureGrowthVisible(force);},120);}
@@ -15902,7 +15913,7 @@ console.log('RM Tracker Build v140.0 · transaction renderer race fixed');
     {name:'James Brandt',stage:'Clear to Close',callType:'CTC Call',role:'Listing'},
     {name:'Jennifer Hochmiller',stage:'Clear to Close',callType:'CTC Call',role:'Listing'},
     {name:'Megan Lynch',stage:'Clear to Close',callType:'CTC Call',role:'Buyer'},
-   
+    {name:'Chris Reed',stage:'New Contract',callType:'Under Contract Call',role:'Buyer'}
   ];
   const TRIGGER_DATE='2026-08-20';
   function k(s){return String(s||'').trim().toLowerCase().replace(/\s+/g,' ');}
@@ -16281,5 +16292,6 @@ console.log('RM Tracker Build v141.0 · known open transaction fallback seeded')
   console.log('RM Tracker Build v145 · C→B resilient last-good render');
 })();
 </script>
+<!-- Internal v146: disabled legacy v134 C→B overwrite path; resilient Step 7 is sole renderer. -->
 </body>
 </html>
