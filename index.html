@@ -16045,5 +16045,64 @@ console.log('RM Tracker Build v141.0 · known open transaction fallback seeded')
   console.log('RM Tracker Build v142.0 · CTC workspace visibility + meeting pace resilience');
 })();
 </script>
+
+<script id="v143-meeting-pace-nonblocking-fix">
+(function(){
+  function v143Today(){try{return typeof today==='function'?today():new Date().toISOString().slice(0,10);}catch(e){return new Date().toISOString().slice(0,10);}}
+  function v143CachedMonthActs(){
+    try{
+      if(typeof rmActsCache!=='undefined'&&rmActsCache&&Array.isArray(rmActsCache.acts))return rmActsCache.acts;
+    }catch(e){}
+    return [];
+  }
+  function v143RenderNow(){
+    var host=document.getElementById('v109NewMeetingPush');if(!host)return;
+    var d=v143Today();
+    try{
+      if(typeof window.v109RenderNewMeetingPush==='function'){
+        window.v109RenderNewMeetingPush([],d,v143CachedMonthActs());
+      }
+    }catch(e){console.warn('v143 immediate meeting pace render failed',e);}
+  }
+  function v143WithTimeout(p,ms){
+    return Promise.race([
+      Promise.resolve(p),
+      new Promise(function(_,reject){setTimeout(function(){reject(new Error('timeout'));},ms);})
+    ]);
+  }
+  async function v143RefreshInBackground(){
+    var d=v143Today(),monthStart=d.slice(0,7)+'-01';
+    // Render first. Network work is never allowed to block Step 5.
+    v143RenderNow();
+    try{
+      if(typeof wp18FetchData==='function')await v143WithTimeout(wp18FetchData(true),7000);
+    }catch(e){console.warn('v143 prospect refresh skipped/timeout',e);}
+    var monthActs=v143CachedMonthActs();
+    try{
+      if(typeof sbFetch==='function'){
+        var fresh=await v143WithTimeout(sbFetch('amanda_activities?select=agent_name,act_type,act_date,outcome,notes&act_date=gte.'+monthStart+'&act_date=lte.'+d+'&limit=5000'),7000);
+        if(Array.isArray(fresh))monthActs=fresh;
+      }
+    }catch(e){console.warn('v143 meeting activity refresh skipped/timeout',e);}
+    try{if(typeof window.v109RenderNewMeetingPush==='function')window.v109RenderNewMeetingPush([],d,monthActs);}catch(e){console.warn('v143 refreshed meeting pace render failed',e);}
+  }
+  // Replace the v142 retry with the nonblocking version.
+  window.v142RetryMeetingPace=function(){
+    var h=document.getElementById('v109NewMeetingPush');
+    if(h)h.innerHTML='<div class="no-data">Building new-meeting pace…</div>';
+    setTimeout(v143RenderNow,10);
+    setTimeout(v143RefreshInBackground,40);
+  };
+  function boot(){
+    v143RenderNow();
+    setTimeout(v143RefreshInBackground,150);
+    setTimeout(v143RenderNow,1200);
+  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
+  document.addEventListener('visibilitychange',function(){if(!document.hidden){v143RenderNow();setTimeout(v143RefreshInBackground,80);}});
+  console.log('RM Tracker Build v143.0 · meeting pace renders before prospect/network refresh');
+})();
+</script>
+
 </body>
 </html>
