@@ -1,5 +1,7 @@
   <!DOCTYPE html>
 <!-- v137: Amanda daily snapshot restored + audit fixes; current operating goals aligned, responsive snapshot, duplicate activity icons corrected -->
+<!-- v139: save/log integrity audit; preserve follow-ups until confirmed save, harden offline replay, Face Time and handled-note history -->
+<!-- v138: transaction visibility guard; newly-added CTC/New Contract calls force-fresh and always stay visible in Step 2 -->
 <!-- v136: C-to-B Director review workflow added; Amanda can send evidence-based growth candidates to Nyny directly from Today -->
 <!-- v135: Amanda Relationship Work ownership fix; all queues now exclude Nyny-owned/strategic/A-B-Channel relationships consistently -->
 
@@ -4108,17 +4110,18 @@ let _activeVoiceRec=null,_activeVoiceBtn=null;
 // ── Clear old follow-up dates for an agent before logging something new — matched by trimmed,
 // case-insensitive name so a stray space or different capitalization doesn't leave a stuck
 // overdue entry behind (exact-string matching silently misses those variants).
-async function clearOldFollowups(name){
+async function clearOldFollowups(name,keepActivityId){
+  const target=(name||"").trim().toLowerCase();
+  if(!target)return{cleared:0,failed:0};
   try{
-    const target=(name||"").trim().toLowerCase();
-    if(!target)return;
-    const rows=await sbFetch("amanda_activities?select=id,agent_name&follow_up_date=not.is.null&limit=2000").catch(()=>[]);
-    const matches=(rows||[]).filter(r=>(r.agent_name||"").trim().toLowerCase()===target);
-    if(!matches.length)return;
-    await Promise.all(matches.map(r=>
-      sbFetch("amanda_activities?id=eq."+r.id,{method:"PATCH",prefer:"return=minimal",body:JSON.stringify({follow_up_date:null})}).catch(()=>{})
-    ));
-  }catch(e){console.error("clearOldFollowups failed:",e);}
+    const rows=await sbFetch("amanda_activities?select=id,agent_name&follow_up_date=not.is.null&limit=2000");
+    const matches=(rows||[]).filter(r=>(r.agent_name||"").trim().toLowerCase()===target&&String(r.id)!==String(keepActivityId||""));
+    if(!matches.length)return{cleared:0,failed:0};
+    const results=await Promise.allSettled(matches.map(r=>sbFetch("amanda_activities?id=eq."+r.id,{method:"PATCH",prefer:"return=minimal",body:JSON.stringify({follow_up_date:null})})));
+    const failed=results.filter(r=>r.status==="rejected").length;
+    if(failed)console.warn("Activity saved; older follow-up cleanup incomplete for",name,failed);
+    return{cleared:matches.length-failed,failed};
+  }catch(e){console.warn("Activity saved; older follow-up cleanup could not run for",name,e);return{cleared:0,failed:1};}
 }
 
 function toggleVoiceNote(textareaId,btnEl){
@@ -4607,18 +4610,20 @@ async function flushOfflineQueue(){
       // A browser can lose the response after Supabase already committed the save. Before replaying
       // an offline item, check whether the exact activity is already there so reconnect cannot create
       // a duplicate. Notes include RM performer/attendee metadata, so exact note matching is useful here.
-      let exists=false;
+      let existingRow=null;
       try{
-        const rows=await sbFetch("amanda_activities?agent_name=ilike."+encodeURIComponent(payload.agent_name)+"&act_type=eq."+encodeURIComponent(payload.act_type)+"&act_date=eq."+payload.act_date+"&select=agent_name,act_type,act_date,outcome,notes,follow_up_date&limit=20");
-        exists=(rows||[]).some(r=>String(r.outcome||"")===String(payload.outcome||"")&&String(r.notes||"")===String(payload.notes||"")&&String(r.follow_up_date||"")===String(payload.follow_up_date||""));
+        const rows=await sbFetch("amanda_activities?agent_name=ilike."+encodeURIComponent(payload.agent_name)+"&act_type=eq."+encodeURIComponent(payload.act_type)+"&act_date=eq."+payload.act_date+"&select=id,agent_name,act_type,act_date,outcome,notes,follow_up_date&limit=20");
+        existingRow=(rows||[]).find(r=>String(r.outcome||"")===String(payload.outcome||"")&&String(r.notes||"")===String(payload.notes||"")&&String(r.follow_up_date||"")===String(payload.follow_up_date||""))||null;
       }catch(checkErr){
         if(isNetworkFailure(checkErr))throw checkErr;
         console.warn("Offline duplicate check failed; keeping item queued rather than risking a duplicate:",checkErr);
         remaining.push(Object.assign({},item,{sync_error:checkErr.message||"Could not verify before sync"}));needsAttention++;continue;
       }
-      if(exists){alreadyThere++;continue;}
-      await sbFetch("amanda_activities",{method:"POST",prefer:"return=minimal",body:JSON.stringify(payload)});
-      synced++;
+      let savedRow=existingRow;
+      if(existingRow){alreadyThere++;}
+      else{const inserted=await sbFetch("amanda_activities",{method:"POST",body:JSON.stringify(payload)});savedRow=inserted&&inserted[0]?inserted[0]:null;synced++;}
+      await clearOldFollowups(payload.agent_name,savedRow&&savedRow.id);
+      await completeActiveFlagAfterActivity(payload.agent_name).catch(()=>{});
     }catch(e){
       // Never silently discard unsynced work. Network failures stay queued automatically; server/schema
       // errors stay queued with the error attached so Amanda can retry after the underlying issue is fixed.
@@ -6979,9 +6984,9 @@ async function logActivity(){
   btn.textContent="Saving...";
   
   try{
-    // Clear existing follow-up dates for this agent before saving new activity
-    await clearOldFollowups(agentName);
     const inserted=await sbFetch("amanda_activities",{method:"POST",body:JSON.stringify({agent_name:agentName,act_type:activityType,act_date:date,outcome,follow_up_date:followupDate,notes:finalNotes})});
+    const insertedRow=inserted&&inserted[0]?inserted[0]:null;
+    await clearOldFollowups(agentName,insertedRow&&insertedRow.id);
     await completeActiveFlagAfterActivity(agentName);
     
     document.getElementById("agentInput").value="";
@@ -6999,7 +7004,7 @@ async function logActivity(){
     vibrateSaved();
 
     if(isNewRealtorMeeting&&!intakeComplete){
-      const row=inserted&&inserted[0]?inserted[0]:null;
+      const row=insertedRow;
       toast("Meeting logged for "+agentName+"! Just a few quick steps left below.","success");
       if(row){
         openIntake={id:row.id,agent_name:agentName,act_date:date,outcome,follow_up_date:followupDate,freeNotes:notes,states:intakeStates};
@@ -7178,7 +7183,10 @@ async function confirmMarkHandled(id,agentName){
   const note=document.getElementById("fu-handled-notes-"+id).value.trim()||null;
   if(countWords(note)<MIN_NOTE_WORDS){toast("Add a note before clearing this — minimum "+MIN_NOTE_WORDS+" words.","error");rmReleaseSaveLock(lockKey);return;}
   try{
-    const patchPayload={follow_up_date:null,edited_at:new Date().toISOString(),notes:note};
+    const current=await sbFetch("amanda_activities?id=eq."+id+"&select=notes&limit=1");
+    const prior=current&&current[0]?String(current[0].notes||"").trim():"";
+    const handledStamp="[FOLLOW_UP_HANDLED "+today()+"] "+note;
+    const patchPayload={follow_up_date:null,edited_at:new Date().toISOString(),notes:prior?(prior+"\n\n"+handledStamp):handledStamp};
     await sbFetch("amanda_activities?id=eq."+id,{method:"PATCH",prefer:"return=minimal",body:JSON.stringify(patchPayload)});
     toast(agentName+" marked as handled ✓","success");
     await rmRefreshAfterMutation("follow-up marked handled");
@@ -7919,11 +7927,11 @@ async function nynyQuickSave(){
     const nynyRms=[document.getElementById("nynyRmNyny")?.checked?"Nyny":"",document.getElementById("nynyRmAmanda")?.checked?"Amanda":""].filter(Boolean);if(!leadership&&!nynyRms.length){toast("Select at least one RM involved.","error");return;}const nynyLp=(document.getElementById("nynyLpAttendee")?.value||"").trim(),nynyNext=(document.getElementById("nynyNextStepOwner")?.value||"").trim();if((outcome==="Requires follow-up"||outcome==="Meeting Scheduled")&&!nynyNext){toast("Choose who owns the next step before saving.","error");return;}notes=appendRmMeta(notes,"Nyny",focus,"",leadership?["Nyny"]:(nynyRms.length?nynyRms:["Nyny"]),nynyLp?[nynyLp]:[],nynyNext);
   const btn=document.getElementById("nynyQuickSaveBtn");if(btn){btn.disabled=true;btn.textContent="Saving...";}
   try{
-    if(!leadership)await clearOldFollowups(agent);
-    await sbFetch("amanda_activities",{method:"POST",prefer:"return=minimal",body:JSON.stringify({
+    const inserted=await sbFetch("amanda_activities",{method:"POST",body:JSON.stringify({
       agent_name:agent,act_type:type,act_date:today(),outcome,notes,
       follow_up_date:(outcome==="Requires follow-up"||outcome==="Meeting Scheduled")?followup:null
     })});
+    if(!leadership){const insertedRow=inserted&&inserted[0]?inserted[0]:null;await clearOldFollowups(agent,insertedRow&&insertedRow.id);}
     const msg=document.getElementById("nynyQuickMsg");if(msg){msg.style.display="block";msg.textContent="✓ "+(leadership?type:agent+" — "+type)+" logged for Nyny";}
     vibrateSaved();
     document.getElementById("nynyQuickAgent").value="";
@@ -8018,12 +8026,12 @@ async function ccSave(){
   const btn = document.querySelector('[onclick="ccSave()"]');
   if(btn){btn.disabled=true;btn.textContent="Saving...";}
   try{
-    // Clear existing follow-up dates for this agent
-    await clearOldFollowups(name);
-    // 1. Log the cold call activity
-    await sbFetch("amanda_activities",{method:"POST",prefer:"return=minimal",body:JSON.stringify({
+    // v139: save first, then clear the superseded follow-up so a failed POST can never erase the old task.
+    const inserted=await sbFetch("amanda_activities",{method:"POST",body:JSON.stringify({
       agent_name:name, act_type:"Cold Calls", act_date:today(), outcome, notes, follow_up_date:outcome==="Requires follow-up"?new Date(Date.now()+3*86400000).toISOString().split("T")[0]:(outcome==="Meeting Scheduled"?scheduledDate:null)
     })});
+    const insertedRow=inserted&&inserted[0]?inserted[0]:null;
+    await clearOldFollowups(name,insertedRow&&insertedRow.id);
 
     // 2–3. Pipeline sync is SECONDARY to the actual call log. If this lookup/update fails,
     // the call is still saved; do not tell Amanda "Save failed" and tempt her to log it twice.
@@ -8081,8 +8089,7 @@ async function ccSave(){
     if(document.getElementById('ccDoubleDialWarn'))document.getElementById('ccDoubleDialWarn').style.display='none';
     document.getElementById('ccAcList').classList.remove('open');
     setTimeout(()=>{if(msg)msg.style.display='none';},3000);
-    loadWeek();loadStartHere();
-    try{_wp18Cache=null;_wp18CacheAt=0;setTimeout(()=>v23LoadAmandaSnapshot(true),80);}catch(e){}
+    await rmRefreshAfterMutation("cold call saved");
   }catch(e){
     toast("Save failed: "+e.message,"error");
   }finally{
@@ -8513,10 +8520,10 @@ async function saveCtcWorkflow(copyAfter){
     if((s.outcome==="Meeting Scheduled"||s.relationship==="Meeting scheduled")&&!s.meetingDate){toast("Add the meeting date for "+s.name+".","error");return;}
   }
   const buttons=document.querySelectorAll('#ctcWorkflowPanel button');buttons.forEach(b=>b.disabled=true);
+  let secondarySyncWarnings=0;
   try{
     for(const s of entered){
-      await ctcUpsertContact(s.name,s.phone,s.email);
-      await clearOldFollowups(s.name);
+      try{await ctcUpsertContact(s.name,s.phone,s.email);}catch(profileErr){secondarySyncWarnings++;console.warn("CTC activity will still save; contact sync failed",profileErr);}
       const fu=(s.outcome==="Meeting Scheduled"||s.relationship==="Meeting scheduled")?s.meetingDate:(s.outcome==="Requires follow-up"||s.relationship==="Interested — follow up"?localDateStr(new Date(Date.now()+3*86400000)):null);
       const tx=wp33CurrentTxnContext(s.name,"CTC Call",s.role);
       const fallbackTxnId=wp33MakeTxnId("Clear to Close",[borrower,property].filter(Boolean).join(" · "),ctcField("ctcBuyerAgent"),ctcField("ctcSellerAgent"),today());
@@ -8525,21 +8532,22 @@ async function saveCtcWorkflow(copyAfter){
       // Retry-safe CTC save: if one side saved and a later step failed, clicking Save again must
       // not create a second CTC Call for the same transaction + role.
       const existingCalls=await sbFetch("amanda_activities?agent_name=eq."+encodeURIComponent(s.name)+"&act_type=eq."+encodeURIComponent("CTC Call")+"&act_date=gte."+today()+"&select=id,notes,outcome,act_date&limit=100");
-      const alreadySaved=(existingCalls||[]).some(r=>wp33TxnId(r.notes)===effectiveTxnId&&String(wp30TxnRole(r.notes)||"").toLowerCase()===s.role.toLowerCase());
-      if(!alreadySaved)await sbFetch("amanda_activities",{method:"POST",prefer:"return=minimal",body:JSON.stringify({agent_name:s.name,act_type:"CTC Call",act_date:today(),outcome:s.outcome,notes:ctcNotes,follow_up_date:fu})});
-      await ctcSyncOpportunity(s.name,s.phone,s.email,s.relationship,s.meetingDate,s.role.toLowerCase()+" agent");
+      const existingSaved=(existingCalls||[]).find(r=>wp33TxnId(r.notes)===effectiveTxnId&&String(wp30TxnRole(r.notes)||"").toLowerCase()===s.role.toLowerCase());
+      let savedRow=existingSaved||null;
+      if(!savedRow){const inserted=await sbFetch("amanda_activities",{method:"POST",body:JSON.stringify({agent_name:s.name,act_type:"CTC Call",act_date:today(),outcome:s.outcome,notes:ctcNotes,follow_up_date:fu})});savedRow=inserted&&inserted[0]?inserted[0]:null;}
+      await clearOldFollowups(s.name,savedRow&&savedRow.id);
+      await completeActiveFlagAfterActivity(s.name).catch(()=>{});
+      try{await ctcSyncOpportunity(s.name,s.phone,s.email,s.relationship,s.meetingDate,s.role.toLowerCase()+" agent");}catch(opErr){secondarySyncWarnings++;console.warn("CTC activity saved; opportunity sync failed",opErr);}
     }
     if(copyAfter)await ctcCopyWhatsApp();
     const savedCount=entered.length;
     window._wp33TxnContext=null;
     try{_wp18Cache=null;_wp18CacheAt=0;}catch(e){}
     ctcResetForm();
-    const msg=document.getElementById("ctcSaveMsg");if(msg){msg.style.display="block";msg.textContent="✓ CTC saved for "+savedCount+" agent"+(savedCount===1?"":"s")+(copyAfter?" + WhatsApp copied":"")+" · completed call(s) cleared from workflow";}
+    const msg=document.getElementById("ctcSaveMsg");if(msg){msg.style.display="block";msg.style.color=secondarySyncWarnings?"var(--warning)":"var(--success)";msg.textContent="✓ CTC activity saved for "+savedCount+" agent"+(savedCount===1?"":"s")+(copyAfter?" + WhatsApp copied":"")+(secondarySyncWarnings?" · "+secondarySyncWarnings+" secondary contact/opportunity update(s) need refresh — do NOT log the CTC again":" · completed call(s) cleared from workflow");}
     vibrateSaved();
-    loadWeek();loadFeed();loadContacts?.();loadPipeline?.();initAutocomplete();
-    try{await loadStartHere();}catch(e){}
-    try{await loadWeeklyWorkPlans(true);}catch(e){}
-    try{await v23LoadAmandaSnapshot(true);}catch(e){}
+    loadContacts?.();loadPipeline?.();initAutocomplete();
+    await rmRefreshAfterMutation("CTC workflow saved");
     setTimeout(()=>{if(msg)msg.style.display="none";},5000);
   }catch(e){toast("CTC save failed: "+e.message,"error");}
   finally{buttons.forEach(b=>b.disabled=false);}
@@ -8621,10 +8629,9 @@ async function quickLogSave(){
       console.warn("Quick Log duplicate check could not run:",e);
     }
     if(btn)btn.textContent="Saving...";
-    // Clear any existing follow-up dates for this agent — otherwise an old overdue follow-up
-    // stays flagged forever even after she's logged something new with them.
-    await clearOldFollowups(agentName);
-    await sbFetch("amanda_activities",{method:"POST",prefer:"return=minimal",body:JSON.stringify({agent_name:agentName,act_type:actType,act_date:today(),outcome,notes,follow_up_date:(outcome==="Requires follow-up"||outcome==="Meeting Scheduled")?followupDate:null})});
+    const inserted=await sbFetch("amanda_activities",{method:"POST",body:JSON.stringify({agent_name:agentName,act_type:actType,act_date:today(),outcome,notes,follow_up_date:(outcome==="Requires follow-up"||outcome==="Meeting Scheduled")?followupDate:null})});
+    const insertedRow=inserted&&inserted[0]?inserted[0]:null;
+    await clearOldFollowups(agentName,insertedRow&&insertedRow.id);
     await completeActiveFlagAfterActivity(agentName);
     if(txnCtx&&String(txnCtx.role).toLowerCase()==="listing")await wp33SyncListingOpportunity(agentName,outcome,followupDate,notes).catch(()=>{});
     if(txnCtx)window._wp33TxnContext=null;
@@ -8645,7 +8652,7 @@ async function quickLogSave(){
     if(document.getElementById("quickLogDoubleDialWarn"))document.getElementById("quickLogDoubleDialWarn").style.display="none";
     document.getElementById("quickLogAcList").classList.remove("open");
     setTimeout(()=>{if(msg)msg.style.display="none";},3000);
-    loadWeek();loadFeed();loadStartHere();
+    await rmRefreshAfterMutation("quick activity saved");
   }catch(e){
     if(isNetworkFailure(e)){
       queueOffline(agentName,actType,today(),outcome,notes,(outcome==="Requires follow-up"||outcome==="Meeting Scheduled")?followupDate:null);
@@ -12521,8 +12528,13 @@ async function wp30SaveTransactionTrigger(){
     ["wp30TxnBuyerAgent","wp30TxnListingAgent","wp30TxnClient","wp30TxnProperty"].forEach(id=>{const el=document.getElementById(id);if(el)el.value="";});
     const d=document.getElementById("wp30TxnIntakeDetails");if(d)d.open=false;
     _wp18Cache=null;_wp18CacheAt=0;
-    await v23LoadAmandaSnapshot(true);if(v21Date()===today())setTimeout(()=>v21LoadDailyPlan(true),40);
-    toast(added?(added+" mandatory transaction call"+(added!==1?"s":"")+" added to the Workflow ✓"):("Already added — no duplicate transaction calls were created."),"success",3600);
+    // v138: do not merely save — rebuild Amanda's visible Today workflow from a fresh DB read.
+    await v23LoadAmandaSnapshot(true);
+    if(v21Date()===today())await v21LoadDailyPlan(true);
+    // The v113 distributor normally reacts via MutationObserver; call it once more on the next tick
+    // so the urgent rows are moved into Step 2 immediately even on slower/mobile browsers.
+    setTimeout(()=>{try{if(typeof window.v138RedistributeUrgent==="function")window.v138RedistributeUrgent();}catch(e){}},0);
+    toast(added?(added+" mandatory transaction call"+(added!==1?"s":"")+" added — see Step 2: Urgent / mandatory work ✓"):("Already added — the existing mandatory call remains in Step 2 until completed."),"success",4200);
   }catch(e){toast("Could not add transaction calls: "+e.message,"error",5500);}
   finally{if(btn){btn.disabled=false;btn.textContent="Add calls";}}
 }
@@ -12654,7 +12666,15 @@ async function wp29RemoveProspectRowsFromRelationshipQueue(rows){
 
 async function wp18FetchData(force){
   if(!force&&_wp18Cache&&Date.now()-_wp18CacheAt<30000)return _wp18Cache;
-  if(_wp18Loading)return _wp18Loading;
+  // v138: a true force refresh must NEVER reuse an in-flight request that started before a save.
+  // That race made newly-added New Contract / CTC triggers save successfully but fail to appear
+  // in Amanda's Urgent / Mandatory section until a later refresh. Wait for the stale request to
+  // finish, then immediately issue a fresh read so the just-saved transaction is included.
+  if(_wp18Loading){
+    if(!force)return _wp18Loading;
+    try{await _wp18Loading;}catch(e){}
+    _wp18Loading=null;
+  }
   _wp18Loading=(async()=>{
     const w=wpWeek();let profiles=[];
     try{profiles=await sbFetch("agent_profiles?select=agent_name,tier,powerbi_level,powerbi_last_seen_at,retained,relationship_status,do_not_contact,email,phone,address,birthday,relationship_type,strategic_partner_category,next_growth_opportunity,growth_opportunity_deadline,last_meaningful_contact_date,next_meeting_date,latest_lead_date,competitor_risk_flag,high_potential_flag,satisfaction_rating,partner_goals,partner_pain_points,referral_leakage_notes,closes_past_year,total_leads_past_year&limit=5000");}
@@ -13132,6 +13152,16 @@ function v21RenderOwner(owner,hostId,capId,blocks,items,data,acts,monthActs,sche
   const host=document.getElementById(hostId),cap=document.getElementById(capId);if(!host)return;
   const busy=v21MergedBusy(blocks),busyMin=busy.reduce((n,x)=>n+x[1]-x[0],0),free=v21Free(blocks),freeMin=480-busyMin;
   const build=v21BuildTasks(owner,items,data,acts,monthActs,date,freeMin),alloc=v21Allocate(build.tasks,free);
+  // v138: urgent/escalation + mandatory transaction work is never allowed to disappear into
+  // capacity overflow. Calendar capacity may change *when* Amanda does it, not whether she sees it.
+  // Keep these rows visible at the top even on a fully-blocked day.
+  const mustStayVisible=(alloc.overflow||[]).filter(t=>t&& (t.kind==="escalation"||t.kind==="transaction"));
+  if(mustStayVisible.length){
+    alloc.overflow=(alloc.overflow||[]).filter(t=>!(t&& (t.kind==="escalation"||t.kind==="transaction")));
+    const seenMandatory=new Set((alloc.planned||[]).filter(t=>t&& (t.kind==="escalation"||t.kind==="transaction")).map(t=>(t.kind||"")+"|"+wp18Key(t.name||"")+"|"+String(t.txn&&t.txn.txnId||"")+"|"+String(t.txn&&t.txn.role||"")));
+    const add=mustStayVisible.filter(t=>{const k=(t.kind||"")+"|"+wp18Key(t.name||"")+"|"+String(t.txn&&t.txn.txnId||"")+"|"+String(t.txn&&t.txn.role||"");if(seenMandatory.has(k))return false;seenMandatory.add(k);return true;});
+    alloc.planned=add.concat(alloc.planned||[]);
+  }
   // BUGFIX (2026-08-20): tier_growth candidates are real (v106AmandaGrowthTasks already found and
   // scored them) but were being silently dropped from Step 7 whenever today's time budget filled up
   // with higher-priority work first (v21Allocate pushes anything that doesn't fit into overflow, and
@@ -13805,9 +13835,9 @@ async function v101OpenFaceTimeModal(name,lp,id){
   m.style.display='flex';
 }
 function v101CloseFaceTimeModal(){var m=document.getElementById('v101FaceTimeModal');if(m)m.style.display='none';}
-async function v101SaveFaceTime(){var id=document.getElementById('v101FtId').value,name=document.getElementById('v101FtAgent').value,date=document.getElementById('v101FtDate').value,time=document.getElementById('v101FtTime').value||null,lp=document.getElementById('v101FtLp').value||null,rm=document.getElementById('v101FtRm').value||'Amanda',notes=document.getElementById('v101FtNotes').value.trim()||null;if(!name||!date){toast('Choose the relationship and date.','error');return;}var body={agent_name:name,event_date:date,event_time:time,lp:lp,rm:rm,status:'scheduled',notes:notes,created_by:'RM Tracker',updated_at:new Date().toISOString()};try{if(id)await sbFetch('face_time_events?id=eq.'+encodeURIComponent(id),{method:'PATCH',prefer:'return=minimal',body:JSON.stringify(body)});else await sbFetch('face_time_events',{method:'POST',prefer:'return=minimal',body:JSON.stringify(body)});v101CloseFaceTimeModal();toast('Face Time booked · shared with LP tracker ✓','success',2800);await loadBreakBreadDue();try{v23LoadAmandaSnapshot(true);}catch(e){}}catch(e){toast('Face Time booking could not save. Run the shared Face Time SQL if needed.','error',4200);}}
+async function v101SaveFaceTime(){if(window._v139FaceTimeBooking)return;var id=document.getElementById('v101FtId').value,name=document.getElementById('v101FtAgent').value,date=document.getElementById('v101FtDate').value,time=document.getElementById('v101FtTime').value||null,lp=document.getElementById('v101FtLp').value||null,rm=document.getElementById('v101FtRm').value||'Amanda',notes=document.getElementById('v101FtNotes').value.trim()||null;if(!name||!date){toast('Choose the relationship and date.','error');return;}var body={agent_name:name,event_date:date,event_time:time,lp:lp,rm:rm,status:'scheduled',notes:notes,created_by:'RM Tracker',updated_at:new Date().toISOString()};window._v139FaceTimeBooking=true;try{if(id)await sbFetch('face_time_events?id=eq.'+encodeURIComponent(id),{method:'PATCH',prefer:'return=minimal',body:JSON.stringify(body)});else{var dup=await sbFetch('face_time_events?agent_name=eq.'+encodeURIComponent(name)+'&event_date=eq.'+encodeURIComponent(date)+'&status=eq.scheduled&select=id&limit=5').catch(()=>[]);if((dup||[]).length){toast('Face Time is already scheduled for '+name+' on this date.','error',4200);return;}await sbFetch('face_time_events',{method:'POST',prefer:'return=minimal',body:JSON.stringify(body)});}v101CloseFaceTimeModal();toast('Face Time booked · shared with LP tracker ✓','success',2800);await rmRefreshAfterMutation('Face Time booked');}catch(e){toast('Face Time booking could not save: '+(e.message||'Unknown error'),'error',4200);}finally{window._v139FaceTimeBooking=false;}}
 async function v101CancelFaceTime(){var id=document.getElementById('v101FtId').value;if(!id)return;try{await sbFetch('face_time_events?id=eq.'+encodeURIComponent(id),{method:'PATCH',prefer:'return=minimal',body:JSON.stringify({status:'cancelled',updated_at:new Date().toISOString()})});v101CloseFaceTimeModal();toast('Face Time booking cancelled.','success');await loadBreakBreadDue();}catch(e){toast('Could not cancel booking.','error');}}
-async function v101CompleteFaceTime(){var id=document.getElementById('v101FtId').value,name=document.getElementById('v101FtAgent').value,date=document.getElementById('v101FtDate').value||today(),lp=document.getElementById('v101FtLp').value||null,rm=document.getElementById('v101FtRm').value||'Amanda',notes=document.getElementById('v101FtNotes').value.trim()||'Face Time completed.';if(!name)return;try{await sbFetch('break_breads',{method:'POST',prefer:'return=minimal',body:JSON.stringify({agent_name:name,date:date,logged_by:rm+(lp?' + '+lp:''),notes:notes})});if(id)await sbFetch('face_time_events?id=eq.'+encodeURIComponent(id),{method:'PATCH',prefer:'return=minimal',body:JSON.stringify({status:'completed',completed_by:rm+(lp?' + '+lp:''),notes:notes,updated_at:new Date().toISOString()})});if(/Amanda/i.test(rm)){await sbFetch('amanda_activities',{method:'POST',prefer:'return=minimal',body:JSON.stringify({agent_name:name,act_type:'Break Breads',act_date:date,outcome:'Positive',notes:notes+' [RM_ATTENDEES:'+rm+']'+(lp?' [LP_ATTENDEE:'+lp+']':''),follow_up_date:null})}).catch(function(){});}v101CloseFaceTimeModal();toast('Face Time completed and shared ✓','success',3000);await rmRefreshAfterMutation('Face Time completed');}catch(e){toast('Could not complete Face Time.','error',4200);}}
+async function v101CompleteFaceTime(){if(window._v139FaceTimeSaving)return;var id=document.getElementById('v101FtId').value,name=document.getElementById('v101FtAgent').value,date=document.getElementById('v101FtDate').value||today(),lp=document.getElementById('v101FtLp').value||null,rm=document.getElementById('v101FtRm').value||'Amanda',notes=document.getElementById('v101FtNotes').value.trim()||'Face Time completed.';if(!name)return;window._v139FaceTimeSaving=true;try{var bb=await sbFetch('break_breads?agent_name=eq.'+encodeURIComponent(name)+'&date=eq.'+encodeURIComponent(date)+'&select=id,agent_name,date&limit=5').catch(()=>[]);if(!(bb||[]).length)await sbFetch('break_breads',{method:'POST',prefer:'return=minimal',body:JSON.stringify({agent_name:name,date:date,logged_by:rm+(lp?' + '+lp:''),notes:notes})});if(id)await sbFetch('face_time_events?id=eq.'+encodeURIComponent(id),{method:'PATCH',prefer:'return=minimal',body:JSON.stringify({status:'completed',completed_by:rm+(lp?' + '+lp:''),notes:notes,updated_at:new Date().toISOString()})});if(/Amanda/i.test(rm)){var acts=await sbFetch('amanda_activities?agent_name=eq.'+encodeURIComponent(name)+'&act_type=eq.'+encodeURIComponent('Break Breads')+'&act_date=eq.'+encodeURIComponent(date)+'&select=id,notes&limit=10').catch(()=>[]);if(!(acts||[]).length)await sbFetch('amanda_activities',{method:'POST',prefer:'return=minimal',body:JSON.stringify({agent_name:name,act_type:'Break Breads',act_date:date,outcome:'Positive',notes:notes+' [RM_ATTENDEES:'+rm+']'+(lp?' [LP_ATTENDEE:'+lp+']':''),follow_up_date:null})});}v101CloseFaceTimeModal();toast('Face Time completed and shared ✓','success',3000);await rmRefreshAfterMutation('Face Time completed');}catch(e){console.error('Face Time save failed',e);toast('Could not fully save Face Time: '+(e.message||'Unknown error')+'. Nothing is being silently marked complete.','error',5200);}finally{window._v139FaceTimeSaving=false;}}
 </script>
 
 <script>
@@ -15132,8 +15162,9 @@ console.log("RM Tracker Build v126.0 · live relationship queues · 221-row reco
       const emoji={Call:'☎️',Text:'📱',Email:'✉️','In Person':'🤝',Video:'💻'}[method]||'☎️';notes=emoji+' '+notes;
       const next=(outcome==='Requires follow-up'||outcome==='Meeting Scheduled')?st.owner:'';
       if(typeof appendRmMeta==='function')notes=appendRmMeta(notes,st.owner,'','',[st.owner],[],next);
-      await clearOldFollowups(st.name);
-      await sbFetch('amanda_activities',{method:'POST',prefer:'return=minimal',body:JSON.stringify({agent_name:st.name,act_type:type,act_date:(typeof today==='function'?today():new Date().toISOString().slice(0,10)),outcome:outcome,notes:notes,follow_up_date:(outcome==='Requires follow-up'||outcome==='Meeting Scheduled')?fu:null})});
+      const inserted=await sbFetch('amanda_activities',{method:'POST',body:JSON.stringify({agent_name:st.name,act_type:type,act_date:(typeof today==='function'?today():new Date().toISOString().slice(0,10)),outcome:outcome,notes:notes,follow_up_date:(outcome==='Requires follow-up'||outcome==='Meeting Scheduled')?fu:null})});
+      const insertedRow=inserted&&inserted[0]?inserted[0]:null;
+      await clearOldFollowups(st.name,insertedRow&&insertedRow.id);
       const ownerEl=document.getElementById('activityOwner'),prevOwner=ownerEl?ownerEl.value:null;if(ownerEl)ownerEl.value=st.owner;try{if(typeof completeActiveFlagAfterActivity==='function')await completeActiveFlagAfterActivity(st.name);}finally{if(ownerEl&&prevOwner!=null)ownerEl.value=prevOwner;}
       await markReconnect({...st,type});
       if(typeof vibrateSaved==='function')vibrateSaved();
@@ -15728,5 +15759,24 @@ console.log('RM Tracker Build v136.0 · Amanda simplicity pass · execution firs
   - Existing-partner snapshot counts all qualifying existing meetings, not only Break Breads.
   - Role-to-date goal scaling is date-safe across calendar years.
 -->
+
+<script id="v138-transaction-visibility-guard">
+(function(){
+  window.v138RedistributeUrgent=function(){
+    const src=document.getElementById('v22AmandaSnapshotPlan'),urgent=document.getElementById('v113UrgentHost');
+    if(!src||!urgent)return;
+    // Remove only previously-distributed urgent renderer blocks, never the Add New Contract / CTC form.
+    Array.from(urgent.children).forEach(function(n){if(n.dataset&&n.dataset.v113Distributed==='1')n.remove();});
+    const urgentNodes=Array.from(src.children).filter(function(n){return n.classList&&n.classList.contains('v112-urgent');});
+    urgentNodes.forEach(function(n){n.dataset.v113Distributed='1';urgent.appendChild(n);});
+    if(!urgentNodes.length){
+      const em=document.createElement('div');em.className='v113-body-empty';em.dataset.v113Distributed='1';em.textContent='Nothing urgent right now.';urgent.insertBefore(em,urgent.firstChild);
+    }
+  };
+  // Any successful transaction intake should become visible immediately, including on mobile browsers
+  // whose MutationObserver delivery can lag behind the save/refresh promise chain.
+  document.addEventListener('visibilitychange',function(){if(!document.hidden)setTimeout(window.v138RedistributeUrgent,80);});
+})();
+</script>
 </body>
 </html>
