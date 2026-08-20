@@ -1,4 +1,4 @@
- <!DOCTYPE html>
+  <!DOCTYPE html>
 <!-- v140: fixes Step 2 transaction renderer race; saved/open CTC and New Contract tasks are no longer erased after successful distribution -->
 <!-- v137: Amanda daily snapshot restored + audit fixes; current operating goals aligned, responsive snapshot, duplicate activity icons corrected -->
 <!-- v139: save/log integrity audit; preserve follow-ups until confirmed save, harden offline replay, Face Time and handled-note history -->
@@ -912,7 +912,7 @@ html,body,button,input,select,textarea{font-family:var(--rm-native-font)!importa
 .v106-pipeline-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}.v106-stage{border:1px solid #D7DFD8;border-radius:12px;background:#fff;overflow:hidden}.v106-stage-head{padding:10px 11px;background:#F4F7F4;border-bottom:1px solid #DDE5DE}.v106-stage-head b{font-size:12px;color:#29463A}.v106-stage-head small{display:block;font-size:9.8px;color:#718077;margin-top:2px}.v106-candidate{padding:9px 10px;border-bottom:1px solid #EDF1EE}.v106-candidate:last-child{border-bottom:0}.v106-candidate-name{font-size:11.5px;font-weight:800;color:#26352D}.v106-candidate-why{font-size:9.8px;color:#69766E;line-height:1.4;margin-top:3px}.v106-actions{display:flex;gap:5px;flex-wrap:wrap;margin-top:6px}.v106-actions button{font:700 9.5px Arial,Helvetica,sans-serif;padding:5px 7px;border-radius:6px;cursor:pointer;border:1px solid #C8D4CB;background:#fff;color:#385547}.v106-actions button.primary{background:#557565;color:#fff;border-color:#557565}
 @media(max-width:900px){.v106-goal-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.v106-pipeline-grid{grid-template-columns:1fr}}
 </style>
-<div id="rmBuildBadge" style="position:fixed;right:10px;bottom:8px;z-index:9999;font-size:10px;padding:3px 6px;border-radius:6px;background:rgba(91,68,152,.12);color:#5B4498;pointer-events:none">Build v141 · Transactions Preseeded</div>
+<div id="rmBuildBadge" style="position:fixed;right:10px;bottom:8px;z-index:9999;font-size:10px;padding:3px 6px;border-radius:6px;background:rgba(91,68,152,.12);color:#5B4498;pointer-events:none">Build v142 · CTC Popup + Pace Fixed</div>
 <div class="header">
 <div class="brand-wrap">
 <span class="brand-chip">RM TRACKER</span>
@@ -15962,5 +15962,88 @@ console.log('RM Tracker Build v140.0 · transaction renderer race fixed');
 console.log('RM Tracker Build v141.0 · known open transaction fallback seeded');
 </script>
 
+
+<script id="v142-ctc-popup-pace-resilience">
+(function(){
+  // v142: The Amanda simplicity pass hides Quick Log with !important. A normal element.style.display
+  // assignment cannot override that rule, so transaction buttons could execute correctly while the
+  // CTC workspace remained invisible. Reveal with an !important inline declaration only when an
+  // explicit workflow action asks to open it.
+  window.v142RevealQuickLog=function(){
+    const card=document.getElementById('quickLogCard'),label=document.getElementById('v104QuickLogLabel');
+    if(label)label.style.setProperty('display','block','important');
+    if(card){
+      card.style.setProperty('display','block','important');
+      card.style.setProperty('opacity','1','important');
+    }
+  };
+  const oldReveal=window.v109RevealQuickLog;
+  window.v109RevealQuickLog=function(){
+    v142RevealQuickLog();
+    const card=document.getElementById('quickLogCard');
+    if(card)setTimeout(function(){card.scrollIntoView({behavior:'smooth',block:'start'});},20);
+    return card;
+  };
+
+  const oldTxnOpen=window.wp30OpenTransactionTask;
+  if(typeof oldTxnOpen==='function'){
+    window.wp30OpenTransactionTask=async function(name,callType,role,owner,txnId){
+      v142RevealQuickLog();
+      try{switchQuickLogTab('talkto');}catch(e){}
+      if(callType==='CTC Call'){
+        const type=document.getElementById('quickLogType');
+        if(type){type.value='CTC Call';try{type.dispatchEvent(new Event('change',{bubbles:true}));}catch(e){}}
+        const panel=document.getElementById('ctcWorkflowPanel');
+        if(panel)panel.style.setProperty('display','block','important');
+      }
+      try{
+        const r=await oldTxnOpen.apply(this,arguments);
+        v142RevealQuickLog();
+        if(callType==='CTC Call'){
+          const panel=document.getElementById('ctcWorkflowPanel');
+          if(panel){panel.style.setProperty('display','block','important');setTimeout(function(){panel.scrollIntoView({behavior:'smooth',block:'start'});},35);}
+        }
+        return r;
+      }catch(e){
+        console.error('v142 transaction workflow open failed',e);
+        v142RevealQuickLog();
+        const panel=document.getElementById('ctcWorkflowPanel');
+        if(callType==='CTC Call'&&panel){panel.style.setProperty('display','block','important');panel.scrollIntoView({behavior:'smooth',block:'start'});}
+        if(typeof toast==='function')toast('The call workspace opened, but some transaction details could not auto-fill. You can still log the call.','error',5000);
+      }
+    };
+  }
+
+  // If the daily plan does not reach the new-meeting renderer, never leave Amanda staring at
+  // "Building new-meeting pace…" forever. Re-render that card independently from the same live
+  // prospect cache and current-month meeting activity.
+  let paceBusy=false;
+  async function ensureMeetingPace(){
+    const host=document.getElementById('v109NewMeetingPush');
+    if(!host||paceBusy)return;
+    const txt=(host.textContent||'').trim();
+    if(!/Building new-meeting pace/i.test(txt))return;
+    paceBusy=true;
+    try{
+      const d=(typeof today==='function'?today():new Date().toISOString().slice(0,10));
+      const monthStart=d.slice(0,7)+'-01';
+      try{
+        if((!window._wp18Cache||!Array.isArray(window._wp18Cache.prospectPool))&&typeof wp18FetchData==='function')await wp18FetchData(true);
+      }catch(e){console.warn('v142 prospect refresh failed',e);}
+      let monthActs=[];
+      try{
+        if(typeof sbFetch==='function')monthActs=await sbFetch('amanda_activities?select=agent_name,act_type,act_date,outcome,notes&act_date=gte.'+monthStart+'&act_date=lte.'+d+'&limit=5000');
+      }catch(e){console.warn('v142 meeting pace activity read failed',e);}
+      if(typeof window.v109RenderNewMeetingPush==='function')window.v109RenderNewMeetingPush([],d,Array.isArray(monthActs)?monthActs:[]);
+      if(/Building new-meeting pace/i.test(host.textContent||''))host.innerHTML='<div style="padding:12px;font-size:11px;color:var(--text-3)">Meeting pace could not refresh automatically. <button type="button" class="btn-sm" onclick="v142RetryMeetingPace()">Retry</button></div>';
+    }finally{paceBusy=false;}
+  }
+  window.v142RetryMeetingPace=function(){const h=document.getElementById('v109NewMeetingPush');if(h)h.innerHTML='<div class="no-data">Building new-meeting pace…</div>';setTimeout(ensureMeetingPace,20);};
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',function(){setTimeout(ensureMeetingPace,1800);setTimeout(ensureMeetingPace,5000);},{once:true});
+  else{setTimeout(ensureMeetingPace,800);setTimeout(ensureMeetingPace,3500);}
+  document.addEventListener('visibilitychange',function(){if(!document.hidden)setTimeout(ensureMeetingPace,250);});
+  console.log('RM Tracker Build v142.0 · CTC workspace visibility + meeting pace resilience');
+})();
+</script>
 </body>
 </html>
