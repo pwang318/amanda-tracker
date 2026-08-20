@@ -1,4 +1,4 @@
- <!DOCTYPE html>
+  <!DOCTYPE html>
 <!-- v140: fixes Step 2 transaction renderer race; saved/open CTC and New Contract tasks are no longer erased after successful distribution -->
 <!-- v137: Amanda daily snapshot restored + audit fixes; current operating goals aligned, responsive snapshot, duplicate activity icons corrected -->
 <!-- v139: save/log integrity audit; preserve follow-ups until confirmed save, harden offline replay, Face Time and handled-note history -->
@@ -15923,103 +15923,33 @@ console.log('RM Tracker Build v140.0 · transaction renderer race fixed');
 
 <script id="v141-preseed-known-open-transactions">
 (function(){
-  const SEEDS=[
-    {name:'Haifa Brunney',stage:'Clear to Close',callType:'CTC Call',role:'Buyer',pairWith:'James Brandt'},
-    {name:'James Brandt',stage:'Clear to Close',callType:'CTC Call',role:'Listing',pairWith:'Haifa Brunney'},
-    {name:'Jennifer Hochmiller',stage:'Clear to Close',callType:'CTC Call',role:'Listing',pairWith:'Megan Lynch'},
-    {name:'Megan Lynch',stage:'Clear to Close',callType:'CTC Call',role:'Buyer',pairWith:'Jennifer Hochmiller'}
+  const FILES=[
+    {stage:'Clear to Close',callType:'CTC Call',buyer:'Haifa Brunney',listing:'James Brandt'},
+    {stage:'Clear to Close',callType:'CTC Call',buyer:'Megan Lynch',listing:'Jennifer Hochmiller'}
   ];
   const TRIGGER_DATE='2026-08-20';
   function k(s){return String(s||'').trim().toLowerCase().replace(/\s+/g,' ');}
-  function escapeHtml(s){return String(s||'').replace(/[&<>\"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;'}[c]||c;});}
-  function jsq(s){return String(s||'').replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/\r?\n/g,' ');}
-  function seedCompleted(seed){
-    try{
-      // BUGFIX (2026-08-20): was checking window._wp18Cache — _wp18Cache is declared with
-      // top-level `let`, which never attaches to `window`, so window._wp18Cache is ALWAYS
-      // undefined regardless of what's actually cached. That made this function return false
-      // unconditionally, so a seeded row could never clear no matter what Amanda logged. Fixed
-      // by reading the bare _wp18Cache variable (same class of bug already fixed elsewhere in
-      // this file as v143, but this instance was missed).
-      const rows=(typeof _wp18Cache!=='undefined'&&_wp18Cache&&Array.isArray(_wp18Cache.transactionActs))?_wp18Cache.transactionActs:[];
-      return rows.some(function(r){
-        if(k(r.agent_name)!==k(seed.name)||String(r.act_type||'')!==seed.callType||String(r.act_date||'')<TRIGGER_DATE)return false;
-        const rr=String((typeof wp30TxnRole==='function'?wp30TxnRole(r.notes):'Agent')||'').toLowerCase();
-        // BUGFIX (2026-08-20): a call logged the normal way (not via this row's "Start call"
-        // button) has no [TXN_ROLE:] tag, so wp30TxnRole() defaults it to "Agent" — that used to
-        // get treated as a real mismatch against a seed expecting "Buyer"/"Listing", so a
-        // genuinely-completed call could never satisfy this row and it would never disappear.
-        // An untagged/"agent" role on the ACTUAL call is unknown, not a real conflict, so it's
-        // now treated as a wildcard too (matching how wp33CallCompletesTrigger already treats an
-        // "Agent" role as a wildcard on the trigger side).
-        if(seed.role&&seed.role!=='Agent'&&rr!=='agent'&&rr!==seed.role.toLowerCase())return false;
-        const outcome=String(r.outcome||'').toLowerCase();
-        if((outcome==='no answer'||outcome==='left voicemail')&&!(typeof wp33TxnTextSent==='function'&&wp33TxnTextSent(r.notes)))return false;
-        return true;
-      });
-    }catch(e){return false;}
+  function esc(s){return String(s||'').replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]||c;});}
+  function callDone(name,role,callType){
+    try{const rows=(typeof _wp18Cache!=='undefined'&&_wp18Cache&&Array.isArray(_wp18Cache.transactionActs))?_wp18Cache.transactionActs:[];return rows.some(function(r){if(k(r.agent_name)!==k(name)||String(r.act_type||'')!==callType||String(r.act_date||'')<TRIGGER_DATE)return false;const rr=String((typeof wp30TxnRole==='function'?wp30TxnRole(r.notes):'Agent')||'Agent').toLowerCase();return rr==='agent'||rr===String(role||'').toLowerCase();});}catch(e){return false;}
   }
-  function liveCardExists(host,seed){
-    if(!host)return false;
-    const name=k(seed.name);
-    return Array.from(host.querySelectorAll('.v112-urgent')).some(function(card){
-      if(card.classList.contains('v141-seeded-transactions'))return false;
-      return k(card.textContent).includes(name);
-    });
+  function openCall(file,name,role){
+    try{if(typeof v142RevealQuickLog==='function')v142RevealQuickLog();if(typeof wp30OpenTransactionTask==='function')wp30OpenTransactionTask(name,file.callType,role,'Amanda','v141-paired-'+k(file.buyer)+'-'+k(file.listing));setTimeout(function(){try{const b=document.getElementById('ctcBuyerAgent'),s=document.getElementById('ctcSellerAgent');if(b)b.value=file.buyer;if(s)s.value=file.listing;if(typeof ctcFillContact==='function'){ctcFillContact('buyer');ctcFillContact('seller');}if(typeof ctcUpdatePreview==='function')ctcUpdatePreview();const loaded=document.getElementById('ctcLoadedContext');if(loaded){loaded.style.display='block';loaded.textContent='✓ Same transaction — Buyer agent: '+file.buyer+' · Listing agent: '+file.listing;}}catch(e){}},260);}catch(e){console.warn('paired CTC open',e);}
   }
-  // 2026-08-20: user-confirmed pairing — Haifa Brunney (Buyer) + James Brandt (Listing) are the
-  // same transaction; Megan Lynch (Buyer) + Jennifer Hochmiller (Listing) are the same
-  // transaction. wp48PrefillCtcTransaction has no way to know this (the seeds carry no shared
-  // txnId), so it can only ever prefill the clicked agent's own side. This wrapper fills in the
-  // paired agent's name on the OTHER side too, right after the normal open/prefill runs, so
-  // starting the call from either side of a pair brings up both agents at once instead of
-  // requiring a manual second entry.
-  async function startPairedCtc(seed){
-    await wp30OpenTransactionTask(seed.name,seed.callType,seed.role,'Amanda','');
-    if(!seed.pairWith)return;
-    setTimeout(function(){
-      try{
-        const buyerEl=document.getElementById('ctcBuyerAgent'),sellerEl=document.getElementById('ctcSellerAgent');
-        if(seed.role==='Buyer'&&sellerEl&&!sellerEl.value.trim()){sellerEl.value=seed.pairWith;if(typeof ctcFillContact==='function')ctcFillContact('seller');}
-        else if(seed.role==='Listing'&&buyerEl&&!buyerEl.value.trim()){buyerEl.value=seed.pairWith;if(typeof ctcFillContact==='function')ctcFillContact('buyer');}
-        if(typeof ctcUpdatePreview==='function')ctcUpdatePreview();
-        const loaded=document.getElementById('ctcLoadedContext');
-        if(loaded&&loaded.textContent&&!loaded.textContent.includes(seed.pairWith))loaded.textContent+=' · Paired agent: '+seed.pairWith;
-      }catch(e){console.warn('v141 paired CTC prefill',e);}
-    },260);
+  window.v146OpenPairedCtc=openCall;
+  function card(file,idx){
+    const buyerDone=callDone(file.buyer,'Buyer',file.callType),listingDone=callDone(file.listing,'Listing',file.callType);if(buyerDone&&listingDone)return '';
+    const buyerBtn=buyerDone?'<span style="font-size:9.5px;font-weight:800;color:#32734B">Buyer call done ✓</span>':'<button type="button" data-v146-file="'+idx+'" data-role="Buyer" style="background:#6A48B8;color:#fff;border:0;border-radius:8px;padding:7px 11px;font-size:10px;font-weight:800;cursor:pointer">Start buyer call</button>';
+    const listingBtn=listingDone?'<span style="font-size:9.5px;font-weight:800;color:#32734B">Listing call done ✓</span>':'<button type="button" data-v146-file="'+idx+'" data-role="Listing" style="background:#6A48B8;color:#fff;border:0;border-radius:8px;padding:7px 11px;font-size:10px;font-weight:800;cursor:pointer">Start listing call</button>';
+    const remaining=(buyerDone?0:1)+(listingDone?0:1);
+    return '<div class="v146-transaction-file" style="padding:12px 13px;border:1px solid #E8C7C2;border-left:4px solid #B94E45;background:#FFF8F7;border-radius:10px;margin:7px 0"><div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start;flex-wrap:wrap"><div><span style="font-size:8.5px;font-weight:900;letter-spacing:.35px;background:#B94E45;color:#fff;border-radius:10px;padding:2px 7px">CTC FILE</span><strong style="font-size:12.5px;color:var(--text-1);margin-left:7px">Transaction '+(idx+1)+'</strong></div><span style="font-size:9px;font-weight:800;color:#93443D">'+remaining+' call'+(remaining===1?'':'s')+' remaining</span></div><div style="display:grid;grid-template-columns:minmax(180px,1fr) minmax(180px,1fr);gap:8px;margin-top:9px"><div style="background:#fff;border:1px solid #F0D8D4;border-radius:8px;padding:9px"><div style="font-size:9px;font-weight:850;color:#8A504A;text-transform:uppercase">Buyer Agent</div><div style="font-size:12.5px;font-weight:850;color:var(--text-1);margin:3px 0 7px">'+esc(file.buyer)+'</div>'+buyerBtn+'</div><div style="background:#fff;border:1px solid #F0D8D4;border-radius:8px;padding:9px"><div style="font-size:9px;font-weight:850;color:#8A504A;text-transform:uppercase">Listing Agent</div><div style="font-size:12.5px;font-weight:850;color:var(--text-1);margin:3px 0 7px">'+esc(file.listing)+'</div>'+listingBtn+'</div></div><div style="font-size:9.5px;color:#7A4C46;margin-top:8px">Clear to close · same file · both relationship calls stay mandatory until completed.</div></div>';
   }
-  window.v141StartPairedCtc=startPairedCtc;
-  function row(seed){
-    const label=seed.callType==='CTC Call'?'CTC CALL':'NEW CONTRACT',why=seed.callType==='CTC Call'?'Clear to close · '+seed.role.toLowerCase()+' agent':'New contract · '+seed.role.toLowerCase()+' agent';
-    return '<div class="v141-seed-row" data-v141-agent="'+escapeHtml(seed.name)+'" style="padding:10px 12px;border:1px solid #E8C7C2;border-left:4px solid #B94E45;background:#FFF8F7;border-radius:9px;margin:6px 0">'
-      +'<div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start;flex-wrap:wrap">'
-      +'<div style="min-width:220px;flex:1"><div style="display:flex;align-items:center;gap:7px;flex-wrap:wrap"><span style="font-size:8.5px;font-weight:900;letter-spacing:.35px;background:#B94E45;color:#fff;border-radius:10px;padding:2px 7px">'+label+'</span><strong style="font-size:12.5px;color:var(--text-1)">'+escapeHtml(seed.name)+'</strong><span style="font-size:9.5px;color:#7B5560">'+escapeHtml(seed.role)+' agent</span></div>'
-      +'<div style="font-size:10.5px;color:#7A4C46;margin-top:4px">'+escapeHtml(why)+' · mandatory transaction call'+(seed.pairWith?' · with '+escapeHtml(seed.pairWith):'')+'</div></div>'
-      +'<button type="button" onclick="v141StartPairedCtc('+JSON.stringify(seed).replace(/"/g,'&quot;')+')" style="background:#6A48B8;color:#fff;border:0;border-radius:8px;padding:7px 11px;font-size:10px;font-weight:800;cursor:pointer">Start call</button>'
-      +'</div></div>';
-  }
-  function ensure(){
-    const host=document.getElementById('v113UrgentHost');if(!host)return;
-    const needed=SEEDS.filter(function(s){return !seedCompleted(s)&&!liveCardExists(host,s);});
-    let box=host.querySelector('.v141-seeded-transactions');
-    if(!needed.length){if(box)box.remove();return;}
-    if(!box){box=document.createElement('div');box.className='v112-urgent v141-seeded-transactions';box.dataset.v141Fallback='1';}
-    box.innerHTML='<div style="font-size:9px;font-weight:900;letter-spacing:.45px;color:#93443D;margin:2px 0 4px">OPEN TRANSACTION CALLS</div>'+needed.map(row).join('');
-    Array.from(host.querySelectorAll('.v113-body-empty')).forEach(function(n){n.remove();});
-    const intake=host.querySelector('#wp30TxnIntakeDetails');
-    if(intake&&intake.nextSibling)host.insertBefore(box,intake.nextSibling);else host.appendChild(box);
-  }
+  function ensure(){const host=document.getElementById('v113UrgentHost');if(!host)return;let box=host.querySelector('.v141-seeded-transactions');const html=FILES.map(card).join('');if(!html){if(box)box.remove();return;}if(!box){box=document.createElement('div');box.className='v112-urgent v141-seeded-transactions';box.dataset.v141Fallback='1';}box.innerHTML='<div style="font-size:9px;font-weight:900;letter-spacing:.45px;color:#93443D;margin:2px 0 4px">OPEN TRANSACTION FILES</div>'+html;box.querySelectorAll('button[data-v146-file]').forEach(function(btn){btn.onclick=function(){const f=FILES[Number(btn.dataset.v146File)],role=btn.dataset.role,name=role==='Buyer'?f.buyer:f.listing;openCall(f,name,role);};});Array.from(host.querySelectorAll('.v113-body-empty')).forEach(function(n){n.remove();});const intake=host.querySelector('#wp30TxnIntakeDetails');if(intake&&intake.nextSibling)host.insertBefore(box,intake.nextSibling);else host.appendChild(box);}
   window.v141EnsureKnownTransactions=ensure;
-  const oldDist=window.v113DistributeSmart;
-  if(typeof oldDist==='function')window.v113DistributeSmart=function(){const r=oldDist.apply(this,arguments);setTimeout(ensure,0);return r;};
-  const oldSnap=window.v23LoadAmandaSnapshot;
-  if(typeof oldSnap==='function')window.v23LoadAmandaSnapshot=async function(){const r=await oldSnap.apply(this,arguments);setTimeout(ensure,0);return r;};
-  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',function(){setTimeout(ensure,650);setTimeout(ensure,1800);},{once:true});
-  else{setTimeout(ensure,100);setTimeout(ensure,1200);}
-  document.addEventListener('visibilitychange',function(){if(!document.hidden)setTimeout(ensure,120);});
-  setInterval(ensure,4000);
+  const oldDist=window.v113DistributeSmart;if(typeof oldDist==='function')window.v113DistributeSmart=function(){const r=oldDist.apply(this,arguments);setTimeout(ensure,0);return r;};
+  const oldSnap=window.v23LoadAmandaSnapshot;if(typeof oldSnap==='function')window.v23LoadAmandaSnapshot=async function(){const r=await oldSnap.apply(this,arguments);setTimeout(ensure,0);return r;};
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',function(){setTimeout(ensure,500);setTimeout(ensure,1500);},{once:true});else{setTimeout(ensure,80);setTimeout(ensure,900);}document.addEventListener('visibilitychange',function(){if(!document.hidden)setTimeout(ensure,100);});setInterval(ensure,4500);
 })();
-console.log('RM Tracker Build v141.0 · known open transaction fallback seeded');
 </script>
 
 
@@ -16262,89 +16192,23 @@ console.log('RM Tracker Build v141.0 · known open transaction fallback seeded')
 </script>
 
 
-<!-- Internal build metadata retained in source only; no version/build badge is rendered to users. -->
-<!-- v145 C→B RESILIENT RENDER · 2026-08-20 -->
 <script id="v145-ctob-resilient">
 (function(){
-  const STORE='rm_v145_ctob_last_good';
-  let timer=null, busy=false;
-  function key(n){return String(n||'').trim().toLowerCase().replace(/\s+/g,' ');}
-  function getStored(){
-    try{const x=JSON.parse(localStorage.getItem(STORE)||'null');return x&&Array.isArray(x.rows)?x:null;}catch(e){return null;}
-  }
-  function saveStored(rows){
-    try{localStorage.setItem(STORE,JSON.stringify({saved_at:new Date().toISOString(),rows:rows.map(c=>({
-      name:c.name||'',owner:c.owner||'Amanda',score:Number(c.score||0),reasons:Array.isArray(c.reasons)?c.reasons:[],away:Number(c.away||0),closes:Number(c.closes||0),leads:Number(c.leads||0),next:c.next||'B',tier:c.tier||'C',
-      profile:c.profile||{}
-    }))}));}catch(e){}
-  }
-  function storedCandidates(){const x=getStored();return x?x.rows:[];}
-  function task(c){
-    const why=(typeof v106CandidateWhy==='function')?v106CandidateWhy(c):((c.closes||0)+' rolling-12 closes · growth opportunity');
-    const item={name:c.name,profile:c.profile||{},owner:'Amanda',score:c.score||0,reasons:['Tier growth C → B · '+why],type:'Agent Talk-to',source:'Tier Growth',queue:null};
-    return {kind:'tier_growth',minutes:15,owner:'Amanda',name:c.name,item:item,title:'C → B growth · '+(typeof resolvedDisplayName==='function'?resolvedDisplayName(c.name):c.name),why:why+' · Next best move: uncover the next buyer/opportunity and book Face Time or a meeting.',growth:c};
-  }
-  function renderRows(rows,stale){
-    const host=document.getElementById('v113GrowthHost');if(!host)return false;
-    rows=(rows||[]).filter(c=>c&&c.name&&String(c.owner||'Amanda')==='Amanda').slice(0,5);
-    if(!rows.length)return false;
-    const cards=rows.map(c=>{
-      const t=task(c);
-      return typeof v112GrowthCard==='function'?v112GrowthCard(t):'<div class="v112-growth-card"><strong>'+escHtml(c.name)+'</strong><div>'+escHtml(t.why)+'</div></div>';
-    }).join('');
-    host.innerHTML='<div class="v112-growth" data-v145-growth="1"><div class="v112-growth-head"><div><b>C → B Growth Opportunities</b><small>Best Amanda-owned C relationships with evidence to move up.'+(stale?' Showing the last good list while live data refreshes.':'')+'</small></div><span style="font-size:9.5px;font-weight:850;color:#2F6847">'+rows.length+' focus relationship'+(rows.length!==1?'s':'')+'</span></div><div class="v112-growth-grid">'+cards+'</div></div>';
-    try{if(typeof v136DecorateGrowthReviewButtons==='function')v136DecorateGrowthReviewButtons();}catch(e){}
-    return true;
-  }
-  function currentCandidates(){
-    try{
-      // BUGFIX (2026-08-20): same window._wp18Cache scoping bug as seedCompleted() above —
-      // this always evaluated to undefined, so this fast-path never actually returned cached
-      // rows and always fell through to the slower localStorage/fetch paths below.
-      const data=(typeof _wp18Cache!=='undefined')?_wp18Cache:null;
-      if(data&&typeof v106BuildTierGrowth==='function'){
-        const built=v106BuildTierGrowth(data||{}),rows=((built&&built.stages&&built.stages.cToB)||[]).filter(c=>c&&c.owner==='Amanda').slice(0,5);
-        if(rows.length)return rows;
-      }
-    }catch(e){console.warn('v145 cached C→B build',e);}
-    return [];
-  }
-  async function withTimeout(p,ms){return Promise.race([p,new Promise((_,rej)=>setTimeout(()=>rej(new Error('C→B refresh timeout')),ms))]);}
-  async function refresh(force){
-    const host=document.getElementById('v113GrowthHost');if(!host||busy)return;
-    // Never blank a known-good list while fetching.
-    const cached=currentCandidates();
-    if(cached.length){renderRows(cached,false);saveStored(cached);}else{const stored=storedCandidates();if(stored.length)renderRows(stored,true);}
-    if(typeof wp18FetchData!=='function'||typeof v106BuildTierGrowth!=='function')return;
-    busy=true;
-    try{
-      const data=await withTimeout(wp18FetchData(force===true),8000);
-      const built=v106BuildTierGrowth(data||{});
-      const rows=((built&&built.stages&&built.stages.cToB)||[]).filter(c=>c&&c.owner==='Amanda').slice(0,5);
-      if(rows.length){saveStored(rows);renderRows(rows,false);}
-      else if(!host.querySelector('.v112-growth-card')){
-        host.innerHTML='<div class="v113-body-empty" data-v145-growth="1">No strong C → B candidate is ready right now.</div>';
-      }
-    }catch(e){
-      console.warn('v145 C→B refresh',e);
-      // Keep any existing/last-good cards. Only show one clean status if there is truly nothing to show.
-      if(!host.querySelector('.v112-growth-card')){
-        const stored=storedCandidates();
-        if(stored.length)renderRows(stored,true);
-        else host.innerHTML='<div class="v113-body-empty" data-v145-growth="1">C → B opportunities are refreshing. Use Refresh if this remains blank.</div>';
-      }
-    }finally{busy=false;}
-  }
-  function schedule(force){clearTimeout(timer);timer=setTimeout(()=>refresh(force),120);}
-  // Replace the older destructive visibility helper with the resilient one.
-  window.v134EnsureGrowthVisible=function(force){return refresh(force);};
-  window.v145RefreshCtoB=refresh;
-  const oldBuild=window.v113BuildTodayLayout;
-  if(typeof oldBuild==='function')window.v113BuildTodayLayout=function(){const r=oldBuild.apply(this,arguments);setTimeout(()=>schedule(false),80);return r;};
-  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>{setTimeout(()=>schedule(false),550);setTimeout(()=>schedule(true),2200);},{once:true});
-  else{setTimeout(()=>schedule(false),120);setTimeout(()=>schedule(true),1800);}
-  window.addEventListener('pageshow',()=>setTimeout(()=>schedule(false),180));
-  console.log('RM Tracker Build v145 · C→B resilient last-good render');
+  const STORE='rm_ctob_last_good_direct';let busy=false,mutating=false;
+  function key(s){return String(s||'').trim().toLowerCase().replace(/\s+/g,' ');}
+  function stored(){try{const x=JSON.parse(localStorage.getItem(STORE)||'null');return x&&Array.isArray(x.rows)?x.rows:[];}catch(e){return[];}}
+  function save(rows){try{localStorage.setItem(STORE,JSON.stringify({saved_at:new Date().toISOString(),rows:rows}));}catch(e){}}
+  function why(c){return typeof v106CandidateWhy==='function'?v106CandidateWhy(c):((c.closes||0)+' rolling-12 closes · '+(c.leads||0)+' leads');}
+  function task(c){const w=why(c);return{kind:'tier_growth',minutes:15,owner:'Amanda',name:c.name,item:{name:c.name,profile:c.profile||{},owner:'Amanda',score:c.score||0,reasons:['Tier growth C → B · '+w],type:'Agent Talk-to',source:'Tier Growth',queue:null},title:'C → B growth · '+(typeof resolvedDisplayName==='function'?resolvedDisplayName(c.name):c.name),why:w+' · Next best move: uncover the next buyer/opportunity and book Face Time or a meeting.',growth:c};}
+  function render(rows,stale){const host=document.getElementById('v113GrowthHost');if(!host)return false;rows=(rows||[]).filter(x=>x&&x.name).slice(0,5);if(!rows.length)return false;const cards=rows.map(c=>typeof v112GrowthCard==='function'?v112GrowthCard(task(c)):'<div class="v112-growth-card"><strong>'+escHtml(c.name)+'</strong><div>'+escHtml(why(c))+'</div></div>').join('');mutating=true;host.innerHTML='<div class="v112-growth" data-direct-ctob="1"><div class="v112-growth-head"><div><b>C → B Growth Opportunities</b><small>Best Amanda-owned C relationships with production/lead evidence.'+(stale?' Showing last known good list while live data refreshes.':'')+'</small></div><span style="font-size:9.5px;font-weight:850;color:#2F6847">'+rows.length+' focus relationship'+(rows.length!==1?'s':'')+'</span></div><div class="v112-growth-grid">'+cards+'</div></div>';mutating=false;try{if(typeof v136DecorateGrowthReviewButtons==='function')v136DecorateGrowthReviewButtons();}catch(e){}return true;}
+  function ownerFrom(name,p,assignments){try{if(typeof wp18OwnerRecord==='function'&&typeof wp18ResolveOwner==='function'){const recs=wp18OwnerRecord(assignments||[]);return wp18ResolveOwner(name,p,recs,'');}}catch(e){}const ks=key(name),rms=new Set();(assignments||[]).forEach(a=>{if(key(a.agent_name)===ks&&a.rm)rms.add(String(a.rm).trim());});if(rms.has('Amanda')&&!rms.has('Nyny'))return'Amanda';if(rms.has('Nyny'))return'Nyny';return String(p&&p.powerbi_level||'').toUpperCase()==='C'?'Amanda':'Unassigned';}
+  function latestRows(profiles){const all=Array.isArray(profiles)?profiles:[];try{if(typeof v124LatestPowerBiSnapshot==='function'){const s=v124LatestPowerBiSnapshot(all);if(s&&Array.isArray(s.rows)&&s.rows.length)return s.rows;}}catch(e){}const valid=all.filter(p=>p&&String(p.powerbi_level||'').trim());let latest=0;valid.forEach(p=>{const m=Date.parse(p.powerbi_last_seen_at||'');if(Number.isFinite(m)&&m>latest)latest=m;});if(!latest)return valid;const near=valid.filter(p=>{const m=Date.parse(p.powerbi_last_seen_at||'');return Number.isFinite(m)&&Math.abs(m-latest)<120000;});return near.length?near:valid;}
+  async function fetchDirect(){if(typeof sbFetch!=='function')throw new Error('Database helper unavailable');let profiles=[];try{profiles=await sbFetch('agent_profiles?select=agent_name,tier,powerbi_level,powerbi_last_seen_at,relationship_status,do_not_contact,relationship_type,next_growth_opportunity,last_meaningful_contact_date,latest_lead_date,competitor_risk_flag,high_potential_flag,satisfaction_rating,closes_past_year,total_leads_past_year&limit=5000');}catch(e){profiles=await sbFetch('agent_profiles?select=agent_name,tier,powerbi_level,powerbi_last_seen_at,relationship_status,do_not_contact,closes_past_year,total_leads_past_year&limit=5000');}const assignments=await sbFetch('agent_assignments?select=agent_name,rm,lp,priority,level&limit=5000').catch(()=>[]);const rows=[];latestRows(profiles).forEach(p=>{if(String(p.powerbi_level||'').trim().toUpperCase()!=='C'||!p.agent_name)return;if(p.do_not_contact||String(p.relationship_status||'active').toLowerCase()==='inactive'||String(p.relationship_type||'realtor').toLowerCase()==='strategic_partner')return;if(ownerFrom(p.agent_name,p,assignments)!=='Amanda')return;const sc=typeof v106CandidateScore==='function'?v106CandidateScore(p,'B'):{score:Number(p.closes_past_year||0)*1000+Number(p.total_leads_past_year||0)*100,reasons:[],away:Math.max(0,2-Number(p.closes_past_year||0))};rows.push({name:p.agent_name,tier:'C',next:'B',owner:'Amanda',score:Number(sc.score||0),reasons:sc.reasons||[],away:Number(sc.away||0),closes:Number(p.closes_past_year||0),leads:Number(p.total_leads_past_year||0),profile:p});});rows.sort((a,b)=>b.score-a.score||a.away-b.away||String(a.name).localeCompare(String(b.name)));return rows.slice(0,5);}
+  async function refresh(){const host=document.getElementById('v113GrowthHost');if(!host||busy)return;const last=stored();if(last.length&&!host.querySelector('.v112-growth-card'))render(last,true);busy=true;try{const rows=await Promise.race([fetchDirect(),new Promise((_,rej)=>setTimeout(()=>rej(new Error('C→B direct timeout')),12000))]);if(rows.length){save(rows);render(rows,false);}else if(!host.querySelector('.v112-growth-card')){mutating=true;host.innerHTML='<div class="v113-body-empty">No Amanda-owned C → B candidate is ready right now.</div>';mutating=false;}}catch(e){console.warn('direct C→B loader',e);if(!host.querySelector('.v112-growth-card')){const old=stored();if(old.length)render(old,true);else{mutating=true;host.innerHTML='<div class="v113-body-empty">C → B is refreshing. Click Refresh if this remains blank.</div>';mutating=false;}}}finally{busy=false;}}
+  window.v145RefreshCtoB=refresh;window.v134EnsureGrowthVisible=refresh;
+  function start(){setTimeout(refresh,200);setTimeout(refresh,1500);}if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start,{once:true});else start();window.addEventListener('pageshow',()=>setTimeout(refresh,180));
+  setInterval(function(){const host=document.getElementById('v113GrowthHost');if(!host||host.querySelector('.v112-growth-card'))return;const t=host.textContent||'';if(/could not load|refreshing|No strong C → B candidate/i.test(t))refresh();},2500);
+  setTimeout(function(){const host=document.getElementById('v113GrowthHost');if(!host)return;new MutationObserver(function(){if(mutating||host.querySelector('.v112-growth-card'))return;const t=host.textContent||'';if(/could not load|refreshing|No strong C → B candidate/i.test(t))setTimeout(refresh,20);}).observe(host,{childList:true,subtree:true,characterData:true});},300);
 })();
 </script>
 </body>
