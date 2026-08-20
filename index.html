@@ -9213,7 +9213,7 @@ async function loadFeed(){
     return;
   }
   applyFeedFilters();
-  if(status){const partial=results.slice(0,2).some(r=>r.status==="rejected");status.textContent=(partial?"Partial · ":"")+allFeedData.length+" activities · updated "+new Date().toLocaleTimeString("en-US",{hour:"numeric",minute:"2-digit"});status.style.color=partial?"var(--warning)":"var(--text-3)";}
+  if(status){const partial=results.slice(0,2).some(r=>r.status==="rejected");status.textContent=(partial?"Partial · ":"")+"Updated "+new Date().toLocaleTimeString("en-US",{hour:"numeric",minute:"2-digit"});status.style.color=partial?"var(--warning)":"var(--text-3)";}
 }
 
 
@@ -15778,5 +15778,107 @@ console.log('RM Tracker Build v136.0 · Amanda simplicity pass · execution firs
   document.addEventListener('visibilitychange',function(){if(!document.hidden)setTimeout(window.v138RedistributeUrgent,80);});
 })();
 </script>
+
+
+<script id="v139-transaction-display-guarantee">
+(function(){
+  const KEY='rm_pending_transaction_triggers_v139';
+  function jget(){try{const x=JSON.parse(localStorage.getItem(KEY)||'[]');return Array.isArray(x)?x:[];}catch(e){return[];}}
+  function jset(rows){try{localStorage.setItem(KEY,JSON.stringify(rows||[]));}catch(e){}}
+  function tkey(r){return [String(r.act_type||''),wp18Key(r.agent_name||''),String(wp33TxnRole(r.notes)||'Agent').toLowerCase(),String(wp33TxnId(r.notes)||'')].join('|');}
+  function freshLocal(){
+    const cutoff=Date.now()-3*86400000;
+    const rows=jget().filter(r=>{
+      const ts=Date.parse(String(r.saved_at||r.act_date||''));
+      return !Number.isFinite(ts)||ts>=cutoff;
+    });
+    if(rows.length!==jget().length)jset(rows);
+    return rows;
+  }
+  function remember(row){
+    const rows=freshLocal(),k=tkey(row),next=rows.filter(x=>tkey(x)!==k);
+    next.push({...row,saved_at:new Date().toISOString(),_v139_local:true});
+    jset(next);
+  }
+  function mergeLocal(data){
+    if(!data)return data;
+    const live=Array.isArray(data.transactionActs)?data.transactionActs:[];
+    const seen=new Set(live.map(tkey));
+    const locals=freshLocal().filter(r=>!seen.has(tkey(r)));
+    data.transactionActs=live.concat(locals);
+    return data;
+  }
+  window.v139PendingTransactionTriggers={get:freshLocal,remember:remember,merge:mergeLocal};
+
+  const oldFetch=window.wp18FetchData;
+  if(typeof oldFetch==='function'){
+    window.wp18FetchData=async function(force){
+      const data=await oldFetch.call(this,force);
+      return mergeLocal(data);
+    };
+  }
+
+  // Replace transaction intake with a verified-save + optimistic mandatory-task workflow.
+  window.wp30SaveTransactionTrigger=async function(){
+    const btn=document.getElementById('wp30TxnAddBtn');
+    if(btn){if(btn.disabled)return;btn.disabled=true;btn.textContent='Adding...';}
+    const stage=document.getElementById('wp30TxnStage')?.value||'New Contract';
+    const buyer=(document.getElementById('wp30TxnBuyerAgent')?.value||'').trim();
+    const listing=(document.getElementById('wp30TxnListingAgent')?.value||'').trim();
+    const clean=s=>String(s||'').replace(/[\]\r\n]/g,' ').trim().slice(0,180);
+    const client=clean(document.getElementById('wp30TxnClient')?.value||'');
+    const property=clean(document.getElementById('wp30TxnProperty')?.value||'');
+    const ref=[client,property].filter(Boolean).join(' · ').slice(0,180);
+    const entries=[];
+    if(buyer)entries.push({name:buyer,role:'Buyer'});
+    if(listing&&wp18Key(listing)!==wp18Key(buyer))entries.push({name:listing,role:'Listing'});
+    if(!entries.length){toast('Add the buyer agent, listing agent, or both.','error');if(btn){btn.disabled=false;btn.textContent='Add calls';}return;}
+    const callType=wp30TxnCallType(stage),td=today(),txnId=wp33MakeTxnId(stage,ref,buyer,listing,td);
+    let added=0,already=0;
+    try{
+      for(const e of entries){
+        const cut=new Date();cut.setDate(cut.getDate()-45);
+        const existing=await sbFetch('amanda_activities?agent_name=eq.'+encodeURIComponent(e.name)+'&act_type=eq.'+encodeURIComponent(stage)+'&act_date=gte.'+wpDateStr(cut)+'&select=id,notes,act_date&limit=100');
+        const duplicate=(existing||[]).some(r=>wp30TxnRole(r.notes)===e.role&&wp33TxnId(r.notes)===txnId);
+        let notes='';
+        const o=getAgentOwnership(e.name),profile=(allContacts||[]).find(c=>wp18Key(c.agent_name)===wp18Key(e.name))||{};
+        const owner=(stage==='Clear to Close'?'Amanda':(wp18StrategicNynyMatch(e.name,profile)?'Nyny':((o&&o.rm==='Nyny')?'Nyny':'Amanda')));
+        notes='[TXN_TRIGGER][TXN_ROLE:'+e.role+'][TXN_ID:'+txnId+']'+(ref?'[TXN_REF:'+ref+']':'')+(client?'[TXN_CLIENT:'+client+']':'')+(property?'[TXN_PROPERTY:'+property+']':'')+' Mandatory '+stage+' transaction call trigger for the '+e.role.toLowerCase()+' agent. Complete the required '+callType+' and log the outcome in the RM tracker.';
+        try{notes=appendRmMeta(notes,owner,'Current Relationship');}catch(err){}
+        const localRow={agent_name:e.name,act_type:stage,act_date:td,outcome:'Requires follow-up',notes:notes,follow_up_date:null};
+        if(duplicate){already++;remember(localRow);continue;}
+        const saved=await sbFetch('amanda_activities',{method:'POST',prefer:'return=representation',body:JSON.stringify(localRow)});
+        if(!Array.isArray(saved)||!saved.length)throw new Error('Supabase did not confirm the transaction task save.');
+        remember({...localRow,id:saved[0].id||null});
+        added++;
+      }
+      ['wp30TxnBuyerAgent','wp30TxnListingAgent','wp30TxnClient','wp30TxnProperty'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+      const d=document.getElementById('wp30TxnIntakeDetails');if(d)d.open=false;
+      try{_wp18Cache=null;_wp18CacheAt=0;}catch(e){}
+      // Render from verified live rows + local guaranteed rows.
+      await v23LoadAmandaSnapshot(true);
+      if(typeof window.v113DistributeSmart==='function')window.v113DistributeSmart();
+      if(typeof window.v138RedistributeUrgent==='function')window.v138RedistributeUrgent();
+      setTimeout(()=>{try{window.v138RedistributeUrgent&&window.v138RedistributeUrgent();}catch(e){}},120);
+      const names=entries.map(x=>resolvedDisplayName(x.name)).join(' + ');
+      toast((added||already)?('✓ '+(stage==='Clear to Close'?'CTC':'New Contract')+' added for '+names+' — it is now in Step 2: Urgent / mandatory work.'):'No transaction task was added.','success',5200);
+    }catch(e){
+      toast('Could not add transaction calls: '+e.message,'error',6000);
+    }finally{
+      if(btn){btn.disabled=false;btn.textContent='Add calls';}
+    }
+  };
+
+  // If a pending local transaction exists, force a Today rebuild when the page becomes active.
+  document.addEventListener('visibilitychange',function(){
+    if(!document.hidden&&freshLocal().length){
+      try{_wp18Cache=null;_wp18CacheAt=0;}catch(e){}
+      setTimeout(()=>{try{v23LoadAmandaSnapshot(true);}catch(e){}},100);
+    }
+  });
+})();
+console.log('RM Tracker Build v139.0 · transaction display guaranteed');
+</script>
+
 </body>
 </html>
