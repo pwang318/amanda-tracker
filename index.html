@@ -1,4 +1,4 @@
-  <!DOCTYPE html>
+ <!DOCTYPE html>
 <!-- v140: fixes Step 2 transaction renderer race; saved/open CTC and New Contract tasks are no longer erased after successful distribution -->
 <!-- v137: Amanda daily snapshot restored + audit fixes; current operating goals aligned, responsive snapshot, duplicate activity icons corrected -->
 <!-- v139: save/log integrity audit; preserve follow-ups until confirmed save, harden offline replay, Face Time and handled-note history -->
@@ -1524,7 +1524,7 @@ html,body,button,input,select,textarea{font-family:var(--rm-native-font)!importa
 <label class="intake-check"><input id="intakeListreports" onchange="updateIntakeProgress()" type="checkbox"/> Added agent to ListReports</label>
 <label class="intake-check"><input id="intakeTotalExpert" onchange="updateIntakeProgress()" type="checkbox"/> Added agent to Total Expert</label>
 <label class="intake-check"><input id="intakeGroupText" onchange="updateIntakeProgress()" type="checkbox"/> Sent follow-up group text introducing Nyny</label>
-<label class="intake-check"><input id="intakeReferralAsk" onchange="updateIntakeProgress()" type="checkbox"/> Asked for the opportunity, walked through how they'll refer clients to us (see How to Refer in Scripts + Training), and CC'd the Loan Partner</label>
+<label class="intake-check"><input id="intakeReferralAsk" onchange="updateIntakeProgress()" type="checkbox"/> Asked for the opportunity, walked through how they'll refer clients to us (see How to Refer in Scripts + Training), and CC'd the Loan Partner on the same post-meeting email above</label>
 <div id="intakeProgress" style="font-size:11px;color:#B85B00;margin-top:6px;font-weight:500">0 of 7 complete</div>
 </div>
 </div>
@@ -8522,34 +8522,60 @@ async function saveCtcWorkflow(copyAfter){
   }
   const buttons=document.querySelectorAll('#ctcWorkflowPanel button');buttons.forEach(b=>b.disabled=true);
   let secondarySyncWarnings=0;
+  // BUGFIX (2026-08-20): both sides used to run inside one shared try/catch with no per-side
+  // isolation. If the Buyer side saved fine but the Listing side's DB call hit any hiccup
+  // (network blip, transient Supabase error, etc.), the whole loop threw and aborted right
+  // there — Buyer's row was already committed, Listing's never got created, and the only
+  // feedback was a generic "CTC save failed" toast that didn't say which side actually saved.
+  // That's what looked like "only pulling down one" and forced a manual re-add of the other
+  // agent. Each side now runs in its own try/catch so one failing can never block or hide the
+  // other, and the final message says exactly which agent(s) saved and which (if any) failed.
+  const sideResults=[];
   try{
     for(const s of entered){
-      try{await ctcUpsertContact(s.name,s.phone,s.email);}catch(profileErr){secondarySyncWarnings++;console.warn("CTC activity will still save; contact sync failed",profileErr);}
-      const fu=(s.outcome==="Meeting Scheduled"||s.relationship==="Meeting scheduled")?s.meetingDate:(s.outcome==="Requires follow-up"||s.relationship==="Interested — follow up"?localDateStr(new Date(Date.now()+3*86400000)):null);
-      const tx=wp33CurrentTxnContext(s.name,"CTC Call",s.role);
-      const fallbackTxnId=wp33MakeTxnId("Clear to Close",[borrower,property].filter(Boolean).join(" · "),ctcField("ctcBuyerAgent"),ctcField("ctcSellerAgent"),today());
-      const effectiveTxnId=tx.txnId||fallbackTxnId;
-      const ctcNotes=wp33TxnMeta(ctcActivityNotes(s.role,s.feedback,s.relationship,s.outcome,s.textSent),s.role,effectiveTxnId,s.textSent);
-      // Retry-safe CTC save: if one side saved and a later step failed, clicking Save again must
-      // not create a second CTC Call for the same transaction + role.
-      const existingCalls=await sbFetch("amanda_activities?agent_name=eq."+encodeURIComponent(s.name)+"&act_type=eq."+encodeURIComponent("CTC Call")+"&act_date=gte."+today()+"&select=id,notes,outcome,act_date&limit=100");
-      const existingSaved=(existingCalls||[]).find(r=>wp33TxnId(r.notes)===effectiveTxnId&&String(wp30TxnRole(r.notes)||"").toLowerCase()===s.role.toLowerCase());
-      let savedRow=existingSaved||null;
-      if(!savedRow){const inserted=await sbFetch("amanda_activities",{method:"POST",body:JSON.stringify({agent_name:s.name,act_type:"CTC Call",act_date:today(),outcome:s.outcome,notes:ctcNotes,follow_up_date:fu})});savedRow=inserted&&inserted[0]?inserted[0]:null;}
-      await clearOldFollowups(s.name,savedRow&&savedRow.id);
-      await completeActiveFlagAfterActivity(s.name).catch(()=>{});
-      try{await ctcSyncOpportunity(s.name,s.phone,s.email,s.relationship,s.meetingDate,s.role.toLowerCase()+" agent");}catch(opErr){secondarySyncWarnings++;console.warn("CTC activity saved; opportunity sync failed",opErr);}
+      try{
+        try{await ctcUpsertContact(s.name,s.phone,s.email);}catch(profileErr){secondarySyncWarnings++;console.warn("CTC activity will still save; contact sync failed",profileErr);}
+        const fu=(s.outcome==="Meeting Scheduled"||s.relationship==="Meeting scheduled")?s.meetingDate:(s.outcome==="Requires follow-up"||s.relationship==="Interested — follow up"?localDateStr(new Date(Date.now()+3*86400000)):null);
+        const tx=wp33CurrentTxnContext(s.name,"CTC Call",s.role);
+        const fallbackTxnId=wp33MakeTxnId("Clear to Close",[borrower,property].filter(Boolean).join(" · "),ctcField("ctcBuyerAgent"),ctcField("ctcSellerAgent"),today());
+        const effectiveTxnId=tx.txnId||fallbackTxnId;
+        const ctcNotes=wp33TxnMeta(ctcActivityNotes(s.role,s.feedback,s.relationship,s.outcome,s.textSent),s.role,effectiveTxnId,s.textSent);
+        // Retry-safe CTC save: if one side saved and a later step failed, clicking Save again must
+        // not create a second CTC Call for the same transaction + role.
+        const existingCalls=await sbFetch("amanda_activities?agent_name=eq."+encodeURIComponent(s.name)+"&act_type=eq."+encodeURIComponent("CTC Call")+"&act_date=gte."+today()+"&select=id,notes,outcome,act_date&limit=100");
+        const existingSaved=(existingCalls||[]).find(r=>wp33TxnId(r.notes)===effectiveTxnId&&String(wp30TxnRole(r.notes)||"").toLowerCase()===s.role.toLowerCase());
+        let savedRow=existingSaved||null;
+        if(!savedRow){const inserted=await sbFetch("amanda_activities",{method:"POST",body:JSON.stringify({agent_name:s.name,act_type:"CTC Call",act_date:today(),outcome:s.outcome,notes:ctcNotes,follow_up_date:fu})});savedRow=inserted&&inserted[0]?inserted[0]:null;}
+        await clearOldFollowups(s.name,savedRow&&savedRow.id);
+        await completeActiveFlagAfterActivity(s.name).catch(()=>{});
+        try{await ctcSyncOpportunity(s.name,s.phone,s.email,s.relationship,s.meetingDate,s.role.toLowerCase()+" agent");}catch(opErr){secondarySyncWarnings++;console.warn("CTC activity saved; opportunity sync failed",opErr);}
+        sideResults.push({role:s.role,name:s.name,ok:true});
+      }catch(sideErr){
+        console.warn("CTC save failed for "+s.role.toLowerCase()+" agent "+s.name,sideErr);
+        sideResults.push({role:s.role,name:s.name,ok:false,error:sideErr&&sideErr.message?sideErr.message:String(sideErr)});
+      }
     }
     if(copyAfter)await ctcCopyWhatsApp();
-    const savedCount=entered.length;
+    const savedCount=sideResults.filter(r=>r.ok).length,failed=sideResults.filter(r=>!r.ok);
     window._wp33TxnContext=null;
     try{_wp18Cache=null;_wp18CacheAt=0;}catch(e){}
-    ctcResetForm();
-    const msg=document.getElementById("ctcSaveMsg");if(msg){msg.style.display="block";msg.style.color=secondarySyncWarnings?"var(--warning)":"var(--success)";msg.textContent="✓ CTC activity saved for "+savedCount+" agent"+(savedCount===1?"":"s")+(copyAfter?" + WhatsApp copied":"")+(secondarySyncWarnings?" · "+secondarySyncWarnings+" secondary contact/opportunity update(s) need refresh — do NOT log the CTC again":" · completed call(s) cleared from workflow");}
+    if(!failed.length)ctcResetForm(); // keep the form filled if something failed, so nothing has to be re-typed
+    const msg=document.getElementById("ctcSaveMsg");
+    if(msg){
+      msg.style.display="block";
+      if(failed.length){
+        msg.style.color="var(--danger)";
+        msg.textContent="⚠ Saved for "+(savedCount||"no")+" agent"+(savedCount===1?"":"s")+" — "+failed.map(f=>f.role.toLowerCase()+" agent "+f.name+" did NOT save ("+f.error+")").join("; ")+". Fix the issue and click Save again — the side(s) that already saved will not be duplicated.";
+      }else{
+        msg.style.color=secondarySyncWarnings?"var(--warning)":"var(--success)";
+        msg.textContent="✓ CTC activity saved for "+savedCount+" agent"+(savedCount===1?"":"s")+(copyAfter?" + WhatsApp copied":"")+(secondarySyncWarnings?" · "+secondarySyncWarnings+" secondary contact/opportunity update(s) need refresh — do NOT log the CTC again":" · completed call(s) cleared from workflow");
+      }
+    }
+    if(failed.length)toast("CTC save incomplete — "+failed.map(f=>f.name).join(", ")+" did not save. See the message below the form.","error",7000);
     vibrateSaved();
     loadContacts?.();loadPipeline?.();initAutocomplete();
     await rmRefreshAfterMutation("CTC workflow saved");
-    setTimeout(()=>{if(msg)msg.style.display="none";},5000);
+    if(!failed.length)setTimeout(()=>{if(msg)msg.style.display="none";},5000);
   }catch(e){toast("CTC save failed: "+e.message,"error");}
   finally{buttons.forEach(b=>b.disabled=false);}
 }
@@ -14316,7 +14342,10 @@ console.log('RM Tracker Build v122.0 · mobile Today render hardening');
   window.openPortfolioNotes=function(nameOrEl){
     _oldPortfolio(nameOrEl);
     var name=typeof nameOrEl==='string'?nameOrEl:(nameOrEl&&nameOrEl.dataset?nameOrEl.dataset.name:String(nameOrEl));
-    var c=(window.allContacts||[]).find(function(x){return x.agent_name===name;})||{};
+    // BUGFIX (2026-08-20): window.allContacts is always undefined (top-level `let` doesn't
+    // attach to window), so this always evaluated as "no contact found" and showed the blank-
+    // state hint even when notes existed.
+    var c=(typeof allContacts!=='undefined'?allContacts:[]).find(function(x){return x.agent_name===name;})||{};
     var details=document.getElementById('partnerPlaybookDetails');if(!details)return;
     var old=document.getElementById('v115PortfolioHint');if(old)old.remove();
     var has=!![c.partner_goals,c.partner_pain_points,c.referral_leakage_notes,c.recovery_plan,c.satisfaction_rating,c.next_growth_opportunity].find(function(v){return String(v||'').trim();});
@@ -15895,10 +15924,10 @@ console.log('RM Tracker Build v140.0 · transaction renderer race fixed');
 <script id="v141-preseed-known-open-transactions">
 (function(){
   const SEEDS=[
-    {name:'Haifa Brunney',stage:'Clear to Close',callType:'CTC Call',role:'Buyer'},
-    {name:'James Brandt',stage:'Clear to Close',callType:'CTC Call',role:'Listing'},
-    {name:'Jennifer Hochmiller',stage:'Clear to Close',callType:'CTC Call',role:'Listing'},
-    {name:'Megan Lynch',stage:'Clear to Close',callType:'CTC Call',role:'Buyer'}
+    {name:'Haifa Brunney',stage:'Clear to Close',callType:'CTC Call',role:'Buyer',pairWith:'James Brandt'},
+    {name:'James Brandt',stage:'Clear to Close',callType:'CTC Call',role:'Listing',pairWith:'Haifa Brunney'},
+    {name:'Jennifer Hochmiller',stage:'Clear to Close',callType:'CTC Call',role:'Listing',pairWith:'Megan Lynch'},
+    {name:'Megan Lynch',stage:'Clear to Close',callType:'CTC Call',role:'Buyer',pairWith:'Jennifer Hochmiller'}
   ];
   const TRIGGER_DATE='2026-08-20';
   function k(s){return String(s||'').trim().toLowerCase().replace(/\s+/g,' ');}
@@ -15906,11 +15935,24 @@ console.log('RM Tracker Build v140.0 · transaction renderer race fixed');
   function jsq(s){return String(s||'').replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/\r?\n/g,' ');}
   function seedCompleted(seed){
     try{
-      const rows=(window._wp18Cache&&Array.isArray(window._wp18Cache.transactionActs))?window._wp18Cache.transactionActs:[];
+      // BUGFIX (2026-08-20): was checking window._wp18Cache — _wp18Cache is declared with
+      // top-level `let`, which never attaches to `window`, so window._wp18Cache is ALWAYS
+      // undefined regardless of what's actually cached. That made this function return false
+      // unconditionally, so a seeded row could never clear no matter what Amanda logged. Fixed
+      // by reading the bare _wp18Cache variable (same class of bug already fixed elsewhere in
+      // this file as v143, but this instance was missed).
+      const rows=(typeof _wp18Cache!=='undefined'&&_wp18Cache&&Array.isArray(_wp18Cache.transactionActs))?_wp18Cache.transactionActs:[];
       return rows.some(function(r){
         if(k(r.agent_name)!==k(seed.name)||String(r.act_type||'')!==seed.callType||String(r.act_date||'')<TRIGGER_DATE)return false;
-        const rr=(typeof wp30TxnRole==='function'?wp30TxnRole(r.notes):'Agent');
-        if(seed.role&&seed.role!=='Agent'&&String(rr||'').toLowerCase()!==seed.role.toLowerCase())return false;
+        const rr=String((typeof wp30TxnRole==='function'?wp30TxnRole(r.notes):'Agent')||'').toLowerCase();
+        // BUGFIX (2026-08-20): a call logged the normal way (not via this row's "Start call"
+        // button) has no [TXN_ROLE:] tag, so wp30TxnRole() defaults it to "Agent" — that used to
+        // get treated as a real mismatch against a seed expecting "Buyer"/"Listing", so a
+        // genuinely-completed call could never satisfy this row and it would never disappear.
+        // An untagged/"agent" role on the ACTUAL call is unknown, not a real conflict, so it's
+        // now treated as a wildcard too (matching how wp33CallCompletesTrigger already treats an
+        // "Agent" role as a wildcard on the trigger side).
+        if(seed.role&&seed.role!=='Agent'&&rr!=='agent'&&rr!==seed.role.toLowerCase())return false;
         const outcome=String(r.outcome||'').toLowerCase();
         if((outcome==='no answer'||outcome==='left voicemail')&&!(typeof wp33TxnTextSent==='function'&&wp33TxnTextSent(r.notes)))return false;
         return true;
@@ -15925,13 +15967,35 @@ console.log('RM Tracker Build v140.0 · transaction renderer race fixed');
       return k(card.textContent).includes(name);
     });
   }
+  // 2026-08-20: user-confirmed pairing — Haifa Brunney (Buyer) + James Brandt (Listing) are the
+  // same transaction; Megan Lynch (Buyer) + Jennifer Hochmiller (Listing) are the same
+  // transaction. wp48PrefillCtcTransaction has no way to know this (the seeds carry no shared
+  // txnId), so it can only ever prefill the clicked agent's own side. This wrapper fills in the
+  // paired agent's name on the OTHER side too, right after the normal open/prefill runs, so
+  // starting the call from either side of a pair brings up both agents at once instead of
+  // requiring a manual second entry.
+  async function startPairedCtc(seed){
+    await wp30OpenTransactionTask(seed.name,seed.callType,seed.role,'Amanda','');
+    if(!seed.pairWith)return;
+    setTimeout(function(){
+      try{
+        const buyerEl=document.getElementById('ctcBuyerAgent'),sellerEl=document.getElementById('ctcSellerAgent');
+        if(seed.role==='Buyer'&&sellerEl&&!sellerEl.value.trim()){sellerEl.value=seed.pairWith;if(typeof ctcFillContact==='function')ctcFillContact('seller');}
+        else if(seed.role==='Listing'&&buyerEl&&!buyerEl.value.trim()){buyerEl.value=seed.pairWith;if(typeof ctcFillContact==='function')ctcFillContact('buyer');}
+        if(typeof ctcUpdatePreview==='function')ctcUpdatePreview();
+        const loaded=document.getElementById('ctcLoadedContext');
+        if(loaded&&loaded.textContent&&!loaded.textContent.includes(seed.pairWith))loaded.textContent+=' · Paired agent: '+seed.pairWith;
+      }catch(e){console.warn('v141 paired CTC prefill',e);}
+    },260);
+  }
+  window.v141StartPairedCtc=startPairedCtc;
   function row(seed){
-    const safe=jsq(seed.name),label=seed.callType==='CTC Call'?'CTC CALL':'NEW CONTRACT',why=seed.callType==='CTC Call'?'Clear to close · '+seed.role.toLowerCase()+' agent':'New contract · '+seed.role.toLowerCase()+' agent';
+    const label=seed.callType==='CTC Call'?'CTC CALL':'NEW CONTRACT',why=seed.callType==='CTC Call'?'Clear to close · '+seed.role.toLowerCase()+' agent':'New contract · '+seed.role.toLowerCase()+' agent';
     return '<div class="v141-seed-row" data-v141-agent="'+escapeHtml(seed.name)+'" style="padding:10px 12px;border:1px solid #E8C7C2;border-left:4px solid #B94E45;background:#FFF8F7;border-radius:9px;margin:6px 0">'
       +'<div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start;flex-wrap:wrap">'
       +'<div style="min-width:220px;flex:1"><div style="display:flex;align-items:center;gap:7px;flex-wrap:wrap"><span style="font-size:8.5px;font-weight:900;letter-spacing:.35px;background:#B94E45;color:#fff;border-radius:10px;padding:2px 7px">'+label+'</span><strong style="font-size:12.5px;color:var(--text-1)">'+escapeHtml(seed.name)+'</strong><span style="font-size:9.5px;color:#7B5560">'+escapeHtml(seed.role)+' agent</span></div>'
-      +'<div style="font-size:10.5px;color:#7A4C46;margin-top:4px">'+escapeHtml(why)+' · mandatory transaction call</div></div>'
-      +'<button type="button" onclick="wp30OpenTransactionTask(\''+safe+'\',\''+jsq(seed.callType)+'\',\''+jsq(seed.role)+'\',\'Amanda\',\'\')" style="background:#6A48B8;color:#fff;border:0;border-radius:8px;padding:7px 11px;font-size:10px;font-weight:800;cursor:pointer">Start call</button>'
+      +'<div style="font-size:10.5px;color:#7A4C46;margin-top:4px">'+escapeHtml(why)+' · mandatory transaction call'+(seed.pairWith?' · with '+escapeHtml(seed.pairWith):'')+'</div></div>'
+      +'<button type="button" onclick="v141StartPairedCtc('+JSON.stringify(seed).replace(/"/g,'&quot;')+')" style="background:#6A48B8;color:#fff;border:0;border-radius:8px;padding:7px 11px;font-size:10px;font-weight:800;cursor:pointer">Start call</button>'
       +'</div></div>';
   }
   function ensure(){
@@ -16024,7 +16088,10 @@ console.log('RM Tracker Build v141.0 · known open transaction fallback seeded')
       const d=(typeof today==='function'?today():new Date().toISOString().slice(0,10));
       const monthStart=d.slice(0,7)+'-01';
       try{
-        if((!window._wp18Cache||!Array.isArray(window._wp18Cache.prospectPool))&&typeof wp18FetchData==='function')await wp18FetchData(true);
+        // BUGFIX (2026-08-20): window._wp18Cache is always undefined (top-level `let` doesn't
+        // attach to window), so this condition was always true, forcing an unnecessary force-
+        // refresh every single time this ran. Reading the bare variable now.
+        if((typeof _wp18Cache==='undefined'||!_wp18Cache||!Array.isArray(_wp18Cache.prospectPool))&&typeof wp18FetchData==='function')await wp18FetchData(true);
       }catch(e){console.warn('v142 prospect refresh failed',e);}
       let monthActs=[];
       try{
@@ -16231,7 +16298,10 @@ console.log('RM Tracker Build v141.0 · known open transaction fallback seeded')
   }
   function currentCandidates(){
     try{
-      const data=window._wp18Cache;
+      // BUGFIX (2026-08-20): same window._wp18Cache scoping bug as seedCompleted() above —
+      // this always evaluated to undefined, so this fast-path never actually returned cached
+      // rows and always fell through to the slower localStorage/fetch paths below.
+      const data=(typeof _wp18Cache!=='undefined')?_wp18Cache:null;
       if(data&&typeof v106BuildTierGrowth==='function'){
         const built=v106BuildTierGrowth(data||{}),rows=((built&&built.stages&&built.stages.cToB)||[]).filter(c=>c&&c.owner==='Amanda').slice(0,5);
         if(rows.length)return rows;
