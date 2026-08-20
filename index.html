@@ -2,6 +2,7 @@
 <!-- v134: Face Time + C-to-B visibility fix; shared LP cadence, Power BI tier fallback, Amanda C routing, always-visible growth candidates -->
 
 
+<!-- v136 AMANDA SIMPLICITY PASS · 2026-08-20 -->
 <html lang="en">
 <head>
 <meta content="no-cache, no-store, must-revalidate" http-equiv="Cache-Control"/>
@@ -13890,8 +13891,8 @@ async function loadBreakBreadDue(){
     const nowForWeek=new Date(),dow=nowForWeek.getDay();nowForWeek.setHours(0,0,0,0);nowForWeek.setDate(nowForWeek.getDate()-(dow===0?6:dow-1));
     const wkStart=nowForWeek.getFullYear()+'-'+String(nowForWeek.getMonth()+1).padStart(2,'0')+'-'+String(nowForWeek.getDate()).padStart(2,'0'),todayStr=today();
     const amVisits=Object.values(visitLedger).filter(v=>amandaNames.has(v.name)),amToday=amVisits.filter(v=>v.date===todayStr).length,amWeek=amVisits.filter(v=>v.date>=wkStart&&v.date<=todayStr).length;
-    if(subEl)subEl.textContent=amandaRows.length+' need Face Time now · '+amToday+' completed today · '+amWeek+' this week · exact shared logic with LP';
-    if(!amandaRows.length){el.innerHTML='<div class="no-data">No Amanda-owned C relationships are due for Face Time right now. A/B/Channel is routed to Nyny, and this list uses the same shared visit cadence as the LP tracker.</div>';v107RenderDirectorFaceTime();return;}
+    if(subEl)subEl.textContent=amandaRows.length+' to schedule · '+amToday+' completed today · '+amWeek+' this week';
+    if(!amandaRows.length){el.innerHTML='<div class="no-data">No Face Time is due for Amanda right now.</div>';v107RenderDirectorFaceTime();return;}
     const shown=amandaRows.slice(0,12);
     el.innerHTML=shown.map(r=>v107FaceTimeRowHtml(r,false)).join('')+(amandaRows.length>shown.length?'<div style="font-size:11px;color:var(--text-4);margin-top:8px">+'+(amandaRows.length-shown.length)+' more Amanda Face Time priorities</div>':'');
     v107RenderDirectorFaceTime();
@@ -14030,32 +14031,32 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
   function build(){
     var card=document.getElementById('weeklyCallPlanCard');if(!card||document.getElementById('v113AmandaDashboard'))return;
     var dash=el('div','v113-dashboard');dash.id='v113AmandaDashboard';
-    var s1=step(1,'▣','Set my day','Add only real meetings or protected time.','v113StepSchedule');
-    var s2=step(2,'!','Urgent / mandatory work','Time-sensitive relationship or transaction work goes first.','v113StepUrgent');
-    var s3=step(3,'↔','LP handoffs','Warm team handoffs. Clear these before broad outreach.','v113StepLP');
-    var s4=step(4,'◉','Face Time to schedule','Build relationships in person. Same shared priority the LP sees.','v113StepFaceTime');
-    var s5=step(5,'☎','New meeting push','Close the gap to 20 new Realtor meetings this month.','v113StepMeetings');
-    var s6=step(6,'☆','Relationship work','Partner Health, reconnects and promised follow-ups stay visible every day.','v113StepSmart');
-    var s7=step(7,'↗','C → B growth opportunities','Focus on developing relationships with evidence they can move up.','v113StepGrowth');
-    var s8=step(8,'♡','Maintenance if time','Lower-priority care after the needle-moving work is handled.','v113StepMaintenance');
+    var s1=step(1,'▣','Set my day','Add meetings or blocked time.','v113StepSchedule');
+    var s2=step(2,'!','Urgent / mandatory work','Handle time-sensitive work first.','v113StepUrgent');
+    var s3=step(3,'↔','LP handoffs','Work warm handoffs before broad outreach.','v113StepLP');
+    var s4=step(4,'◉','Face Time to schedule','Book the next in-person touch.','v113StepFaceTime');
+    var s5=step(5,'☎','New meeting push','Book new Realtor meetings.','v113StepMeetings');
+    var s6=step(6,'☆','Relationship work','Work today’s priority relationships.','v113StepSmart');
+    var s7=step(7,'↗','C → B growth opportunities','Develop C relationships with growth evidence.','v113StepGrowth');
+    var s8=step(8,'♡','Maintenance if time','Only after priority work is done.','v113StepMaintenance');
     dash.append(s1,s2,s3,s4,s5,s6,s7,s8);
     var foot=el('div','v113-footer-actions','<button onclick="v85OpenInsightModal()">Share with Nyny</button><button onclick="openScriptsModal()">Scripts + Training</button><button onclick="openResourcesModal()">Resources</button><button class="primary" onclick="switchTab(\'log\')">Log Activity</button>');dash.appendChild(foot);
     card.appendChild(dash);
     var weekView=document.getElementById('view-week');if(weekView)weekView.classList.add('v113-ready');
     // Schedule
-    var sched=document.getElementById('v23AmandaAddTimeDetails');if(sched){sched.open=true;s1.lastChild.innerHTML=bodyTitle('Today’s real meetings / blocked time','Keeps the planner realistic');s1.lastChild.appendChild(sched);}
+    var sched=document.getElementById('v23AmandaAddTimeDetails');if(sched){sched.open=true;s1.lastChild.innerHTML=bodyTitle('Today’s meetings / blocked time','Meetings only');s1.lastChild.appendChild(sched);}
     // Urgent host + transaction intake helper
-    s2.lastChild.innerHTML=bodyTitle('Do this first','Only true time-sensitive work');var uh=el('div');uh.id='v113UrgentHost';s2.lastChild.appendChild(uh);var tx=document.getElementById('wp30TxnIntakeDetails');if(tx){tx.open=false;uh.appendChild(tx);}
+    s2.lastChild.innerHTML=bodyTitle('Do this first','Time-sensitive only');var uh=el('div');uh.id='v113UrgentHost';s2.lastChild.appendChild(uh);var tx=document.getElementById('wp30TxnIntakeDetails');if(tx){tx.open=false;uh.appendChild(tx);}
     // Split LP card into real rows
     var lpCard=document.getElementById('rmLpCoordCard'),sections=lpCard?Array.from(lpCard.querySelectorAll(':scope .rm-lp-coord-grid > section')):[];
-    s3.lastChild.innerHTML=bodyTitle('LP handoffs','Warmest team-generated outreach');var lph=el('div');lph.id='v113LpHost';s3.lastChild.appendChild(lph);if(sections[0])lph.appendChild(sections[0]);
-    s4.lastChild.innerHTML=bodyTitle('Face Time to schedule','Amanda-owned C relationships due by the same cadence the LP sees');var fth=el('div');fth.id='v113FaceTimeHost';s4.lastChild.appendChild(fth);if(sections[1])fth.appendChild(sections[1]);
+    s3.lastChild.innerHTML=bodyTitle('LP handoffs','Warm handoffs first');var lph=el('div');lph.id='v113LpHost';s3.lastChild.appendChild(lph);if(sections[0])lph.appendChild(sections[0]);
+    s4.lastChild.innerHTML=bodyTitle('Face Time to schedule','Book the next visit');var fth=el('div');fth.id='v113FaceTimeHost';s4.lastChild.appendChild(fth);if(sections[1])fth.appendChild(sections[1]);
     // meetings
-    s5.lastChild.innerHTML=bodyTitle('New meeting pace','Warmest paths first · then best new prospects');var mp=document.getElementById('v109NewMeetingPush');if(mp)s5.lastChild.appendChild(mp);
+    s5.lastChild.innerHTML=bodyTitle('New meeting pace','Book the meeting');var mp=document.getElementById('v109NewMeetingPush');if(mp)s5.lastChild.appendChild(mp);
     // smart placeholders; live renderer gets distributed from hidden source
-    s6.lastChild.innerHTML=bodyTitle('Relationship work','Partner Health · Relationship moves · Reconnect · Follow-ups — always visible');var sh=el('div');sh.id='v113SmartHost';s6.lastChild.appendChild(sh);
-    s7.lastChild.innerHTML=bodyTitle('C → B growth','Show the actual production + lead evidence');var gh=el('div');gh.id='v113GrowthHost';s7.lastChild.appendChild(gh);
-    s8.lastChild.innerHTML=bodyTitle('Maintenance','Visible, but never allowed to steal prime time');var mh=el('div');mh.id='v113MaintenanceHost';s8.lastChild.appendChild(mh);
+    s6.lastChild.innerHTML=bodyTitle('Relationship work','Today’s priority names');var sh=el('div');sh.id='v113SmartHost';s6.lastChild.appendChild(sh);
+    s7.lastChild.innerHTML=bodyTitle('C → B growth','Grow the right C relationships');var gh=el('div');gh.id='v113GrowthHost';s7.lastChild.appendChild(gh);
+    s8.lastChild.innerHTML=bodyTitle('Maintenance','Only if priority work is done');var mh=el('div');mh.id='v113MaintenanceHost';s8.lastChild.appendChild(mh);
     var source=document.getElementById('v22AmandaSnapshotPlan');if(source){source.style.display='none';card.appendChild(source);var obs=new MutationObserver(function(){setTimeout(distribute,0)});obs.observe(source,{childList:true,subtree:false});}
     // nurture / graduation are meaningful smart-work cards
     ['rmNurtureTodayCard','v84AmandaGraduationCard'].forEach(function(id){var n=document.getElementById(id);if(n)sh.appendChild(n);});
@@ -14648,7 +14649,7 @@ function v133Column(title,note,rows,totalCount,viewAllTab,viewAllLabel){
   const shown=rows.length;
   const extra=Math.max(0,(totalCount||shown)-shown);
   const body=shown?rows.join(""):'<div class="v133-col-empty">Nothing here right now.</div>';
-  const moreNote=extra>0?('+'+extra+' more in '+(viewAllLabel||title)):'';
+  const moreNote=extra>0?("Today’s priority names are above · "+extra+" more available in the full "+(viewAllLabel||title)+" queue"):'';
   return '<div class="v133-col">'+
     '<div class="v133-col-title">'+v126Esc(title)+'</div><div class="v133-col-note">'+v126Esc(note||"")+'</div>'+
     body+
@@ -15399,14 +15400,14 @@ console.log('RM Tracker Build v134 · mobile-safe Today fallback');
       var built=v106BuildTierGrowth(data||{});
       var rows=((built&&built.stages&&built.stages.cToB)||[]).filter(function(c){return c&&c.owner==='Amanda';}).slice(0,5);
       if(!rows.length){
-        host.innerHTML='<div class="v113-body-empty" data-v134-growth="1">No Amanda-owned C → B growth candidates are loaded right now.</div>';
+        host.innerHTML='<div class="v113-body-empty" data-v134-growth="1">No C → B focus relationship is ready right now.</div>';
         return;
       }
       var cards=rows.map(function(c){
         var t=v134GrowthTask(c);
         return (typeof v112GrowthCard==='function')?v112GrowthCard(t):'<div class="v112-growth-card"><strong>'+escHtml(typeof resolvedDisplayName==='function'?resolvedDisplayName(c.name):c.name)+'</strong><div>'+escHtml(typeof v106CandidateWhy==='function'?v106CandidateWhy(c):'Growth opportunity')+'</div></div>';
       }).join('');
-      host.innerHTML='<div class="v112-growth" data-v134-growth="1"><div class="v112-growth-head"><div><b>C → B Growth Opportunities</b><small>Top Amanda-owned C relationships from the current Power BI roster. These stay visible even when the same person also appears in Relationship Work.</small></div><span style="font-size:9.5px;font-weight:850;color:#2F6847">'+rows.length+' focus relationship'+(rows.length!==1?'s':'')+'</span></div><div class="v112-growth-grid">'+cards+'</div></div>';
+      host.innerHTML='<div class="v112-growth" data-v134-growth="1"><div class="v112-growth-head"><div><b>C → B Growth Opportunities</b><small>Best Amanda-owned C relationships with evidence to move up.</small></div><span style="font-size:9.5px;font-weight:850;color:#2F6847">'+rows.length+' focus relationship'+(rows.length!==1?'s':'')+'</span></div><div class="v112-growth-grid">'+cards+'</div></div>';
     }catch(e){
       console.warn('v134 C→B visibility',e);
       if(!host.querySelector('.v112-growth-card'))host.innerHTML='<div class="v113-body-empty" data-v134-growth="1">C → B names could not load right now. Retry the tracker refresh.</div>';
@@ -15429,5 +15430,95 @@ console.log('RM Tracker Build v134 · mobile-safe Today fallback');
 })();
 console.log('RM Tracker Build v134.0 · Face Time + C-to-B visibility aligned');
 </script>
+
+<style id="v136-amanda-simplicity-pass-css">
+/* v136 — Amanda Today: execution first, less explanation, louder names/actions. */
+#view-week .v113-body-note{display:none!important}
+#view-week #v113SmartHost .v127-inventory{display:none!important}
+#view-week #v113StepMeetings{border:2px solid #BCA4D8!important;box-shadow:0 7px 22px rgba(95,63,139,.08)!important}
+#view-week #v113StepMeetings .v113-step-rail{background:linear-gradient(180deg,#F6EEFD,#F1E5FA)!important}
+#view-week #v113StepMeetings .v113-rail-icon{background:#6A44A8!important;color:#fff!important}
+#view-week #v109NewMeetingPush>div:first-child>div>div:first-child{font-size:13px!important;font-weight:900!important;letter-spacing:.2px!important}
+#view-week #v109NewMeetingPush .v109-big{font-size:30px!important;font-weight:900!important}
+#view-week #v109NewMeetingPush .v109-prospect>div:first-child span:first-child,
+#view-week #v109NewMeetingPush [style*="font-size:11.5px"][style*="font-weight:760"]{font-size:13px!important;font-weight:800!important}
+#view-week #v109NewMeetingPush button{min-height:31px!important;font-size:10.5px!important;font-weight:800!important}
+#view-week .v133-col{padding:11px 12px!important}
+#view-week .v133-col-title{font-size:13px!important;font-weight:800!important}
+#view-week .v133-col-note{font-size:10px!important;margin-bottom:6px!important}
+#view-week .v133-col-name{font-size:13px!important;font-weight:800!important;color:#2E1F43!important}
+#view-week .v133-col-why{font-size:10.5px!important;line-height:1.35!important;color:#72667C!important}
+#view-week .v133-col-btn{min-height:32px!important;font-size:10.5px!important;font-weight:800!important;margin-top:7px!important}
+#view-week .v133-col-more{font-size:10px!important;line-height:1.35!important;color:#746A7C!important;padding-top:3px!important}
+#view-week .v133-col-viewall{min-height:30px!important;font-size:10.5px!important;font-weight:800!important}
+#view-week #v113SmartHost .v112-name{font-size:13px!important;font-weight:850!important;color:#2B203A!important}
+#view-week #v113SmartHost .v112-why{font-size:10.5px!important;line-height:1.35!important}
+#view-week #v113SmartHost .v112-row-actions button{min-height:31px!important;font-size:10px!important;font-weight:800!important;padding:6px 9px!important}
+#view-week #v113GrowthHost .v112-growth-title b{font-size:13.5px!important;font-weight:850!important}
+#view-week #v113GrowthHost .v112-growth-reason{font-size:10.5px!important;line-height:1.4!important}
+#view-week #v113GrowthHost .v112-stat{font-size:10px!important}
+#view-week #v113GrowthHost .v112-row-actions button{min-height:31px!important;font-size:10px!important;font-weight:800!important;padding:6px 9px!important}
+#view-week #v113FaceTimeHost #breadDueList>div[style*="display:grid"]{background:#FCFBFE!important;border:1px solid #E8E0F0!important;border-radius:10px!important;padding:10px!important;margin:0 0 7px!important}
+#view-week #v113FaceTimeHost #breadDueList>div[style*="display:grid"]>div:first-child>strong{font-size:13.5px!important;font-weight:850!important;color:#2B203A!important}
+#view-week #v113FaceTimeHost #breadDueList button{min-height:31px!important;font-size:10px!important;font-weight:800!important;padding:6px 9px!important}
+#view-week #breadSub{font-size:10.5px!important;color:#6F6479!important}
+.v136-today-focus{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;border:1px solid #C9B5E1;background:linear-gradient(90deg,#F3E9FC,#FBF8FE);border-radius:13px;padding:10px 13px;margin-bottom:1px;color:#382351}
+.v136-today-focus strong{font-size:12.5px;font-weight:900;letter-spacing:.15px}
+.v136-today-focus span{font-size:11px;color:#665670;font-weight:600}
+.v136-today-focus .v136-target{background:#65409D;color:#fff;border-radius:999px;padding:5px 9px;font-size:10.5px;font-weight:900;white-space:nowrap}
+@media(max-width:620px){
+  .v136-today-focus{padding:9px 10px;gap:6px}
+  .v136-today-focus strong{font-size:12px}
+  .v136-today-focus span{font-size:10.5px}
+  #view-week .v133-col-name,#view-week #v113GrowthHost .v112-growth-title b,#view-week #v113FaceTimeHost #breadDueList>div[style*="display:grid"]>div:first-child>strong{font-size:13px!important}
+}
+</style>
+<script id="v136-amanda-simplicity-pass-js">
+(function(){
+  function meetingTargetFromHost(){
+    var h=document.getElementById('v109NewMeetingPush');
+    var txt=h?String(h.textContent||''):'';
+    var m=txt.match(/Today[’']s working target:\s*(\d+)\s*meeting/i);
+    if(!m)m=txt.match(/target:\s*(\d+)\s*meeting/i);
+    return m?Number(m[1]):null;
+  }
+  function ensureFocus(){
+    var dash=document.getElementById('v113AmandaDashboard');if(!dash)return;
+    var box=document.getElementById('v136TodayFocus');
+    if(!box){
+      box=document.createElement('div');box.id='v136TodayFocus';box.className='v136-today-focus';
+      dash.insertBefore(box,dash.firstChild);
+    }
+    var n=meetingTargetFromHost();
+    if(n===0){
+      box.innerHTML='<div><strong>Today’s focus</strong><br><span>Work the priority names below from top to bottom and log each touch.</span></div><div class="v136-target">MEETING GOAL ON PACE</div>';
+    }else if(Number.isFinite(n)){
+      box.innerHTML='<div><strong>Today’s win: book '+n+' new Realtor meeting'+(n===1?'':'s')+'</strong><br><span>Work top to bottom. Warm opportunities first. Log each touch as you go.</span></div><div class="v136-target">BOOK '+n+' TODAY</div>';
+    }else{
+      box.innerHTML='<div><strong>Today’s focus</strong><br><span>Work top to bottom. Move conversations toward a meeting and log each touch.</span></div><div class="v136-target">MOVE THE NEEDLE</div>';
+    }
+  }
+  function cleanCopy(){
+    var growth=document.querySelector('#v113GrowthHost .v112-growth-head small');
+    if(growth)growth.textContent='Best Amanda-owned C relationships with evidence to move up.';
+    var face=document.getElementById('breadSub');
+    if(face)face.textContent=String(face.textContent||'').replace(/\s*·\s*exact shared logic with LP\s*$/i,'').replace(/need Face Time now/i,'to schedule');
+    document.querySelectorAll('#v113SmartHost .v133-col-more').forEach(function(n){
+      var t=String(n.textContent||'').trim(),m=t.match(/^\+(\d+) more in (.+)$/i);
+      if(m)n.textContent='Today’s priority names are above · '+m[1]+' more available in the full '+m[2]+' queue';
+    });
+  }
+  function polish(){ensureFocus();cleanCopy();}
+  var oldMeeting=window.v109RenderNewMeetingPush;
+  if(typeof oldMeeting==='function')window.v109RenderNewMeetingPush=function(){var r=oldMeeting.apply(this,arguments);setTimeout(polish,0);return r;};
+  ['v109NewMeetingPush','v113SmartHost','breadDueList','v113GrowthHost'].forEach(function(id){
+    var el=document.getElementById(id);if(el&&!el.dataset.v136Observed){el.dataset.v136Observed='1';new MutationObserver(function(){setTimeout(polish,0);}).observe(el,{childList:true,subtree:true});}
+  });
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',function(){setTimeout(polish,650);setTimeout(polish,1800);},{once:true});
+  else{setTimeout(polish,180);setTimeout(polish,1200);}
+})();
+console.log('RM Tracker Build v136.0 · Amanda simplicity pass · execution first');
+</script>
+
 </body>
 </html>
