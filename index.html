@@ -1,5 +1,5 @@
   <!DOCTYPE html>
-<!-- v134: Face Time + C-to-B visibility fix; shared LP cadence, Power BI tier fallback, Amanda C routing, always-visible growth candidates -->
+<!-- v135: Amanda Relationship Work ownership fix; all queues now exclude Nyny-owned/strategic/A-B-Channel relationships consistently -->
 
 
 <!-- v136 AMANDA SIMPLICITY PASS · 2026-08-20 -->
@@ -14738,11 +14738,28 @@ function v131DaysSince(dateStr){
   if(Number.isNaN(d.getTime()))return null;
   return Math.max(0,Math.round((new Date((typeof today==="function"?today():new Date().toISOString().slice(0,10))+"T12:00:00")-d)/86400000));
 }
+function v135AmandaRelationshipAllowed(name,profile,tierHint,ownerMap){
+  const nm=String(name||"").trim();
+  if(!nm)return false;
+  // Strategic / Director-owned rules always win, even if an old assignment still says Amanda.
+  try{if(typeof wp18StrategicNynyMatch==="function"&&wp18StrategicNynyMatch(nm,profile||{}))return false;}catch(e){}
+  const tier=String(tierHint||(profile&&(profile.tier||profile.powerbi_level))||"").trim().toUpperCase();
+  if(tier==="CHANNEL"||tier==="A"||tier==="B")return false;
+  let own=null;
+  try{
+    const k=String(nm).trim().toLowerCase().replace(/\s+/g," ");
+    if(ownerMap&&ownerMap[k])own=ownerMap[k];
+    if(!own&&typeof getAgentOwnership==="function")own=getAgentOwnership(nm);
+  }catch(e){}
+  if(own&&String(own.rm||"").trim())return String(own.rm||"").trim().toLowerCase()==="amanda";
+  // Unassigned C relationships remain Amanda-routable until ownership cleanup assigns them.
+  return true;
+}
 function v131ReconnectFallbackRows(){
   let rows=[];
   try{if(typeof rcData!=="undefined"&&Array.isArray(rcData)&&rcData.length)rows=rcData.slice();}catch(e){}
   try{if(!rows.length&&typeof V126_RECONNECT_SOURCE!=="undefined"&&Array.isArray(V126_RECONNECT_SOURCE))rows=V126_RECONNECT_SOURCE.slice();}catch(e){}
-  return rows.filter(r=>r&&r.agent_name&&(!r.status||r.status==="active"));
+  return rows.filter(r=>r&&r.agent_name&&(!r.status||r.status==="active")&&v135AmandaRelationshipAllowed(r.agent_name,null,r.grade,null));
 }
 function v131RenderImmediateRelationshipFallback(live){
   if(!live)return;
@@ -14798,38 +14815,45 @@ async function v126RefreshRelationshipWork(force){
       const profilePath="agent_profiles?select=agent_name,tier,powerbi_level,retained,do_not_contact,relationship_status,relationship_type,competitor_risk_flag,high_potential_flag,next_growth_opportunity,latest_lead_date,last_meaningful_contact_date,closes_past_year,total_leads_past_year&retained=eq.true&limit=1000";
       const reconnectPath=(typeof RC_TABLE!=="undefined"?RC_TABLE:"reconnect_agents")+"?select=id,agent_name,grade,days_since,status,latest_interaction,closes_past_year&status=eq.active&limit=1000";
       const followPath="amanda_activities?select=id,agent_name,act_type,act_date,outcome,notes,follow_up_date&follow_up_date=not.is.null&follow_up_date=lte."+todayStr+"&order=follow_up_date.asc&limit=250";
+      const ownershipPath="agent_assignments?select=agent_name,rm,lp,priority,added,level&limit=5000";
       const results=await Promise.all([
         v131Timeout(sbFetch(profilePath),15000,null),
         v131Timeout(sbFetch(reconnectPath),6500,[]),
-        v131Timeout(sbFetch(followPath),6500,[])
+        v131Timeout(sbFetch(followPath),6500,[]),
+        v131Timeout(sbFetch(ownershipPath),6500,[])
       ]);
       // FIX (2026-08-19): the profile query is the heaviest of the three (up to 1000 rows, 14
       // columns) and was timing out at 6.5s, silently rendering as "0 red / 0 yellow" instead of
       // showing that the load failed. Partner Health and Relationship Moves both depend on this
       // query, so a null here (vs. a genuinely-empty []) means "couldn't load," not "nothing to show."
       const profilesFailed=results[0]===null;
-      const profiles=results[0]||[], reconnect=results[1]||[], followups=results[2]||[];
+      const profiles=results[0]||[], reconnect=results[1]||[], followups=results[2]||[], ownershipRows=results[3]||[];
       const pkey=n=>String(n||"").trim().toLowerCase().replace(/\s+/g," ");
+      const profileMap={};(profiles||[]).forEach(p=>{if(p&&p.agent_name)profileMap[pkey(p.agent_name)]=p;});
+      const ownerMap={};(ownershipRows||[]).forEach(o=>{if(o&&o.agent_name){ownerMap[pkey(o.agent_name)]=o;try{if(typeof cacheOwnershipRow==="function")cacheOwnershipRow(o);}catch(e){}}});
       const strategic=p=>{
         try{return String(p.relationship_type||"").toLowerCase()==="strategic_partner"||(typeof wp18StrategicNynyMatch==="function"&&wp18StrategicNynyMatch(p.agent_name,p));}
         catch(e){return String(p.relationship_type||"").toLowerCase()==="strategic_partner";}
       };
-      const director=p=>{
-        try{
-          const o=typeof getAgentOwnership==="function"?getAgentOwnership(p.agent_name):null;
-          if(o&&o.rm)return o.rm==="Nyny";
-        }catch(e){}
-        const tier=String(p.tier||p.powerbi_level||"").toUpperCase();
-        return strategic(p)||tier==="CHANNEL"||tier==="A"||tier==="B";
-      };
+      const director=p=>!v135AmandaRelationshipAllowed(p&&p.agent_name,p,null,ownerMap);
       const activeProfiles=profiles.filter(p=>p&&p.agent_name&&p.do_not_contact!==true&&String(p.relationship_status||"active").toLowerCase()!=="inactive"&&!strategic(p)&&!director(p));
       const inactive=new Set(profiles.filter(p=>p&&p.agent_name&&(p.do_not_contact===true||String(p.relationship_status||"active").toLowerCase()==="inactive")).map(p=>pkey(p.agent_name)));
 
-      const recOpen=(reconnect.length?reconnect:v131ReconnectFallbackRows()).filter(r=>r&&r.agent_name&&(!r.status||r.status==="active")&&!inactive.has(pkey(r.agent_name)));
+      const recOpen=(reconnect.length?reconnect:v131ReconnectFallbackRows()).filter(r=>{
+        if(!r||!r.agent_name||!(!r.status||r.status==="active")||inactive.has(pkey(r.agent_name)))return false;
+        return v135AmandaRelationshipAllowed(r.agent_name,profileMap[pkey(r.agent_name)]||null,r.grade,ownerMap);
+      });
       const tr={Channel:0,A:1,B:2,C:3};
       recOpen.sort((a,b)=>(tr[a.grade]??4)-(tr[b.grade]??4)||(Number(b.days_since)||0)-(Number(a.days_since)||0));
 
-      const followDue=followups.filter(f=>f&&f.agent_name&&String(f.follow_up_date||"")<=todayStr);
+      const followDue=followups.filter(f=>{
+        if(!f||!f.agent_name||String(f.follow_up_date||"")>todayStr)return false;
+        if(!v135AmandaRelationshipAllowed(f.agent_name,profileMap[pkey(f.agent_name)]||null,null,ownerMap))return false;
+        // If the activity explicitly assigns the next step to Nyny, it belongs in the Director queue,
+        // not Amanda's Today list, even when the underlying relationship is otherwise shared.
+        try{if(typeof getNextStepOwner==="function"&&String(getNextStepOwner(f)||"").trim()==="Nyny")return false;}catch(e){}
+        return true;
+      });
       followDue.sort((a,b)=>String(a.follow_up_date||"").localeCompare(String(b.follow_up_date||"")));
       const followOver=followDue.filter(f=>String(f.follow_up_date)<todayStr).length;
 
