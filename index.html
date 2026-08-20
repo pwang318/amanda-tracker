@@ -1,5 +1,5 @@
- <!DOCTYPE html>
-<!-- v125: restores distinct Partner Health, Reconnect, Follow-ups and Relationship Moves visibility in Amanda Today; single-source Power BI unchanged -->
+  <!DOCTYPE html>
+<!-- v134: Face Time + C-to-B visibility fix; shared LP cadence, Power BI tier fallback, Amanda C routing, always-visible growth candidates -->
 
 
 <html lang="en">
@@ -65,7 +65,7 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI'
 .week-chip{background:rgba(255,255,255,.12);color:rgba(255,255,255,.85);font-size:11px;padding:5px 12px;border-radius:20px;font-weight:500}
 .sync{display:flex;align-items:center;gap:5px;font-size:12px;color:rgba(255,255,255,.82)}
 .sync-dot{width:7px;height:7px;border-radius:50%;background:#555}
-.sync-dot.ok{background:#22C99A}.sync-dot.err{background:#F06260}
+.sync-dot.ok{background:#22C99A}.sync-dot.slow{background:#E0A44C}.sync-dot.err{background:#F06260}
 .sync-btn{background:none;border:none;color:rgba(255,255,255,.6);font-size:13px;cursor:pointer;padding:5px 9px;border-radius:8px;transition:all .2s}
 .sync-btn:hover{background:rgba(255,255,255,.15);color:#fff}
 
@@ -3929,10 +3929,34 @@ document.getElementById("weekPill").textContent=week.label;
 document.getElementById("activityDate").value=today();
 
 // ENHANCED sbFetch with timeout, better errors, and schema-safe agent_profiles reads.
-// FIX (2026-08-19): raised from 12000ms. This connection has repeatedly needed 15s+ to complete
-// its heavier queries (1000+ rows, 20+ columns) — the tighter timeout was causing exactly the
-// "silently comes back empty" pattern found separately in Relationship Work, C-to-B growth, and
-// Face Time. This is the shared root cause; every sbFetch call benefits from the same margin.
+// v135 connection state: distinguish reachable, slow, offline, and real data-access errors.
+function rmSetConnectionStatus(state){
+  const btn=document.getElementById("syncBtn"),dot=document.getElementById("syncDot"),txt=document.getElementById("syncTxt");
+  if(!dot||!txt)return;
+  if(state==="live"){dot.className="sync-dot ok";txt.textContent="Live";}
+  else if(state==="checking"){dot.className="sync-dot slow";txt.textContent="Checking...";}
+  else if(state==="slow"){dot.className="sync-dot slow";txt.textContent="Slow connection · Retry";}
+  else if(state==="offline"){dot.className="sync-dot err";txt.textContent="Offline · Retry";}
+  else{dot.className="sync-dot err";txt.textContent="Data access issue · Retry";}
+  if(btn){btn.disabled=state==="checking";btn.style.opacity=state==="checking"?"0.5":"1";}
+}
+let rmLastServerSuccessAt=0;
+function rmMarkServerReachable(){
+  rmLastServerSuccessAt=Date.now();
+  const txt=document.getElementById("syncTxt");
+  if(!txt)return;
+  if(/Connecting|Checking|Slow connection|Offline|Data access issue/.test(String(txt.textContent||"")))rmSetConnectionStatus("live");
+}
+function rmConnectionErrorKind(err){
+  const msg=String((err&&err.message)||err||"");
+  if(typeof navigator!=="undefined"&&navigator.onLine===false)return "offline";
+  if((err&&err.code==="RM_TIMEOUT")||/responding slowly|timed out/i.test(msg))return "slow";
+  if((err&&err.code==="RM_NETWORK")||/Failed to fetch|NetworkError|Load failed/i.test(msg))return "offline";
+  return "error";
+}
+
+// FIX (2026-08-20): use the same 20s timeout everywhere. The previous 7s health check contradicted
+// the proven 15s+ Supabase response time and created false "connection issue" warnings.
 async function sbFetch(path,options={}){
   const originalPath=path;
   const originalOptions={...options};
@@ -3943,6 +3967,7 @@ async function sbFetch(path,options={}){
   if(!options.signal)options.signal=controller.signal;
   try{
     const res=await fetch(SB_URL+"/rest/v1/"+path,{headers,...options});
+    rmMarkServerReachable();
     const text=await res.text();
     let body;
     try{body=text?JSON.parse(text):{};}catch(e){body={error:"Parse error",raw:text};}
@@ -3975,7 +4000,12 @@ async function sbFetch(path,options={}){
     }
     return body;
   }catch(err){
-    if(err&&err.name==="AbortError")throw new Error("Connection timed out. Please retry.");
+    if(err&&err.name==="AbortError"){
+      const timeoutErr=new Error("Supabase is responding slowly. Please retry if this does not recover.");
+      timeoutErr.code="RM_TIMEOUT";
+      throw timeoutErr;
+    }
+    if(err&&err.status===undefined&&(/Failed to fetch|NetworkError|Load failed/i).test(String(err.message||err)))err.code=err.code||"RM_NETWORK";
     throw err;
   }finally{clearTimeout(timer);}
 }
@@ -4447,32 +4477,23 @@ document.getElementById("agentInput").addEventListener("input",function(){
   ddTimer=setTimeout(()=>{checkDoubleDial(val,"doubleDialWarn");showPersonalNotesReminder(val);},500);
 });
 
-// Connection status: fast, read-only, and timeout-safe.
-// A health check should never create/delete a fake activity record. Actual saves validate write access.
+// Connection status: lightweight and read-only, but now uses the SAME network timeout as real data.
+// Timeout = slow; browser/network failure = offline; an HTTP/schema/auth error = data access issue.
 async function testConnection(){
-  const btn=document.getElementById("syncBtn");
-  const dot=document.getElementById("syncDot");
-  const txt=document.getElementById("syncTxt");
-  if(btn){btn.disabled=true;btn.style.opacity="0.5";}
-  if(txt)txt.textContent="Checking...";
-  const controller=new AbortController();
-  const timer=setTimeout(()=>controller.abort(),7000);
+  const started=Date.now();
+  rmSetConnectionStatus("checking");
   try{
-    const res=await fetch(SB_URL+"/rest/v1/amanda_activities?select=id&limit=1",{
-      headers:{"apikey":SB_KEY,"Authorization":"Bearer "+SB_KEY},
-      signal:controller.signal
-    });
-    if(!res.ok){const body=await res.text().catch(()=>"");throw new Error(body||("HTTP "+res.status));}
-    if(dot)dot.className="sync-dot ok";
-    if(txt)txt.textContent="Live";
+    await sbFetch("amanda_activities?select=id&limit=1");
+    rmSetConnectionStatus("live");
     clearLogErrorBanner();
+    return true;
   }catch(e){
-    if(dot)dot.className="sync-dot err";
-    if(txt)txt.textContent="Connection issue · Retry";
-    console.warn("RM connection check failed:",e);
-  }finally{
-    clearTimeout(timer);
-    if(btn){btn.disabled=false;btn.style.opacity="1";}
+    // A different successful Supabase response after this check began already proves connectivity.
+    if(rmLastServerSuccessAt>=started){rmSetConnectionStatus("live");return true;}
+    const kind=rmConnectionErrorKind(e);
+    rmSetConnectionStatus(kind);
+    console.warn("RM connection check:",kind,e);
+    return false;
   }
 }
 
@@ -4490,22 +4511,36 @@ async function loadSharedDisplayNames(){
 }
 
 async function init(){
-  loadSharedDisplayNames();
-  testConnection();
-  cleanupLegacyConnectionTests();
-  flushOfflineQueue();
+  // Local UI first so the page is usable immediately.
   updateOfflineBadge();
-  loadWeek();loadFollowups();initAutocomplete();loadFlagged();loadOnboarding();loadStartHere();loadBreakBreadDue();loadDropoffWarning();
-  // v132 stability: Feed, Management, Quiet coverage and data-quality scans load only when needed instead of competing with Today startup.
-  setTimeout(()=>{try{loadContactDataQuality();}catch(e){}try{loadZeroProduction();}catch(e){}},5000);
+  initAutocomplete();
   checkOpenIntake();
   updateNotesRequirementHint();
   const savedOwner=localStorage.getItem("rm_activity_owner");
   if(savedOwner&&document.getElementById("activityOwner"))document.getElementById("activityOwner").value=savedOwner;
   onActivityOwnerChange();
-  loadRmTeamScorecard();
-  document.getElementById("agentInput").addEventListener("input",checkDedupOnInput);
+  const agentInput=document.getElementById("agentInput");if(agentInput)agentInput.addEventListener("input",checkDedupOnInput);
   onQuickLogTypeChange();
+
+  // v135 stability: stagger Supabase startup work. The old init fired nearly every query together,
+  // making the tiny health request compete with the full Today dashboard and creating false failures.
+  testConnection();
+  const startupTasks=[
+    [120,"week",loadWeek],
+    [320,"display names",loadSharedDisplayNames],
+    [520,"follow-ups",loadFollowups],
+    [720,"flags",loadFlagged],
+    [920,"onboarding",loadOnboarding],
+    [1120,"start here",loadStartHere],
+    [1320,"break bread",loadBreakBreadDue],
+    [1520,"dropoff",loadDropoffWarning],
+    [1850,"team scorecard",loadRmTeamScorecard],
+    [2400,"legacy test cleanup",cleanupLegacyConnectionTests],
+    [3000,"offline queue",flushOfflineQueue]
+  ];
+  startupTasks.forEach(([delay,label,fn])=>setTimeout(()=>{try{const p=fn();if(p&&p.catch)p.catch(e=>console.warn("RM startup "+label+" skipped:",e));}catch(e){console.warn("RM startup "+label+" skipped:",e);}},delay));
+  // Heavy diagnostics stay well behind the daily workflow.
+  setTimeout(()=>{try{loadContactDataQuality();}catch(e){}try{loadZeroProduction();}catch(e){}},7000);
 }
 // FIX (2026-08-19): init() was defined but never invoked anywhere in the file, so none of the
 // core data (Week, Follow-ups, Feed, Management, Quiet, Flagged, Onboarding, Start Here,
@@ -4587,7 +4622,8 @@ async function flushOfflineQueue(){
   if(needsAttention>0)toast(needsAttention+" offline "+(needsAttention===1?"entry needs":"entries need")+" attention and remain safely queued — nothing was discarded.","error",6500);
 }
 
-window.addEventListener("online",flushOfflineQueue);
+window.addEventListener("online",()=>{testConnection();flushOfflineQueue();});
+window.addEventListener("offline",()=>rmSetConnectionStatus("offline"));
 
 const SNOOZE_KEY="rm_snoozed_agents";
 let snoozeSupported=false;
@@ -6173,8 +6209,8 @@ function renderPeriodScorecard(){
 }
 
 // Face Time uses the Playbook meeting cadence: Channel/A monthly, B every other month, high-potential C quarterly.
-const FT_THRESHOLDS_LOCAL={Channel:[21,30,45],A:[21,30,45],B:[45,60,90],C:[75,90,120]};
-const FT_TARGETS_SHARED={Channel:30,A:30,B:60,C:90};
+const FT_THRESHOLDS_LOCAL={Channel:[10,14,21],A:[10,14,21],B:[21,30,45],C:[45,60,90]};
+const FT_TARGETS_SHARED={Channel:14,A:14,B:30,C:60};
 function sharedFaceTimePriorityScore(r){
   if(r.scheduled)return -100000;
   const severity={critical:4200,red:2700,warn:1300,ok:0};
@@ -13284,11 +13320,12 @@ function v44SetupManagementView(){
 // Make the guide close predictably with Escape, and build the clean Management View after the base tracker exists.
 document.addEventListener('keydown',function(e){if(e.key==='Escape'){const m=document.getElementById('appGuideModal');if(m&&m.classList.contains('open'))closeAppGuide();}});
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',v44SetupManagementView);else v44SetupManagementView();
-// Status watchdog: never leave the header frozen on Connecting/Checking forever.
+// v135 watchdog: after 18s, label an unresolved health check as slow — never as offline.
+// The shared 20s request timeout and later successful traffic can still restore Live automatically.
 setTimeout(function(){
-  const t=document.getElementById('syncTxt'),d=document.getElementById('syncDot');
-  if(t&&(/Connecting|Checking/.test(t.textContent||''))){t.textContent='Connection issue · Retry';if(d)d.className='sync-dot err';}
-},9000);
+  const t=document.getElementById('syncTxt');
+  if(t&&(/Connecting|Checking/.test(t.textContent||'')))rmSetConnectionStatus('slow');
+},18000);
 </script>
 <script id="v47-ia-navigation-fixes">
 // Clean browser tab title. Internal build names should never leak into the user experience.
@@ -13768,12 +13805,12 @@ function v107IsAmandaFaceTimeRow(r){
   var tier=String(r&&r.tier||'C').toUpperCase();
   var rm=String(r&&r.rm||'').trim().toLowerCase();
   // Amanda develops her own C/developing book. A/B/Channel belong in Director coverage.
-  return rm==='amanda' && tier==='C' && r&&r.high_potential_flag===true;
+  return !!r && rm.indexOf('amanda')>=0 && tier==='C';
 }
 function v107IsDirectorFaceTimeRow(r){
   var tier=String(r&&r.tier||'C').toUpperCase();
   var rm=String(r&&r.rm||'').trim().toLowerCase();
-  return rm==='nyny' && ['CHANNEL','A','B'].includes(tier);
+  return !!r && rm.indexOf('nyny')>=0 && ['CHANNEL','A','B'].includes(tier);
 }
 function v107OpenFTEncoded(name,lp,id){v101OpenFaceTimeModal(decodeURIComponent(name||''),decodeURIComponent(lp||''),decodeURIComponent(id||''));}
 function v107LogVisitEncoded(name){prefillActivityLog(decodeURIComponent(name||''),'Break Breads');}
@@ -13801,7 +13838,7 @@ async function loadBreakBreadDue(){
   if(!el)return;
   try{
     const[profiles,myBreads,lpBreads,assignments,scheduledFaceTime]=await Promise.all([
-      sbFetch('agent_profiles?select=agent_name,tier,retained,do_not_contact,relationship_status,relationship_type,lp_outreach_status,competitor_risk_flag,high_potential_flag,next_growth_opportunity,latest_lead_date,closes_past_year,total_leads_past_year&limit=5000').catch(()=>sbFetch('agent_profiles?select=agent_name,tier,do_not_contact,relationship_status&limit=5000').catch(()=>[])),
+      sbFetch('agent_profiles?select=agent_name,tier,powerbi_level,powerbi_last_seen_at,retained,do_not_contact,relationship_status,relationship_type,lp_outreach_status,competitor_risk_flag,high_potential_flag,next_growth_opportunity,latest_lead_date,closes_past_year,total_leads_past_year&limit=5000').catch(()=>sbFetch('agent_profiles?select=agent_name,tier,powerbi_level,do_not_contact,relationship_status&limit=5000').catch(()=>[])),
       sbFetch('amanda_activities?select=agent_name,act_date,notes&act_type=eq.Break Breads&order=act_date.desc&limit=4000').catch(()=>[]),
       sbFetch('break_breads?select=agent_name,date,logged_by,notes&order=date.desc&limit=4000').catch(()=>[]),
       sbFetch('agent_assignments?select=agent_name,lp,rm&limit=5000').catch(()=>[]),
@@ -13828,8 +13865,8 @@ async function loadBreakBreadDue(){
     (myBreads||[]).forEach(a=>{const n=normalize(a.agent_name);if(!n)return;const who=(getRmAttendees(a)||[getActivityOwner(a)||'Amanda']).join(' + ');if(!lastTouch[n]||a.act_date>lastTouch[n].date)lastTouch[n]={date:a.act_date,by:who};});
     (lpBreads||[]).forEach(b=>{const n=normalize(b.agent_name);if(!n)return;if(!lastTouch[n]||b.date>lastTouch[n].date)lastTouch[n]={date:b.date,by:b.logged_by||'LP'};});
     const today0=new Date();today0.setHours(0,0,0,0);
-    const allRows=(profiles||[]).filter(p=>{const k=normalize(p.agent_name),own=owners[k]||{},tier=String(p.tier||'').trim().toUpperCase();return !!k&&!p.do_not_contact&&(p.relationship_status||'active')!=='inactive'&&p.retained!==false&&!own.removed&&String(p.relationship_type||'realtor')!=='strategic_partner'&&String(p.lp_outreach_status||'active')!=='nurture'&&['CHANNEL','A','B','C'].includes(tier)&&(tier!=='C'||p.high_potential_flag===true);}).map(p=>{
-      const n=normalize(p.agent_name),tier=p.tier||'C',touch=lastTouch[n],own=owners[n]||{};
+    const allRows=(profiles||[]).filter(p=>{const k=normalize(p.agent_name),own=owners[k]||{},profileTier=String(p.tier||'').trim().toUpperCase(),pbTier=String(p.powerbi_level||'').trim().toUpperCase(),tier=profileTier==='CHANNEL'?'CHANNEL':(['A','B','C'].includes(pbTier)?pbTier:profileTier);return !!k&&!p.do_not_contact&&String(p.relationship_status||'active').toLowerCase()!=='inactive'&&p.retained!==false&&!own.removed&&String(p.relationship_type||'realtor').toLowerCase()!=='strategic_partner'&&String(p.lp_outreach_status||'active').toLowerCase()!=='nurture'&&['CHANNEL','A','B','C'].includes(tier);}).map(p=>{
+      const n=normalize(p.agent_name),profileTier=String(p.tier||'').trim().toUpperCase(),pbTier=String(p.powerbi_level||'').trim().toUpperCase(),tier=profileTier==='CHANNEL'?'Channel':(['A','B','C'].includes(pbTier)?pbTier:(profileTier||'C')),touch=lastTouch[n],own=owners[n]||{};
       const days=touch?Math.floor((today0-new Date(touch.date+'T12:00:00'))/86400000):null;
       const th=FT_THRESHOLDS_LOCAL[tier]||FT_THRESHOLDS_LOCAL.C; let status='ok';
       if(days===null||days>=th[2])status='critical'; else if(days>=th[1])status='red'; else if(days>=th[0])status='warn';
@@ -13838,6 +13875,7 @@ async function loadBreakBreadDue(){
       let rm=own.rm||'Unassigned';
       try{if(ownerRecords&&typeof wp18ResolveOwner==="function")rm=wp18ResolveOwner(p.agent_name,p,ownerRecords,"")||rm;}catch(e){}
       if(['CHANNEL','A','B'].includes(String(tier||'').toUpperCase()))rm='Nyny';
+      else if(String(tier||'').toUpperCase()==='C'&&!/^(Amanda|Nyny)$/i.test(String(rm||'')))rm='Amanda';
       const row={name:p.agent_name,tier,days,status,by:touch?touch.by:null,lastDate:touch?touch.date:null,lp:own.lp||'Unassigned',rm,target,scheduled:sched,competitor_risk_flag:!!p.competitor_risk_flag,high_potential_flag:!!p.high_potential_flag,next_growth_opportunity:p.next_growth_opportunity||'',daysLead,closes_past_year:p.closes_past_year||0,total_leads_past_year:p.total_leads_past_year||0};
       row.priorityScore=sharedFaceTimePriorityScore(row);row.priorityWhy=sharedFaceTimeWhy(row);return row;
     });
@@ -13853,7 +13891,7 @@ async function loadBreakBreadDue(){
     const wkStart=nowForWeek.getFullYear()+'-'+String(nowForWeek.getMonth()+1).padStart(2,'0')+'-'+String(nowForWeek.getDate()).padStart(2,'0'),todayStr=today();
     const amVisits=Object.values(visitLedger).filter(v=>amandaNames.has(v.name)),amToday=amVisits.filter(v=>v.date===todayStr).length,amWeek=amVisits.filter(v=>v.date>=wkStart&&v.date<=todayStr).length;
     if(subEl)subEl.textContent=amandaRows.length+' need Face Time now · '+amToday+' completed today · '+amWeek+' this week · exact shared logic with LP';
-    if(!amandaRows.length){el.innerHTML='<div class="no-data">No Amanda-owned high-potential C Face Time needs scheduling right now. A/B/Channel is routed to Nyny; lower-potential C stays in campaign/event nurture per the Playbook.</div>';v107RenderDirectorFaceTime();return;}
+    if(!amandaRows.length){el.innerHTML='<div class="no-data">No Amanda-owned C relationships are due for Face Time right now. A/B/Channel is routed to Nyny, and this list uses the same shared visit cadence as the LP tracker.</div>';v107RenderDirectorFaceTime();return;}
     const shown=amandaRows.slice(0,12);
     el.innerHTML=shown.map(r=>v107FaceTimeRowHtml(r,false)).join('')+(amandaRows.length>shown.length?'<div style="font-size:11px;color:var(--text-4);margin-top:8px">+'+(amandaRows.length-shown.length)+' more Amanda Face Time priorities</div>':'');
     v107RenderDirectorFaceTime();
@@ -14011,7 +14049,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
     // Split LP card into real rows
     var lpCard=document.getElementById('rmLpCoordCard'),sections=lpCard?Array.from(lpCard.querySelectorAll(':scope .rm-lp-coord-grid > section')):[];
     s3.lastChild.innerHTML=bodyTitle('LP handoffs','Warmest team-generated outreach');var lph=el('div');lph.id='v113LpHost';s3.lastChild.appendChild(lph);if(sections[0])lph.appendChild(sections[0]);
-    s4.lastChild.innerHTML=bodyTitle('Face Time to schedule','Amanda-owned high-potential C relationships only');var fth=el('div');fth.id='v113FaceTimeHost';s4.lastChild.appendChild(fth);if(sections[1])fth.appendChild(sections[1]);
+    s4.lastChild.innerHTML=bodyTitle('Face Time to schedule','Amanda-owned C relationships due by the same cadence the LP sees');var fth=el('div');fth.id='v113FaceTimeHost';s4.lastChild.appendChild(fth);if(sections[1])fth.appendChild(sections[1]);
     // meetings
     s5.lastChild.innerHTML=bodyTitle('New meeting pace','Warmest paths first · then best new prospects');var mp=document.getElementById('v109NewMeetingPush');if(mp)s5.lastChild.appendChild(mp);
     // smart placeholders; live renderer gets distributed from hidden source
@@ -15343,6 +15381,53 @@ console.log("RM Tracker Build v126.0 · live relationship queues · 221-row reco
   window.addEventListener('pageshow',function(){setTimeout(ensureVisible,120);});
 })();
 console.log('RM Tracker Build v134 · mobile-safe Today fallback');
+</script>
+<script>console.log("RM Tracker Build v135.0 · connection status stabilization · staggered startup · false failure fix");</script>
+
+<script id="v134-facetime-growth-visibility-fix">
+(function(){
+  var V134_GROWTH_TIMER=null;
+  function v134GrowthTask(c){
+    var item={name:c.name,profile:c.profile||{},owner:'Amanda',score:c.score||0,reasons:['Tier growth C → B · '+(typeof v106CandidateWhy==='function'?v106CandidateWhy(c):'growth opportunity')],type:'Agent Talk-to',source:'Tier Growth',queue:null};
+    return {kind:'tier_growth',minutes:15,owner:'Amanda',name:c.name,item:item,title:'C → B growth · '+(typeof resolvedDisplayName==='function'?resolvedDisplayName(c.name):c.name),why:(typeof v106CandidateWhy==='function'?v106CandidateWhy(c):'Growth opportunity')+' · Next best move: uncover the next buyer/opportunity and book Face Time or a meeting.',growth:c};
+  }
+  async function v134EnsureGrowthVisible(force){
+    var host=document.getElementById('v113GrowthHost');
+    if(!host||typeof wp18FetchData!=='function'||typeof v106BuildTierGrowth!=='function')return;
+    try{
+      var data=await wp18FetchData(force===true);
+      var built=v106BuildTierGrowth(data||{});
+      var rows=((built&&built.stages&&built.stages.cToB)||[]).filter(function(c){return c&&c.owner==='Amanda';}).slice(0,5);
+      if(!rows.length){
+        host.innerHTML='<div class="v113-body-empty" data-v134-growth="1">No Amanda-owned C → B growth candidates are loaded right now.</div>';
+        return;
+      }
+      var cards=rows.map(function(c){
+        var t=v134GrowthTask(c);
+        return (typeof v112GrowthCard==='function')?v112GrowthCard(t):'<div class="v112-growth-card"><strong>'+escHtml(typeof resolvedDisplayName==='function'?resolvedDisplayName(c.name):c.name)+'</strong><div>'+escHtml(typeof v106CandidateWhy==='function'?v106CandidateWhy(c):'Growth opportunity')+'</div></div>';
+      }).join('');
+      host.innerHTML='<div class="v112-growth" data-v134-growth="1"><div class="v112-growth-head"><div><b>C → B Growth Opportunities</b><small>Top Amanda-owned C relationships from the current Power BI roster. These stay visible even when the same person also appears in Relationship Work.</small></div><span style="font-size:9.5px;font-weight:850;color:#2F6847">'+rows.length+' focus relationship'+(rows.length!==1?'s':'')+'</span></div><div class="v112-growth-grid">'+cards+'</div></div>';
+    }catch(e){
+      console.warn('v134 C→B visibility',e);
+      if(!host.querySelector('.v112-growth-card'))host.innerHTML='<div class="v113-body-empty" data-v134-growth="1">C → B names could not load right now. Retry the tracker refresh.</div>';
+    }
+  }
+  function scheduleGrowth(force){clearTimeout(V134_GROWTH_TIMER);V134_GROWTH_TIMER=setTimeout(function(){v134EnsureGrowthVisible(force);},120);}
+  window.v134EnsureGrowthVisible=v134EnsureGrowthVisible;
+  window.v134RefreshFaceTimeAndGrowth=async function(){
+    try{if(typeof loadBreakBreadDue==='function')await loadBreakBreadDue();}catch(e){console.warn('v134 Face Time refresh',e);}
+    try{await v134EnsureGrowthVisible(true);}catch(e){}
+  };
+  function attach(){
+    var src=document.getElementById('v22AmandaSnapshotPlan');
+    if(src&&!src.dataset.v134Observed){src.dataset.v134Observed='1';new MutationObserver(function(){scheduleGrowth(false);}).observe(src,{childList:true,subtree:false});}
+    scheduleGrowth(false);
+    try{if(typeof loadBreakBreadDue==='function')loadBreakBreadDue();}catch(e){}
+  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',function(){setTimeout(attach,900);},{once:true});else setTimeout(attach,900);
+  setTimeout(attach,2200);
+})();
+console.log('RM Tracker Build v134.0 · Face Time + C-to-B visibility aligned');
 </script>
 </body>
 </html>
