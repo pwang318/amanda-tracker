@@ -11877,23 +11877,35 @@ function initRealtimeSync(){
   }
   try{
     const rtClient=window.supabase.createClient(SB_URL,SB_KEY);
+    // BUGFIX (2026-08-20): every one of these realtime callbacks fires on ANY change to the
+    // underlying table, from ANY device/user on the team — not on a fixed timer, which is why
+    // it felt random. Several of them (amanda_activities in particular) rebuild the exact panel
+    // that holds in-progress note textareas (Quick Log notes, etc.), wiping whatever was being
+    // typed. Only the agent_profiles handler had the existing `userTyping` guard (used by the
+    // 2-minute poll below); the rest did not. Added the same guard to all of them so a background
+    // change from someone else's device never interrupts active typing — the missed update is
+    // simply picked up on the next poll/visibility-change once typing stops.
     rtClient.channel("shared-tracker-changes")
       .on("postgres_changes",{event:"*",schema:"public",table:"agent_profiles"},function(){
         nearRealtimeRefreshSharedData();
       })
       .on("postgres_changes",{event:"*",schema:"public",table:"agent_assignments"},function(){
+        if(userTyping)return;
         loadAgentOwnership().then(()=>{loadContacts().catch(()=>{});});
       })
       .on("postgres_changes",{event:"*",schema:"public",table:"lp_flags"},function(){
+        if(userTyping)return;
         if(typeof loadFlagged==="function")loadFlagged().catch(()=>{});
         const mv=document.getElementById("view-daniel");
         if(mv&&mv.classList.contains("active")&&typeof loadRmFlagResponseHistory==="function")loadRmFlagResponseHistory().catch(()=>{});
       })
       .on("postgres_changes",{event:"*",schema:"public",table:"rm_lp_flags"},function(){
+        if(userTyping)return;
         const mv=document.getElementById("view-daniel");
         if(mv&&mv.classList.contains("active")&&typeof loadRmToLpHistory==="function")loadRmToLpHistory().catch(()=>{});
       })
       .on("postgres_changes",{event:"*",schema:"public",table:"call_logs"},function(){
+        if(userTyping)return;
         if(typeof loadFlagged==="function")loadFlagged().catch(()=>{});
         const mv=document.getElementById("view-daniel");
         if(mv&&mv.classList.contains("active")&&typeof loadRmFlagResponseHistory==="function")loadRmFlagResponseHistory().catch(()=>{});
@@ -11902,17 +11914,21 @@ function initRealtimeSync(){
       })
       .on("postgres_changes",{event:"*",schema:"public",table:"amanda_activities"},function(){
         // Cross-device sync for Amanda's own activity log (e.g. logged from another device/tab).
+        if(userTyping)return;
         if(typeof v23LoadAmandaSnapshot==="function")v23LoadAmandaSnapshot(true).catch(()=>{});
       })
       .on("postgres_changes",{event:"*",schema:"public",table:"break_breads"},function(){
+        if(userTyping)return;
         if(typeof loadBreakBreadDue==="function")loadBreakBreadDue().catch(()=>{});
       })
       .on("postgres_changes",{event:"*",schema:"public",table:"tier_migrations"},function(){
+        if(userTyping)return;
         if(typeof v106LoadTierGrowth==="function")v106LoadTierGrowth(true).catch(()=>{});
         const pv=document.getElementById("view-portfolio");
         if(pv&&pv.classList.contains("active")&&typeof loadPortfolioReview==="function")loadPortfolioReview().catch(()=>{});
       })
       .on("postgres_changes",{event:"*",schema:"public",table:"health_snapshots"},function(){
+        if(userTyping)return;
         const pv=document.getElementById("view-portfolio");
         if(pv&&pv.classList.contains("active")&&typeof loadPortfolioReview==="function")loadPortfolioReview().catch(()=>{});
       })
@@ -15463,59 +15479,29 @@ console.log('RM Tracker Build v134 · mobile-safe Today fallback');
 
 <script id="v134-facetime-growth-visibility-fix">
 (function(){
-  var V134_GROWTH_TIMER=null;
-  function v134GrowthTask(c){
-    var item={name:c.name,profile:c.profile||{},owner:'Amanda',score:c.score||0,reasons:['Tier growth C → B · '+(typeof v106CandidateWhy==='function'?v106CandidateWhy(c):'growth opportunity')],type:'Agent Talk-to',source:'Tier Growth',queue:null};
-    return {kind:'tier_growth',minutes:15,owner:'Amanda',name:c.name,item:item,title:'C → B growth · '+(typeof resolvedDisplayName==='function'?resolvedDisplayName(c.name):c.name),why:(typeof v106CandidateWhy==='function'?v106CandidateWhy(c):'Growth opportunity')+' · Next best move: uncover the next buyer/opportunity and book Face Time or a meeting.',growth:c};
-  }
-  async function v134EnsureGrowthVisible(force){
-    // v146: v134 used to keep a private scheduled copy of this loader alive even after
-    // newer C→B renderers replaced window.v134EnsureGrowthVisible. That private copy could
-    // overwrite a good Step 7 render with the old "could not load" message. Once the
-    // resilient v145 loader exists, delegate to it and never run the legacy renderer again.
-    if(typeof window.v145RefreshCtoB==='function' && window.v145RefreshCtoB!==v134EnsureGrowthVisible){
-      return window.v145RefreshCtoB(force===true);
-    }
-    var host=document.getElementById('v113GrowthHost');
-    if(!host||typeof wp18FetchData!=='function'||typeof v106BuildTierGrowth!=='function')return;
-    try{
-      var data=await wp18FetchData(force===true);
-      var built=v106BuildTierGrowth(data||{});
-      var rows=((built&&built.stages&&built.stages.cToB)||[]).filter(function(c){return c&&c.owner==='Amanda';}).slice(0,5);
-      if(!rows.length){
-        host.innerHTML='<div class="v113-body-empty" data-v134-growth="1">No C → B focus relationship is ready right now.</div>';
-        return;
-      }
-      var cards=rows.map(function(c){
-        var t=v134GrowthTask(c);
-        return (typeof v112GrowthCard==='function')?v112GrowthCard(t):'<div class="v112-growth-card"><strong>'+escHtml(typeof resolvedDisplayName==='function'?resolvedDisplayName(c.name):c.name)+'</strong><div>'+escHtml(typeof v106CandidateWhy==='function'?v106CandidateWhy(c):'Growth opportunity')+'</div></div>';
-      }).join('');
-      host.innerHTML='<div class="v112-growth" data-v134-growth="1"><div class="v112-growth-head"><div><b>C → B Growth Opportunities</b><small>Best Amanda-owned C relationships with evidence to move up.</small></div><span style="font-size:9.5px;font-weight:850;color:#2F6847">'+rows.length+' focus relationship'+(rows.length!==1?'s':'')+'</span></div><div class="v112-growth-grid">'+cards+'</div></div>';
-    }catch(e){
-      console.warn('v134 C→B visibility',e);
-      // v146: legacy loader must never replace Step 7 with an error state. The resilient
-      // renderer will show cached/live candidates or a single neutral refreshing state.
-      if(!host.querySelector('.v112-growth-card') && typeof window.v145RefreshCtoB!=='function'){
-        host.innerHTML='<div class="v113-body-empty" data-v134-growth="1">C → B opportunities are refreshing.</div>';
-      }
-    }
-  }
-  function scheduleGrowth(force){clearTimeout(V134_GROWTH_TIMER);V134_GROWTH_TIMER=setTimeout(function(){v134EnsureGrowthVisible(force);},120);}
-  window.v134EnsureGrowthVisible=v134EnsureGrowthVisible;
+  // NOTE (2026-08-20): This script used to render the C→B Growth panel itself via its
+  // own v134EnsureGrowthVisible(), on its own MutationObserver + timers. That duplicated
+  // (and raced against) the newer, resilient v145-ctob-resilient renderer further down
+  // this file — both were writing to #v113GrowthHost independently, and whichever one
+  // finished last won, which is why the C→B section intermittently rendered blank/empty
+  // even though v145's own logic was correct. The growth-rendering code has been removed
+  // from here; v145RefreshCtoB (defined later in this file) is now the single owner of
+  // #v113GrowthHost. This script now only handles the Face Time refresh it originally
+  // also did, and delegates any growth refresh request to v145.
+  window.v134EnsureGrowthVisible=function(force){
+    return (typeof window.v145RefreshCtoB==='function')?window.v145RefreshCtoB(force):Promise.resolve();
+  };
   window.v134RefreshFaceTimeAndGrowth=async function(){
     try{if(typeof loadBreakBreadDue==='function')await loadBreakBreadDue();}catch(e){console.warn('v134 Face Time refresh',e);}
-    try{await v134EnsureGrowthVisible(true);}catch(e){}
+    try{if(typeof window.v145RefreshCtoB==='function')await window.v145RefreshCtoB(true);}catch(e){}
   };
   function attach(){
-    var src=document.getElementById('v22AmandaSnapshotPlan');
-    if(src&&!src.dataset.v134Observed){src.dataset.v134Observed='1';new MutationObserver(function(){scheduleGrowth(false);}).observe(src,{childList:true,subtree:false});}
-    scheduleGrowth(false);
     try{if(typeof loadBreakBreadDue==='function')loadBreakBreadDue();}catch(e){}
   }
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',function(){setTimeout(attach,900);},{once:true});else setTimeout(attach,900);
   setTimeout(attach,2200);
 })();
-console.log('RM Tracker Build v134.0 · Face Time + C-to-B visibility aligned');
+console.log('RM Tracker Build v134.1 · Face Time refresh only; C-to-B ownership handed to v145');
 </script>
 
 <style id="v136-amanda-simplicity-pass-css">
@@ -15912,8 +15898,7 @@ console.log('RM Tracker Build v140.0 · transaction renderer race fixed');
     {name:'Haifa Brunney',stage:'Clear to Close',callType:'CTC Call',role:'Buyer'},
     {name:'James Brandt',stage:'Clear to Close',callType:'CTC Call',role:'Listing'},
     {name:'Jennifer Hochmiller',stage:'Clear to Close',callType:'CTC Call',role:'Listing'},
-    {name:'Megan Lynch',stage:'Clear to Close',callType:'CTC Call',role:'Buyer'},
-    {name:'Chris Reed',stage:'New Contract',callType:'Under Contract Call',role:'Buyer'}
+    {name:'Megan Lynch',stage:'Clear to Close',callType:'CTC Call',role:'Buyer'}
   ];
   const TRIGGER_DATE='2026-08-20';
   function k(s){return String(s||'').trim().toLowerCase().replace(/\s+/g,' ');}
@@ -16292,6 +16277,5 @@ console.log('RM Tracker Build v141.0 · known open transaction fallback seeded')
   console.log('RM Tracker Build v145 · C→B resilient last-good render');
 })();
 </script>
-<!-- Internal v146: disabled legacy v134 C→B overwrite path; resilient Step 7 is sole renderer. -->
 </body>
 </html>
