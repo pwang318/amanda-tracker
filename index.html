@@ -1,4 +1,5 @@
   <!DOCTYPE html>
+<!-- Cleanup pass: floating Page Guide + stale developer build logs removed; active workflow logic preserved. -->
 <!-- v140: fixes Step 2 transaction renderer race; saved/open CTC and New Contract tasks are no longer erased after successful distribution -->
 <!-- v137: Amanda daily snapshot restored + audit fixes; current operating goals aligned, responsive snapshot, duplicate activity icons corrected -->
 <!-- v139: save/log integrity audit; preserve follow-ups until confirmed save, harden offline replay, Face Time and handled-note history -->
@@ -5703,7 +5704,6 @@ function switchTab(name){
   document.querySelectorAll(".tab").forEach(t=>t.classList.toggle("active",t.dataset.tab===name));
   document.querySelectorAll(".view").forEach(v=>v.classList.remove("active"));
   target.classList.add("active");
-  if(typeof updatePageGuideVisibility==="function")updatePageGuideVisibility();
   if(name==="week"){loadStartHere();loadRmNurtureToday();if(typeof v84LoadPartnerGraduations==="function")v84LoadPartnerGraduations();}
   if(name==="pipeline")loadPipeline();
     if(name==="contacts")loadContacts();
@@ -12006,78 +12006,6 @@ function wpOpenLog(name,owner,type){
 function wpOpenContact(name){openContactModal(name);}
 function wpDayLabel(i){return["Monday","Tuesday","Wednesday","Thursday","Friday"][i];}
 </script>
-<!-- Page Guide — floating index so nothing on Snapshot gets missed just because someone didn't scroll -->
-<div id="pageGuideBtn" onclick="togglePageGuide()" style="display:none !important;position:fixed;bottom:20px;right:20px;z-index:998;background:var(--brand);color:#fff;border-radius:24px;padding:10px 16px;font-size:12px;font-weight:700;cursor:pointer;box-shadow:var(--shadow-lg);font-family:inherit;align-items:center;gap:6px">
-  📍 <span>Page Guide</span>
-</div>
-<div id="pageGuidePanel" style="display:none;position:fixed;bottom:70px;right:20px;z-index:999;background:#fff;border-radius:12px;box-shadow:var(--shadow-lg);border:1px solid var(--border);width:280px;max-height:70vh;overflow-y:auto;padding:6px">
-<div style="padding:10px 12px;font-size:11px;font-weight:700;color:var(--text-3);text-transform:uppercase;letter-spacing:.4px;border-bottom:1px solid var(--border-light)">Jump to a section</div>
-<div id="pageGuideList"></div>
-</div>
-<script>
-const PAGE_GUIDE_SECTIONS=[
-  {id:"startHereOuterCard",label:"Start Here",desc:"What matters most right now + your daily checklist"},
-  {id:"weeklyCallPlanCard",label:"Amanda’s Workflow",desc:"Today’s prioritized work, adjusted around real meetings"},
-  {id:"personalScorecard",label:"Your Wins This Month",desc:"Meetings, break breads, cold call wins — tap any number"},
-  {id:"quickLogCard",label:"Quick Log",desc:"Fast entry for calls & talk-to's"},
-  {id:"onboardingCard",label:"Gifting Campaign Follow-Up",desc:"New agents in their first 4 weeks"},
-  {id:"breadDueCard",label:"Break Bread Due List",desc:"Who's due for a break bread, soonest first"},
-  {id:"dropoffCard",label:"Approaching 90-Day Drop-Off",desc:"Agents about to fall off as active — act now"},
-  {id:"zeroProductionCard",label:"Never Converted — Zero Closes",desc:"Retained agents with zero closes — prioritized by who's actually getting leads"},
-  {id:"contactDataCard",label:"Contact Info Needs Updating",desc:"Missing phone, email, address, or birthday — fix it while you work the relationship"},
-  {id:"onYourRadarCard",label:"On Your Radar",desc:"LP flags, CTC calls, buddy intro progress, follow-ups you scheduled"},
-  {id:"atRiskCard",label:"At Risk — Need a Touch",desc:"Retained agents gone quiet — nobody flagged these, the app noticed"}
-];
-function toggleAppGuide(){
-  const modal=document.getElementById("appGuideModal");
-  const isOpen=modal.classList.contains("open");
-  if(isOpen){modal.classList.remove("open");}
-  else{modal.classList.add("open");}
-}
-function closeAppGuide(){document.getElementById("appGuideModal").classList.remove("open");}
-
-function togglePageGuide(){
-  const panel=document.getElementById("pageGuidePanel");
-  const isOpen=panel.style.display==="block";
-  if(isOpen){panel.style.display="none";return;}
-  renderPageGuide();
-  panel.style.display="block";
-}
-function renderPageGuide(){
-  const list=document.getElementById("pageGuideList");
-  if(!list)return;
-  list.innerHTML=PAGE_GUIDE_SECTIONS.map(s=>{
-    const el=document.getElementById(s.id);
-    const isVisible=el&&el.offsetParent!==null; // skip sections currently hidden (e.g. no drop-offs right now)
-    if(!isVisible)return"";
-    return'<div onclick="scrollToPageSection(\''+s.id+'\')" style="padding:10px 12px;cursor:pointer;border-bottom:1px solid var(--border-light)" onmouseover="this.style.background=\'var(--surface-2)\'" onmouseout="this.style.background=\'transparent\'">'
-      +'<div style="font-size:13px;font-weight:600;color:var(--text-1)">'+s.label+'</div>'
-      +'<div style="font-size:11px;color:var(--text-3);margin-top:1px">'+s.desc+'</div>'
-      +'</div>';
-  }).join("")||'<div style="padding:12px;font-size:12px;color:var(--text-3)">Nothing to jump to right now.</div>';
-}
-function scrollToPageSection(id){
-  const el=document.getElementById(id);
-  if(el)el.scrollIntoView({behavior:"smooth",block:"start"});
-  document.getElementById("pageGuidePanel").style.display="none";
-}
-// Only show the guide button while on Snapshot — it's not relevant on other tabs
-function updatePageGuideVisibility(){
-  const btn=document.getElementById("pageGuideBtn");
-  if(!btn)return;
-  const snapshotActive=document.getElementById("view-week")?.classList.contains("active");
-  btn.style.display=snapshotActive?"flex":"none";
-  if(!snapshotActive)document.getElementById("pageGuidePanel").style.display="none";
-}
-document.addEventListener("click",function(e){
-  const panel=document.getElementById("pageGuidePanel");
-  const btn=document.getElementById("pageGuideBtn");
-  if(panel&&panel.style.display==="block"&&!panel.contains(e.target)&&!btn.contains(e.target)){
-    panel.style.display="none";
-  }
-});
-setTimeout(updatePageGuideVisibility,500);
-</script>
 <script>try{nynyQuickTypeChange();nynyQuickToggleFollowup();}catch(e){}</script>
 <script>
 // ─────────────────────────────────────────────────────────────────────────────
@@ -13533,7 +13461,6 @@ function v106AmandaGrowthTasks(data,excludeKeys){const g=v106BuildTierGrowth(dat
 async function v84LoadPartnerGraduations(){const aCard=document.getElementById("v84AmandaGraduationCard"),dHost=document.getElementById("v84DirectorGraduationList");try{const [assignments,profilesFull]=await Promise.all([sbFetch("agent_assignments?select=agent_name,lp,rm,priority,added,level&limit=5000").catch(()=>[]),sbFetch("agent_profiles?select=agent_name,tier,relationship_status,do_not_contact,relationship_type,rm_handoff_status,rm_handoff_from,rm_handoff_to,rm_handoff_started_at,rm_handoff_intro_at,rm_handoff_joint_meeting_date,rm_handoff_completed_at&limit=5000").catch(()=>null)]);let schemaOk=Array.isArray(profilesFull),profiles=profilesFull;if(!schemaOk)profiles=await sbFetch("agent_profiles?select=agent_name,tier,relationship_status,do_not_contact,relationship_type&limit=5000").catch(()=>[]);const owners={};(assignments||[]).forEach(o=>owners[ownerKey(o.agent_name)]=o);const rows=(profiles||[]).filter(p=>String(p.relationship_type||"realtor").toLowerCase()!=="strategic_partner"&&String(p.tier||"").toUpperCase()==="B"&&!p.do_not_contact&&String(p.relationship_status||"active").toLowerCase()!=="inactive").map(p=>{const o=owners[ownerKey(p.agent_name)]||{};return Object.assign({},p,{relationship_owner:o.rm||"",lp_owner:o.lp||"",rm_handoff_status:p.rm_handoff_status||"pending"});}).filter(r=>r.relationship_owner==="Amanda"||["intro_sent","joint_meeting_scheduled"].includes(String(r.rm_handoff_status||"").toLowerCase()));v84GraduationRows=rows;v84RenderAmanda(rows);v84RenderDirector(rows,schemaOk);}catch(e){console.warn("Partner graduation load failed",e);if(aCard)aCard.style.display="none";if(dHost)dHost.innerHTML='<div class="no-data">Could not load partner graduations right now.</div>';}}
 setTimeout(function(){try{v84LoadPartnerGraduations();}catch(e){}},1400);
 </script>
-<script>console.log("RM Tracker Build v122.0 · B-tier warm handoff workflow");</script>
 <script>setTimeout(function(){try{loadRmNurtureToday();}catch(e){}},1200);</script>
 <script>
 // v85 — scale-ready Director operating system foundation.
@@ -13585,7 +13512,7 @@ async function v85LoadCommandCenter(){
   }catch(e){console.warn('v85 command center load failed',e);inbox.innerHTML='<div class="no-data">Could not load the Director command center right now.</div>';}
 }
 setTimeout(function(){try{v85LoadCommandCenter();}catch(e){}},1600);
-console.log("RM Tracker Build v122.0 · scale-ready Director operating system");
+
 </script>
 <div class="v92-drawer-backdrop" id="v92DirectorDrawer" onclick="if(event.target===this)v92CloseDrawer()" style="display:none">
 <aside aria-labelledby="v92DrawerTitle" aria-modal="true" class="v92-drawer" role="dialog">
@@ -13847,7 +13774,7 @@ function v98ReturnDirector(){try{sessionStorage.removeItem('rm_return_director')
   if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",start,{once:true});
   else setTimeout(start,0);
 })();
-console.log("RM Tracker Build v122.0 · workflow integrity + Director navigation + smarter health cleanup");
+
 </script>
 <style>
 #v101FaceTimeModal{display:none;position:fixed;inset:0;background:rgba(31,39,34,.34);z-index:12050;align-items:center;justify-content:center;padding:18px}
@@ -13890,7 +13817,7 @@ function v104Jump(id){
   if(el.tagName==='DETAILS')el.open=true;
   el.scrollIntoView({behavior:'smooth',block:'start'});
 }
-console.log("RM Tracker Build v122.0 · calm ordered Amanda workflow");
+
 </script>
 <script>
 // v107 — route shared Face Time by RM responsibility without changing shared urgency math.
@@ -13992,7 +13919,7 @@ async function loadBreakBreadDue(){
   }catch(e){console.warn('Face Time load failed',e);el.innerHTML='<div class="no-data">Could not load Face Time priorities right now.</div>';}
 }
 setTimeout(function(){try{loadBreakBreadDue();v107RenderDirectorFaceTime();}catch(e){}},1450);
-console.log('RM Tracker Build v122.0 · Face Time responsibility routing');
+
 </script>
 
 <script id="v112-amanda-mockup-layout-js">
@@ -14180,7 +14107,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',function(){setTimeout(build,250)},{once:true});else setTimeout(build,250);
   setTimeout(function(){try{build();distribute();}catch(e){console.warn('v113 layout',e)}},1200);
 })();
-console.log('RM Tracker Build v125.0 · Partner Health, Reconnect and Follow-ups restored as visible daily work');
+
 </script>
 
 <style id="v114-mobile-render-hardening">
@@ -14237,7 +14164,7 @@ console.log('RM Tracker Build v125.0 · Partner Health, Reconnect and Follow-ups
   setInterval(ensureToday,15000);
   // v132 stability: no self-observing Today MutationObserver. Explicit render/load hooks keep this view current.
 })();
-console.log('RM Tracker Build v122.0 · mobile Today render hardening');
+
 </script>
 
 <style id="v115-smart-usability-css">
@@ -14375,7 +14302,7 @@ console.log('RM Tracker Build v122.0 · mobile Today render hardening');
   // Re-render current Today so v115 cards/candidate count are visible immediately.
   setTimeout(function(){try{if(typeof v21LoadDailyPlan==='function')v21LoadDailyPlan(true);}catch(e){}},900);
 })();
-console.log('RM Tracker Build v122.0 · smarter new-meeting queue + low-friction Partner Touch + cleanup workflow');
+
 </script>
 
 <style id="v116-readability-empty-state-css">
@@ -14414,7 +14341,7 @@ console.log('RM Tracker Build v122.0 · smarter new-meeting queue + low-friction
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',function(){setTimeout(syncEmptySteps,900)},{once:true}); else setTimeout(syncEmptySteps,900);
   setInterval(syncEmptySteps,15000);
 })();
-console.log('RM Tracker Build v122.0 · clearer Face Time actions + readable Today font + compact empty states');
+
 </script>
 
 
@@ -14488,7 +14415,7 @@ window.v92Go=function(btn,id){
   var el=document.getElementById(id)||document.getElementById(id==='v76StrategicPartnerMgmtCard'?'strategicPartnersDirectorCard':id);
   if(el){el.scrollIntoView({behavior:'smooth',block:'start'});el.classList.add('v117-focus-flash');setTimeout(function(){el.classList.remove('v117-focus-flash');},1300);}
 };
-console.log('RM Tracker Build v122.0 · functional Director tabs + role titles + Calibri readability');
+
 </script>
 
 <style id="v119Style">
@@ -14550,7 +14477,7 @@ var _v119OpenMetric=window.v92OpenMetric;window.v92OpenMetric=function(type){if(
 // Keep the visible Protect board useful too, even when there is no crisis.
 var _v119LoadDirector=window.v91LoadDirectorOS;window.v91LoadDirectorOS=async function(){var r=await _v119LoadDirector.apply(this,arguments);setTimeout(function(){try{var el=document.getElementById('v91RetentionList');if(el)el.innerHTML=v119ProtectHtml();}catch(e){}},180);return r;};
 window.v91RefreshDirectorOS=function(){try{v92LoadDirectorOS();}catch(e){}setTimeout(function(){try{var el=document.getElementById('v91RetentionList');if(el)el.innerHTML=v119ProtectHtml();}catch(e){}},250);try{v85LoadCommandCenter();}catch(e){}try{v84LoadPartnerGraduations();}catch(e){}try{loadStrategicPartnerManagement();}catch(e){}try{loadManagement();}catch(e){}};
-console.log('RM Tracker Build v122.0 · Protect intelligence + Amanda-all-CTC routing');
+
 </script>
 
 <style id="v120Style">
@@ -14569,14 +14496,14 @@ var _v120ProtectHtml=window.v119ProtectHtml;
 if(_v120ProtectHtml)window.v119ProtectHtml=function(){
   return '<div class="v120-rule-note"><b>Protect logic:</b> active save situations come from competitor risk, low satisfaction, confirmed leakage, service friction or an open Director risk insight. If there is no crisis, the tracker still surfaces early warnings for important A/B/Channel relationships before they become red.</div>'+_v120ProtectHtml.apply(this,arguments);
 };
-console.log('RM Tracker Build v122.0 · Protect-first intelligence + all-tier Amanda CTC invariant');
+
 </script>
 <script id="v121AuditScript">
 // v121 smart-work invariants:
 // 1) Protect/retain true risk first. 2) Amanda executes every CTC call regardless of tier.
 // 3) LP handoffs and shared Face Time stay warm/high-value work. 4) Meeting conversion and tier migration outrank generic maintenance.
 // 5) Ownership controls recurring relationship work; activity/attendance never silently changes ownership.
-console.log('RM Tracker Build v122.0 · smart-routing integrity audit');
+
 </script>
 
 <style id="v122Style">
@@ -14637,7 +14564,7 @@ async function v124RefreshSharedData(){try{if(typeof _wp18Cache!=="undefined"){_
 
 
 setTimeout(function(){v124MountAudit();v122RenderAudit();},1200);
-console.log("RM Tracker Build v124.0 · single Power BI source · RM read-only mirror · daily goals restored");
+
 </script>
 
 
@@ -15044,14 +14971,11 @@ async function v126Init(){
 }
 if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",()=>setTimeout(v126Init,700),{once:true});else setTimeout(v126Init,700);
 setTimeout(()=>{try{v126SetupReconnectCleanup();v126EnhanceReconnectRows();}catch(e){}},2200);
-console.log("RM Tracker Build v126.0 · live relationship queues · 221-row reconnect source · persistent remove");
+
 })();
 </script>
 
-<script>console.log("RM Tracker Build v127.0 · simplified relationship work + working log actions");</script>
-<script>console.log("RM Tracker Build v124.0 · Smart Work Engine: risk + business + opportunity + meeting conversion");</script>
-
-<script>setTimeout(()=>{try{if(document.getElementById('v106TierGrowthCenter'))v106LoadTierGrowth(false);}catch(e){}},1200);console.log("RM Tracker Build v124.0 · Playbook tier growth engine · shared source counts");</script>
+<script>setTimeout(()=>{try{if(document.getElementById('v106TierGrowthCenter'))v106LoadTierGrowth(false);}catch(e){}},1200);</script>
 
 <style id="v128-consistent-quick-log-style">
 /* v128 — one contextual Quick Log experience everywhere; cleaner Relationship Work presentation. */
@@ -15284,7 +15208,7 @@ console.log("RM Tracker Build v126.0 · live relationship queues · 221-row reco
   }
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(init,900),{once:true});else setTimeout(init,600);
   setTimeout(init,1800);
-  console.log('RM Tracker Build v128.0 · consistent contextual Quick Log + Management mirror');
+
 })();
 </script>
 
@@ -15460,10 +15384,9 @@ console.log("RM Tracker Build v126.0 · live relationship queues · 221-row reco
   }
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(init,350),{once:true});else setTimeout(init,250);
   setTimeout(init,1800);
-  console.log('RM Tracker Build v129.0 · source audit counts · owner repair · nonblocking queues · easy duplicate cleanup');
+
 })();
 </script>
-<script>console.log('RM Tracker Build v133.0 · aligned operating model · LP-only Power BI · RM↔LP Face Time parity');</script>
 <!-- v133 ALIGNED OPERATING MODEL · 2026-08-19 -->
 
 <style id="v134-mobile-safe-fallback">
@@ -15502,10 +15425,8 @@ console.log("RM Tracker Build v126.0 · live relationship queues · 221-row reco
   else{setTimeout(ensureVisible,50);setTimeout(ensureVisible,1200);}
   window.addEventListener('pageshow',function(){setTimeout(ensureVisible,120);});
 })();
-console.log('RM Tracker Build v134 · mobile-safe Today fallback');
-</script>
-<script>console.log("RM Tracker Build v135.0 · connection status stabilization · staggered startup · false failure fix");</script>
 
+</script>
 <script id="v134-facetime-growth-visibility-fix">
 (function(){
   // NOTE (2026-08-20): This script used to render the C→B Growth panel itself via its
@@ -15530,7 +15451,7 @@ console.log('RM Tracker Build v134 · mobile-safe Today fallback');
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',function(){setTimeout(attach,900);},{once:true});else setTimeout(attach,900);
   setTimeout(attach,2200);
 })();
-console.log('RM Tracker Build v134.1 · Face Time refresh only; C-to-B ownership handed to v145');
+
 </script>
 
 <style id="v136-amanda-simplicity-pass-css">
@@ -15619,7 +15540,7 @@ console.log('RM Tracker Build v134.1 · Face Time refresh only; C-to-B ownership
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',function(){setTimeout(polish,650);setTimeout(polish,1800);},{once:true});
   else{setTimeout(polish,180);setTimeout(polish,1200);}
 })();
-console.log('RM Tracker Build v136.0 · Amanda simplicity pass · execution first');
+
 </script>
 
 
@@ -15775,9 +15696,6 @@ console.log('RM Tracker Build v136.0 · Amanda simplicity pass · execution firs
 .v136-review-btn.v136-sent,.v136-review-btn:disabled{background:#EEF8F2!important;color:#2F6847!important;border-color:#C9DED1!important;cursor:default!important;opacity:1!important}
 .v136-review-btn.v136-followup{background:#FFF7E8!important;color:#8A5A00!important;border-color:#E6C987!important}
 </style>
-<script>console.log("RM Tracker Build v136.0 · C→B Director review workflow");</script>
-
-
 <!-- v137 AUDIT NOTES
   - Daily snapshot restored and mobile-safe.
   - Snapshot Today/WTD/MTD targets aligned to Amanda execution + RM operating model.
@@ -15917,7 +15835,7 @@ console.log('RM Tracker Build v136.0 · Amanda simplicity pass · execution firs
     }
   });
 })();
-console.log('RM Tracker Build v140.0 · transaction renderer race fixed');
+
 </script>
 
 
@@ -16035,7 +15953,7 @@ console.log('RM Tracker Build v140.0 · transaction renderer race fixed');
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',function(){setTimeout(ensureMeetingPace,1800);setTimeout(ensureMeetingPace,5000);},{once:true});
   else{setTimeout(ensureMeetingPace,800);setTimeout(ensureMeetingPace,3500);}
   document.addEventListener('visibilitychange',function(){if(!document.hidden)setTimeout(ensureMeetingPace,250);});
-  console.log('RM Tracker Build v142.0 · CTC workspace visibility + meeting pace resilience');
+
 })();
 </script>
 
@@ -16093,7 +16011,7 @@ console.log('RM Tracker Build v140.0 · transaction renderer race fixed');
   }
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
   document.addEventListener('visibilitychange',function(){if(!document.hidden){v143RenderNow();setTimeout(v143RefreshInBackground,80);}});
-  console.log('RM Tracker Build v143.0 · meeting pace renders before prospect/network refresh');
+
 })();
 </script>
 
@@ -16187,7 +16105,6 @@ console.log('RM Tracker Build v140.0 · transaction renderer race fixed');
   document.addEventListener('visibilitychange',function(){if(!document.hidden){v144SyncFromScorecard();setTimeout(v144RefreshCount,100);}});
   setInterval(v144SyncFromScorecard,5000);
 
-  console.log('RM Tracker Build v144.0 · Step 5 meeting count synchronized with shared RM Team scorecard');
 })();
 </script>
 
