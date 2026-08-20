@@ -1,4 +1,5 @@
-  <!DOCTYPE html>
+ <!DOCTYPE html>
+<!-- v140: fixes Step 2 transaction renderer race; saved/open CTC and New Contract tasks are no longer erased after successful distribution -->
 <!-- v137: Amanda daily snapshot restored + audit fixes; current operating goals aligned, responsive snapshot, duplicate activity icons corrected -->
 <!-- v139: save/log integrity audit; preserve follow-ups until confirmed save, harden offline replay, Face Time and handled-note history -->
 <!-- v138: transaction visibility guard; newly-added CTC/New Contract calls force-fresh and always stay visible in Step 2 -->
@@ -15765,13 +15766,26 @@ console.log('RM Tracker Build v136.0 · Amanda simplicity pass · execution firs
   window.v138RedistributeUrgent=function(){
     const src=document.getElementById('v22AmandaSnapshotPlan'),urgent=document.getElementById('v113UrgentHost');
     if(!src||!urgent)return;
-    // Remove only previously-distributed urgent renderer blocks, never the Add New Contract / CTC form.
-    Array.from(urgent.children).forEach(function(n){if(n.dataset&&n.dataset.v113Distributed==='1')n.remove();});
-    const urgentNodes=Array.from(src.children).filter(function(n){return n.classList&&n.classList.contains('v112-urgent');});
-    urgentNodes.forEach(function(n){n.dataset.v113Distributed='1';urgent.appendChild(n);});
-    if(!urgentNodes.length){
-      const em=document.createElement('div');em.className='v113-body-empty';em.dataset.v113Distributed='1';em.textContent='Nothing urgent right now.';urgent.insertBefore(em,urgent.firstChild);
+    // IMPORTANT: v113DistributeSmart MOVES .v112-urgent nodes out of the hidden source and into
+    // Step 2. The previous guard deleted those successfully rendered cards, then looked back at
+    // the now-empty source and incorrectly replaced them with "Nothing urgent right now."
+    // Preserve any live urgent cards already in Step 2. Only pull from the staging source when
+    // Step 2 does not already contain them.
+    const existingUrgent=Array.from(urgent.children).filter(function(n){return n.classList&&n.classList.contains('v112-urgent');});
+    if(existingUrgent.length){
+      // Remove only a stale empty-state message if real mandatory work is visible.
+      Array.from(urgent.querySelectorAll('.v113-body-empty[data-v113-distributed="1"]')).forEach(function(n){n.remove();});
+      return;
     }
+    const urgentNodes=Array.from(src.children).filter(function(n){return n.classList&&n.classList.contains('v112-urgent');});
+    if(urgentNodes.length){
+      Array.from(urgent.querySelectorAll('.v113-body-empty[data-v113-distributed="1"]')).forEach(function(n){n.remove();});
+      urgentNodes.forEach(function(n){n.dataset.v113Distributed='1';urgent.appendChild(n);});
+      return;
+    }
+    // Do not manufacture an empty state here. v113DistributeSmart owns empty-state rendering and
+    // knows whether the live workflow renderer has produced urgent work. This guard is only a
+    // visibility helper; it must never override the real workflow state.
   };
   // Any successful transaction intake should become visible immediately, including on mobile browsers
   // whose MutationObserver delivery can lag behind the save/refresh promise chain.
@@ -15877,7 +15891,7 @@ console.log('RM Tracker Build v136.0 · Amanda simplicity pass · execution firs
     }
   });
 })();
-console.log('RM Tracker Build v139.0 · transaction display guaranteed');
+console.log('RM Tracker Build v140.0 · transaction renderer race fixed');
 </script>
 
 </body>
