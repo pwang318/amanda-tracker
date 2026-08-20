@@ -5127,12 +5127,14 @@ async function loadFlagged(){
     if(flagCard)flagCard.style.display="block";
 
     let html='<div style="font-size:11px;font-weight:700;color:var(--danger);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;padding-top:8px;border-top:1px solid var(--border-light)">🚩 Flagged by LPs — action needed</div>';
+    window._rmExpandableNotes=window._rmExpandableNotes||{};
     html+=flagged.map(f=>{
       const note=(f.note||"").trim();
       const isLong=note.length>100;
       const shortNote=isLong?note.substring(0,100)+"...":note;
       const noteId="flag-note-"+f._flagSource+"-"+f.id;
       const btnId="flag-btn-"+f._flagSource+"-"+f.id;
+      window._rmExpandableNotes[noteId]={full:note,short:shortNote,open:false};
       const safeAgent=(f.agent_name||"").replace(/'/g,"\\'");
       const hasReply=!!(f.rm_note&&String(f.rm_note).trim());
       const sourceLabel=f._flagSource==="lpflag"?" · direct LP flag":"";
@@ -5148,7 +5150,7 @@ async function loadFlagged(){
         +'</div>'
         +(note?'<div style="font-size:13px;color:var(--text-1);line-height:1.5;margin-bottom:10px;padding:8px 10px;background:rgba(255,255,255,.6);border-radius:6px">'
           +'<span id="'+noteId+'">'+escHtml(shortNote)+'</span>'
-          +(isLong?'<span id="'+btnId+'" onclick="toggleFlagNote(\''+noteId+'\',\''+btnId+'\',\''+note.replace(/'/g,"\\'").replace(/\n/g," ")+'\',\''+shortNote.replace(/'/g,"\\'")+'\',\'1\')" style="color:var(--brand);cursor:pointer;font-size:11px;margin-left:5px;font-weight:600">See more</span>':"")
+          +(isLong?'<button type="button" id="'+btnId+'" onclick="toggleFlagNote(\''+noteId+'\',\''+btnId+'\')" style="appearance:none;border:0;background:transparent;padding:0;color:var(--brand);cursor:pointer;font-size:11px;margin-left:5px;font-weight:700;font-family:inherit">See more</button>':"")
           +'</div>':"")
         +(hasReply?'<div style="background:#E8F5E9;border:1px solid #81C784;border-radius:6px;padding:8px 10px;margin-bottom:10px;font-size:12px;color:#1B5E20">'
           +'<div style="font-size:10px;font-weight:700;color:#4E3D8A;margin-bottom:3px">Response to '+escHtml(f.lp||"LP")+(f.rm_note_by?" · "+escHtml(f.rm_note_by):"")+(f.rm_note_at?" · "+fmtDate(String(f.rm_note_at).slice(0,10)):"")+'</div>'+escHtml(String(f.rm_note))+'</div>':"")
@@ -5202,19 +5204,15 @@ async function sendFlagReply(source,id){
   }
 }
 
-function toggleFlagNote(noteId,btnId,fullText,shortText,isShowing){
+function toggleFlagNote(noteId,btnId){
   const noteEl=document.getElementById(noteId);
   const btnEl=document.getElementById(btnId);
-  if(!noteEl||!btnEl)return;
-  if(isShowing==="1"){
-    noteEl.textContent=fullText;
-    btnEl.textContent="See less";
-    btnEl.setAttribute("onclick","toggleFlagNote('"+noteId+"','"+btnId+"','"+fullText.replace(/'/g,"\\'")+"','"+shortText.replace(/'/g,"\\'")+"','0')");
-  }else{
-    noteEl.textContent=shortText;
-    btnEl.textContent="See more";
-    btnEl.setAttribute("onclick","toggleFlagNote('"+noteId+"','"+btnId+"','"+fullText.replace(/'/g,"\\'")+"','"+shortText.replace(/'/g,"\\'")+"','1')");
-  }
+  const store=(window._rmExpandableNotes||{})[noteId];
+  if(!noteEl||!btnEl||!store)return;
+  store.open=!store.open;
+  noteEl.textContent=store.open?store.full:store.short;
+  btnEl.textContent=store.open?"See less":"See more";
+  btnEl.setAttribute("aria-expanded",store.open?"true":"false");
 }
 
 async function resolveFlag(source,id){
@@ -6341,6 +6339,8 @@ async function loadOnboarding(){
       const fullNote=doneAct&&doneAct.notes?doneAct.notes:"";
       const isLongNote=fullNote.length>80;
       const shortNote=isLongNote?fullNote.substring(0,80)+"...":fullNote;
+      window._rmExpandableNotes=window._rmExpandableNotes||{};
+      window._rmExpandableNotes[noteId]={full:fullNote,short:shortNote,open:false};
       const addr=addressByAgent[key];
       const addrLine=addr
         ?'<div style="font-size:11px;color:var(--text-2);margin-top:3px">📍 '+addr+'</div>'
@@ -6353,7 +6353,7 @@ async function loadOnboarding(){
         +(!isDone?'<div style="font-size:12px;color:var(--text-2);margin-top:4px;font-style:italic;line-height:1.4">'+task+'</div>':"")
         +(isDone&&doneAct?'<div style="font-size:11px;color:var(--text-3);margin-top:4px">'+fmtDate(doneAct.act_date)+' · '+(doneAct.act_type||'')
           +(fullNote?' — <em style="color:var(--text-2)" id="'+noteId+'">"'+shortNote+'"</em>'
-            +(isLongNote?'<span id="'+btnId+'" onclick="toggleFlagNote(\''+noteId+'\',\''+btnId+'\',\''+fullNote.replace(/'/g,"\\'").replace(/\n/g," ")+'\',\''+shortNote.replace(/'/g,"\\'")+'\',\'1\')" style="color:var(--brand);cursor:pointer;font-size:10px;margin-left:5px;font-weight:600">See more</span>':'')
+            +(isLongNote?'<button type="button" id="'+btnId+'" onclick="toggleFlagNote(\''+noteId+'\',\''+btnId+'\')" style="appearance:none;border:0;background:transparent;padding:0;color:var(--brand);cursor:pointer;font-size:10px;margin-left:5px;font-weight:700;font-family:inherit">See more</button>':'')
           :' — <span style="color:var(--danger)">no note on this entry</span>')+'</div>':"")
         +'</div><div style="text-align:right;flex-shrink:0">'
         +'<div style="font-size:11px;font-weight:600;color:'+dueColor+';margin-bottom:6px">'+dueLabel+'</div>'
@@ -15825,7 +15825,7 @@ console.log('RM Tracker Build v136.0 · Amanda simplicity pass · execution firs
   const KEY='rm_pending_transaction_triggers_v139';
   function jget(){try{const x=JSON.parse(localStorage.getItem(KEY)||'[]');return Array.isArray(x)?x:[];}catch(e){return[];}}
   function jset(rows){try{localStorage.setItem(KEY,JSON.stringify(rows||[]));}catch(e){}}
-  function tkey(r){return [String(r.act_type||''),wp18Key(r.agent_name||''),String(wp33TxnRole(r.notes)||'Agent').toLowerCase(),String(wp33TxnId(r.notes)||'')].join('|');}
+  function tkey(r){return [String(r.act_type||''),wp18Key(r.agent_name||''),String(wp30TxnRole(r.notes)||'Agent').toLowerCase(),String(wp33TxnId(r.notes)||'')].join('|');}
   function freshLocal(){
     const cutoff=Date.now()-3*86400000;
     const rows=jget().filter(r=>{
