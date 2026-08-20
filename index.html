@@ -1,4 +1,5 @@
   <!DOCTYPE html>
+<!-- v137: Amanda daily snapshot restored + audit fixes; current operating goals aligned, responsive snapshot, duplicate activity icons corrected -->
 <!-- v136: C-to-B Director review workflow added; Amanda can send evidence-based growth candidates to Nyny directly from Today -->
 <!-- v135: Amanda Relationship Work ownership fix; all queues now exclude Nyny-owned/strategic/A-B-Channel relationships consistently -->
 
@@ -820,8 +821,18 @@ html,body,button,input,select,textarea{font-family:var(--rm-native-font)!importa
 <style id="v112-amanda-mockup-layout">
 /* v112 — faithful Amanda mockup layout. Logic is preserved; this only reorganizes Today. */
 #view-week{background:linear-gradient(180deg,#FBF8FF 0,#FFF 36%,#FBFAFE 100%)!important;font-family:system-ui,-apple-system,"Segoe UI",Arial,sans-serif!important;color:#241C35!important;padding-top:14px!important}
-#view-week #startHereOuterCard,#view-week #snapshotScorecardCard,#view-week #v104DailyOrderStrip,#view-week #v104QuickLogLabel,#view-week #quickLogCard{display:none!important}
+#view-week #startHereOuterCard,#view-week #v104DailyOrderStrip,#view-week #v104QuickLogLabel,#view-week #quickLogCard{display:none!important}
 #view-week #dailyQuoteCard{display:block!important;margin:0 0 12px!important}
+#view-week #snapshotScorecardCard{display:block!important;margin:0 0 12px!important;padding:14px 16px!important;border:1px solid #DCCEF0!important;background:#fff!important;box-shadow:0 4px 16px rgba(89,54,133,.055)!important}
+#view-week #snapshotScorecardCard .period-toggle{gap:5px!important}
+#view-week #snapshotScorecardCard .ptoggle{padding:6px 10px!important;font-size:10.5px!important}
+#view-week #snapshotStats{grid-template-columns:repeat(5,minmax(0,1fr))!important;gap:7px!important;margin-bottom:0!important}
+@media(max-width:720px){
+  #view-week #snapshotScorecardCard{padding:12px!important}
+  #view-week #snapshotScorecardCard>div:nth-child(2){align-items:flex-start!important;gap:8px!important;flex-direction:column!important}
+  #view-week #snapshotStats{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+  #view-week #snapshotStats>div:last-child{grid-column:1/-1!important}
+}
 #view-week #weeklyCallPlanCard{background:transparent!important;border:0!important;box-shadow:none!important;padding:0!important;margin:0!important}
 #view-week #weeklyCallPlanCard>.v112-hide,#view-week #weeklyCallPlanCard>.amanda-calm-steps,#view-week #weeklyCallPlanCard>.amanda-portfolio-reminder{display:none!important}
 #view-week .v95-amanda-greeting{max-width:none!important;margin:0 0 14px!important;padding:20px 22px!important;border:1px solid #DCCEF0!important;border-radius:22px!important;background:linear-gradient(135deg,#FBF7FF 0%,#F2E9FC 58%,#FBF9FF 100%)!important;box-shadow:0 8px 26px rgba(89,54,133,.07)!important}
@@ -3388,9 +3399,9 @@ function toggleMeetingFocusField(){
 }
 
 const EMOJI={
-  "Cold Calls":"🏹","New Realtor Meeting":"🌸","New Agent Follow-up":"🌻","Break Breads":"🤝","Agent Talk-to":"🤙","Agent Talk-to":"📞",
-  "Realtor Buddy Referral Ask":"🌾","Buddy Intro Received":"🤝","CTC Call":"⚡","Under Contract Call":"🏠",  "Market Update":"📊",
-  "Co-hosted Event":"🎉","CTC Call":"🍰","Birthday Outreach":"🍰",
+  "Cold Calls":"🏹","New Realtor Meeting":"🌸","New Agent Follow-up":"🌻","Break Breads":"🤝","Agent Talk-to":"📞",
+  "Realtor Buddy Referral Ask":"🌾","Buddy Intro Received":"🤝","CTC Call":"⚡","Under Contract Call":"🏠","Market Update":"📊",
+  "Co-hosted Event":"🎉","Birthday Outreach":"🍰",
   "Holiday Outreach":"🎅","Agent Appreciation":"❤️","Reconnect Outreach":"🔁",
   "Partner Meeting":"🤝","Strategic Partner Meeting":"🎯","Channel Meeting":"⭐","Team / Office Presentation":"🏢","Retention Meeting":"🛟",
   "Amanda Coaching / Development":"🧭","RM Scorecard Review":"📋","RM Portfolio Review":"🔎","RM Process Improvement":"⚙️","Tracker / System Development":"🛠️","RM Training":"🎓","RM Leadership Escalation Support":"🚦"
@@ -3398,8 +3409,8 @@ const EMOJI={
 const GOALS=[
   {label:"Cold calls",type:"Cold Calls",weekly:125,monthly:500},
   // Amanda execution goals. The RM Team card separately tracks the shared 20-new-meeting goal.
-  {label:"New realtor meetings",type:"New Realtor Meeting",weekly:3,monthly:12},
-  {label:"Existing partner meetings",type:"__existingmeeting__",weekly:5,monthly:18},
+  {label:"New realtor meetings",type:"New Realtor Meeting",weekly:3,monthly:10},
+  {label:"Existing partner meetings",type:"__existingmeeting__",weekly:5,monthly:20},
   {label:"Agent Talk-to's",type:"__talkto__",weekly:100,monthly:400},
   {label:"Buddy intros received",type:"Buddy Intro Received",weekly:3,monthly:12}
 ];
@@ -5716,7 +5727,7 @@ function prefillActivityLog(agentName,activityType){
   switchTab("log");
 }
 
-let periodData={mtd:[],ytd:[]},currentPeriod="mtd";
+let periodData={daily:[],wtd:[],mtd:[],ytd:[]},currentPeriod="daily";
 let focusQueue=[],focusIndex=0;
 
 // ── "I'm overwhelmed — just give me one thing" — a treadmill, not a to-do list ──
@@ -6041,18 +6052,22 @@ async function showWinsDetail(kind){
 }
 
 function renderSnapshotStats(acts, period){
-  const labels={daily:"Today",wtd:"This week",mtd:"This month",ytd:"This year"};
+  const labels={daily:"Today",wtd:"This week",mtd:"This month",ytd:"Since Apr 2026"};
+  const now=new Date();
+  const roleStart=new Date(2026,3,1); // Apr 1, 2026
+  const monthsSinceRoleStart=Math.max(1,(now.getFullYear()-roleStart.getFullYear())*12+(now.getMonth()-roleStart.getMonth())+1);
   const goals={
-    daily:{coldCalls:25,talkTos:20,meetings:1,breakBreads:1,buddyAsks:1},
-    wtd:{coldCalls:125,talkTos:100,meetings:5,breakBreads:5,buddyAsks:3},
-    mtd:{coldCalls:500,talkTos:400,meetings:20,breakBreads:20,buddyAsks:12},
-    ytd:{coldCalls:6000,talkTos:4800,meetings:240,breakBreads:240,buddyAsks:144}
+    // Daily = controllable execution. WTD/MTD = current Amanda operating model.
+    daily:{coldCalls:25,talkTos:20,newMeetings:1,existingMeetings:1,buddy:1,buddyMode:"asks"},
+    wtd:{coldCalls:125,talkTos:100,newMeetings:3,existingMeetings:5,buddy:3,buddyMode:"intros"},
+    mtd:{coldCalls:500,talkTos:400,newMeetings:RM_TEAM_GOALS.amandaNew,existingMeetings:RM_TEAM_GOALS.amandaExisting,buddy:12,buddyMode:"intros"},
+    ytd:{coldCalls:500*monthsSinceRoleStart,talkTos:400*monthsSinceRoleStart,newMeetings:RM_TEAM_GOALS.amandaNew*monthsSinceRoleStart,existingMeetings:RM_TEAM_GOALS.amandaExisting*monthsSinceRoleStart,buddy:12*monthsSinceRoleStart,buddyMode:"intros"}
   };
   const g=goals[period]||goals.daily;
   const coldCalls=(acts||[]).filter(a=>a.act_type==="Cold Calls").length;
   const talkTos=cntTalkTo(acts);
-  const meetings=(acts||[]).filter(a=>a.act_type==="New Realtor Meeting").length;
-  const breakBreads=(acts||[]).filter(a=>a.act_type==="Break Breads").length;
+  const newMeetings=(acts||[]).filter(a=>a.act_type==="New Realtor Meeting").length;
+  const existingMeetings=(acts||[]).filter(a=>isExistingMeeting(a)).length;
   const buddyAsks=(acts||[]).filter(a=>a.act_type==="Realtor Buddy Referral Ask").length;
   const buddyIntros=(acts||[]).filter(a=>a.act_type==="Buddy Intro Received").length;
 
@@ -6064,7 +6079,6 @@ function renderSnapshotStats(acts, period){
     const badgeBg=hit?"var(--success-bg)":track?"var(--brand-light)":low?"var(--danger-bg)":"var(--warning-bg)";
     const badgeColor=hit?"var(--success)":track?"var(--brand)":low?"var(--danger)":"var(--warning)";
     const clickFn=filterType?'onclick="snapshotDrillDown(\''+filterType+'\')" style="cursor:pointer"':'';
-    // Pace hint — only meaningful for "today", so 0/25 at 9am doesn't read as failure
     let paceHtml="";
     if(period==="daily"&&goal>0){
       const nowT=new Date();
@@ -6077,28 +6091,30 @@ function renderSnapshotStats(acts, period){
         paceHtml='<div style="font-size:8.5px;margin-top:4px;color:'+(onPace?"var(--success)":"var(--text-4)")+'">'+(onPace?"on pace":"~"+expectedByNow+" by now")+'</div>';
       }
     }
-    return'<div '+clickFn+' style="text-align:center;padding:14px 8px;background:var(--surface-2);border:1px solid var(--border-light);border-radius:var(--radius);transition:box-shadow .15s" onmouseover="this.style.boxShadow=\'var(--shadow)\'" onmouseout="this.style.boxShadow=\'none\'">'
-      +'<div style="font-size:28px;font-weight:700;color:'+color+';line-height:1">'+num+'</div>'
+    return'<div '+clickFn+' style="text-align:center;padding:12px 7px;background:var(--surface-2);border:1px solid var(--border-light);border-radius:var(--radius);transition:box-shadow .15s;min-width:0" onmouseover="this.style.boxShadow=\'var(--shadow)\'" onmouseout="this.style.boxShadow=\'none\'">'
+      +'<div style="font-size:25px;font-weight:700;color:'+color+';line-height:1">'+num+'</div>'
       +'<div style="font-size:10px;color:var(--text-3);margin-top:2px">/ '+goal+'</div>'
-      +'<div style="font-size:9px;font-weight:700;margin-top:6px;padding:2px 7px;border-radius:20px;background:'+badgeBg+';color:'+badgeColor+'">'+badge+'</div>'
-      +'<div style="font-size:10px;color:var(--text-2);margin-top:5px;font-weight:500">'+label+'</div>'
+      +'<div style="font-size:9px;font-weight:700;margin-top:6px;padding:2px 6px;border-radius:20px;background:'+badgeBg+';color:'+badgeColor+'">'+badge+'</div>'
+      +'<div style="font-size:10px;color:var(--text-2);margin-top:5px;font-weight:600;line-height:1.25">'+label+'</div>'
       +paceHtml
       +'</div>';
   };
+
+  const buddyValue=g.buddyMode==="asks"?buddyAsks:buddyIntros;
+  const buddyLabel=g.buddyMode==="asks"?"Buddy Ask":"Buddy Intros";
+  const buddyFilter=g.buddyMode==="asks"?"Realtor Buddy Referral Ask":"Buddy Intro Received";
 
   const el=document.getElementById("snapshotStats");
   if(el) el.innerHTML=
     statCard(coldCalls,g.coldCalls,"Cold Calls","Cold Calls")+
     statCard(talkTos,g.talkTos,"Realtor Talk-to's","__talkto__")+
-    statCard(meetings,g.meetings,"New Realtor Meetings","New Realtor Meeting")+
-    statCard(breakBreads,g.breakBreads,"Break Breads","Break Breads")+
-    statCard(buddyIntros,g.buddyAsks,"Buddy Intros · "+buddyAsks+" asks","Buddy Intro Received");
+    statCard(newMeetings,g.newMeetings,"New Partner Meetings","New Realtor Meeting")+
+    statCard(existingMeetings,g.existingMeetings,"Existing Partner Meetings","__existingmeeting__")+
+    statCard(buddyValue,g.buddy,buddyLabel,buddyFilter);
 
-  // Update day label
   const dayEl=document.getElementById("snapshotDayLabel");
   if(dayEl) dayEl.textContent=labels[period]||"Today";
 }
-
 function showPeriod(p){
   currentPeriod=p;
   ["daily","wtd","mtd","ytd"].forEach(id=>{
@@ -6189,11 +6205,13 @@ function renderCtcRow(count,label){
 function renderPeriodScorecard(){
   const data=periodData[currentPeriod]||[];
   const labels={daily:"Today",wtd:"Week to date",mtd:"Month to date",ytd:"Year to date"};
+  const roleStart=new Date(2026,3,1),now=new Date();
+  const roleMonths=Math.max(1,(now.getFullYear()-roleStart.getFullYear())*12+(now.getMonth()-roleStart.getMonth())+1);
   const goalMultipliers={
     daily:{multiplier:1/5,base:"weekly"}, // daily = weekly goal / 5 days
     wtd:{multiplier:1,base:"weekly"},
     mtd:{multiplier:1,base:"monthly"},
-    ytd:{multiplier:12,base:"monthly"}
+    ytd:{multiplier:roleMonths,base:"monthly"}
   };
   const cfg=goalMultipliers[currentPeriod]||goalMultipliers.mtd;
   const isYTD=currentPeriod==="ytd";
@@ -10939,7 +10957,7 @@ function renderMgmtPeriod(){
   const labelMap={daily:"Today",week:"This week",mtd:"Month to date",ytd:"Year to date"};
   const label=(mgmtPeriodBounds[currentMgmtPeriod]&&mgmtPeriodBounds[currentMgmtPeriod].label)||labelMap[currentMgmtPeriod]||"Month to date";
   const isWeek=currentMgmtPeriod==="week",isYTD=currentMgmtPeriod==="ytd",isDaily=currentMgmtPeriod==="daily";
-  const monthsSinceStart=Math.min(12,Math.max(1,new Date().getMonth()-2));// April=month 3, so current month - 2 = months since April
+  const _roleStart=new Date(2026,3,1),_now=new Date();const monthsSinceStart=Math.max(1,(_now.getFullYear()-_roleStart.getFullYear())*12+(_now.getMonth()-_roleStart.getMonth())+1);
   const goalTarget=g=>isDaily?Math.ceil(g.weekly/5):isWeek?g.weekly:isYTD?g.monthly*monthsSinceStart:g.monthly;
   if(!data.length){document.getElementById("danielGoals").innerHTML='<div class="no-data">No activity logged yet for this period.</div>';return;}
   let html='<div style="font-size:11px;color:#bbb;margin-bottom:14px">'+label+' — '+data.length+' total activities</div>';
@@ -15701,5 +15719,14 @@ console.log('RM Tracker Build v136.0 · Amanda simplicity pass · execution firs
 </style>
 <script>console.log("RM Tracker Build v136.0 · C→B Director review workflow");</script>
 
+
+<!-- v137 AUDIT NOTES
+  - Daily snapshot restored and mobile-safe.
+  - Snapshot Today/WTD/MTD targets aligned to Amanda execution + RM operating model.
+  - CTC/Agent Talk-to duplicate icon keys removed.
+  - Snapshot default period now matches Today.
+  - Existing-partner snapshot counts all qualifying existing meetings, not only Break Breads.
+  - Role-to-date goal scaling is date-safe across calendar years.
+-->
 </body>
 </html>
