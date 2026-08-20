@@ -1,4 +1,5 @@
   <!DOCTYPE html>
+<!-- v136: C-to-B Director review workflow added; Amanda can send evidence-based growth candidates to Nyny directly from Today -->
 <!-- v135: Amanda Relationship Work ownership fix; all queues now exclude Nyny-owned/strategic/A-B-Channel relationships consistently -->
 
 
@@ -13502,14 +13503,14 @@ console.log("RM Tracker Build v122.0 · scale-ready Director operating system");
 </div>
 <div id="v85InsightModal" onclick="if(event.target===this)v85CloseInsightModal()" style="display:none;position:fixed;inset:0;z-index:10050;background:rgba(30,24,48,.32);align-items:center;justify-content:center;padding:18px">
 <div style="width:min(520px,96vw);background:#fff;border:1px solid var(--border);border-radius:14px;box-shadow:0 18px 55px rgba(38,29,70,.20);padding:16px">
-<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:10px"><div><div style="font-size:15px;font-weight:850;color:var(--text-1)">Share with Nyny</div><div style="font-size:10.5px;color:var(--text-3);margin-top:2px">Use this when Nyny should know, join, strategize or follow up. It does not change relationship ownership.</div></div><button onclick="v85CloseInsightModal()" style="border:0;background:transparent;font-size:19px;color:var(--text-3);cursor:pointer" type="button">×</button></div>
+<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:10px"><div><div id="v85InsightTitle" style="font-size:15px;font-weight:850;color:var(--text-1)">Share with Nyny</div><div id="v85InsightSub" style="font-size:10.5px;color:var(--text-3);margin-top:2px">Use this when Nyny should know, join, strategize or follow up. It does not change relationship ownership.</div></div><button onclick="v85CloseInsightModal()" style="border:0;background:transparent;font-size:19px;color:var(--text-3);cursor:pointer" type="button">×</button></div>
 <div class="field" style="margin-bottom:8px"><label>Agent / relationship</label><input id="v85InsightAgent" placeholder="Agent or partner name" type="text"/></div>
 <div style="display:grid;grid-template-columns:1.4fr .8fr;gap:8px">
-<div class="field" style="margin:0"><label>What is this?</label><select id="v85InsightType"><option>Growth opportunity</option><option>Retention / competitor risk</option><option>Join next meeting</option><option>Strategy help</option><option>Service issue</option><option>Relationship insight / FYI</option></select></div>
+<div class="field" style="margin:0"><label>What is this?</label><select id="v85InsightType"><option>Growth opportunity</option><option>Possible C → B</option><option>Retention / competitor risk</option><option>Join next meeting</option><option>Strategy help</option><option>Service issue</option><option>Relationship insight / FYI</option></select></div>
 <div class="field" style="margin:0"><label>Priority</label><select id="v85InsightPriority"><option value="normal">Normal</option><option value="high">High</option></select></div>
 </div>
 <div class="field" style="margin-top:8px"><label>What should Nyny know?</label><textarea id="v85InsightNote" placeholder="What did you learn, why does it matter, and what help or next move would be useful?" rows="4"></textarea></div>
-<div style="display:flex;justify-content:flex-end;gap:7px;margin-top:10px"><button class="btn-sm" onclick="v85CloseInsightModal()">Cancel</button><button class="btn-primary" onclick="v85SaveInsight()">Share</button></div>
+<div style="display:flex;justify-content:flex-end;gap:7px;margin-top:10px"><button class="btn-sm" onclick="v85CloseInsightModal()">Cancel</button><button class="btn-primary" id="v85InsightSaveBtn" onclick="v85SaveInsight()">Share</button></div>
 </div>
 </div>
 <script>
@@ -15543,6 +15544,161 @@ console.log('RM Tracker Build v134.0 · Face Time + C-to-B visibility aligned');
 })();
 console.log('RM Tracker Build v136.0 · Amanda simplicity pass · execution first');
 </script>
+
+
+<script id="v136-ctob-director-review-workflow">
+// v136 — Amanda -> Nyny C→B review loop. Reuses rm_director_insights; no new Supabase table required.
+(function(){
+  const V136_TYPE='Possible C → B';
+  window._v136GrowthReviews={};
+
+  function v136Key(name){
+    try{return typeof ownerKey==='function'?ownerKey(name):String(name||'').trim().toLowerCase();}
+    catch(e){return String(name||'').trim().toLowerCase();}
+  }
+  function v136Js(v){
+    try{return typeof wpJs==='function'?wpJs(v):String(v||'').replace(/\\/g,'\\\\').replace(/'/g,"\\'");}
+    catch(e){return String(v||'').replace(/\\/g,'\\\\').replace(/'/g,"\\'");}
+  }
+  function v136Date(raw){
+    if(!raw)return'';
+    try{return new Date(raw).toLocaleDateString('en-US',{month:'short',day:'numeric'});}catch(e){return String(raw).slice(0,10);}
+  }
+  function v136IsGrowthReview(row){return String((row&&row.insight_type)||'').indexOf(V136_TYPE)===0;}
+  function v136IsAmandaFollowup(row){return /Amanda follow-up/i.test(String((row&&row.insight_type)||''));}
+
+  window.v136LoadGrowthReviewStatus=async function(){
+    try{
+      const rows=await sbFetch('rm_director_insights?status=eq.open&select=id,agent_name,submitted_by,insight_type,priority,note,created_at,status&order=created_at.desc&limit=250').catch(()=>[]);
+      const map={};
+      (rows||[]).filter(v136IsGrowthReview).forEach(function(r){const k=v136Key(r.agent_name);if(k&&!map[k])map[k]=r;});
+      window._v136GrowthReviews=map;
+      v136DecorateGrowthReviewButtons();
+      return map;
+    }catch(e){console.warn('C→B review status load failed',e);return{};}
+  };
+
+  window.v136DecorateGrowthReviewButtons=function(){
+    document.querySelectorAll('[data-v136-review-agent]').forEach(function(btn){
+      const name=btn.getAttribute('data-v136-review-agent')||'',row=(window._v136GrowthReviews||{})[v136Key(name)];
+      if(!row){btn.disabled=false;btn.classList.remove('v136-sent','v136-followup');btn.textContent='Send to Nyny for Review';btn.title='Send this C → B opportunity and its evidence to Nyny for review.';return;}
+      if(v136IsAmandaFollowup(row)){
+        btn.disabled=false;btn.classList.add('v136-followup');btn.classList.remove('v136-sent');btn.textContent='Nyny: follow up';btn.title='Nyny asked you to follow up on this C → B review. Click to update and send the new context.';
+      }else{
+        btn.disabled=true;btn.classList.add('v136-sent');btn.classList.remove('v136-followup');btn.textContent='✓ Sent to Nyny'+(row.created_at?' · '+v136Date(row.created_at):'');btn.title='This C → B review is already waiting for Nyny.';
+      }
+    });
+  };
+
+  // Reset the shared modal every time the generic Share with Nyny action is used.
+  const oldOpen=window.v85OpenInsightModal;
+  window.v85OpenInsightModal=function(agent){
+    const title=document.getElementById('v85InsightTitle'),sub=document.getElementById('v85InsightSub'),btn=document.getElementById('v85InsightSaveBtn'),type=document.getElementById('v85InsightType'),priority=document.getElementById('v85InsightPriority');
+    if(title)title.textContent='Share with Nyny';
+    if(sub)sub.textContent='Use this when Nyny should know, join, strategize or follow up. It does not change relationship ownership.';
+    if(btn)btn.textContent='Share';
+    if(type&&type.value===V136_TYPE)type.value='Growth opportunity';
+    if(priority)priority.value='normal';
+    return oldOpen?oldOpen(agent):undefined;
+  };
+
+  window.v136OpenGrowthReview=function(name,evidence,qualifies){
+    const existing=(window._v136GrowthReviews||{})[v136Key(name)];
+    // A Director follow-up request is intentionally reopenable so Amanda can add the new result.
+    if(existing&&!v136IsAmandaFollowup(existing)){
+      toast('This C → B review is already waiting for Nyny.','success',2800);return;
+    }
+    window.v85OpenInsightModal(name);
+    const title=document.getElementById('v85InsightTitle'),sub=document.getElementById('v85InsightSub'),btn=document.getElementById('v85InsightSaveBtn'),type=document.getElementById('v85InsightType'),priority=document.getElementById('v85InsightPriority'),note=document.getElementById('v85InsightNote');
+    if(title)title.textContent='Send C → B Review to Nyny';
+    if(sub)sub.textContent='Amanda spots the opportunity; Nyny reviews the relationship. Sending this does not change tier or ownership.';
+    if(btn)btn.textContent='Send for review';
+    if(type){
+      if(!Array.from(type.options||[]).some(o=>o.value===V136_TYPE)){const o=document.createElement('option');o.value=V136_TYPE;o.textContent=V136_TYPE;type.appendChild(o);}
+      type.value=V136_TYPE;
+    }
+    if(priority)priority.value=qualifies?'high':'normal';
+    if(note){
+      const prefix=existing&&v136IsAmandaFollowup(existing)?'Following up on your C → B review request for '+properCase(name)+'. ':'I think '+properCase(name)+' may be getting close to B status. ';
+      note.value=prefix+'Current evidence: '+String(evidence||'growth signals are strengthening')+'. Please review for B readiness and the best next move.';
+      setTimeout(()=>{try{note.focus();note.setSelectionRange(note.value.length,note.value.length);}catch(e){}},80);
+    }
+  };
+
+  // Keep the card status current after Amanda saves an insight through the shared modal.
+  const oldSave=window.v85SaveInsight;
+  window.v85SaveInsight=async function(){
+    const wasGrowth=String(document.getElementById('v85InsightType')?.value||'')===V136_TYPE;
+    const result=oldSave?await oldSave():undefined;
+    if(wasGrowth)setTimeout(()=>v136LoadGrowthReviewStatus(),300);
+    return result;
+  };
+
+  // Override the growth card last so the contextual review action is always present.
+  window.v112GrowthCard=function(t){
+    var c=t.growth||{},p=(t.item&&t.item.profile)||c.profile||{},name=t.name||c.name||'',safe=v136Js(name),closes=Number(p.closes_past_year||c.closes||0),leads=Number(p.total_leads_past_year||c.leads||0),need=Math.max(0,2-closes),lastClose=p.latest_close_date||'',lastLead=p.latest_lead_date||'',reason=(c.reasons||[]).slice(0,4).join(' · ')||String(t.why||'Growth signal documented');
+    var closeCopy=lastClose?(typeof v112SafeDate==='function'?v112SafeDate(lastClose):String(lastClose).slice(0,10)):'not tracked';
+    var leadCopy=lastLead?(typeof v112SafeDate==='function'?v112SafeDate(lastLead):String(lastLead).slice(0,10)):'none recent';
+    var evidence=closes+' rolling-12 close'+(closes===1?'':'s')+(leads?' · '+leads+' lead'+(leads===1?'':'s'):'')+(lastLead?' · latest lead '+leadCopy:'')+' · '+reason;
+    var row=(window._v136GrowthReviews||{})[v136Key(name)],sent=!!row,followup=sent&&v136IsAmandaFollowup(row);
+    var reviewLabel=followup?'Nyny: follow up':sent?'✓ Sent to Nyny'+(row.created_at?' · '+v136Date(row.created_at):''):'Send to Nyny for Review';
+    var reviewDisabled=sent&&!followup?' disabled':'';
+    return '<div class="v112-growth-card" data-v136-growth-card="'+escHtml(name)+'"><div class="v112-growth-title"><b>'+escHtml(resolvedDisplayName(name))+'</b><span class="v112-tier">C → B</span></div><div class="v112-growth-stats"><div class="v112-stat">Rolling 12m closes: <strong>'+closes+'</strong></div><div class="v112-stat">Rolling leads: <strong>'+leads+'</strong></div><div class="v112-stat">Last close: <strong>'+escHtml(closeCopy)+'</strong></div><div class="v112-stat">Latest lead: <strong>'+escHtml(leadCopy)+'</strong></div></div><div class="v112-growth-reason"><strong>Why Amanda is seeing this:</strong> '+escHtml(reason)+'. <strong>'+(need?need+' more closing'+(need!==1?'s':'')+' to reach B':'Production qualifies for B review')+'.</strong></div><div class="v112-row-actions" style="margin-top:8px"><button class="primary" onclick="v98DirectorLog(\''+safe+'\',\'Amanda\',\'Agent Talk-to\')">Log touch</button><button onclick="wpOpenContact(\''+safe+'\')">Update</button><button onclick="v101OpenFaceTimeModal(\''+safe+'\',\'\',\'\')">Schedule Face Time</button><button data-v136-review-agent="'+escHtml(name)+'" class="v136-review-btn '+(sent?(followup?'v136-followup':'v136-sent'):'')+'" onclick="v136OpenGrowthReview(\''+safe+'\',\''+v136Js(evidence)+'\','+(need===0?'true':'false')+')"'+reviewDisabled+'>'+escHtml(reviewLabel)+'</button></div></div>';
+  };
+
+  window.v136DirectorDecision=async function(id,name,decision){
+    try{
+      if(decision==='keep'){
+        await sbFetch('rm_director_insights?id=eq.'+encodeURIComponent(id),{method:'PATCH',prefer:'return=minimal',body:JSON.stringify({status:'resolved',resolved_at:new Date().toISOString(),resolved_by:'Nyny',insight_type:V136_TYPE+' · Keep C'})});
+        toast(properCase(name)+' stays C for now ✓','success',2800);
+      }else if(decision==='followup'){
+        await sbFetch('rm_director_insights?id=eq.'+encodeURIComponent(id),{method:'PATCH',prefer:'return=minimal',body:JSON.stringify({status:'open',priority:'high',insight_type:V136_TYPE+' · Amanda follow-up'})});
+        toast('Amanda follow-up requested ✓','success',2800);
+      }else{
+        await sbFetch('rm_director_insights?id=eq.'+encodeURIComponent(id),{method:'PATCH',prefer:'return=minimal',body:JSON.stringify({status:'resolved',resolved_at:new Date().toISOString(),resolved_by:'Nyny'})});
+        toast('C → B review marked handled ✓','success',2400);
+      }
+      await v136LoadGrowthReviewStatus();
+      try{await v85LoadCommandCenter();}catch(e){}
+    }catch(e){console.warn(e);toast('Could not update the C → B review.','error',3800);}
+  };
+
+  window.v136RenderDirectorGrowthReviews=async function(){
+    const inbox=document.getElementById('v85DirectorInbox');if(!inbox)return;
+    try{
+      const rows=await sbFetch('rm_director_insights?status=eq.open&select=id,agent_name,submitted_by,insight_type,priority,note,created_at,status&order=created_at.desc&limit=250').catch(()=>[]);
+      const growth=(rows||[]).filter(v136IsGrowthReview);
+      const old=document.getElementById('v136DirectorGrowthReviews');if(old)old.remove();
+      if(!growth.length)return;
+      const panel=document.createElement('div');panel.id='v136DirectorGrowthReviews';panel.style.cssText='margin:0 0 10px;border:1px solid #C9DED1;border-radius:10px;background:#F8FCF9;padding:10px';
+      panel.innerHTML='<div style="display:flex;justify-content:space-between;gap:8px;align-items:center;margin-bottom:7px"><div><div style="font-size:11.5px;font-weight:850;color:#2F6847">C → B REVIEW REQUESTS · '+growth.length+'</div><div style="font-size:10px;color:#63736A;margin-top:2px">Amanda surfaced these relationships because the production/lead evidence may be nearing B.</div></div></div>'+growth.map(function(r){
+        const safe=v136Js(r.agent_name),follow=v136IsAmandaFollowup(r);
+        return '<div style="background:#fff;border:1px solid #DCE8DF;border-radius:8px;padding:9px 10px;margin-top:6px"><div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start;flex-wrap:wrap"><div style="min-width:220px;flex:1"><div style="font-size:12px;font-weight:850;color:var(--text-1)">'+escHtml(properCase(r.agent_name||''))+' <span style="font-size:9px;font-weight:800;color:'+(follow?'#9A5D00':'#2F6847')+'">· '+(follow?'AMANDA FOLLOW-UP REQUESTED':'C → B REVIEW')+'</span></div><div style="font-size:10.5px;color:var(--text-2);line-height:1.45;margin-top:3px">'+escHtml(r.note||'')+'</div><div style="font-size:9.5px;color:var(--text-4);margin-top:4px">Shared by Amanda'+(r.created_at?' · '+v136Date(r.created_at):'')+'</div></div><div style="display:flex;gap:5px;flex-wrap:wrap"><button class="btn-sm" onclick="v98OpenDirectorHistory(\''+safe+'\')">Review relationship</button><button class="btn-sm" data-id="'+escHtml(String(r.id||''))+'" data-agent="'+escHtml(r.agent_name||'')+'" onclick="v136DirectorDecision(this.dataset.id,this.dataset.agent,\'keep\')">Keep C</button><button class="btn-sm" data-id="'+escHtml(String(r.id||''))+'" data-agent="'+escHtml(r.agent_name||'')+'" onclick="v136DirectorDecision(this.dataset.id,this.dataset.agent,\'followup\')" style="background:#FFF8E8;color:#765A19;border-color:#E7D19A">Ask Amanda follow-up</button><button class="btn-sm" data-id="'+escHtml(String(r.id||''))+'" data-agent="'+escHtml(r.agent_name||'')+'" onclick="v136DirectorDecision(this.dataset.id,this.dataset.agent,\'handled\')" style="background:#2F6847;color:#fff;border-color:#2F6847">Handled</button></div></div></div>';
+      }).join('');
+      inbox.prepend(panel);
+    }catch(e){console.warn('Director C→B review panel failed',e);}
+  };
+
+  const oldCommand=window.v85LoadCommandCenter;
+  window.v85LoadCommandCenter=async function(){
+    const r=oldCommand?await oldCommand():undefined;
+    await v136RenderDirectorGrowthReviews();
+    return r;
+  };
+
+  // Refresh the status after Today/Growth renders, without blocking normal startup.
+  setTimeout(()=>v136LoadGrowthReviewStatus(),1800);
+  const mo=new MutationObserver(function(){clearTimeout(window._v136DecorateTimer);window._v136DecorateTimer=setTimeout(v136DecorateGrowthReviewButtons,80);});
+  setTimeout(function(){const h=document.getElementById('v113GrowthHost');if(h)mo.observe(h,{childList:true,subtree:true});},500);
+})();
+</script>
+<style id="v136-ctob-review-style">
+.v136-review-btn{background:#F4F1FA!important;color:#5D3E83!important;border:1px solid #D6C9E6!important}
+.v136-review-btn:hover:not(:disabled){background:#EEE6F8!important}
+.v136-review-btn.v136-sent,.v136-review-btn:disabled{background:#EEF8F2!important;color:#2F6847!important;border-color:#C9DED1!important;cursor:default!important;opacity:1!important}
+.v136-review-btn.v136-followup{background:#FFF7E8!important;color:#8A5A00!important;border-color:#E6C987!important}
+</style>
+<script>console.log("RM Tracker Build v136.0 · C→B Director review workflow");</script>
 
 </body>
 </html>
