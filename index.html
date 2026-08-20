@@ -1,4 +1,4 @@
-  <!DOCTYPE html>
+ <!DOCTYPE html>
 <!-- v140: fixes Step 2 transaction renderer race; saved/open CTC and New Contract tasks are no longer erased after successful distribution -->
 <!-- v137: Amanda daily snapshot restored + audit fixes; current operating goals aligned, responsive snapshot, duplicate activity icons corrected -->
 <!-- v139: save/log integrity audit; preserve follow-ups until confirmed save, harden offline replay, Face Time and handled-note history -->
@@ -16104,5 +16104,104 @@ console.log('RM Tracker Build v141.0 · known open transaction fallback seeded')
 })();
 </script>
 
+
+<script id="v144-meeting-count-sync-fix">
+(function(){
+  // v144: Step 5 and the RM Team scorecard must use the same monthly New Realtor Meeting count.
+  // v143 intentionally renders Step 5 before network data arrives; that could temporarily (or on a
+  // slow request, persistently) show 0/20 while the scorecard already knew the true count.
+  window._v144MeetingActs = Array.isArray(window._v144MeetingActs) ? window._v144MeetingActs : [];
+  window._v144MeetingCount = Number.isFinite(window._v144MeetingCount) ? window._v144MeetingCount : null;
+
+  function v144Today(){
+    try{return typeof today==='function'?today():new Date().toISOString().slice(0,10);}catch(e){return new Date().toISOString().slice(0,10);}
+  }
+  function v144NewCount(arr){
+    return (Array.isArray(arr)?arr:[]).filter(function(a){
+      return a&&a.act_type==='New Realtor Meeting'&&!(typeof isInternalTxnTrigger==='function'&&isInternalTxnTrigger(a));
+    }).length;
+  }
+  function v144ScorecardCount(){
+    try{
+      var el=document.getElementById('rmTeamScorecard');
+      if(!el)return null;
+      var t=String(el.textContent||'').replace(/\s+/g,' ');
+      var m=t.match(/Shared acquisition outcome.*?(\d+)\s*\/\s*20/i);
+      if(m)return Number(m[1]);
+    }catch(e){}
+    return null;
+  }
+  function v144SyntheticActs(n){
+    var d=v144Today();
+    return Array.from({length:Math.max(0,Number(n)||0)},function(_,i){return {agent_name:'__team_meeting_'+i,act_type:'New Realtor Meeting',act_date:d,outcome:'',notes:''};});
+  }
+
+  var priorRender=window.v109RenderNewMeetingPush;
+  window.v109RenderNewMeetingPush=function(planned,date,monthActs){
+    var passed=Array.isArray(monthActs)?monthActs:[];
+    var passedCount=v144NewCount(passed);
+    var domCount=v144ScorecardCount();
+    if(Number.isFinite(domCount))window._v144MeetingCount=domCount;
+    if(passedCount>0 || (passed.length && window._v144MeetingCount===null)){
+      window._v144MeetingActs=passed;
+      window._v144MeetingCount=passedCount;
+    }
+    var effective=passed;
+    if(Array.isArray(window._v144MeetingActs)&&window._v144MeetingActs.length){
+      effective=window._v144MeetingActs;
+    }else if(Number.isFinite(window._v144MeetingCount)&&window._v144MeetingCount>passedCount){
+      effective=v144SyntheticActs(window._v144MeetingCount);
+    }
+    return priorRender.apply(this,[planned,date,effective]);
+  };
+
+  function v144WithTimeout(p,ms){
+    return Promise.race([Promise.resolve(p),new Promise(function(_,reject){setTimeout(function(){reject(new Error('timeout'));},ms);})]);
+  }
+  async function v144RefreshCount(){
+    var d=v144Today(),monthStart=d.slice(0,7)+'-01';
+    try{
+      if(typeof sbFetch!=='function')return;
+      var acts=await v144WithTimeout(sbFetch('amanda_activities?select=agent_name,act_type,act_date,outcome,notes&act_date=gte.'+monthStart+'&order=act_date.desc&limit=5000'),9000);
+      if(!Array.isArray(acts))return;
+      window._v144MeetingActs=acts;
+      window._v144MeetingCount=v144NewCount(acts);
+      if(typeof window.v109RenderNewMeetingPush==='function')window.v109RenderNewMeetingPush([],d,acts);
+    }catch(e){
+      // If the network is slow, synchronize from the already-rendered RM Team scorecard instead.
+      var n=v144ScorecardCount();
+      if(Number.isFinite(n)){
+        window._v144MeetingCount=n;
+        if(typeof window.v109RenderNewMeetingPush==='function')window.v109RenderNewMeetingPush([],d,v144SyntheticActs(n));
+      }
+      console.warn('v144 shared meeting-count refresh skipped/timeout',e);
+    }
+  }
+  function v144SyncFromScorecard(){
+    var n=v144ScorecardCount();
+    if(!Number.isFinite(n))return;
+    if(window._v144MeetingCount!==n){
+      window._v144MeetingCount=n;
+      if(typeof window.v109RenderNewMeetingPush==='function')window.v109RenderNewMeetingPush([],v144Today(),v144SyntheticActs(n));
+    }
+  }
+  function boot(){
+    setTimeout(v144SyncFromScorecard,100);
+    setTimeout(v144RefreshCount,250);
+    [900,1800,3500,6500].forEach(function(ms){setTimeout(v144SyncFromScorecard,ms);});
+  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
+  document.addEventListener('visibilitychange',function(){if(!document.hidden){v144SyncFromScorecard();setTimeout(v144RefreshCount,100);}});
+  setInterval(v144SyncFromScorecard,5000);
+
+  // Keep the visible build marker honest.
+  document.addEventListener('DOMContentLoaded',function(){
+    document.querySelectorAll('*').forEach(function(el){
+      if(el.children.length===0 && /Build v\d+/i.test(el.textContent||''))el.textContent=(el.textContent||'').replace(/Build v\d+(?:\.\d+)?/i,'Build v144');
+    });
+  },{once:true});
+  console.log('RM Tracker Build v144.0 · Step 5 meeting count synchronized with shared RM Team scorecard');
+})();
+</script>
 </body>
 </html>
