@@ -1,6 +1,6 @@
    <!DOCTYPE html>
 <!-- v217 4-WEEK BUTTON HANDLER FIX · 2026-08-21 -->
-<!-- v218 MANAGER WORKSPACE + CLICKABLE DRILLDOWNS + AMANDA FULL TRACKER · 2026-08-21 -->
+<!-- v219 MANAGEMENT DRILLDOWNS + ACTIVITY WORKBENCH · 2026-08-21 -->
 
 <!-- Cleanup pass: floating Page Guide + stale developer build logs removed; active workflow logic preserved. -->
 <!-- v140: fixes Step 2 transaction renderer race; saved/open CTC and New Contract tasks are no longer erased after successful distribution -->
@@ -1110,6 +1110,10 @@ body.rmx-director-site #view-daniel>*:not(#rmxApp){display:none!important}
 .rmx-admin-tabs{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:10px}.rmx-admin-tabs button{border:1px solid #dfe1dd;background:#fff;border-radius:8px;padding:7px 10px;font:750 10px inherit;cursor:pointer}.rmx-admin-tabs button.active{background:#f1ecfb;border-color:#cdbfe9;color:var(--rmx-purple)}
 @media(max-width:1250px){.rmx-amanda-top.v218{grid-template-columns:1.3fr repeat(3,1fr)}}
 @media(max-width:850px){.rmx-nav-group{display:none}.rmx-amanda-top.v218{grid-template-columns:1fr 1fr}.rmx-action-menu{grid-template-columns:1fr}.rmx-tier-status{align-items:flex-start;flex-direction:column}}
+/* v219 — manager drilldown workbench */
+.rmx-focus-strip{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;padding:11px 13px;border:1px solid #d9ccef;background:#faf7ff;border-radius:12px;margin:0 0 12px}.rmx-focus-strip b{display:block;font-size:12px;color:#4d2d86}.rmx-focus-strip span{display:block;font-size:10.5px;color:#6b6474;margin-top:2px}.rmx-workbench-tabs{display:flex;gap:7px;flex-wrap:wrap;margin:0 0 12px}.rmx-workbench-tabs button{border:1px solid #ded9e8;background:#fff;border-radius:999px;padding:7px 10px;font:700 10.5px/1.1 Arial;color:#4d4656;cursor:pointer}.rmx-workbench-tabs button.active{background:#5d36a3;color:#fff;border-color:#5d36a3}.rmx-detail-list{display:grid;gap:8px}.rmx-detail-row{display:grid;grid-template-columns:95px minmax(145px,1fr) 145px minmax(180px,1.4fr) 100px minmax(210px,auto);gap:10px;align-items:start;padding:10px 12px;border:1px solid #e7e4eb;border-radius:10px;background:#fff}.rmx-detail-row .dt{font-size:10px;color:#77717c}.rmx-detail-row .who{font-size:11.5px;font-weight:850;color:#15261d}.rmx-detail-row .type{font-size:10.5px;font-weight:750;color:#51475f}.rmx-detail-row .copy{font-size:10.5px;color:#5c5961;line-height:1.4}.rmx-detail-row .follow{font-size:10px;color:#776d7f}.rmx-detail-head{display:grid;grid-template-columns:95px minmax(145px,1fr) 145px minmax(180px,1.4fr) 100px minmax(210px,auto);gap:10px;padding:0 12px 6px;color:#716979;font-size:9px;font-weight:850;text-transform:uppercase;letter-spacing:.04em}.rmx-quick-card.manage{min-height:86px;text-align:left;display:flex;flex-direction:column;align-items:flex-start;justify-content:center;padding:13px}.rmx-quick-card.manage b{font-size:11px;color:#34264a}.rmx-quick-card.manage span{font-size:9.8px;color:#7a7184;margin-top:4px;line-height:1.35}.rmx-kpi[data-rmx-focus]::after,.rmx-stat[data-rmx-focus]::after{content:'View details →';display:block;font-size:9px;font-weight:800;color:#6040a2;margin-top:7px}.rmx-dashboard-guide{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin:0 0 14px}.rmx-guide-card{border:1px solid #e4e1e8;background:#fff;border-radius:11px;padding:10px 11px;text-align:left;cursor:pointer}.rmx-guide-card b{display:block;font-size:11px;color:#24352b}.rmx-guide-card span{display:block;font-size:9.5px;color:#77717c;margin-top:3px;line-height:1.35}.rmx-external-only{border-style:dashed!important}.rmx-external-only::after{content:'Only this opens Amanda’s tracker';display:block;font-size:8.8px;color:#725e8d;margin-top:5px;font-weight:750}
+@media(max-width:1100px){.rmx-detail-row,.rmx-detail-head{grid-template-columns:85px 1fr 115px 1.2fr}.rmx-detail-row .follow,.rmx-detail-row .rmx-actions{grid-column:auto}.rmx-dashboard-guide{grid-template-columns:1fr 1fr}}
+@media(max-width:720px){.rmx-detail-head{display:none}.rmx-detail-row{grid-template-columns:1fr}.rmx-dashboard-guide{grid-template-columns:1fr}.rmx-quick-card.manage{min-height:72px}}
 </style>
 <style id="v211-final-director-route-css">
 body.rm-amanda-route #view-daniel,body.rm-amanda-route #rmxApp{display:none!important}
@@ -17213,6 +17217,7 @@ window.rmAuditVisibleButtons=function(){
   ['dashboard','▦','Dashboard'],
   ['queue','▣','Director Queue'],
   ['amanda','♙','Amanda Overview'],
+  ['performance','◫','Activity & Meetings'],
   ['tier','↗','Tier Growth'],
   ['risk','◇','Portfolio Risk'],
   ['communication','⇄','LP / RM Handoffs'],
@@ -17221,7 +17226,7 @@ window.rmAuditVisibleButtons=function(){
 ]}
  function navMarkup(){
   const lookup={};nav().forEach(n=>lookup[n[0]]=n);
-  const groups=[['Manage',['dashboard','queue','amanda']],['Grow & Retain',['tier','risk']],['Operations',['communication','reports','admin']]];
+  const groups=[['Manage',['dashboard','queue','amanda','performance']],['Grow & Retain',['tier','risk']],['Operations',['communication','reports','admin']]];
   return groups.map(g=>'<div class="rmx-nav-group">'+g[0]+'</div>'+g[1].map(k=>{const n=lookup[k];return '<button data-rmx="'+n[0]+'"><span class="ico">'+n[1]+'</span>'+n[2]+'</button>'}).join('')).join('');
  }
  function identity(){
@@ -17259,6 +17264,7 @@ window.rmAuditVisibleButtons=function(){
     if(route==='dashboard')renderSnapshot(c,d);
     else if(route==='queue')renderMyDay(c,d);
     else if(route==='amanda')renderAmanda(c,d);
+    else if(route==='performance')renderPerformance(c,d);
     else if(route==='tier')renderTier(c,d);
     else if(route==='risk')renderPortfolio(c,d);
     else if(route==='communication')renderComm(c,d);
@@ -17286,7 +17292,14 @@ window.rmAuditVisibleButtons=function(){
     }
     const amTab=e.target.closest('[data-rmx-amanda-tab]');if(amTab){e.preventDefault();e.stopPropagation();window.rmxOpenAmandaTab(amTab.dataset.rmxAmandaTab||'week');return}
     const scroll=e.target.closest('[data-rmx-scroll]');if(scroll){e.preventDefault();e.stopPropagation();const el=$(scroll.dataset.rmxScroll);if(el)el.scrollIntoView({behavior:'smooth',block:'start'});return}
-    const target=e.target.closest('[data-rmx-jump]');if(target){e.preventDefault();e.stopPropagation();go(target.dataset.rmxJump);return}
+    const target=e.target.closest('[data-rmx-jump]');if(target){
+      e.preventDefault();e.stopPropagation();
+      const route=target.dataset.rmxJump,focus=target.dataset.rmxFocus||'';
+      if(route==='performance')R.sub.performanceFocus=focus||'today';
+      else if(route==='risk')R.sub.riskFocus=focus||'all';
+      else if(route==='queue')R.sub.queueFocus=focus||'';
+      go(route);return
+    }
     const navBtn=e.target.closest('[data-rmx]');if(navBtn){e.preventDefault();e.stopPropagation();go(navBtn.dataset.rmx);return}
   });
 }
@@ -17362,9 +17375,9 @@ window.rmAuditVisibleButtons=function(){
    return aDate>profileDate?aDate:profileDate;
  }
  function pctRaw(a,t){return t>0?Math.max(0,Number(a||0))/Number(t):0}
- function kpiCard(label,val,goal,cls,route){
+ function kpiCard(label,val,goal,cls,route,focus){
    const p=goal?Math.min(100,Math.round(pctRaw(val,goal)*100)):0;
-   return '<div class="rmx-kpi '+(cls||'')+'"'+(route?' data-rmx-jump="'+route+'" style="cursor:pointer"':'')+'><div class="label">'+esc(label)+'</div><div class="number">'+esc(val)+'</div>'+(goal?'<div class="goal">Goal: '+esc(goal)+'</div><div class="rmx-progress"><i style="width:'+p+'%"></i></div>':'')+'</div>'
+   return '<div class="rmx-kpi '+(cls||'')+'"'+(route?' data-rmx-jump="'+route+'"'+(focus?' data-rmx-focus="'+focus+'"':'')+' style="cursor:pointer"':'')+'><div class="label">'+esc(label)+'</div><div class="number">'+esc(val)+'</div>'+(goal?'<div class="goal">Goal: '+esc(goal)+'</div><div class="rmx-progress"><i style="width:'+p+'%"></i></div>':'')+'</div>'
  }
  function mtdAmanda(d){return (d.acts||[]).filter(isAmanda)}
  function todayAmanda(d){const t=todayS();return mtdAmanda(d).filter(a=>String(a.act_date||'')===t)}
@@ -17398,12 +17411,12 @@ function renderSnapshot(c,d){
   const needs=high.length+reviews.length+nynyDue.length+d.flags.length;
   if($('rmxHeadSub'))$('rmxHeadSub').textContent=needs+' items need review · '+rr.filter(x=>x.score>=45).length+' relationships need attention · '+d.flags.length+' LP handoffs';
   c.innerHTML+='<div class="rmx-kpi-grid">'
-    +kpiCard('Cold Calls',cold,25,cold>=25?'good':cold>=15?'warn':'bad','amanda')
-    +kpiCard('Talk-To’s',talk,20,talk>=20?'good':talk>=12?'warn':'bad','amanda')
-    +kpiCard('New Realtor Meetings',newM,10,newM>=10?'good':newM>=6?'warn':'bad','amanda')
-    +kpiCard('Existing Partner Meetings',existM,20,existM>=20?'good':existM>=12?'warn':'bad','amanda')
-    +kpiCard('Transaction Calls Open',tx.open.length,null,tx.open.length?'bad':'good','amanda')
-    +kpiCard('Portfolio Gaps',pe.missing.length,null,pe.missing.length?'warn':'good','risk')+'</div>';
+    +kpiCard('Cold Calls',cold,25,cold>=25?'good':cold>=15?'warn':'bad','performance','cold')
+    +kpiCard('Talk-To’s',talk,20,talk>=20?'good':talk>=12?'warn':'bad','performance','talk')
+    +kpiCard('New Realtor Meetings',newM,10,newM>=10?'good':newM>=6?'warn':'bad','performance','new')
+    +kpiCard('Existing Partner Meetings',existM,20,existM>=20?'good':existM>=12?'warn':'bad','performance','existing')
+    +kpiCard('Transaction Calls Open',tx.open.length,null,tx.open.length?'bad':'good','performance','transactions')
+    +kpiCard('Portfolio Gaps',pe.missing.length,null,pe.missing.length?'warn':'good','performance','portfolio')+'</div>';
   const att=[
     {l:'Overdue Follow-Ups',n:d.due.length,sub:'Due or overdue relationship follow-up',tone:d.due.length?'red':''},
     {l:'Cold Calls Behind Pace',n:Math.max(0,25-cold),sub:'Remaining today',tone:cold<15?'amber':''},
@@ -17411,15 +17424,21 @@ function renderSnapshot(c,d){
     {l:'Transaction Calls Open',n:tx.open.length,sub:'CTC / New Contract follow-up',tone:tx.open.length?'red':''},
     {l:'Portfolio Updates Missing',n:pe.missing.length,sub:'Meaningful touch needs relationship update',tone:pe.missing.length?'amber':''}
   ];
-  const attRoutes=['queue','amanda','amanda','amanda','risk'];const attention=att.map((x,i)=>'<button type="button" class="rmx-priority rmx-click-priority '+x.tone+'" data-rmx-jump="'+attRoutes[i]+'"><span class="rank">'+(i+1)+'</span><div class="copy"><b>'+x.l+'</b><span>'+x.sub+'</span></div><span class="count">'+x.n+'</span></button>').join('');
+  const attRoutes=[['performance','followups'],['performance','cold'],['performance','new'],['performance','transactions'],['performance','portfolio']];const attention=att.map((x,i)=>'<button type="button" class="rmx-priority rmx-click-priority '+x.tone+'" data-rmx-jump="'+attRoutes[i][0]+'" data-rmx-focus="'+attRoutes[i][1]+'"><span class="rank">'+(i+1)+'</span><div class="copy"><b>'+x.l+'</b><span>'+x.sub+'</span></div><span class="count">'+x.n+'</span></button>').join('');
   const needRows=[
     {l:'Escalations',n:high.length,sub:'High-priority RM insights',tone:'red'},
     {l:'C → B Reviews',n:reviews.length,sub:'Amanda requests your review'},
     {l:'Your Follow-Ups',n:nynyDue.length,sub:'Director-owned due work'},
     {l:'LP / RM Handoffs',n:d.flags.length,sub:'Open LP flags needing RM response'}
   ];
-  const needRoutes=['queue','queue','queue','communication'];const needHtml=needRows.map((x,i)=>'<button type="button" class="rmx-priority rmx-click-priority '+(x.tone||'')+'" data-rmx-jump="'+needRoutes[i]+'"><span class="rank">'+(i+1)+'</span><div class="copy"><b>'+x.l+'</b><span>'+x.sub+'</span></div><span class="count">'+x.n+'</span></button>').join('');
+  const needRoutes=[['queue','urgent'],['queue','reviews'],['queue','mine'],['communication','']];const needHtml=needRows.map((x,i)=>'<button type="button" class="rmx-priority rmx-click-priority '+(x.tone||'')+'" data-rmx-jump="'+needRoutes[i][0]+'"'+(needRoutes[i][1]?' data-rmx-focus="'+needRoutes[i][1]+'"':'')+'><span class="rank">'+(i+1)+'</span><div class="copy"><b>'+x.l+'</b><span>'+x.sub+'</span></div><span class="count">'+x.n+'</span></button>').join('');
   const paceParts=[['Cold Calls',cold,25],['Talk-To’s',talk,20],['New Realtor Meetings',newM,10],['Partner Meetings',existM,20]];const avg=Math.round(paceParts.reduce((s,x)=>s+Math.min(1,pctRaw(x[1],x[2])),0)/paceParts.length*100);
+  c.innerHTML+='<div class="rmx-dashboard-guide">'
+    +'<button class="rmx-guide-card" data-rmx-jump="queue"><b>1 · Manage Today</b><span>Escalations, coaching, your follow-ups and decisions.</span></button>'
+    +'<button class="rmx-guide-card" data-rmx-jump="performance"><b>2 · Manage Amanda</b><span>Calls, meetings, quality, follow-ups and conversion work.</span></button>'
+    +'<button class="rmx-guide-card" data-rmx-jump="risk"><b>3 · Protect Relationships</b><span>Risk, cadence gaps, retention and missing next moves.</span></button>'
+    +'<button class="rmx-guide-card" data-rmx-jump="tier"><b>4 · Grow the Book</b><span>Daniel’s tier targets, gaps and the relationships behind them.</span></button>'
+    +'</div>';
   c.innerHTML+='<div class="rmx-dashboard-grid">'
     +'<section class="rmx-card"><div class="rmx-card-head"><h2><span class="rmx-section-num">1</span>What Needs Attention Today</h2></div>'+attention+'<button class="rmx-link" data-rmx-jump="queue">View Director Queue →</button></section>'
     +'<section class="rmx-card"><div class="rmx-card-head"><h2><span class="rmx-section-num">2</span>What Needs You Now</h2></div>'+needHtml+'<button class="rmx-link" data-rmx-jump="queue">Open Director Queue →</button></section>'
@@ -17457,6 +17476,8 @@ function renderSnapshot(c,d){
     +reviewSection()
     +section('My Follow-Ups','rmxQueueMine',director.slice(0,16),'relationship','Director-owned relationship work.')
     +section('High-Value Relationships','rmxQueueHighValue',highValue,'relationship','Your Channel / A / B relationship book.');
+  const qFocus=R.sub.queueFocus||'';R.sub.queueFocus='';
+  if(qFocus){const ids={urgent:'rmxQueueUrgent',coaching:'rmxQueueCoaching',reviews:'rmxQueueReviews',mine:'rmxQueueMine',highvalue:'rmxQueueHighValue'};setTimeout(()=>{const el=$(ids[qFocus]||'');if(el)el.scrollIntoView({behavior:'smooth',block:'start'})},50)}
  } 
  function renderAmanda(c,d){
   title(c,'Amanda Overview','Manager view of Amanda’s execution, pace, quality, coaching opportunities, and a direct path into her real tracker.');
@@ -17466,25 +17487,76 @@ function renderSnapshot(c,d){
   const status=dayP>=90?'On Pace':dayP>=60?'Working':'Needs Attention';
   c.innerHTML+='<div class="rmx-subnav"><button data-rmx-scroll="rmxAmandaExecution">Execution</button><button data-rmx-scroll="rmxAmandaCoaching">Coaching</button><button data-rmx-scroll="rmxAmandaQuality">Activity Quality</button><button data-rmx-amanda-tab="week">View Full Tracker ↗</button></div>';
   c.innerHTML+='<div class="rmx-amanda-top v218"><div class="rmx-person-card">'+(asrc?'<img data-rm-profile-role="amanda" src="'+esc(asrc)+'">':'<div class="rmx-person-fallback">A</div>')+'<div><strong>Amanda</strong><small>Relationship Manager</small><small>'+ta.length+' activities logged today</small><div class="rmx-person-actions"><button class="rmx-btn small" onclick="rmxCoachAmandaForAgent(\'\')">Coach Amanda</button></div></div><div class="rmx-status">'+status+'</div></div>'
-    +'<button type="button" class="rmx-quick-card full" data-rmx-amanda-tab="week">View Full Tracker</button>'
-    +'<button type="button" class="rmx-quick-card" data-rmx-amanda-tab="week">Open Today</button>'
-    +'<button type="button" class="rmx-quick-card" data-rmx-amanda-tab="log">Log Activity</button>'
-    +'<button type="button" class="rmx-quick-card" data-rmx-amanda-tab="portfolio">Portfolio</button>'
-    +'<button type="button" class="rmx-quick-card" data-rmx-amanda-tab="reconnect">Reconnect</button></div>';
+    +'<button type="button" class="rmx-quick-card full manage rmx-external-only" data-rmx-amanda-tab="week"><b>View Full Amanda Tracker ↗</b><span>Open her actual working tracker in a separate tab.</span></button>'
+    +'<button type="button" class="rmx-quick-card manage" data-rmx-jump="performance" data-rmx-focus="today"><b>Review Today</b><span>Inspect today’s work here in Management View.</span></button>'
+    +'<button type="button" class="rmx-quick-card manage" data-rmx-jump="performance" data-rmx-focus="followups"><b>Review Follow-Ups</b><span>See due work and ownership.</span></button>'
+    +'<button type="button" class="rmx-quick-card manage" data-rmx-jump="performance" data-rmx-focus="quality"><b>Review Quality</b><span>Missing notes, outcomes and next-step gaps.</span></button>'
+    +'<button type="button" class="rmx-quick-card manage" data-rmx-jump="performance" data-rmx-focus="conversion"><b>4-Week Conversion</b><span>Audit required Week 1–4 follow-up.</span></button></div>';
   const openTasks=d.due.filter(a=>isAmanda(a)).length+tx.open.length+pe.missing.length;
   c.innerHTML+='<section id="rmxAmandaExecution" class="rmx-section-block"><div class="rmx-section-label">Execution</div><div class="rmx-kpi-grid">'
-    +kpiCard('Cold Calls Today',cold,25,cold>=25?'good':cold>=15?'warn':'bad','amanda')
-    +kpiCard('Talk-To’s Today',talk,20,talk>=20?'good':talk>=12?'warn':'bad','amanda')
-    +kpiCard('New Realtor Meetings',newM,10,newM>=10?'good':newM>=6?'warn':'bad','amanda')
-    +kpiCard('Existing Partner Meetings',existing,20,existing>=20?'good':existing>=12?'warn':'bad','amanda')
-    +kpiCard('Meaningful Contacts',meaningful,null,meaningful?'good':'warn','amanda')
-    +kpiCard('Open Tasks',openTasks,null,openTasks?'warn':'good','queue')+'</div></section>';
+    +kpiCard('Cold Calls Today',cold,25,cold>=25?'good':cold>=15?'warn':'bad','performance','cold')
+    +kpiCard('Talk-To’s Today',talk,20,talk>=20?'good':talk>=12?'warn':'bad','performance','talk')
+    +kpiCard('New Realtor Meetings',newM,10,newM>=10?'good':newM>=6?'warn':'bad','performance','new')
+    +kpiCard('Existing Partner Meetings',existing,20,existing>=20?'good':existing>=12?'warn':'bad','performance','existing')
+    +kpiCard('Meaningful Contacts',meaningful,null,meaningful?'good':'warn','performance','meaningful')
+    +kpiCard('Open Tasks',openTasks,null,openTasks?'warn':'good','performance','followups')+'</div></section>';
   const recentAmanda=(d.recent||[]).filter(isAmanda).slice(0,80),missingNotes=recentAmanda.filter(a=>meaning(a)&&String(typeof stripRmMeta==='function'?stripRmMeta(a.notes||''):a.notes||'').trim().length<8).length,missingNext=pe.missing.length,noToday=ta.length?0:1,reconnectUntouched=(d.prospects||[]).filter(p=>String(p.status||'').toLowerCase()==='active').length;
   const coach=[['Missing Notes on Activities',missingNotes,'Add what happened and why it matters.','red'],['Missing Portfolio Next Steps',missingNext,'Close the relationship-intelligence gap.','amber'],['No Activity Logged Today',noToday,'Execution should be visible in the tracker.','amber'],['Transaction Calls Needing Follow-Up',tx.open.length,'CTC / New Contract calls stay open until complete.',''],['Reconnect Work Available',reconnectUntouched,'Use this when higher-priority work is current.','']];
-  c.innerHTML+='<div class="rmx-two" id="rmxAmandaCoaching"><section class="rmx-card"><h2>Coaching Opportunities</h2><div class="sub">Signals that help you coach quality, not just quantity.</div>'+coach.map((x,i)=>'<div class="rmx-priority '+x[3]+'"><span class="rank">'+(i+1)+'</span><div class="copy"><b>'+x[0]+'</b><span>'+x[2]+'</span></div><span class="count">'+x[1]+'</span></div>').join('')+'<div class="rmx-person-actions"><button class="rmx-btn primary" onclick="rmxCoachAmandaForAgent(\'\')">Log Coaching</button><button class="rmx-btn" data-rmx-jump="queue">Open Coaching Queue</button></div></section><section class="rmx-card"><h2>Pace vs Goal</h2><div class="sub">A fast coaching read across today, week, and month.</div><div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;text-align:center;margin-top:18px"><div><div class="rmx-donut" style="--pct:'+dayP+';margin:auto"><div><b>'+dayP+'%</b><span>Today</span></div></div><div class="rmx-muted">Calls + Talk-To’s</div></div><div><div class="rmx-donut" style="--pct:'+weekP+';margin:auto"><div><b>'+weekP+'%</b><span>This Week</span></div></div><div class="rmx-muted">125 calls / 100 talk-to’s</div></div><div><div class="rmx-donut" style="--pct:'+monthP+';margin:auto"><div><b>'+monthP+'%</b><span>This Month</span></div></div><div class="rmx-muted">10 new / 20 existing meetings</div></div></div></section></div>';
+  const coachFocus=['quality','portfolio','today','transactions','today'];
+  c.innerHTML+='<div class="rmx-two" id="rmxAmandaCoaching"><section class="rmx-card"><h2>Coaching Opportunities</h2><div class="sub">Signals that help you coach quality, not just quantity.</div>'+coach.map((x,i)=>'<button type="button" class="rmx-priority rmx-click-priority '+x[3]+'" data-rmx-jump="performance" data-rmx-focus="'+coachFocus[i]+'"><span class="rank">'+(i+1)+'</span><div class="copy"><b>'+x[0]+'</b><span>'+x[2]+'</span></div><span class="count">'+x[1]+'</span></button>').join('')+'<div class="rmx-person-actions"><button class="rmx-btn primary" onclick="rmxCoachAmandaForAgent(\'\')">Log Coaching</button><button class="rmx-btn" data-rmx-jump="queue">Open Coaching Queue</button></div></section><section class="rmx-card"><h2>Pace vs Goal</h2><div class="sub">A fast coaching read across today, week, and month.</div><div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;text-align:center;margin-top:18px"><div><div class="rmx-donut" style="--pct:'+dayP+';margin:auto"><div><b>'+dayP+'%</b><span>Today</span></div></div><div class="rmx-muted">Calls + Talk-To’s</div></div><div><div class="rmx-donut" style="--pct:'+weekP+';margin:auto"><div><b>'+weekP+'%</b><span>This Week</span></div></div><div class="rmx-muted">125 calls / 100 talk-to’s</div></div><div><div class="rmx-donut" style="--pct:'+monthP+';margin:auto"><div><b>'+monthP+'%</b><span>This Month</span></div></div><div class="rmx-muted">10 new / 20 existing meetings</div></div></div></section></div>';
   const qa=recentAmanda.slice(0,10);
   c.innerHTML+='<section class="rmx-card rmx-quality rmx-section-block" id="rmxAmandaQuality"><h2>Quality of Execution</h2><div class="sub">Recent activity with enough context to coach the work. Use History or Portfolio from Director Queue when you need the relationship detail.</div><div class="rmx-tablewrap"><table class="rmx-table"><thead><tr><th>Activity</th><th>Type</th><th>Date</th><th>Outcome</th><th>Notes Quality</th><th>Follow-Up</th></tr></thead><tbody>'+(qa.length?qa.map(a=>{const note=String(typeof stripRmMeta==='function'?stripRmMeta(a.notes||''):a.notes||'').trim(),quality=note.length>=20?'Complete':note.length?'Thin':'Missing';return '<tr><td><div class="rmx-name">'+esc(fmtName(a.agent_name||''))+'</div></td><td>'+esc(a.act_type||'')+'</td><td>'+esc(a.act_date||'')+'</td><td>'+esc(a.outcome||'')+'</td><td><span class="rmx-pill '+(quality==='Complete'?'green':quality==='Missing'?'red':'amber')+'">'+quality+'</span></td><td>'+esc(a.follow_up_date||'—')+'</td></tr>'}).join(''):'<tr><td colspan="6">No recent Amanda activity.</td></tr>')+'</tbody></table></div></section>';
  } 
+
+ function rmxActivityNote(a){const raw=String(a&&a.notes||'');try{return typeof stripRmMeta==='function'?stripRmMeta(raw):raw}catch(e){return raw}}
+ function renderPerformance(c,d){
+   title(c,'Activity & Meetings','Inspect Amanda’s execution behind the numbers without leaving Management View.');
+   const ta=todayAmanda(d),ma=mtdAmanda(d),tx=rmxTxn(d),pe=rmxPortfolioExecution(d),conv=rmxConversion(d);
+   const defs={today:['Today','All activity Amanda logged today'],cold:['Cold Calls','Today’s cold-call execution'],talk:['Talk-To’s','Today’s qualifying relationship conversations'],meaningful:['Meaningful Contacts','Today’s meaningful relationship touches'],new:['New Realtor Meetings','New Realtor meetings this month'],existing:['Existing Partner Meetings','Existing-partner meetings this month'],transactions:['Transaction Calls','Open CTC / New Contract follow-up'],followups:['Follow-Ups Due','Due and overdue work with owner visibility'],portfolio:['Portfolio Gaps','Today’s meaningful contacts missing relationship intelligence / next move'],quality:['Quality Review','Amanda activity with missing notes or outcomes'],conversion:['4-Week Conversion','Required Week 1–4 follow-up after new Realtor meetings']};
+   let focus=R.sub.performanceFocus||'today';if(!defs[focus])focus='today';R.sub.performanceFocus=focus;
+   const tabs=['today','cold','talk','meaningful','new','existing','transactions','followups','portfolio','quality','conversion'];
+   c.innerHTML+='<div class="rmx-workbench-tabs">'+tabs.map(k=>'<button type="button" data-performance-filter="'+k+'" class="'+(focus===k?'active':'')+'" onclick="rmxPerformanceFilterTo(\''+k+'\')">'+defs[k][0]+'</button>').join('')+'</div>';
+   c.innerHTML+='<div class="rmx-kpi-grid">'
+     +kpiCard('Cold Calls Today',coldCount(ta),25,coldCount(ta)>=25?'good':'warn','performance','cold')
+     +kpiCard('Talk-To’s Today',talkCount(ta),20,talkCount(ta)>=20?'good':'warn','performance','talk')
+     +kpiCard('New Realtor Meetings',ma.filter(a=>a.act_type==='New Realtor Meeting').length,10,'','performance','new')
+     +kpiCard('Existing Partner Meetings',ma.filter(a=>isExistingMeetingType(a.act_type)).length,20,'','performance','existing')
+     +kpiCard('Transaction Calls Open',tx.open.length,null,tx.open.length?'bad':'good','performance','transactions')
+     +kpiCard('Follow-Ups Due',d.due.length,null,d.due.length?'warn':'good','performance','followups')+'</div>';
+   c.innerHTML+='<div class="rmx-focus-strip" id="rmxPerformanceFocus"><div><b>'+defs[focus][0]+'</b><span>'+defs[focus][1]+'</span></div><button class="rmx-btn small rmx-external-only" data-rmx-amanda-tab="week">Open Full Amanda Tracker ↗</button></div><div id="rmxPerformanceBody"></div>';
+
+   function activityRows(rows){
+     rows=(rows||[]).slice().sort((a,b)=>String(b.act_date||b.created_at||'').localeCompare(String(a.act_date||a.created_at||'')));
+     if(!rows.length)return empty('No activity matches this view.');
+     return '<div class="rmx-detail-head"><div>Date</div><div>Agent / Partner</div><div>Activity</div><div>Outcome / Notes</div><div>Follow-Up</div><div>Manage</div></div><div class="rmx-detail-list">'+rows.slice(0,250).map(a=>{const note=rmxActivityNote(a);return '<div class="rmx-detail-row"><div class="dt">'+esc(a.act_date||String(a.created_at||'').slice(0,10)||'—')+'</div><div class="who">'+esc(fmtName(a.agent_name||'—'))+'</div><div class="type">'+esc(a.act_type||'—')+'</div><div class="copy">'+esc(a.outcome||'')+(note?'<div class="rmx-muted" style="margin-top:3px">'+esc(note)+'</div>':'')+'</div><div class="follow">'+esc(a.follow_up_date||'—')+'</div><div>'+actionBtns(a.agent_name||'','coaching')+'</div></div>'}).join('')+'</div>';
+   }
+   function dueRows(rows){
+     const mapped=(rows||[]).map(a=>{const p=d.profiles.find(x=>key(x.agent_name)===key(a.agent_name))||{agent_name:a.agent_name,_tier:'—'},owner=String((d.assigns[key(a.agent_name)]||{}).rm||ownerName(d,p)||'Unassigned');return {a,p,owner}}).sort((x,y)=>String(x.a.follow_up_date||'').localeCompare(String(y.a.follow_up_date||'')));
+     if(!mapped.length)return empty('No due follow-ups right now.');
+     return '<div class="rmx-tablewrap"><table class="rmx-table"><thead><tr><th>Due</th><th>Agent / Partner</th><th>Tier</th><th>Owner</th><th>Activity / Outcome</th><th>Actions</th></tr></thead><tbody>'+mapped.slice(0,250).map(x=>'<tr><td>'+esc(x.a.follow_up_date||'—')+'</td><td><div class="rmx-name">'+esc(fmtName(x.a.agent_name||'—'))+'</div></td><td><span class="rmx-pill">'+esc(x.p._tier||'—')+'</span></td><td>'+esc(x.owner)+'</td><td>'+esc(x.a.act_type||'Follow-up')+'<div class="rmx-muted">'+esc(x.a.outcome||'')+'</div></td><td>'+actionBtns(x.a.agent_name,String(x.owner).toLowerCase()==='amanda'?'coaching':'relationship')+'</td></tr>').join('')+'</tbody></table></div>';
+   }
+   function portfolioRows(rows){if(!rows.length)return empty('No portfolio update gaps from today’s meaningful contacts.');return '<div class="rmx-tablewrap"><table class="rmx-table"><thead><tr><th>Agent / Partner</th><th>Tier</th><th>Owner</th><th>Last Touch</th><th>Required Next Step</th><th>Actions</th></tr></thead><tbody>'+rows.map(p=>'<tr><td><div class="rmx-name">'+esc(fmtName(p.agent_name||'—'))+'</div></td><td><span class="rmx-pill">'+esc(p._tier||'—')+'</span></td><td>'+esc(ownerName(d,p))+'</td><td>'+esc(latestTouch(d,p)||'—')+'</td><td>'+esc(String(p.next_growth_opportunity||'').trim()||'Document relationship intelligence and next growth move')+'</td><td>'+actionBtns(p.agent_name,'coaching')+'</td></tr>').join('')+'</tbody></table></div>'}
+   function conversionRows(){const rows=conv.campaigns||[];if(!rows.length)return empty('No active 4-week conversion campaigns.');return '<div class="rmx-tablewrap"><table class="rmx-table"><thead><tr><th>Agent</th><th>Meeting</th><th>Next Required</th><th>Due</th><th>Progress</th><th>Actions</th></tr></thead><tbody>'+rows.map(x=>{const done=x.weeks.filter(w=>w.done).length,next=x.next;return '<tr><td><div class="rmx-name">'+esc(fmtName(x.name))+'</div></td><td>'+esc(x.meet)+'</td><td>'+(next?'Week '+next.w:'Complete')+'</td><td>'+(next?esc(next.due):'—')+'</td><td>'+done+' / 4 complete'+(next&&next.overdue?' <span class="rmx-pill red">OVERDUE</span>':'')+'</td><td>'+actionBtns(x.name,'coaching')+'</td></tr>'}).join('')+'</tbody></table></div>'}
+   function paint(f){
+     f=f||R.sub.performanceFocus||'today';if(!defs[f])f='today';R.sub.performanceFocus=f;
+     document.querySelectorAll('[data-performance-filter]').forEach(b=>b.classList.toggle('active',b.dataset.performanceFilter===f));
+     const strip=$('rmxPerformanceFocus');if(strip){const d0=strip.querySelector('div');if(d0)d0.innerHTML='<b>'+defs[f][0]+'</b><span>'+defs[f][1]+'</span>'}
+     const host=$('rmxPerformanceBody');if(!host)return;
+     if(f==='today')host.innerHTML=activityRows(ta);
+     else if(f==='cold')host.innerHTML=activityRows(ta.filter(a=>a.act_type==='Cold Calls'||a.act_type==='Cold Call'));
+     else if(f==='talk')host.innerHTML=activityRows(ta.filter(a=>rmxTalkTypes().has(String(a.act_type||'').trim())));
+     else if(f==='meaningful')host.innerHTML=activityRows(ta.filter(meaning));
+     else if(f==='new')host.innerHTML=activityRows(ma.filter(a=>a.act_type==='New Realtor Meeting'));
+     else if(f==='existing')host.innerHTML=activityRows(ma.filter(a=>isExistingMeetingType(a.act_type)));
+     else if(f==='transactions')host.innerHTML=activityRows(tx.open.length?tx.open:ma.filter(a=>['CTC Call','Under Contract Call'].includes(a.act_type)));
+     else if(f==='followups')host.innerHTML=dueRows(d.due);
+     else if(f==='portfolio')host.innerHTML=portfolioRows(pe.missing);
+     else if(f==='quality')host.innerHTML=activityRows((d.recent||[]).filter(isAmanda).filter(a=>!String(a.outcome||'').trim()||rmxActivityNote(a).trim().length<8).slice(0,120));
+     else if(f==='conversion')host.innerHTML=conversionRows();
+   }
+   window.rmxPerformanceFilterTo=function(f){paint(f);const el=$('rmxPerformanceFocus');if(el)el.scrollIntoView({behavior:'smooth',block:'start'})};
+   paint(focus);
+ }
  function renderTier(c,d){
   title(c,'Tier Growth','Daniel’s net-count scorecard first, then the growth signals and relationships behind it.');
   const x=tierCounts(d),t=milestone(),parts=tierScoreParts(x,t),total=parts.Channel+parts.A+parts.B,mig=migrationCounts(d),year=R.targets[R.targets.length-1];
@@ -17525,11 +17597,11 @@ function renderSnapshot(c,d){
   const map=new Map();rr.forEach(r=>map.set(key(r.p.agent_name),r));
   function addDue(a,owner){const k=key(a.agent_name);if(!k)return;let r=map.get(k);if(!r){const p=d.profiles.find(x=>key(x.agent_name)===k)||{agent_name:a.agent_name,_tier:'—',_assign:{rm:owner}};r={p,owner,lt:latestTouch(d,p),days:daysSince(latestTouch(d,p)),reasons:[],score:25};map.set(k,r)}r.reasons=r.reasons||[];const msg='Follow-up due '+String(a.follow_up_date||'');if(!r.reasons.includes(msg))r.reasons.push(msg);}
   amandaDue.forEach(a=>addDue(a,'Amanda'));nynyDue.forEach(a=>addDue(a,'Nyny'));
-  const allRows=Array.from(map.values());let filter='all';
+  const allRows=Array.from(map.values());let filter=R.sub.riskFocus||'all';R.sub.riskFocus='';
   const dueAmandaKeys=new Set(amandaDue.map(a=>key(a.agent_name))),dueMineKeys=new Set(nynyDue.map(a=>key(a.agent_name))),planKeys=new Set(plan.map(p=>key(p.agent_name)));
   function paint(){const q=$('rmxRiskSearch').value.trim().toLowerCase();let rows=allRows.filter(r=>{if(filter==='high')return r.score>=80;if(filter==='rising')return r.score>=45&&r.score<80;if(filter==='notouch')return r.days!=null&&r.days>=14;if(filter==='plan')return planKeys.has(key(r.p.agent_name));if(filter==='amanda')return dueAmandaKeys.has(key(r.p.agent_name));if(filter==='mine')return dueMineKeys.has(key(r.p.agent_name));return true}).filter(r=>!q||[r.p.agent_name,r.p.brokerage,r.owner,(r.reasons||[]).join(' '),r.p.next_growth_opportunity].some(v=>String(v||'').toLowerCase().includes(q)));$('rmxRiskBody').innerHTML=rows.length?rows.slice(0,250).map(r=>relationshipRow(d,r,String(r.owner||'').toLowerCase()==='amanda'?'coaching':'relationship')).join(''):'<tr><td colspan="7">No relationships match this view.</td></tr>';}
   window.rmxRiskFilterTo=function(f){filter=f||'all';document.querySelectorAll('[data-risk-filter]').forEach(b=>b.classList.toggle('active-filter',b.dataset.riskFilter===filter));const labels={all:'All relationships with an active risk or follow-up signal.',high:'High-risk relationships needing immediate retention attention.',rising:'Rising-risk relationships to address before they become critical.',notouch:'Relationships with a 14+ day meaningful-contact gap.',plan:'Channel / A / B relationships missing a documented next growth move.',amanda:'Amanda-owned follow-ups that are due or overdue.',mine:'Your Director-owned follow-ups that are due or overdue.'};const ex=$('rmxRiskExplain');if(ex)ex.innerHTML='<b>Showing:</b> '+labels[filter];paint();};
-  $('rmxRiskSearch').oninput=paint;paint();
+  $('rmxRiskSearch').oninput=paint;rmxRiskFilterTo(filter);
  } 
  function renderComm(c,d){title(c,'LP / RM Handoffs','Open communication that needs an RM response.');if(!d.flags.length){c.innerHTML+=empty('No open LP flags — caught up.');return}c.innerHTML+='<div class="rmx-list">'+d.flags.map(f=>'<div class="rmx-card"><div class="rmx-row"><div><div class="name">'+esc(fmtName(f.agent_name||'Agent'))+' <span class="rmx-pill">via '+esc(f.lp||'LP')+'</span></div><div class="meta">'+esc(f.note||f.outcome||'Open LP handoff')+'</div></div><div class="meta">'+esc(String(f.created_at||f.call_date||'').slice(0,10))+'</div><div class="rmx-actions"><button class="rmx-btn small primary" onclick="rmxLog(\''+esc(f.agent_name||'').replace(/'/g,"\\'")+'\')">Log outreach</button><button class="rmx-btn small" onclick="rmxReply(\''+f._src+'\',\''+esc(f.id).replace(/'/g,"\\'")+'\',\''+esc(f.agent_name||'').replace(/'/g,"\\'")+'\')">Reply</button><button class="rmx-btn small" onclick="rmxHandle(\''+f._src+'\',\''+esc(f.id).replace(/'/g,"\\'")+'\')">Mark handled</button></div></div></div>').join('')+'</div>'}
  function renderReports(c,d){
@@ -17679,6 +17751,7 @@ window.rmxAdminRemoveAgent=async function(name){if(!window.confirm('Mark '+name+
  };
  window.rmxOpenAmandaTab=function(tab){
    try{
+     sessionStorage.setItem('rmx_return_director','1');
      const u=new URL(window.location.href);u.hash='';u.searchParams.delete('director');u.searchParams.set('rmx_amanda_tab',tab||'week');
      window.open(u.toString(),'rmxAmandaTracker');
    }catch(e){window.open(window.location.pathname+window.location.search,'rmxAmandaTracker')}
