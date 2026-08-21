@@ -13226,10 +13226,12 @@ function v104Jump(id){
 // v107 — route shared Face Time by RM responsibility without changing shared urgency math.
 var V107_SHARED_FT_ROWS=[];
 function v107IsAmandaFaceTimeRow(r){
-  var tier=String(r&&r.tier||'C').toUpperCase();
-  var rm=String(r&&r.rm||'').trim().toLowerCase();
+  if(!r)return false;
+  var tier=String(r.tier||'C').toUpperCase();
+  var rm=String(r.rm||'').trim().toLowerCase();
+  if(typeof rmIsDirectorOwned==='function'&&rmIsDirectorOwned(r.name,r.brokerage,r.team,r.company))return false;
   // Amanda develops her own C/developing book. A/B/Channel belong in Director coverage.
-  return !!r && rm.indexOf('amanda')>=0 && tier==='C';
+  return rm.indexOf('amanda')>=0 && tier==='C';
 }
 function v107IsDirectorFaceTimeRow(r){
   var tier=String(r&&r.tier||'C').toUpperCase();
@@ -13262,7 +13264,7 @@ async function loadBreakBreadDue(){
   if(!el)return;
   try{
     const[profiles,myBreads,lpBreads,assignments,scheduledFaceTime]=await Promise.all([
-      sbFetch('agent_profiles?select=agent_name,tier,powerbi_level,powerbi_last_seen_at,retained,do_not_contact,relationship_status,relationship_type,lp_outreach_status,competitor_risk_flag,high_potential_flag,next_growth_opportunity,latest_lead_date,closes_past_year,total_leads_past_year&limit=5000').catch(()=>sbFetch('agent_profiles?select=agent_name,tier,powerbi_level,do_not_contact,relationship_status&limit=5000').catch(()=>[])),
+      sbFetch('agent_profiles?select=agent_name,tier,powerbi_level,powerbi_last_seen_at,retained,do_not_contact,relationship_status,relationship_type,lp_outreach_status,competitor_risk_flag,high_potential_flag,next_growth_opportunity,latest_lead_date,closes_past_year,total_leads_past_year,brokerage&limit=5000').catch(()=>sbFetch('agent_profiles?select=agent_name,tier,powerbi_level,do_not_contact,relationship_status&limit=5000').catch(()=>[])),
       sbFetch('amanda_activities?select=agent_name,act_date,notes&act_type=eq.Break Breads&order=act_date.desc&limit=4000').catch(()=>[]),
       sbFetch('break_breads?select=agent_name,date,logged_by,notes&order=date.desc&limit=4000').catch(()=>[]),
       sbFetch('agent_assignments?select=agent_name,lp,rm&limit=5000').catch(()=>[]),
@@ -13301,9 +13303,10 @@ async function loadBreakBreadDue(){
       const daysLead=leadDate?Math.max(0,Math.floor((today0-new Date(leadDate+'T12:00:00'))/86400000)):null;
       let rm=own.rm||'Unassigned';
       try{if(ownerRecords&&typeof wp18ResolveOwner==="function")rm=wp18ResolveOwner(p.agent_name,p,ownerRecords,"")||rm;}catch(e){}
-      if(['CHANNEL','A','B'].includes(String(tier||'').toUpperCase()))rm='Nyny';
+      if(typeof rmIsDirectorOwned==='function'&&rmIsDirectorOwned(p.agent_name,p.brokerage,p.team,p.company))rm='Nyny';
+      else if(['CHANNEL','A','B'].includes(String(tier||'').toUpperCase()))rm='Nyny';
       else if(String(tier||'').toUpperCase()==='C'&&!/^(Amanda|Nyny)$/i.test(String(rm||'')))rm='Amanda';
-      const row={name:p.agent_name,tier,days,status,by:touch?touch.by:null,lastDate:touch?touch.date:null,lp:own.lp||'Unassigned',rm,target,scheduled:sched,competitor_risk_flag:!!p.competitor_risk_flag,high_potential_flag:!!p.high_potential_flag,next_growth_opportunity:p.next_growth_opportunity||'',daysLead,closes_past_year:p.closes_past_year||0,total_leads_past_year:p.total_leads_past_year||0};
+      const row={name:p.agent_name,tier,days,status,by:touch?touch.by:null,lastDate:touch?touch.date:null,lp:own.lp||'Unassigned',rm,target,scheduled:sched,brokerage:p.brokerage||'',competitor_risk_flag:!!p.competitor_risk_flag,high_potential_flag:!!p.high_potential_flag,next_growth_opportunity:p.next_growth_opportunity||'',daysLead,closes_past_year:p.closes_past_year||0,total_leads_past_year:p.total_leads_past_year||0};
       row.priorityScore=sharedFaceTimePriorityScore(row);row.priorityWhy=sharedFaceTimeWhy(row);return row;
     });
     const rows=allRows.filter(r=>r.status!=='ok');
@@ -16262,288 +16265,6 @@ setTimeout(()=>{try{v126SetupReconnectCleanup();v126EnhanceReconnectRows();}catc
 }
 </style>
 
-<script id="v165-clean-stable-final-js">
-(function(){
-  const CACHE_MS=60000;
-  let prospectPromise=null, prospectAt=0;
-  let relationshipPromise=null, relationshipAt=0;
-
-  const key=s=>String(s||'').trim().toLowerCase().replace(/\s+/g,' ');
-  const escv=s=>{try{return escHtml(String(s==null?'':s))}catch(e){return String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}};
-  const tday=()=>{try{return typeof today==='function'?today():new Date().toISOString().slice(0,10)}catch(e){return new Date().toISOString().slice(0,10)}};
-  const addDays=(raw,n)=>{const d=new Date((raw||tday())+'T12:00:00');d.setDate(d.getDate()+n);return d.toISOString().slice(0,10)};
-  const timeout=(p,ms,fallback)=>Promise.race([Promise.resolve(p),new Promise(res=>setTimeout(()=>res(fallback),ms))]);
-
-  function isRemovedProfile(p){
-    return !p || p.do_not_contact===true ||
-      String(p.relationship_status||'active').toLowerCase()==='inactive' ||
-      (typeof HIDDEN_PROFILE_MARKER!=='undefined' && p.display_name===HIDDEN_PROFILE_MARKER);
-  }
-  function ownerMap(rows){
-    const m={};
-    (rows||[]).forEach(a=>{
-      if(!a||!a.agent_name)return;
-      const k=key(a.agent_name),cur=m[k]||{rm:'',lp:'',removed:false};
-      if(a.lp==='__REMOVED__')cur.removed=true;
-      else if(a.lp&&!cur.lp)cur.lp=a.lp;
-      const nr=String(a.rm||'').trim().toLowerCase(),cr=String(cur.rm||'').trim().toLowerCase();
-      if(nr==='nyny'||(nr==='amanda'&&cr!=='nyny')||(!cur.rm&&a.rm))cur.rm=a.rm||cur.rm;
-      if(typeof rmIsDirectorOwned==='function'&&rmIsDirectorOwned(a.agent_name)){cur.rm='Nyny';} m[k]=cur;
-    });
-    return m;
-  }
-
-  // ---------- NEW MEETING PUSH: direct, lightweight, independent ----------
-  window.v165LoadNewMeetingPush=async function(force){
-    const host=document.getElementById('v109NewMeetingPush');
-    if(!host)return;
-    if(prospectPromise)return prospectPromise;
-    if(!force && Date.now()-prospectAt<CACHE_MS && host.dataset.v165Loaded==='1')return;
-
-    // Render a calm state, never "Building..." forever.
-    if(host.dataset.v165Loaded!=='1')host.innerHTML='<div class="v165-loader">Loading new prospects…</div>';
-
-    prospectPromise=(async()=>{
-      const d=tday(), monthStart=d.slice(0,7)+'-01', recentStart=addDays(d,-120);
-      const [prospects,profiles,assignments,acts,monthActs]=await Promise.all([
-        timeout(sbFetch('outreach_prospects?select=id,agent_name,brokerage,phone,email,status,follow_up_date,notes&order=follow_up_date.asc.nullslast&limit=1500'),8000,[]),
-        timeout(sbFetch('agent_profiles?select=agent_name,display_name,relationship_status,do_not_contact,powerbi_last_seen_at&limit=4000'),8000,[]),
-        timeout(sbFetch('agent_assignments?select=agent_name,lp,rm&limit=4000'),7000,[]),
-        timeout(sbFetch('amanda_activities?select=agent_name,act_type,act_date,outcome,follow_up_date&act_type=in.(Cold Calls,New Realtor Meeting)&act_date=gte.'+recentStart+'&order=act_date.desc&limit=4000'),8000,[]),
-        timeout(sbFetch('amanda_activities?select=agent_name,act_type,act_date,outcome&act_type=eq.New Realtor Meeting&act_date=gte.'+monthStart+'&act_date=lte.'+d+'&limit=3000'),8000,[])
-      ]);
-
-      const owners=ownerMap(assignments);
-      const profilesBy={};
-      const excluded=new Set();
-      (profiles||[]).forEach(p=>{
-        const k=key(p.agent_name);if(!k)return;
-        if(isRemovedProfile(p))excluded.add(k);
-        if(!profilesBy[k] || new Date(p.powerbi_last_seen_at||0)>new Date(profilesBy[k].powerbi_last_seen_at||0))profilesBy[k]=p;
-      });
-      Object.entries(owners).forEach(([k,o])=>{if(o.removed)excluded.add(k)});
-
-      // Any person who already had a New Realtor Meeting is no longer a new prospect.
-      const met=new Set((acts||[]).filter(a=>a&&a.act_type==='New Realtor Meeting').map(a=>key(a.agent_name)));
-      const lastAct={};
-      (acts||[]).forEach(a=>{
-        const k=key(a.agent_name);if(!k)return;
-        if(!lastAct[k] || String(a.act_date||'')>String(lastAct[k].act_date||''))lastAct[k]=a;
-      });
-
-      const blockedStatus=/do not contact|dnc|inactive|removed|excluded|not a prospect|already\s*(?:with|w\/?)?\s*nfm|\bnfm\b|converted|closed|not interested/i;
-      const seen=new Set();
-      const eligible=(prospects||[]).filter(p=>{
-        const k=key(p.agent_name);
-        if(!k||seen.has(k)||excluded.has(k)||met.has(k)||blockedStatus.test(String(p.status||''))||(typeof rmProspectIsTombstoned==='function'&&rmProspectIsTombstoned(p.agent_name))||(typeof rmIsDirectorOwned==='function'&&rmIsDirectorOwned(p.agent_name,p.brokerage,p.team,p.company))||(typeof rmIsStrategicPartner==='function'&&rmIsStrategicPartner(p.agent_name,profilesBy[k])))return false;
-        // If this prospect has become an active profile relationship, stop prospecting them.
-        const prof=profilesBy[k];
-        if(prof && !isRemovedProfile(prof))return false;
-        seen.add(k);return true;
-      }).sort((a,b)=>{
-        const ad=String(a.follow_up_date||'9999-12-31'),bd=String(b.follow_up_date||'9999-12-31');
-        if(ad!==bd)return ad.localeCompare(bd);
-        return String(a.agent_name||'').localeCompare(String(b.agent_name||''));
-      });
-
-      const teamNew=(monthActs||[]).filter(a=>a&&a.act_type==='New Realtor Meeting').length;
-      const target=(typeof RM_TEAM_GOALS!=='undefined'&&Number(RM_TEAM_GOALS.teamNew))||20;
-      const remaining=Math.max(0,target-teamNew);
-      const weekdays=typeof v109RemainingWeekdays==='function'?Math.max(1,v109RemainingWeekdays(d)):Math.max(1,5);
-      const daily=remaining?Math.max(1,Math.ceil(remaining/weekdays)):0;
-      const top=eligible.slice(0,5);
-
-      let html='<div class="v165-prospect-head"><div><b>NEW MEETING PUSH · '+teamNew+' / '+target+'</b><small>Work these names in order. Positive conversation = ask for the meeting. Buyer opportunity = ask for the introduction.</small></div><button class="v165-refresh" onclick="v165LoadNewMeetingPush(true)">Refresh</button></div>';
-      html+='<div class="v165-pace-grid"><div class="v165-pace"><strong>'+remaining+'</strong><span>new meetings still needed this month<br><b>Today: book '+daily+'</b></span>'
-        +'<div class="v165-outline"><b>First meeting:</b> office or structured coffee · 20–40 min · no lunch.<br>Tour + Top 3 + Standards + ask for the opportunity.<br><button onclick="openScriptsSection(\'first-realtor-meeting\')">Open Realtor Meeting Outline</button></div></div><div>';
-
-      if(top.length){
-        html+=top.map((p,i)=>{
-          const k=key(p.agent_name),a=lastAct[k],due=p.follow_up_date?('Follow-up '+p.follow_up_date):(a&&a.act_date?'Last attempt '+a.act_date:'New prospect');
-          return '<div class="v165-prospect-row"><div><div class="v165-prospect-name">'+(i+1)+'. '+escv(p.agent_name)+'</div><div class="v165-prospect-meta">'+escv(p.brokerage||'')+(p.brokerage?' · ':'')+escv(due)+'</div></div><div class="v165-actions"><button class="primary" data-rm-action="outreach" data-agent="'+encodeURIComponent(String(p.agent_name||''))+'">Log outreach</button><button onclick="switchTab(\'pipeline\')">Open New Agents</button></div></div>';
-        }).join('');
-      }else{
-        html+='<div class="v165-empty"><b>No eligible new prospects are loaded.</b><br>Open <b>New Agents</b> to add the fresh list. Removed agents, existing relationships, DNC names and people who already had a New Realtor Meeting are excluded automatically.</div>';
-      }
-      html+='</div></div>';
-      host.innerHTML=html;
-      host.dataset.v165Loaded='1';
-      prospectAt=Date.now();
-    })().catch(e=>{
-      console.warn('v165 new prospects',e);
-      host.innerHTML='<div class="v165-empty"><b>New prospects did not load.</b><br><button class="v165-refresh" onclick="v165LoadNewMeetingPush(true)">Retry</button> Amanda can continue the other Today steps while this reconnects.</div>';
-    }).finally(()=>prospectPromise=null);
-
-    return prospectPromise;
-  };
-
-  window.v165ProspectLog=function(name){
-    try{
-      if(typeof prefillActivityLog==='function'){prefillActivityLog(name,'Cold Calls');return}
-      switchTab('log');
-      const a=document.getElementById('agentInput'),t=document.getElementById('activityType');
-      if(a)a.value=name||'';
-      if(t){t.value='Cold Calls';t.dispatchEvent(new Event('change',{bubbles:true}));}
-    }catch(e){console.warn('Prospect log route',e)}
-  };
-
-  // ---------- ONE relationship dataset only ----------
-  window.v165LoadCallNext=async function(force){
-    const parent=document.getElementById('v113SmartHost');
-    if(!parent)return;
-    let host=document.getElementById('v165CallNext');
-    if(!host){host=document.createElement('div');host.id='v165CallNext';parent.appendChild(host)}
-    if(relationshipPromise)return relationshipPromise;
-    if(!force && Date.now()-relationshipAt<CACHE_MS && host.dataset.loaded==='1')return;
-    host.innerHTML='<div class="v165-loader">Loading the next relationship call…</div>';
-
-    relationshipPromise=(async()=>{
-      const d=tday(), cut=addDays(d,-180);
-      const [profiles,assignments,due,acts,reconnect]=await Promise.all([
-        timeout(sbFetch('agent_profiles?select=agent_name,display_name,tier,powerbi_level,relationship_status,do_not_contact,relationship_type,competitor_risk_flag,high_potential_flag,next_growth_opportunity,latest_lead_date,last_meaningful_contact_date,closes_past_year,total_leads_past_year,powerbi_last_seen_at&limit=4000'),9000,[]),
-        timeout(sbFetch('agent_assignments?select=agent_name,rm,lp,priority,level&limit=4000'),7000,[]),
-        timeout(sbFetch('amanda_activities?select=id,agent_name,act_type,act_date,outcome,notes,follow_up_date,created_at&follow_up_date=not.is.null&follow_up_date=lte.'+d+'&order=follow_up_date.asc&limit=1200'),7000,[]),
-        timeout(sbFetch('amanda_activities?select=agent_name,act_type,act_date,outcome,created_at&act_date=gte.'+cut+'&order=act_date.desc&limit=5000'),9000,[]),
-        timeout(sbFetch((typeof RC_TABLE!=='undefined'?RC_TABLE:'reconnect_agents')+'?select=agent_name,status,grade,days_since,latest_interaction,closes_past_year&status=eq.active&limit=1500'),7000,[])
-      ]);
-
-      const owners=ownerMap(assignments),excluded=new Set(),pmap={};
-      (profiles||[]).forEach(p=>{
-        const k=key(p.agent_name);if(!k)return;
-        if(isRemovedProfile(p))excluded.add(k);
-        if(typeof rmStrategicPartnerOverride==='function'){const sp=rmStrategicPartnerOverride(p.agent_name);if(sp)p=Object.assign({},p,sp);} if(!pmap[k] || new Date(p.powerbi_last_seen_at||0)>new Date(pmap[k].powerbi_last_seen_at||0))pmap[k]=p;
-      });
-      Object.entries(owners).forEach(([k,o])=>{if(o.removed)excluded.add(k)});
-
-      const latestAny={},latestLead={};
-      (acts||[]).forEach(a=>{
-        if(!a||!a.agent_name)return;
-        const k=key(a.agent_name),x=new Date(a.act_date||a.created_at||0);
-        if(isNaN(x))return;
-        if(!/Cold Calls?|New Agent Prospect/i.test(String(a.act_type||'')) && (!latestAny[k]||x>latestAny[k]))latestAny[k]=x;
-        if(/New Lead Received|Referral Lead|Lead Received/i.test(String(a.act_type||'')) && (!latestLead[k]||x>latestLead[k]))latestLead[k]=x;
-      });
-
-      const q={},add=(name,priority,why,type)=>{
-        const k=key(name);if(!k||excluded.has(k)||(typeof rmIsDirectorOwned==='function'&&rmIsDirectorOwned(name)))return;
-        const p=pmap[k],o=owners[k]||{};
-        if(!p||String(o.rm||'').toLowerCase()!=='amanda'||(typeof rmIsStrategicPartner==='function'&&rmIsStrategicPartner(name,p)))return;
-        const t=String(p.tier||p.powerbi_level||'C').toUpperCase();
-        // Amanda's routine relationship queue is C only. A/B/Channel belong to Nyny/director work.
-        if(t!=='C')return;
-        const cur=q[k];
-        if(!cur||priority<cur.priority)q[k]={name,priority,why,type:type||'Agent Talk-to'};
-      };
-
-      // Due promised follow-ups: ignore stale promises if a newer meaningful touch happened.
-      (due||[]).forEach(f=>{
-        const k=key(f.agent_name),origin=new Date(f.act_date||f.created_at||0),later=latestAny[k];
-        if(excluded.has(k) || /Cold Calls?|New Realtor Meeting|New Agent Prospect/i.test(String(f.act_type||'')))return;
-        if(later&&!isNaN(origin)&&later>origin)return;
-        add(f.agent_name,String(f.follow_up_date||'')<d?5:10,
-            (String(f.follow_up_date||'')<d?'Overdue follow-up':'Follow-up due today')+(f.act_type?' · '+f.act_type:''),
-            f.act_type||'Agent Talk-to');
-      });
-
-      // Health / documented growth.
-      Object.values(pmap).forEach(p=>{
-        const k=key(p.agent_name);if(excluded.has(k))return;
-        const o=owners[k]||{},t=String(p.tier||p.powerbi_level||'C').toUpperCase();
-        if(String(o.rm||'').toLowerCase()!=='amanda'||t!=='C'||String(p.relationship_type||'realtor').toLowerCase()==='strategic_partner')return;
-        const ld=p.latest_lead_date?new Date(p.latest_lead_date):latestLead[k];
-        const lc=p.last_meaningful_contact_date?new Date(p.last_meaningful_contact_date):latestAny[k];
-        const freshestLead=[ld,latestLead[k]].filter(Boolean).sort((a,b)=>b-a)[0];
-        const freshestContact=[lc,latestAny[k]].filter(Boolean).sort((a,b)=>b-a)[0];
-        const dl=freshestLead?Math.max(0,Math.floor((Date.now()-freshestLead)/86400000)):null;
-        const dc=freshestContact?Math.max(0,Math.floor((Date.now()-freshestContact)/86400000)):null;
-        const recentLead=dl!==null&&dl<=45;
-        if(p.competitor_risk_flag)add(p.agent_name,20,'Competitor risk flagged · relationship needs attention','Agent Talk-to');
-        else if(!recentLead&&dc!==null&&dc>=90)add(p.agent_name,35,dc+' days since a meaningful relationship touch','Agent Talk-to');
-        else if(String(p.next_growth_opportunity||'').trim())add(p.agent_name,45,String(p.next_growth_opportunity).slice(0,120),'Agent Talk-to');
-      });
-
-      // Reconnect only if no fresher signal in last 60 days.
-      (reconnect||[]).forEach(r=>{
-        const k=key(r.agent_name);if(excluded.has(k))return;
-        const fresh=latestAny[k]||latestLead[k];
-        if(fresh&&((Date.now()-fresh)/86400000)<60)return;
-        add(r.agent_name,55,'Reconnect relationship · '+(r.days_since!=null?r.days_since+' days quiet':'relationship went quiet'),'Reconnect Outreach');
-      });
-
-      const rows=Object.values(q).sort((a,b)=>a.priority-b.priority||String(a.name).localeCompare(String(b.name))).slice(0,5);
-
-      let html='<div class="v165-call-head"><div><b>Who do I call next?</b><small>One source. Amanda-owned relationships only. Do #1, log it, then move down.</small></div><button class="v165-refresh" onclick="v165LoadCallNext(true)">Refresh</button></div>';
-      if(rows.length){
-        const first=rows[0];
-        html+='<div class="v165-primary"><div class="v165-primary-label">CALL THIS PERSON NEXT</div><div class="v165-primary-row"><div class="v165-rank">1</div><div><div class="v165-name">'+escv(first.name)+'</div><div class="v165-why"><b>Why:</b> '+escv(first.why)+'</div></div><div class="v165-actions"><button class="primary" data-rm-action="touch" data-agent="'+encodeURIComponent(first.name)+'" data-type="'+encodeURIComponent(first.type||'Agent Talk-to')+'">Log touch</button><button data-rm-action="update" data-agent="'+encodeURIComponent(first.name)+'">Update</button></div></div></div>';
-        if(rows.length>1){
-          html+='<div class="v165-upnext">'+rows.slice(1).map((r,i)=>'<div class="v165-up-row"><div class="v165-rank">'+(i+2)+'</div><div><b>'+escv(r.name)+'</b><span>'+escv(r.why)+'</span></div><div class="v165-actions"><button class="primary" data-rm-action="touch" data-agent="'+encodeURIComponent(r.name)+'" data-type="'+encodeURIComponent(r.type||'Agent Talk-to')+'">Log</button><button data-rm-action="update" data-agent="'+encodeURIComponent(r.name)+'">Update</button></div></div>').join('')+'</div>';
-        }
-        html+='<div class="v165-call-foot"><span>Only the top 5 are shown on Today.</span><button class="v165-refresh" onclick="switchTab(\'portfolio\')">Full Portfolio</button></div>';
-      }else{
-        html+='<div class="v165-empty"><b>No existing-relationship call is due right now.</b><br>Stay in New Meeting Push and Week 1–4 Conversion.</div>';
-      }
-      host.innerHTML=html;host.dataset.loaded='1';relationshipAt=Date.now();
-    })().catch(e=>{
-      console.warn('v165 call next',e);
-      host.innerHTML='<div class="v165-empty"><b>Relationship queue did not load.</b><br><button class="v165-refresh" onclick="v165LoadCallNext(true)">Retry</button></div>';
-    }).finally(()=>relationshipPromise=null);
-
-    return relationshipPromise;
-  };
-
-  window.v165RelationshipLog=function(name,type){
-    try{
-      if(typeof prefillActivityLog==='function'){prefillActivityLog(name,type||'Agent Talk-to');return}
-      switchTab('log');
-      const a=document.getElementById('agentInput'),t=document.getElementById('activityType');
-      if(a)a.value=name||'';
-      if(t){t.value=type||'Agent Talk-to';t.dispatchEvent(new Event('change',{bubbles:true}));}
-    }catch(e){console.warn('Relationship log route',e)}
-  };
-  window.v165RelationshipUpdate=function(name){
-    try{
-      if(typeof openContactModal==='function'){openContactModal(name);return}
-      switchTab('contacts');
-      const s=document.getElementById('contactsSearch');
-      if(s){s.value=name||'';if(typeof filterContacts==='function')filterContacts();}
-    }catch(e){console.warn('Relationship update route',e)}
-  };
-
-  // Replace the public render functions so all later hooks use the single controllers above.
-  window.v109RenderNewMeetingPush=function(){ return v165LoadNewMeetingPush(false); };
-  window.v126RefreshRelationshipWork=function(force){ return v165LoadCallNext(!!force); };
-
-  // Load each execution section ONCE. No polling. No self-observers.
-  function boot(){
-    setTimeout(()=>v165LoadNewMeetingPush(false),350);
-    setTimeout(()=>v165LoadCallNext(false),650);
-  }
-  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});
-  else boot();
-
-  // Refresh only when the user returns to the app after it was hidden for a meaningful amount of time.
-  let hiddenAt=0;
-  document.addEventListener('visibilitychange',function(){
-    if(document.hidden){hiddenAt=Date.now();return}
-    if(hiddenAt && Date.now()-hiddenAt>300000){
-      v165LoadNewMeetingPush(true);
-      v165LoadCallNext(true);
-    }
-  });
-})();
-</script>
-
-
-<script id="v165-legacy-handler-cleanup">
-(function(){
-  // Legacy buttons that may still exist in hidden historical markup route to the one current controller.
-  window.v154Log=function(name,type){return window.v165RelationshipLog(decodeURIComponent(name||''),decodeURIComponent(type||'Agent Talk-to'));};
-  window.v154Update=function(name){return window.v165RelationshipUpdate(decodeURIComponent(name||''));};
-})();
-</script>
-
-
 <style id="v166-goals-refresh-css">
 .v166-goal-strip{
   display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:0 0 10px
@@ -16556,169 +16277,6 @@ setTimeout(()=>{try{v126SetupReconnectCleanup();v126EnhanceReconnectRows();}catc
 .v166-goal strong{color:#5E4387}
 @media(max-width:700px){.v166-goal-strip{grid-template-columns:1fr}}
 </style>
-
-<script id="v166-goals-refresh-alignment">
-(function(){
-  // One source of truth for Amanda's daily goals.
-  window.RM_AMANDA_DAILY_GOALS=Object.freeze({coldCalls:25,talkTos:20});
-
-  function todayStr(){try{return typeof today==='function'?today():new Date().toISOString().slice(0,10)}catch(e){return new Date().toISOString().slice(0,10)}}
-  function isTalkToType(t){
-    return [
-      "Agent Talk-to","Active Agent Talk-to","Active Agent Check-in",
-      "Reconnect Outreach","CTC Call","Under Contract Call",
-      "Birthday Outreach","Holiday Outreach","Agent Appreciation",
-      "Market Update","Market Update Call","Sent Market Report","Sent Referral",
-      "Co-Marketing Discussion","New Agent Follow-up","Closed Deal Thank You"
-    ].includes(String(t||''));
-  }
-
-  async function dailyCounts(){
-    const d=todayStr();
-    try{
-      const rows=await sbFetch('amanda_activities?select=act_type,act_date&act_date=eq.'+d+'&limit=3000');
-      const cold=(rows||[]).filter(a=>a.act_type==='Cold Calls').length;
-      const talks=(rows||[]).filter(a=>isTalkToType(a.act_type)).length;
-      return {cold,talks};
-    }catch(e){return {cold:0,talks:0}}
-  }
-
-  function resetV165Caches(){
-    // Existing v165 variables are closure-private, so force-refresh via public functions.
-    try{const h=document.getElementById('v109NewMeetingPush');if(h)h.dataset.v165Loaded='0'}catch(e){}
-    try{const h=document.getElementById('v165CallNext');if(h)h.dataset.loaded='0'}catch(e){}
-  }
-
-  window.rmRefreshExecutionQueues=async function(){
-    resetV165Caches();
-    await Promise.allSettled([
-      (typeof v165LoadNewMeetingPush==='function'?v165LoadNewMeetingPush(true):Promise.resolve()),
-      (typeof v165LoadCallNext==='function'?v165LoadCallNext(true):Promise.resolve())
-    ]);
-    try{await v166PaintGoalStrip()}catch(e){}
-  };
-
-  window.v166PaintGoalStrip=async function(){
-    const c=await dailyCounts();
-    const host=document.getElementById('v109NewMeetingPush');
-    if(host && !document.getElementById('v166ProspectGoalStrip')){
-      const strip=document.createElement('div');
-      strip.id='v166ProspectGoalStrip';
-      strip.className='v166-goal-strip';
-      host.parentNode.insertBefore(strip,host);
-    }
-    const strip=document.getElementById('v166ProspectGoalStrip');
-    if(strip){
-      const coldLeft=Math.max(0,25-c.cold),talkLeft=Math.max(0,20-c.talks);
-      strip.innerHTML=
-        '<div class="v166-goal"><b>'+c.cold+' / 25 Cold Calls</b><strong>'+coldLeft+' left today.</strong> Today shows 5 prospects at a time and replenishes after each logged call.</div>'
-        +'<div class="v166-goal"><b>'+c.talks+' / 20 Talk-to’s</b><strong>'+talkLeft+' left today.</strong> CTC, Under Contract/New Contract calls, Reconnect and other qualifying relationship touches all count.</div>';
-    }
-  };
-
-  // Wrap v165 prospect log so the UI explains it is one of 25, not "finish these 5."
-  const oldProspectLog=window.v165ProspectLog;
-  if(typeof oldProspectLog==='function'){
-    window.v165ProspectLog=function(name){
-      return oldProspectLog.apply(this,arguments);
-    };
-  }
-
-  // Patch save functions once they exist. After ANY successful activity save, replenish both queues.
-  function wrapSave(name){
-    const fn=window[name];
-    if(typeof fn!=='function'||fn.__v166Wrapped)return false;
-    const wrapped=async function(){
-      const r=await fn.apply(this,arguments);
-      // Do not block the save confirmation; refresh execution lists immediately after.
-      setTimeout(()=>{try{rmRefreshExecutionQueues()}catch(e){}},120);
-      return r;
-    };
-    wrapped.__v166Wrapped=true;
-    window[name]=wrapped;
-    return true;
-  }
-
-  function bindSaves(){
-    [
-      'saveActivity','saveQuickLog','saveColdCall','saveCtcWorkflow',
-      'saveInlineLog','saveQuickActivity','saveActivityLog'
-    ].forEach(wrapSave);
-  }
-
-  // Also catch Supabase activity inserts performed by specialized inline workflows.
-  const oldSb=window.sbFetch;
-  if(typeof oldSb==='function'&&!oldSb.__v166Wrapped){
-    const wrapped=async function(path,opts){
-      const r=await oldSb.apply(this,arguments);
-      try{
-        const method=String(opts&&opts.method||'GET').toUpperCase();
-        if(method==='POST' && String(path||'').replace(/^\/+/,'').startsWith('amanda_activities')){
-          setTimeout(()=>{try{rmRefreshExecutionQueues()}catch(e){}},160);
-        }
-      }catch(e){}
-      return r;
-    };
-    wrapped.__v166Wrapped=true;
-    window.sbFetch=wrapped;
-  }
-
-  // Make the New Meeting Push wording explicit: 5 is only the current batch.
-  function clarifyProspects(){
-    const host=document.getElementById('v109NewMeetingPush');
-    if(!host)return;
-    const sm=host.querySelector('.v165-prospect-head small');
-    if(sm)sm.textContent='Work the 5 shown in order. Log each call. The next eligible prospect automatically replaces it until you hit 25 Cold Calls today.';
-  }
-
-  // Make Call Next wording explicit: it supports the 20 combined Talk-to goal.
-  function clarifyTalkTos(){
-    const host=document.getElementById('v165CallNext');
-    if(!host)return;
-    const sm=host.querySelector('.v165-call-head small');
-    if(sm)sm.textContent='Do #1 and log it. Then the queue replenishes. This works toward the 20/day combined Talk-to goal with CTC, Under Contract/New Contract, Reconnect and other qualifying relationship touches.';
-  }
-
-  async function boot(){
-    bindSaves();
-    await v166PaintGoalStrip();
-    setTimeout(clarifyProspects,900);
-    setTimeout(clarifyTalkTos,1100);
-  }
-  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
-
-  // No polling. Only re-bind when returning to the page because late scripts may define save handlers after boot.
-  window.addEventListener('pageshow',()=>{bindSaves();v166PaintGoalStrip();setTimeout(clarifyProspects,350);setTimeout(clarifyTalkTos,450)});
-})();
-</script>
-
-
-<script id="v167-relationship-data-sanitizer">
-(function(){
-  function cleanFakeDays(){
-    const host=document.getElementById('v165CallNext');
-    if(!host)return;
-    host.querySelectorAll('.v165-why,.v165-up-row span').forEach(function(el){
-      const t=String(el.textContent||'');
-      if(/\b9{3,}\s*days\b/i.test(t)){
-        el.textContent='No reliable last-touch date is stored. Open Update to review the relationship record.';
-      }
-    });
-  }
-  const oldLoad=window.v165LoadCallNext;
-  if(typeof oldLoad==='function'){
-    window.v165LoadCallNext=async function(force){
-      const r=await oldLoad.call(this,force);
-      cleanFakeDays();
-      return r;
-    };
-  }
-  if(document.readyState==='loading'){
-    document.addEventListener('DOMContentLoaded',function(){setTimeout(cleanFakeDays,900)},{once:true});
-  }else setTimeout(cleanFakeDays,500);
-})();
-</script>
-
 
 <script id="v168-explicit-ownership-overrides">
 (function(){
@@ -16820,17 +16378,6 @@ setTimeout(()=>{try{v126SetupReconnectCleanup();v126EnhanceReconnectRows();}catc
     window.rmRefreshExecutionQueues = wrapped;
   }
 })();
-</script>
-
-
-<script id="v168-face-time-filter-helper">
-window.rmFilterAmandaOwnedRows = function(rows){
-  return (rows||[]).filter(function(r){
-    const name = r && (r.agent_name||r.name||r.realtor_name);
-    const brokerage = r && (r.brokerage||r.company||r.team_name);
-    return !(typeof rmIsDirectorOwned==='function' && rmIsDirectorOwned(name,brokerage,r&&r.team,r&&r.company));
-  });
-};
 </script>
 
 
@@ -17647,6 +17194,203 @@ window.rmAuditVisibleButtons=function(){
     try{if(typeof v165LoadNewMeetingPush==='function')await v165LoadNewMeetingPush(true)}catch(e){}
     try{if(typeof rmRefreshExecutionQueues==='function')await rmRefreshExecutionQueues()}catch(e){}
   };
+})();
+</script>
+
+
+<script id="v179-authoritative-amanda-queues">
+(function(){
+  const K=s=>String(s||'').trim().toLowerCase().replace(/\s+/g,' ');
+  const E=s=>{try{return escHtml(String(s==null?'':s))}catch(e){return String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}};
+  const T=()=>{try{return typeof today==='function'?today():new Date().toISOString().slice(0,10)}catch(e){return new Date().toISOString().slice(0,10)}};
+  const ADD=(raw,n)=>{const d=new Date((raw||T())+'T12:00:00');d.setDate(d.getDate()+n);return d.toISOString().slice(0,10)};
+  const TIMEOUT=(p,ms,fallback)=>Promise.race([Promise.resolve(p).catch(()=>fallback),new Promise(res=>setTimeout(()=>res(fallback),ms))]);
+
+  let prospectLoad=null, relationshipLoad=null;
+
+  function removedProfile(p){
+    return !p||p.do_not_contact===true||String(p.relationship_status||'active').toLowerCase()==='inactive';
+  }
+  function owners(rows){
+    const map={};
+    (rows||[]).forEach(a=>{
+      if(!a||!a.agent_name)return;
+      const k=K(a.agent_name),cur=map[k]||{rm:'',lp:'',removed:false};
+      if(a.lp==='__REMOVED__')cur.removed=true;
+      else if(a.lp&&!cur.lp)cur.lp=a.lp;
+      const nr=String(a.rm||'').trim().toLowerCase(),cr=String(cur.rm||'').trim().toLowerCase();
+      if(nr==='nyny'||(nr==='amanda'&&cr!=='nyny')||(!cur.rm&&a.rm))cur.rm=a.rm||cur.rm;
+      if(typeof rmIsDirectorOwned==='function'&&rmIsDirectorOwned(a.agent_name))cur.rm='Nyny';
+      map[k]=cur;
+    });
+    return map;
+  }
+  function isStrategic(name,p){
+    try{return typeof rmIsStrategicPartner==='function'&&rmIsStrategicPartner(name,p)}catch(e){return String(p&&p.relationship_type||'').toLowerCase()==='strategic_partner'}
+  }
+  function isDirector(name,p){
+    try{return typeof rmIsDirectorOwned==='function'&&rmIsDirectorOwned(name,p&&p.brokerage,p&&p.team,p&&p.company)}catch(e){return false}
+  }
+
+  window.v179LoadNewMeetingPush=async function(force){
+    const host=document.getElementById('v109NewMeetingPush');if(!host)return;
+    if(prospectLoad)return prospectLoad;
+    host.innerHTML='<div class="v165-loader">Loading new prospects…</div>';
+
+    prospectLoad=(async()=>{
+      const d=T(),month=d.slice(0,7)+'-01',recent=ADD(d,-120);
+      const results=await Promise.all([
+        TIMEOUT(sbFetch('outreach_prospects?select=id,agent_name,brokerage,phone,email,status,follow_up_date,notes&order=follow_up_date.asc.nullslast&limit=1500'),6500,[]),
+        TIMEOUT(sbFetch('agent_profiles?select=agent_name,display_name,relationship_status,do_not_contact,relationship_type,strategic_partner_category,brokerage,powerbi_last_seen_at&limit=4000'),6500,[]),
+        TIMEOUT(sbFetch('agent_assignments?select=agent_name,lp,rm&limit=4000'),6500,[]),
+        TIMEOUT(sbFetch('amanda_activities?select=agent_name,act_type,act_date,outcome&act_type=in.(Cold Calls,New Realtor Meeting)&act_date=gte.'+recent+'&order=act_date.desc&limit=4000'),6500,[]),
+        TIMEOUT(sbFetch('amanda_activities?select=agent_name,act_type,act_date&act_type=eq.New Realtor Meeting&act_date=gte.'+month+'&act_date=lte.'+d+'&limit=3000'),6500,[])
+      ]);
+      const prospects=results[0]||[],profiles=results[1]||[],assign=results[2]||[],acts=results[3]||[],monthActs=results[4]||[];
+      const own=owners(assign),pmap={},excluded=new Set();
+      profiles.forEach(p=>{
+        const k=K(p.agent_name);if(!k)return;
+        if(removedProfile(p))excluded.add(k);
+        if(!pmap[k]||new Date(p.powerbi_last_seen_at||0)>new Date(pmap[k].powerbi_last_seen_at||0))pmap[k]=p;
+      });
+      Object.entries(own).forEach(([k,o])=>{if(o.removed)excluded.add(k)});
+      const met=new Set(acts.filter(a=>a&&a.act_type==='New Realtor Meeting').map(a=>K(a.agent_name)));
+      const last={};acts.forEach(a=>{const k=K(a.agent_name);if(k&&(!last[k]||String(a.act_date)>String(last[k].act_date)))last[k]=a});
+      const blocked=/do not contact|dnc|inactive|removed|excluded|not a prospect|already\s*(?:with|w\/?)?\s*nfm|\bnfm\b|converted|closed|not interested/i;
+      const seen=new Set();
+      const eligible=prospects.filter(p=>{
+        const k=K(p.agent_name),prof=pmap[k];
+        if(!k||seen.has(k)||excluded.has(k)||met.has(k)||blocked.test(String(p.status||'')))return false;
+        if(typeof rmProspectIsTombstoned==='function'&&rmProspectIsTombstoned(p.agent_name))return false;
+        if(isDirector(p.agent_name,p)||isStrategic(p.agent_name,prof))return false;
+        // Existing current relationship = not a prospect.
+        if(prof&&!removedProfile(prof))return false;
+        seen.add(k);return true;
+      }).sort((a,b)=>String(a.follow_up_date||'9999-12-31').localeCompare(String(b.follow_up_date||'9999-12-31'))||String(a.agent_name||'').localeCompare(String(b.agent_name||'')));
+
+      const teamNew=monthActs.length,target=(typeof RM_TEAM_GOALS!=='undefined'&&Number(RM_TEAM_GOALS.teamNew))||20;
+      const remaining=Math.max(0,target-teamNew),days=typeof v109RemainingWeekdays==='function'?Math.max(1,v109RemainingWeekdays(d)):5,daily=remaining?Math.max(1,Math.ceil(remaining/days)):0;
+      const top=eligible.slice(0,5);
+      let html='<div class="v165-prospect-head"><div><b>NEW MEETING PUSH · '+teamNew+' / '+target+'</b><small>5 names at a time · log each call · the next eligible prospect replaces it.</small></div><button class="v165-refresh" onclick="v179LoadNewMeetingPush(true)">Refresh</button></div>';
+      html+='<div class="v165-pace-grid"><div class="v165-pace"><strong>'+remaining+'</strong><span>new meetings still needed this month<br><b>Today: book '+daily+'</b></span><div class="v165-outline"><b>First meeting:</b> office or structured coffee · 20–40 min · no lunch.<br><button onclick="openScriptsSection(\'first-realtor-meeting\')">Open Realtor Meeting Outline</button></div></div><div>';
+      if(top.length){
+        html+=top.map((p,i)=>{
+          const a=last[K(p.agent_name)],due=p.follow_up_date?'Follow-up '+p.follow_up_date:(a&&a.act_date?'Last attempt '+a.act_date:'New prospect');
+          return '<div class="v165-prospect-row"><div class="v165-rank">'+(i+1)+'</div><div><b class="v165-prospect-name">'+E(p.agent_name)+'</b><span class="v165-prospect-meta">'+E(due)+'</span></div><div class="v165-actions"><button class="primary" data-rm-action="outreach" data-agent="'+encodeURIComponent(String(p.agent_name||''))+'">Log outreach</button><button onclick="openPipelineContact(\''+encodeURIComponent(String(p.agent_name||''))+'\')">Open New Agents</button></div></div>';
+        }).join('');
+      }else{
+        html+='<div class="v165-empty"><b>No eligible new prospects are loaded right now.</b><br>Refresh New Agents or add a qualified prospect.</div>';
+      }
+      html+='</div></div>';
+      host.innerHTML=html;
+      host.dataset.v179Loaded='1';
+    })().catch(e=>{
+      console.warn('New Meeting Push load',e);
+      host.innerHTML='<div class="v165-empty"><b>New Meeting Push did not load.</b><br><button class="v165-refresh" onclick="v179LoadNewMeetingPush(true)">Retry</button></div>';
+    }).finally(()=>{prospectLoad=null});
+    return prospectLoad;
+  };
+
+  window.v179LoadCallNext=async function(force){
+    const parent=document.getElementById('v113SmartHost');if(!parent)return;
+    let host=document.getElementById('v165CallNext');if(!host){host=document.createElement('div');host.id='v165CallNext';parent.appendChild(host)}
+    if(relationshipLoad)return relationshipLoad;
+    host.innerHTML='<div class="v165-loader">Loading who to call next…</div>';
+
+    relationshipLoad=(async()=>{
+      const d=T(),cut=ADD(d,-180);
+      const results=await Promise.all([
+        TIMEOUT(sbFetch('agent_profiles?select=agent_name,display_name,tier,powerbi_level,relationship_status,do_not_contact,relationship_type,brokerage,competitor_risk_flag,high_potential_flag,next_growth_opportunity,latest_lead_date,last_meaningful_contact_date,closes_past_year,total_leads_past_year,powerbi_last_seen_at&limit=4000'),7000,[]),
+        TIMEOUT(sbFetch('agent_assignments?select=agent_name,rm,lp,priority,level&limit=4000'),6500,[]),
+        TIMEOUT(sbFetch('amanda_activities?select=id,agent_name,act_type,act_date,outcome,notes,follow_up_date,created_at&follow_up_date=not.is.null&follow_up_date=lte.'+d+'&order=follow_up_date.asc&limit=1500'),6500,[]),
+        TIMEOUT(sbFetch('amanda_activities?select=agent_name,act_type,act_date,outcome,created_at&act_date=gte.'+cut+'&order=act_date.desc&limit=5000'),7000,[]),
+        TIMEOUT(sbFetch((typeof RC_TABLE!=='undefined'?RC_TABLE:'reconnect_agents')+'?select=agent_name,status,grade,days_since,latest_interaction,closes_past_year&status=eq.active&limit=1500'),6500,[])
+      ]);
+      const profiles=results[0]||[],assign=results[1]||[],due=results[2]||[],acts=results[3]||[],reconnect=results[4]||[];
+      const own=owners(assign),pmap={},excluded=new Set();
+      profiles.forEach(p=>{
+        const k=K(p.agent_name);if(!k)return;
+        if(removedProfile(p))excluded.add(k);
+        if(!pmap[k]||new Date(p.powerbi_last_seen_at||0)>new Date(pmap[k].powerbi_last_seen_at||0))pmap[k]=p;
+      });
+      Object.entries(own).forEach(([k,o])=>{if(o.removed)excluded.add(k)});
+      const latest={};acts.forEach(a=>{if(/Cold Calls?|New Agent Prospect/i.test(String(a.act_type||'')))return;const k=K(a.agent_name),dt=new Date(a.act_date||a.created_at||0);if(k&&!isNaN(dt)&&(!latest[k]||dt>latest[k]))latest[k]=dt});
+
+      const q={};
+      function add(name,priority,why,type){
+        const k=K(name),p=pmap[k],o=own[k]||{};
+        if(!k||excluded.has(k)||!p||isDirector(name,p)||isStrategic(name,p))return;
+        if(String(o.rm||'').toLowerCase()!=='amanda')return;
+        if(String(p.tier||p.powerbi_level||'C').toUpperCase()!=='C')return;
+        const cur=q[k];if(!cur||priority<cur.priority)q[k]={name,priority,why,type:type||'Agent Talk-to'};
+      }
+      due.forEach(f=>{
+        const k=K(f.agent_name),origin=new Date(f.act_date||f.created_at||0),later=latest[k];
+        if(/Cold Calls?|New Realtor Meeting|New Agent Prospect/i.test(String(f.act_type||'')))return;
+        if(later&&!isNaN(origin)&&later>origin)return;
+        add(f.agent_name,String(f.follow_up_date||'')<d?5:10,(String(f.follow_up_date||'')<d?'Overdue follow-up':'Follow-up due today')+(f.act_type?' · '+f.act_type:''),f.act_type||'Agent Talk-to');
+      });
+      reconnect.forEach(r=>add(r.agent_name,30,'Reconnect relationship'+(r.days_since!=null?' · '+r.days_since+' days quiet':''),'Reconnect Outreach'));
+      profiles.forEach(p=>{
+        if(!p.next_growth_opportunity&&!p.competitor_risk_flag&&!p.high_potential_flag)return;
+        add(p.agent_name,p.competitor_risk_flag?15:p.high_potential_flag?22:25,p.competitor_risk_flag?'Retention risk':p.next_growth_opportunity?'Active opportunity':'High potential','Agent Talk-to');
+      });
+
+      // Fill to 5 with Amanda-owned C relationships, oldest reliable touch first.
+      profiles.forEach(p=>{
+        const k=K(p.agent_name),o=own[k]||{};
+        if(excluded.has(k)||isDirector(p.agent_name,p)||isStrategic(p.agent_name,p)||String(o.rm||'').toLowerCase()!=='amanda'||String(p.tier||p.powerbi_level||'C').toUpperCase()!=='C')return;
+        const dt=p.last_meaningful_contact_date?new Date(p.last_meaningful_contact_date):latest[k];
+        const days=dt&&!isNaN(dt)?Math.max(0,Math.floor((Date.now()-dt)/86400000)):null;
+        add(p.agent_name,days===null?90:50-Math.min(30,days/3),days===null?'No reliable last-touch date — review relationship record':'Intentional relationship check-in · '+days+' days since meaningful touch','Agent Talk-to');
+      });
+
+      const rows=Object.values(q).sort((a,b)=>a.priority-b.priority||String(a.name).localeCompare(String(b.name))).slice(0,5);
+      let html='<div class="v165-call-card"><div class="v165-call-head"><div><b>Who do I call next?</b><small>One source. Amanda-owned relationships only. Do #1, log it, then move down.</small></div><button class="v165-refresh" onclick="v179LoadCallNext(true)">Refresh</button></div>';
+      if(rows.length){
+        const f=rows[0];
+        html+='<div class="v165-primary"><div class="v165-primary-label">CALL THIS PERSON NEXT</div><div class="v165-primary-row"><div class="v165-rank">1</div><div><div class="v165-name">'+E(f.name)+'</div><div class="v165-why"><b>Why:</b> '+E(f.why)+'</div></div><div class="v165-actions"><button class="primary" data-rm-action="touch" data-agent="'+encodeURIComponent(f.name)+'" data-type="'+encodeURIComponent(f.type)+'">Log touch</button><button data-rm-action="update" data-agent="'+encodeURIComponent(f.name)+'">Update</button></div></div></div>';
+        if(rows.length>1)html+='<div class="v165-upnext">'+rows.slice(1).map((r,i)=>'<div class="v165-up-row"><div class="v165-rank">'+(i+2)+'</div><div><b>'+E(r.name)+'</b><span>'+E(r.why)+'</span></div><div class="v165-actions"><button class="primary" data-rm-action="touch" data-agent="'+encodeURIComponent(r.name)+'" data-type="'+encodeURIComponent(r.type)+'">Log</button><button data-rm-action="update" data-agent="'+encodeURIComponent(r.name)+'">Update</button></div></div>').join('')+'</div>';
+        html+='<div class="v165-call-foot"><span>Only the top 5 are shown on Today.</span><button class="v165-refresh" onclick="switchTab(\'portfolio\')">Full Portfolio</button></div>';
+      }else html+='<div class="v165-empty"><b>No existing-relationship call is due right now.</b><br>Stay in New Meeting Push and Week 1–4 Conversion.</div>';
+      host.innerHTML=html+'</div>';
+      host.dataset.v179Loaded='1';
+    })().catch(e=>{
+      console.warn('Who to Call Next load',e);
+      host.innerHTML='<div class="v165-empty"><b>Who to Call Next did not load.</b><br><button class="v165-refresh" onclick="v179LoadCallNext(true)">Retry</button></div>';
+    }).finally(()=>{relationshipLoad=null});
+    return relationshipLoad;
+  };
+
+  async function dailyCounts(){
+    try{
+      const d=T(),rows=await TIMEOUT(sbFetch('amanda_activities?select=act_type,act_date&act_date=eq.'+d+'&limit=3000'),6000,[]);
+      const types=new Set(['Agent Talk-to','Active Agent Talk-to','Active Agent Check-in','Reconnect Outreach','CTC Call','Under Contract Call','Birthday Outreach','Holiday Outreach','Agent Appreciation','Market Update','Market Update Call','Sent Market Report','Sent Referral','Co-Marketing Discussion','New Agent Follow-up','Closed Deal Thank You']);
+      return {cold:rows.filter(a=>a.act_type==='Cold Calls'||a.act_type==='Cold Call').length,talks:rows.filter(a=>types.has(a.act_type)).length};
+    }catch(e){return {cold:0,talks:0}}
+  }
+  async function paintGoals(){
+    const c=await dailyCounts(),host=document.getElementById('v109NewMeetingPush');if(!host)return;
+    let strip=document.getElementById('v166ProspectGoalStrip');
+    if(!strip){strip=document.createElement('div');strip.id='v166ProspectGoalStrip';strip.className='v166-goal-strip';host.parentNode.insertBefore(strip,host)}
+    strip.innerHTML='<div class="v166-goal"><b>'+c.cold+' / 25 Cold Calls</b><strong>'+Math.max(0,25-c.cold)+' left today.</strong> Five prospects show at a time.</div><div class="v166-goal"><b>'+c.talks+' / 20 Talk-to’s</b><strong>'+Math.max(0,20-c.talks)+' left today.</strong> CTC, New Contract, Reconnect and qualifying relationship touches count.</div>';
+  }
+
+  window.v165LoadNewMeetingPush=window.v179LoadNewMeetingPush;
+  window.v165LoadCallNext=window.v179LoadCallNext;
+  window.v109RenderNewMeetingPush=function(){return v179LoadNewMeetingPush(true)};
+  window.v126RefreshRelationshipWork=function(){return v179LoadCallNext(true)};
+  window.rmRefreshExecutionQueues=async function(){await Promise.allSettled([v179LoadNewMeetingPush(true),v179LoadCallNext(true),paintGoals()])};
+
+  function boot(){
+    v179LoadNewMeetingPush(true);
+    setTimeout(()=>v179LoadCallNext(true),120);
+    setTimeout(()=>paintGoals(),240);
+    // Re-run once after the inherited Today layout finishes moving its hosts.
+    setTimeout(()=>v179LoadNewMeetingPush(true),900);
+    setTimeout(()=>v179LoadCallNext(true),1050);
+  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
 })();
 </script>
 
