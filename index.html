@@ -1981,7 +1981,7 @@ html,body,button,input,select,textarea{font-family:var(--rm-native-font)!importa
 <button class="btn-sm" onclick="closeContactModal()">Cancel</button>
 </div>
 <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:flex-end">
-<button class="btn-sm" id="deleteAgentBtn" onclick="deleteAgent()">Remove from active</button>
+<button class="btn-sm" title="Use this when an agent should no longer count in Amanda&#39;s active roster, queues, Face Time or carryover." id="deleteAgentBtn" onclick="deleteAgent()">Remove from active</button>
 <button class="btn-sm danger" id="permanentHideAgentBtn" onclick="permanentlyHideAgent()" title="Use only for a bad spelling or duplicate profile you want gone from the tracker">Delete bad/duplicate</button>
 </div>
 </div>
@@ -12093,18 +12093,33 @@ async function wp18FetchData(force){
       sbFetch("velocify_leads?select=referral_partner_name,date_added&date_added=gte."+healthStart+"&order=date_added.desc&limit=5000").catch(()=>[]),
       sbFetch("received_leads?select=agent_name,logged_date&logged_date=gte."+healthStart+"&order=logged_date.desc&limit=5000").catch(()=>[])
     ]);
-    const candidates=wp18BuildCandidates(profiles,assignments,reconnect,followups,w);
-    const prospectPool=wp29BuildProspectPool(prospects,profiles,assignments,prospectActs,candidates);
-    const ownerRecords=wp18OwnerRecord(assignments);
+    const excludedKeys=new Set();
+    (profiles||[]).forEach(p=>{if(p&&(p.do_not_contact===true||String(p.relationship_status||'active').toLowerCase()==='inactive'||p.display_name===HIDDEN_PROFILE_MARKER))excludedKeys.add(wp18Key(p.agent_name));});
+    (assignments||[]).forEach(a=>{if(a&&a.lp==='__REMOVED__')excludedKeys.add(wp18Key(a.agent_name));});
+    const cleanProfiles=(profiles||[]).filter(p=>!excludedKeys.has(wp18Key(p.agent_name)));
+    const cleanAssignments=(assignments||[]).filter(a=>!excludedKeys.has(wp18Key(a.agent_name)));
+    const cleanReconnect=(reconnect||[]).filter(r=>!excludedKeys.has(wp18Key(r.agent_name)));
+    const cleanFollowups=(followups||[]).filter(f=>!excludedKeys.has(wp18Key(f.agent_name)));
+    const cleanProspects=(prospects||[]).filter(p=>!excludedKeys.has(wp18Key(p.agent_name)));
+    const cleanProspectActs=(prospectActs||[]).filter(a=>!excludedKeys.has(wp18Key(a.agent_name)));
+
+    const candidates=wp18BuildCandidates(cleanProfiles,cleanAssignments,cleanReconnect,cleanFollowups,w);
+    const prospectPool=wp29BuildProspectPool(cleanProspects,cleanProfiles,cleanAssignments,cleanProspectActs,candidates);
+    const ownerRecords=wp18OwnerRecord(cleanAssignments);
     // v63: completion credit follows RM attendee(s), never relationship ownership or strategic routing.
     // Store the latest qualifying work date per person+agent so Monday work cannot clear a Thursday task.
     const touched=wp63BuildWorkedDates(weekActs||[]);
     const queue=await wp18LoadOrCreateQueue(candidates,w);
     let qrows=queue.supported?queue.rows:wp18FallbackRows(candidates,w);
+    const staleRemoved=(qrows||[]).filter(r=>excludedKeys.has(wp18Key(r.agent_key||r.agent_name)));
+    if(staleRemoved.length&&queue.supported){
+      await Promise.all(staleRemoved.map(r=>sbFetch("rm_work_queue?id=eq."+encodeURIComponent(r.id),{method:"DELETE",prefer:"return=minimal"}).catch(()=>{})));
+    }
+    qrows=(qrows||[]).filter(r=>!excludedKeys.has(wp18Key(r.agent_key||r.agent_name)));
     if(queue.supported)qrows=await wp29RemoveProspectRowsFromRelationshipQueue(qrows);
     if(queue.supported)await wp18SyncWorked(qrows,touched);
-    const items=wp18RowsToItems(qrows,candidates.pmap),activeProfiles=(profiles||[]).filter(wp18IsActive),complete=activeProfiles.filter(p=>wpMissing(p).length===0).length;
-    const data={w,touched,profiles:activeProfiles,allProfiles:profiles||[],profileMap:candidates.pmap,ownerRecords,complete,queueSupported:queue.supported,queueRows:qrows,amanda:items.filter(x=>x.owner==="Amanda"),nyny:items.filter(x=>x.owner==="Nyny"),prospectPool,transactionActs:transactionActs||[],ctcSignals:ctcSignals||[],contractSignals:contractSignals||[],openLpFlags:openLpFlags||[],legacyRmFlags:legacyRmFlags||[],healthActs:healthActs||[],healthLpCalls:healthLpCalls||[],healthLeadMap:buildLatestLeadMap([...(healthLeadRows||[]),...(receivedLeadRows||[])])};
+    const items=wp18RowsToItems(qrows,candidates.pmap),activeProfiles=(cleanProfiles||[]).filter(wp18IsActive),complete=activeProfiles.filter(p=>wpMissing(p).length===0).length;
+    const data={w,touched,profiles:activeProfiles,allProfiles:cleanProfiles||[],profileMap:candidates.pmap,ownerRecords,complete,queueSupported:queue.supported,queueRows:qrows,amanda:items.filter(x=>x.owner==="Amanda"),nyny:items.filter(x=>x.owner==="Nyny"),prospectPool,transactionActs:transactionActs||[],ctcSignals:ctcSignals||[],contractSignals:contractSignals||[],openLpFlags:openLpFlags||[],legacyRmFlags:legacyRmFlags||[],healthActs:healthActs||[],healthLpCalls:healthLpCalls||[],healthLeadMap:buildLatestLeadMap([...(healthLeadRows||[]),...(receivedLeadRows||[])])};
     _wp18Cache=data;_wp18CacheAt=Date.now();return data;
   })();
   try{return await _wp18Loading;}finally{_wp18Loading=null;}
@@ -12631,7 +12646,7 @@ async function v21LoadDailyPlan(force){
     v21RenderOwner("Amanda","v21AmandaDayPlan","v21AmandaCapacity",ab,data.amanda,data,acts,monthActs,scheduledActs,date);
     // Snapshot is Amanda's TODAY workspace. Never let Nyny's Management date selector change Amanda's Snapshot to a past/future day.
     if(date===today()&&document.getElementById("v22AmandaSnapshotPlan"))v21RenderOwner("Amanda","v22AmandaSnapshotPlan","v22AmandaSnapshotCapacity",ab,data.amanda,data,acts,monthActs,scheduledActs,date);
-  }catch(e){console.error("v21 daily plan error",e);const s=document.getElementById("v21DailyPlanStatus");if(s)s.innerHTML='<div style="font-size:11px;color:var(--danger)">Unable to build today’s Workflow. Refresh and try again.</div>';
+  }catch(e){console.error("v21 daily plan error",e);const s=document.getElementById("v21DailyPlanStatus");if(s)s.innerHTML='<div style="font-size:10.5px;color:#6B6670;background:#F7F5FA;border:1px solid #E4E0EA;border-radius:8px;padding:7px 9px">Live schedule sync is retrying. Amanda can continue working the priority lists below.</div>';setTimeout(()=>{try{v21LoadDailyPlan(true)}catch(_){}},3500);
   }finally{_v21PlanLoading=false;}
 }
 async function v23SaveBlockPayload(payload){
@@ -12678,7 +12693,14 @@ async function v23LoadAmandaSnapshot(force){
     ]);
     const ab=(blocks||[]).filter(b=>b.owner==="Amanda");
     v21RenderOwner("Amanda","v22AmandaSnapshotPlan","v22AmandaSnapshotCapacity",ab,data.amanda,data,acts,monthActs,scheduledActs,date);
-  }catch(e){console.error("Amanda Workflow error",e);host.innerHTML='<div class="no-data" style="color:var(--danger)">Unable to build Amanda’s Workflow. Refresh and try again.</div>';}
+  }catch(e){
+    console.error("Amanda Workflow error",e);
+    const existing=String(host.innerHTML||'').trim();
+    if(!existing||/Loading|Unable to build/i.test(existing)){
+      host.innerHTML='<div class="no-data" style="color:var(--text-3)">Core priorities are still available above. Relationship priorities are refreshing automatically…</div>';
+    }
+    setTimeout(()=>{try{v23LoadAmandaSnapshot(true)}catch(_){}},3500);
+  }
 }
 function v21Init(){const d=document.getElementById("v21PlanDate");if(d&&!d.value)d.value=today();v21LoadDailyPlan(true);v23LoadAmandaSnapshot(true);}
 // Refresh the correct role workspace whenever its tab is opened.
@@ -13159,8 +13181,10 @@ async function loadBreakBreadDue(){
       sbFetch('face_time_events?select=*&status=eq.scheduled&event_date=gte.'+today()+'&order=event_date.asc,event_time.asc&limit=1000').catch(()=>[])
     ]);
     const normalize=s=>(s||'').trim().toUpperCase();
+    const inactiveKeys=new Set((profiles||[]).filter(p=>p&&(p.do_not_contact===true||String(p.relationship_status||'active').toLowerCase()==='inactive'||p.display_name===HIDDEN_PROFILE_MARKER)).map(p=>normalize(p.agent_name)));
+    const removedKeys=new Set((assignments||[]).filter(a=>a&&a.lp==='__REMOVED__').map(a=>normalize(a.agent_name)));
     const owners={};
-    (assignments||[]).forEach(a=>{const k=normalize(a.agent_name);if(k)owners[k]={lp:a.lp&&a.lp!=='__REMOVED__'?a.lp:'',rm:a.rm||'',removed:a.lp==='__REMOVED__'};});
+    (assignments||[]).forEach(a=>{const k=normalize(a.agent_name);if(!k)return;const cur=owners[k]||{lp:'',rm:'',removed:false};if(a.lp==='__REMOVED__')cur.removed=true;else if(a.lp&&!cur.lp)cur.lp=a.lp;const nr=String(a.rm||'').trim().toLowerCase(),cr=String(cur.rm||'').trim().toLowerCase();if(nr==='nyny'||(nr==='amanda'&&cr!=='nyny')||(!cur.rm&&a.rm))cur.rm=a.rm||cur.rm;owners[k]=cur;});
     // FIX (2026-08-19): the block above overwrites owners[k] on every assignment row for the same
     // agent, so a jointly-credited (Amanda + Nyny) relationship's rm ends up as whichever row
     // happened to load last — effectively random, and it can silently misattribute a C-tier
@@ -13171,7 +13195,7 @@ async function loadBreakBreadDue(){
     (scheduledFaceTime||[]).forEach(ev=>{const k=normalize(ev.agent_name);if(!k)return;if(!scheduledByAgent[k]||String(ev.event_date||'')<String(scheduledByAgent[k].event_date||''))scheduledByAgent[k]=ev;});
     const schedHost=document.getElementById('v101FaceTimeScheduled');
     if(schedHost){
-      const upcoming=(scheduledFaceTime||[]).filter(ev=>/amanda/i.test(String(ev.rm||''))).slice().sort((a,b)=>String(a.event_date||'').localeCompare(String(b.event_date||''))||String(a.event_time||'').localeCompare(String(b.event_time||''))).slice(0,8);
+      const upcoming=(scheduledFaceTime||[]).filter(ev=>{const k=normalize(ev.agent_name);return /amanda/i.test(String(ev.rm||''))&&!inactiveKeys.has(k)&&!removedKeys.has(k);}).slice().sort((a,b)=>String(a.event_date||'').localeCompare(String(b.event_date||''))||String(a.event_time||'').localeCompare(String(b.event_time||''))).slice(0,8);
       schedHost.innerHTML=upcoming.length?'<div style="background:#F3F7F3;border:1px solid #C9D9CD;border-radius:9px;padding:9px 11px"><div style="font-size:10px;font-weight:850;color:#41604B;text-transform:uppercase;letter-spacing:.35px;margin-bottom:5px">Booked Face Time · Amanda coverage</div>'+upcoming.map(ev=>'<div style="display:flex;justify-content:space-between;gap:8px;align-items:center;padding:5px 0;border-top:1px solid #E2EBE4"><div><strong style="font-size:11.5px;color:var(--text-1)">'+escHtml(properCase(ev.agent_name||''))+'</strong><div style="font-size:10px;color:var(--text-3)">'+escHtml(ev.event_date||'')+(ev.event_time?' · '+escHtml(String(ev.event_time).slice(0,5)):'')+' · LP: '+escHtml(ev.lp||'Unassigned')+'</div></div><button class="v101-ft-open" data-agent="'+escHtml(ev.agent_name||'')+'" data-lp="'+escHtml(ev.lp||'')+'" data-id="'+escHtml(String(ev.id||''))+'" style="font-size:9.5px;padding:5px 8px;border:1px solid #BCD0C0;background:#fff;color:#365342;border-radius:6px;cursor:pointer">Open</button></div>').join('')+'</div>':'';
       setTimeout(()=>schedHost.querySelectorAll('.v101-ft-open').forEach(btn=>btn.addEventListener('click',()=>v101OpenFaceTimeModal(btn.dataset.agent,btn.dataset.lp,btn.dataset.id))),0);
     }
@@ -13179,7 +13203,8 @@ async function loadBreakBreadDue(){
     (myBreads||[]).forEach(a=>{const n=normalize(a.agent_name);if(!n)return;const who=(getRmAttendees(a)||[getActivityOwner(a)||'Amanda']).join(' + ');if(!lastTouch[n]||a.act_date>lastTouch[n].date)lastTouch[n]={date:a.act_date,by:who};});
     (lpBreads||[]).forEach(b=>{const n=normalize(b.agent_name);if(!n)return;if(!lastTouch[n]||b.date>lastTouch[n].date)lastTouch[n]={date:b.date,by:b.logged_by||'LP'};});
     const today0=new Date();today0.setHours(0,0,0,0);
-    const allRows=(profiles||[]).filter(p=>{const k=normalize(p.agent_name),own=owners[k]||{},tier=danielTierFromProduction(p);return !!k&&!p.do_not_contact&&String(p.relationship_status||'active').toLowerCase()!=='inactive'&&p.retained!==false&&!own.removed&&String(p.relationship_type||'realtor').toLowerCase()!=='strategic_partner'&&String(p.lp_outreach_status||'active').toLowerCase()!=='nurture'&&!!tier;}).map(p=>{
+    const seenFaceTime=new Set();
+    const allRows=(profiles||[]).filter(p=>{const k=normalize(p.agent_name),own=owners[k]||{},tier=danielTierFromProduction(p);if(!k||seenFaceTime.has(k)||inactiveKeys.has(k)||removedKeys.has(k))return false;const ok=!p.do_not_contact&&String(p.relationship_status||'active').toLowerCase()!=='inactive'&&p.retained!==false&&!own.removed&&String(p.relationship_type||'realtor').toLowerCase()!=='strategic_partner'&&String(p.lp_outreach_status||'active').toLowerCase()!=='nurture'&&!!tier;if(ok)seenFaceTime.add(k);return ok;}).map(p=>{
       const n=normalize(p.agent_name),tier=danielTierFromProduction(p)||'C',touch=lastTouch[n],own=owners[n]||{};
       const days=touch?Math.floor((today0-new Date(touch.date+'T12:00:00'))/86400000):null;
       const th=FT_THRESHOLDS_LOCAL[tier]||FT_THRESHOLDS_LOCAL.C; let status='ok';
@@ -15687,15 +15712,15 @@ setTimeout(()=>{try{v126SetupReconnectCleanup();v126EnhanceReconnectRows();}catc
       });
       var by={};
       // 1) promised relationship follow-ups. Acquisition/cold-call follow-ups stay in Step 5.
-      follow.forEach(function(f){if(!f||!f.agent_name||prospectActivity(f)||String(f.follow_up_date||'')>todayStr)return;var p=pmap[key(f.agent_name)]||null;if(!allowed(f.agent_name,p,null,omap))return;try{if(typeof getNextStepOwner==='function'&&String(getNextStepOwner(f)||'').trim()==='Nyny')return}catch(e){}var overdue=String(f.follow_up_date||'')<todayStr;add(by,f.agent_name,overdue?5:10,(overdue?'Overdue promised follow-up':'Promised follow-up due today')+(f.act_type?' · '+f.act_type:''),overdue?'Overdue follow-up':'Follow-up due',f.act_type||'Agent Talk-to',100);});
+      follow.forEach(function(f){if(!f||!f.agent_name||prospectActivity(f)||String(f.follow_up_date||'')>todayStr)return;var p=pmap[key(f.agent_name)]||null;if(excluded.has(kk)||!allowed(f.agent_name,p,null,omap))return;try{if(typeof getNextStepOwner==='function'&&String(getNextStepOwner(f)||'').trim()==='Nyny')return}catch(e){}var overdue=String(f.follow_up_date||'')<todayStr;add(by,f.agent_name,overdue?5:10,(overdue?'Overdue promised follow-up':'Promised follow-up due today')+(f.act_type?' · '+f.act_type:''),overdue?'Overdue follow-up':'Follow-up due',f.act_type||'Agent Talk-to',100);});
       // 2) health/risk on Amanda-owned relationships.
       var thresholds={Channel:[14,21],A:[14,21],B:[30,45],C:[60,90]};
-      profiles.forEach(function(p){if(!p||!p.agent_name||p.do_not_contact===true||String(p.relationship_status||'active').toLowerCase()==='inactive'||!allowed(p.agent_name,p,null,omap))return;var tier=String(p.tier||p.powerbi_level||'C').toUpperCase(),pair=thresholds[tier]||thresholds.C,dl=days(p.latest_lead_date),dc=days(p.last_meaningful_contact_date);var red=!!p.competitor_risk_flag||dc===null||dc>=pair[1]||dl===null||dl>=60;var yellow=!red&&(dc>=pair[0]||dl>=30);if(red||yellow){var why=(red?'Relationship needs attention':'Relationship is approaching cadence risk')+' · '+tier+' tier'+(dc!=null?' · '+dc+'d since meaningful contact':'');add(by,p.agent_name,red?20:55,why,red?'Partner health · risk':'Partner health','Agent Talk-to',(tier==='Channel'?40:tier==='A'?30:tier==='B'?20:10)+(p.high_potential_flag?5:0));}
+      profiles.forEach(function(p){if(!p||!p.agent_name||excluded.has(k(p.agent_name))||p.do_not_contact===true||String(p.relationship_status||'active').toLowerCase()==='inactive'||!allowed(p.agent_name,p,null,omap))return;var tier=String(p.tier||p.powerbi_level||'C').toUpperCase(),pair=thresholds[tier]||thresholds.C,dl=days(p.latest_lead_date),dc=days(p.last_meaningful_contact_date);var red=!!p.competitor_risk_flag||dc===null||dc>=pair[1]||dl===null||dl>=60;var yellow=!red&&(dc>=pair[0]||dl>=30);if(red||yellow){var why=(red?'Relationship needs attention':'Relationship is approaching cadence risk')+' · '+tier+' tier'+(dc!=null?' · '+dc+'d since meaningful contact':'');add(by,p.agent_name,red?20:55,why,red?'Partner health · risk':'Partner health','Agent Talk-to',(tier==='Channel'?40:tier==='A'?30:tier==='B'?20:10)+(p.high_potential_flag?5:0));}
         // documented next move
         if(String(p.next_growth_opportunity||'').trim())add(by,p.agent_name,50,String(p.next_growth_opportunity).slice(0,130),'Relationship move','Agent Talk-to',Number(p.closes_past_year||0)*3+Number(p.total_leads_past_year||0));
       });
       // 3) warm reconnects after promised/risk work.
-      reconnect.forEach(function(x){if(!x||!x.agent_name||x.status&&x.status!=='active')return;var p=pmap[key(x.agent_name)]||null;if(!allowed(x.agent_name,p,x.grade,omap))return;add(by,x.agent_name,40,'Warm relationship went quiet'+(x.days_since!=null?' · '+x.days_since+'d since last interaction':''),'Reconnect','Reconnect Outreach',Number(x.closes_past_year||0)*4+Number(x.days_since||0)/30);});
+      reconnect.forEach(function(x){if(!x||!x.agent_name||x.status&&x.status!=='active')return;var p=pmap[key(x.agent_name)]||null;if(excluded.has(kk)||!allowed(x.agent_name,p,x.grade,omap))return;add(by,x.agent_name,40,'Warm relationship went quiet'+(x.days_since!=null?' · '+x.days_since+'d since last interaction':''),'Reconnect','Reconnect Outreach',Number(x.closes_past_year||0)*4+Number(x.days_since||0)/30);});
       var q=Object.values(by).sort(function(a,b){return a.priority-b.priority||b.score-a.score||String(a.name).localeCompare(String(b.name))});
       var html='<div class="v154-head"><div><b>Who to contact next</b><small>One ranked list. One person once. Work top to bottom. New-prospect and cold-call follow-ups stay in Step 5. C → B graduation candidates stay in Step 7.</small></div><span class="v154-count">'+q.length+' priority '+(q.length===1?'relationship':'relationships')+'</span></div>';
       if(q.length){html+=q.slice(0,10).map(function(e,i){return '<div class="v154-row"><div class="v154-rank">'+(i+1)+'</div><div><div class="v154-name">'+escv(typeof resolvedDisplayName==='function'?resolvedDisplayName(e.name):e.name)+'</div><div class="v154-why"><strong>Why now:</strong> '+escv(e.reasons.slice(0,2).join(' · '))+'</div>'+tagHtml(e.labels)+'</div>'+actionHtml(e.name,e.type)+'</div>'}).join('');html+='<div class="v154-foot"><span>'+(q.length>10?(q.length-10)+' more relationship priorities available.':'That is the full relationship priority queue right now.')+'</span><button onclick="switchTab(\'portfolio\')">Open Portfolio</button></div>'}
@@ -15913,8 +15938,10 @@ setTimeout(()=>{try{v126SetupReconnectCleanup();v126EnhanceReconnectRows();}catc
 
       const profiles=r[0]||[],reconnect=r[1]||[],follow=r[2]||[],acts=r[3]||[],owners=r[4]||[];
       const pmap={},omap={},activityBy={},latestAny={},latestLead={};
-
-      profiles.forEach(p=>{if(p&&p.agent_name)pmap[k(p.agent_name)]=p});
+      const excluded=new Set();
+      profiles.forEach(function(p){if(p&&(p.do_not_contact===true||String(p.relationship_status||'active').toLowerCase()==='inactive'||p.display_name===HIDDEN_PROFILE_MARKER))excluded.add(k(p.agent_name));});
+      owners.forEach(function(o){if(o&&o.lp==='__REMOVED__')excluded.add(k(o.agent_name));});
+      profiles.forEach(function(p){const kk=p&&k(p.agent_name);if(!kk||excluded.has(kk))return;if(!pmap[kk]||new Date(p.powerbi_last_seen_at||0)>new Date(pmap[kk].powerbi_last_seen_at||0))pmap[kk]=p});
       owners.forEach(function(o){
         if(!o||!o.agent_name)return;
         const kk=k(o.agent_name),cur=omap[kk],nr=String(o.rm||'').trim().toLowerCase(),cr=cur?String(cur.rm||'').trim().toLowerCase():'';
@@ -16099,6 +16126,29 @@ setTimeout(()=>{try{v126SetupReconnectCleanup();v126EnhanceReconnectRows();}catc
       }
     }).observe(host,{childList:true,subtree:true,characterData:true});
   },700);
+})();
+</script>
+
+
+<script id="v160-removal-authority-final">
+(function(){
+  window.rmRefreshAfterRosterRemoval=async function(){
+    try{_wp18Cache=null;_wp18CacheAt=0;}catch(e){}
+    try{_wp18Loading=null;}catch(e){}
+    try{await loadWeeklyWorkPlans(true)}catch(e){}
+    try{await v23LoadAmandaSnapshot(true)}catch(e){}
+    try{await v126RefreshRelationshipWork(true)}catch(e){}
+    try{await loadBreakBreadDue()}catch(e){}
+    try{if(typeof v145RefreshCtoB==='function')await v145RefreshCtoB(true)}catch(e){}
+  };
+  const old=window.removeAgentAcrossSharedTrackers;
+  if(typeof old==='function'){
+    window.removeAgentAcrossSharedTrackers=async function(name){
+      const r=await old.apply(this,arguments);
+      setTimeout(()=>rmRefreshAfterRosterRemoval(),80);
+      return r;
+    };
+  }
 })();
 </script>
 
