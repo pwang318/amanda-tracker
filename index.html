@@ -1,4 +1,5 @@
   <!DOCTYPE html>
+<!-- v212 STABLE DIRECTOR + LIVE AMANDA · 2026-08-21 -->
 
 <!-- Cleanup pass: floating Page Guide + stale developer build logs removed; active workflow logic preserved. -->
 <!-- v140: fixes Step 2 transaction renderer race; saved/open CTC and New Contract tasks are no longer erased after successful distribution -->
@@ -1080,7 +1081,13 @@ body.rmx-director-active .app-header{margin-left:0!important;padding-left:24px!i
 .rmx-list{display:flex;flex-direction:column}.rmx-row{display:grid;grid-template-columns:minmax(180px,1.3fr) minmax(180px,1fr) auto;gap:14px;align-items:center;padding:13px 4px;border-bottom:1px solid #ECEDE8}.rmx-row:last-child{border-bottom:0}.rmx-row .name{font-size:16px;font-weight:700}.rmx-row .meta{font-size:13px;color:#6C756E;margin-top:3px}.rmx-actions{display:flex;gap:7px;flex-wrap:wrap;justify-content:flex-end}.rmx-pill{display:inline-block;padding:3px 8px;border-radius:999px;background:#F0F2EA;color:#506255;font-size:11px;font-weight:700;margin-left:5px}.rmx-pill.red{background:#FCEBEA;color:#9A4740}.rmx-pill.amber{background:#FBF2DA;color:#7A5D1B}.rmx-pill.green{background:#EAF4ED;color:#356847}
 .rmx-search{width:100%;border:1px solid #D9DCD6;border-radius:11px;padding:11px 13px;font-size:16px;margin:0 0 14px;background:#fff}.rmx-search:focus{outline:2px solid #DDE8D9;border-color:#8EA08E}.rmx-note{background:#F5F5EF;border:1px solid #E5E5DE;border-radius:11px;padding:12px;font-size:14px;line-height:1.55}.rmx-tablewrap{overflow:auto;border:1px solid #E4E5E0;border-radius:12px}.rmx-table{width:100%;border-collapse:collapse;font-size:14px;min-width:680px}.rmx-table th,.rmx-table td{padding:10px 12px;border-bottom:1px solid #ECEDE8;text-align:left}.rmx-table th{background:#F6F6F2;font-size:12px;color:#69736C;text-transform:uppercase;letter-spacing:.03em}.rmx-table tr:last-child td{border-bottom:0}
 .rmx-modal{display:none;position:fixed;inset:0;z-index:99999;background:rgba(27,36,30,.35);align-items:center;justify-content:center;padding:20px}.rmx-modal.open{display:flex}.rmx-modalbox{width:min(720px,100%);max-height:88vh;overflow:auto;background:#FFFEFB;border-radius:17px;border:1px solid #DDE0D9;box-shadow:0 25px 80px rgba(0,0,0,.22);padding:22px}.rmx-modalhead{display:flex;justify-content:space-between;align-items:center;margin-bottom:15px}.rmx-modalhead h2{margin:0;font-size:23px}.rmx-x{border:0;background:#F0F1EB;width:34px;height:34px;border-radius:50%;cursor:pointer;font-size:20px}.rmx-field{margin-bottom:13px}.rmx-field label{display:block;font-size:13px;font-weight:700;margin-bottom:5px}.rmx-field input,.rmx-field textarea,.rmx-field select{width:100%;border:1px solid #D8DDD5;border-radius:9px;padding:10px 11px;font-size:15px;background:#fff}.rmx-field textarea{min-height:92px;resize:vertical}.rmx-modal-actions{display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap;margin-top:14px}
+.rmx-amanda-shell{background:#fff;border:1px solid #DDE0D9;border-radius:16px;overflow:hidden;box-shadow:0 6px 18px rgba(49,65,53,.05);margin-bottom:18px}
+.rmx-amanda-toolbar{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:11px 13px;border-bottom:1px solid #E5E6E1;background:#FAFAF7}
+.rmx-amanda-toolbar b{display:block;font-size:14px;color:#24372C}.rmx-amanda-toolbar span{display:block;font-size:11px;color:#6C776F;margin-top:2px}
+.rmx-amanda-frame{display:block;width:100%;height:calc(100vh - 225px);min-height:720px;border:0;background:#F7F4FB}
 @media(max-width:900px){.rmx-shell{grid-template-columns:1fr}.rmx-side{position:static;height:auto;border-right:0;border-bottom:1px solid #E3E3DC;padding:12px}.rmx-brand{display:none}.rmx-nav{flex-direction:row;overflow:auto}.rmx-nav button{white-space:nowrap;font-size:14px;padding:9px 11px}.rmx-main{padding:20px 14px}.rmx-head{align-items:flex-start}.rmx-avatar{width:56px;height:56px}.rmx-greet{font-size:20px}.rmx-date{font-size:14px}.rmx-row{grid-template-columns:1fr}.rmx-actions{justify-content:flex-start}}
+
+@media(max-width:900px){.rmx-amanda-frame{height:78vh;min-height:620px}.rmx-amanda-toolbar{align-items:flex-start;flex-direction:column}}
 </style>
 <style id="rmx-director-production-hardening">
 /* director.html: Management View gets a clean full-width layout when active,
@@ -1266,7 +1273,7 @@ body.rm-director-route .tabs,body.rm-director-route .who-bar{display:none!import
 </div>
 <div aria-label="RM Tracker navigation" class="tabs">
 <div class="nav-group-label">DAILY</div>
-<div class="tab active" data-tab="week" onclick="rmxOpenAmanda()" title="Amanda's daily home base"><span class="nav-num">01</span><span>Today</span></div>
+<div class="tab active" data-tab="week" onclick="switchTab(\'week\')" title="Amanda\'s daily home base"><span class="nav-num">01</span><span>Today</span></div>
 <div class="tab" data-tab="log" onclick="switchTab('log')" title="Record calls, texts, meetings and outcomes"><span class="nav-num">02</span><span>Log Activity</span></div>
 <div class="nav-group-label">RELATIONSHIPS</div>
 <div class="tab portfolio-priority-tab" data-tab="portfolio" onclick="switchTab('portfolio')" title="Partner Health, portfolio movement, growth opportunities and cadence"><span class="nav-num">03</span><span>Portfolio</span><span class="nav-priority-dot">●</span></div>
@@ -4961,7 +4968,7 @@ async function loadDropoffWarning(){
     const[rows,assignments]=await Promise.all([
       sbFetch(RC_TABLE+"?select=agent_name,days_since,grade,status&status=neq.removed&limit=2000").catch(()=>[]),
       sbFetch("agent_assignments?select=agent_name,lp,rm&limit=5000").catch(()=>[]),
-      sbFetch("face_time_events?select=*&status=eq.scheduled&event_date=gte."+today()+"&order=event_date.asc,event_time.asc&limit=1000").catch(()=>[])
+      Promise.resolve([]) /* legacy face_time_events table is not installed */
     ]);
     const key=n=>(n||"").trim().toLowerCase().replace(/\s+/g," ");
     const owners={};(assignments||[]).forEach(a=>{if(a&&a.agent_name)owners[key(a.agent_name)]={lp:a.lp&&a.lp!=="__REMOVED__"?a.lp:"Unassigned",rm:a.rm||"Unassigned"};});
@@ -5377,8 +5384,12 @@ function directorMode(){
   }catch(e){return false;}
 }
 function openDirectorMode(){
-  try{const u=new URL(window.location.href);const base=u.pathname.replace(/(?:index|director)\.html$/i,"");u.pathname=base+"director.html";u.search="";u.hash="";window.location.href=u.toString();}
-  catch(e){window.location.href="director.html";}
+  try{
+    const u=new URL(window.location.href);
+    u.searchParams.delete("director");
+    u.hash="director";
+    window.location.href=u.toString();
+  }catch(e){window.location.hash="director";}
 }
 function openAmandaMode(){
   try{const u=new URL(window.location.href);const base=u.pathname.replace(/(?:index|director)\.html$/i,"");u.pathname=base;u.search="";u.hash="";window.location.href=u.toString();}
@@ -9745,365 +9756,10 @@ async function loadRmToLpHistory(){
 }
 
 async function loadManagement(){
-  // The Director page is now the RMX shell (see rmx-stable-director-script near the end of
-  // the file) — the old Director Command Center elements this function targets (danielFeedbackFlags,
-  // danielRetentionGrid, mgmtLookbackActive, etc.) were removed from the page in an earlier fix and
-  // no longer exist. Left unguarded, this still ran automatically twice on every page load (via the
-  // v129 init() pass) and fired 15 parallel Supabase queries into the void every time — competing
-  // with, and sometimes starving out, the RMX shell's own un-caught "core truth" queries. That race
-  // is what made the Amanda tab render correctly for a moment and then flip to an error card. Skip
-  // entirely while the Director/RMX view is active.
-  if(document.body.classList.contains('rm-director-route')||document.getElementById('rmxApp'))return;
-  loadRmFlagResponseHistory();
-  loadRmToLpHistory();
-  loadAmandaCoachingQueue();
-  loadNynyDirectorManagement();
-  loadStrategicPartnerManagement();
-  loadMgmtAccountability();
-  updateBackupReminder();
-  loadGoalPace();
-  const lookbackLabel=document.getElementById("mgmtLookbackActive");
-  if(lookbackLabel)lookbackLabel.textContent="";
-  try{
-    const now=new Date();
-    const todayStr=today();
-    const monthStart=now.getFullYear()+"-"+String(now.getMonth()+1).padStart(2,"0")+"-01";
-    const yearStart=now.getFullYear()+"-04-01";// April — role start date
-    const prevMonthStart=new Date(now.getFullYear(),now.getMonth()-1,1);
-    const prevMonthEnd=new Date(now.getFullYear(),now.getMonth(),0);
-    const prevStart=prevMonthStart.toISOString().split("T")[0];
-    const prevEnd=prevMonthEnd.toISOString().split("T")[0];
-    // Week bounds — Monday to Sunday
-    const nowD=new Date();
-    const dayOfWeek=nowD.getDay();
-    const diffToMon=dayOfWeek===0?-6:1-dayOfWeek;
-    const weekStartD=new Date(nowD);weekStartD.setDate(nowD.getDate()+diffToMon);weekStartD.setHours(0,0,0,0);
-    const weekEndD=new Date(weekStartD);weekEndD.setDate(weekStartD.getDate()+6);
-    const wkStart=weekStartD.toISOString().split("T")[0];
-    const wkEnd=weekEndD.toISOString().split("T")[0];
-
-    const escFlagCutoff=new Date();escFlagCutoff.setDate(escFlagCutoff.getDate()-30);
-    const escFlagCutoffStr=localDateStr(escFlagCutoff);
-    // Broad lookback for funnel/close lookups — since role start, so any period's cohort can be checked against it
-    const roleStartStr=yearStart;
-
-    const[dailyActs,weekActs,mtdActs,ytdActs,prevActs,aTierAgents,rcContacted,allAgents,allActs,feedbackFlags,closesAll,flagResponses,rcAllAgents,funnelCohortActs]=await Promise.all([
-      sbFetch("amanda_activities?select=*&act_date=eq."+todayStr),
-      sbFetch("amanda_activities?select=*&act_date=gte."+wkStart+"&act_date=lte."+wkEnd+"&order=act_date.desc"),
-      sbFetch("amanda_activities?select=*&act_date=gte."+monthStart+"&order=act_date.desc&limit=2000"),
-      sbFetch("amanda_activities?select=*&act_date=gte."+yearStart+"&order=act_date.desc&limit=5000"),
-      sbFetch("amanda_activities?select=act_type,agent_name&act_date=gte."+prevStart+"&act_date=lte."+prevEnd).catch(()=>[]),
-      sbFetch("agent_profiles?select=agent_name,tier&tier=eq.A&limit=200").catch(()=>[]),
-      sbFetch(RC_TABLE+"?select=agent_name,contacted_at&status=eq.contacted&limit=100").catch(()=>[]),
-      sbFetch("agent_profiles?select=agent_name&limit=500").catch(()=>[]),
-      sbFetch("amanda_activities?select=agent_name,act_date&order=act_date.desc&limit=2000").catch(()=>[]),
-      sbFetch("amanda_activities?select=agent_name,act_type,act_date,notes&outcome=eq.Needs manager attention&act_date=gte."+escFlagCutoffStr+"&order=act_date.desc&limit=50").catch(()=>[]),
-      sbFetch("call_logs?select=agent_name,call_date,outcome&outcome=ilike.*close*&call_date=gte."+roleStartStr+"&limit=1000").catch(()=>[]),
-      sbFetch("call_logs?select=call_date,rm_note_at&rm_note_at=not.is.null&call_date=gte."+escFlagCutoffStr+"&limit=200").catch(()=>[]),
-      sbFetch(RC_TABLE+"?select=agent_name,status&status=neq.removed&limit=1000").catch(()=>[]),
-      sbFetch("amanda_activities?select=act_type,agent_name,act_date,outcome&act_date=gte."+roleStartStr+"&act_type=in.(Cold Calls,New Realtor Meeting)&limit=5000").catch(()=>[])
-    ]);
-
-    mgmtPeriodData={daily:dailyActs,week:weekActs,mtd:mtdActs,ytd:ytdActs};
-    mgmtPeriodBounds={
-      daily:{start:todayStr,end:todayStr,label:"Today"},
-      week:{start:wkStart,end:wkEnd,label:"This week"},
-      mtd:{start:monthStart,end:todayStr,label:"Month to date"},
-      ytd:{start:yearStart,end:todayStr,label:"Year to date (since April)"}
-    };
-    mgmtLookupData={allColdCallsAndMeetings:funnelCohortActs||[],rcAllAgents:rcAllAgents||[],aTierAgents:aTierAgents||[],closesAll:closesAll||[]};
-    try{if(typeof v124RenderAmandaDailyGoals==="function")v124RenderAmandaDailyGoals(dailyActs||[]);}catch(e){console.warn("Amanda daily goals render failed",e);}
-    // Re-render whichever period is currently selected
-    try{
-      renderMgmtPeriod();
-      renderMgmtTable(mgmtPeriodData[currentMgmtPeriod]||weekActs);
-      renderMgmtPeriodDetail(currentMgmtPeriod);
-      // Update active button highlight
-      ["daily","week","mtd","ytd"].forEach(id=>{
-        const btn=document.getElementById("mgbtn-"+id);
-        if(btn)btn.classList.toggle("active",currentMgmtPeriod===id);
-      });
-    }catch(e){
-      console.error("renderMgmtPeriod/Table error:",e);
-      const dg=document.getElementById("danielGoals");
-      if(dg)dg.innerHTML='<div class="no-data" style="color:var(--danger)">Error: '+e.message+'</div>';
-    }
-
-    // ── Helper: count by type ─────────────────────────────────────
-    const c=(acts,type)=>acts.filter(a=>a.act_type===type).length;
-    const uniq=(acts)=>new Set(acts.map(a=>(a.agent_name||"").toLowerCase().trim()).filter(Boolean)).size;
-
-    // ── FUNNEL / CONNECT RATES / RECONNECT PACE / PRODUCTION SIGNAL — period-aware ──
-    renderMgmtPeriodDetail(currentMgmtPeriod);
-
-
-    // ── NEEDS LEADERSHIP ATTENTION: escalations flagged during a touch ──
-    try{
-      if(!feedbackFlags||!feedbackFlags.length){
-        document.getElementById("danielFeedbackCard")&&(document.getElementById("danielFeedbackCard").style.display="none");
-        document.getElementById("danielFeedbackFlags").innerHTML='';
-      }else{
-        document.getElementById("danielFeedbackCard")&&(document.getElementById("danielFeedbackCard").style.display="block");
-        document.getElementById("danielFeedbackFlags").innerHTML=feedbackFlags.map(f=>
-          '<div style="background:var(--danger-bg);border:1px solid var(--border-danger);border-radius:var(--radius-sm);padding:10px 12px;margin-bottom:8px">'
-          +'<div style="display:flex;justify-content:space-between;margin-bottom:4px"><span style="font-weight:600;font-size:13px;color:var(--text-1)">'+properCase(f.agent_name)+'</span><span style="font-size:10px;color:var(--text-3)">'+fmtDate(f.act_date)+' · '+escHtml(f.act_type||'')+'</span></div>'
-          +(f.notes?'<div style="font-size:12px;color:var(--text-2)">'+escHtml(f.notes)+'</div>':'')
-          +'</div>'
-        ).join("");
-      }
-    }catch(e){console.error("Feedback flags error:",e);document.getElementById("danielFeedbackFlags").innerHTML='<div class="no-data">Unable to load.</div>';}
-
-    // ── RESPONSE TIME to LP flags ──────────────────────────────────
-    try{
-      const diffs=(flagResponses||[]).map(f=>{
-        const flagged=new Date(f.call_date+"T12:00:00"),responded=new Date(f.rm_note_at);
-        return Math.max(0,(responded-flagged)/86400000);
-      }).filter(d=>!isNaN(d));
-      if(!diffs.length){
-        document.getElementById("danielResponseCard")&&(document.getElementById("danielResponseCard").style.display="none");
-        document.getElementById("danielResponseCard")&&(document.getElementById("danielResponseCard").style.display="block");
-        document.getElementById("danielResponseTime").innerHTML='';
-      }else{
-        const avg=(diffs.reduce((a,b)=>a+b,0)/diffs.length).toFixed(1);
-        const within2=diffs.filter(d=>d<=2).length;
-        const within2Pct=Math.round((within2/diffs.length)*100);
-        const avgColor=avg<=2?"var(--success)":avg<=5?"var(--warning)":"var(--danger)";
-        document.getElementById("danielResponseCard")&&(document.getElementById("danielResponseCard").style.display="block");
-        document.getElementById("danielResponseTime").innerHTML=
-          '<div style="display:flex;gap:24px;flex-wrap:wrap">'
-          +'<div><div style="font-size:24px;font-weight:700;color:'+avgColor+'">'+avg+'d</div><div style="font-size:11px;color:var(--text-3)">avg response time</div></div>'
-          +'<div><div style="font-size:24px;font-weight:700;color:var(--text-1)">'+within2Pct+'%</div><div style="font-size:11px;color:var(--text-3)">responded within 2 days</div></div>'
-          +'<div><div style="font-size:24px;font-weight:700;color:var(--text-1)">'+diffs.length+'</div><div style="font-size:11px;color:var(--text-3)">flags responded to (30d)</div></div>'
-          +'</div>';
-      }
-    }catch(e){console.error("Response time error:",e);document.getElementById("danielResponseTime").innerHTML='<div class="no-data">Unable to load.</div>';}
-
-    // ── A-tier setup ──────────────────────────────────────────────
-    const aTierNames=new Set(aTierAgents.map(a=>(a.agent_name||"").toLowerCase().trim()));
-    const aTierTotal=aTierNames.size;
-    const aTierTouched=(acts)=>[...new Set(acts.map(a=>(a.agent_name||"").toLowerCase().trim()))].filter(n=>aTierNames.has(n)).length;
-
-    // ── At risk count ─────────────────────────────────────────────
-    const lastSeen={};
-    allActs.forEach(a=>{const n=(a.agent_name||"").trim().toLowerCase();if(n&&!lastSeen[n])lastSeen[n]=a.act_date;});
-    const atRiskCount=allAgents.filter(a=>{
-      const name=(a.agent_name||"").trim().toLowerCase();
-      if(!name)return false;
-      const last=lastSeen[name];
-      const days=last?Math.round((now-new Date(last+"T12:00:00"))/86400000):null;
-      return days===null||days>=60;
-    }).length;
-
-    // ── Pace: are we on track for monthly goals? ──────────────────
-    const daysInMonth=new Date(now.getFullYear(),now.getMonth()+1,0).getDate();
-    const dayOfMonth=now.getDate();
-    const paceMultiplier=daysInMonth/dayOfMonth; // project MTD to end of month
-    const mtdMeetings=c(mtdActs,"New Realtor Meeting");
-    const projectedMeetings=Math.round(mtdMeetings*paceMultiplier);
-    const meetingPct=Math.min(100,Math.round((mtdMeetings/20)*100));
-    const meetingColor=meetingPct>=100?"var(--success)":meetingPct>=60?"var(--brand)":"var(--danger)";
-
-    // ── SHARED GRID LAYOUT ────────────────────────────────────────
-    const isMobile=window.innerWidth<600;
-    const gridCols=isMobile?"1.8fr 50px 55px 55px":"1.6fr 60px 60px 70px 70px 80px";
-    const gridHeader='<div style="display:grid;grid-template-columns:'+gridCols+';gap:8px;padding:0 0 8px;border-bottom:2px solid var(--border);margin-bottom:4px">'
-      +'<span style="font-size:10px;font-weight:700;color:var(--text-4);text-transform:uppercase;letter-spacing:.5px">Metric</span>'
-      +(isMobile?'':'<span style="font-size:10px;font-weight:700;color:var(--text-4);text-align:center;text-transform:uppercase;letter-spacing:.5px">Today</span>')
-      +'<span style="font-size:10px;font-weight:700;color:var(--text-4);text-align:center;text-transform:uppercase;letter-spacing:.5px">WTD</span>'
-      +'<span style="font-size:10px;font-weight:700;color:var(--text-1);text-align:center;text-transform:uppercase;letter-spacing:.5px">MTD</span>'
-      +'<span style="font-size:10px;font-weight:700;color:var(--text-4);text-align:center;text-transform:uppercase;letter-spacing:.5px">YTD</span>'
-      +(isMobile?'':'<span style="font-size:10px;font-weight:700;color:var(--text-4);text-align:right;text-transform:uppercase;letter-spacing:.5px">vs Goal</span>')
-      +'</div>';
-
-    // ── GROWTH METRICS ────────────────────────────────────────────
-    try{
-    const growthMetricRow=(label,daily,wtd,mtd,ytd,goal,goalPeriod,actType)=>{
-      const pct=goal?Math.min(100,Math.round((mtd/goal)*100)):null;
-      const pctBadge=pct!==null&&!isMobile?'<span style="font-size:10px;padding:2px 7px;border-radius:20px;font-weight:600;background:'+(pct>=100?"var(--success-bg)":pct>=60?"var(--brand-light)":"var(--danger-bg)")+';color:'+(pct>=100?"var(--success)":pct>=60?"var(--brand)":"var(--danger)")+'">'+pct+'%</span>':"";
-      const safeType=(actType||"").replace(/'/g,"\\'");
-      const clickStyle='cursor:pointer;text-decoration:underline dotted;text-underline-offset:3px';
-      const cell=(value,period,extra)=>actType
-        ?'<span title="Click to see the records" onclick="event.stopPropagation();showActivityDetailModal(\''+safeType+'\',\''+period+'\')" style="text-align:center;'+clickStyle+(extra||'')+'">'+value+'</span>'
-        :'<span style="text-align:center'+(extra||'')+'">'+value+'</span>';
-      const mtdValue=mtd+(goal?'<span style="font-size:10px;color:var(--text-4);font-weight:400">/'+goal+'</span>':'');
-      return'<div style="display:grid;grid-template-columns:'+gridCols+';gap:8px;align-items:center;padding:9px 0;border-bottom:1px solid var(--border-light);font-size:13px">'
-        +'<span style="font-weight:500;color:var(--text-1)">'+label+'</span>'
-        +(isMobile?'':cell(daily,'daily',';color:var(--text-3)'))
-        +cell(wtd,'week',';color:var(--text-2)')
-        +cell(mtdValue,'mtd',';font-weight:600;color:var(--text-1)')
-        +cell(ytd,'ytd',';color:var(--text-3)')
-        +(isMobile?'':'<span style="text-align:right">'+pctBadge+'</span>')
-        +'</div>';
-    };
-
-    const aprilStartMonths=Math.min(12,Math.max(1,new Date().getMonth()-2));
-    document.getElementById("danielGrowthGrid").innerHTML=gridHeader
-      +growthMetricRow("New realtor meetings — RM Team",c(dailyActs,"New Realtor Meeting"),c(weekActs,"New Realtor Meeting"),mtdMeetings,c(ytdActs,"New Realtor Meeting"),RM_TEAM_GOALS.teamNew,"MTD","New Realtor Meeting")
-      +growthMetricRow("Cold calls",c(dailyActs,"Cold Calls"),c(weekActs,"Cold Calls"),c(mtdActs,"Cold Calls"),c(ytdActs,"Cold Calls"),500,"MTD","Cold Calls")
-      +growthMetricRow("Buddy intros received",c(dailyActs,"Buddy Intro Received"),c(weekActs,"Buddy Intro Received"),c(mtdActs,"Buddy Intro Received"),c(ytdActs,"Buddy Intro Received"),12,"MTD","Buddy Intro Received")
-      +growthMetricRow("Buddy intro asks",c(dailyActs,"Realtor Buddy Referral Ask"),c(weekActs,"Realtor Buddy Referral Ask"),c(mtdActs,"Realtor Buddy Referral Ask"),c(ytdActs,"Realtor Buddy Referral Ask"),null,"MTD","Realtor Buddy Referral Ask")
-      +'<div style="margin-top:10px;padding:10px 12px;background:var(--surface-2);border-radius:var(--radius-sm);font-size:12px;color:var(--text-2)">'
-      +'On pace for <strong style="color:'+meetingColor+'">'+projectedMeetings+'</strong> new meetings this month '
-      +'<span style="color:var(--text-4)">(RM Team goal: 20)</span>'
-      +'</div>'
-      +'<div style="margin-top:6px;font-size:11px;color:var(--text-3)">YTD counts from April (role start). '+aprilStartMonths+' months of data.</div>';
-    }catch(e){ console.error("Growth grid render error:",e); }
-
-    // ── RETENTION METRICS ─────────────────────────────────────────
-    try{
-    const retentionRow=(label,daily,wtd,mtd,ytd,note,actType)=>{
-      const clickAttr=actType==="__uniqueagents__"?' onclick="showUniqueAgentsModal(\'mtd\')"':actType==="__reconnectcontacted__"?' onclick="showReconnectContactedModal()"':actType?' onclick="jumpToFeedType(\''+actType.replace(/'/g,"\\'")+'\')"':"";
-      const isClickable=actType==="__uniqueagents__"||actType==="__reconnectcontacted__"||!!actType;
-      return'<div'+clickAttr+' style="display:grid;grid-template-columns:'+gridCols+';gap:8px;align-items:center;padding:9px 0;border-bottom:1px solid var(--border-light);font-size:13px'+(isClickable?';cursor:pointer':'')+'">'
-        +'<div><span style="font-weight:500;color:var(--text-1)">'+label+'</span>'+(note?'<div style="font-size:10px;color:var(--text-4);margin-top:1px">'+note+'</div>':'')+'</div>'
-        +(isMobile?'':'<span style="text-align:center;color:var(--text-3)">'+daily+'</span>')
-        +'<span style="text-align:center;color:var(--text-2)">'+wtd+'</span>'
-        +'<span style="text-align:center;font-weight:600;color:var(--text-1)">'+mtd+'</span>'
-        +'<span style="text-align:center;color:var(--text-3)">'+ytd+'</span>'
-        +(isMobile?'':'<span></span>')
-        +'</div>';
-    };
-    const uniqMtd=uniq(mtdActs);
-    const uniqWtd=uniq(weekActs);
-    const uniqDaily=uniq(dailyActs);
-    const uniqYtd=uniq(ytdActs);
-    const aTierMtd=aTierTotal?aTierTouched(mtdActs):0;
-
-    // Cache the actual agent lists behind "Unique agents touched" so the row can be clicked open
-    const namesWithCounts=(acts)=>{
-      const seen={};
-      (acts||[]).forEach(a=>{
-        const n=(a.agent_name||"").trim();
-        if(!n)return;
-        const k=n.toLowerCase();
-        if(!seen[k])seen[k]={name:n,count:0,lastDate:a.act_date};
-        seen[k].count++;
-        if(a.act_date>seen[k].lastDate)seen[k].lastDate=a.act_date;
-      });
-      return Object.values(seen).sort((a,b)=>b.count-a.count);
-    };
-    mgmtUniqueAgentsCache={daily:namesWithCounts(dailyActs),week:namesWithCounts(weekActs),mtd:namesWithCounts(mtdActs),ytd:namesWithCounts(ytdActs)};
-    mgmtReconnectContactedCache=(rcContacted||[]).map(r=>({name:r.agent_name,contactedAt:r.contacted_at})).sort((a,b)=>(b.contactedAt||"").localeCompare(a.contactedAt||""));
-
-    document.getElementById("danielRetentionGrid").innerHTML=gridHeader
-      +retentionRow("Unique agents touched",uniqDaily,uniqWtd,uniqMtd,uniqYtd,"tap to see who","__uniqueagents__")
-      +(aTierTotal?retentionRow("A-tier agents touched",aTierTouched(dailyActs),aTierTouched(weekActs),aTierMtd+" of "+aTierTotal,aTierTouched(ytdActs),"highest-value agents"):"")
-      +retentionRow("Agent Talk-to's",cntTalkTo(dailyActs),cntTalkTo(weekActs),cntTalkTo(mtdActs)+" / 400",cntTalkTo(ytdActs),"all meaningful touches with existing agents")
-      +retentionRow("Break breads",c(dailyActs,"Break Breads"),c(weekActs,"Break Breads"),c(mtdActs,"Break Breads")+" / 20",c(ytdActs,"Break Breads"),"","Break Breads")
-      +retentionRow("CTC calls",c(dailyActs,CTC_TYPE),c(weekActs,CTC_TYPE),c(mtdActs,CTC_TYPE),c(ytdActs,CTC_TYPE),"post-close thank you",CTC_TYPE)
-      +retentionRow("Reconnect contacts",0,0,rcContacted.length,"—","tap to see who","__reconnectcontacted__")
-      +'<div style="margin-top:10px;padding:10px 12px;background:'+(atRiskCount>20?"var(--danger-bg)":"var(--success-bg)")+';border-radius:var(--radius-sm);font-size:12px;color:var(--text-2)">'
-      +'<strong style="color:'+(atRiskCount>20?"var(--danger)":"var(--success)")+'">'+atRiskCount+'</strong> agents at risk of going cold (60+ days no touch)'
-      +'</div>'
-      +(function(){
-        const compDaily=notesComplianceStats(dailyActs),compWtd=notesComplianceStats(weekActs),compMtd=notesComplianceStats(mtdActs),compYtd=notesComplianceStats(ytdActs);
-        const pctColor=p=>p>=90?"var(--success)":p>=70?"var(--warning)":"var(--danger)";
-        return'<div style="margin-top:10px;padding:10px 12px;background:var(--surface-2);border-radius:var(--radius-sm);font-size:12px;color:var(--text-2)">'
-          +'<div style="font-weight:600;color:var(--text-1);margin-bottom:6px">Notes compliance <span style="font-weight:400;color:var(--text-4);font-size:10px">% of Talk-to/Cold Call/CTC/Birthday/Check-in activities with an adequate note</span></div>'
-          +'<div style="display:flex;gap:14px;flex-wrap:wrap">'
-          +'<span>Today: <strong style="color:'+pctColor(compDaily.pct)+'">'+compDaily.pct+'%</strong></span>'
-          +'<span>WTD: <strong style="color:'+pctColor(compWtd.pct)+'">'+compWtd.pct+'%</strong></span>'
-          +'<span>MTD: <strong style="color:'+pctColor(compMtd.pct)+'">'+compMtd.pct+'%</strong> <span style="color:var(--text-4)">('+compMtd.passing+'/'+compMtd.total+')</span></span>'
-          +'<span>YTD: <strong style="color:'+pctColor(compYtd.pct)+'">'+compYtd.pct+'%</strong></span>'
-          +'</div></div>';
-      })();
-    }catch(e){ console.error("Retention grid render error:",e); }
-
-    // ── TRENDS: Month-over-month ─────────────────────────────────
-    try{
-    const prevMonthName=prevMonthStart.toLocaleString("en-US",{month:"long"});
-    const thisMonthName=now.toLocaleString("en-US",{month:"long"});
-    const momCard=document.getElementById("danielMomCard");
-    const momEl=document.getElementById("danielMom");
-    if(momEl&&momCard){
-      const trendRow=(label,prev,curr,goal,clickable)=>{
-        const diff=curr-prev;
-        const trend=diff>0?'<span style="color:var(--success);font-weight:700">▲'+diff+'</span>':diff<0?'<span style="color:var(--danger);font-weight:700">▼'+Math.abs(diff)+'</span>':'<span style="color:var(--text-4)">—</span>';
-        const pct=goal?'<span style="font-size:11px;color:'+(curr>=goal?"var(--success)":curr/goal>=.6?"var(--brand)":"var(--danger)")+'">'+Math.round(curr/goal*100)+'%</span>':"";
-        const clickAttr=clickable?' onclick="showUniqueAgentsModal(\'mtd\')" style="cursor:pointer"':"";
-        return'<div'+clickAttr+' style="display:grid;grid-template-columns:1.4fr 60px 70px 60px 70px;gap:10px;align-items:center;padding:8px 0;border-bottom:1px solid var(--border-light);font-size:13px">'
-          +'<span style="font-weight:500;color:var(--text-1)">'+label+(clickable?' <span style="font-size:10px;color:var(--text-4);text-decoration:underline">(view)</span>':'')+'</span>'
-          +'<span style="text-align:center;color:var(--text-3)">'+prev+'</span>'
-          +'<span style="text-align:center;font-weight:600;color:var(--text-1)">'+curr+(goal?'<span style="font-size:10px;color:var(--text-4)">/'+goal+'</span>':'')+'</span>'
-          +'<span style="text-align:center">'+trend+'</span>'
-          +'<span style="text-align:right">'+pct+'</span>'
-          +'</div>';
-      };
-      momEl.innerHTML='<div style="display:grid;grid-template-columns:1.4fr 60px 70px 60px 70px;gap:10px;padding-bottom:8px;border-bottom:2px solid var(--border);margin-bottom:4px">'
-        +'<span style="font-size:10px;font-weight:700;color:var(--text-4);text-transform:uppercase;letter-spacing:.5px"></span>'
-        +'<span style="font-size:10px;font-weight:700;color:var(--text-4);text-align:center;text-transform:uppercase;letter-spacing:.5px">'+prevMonthName.slice(0,3)+'</span>'
-        +'<span style="font-size:10px;font-weight:700;color:var(--text-1);text-align:center;text-transform:uppercase;letter-spacing:.5px">'+thisMonthName.slice(0,3)+'</span>'
-        +'<span style="font-size:10px;font-weight:700;color:var(--text-4);text-align:center;text-transform:uppercase;letter-spacing:.5px">Change</span>'
-        +'<span style="font-size:10px;font-weight:700;color:var(--text-4);text-align:right;text-transform:uppercase;letter-spacing:.5px">vs Goal</span>'
-        +'</div>'
-        +trendRow("New meetings",c(prevActs,"New Realtor Meeting"),mtdMeetings,RM_TEAM_GOALS.teamNew)
-        +trendRow("Cold calls",c(prevActs,"Cold Calls"),c(mtdActs,"Cold Calls"),500)
-        +trendRow("Agent Talk-to's",cntTalkTo(prevActs),cntTalkTo(mtdActs),400)
-        +trendRow("Break breads",c(prevActs,"Break Breads"),c(mtdActs,"Break Breads"),20)
-        +trendRow("Unique agents touched",uniq(prevActs),uniq(mtdActs),null,true)
-        +trendRow("CTC calls",c(prevActs,CTC_TYPE),c(mtdActs,CTC_TYPE),null);
-      momCard.style.display="block";
-    }
-    }catch(e){ console.error("Trends render error:",e); }
-  }catch(e){console.error("loadDaniel outer error:",e);}
-
-  // ── FOLLOW-UPS ───────────────────────────────────────────────────
-  try{
-    const todayStr=today();
-    const[fus,overdue]=await Promise.all([
-      sbFetch("amanda_activities?select=agent_name,act_type,follow_up_date&follow_up_date=gte."+todayStr+"&follow_up_date=lte."+week.end+"&order=follow_up_date.asc&limit=8"),
-      sbFetch("amanda_activities?select=id,agent_name,act_type,follow_up_date&follow_up_date=lt."+todayStr+"&follow_up_date=not.is.null&order=follow_up_date.desc&limit=4")
-    ]);
-    const all=[...overdue,...fus];
-    document.getElementById("danielFollowups").innerHTML=all.length?all.map(f=>{
-      const isOvr=f.follow_up_date<todayStr,c2=isOvr?"var(--danger)":"var(--brand)";
-      return'<div class="fu-item"><div class="fu-dot" style="background:'+c2+'"></div><div class="fu-body"><div class="fu-name">'+properCase(f.agent_name)+'</div><div class="fu-meta">'+badgeEmoji(f.act_type)+'</div></div><div class="fu-date" style="color:'+c2+'">'+(isOvr?"Overdue":fmtDate(f.follow_up_date))+'</div></div>';
-    }).join(""):'<div class="no-data" style="padding:16px">No follow-ups due</div>';
-  }catch(e){console.error(e);}
-
-  // ── AT RISK ──────────────────────────────────────────────────────
-  try{
-    const[agts,acts2,lpCalls2,removedReconnect2]=await Promise.all([
-      sbFetch("agent_profiles?select=agent_name,retained,tier,do_not_contact,relationship_status,relationship_type&limit=2000").catch(()=>sbFetch("agent_profiles?select=agent_name,retained,tier,do_not_contact&limit=2000")),
-      sbFetch("amanda_activities?select=agent_name,act_date,outcome,act_type&order=act_date.desc&limit=3000"),
-      sbFetch("call_logs?select=agent_name,call_date,outcome&order=call_date.desc&limit=3000").catch(()=>[]),
-      sbFetch(RC_TABLE+"?select=agent_name,status&status=eq.removed&limit=2000").catch(()=>[])
-    ]);
-    const removedDanielKeys=new Set((removedReconnect2||[]).map(r=>(r.agent_name||"").trim().toLowerCase()).filter(Boolean));
-    const ls={};
-    // Use the same meaningful-contact classifier as Going Quiet/Partner Health. A voicemail,
-    // no-answer or blank outcome should not keep someone off the At Risk list.
-    acts2.forEach(a=>{const n=(a.agent_name||"").trim().toLowerCase();if(n&&!ls[n]&&isMeaningfulOutcome(a.outcome,NOT_MEANINGFUL_RM_OUTCOMES,a.act_type))ls[n]=a.act_date;});
-    const lsLP={};
-    (lpCalls2||[]).forEach(c=>{const n=(c.agent_name||"").trim().toLowerCase();if(n&&!lsLP[n]&&isMeaningfulOutcome(c.outcome,NOT_MEANINGFUL_LP_OUTCOMES))lsLP[n]=c.call_date;});
-    const now3=new Date();
-    // Same tiered cadence as Snapshot — A-tier checked on far more often than C-tier
-    const TIER_TOUCH_THRESHOLD2={A:21,B:35,C:60};
-    const TIER_URGENT_THRESHOLD2={A:35,B:55,C:90};
-    const quiet=(agts||[]).filter(a=>a.retained&&a.do_not_contact!==true&&a.relationship_status!=="inactive"&&!v76IsStrategicPartner(a.agent_name,a)&&!removedDanielKeys.has((a.agent_name||"").trim().toLowerCase())).map(a=>{
-      const name=(a.agent_name||"").trim();if(!name)return null;
-      const last=ls[name.toLowerCase()];
-      const lastLP=lsLP[name.toLowerCase()];
-      const days=last?Math.round((now3-new Date(last+"T12:00:00"))/86400000):null;
-      const daysLP=lastLP?Math.round((now3-new Date(lastLP+"T12:00:00"))/86400000):null;
-      // Whichever channel (RM or LP) touched them most recently — an active LP relationship
-      // should count toward keeping an agent off this list, not just show as a side note.
-      const daysAny=(days===null&&daysLP===null)?null:Math.min(days===null?Infinity:days,daysLP===null?Infinity:daysLP);
-      const tier=a.tier||null;
-      const threshold=TIER_TOUCH_THRESHOLD2[tier]||21;
-      const urgentThreshold=TIER_URGENT_THRESHOLD2[tier]||35;
-      return{name,days,daysLP,daysAny,tier,threshold,urgentThreshold};
-    }).filter(Boolean).filter(r=>r.daysAny===null||r.daysAny>=r.threshold)
-      .sort((a,b)=>(a.daysAny===null?-1:b.daysAny===null?1:b.daysAny-a.daysAny));
-    document.getElementById("danielQuiet").innerHTML=quiet.length?quiet.map(r=>{
-      const isUrgent=r.daysAny===null||r.daysAny>=r.urgentThreshold,c3=isUrgent?"var(--danger)":"var(--warning)";
-      const label=r.days===null?"No RM activity logged":r.days+"d since last RM touch";
-      const lpLabel2=r.daysLP!==null?' · LP '+r.daysLP+'d ago':' · LP: no calls logged';
-      const tierLabel2=r.tier==="Channel"?"Channel":r.tier+"-tier";
-      const tierBadge2=r.tier?' <span style="font-size:9px;padding:1px 6px;background:var(--surface-2);color:var(--text-2);border-radius:20px;font-weight:600">'+tierLabel2+' · '+r.threshold+'d cadence</span>':"";
-      return'<div class="fu-item"><div class="fu-dot" style="background:'+c3+'"></div><div class="fu-body"><div class="fu-name">'+properCase(r.name)+tierBadge2+'</div><div class="fu-meta" style="color:'+c3+'">'+label+lpLabel2+'</div></div></div>';
-    }).join(""):'<div class="no-data" style="padding:16px">No retained agents overdue for their tier\'s cadence</div>';
-  }catch(e){console.error(e);}
+  // RETIRED: the live Director experience is the RMX Management View.
+  // The legacy renderer targeted DOM nodes that no longer exist and could finish
+  // after RMX mounted, then throw on null.innerHTML and destabilize the page.
+  return;
 }
 
 // FINAL TIER MODEL — Daniel Sa direction, 2026-08-20.
@@ -13774,7 +13430,7 @@ async function loadBreakBreadDue(){
       sbFetch('amanda_activities?select=agent_name,act_date,notes&act_type=eq.Break Breads&order=act_date.desc&limit=4000').catch(()=>[]),
       sbFetch('break_breads?select=agent_name,date,logged_by,notes&order=date.desc&limit=4000').catch(()=>[]),
       sbFetch('agent_assignments?select=agent_name,lp,rm&limit=5000').catch(()=>[]),
-      sbFetch('face_time_events?select=*&status=eq.scheduled&event_date=gte.'+today()+'&order=event_date.asc,event_time.asc&limit=1000').catch(()=>[])
+      Promise.resolve([]) /* legacy face_time_events table is not installed */
     ]);
     const normalize=s=>(s||'').trim().toUpperCase();
     const inactiveKeys=new Set((profiles||[]).filter(p=>p&&(p.do_not_contact===true||String(p.relationship_status||'active').toLowerCase()==='inactive'||p.display_name===HIDDEN_PROFILE_MARKER)).map(p=>normalize(p.agent_name)));
@@ -16748,7 +16404,7 @@ window.rmAuditVisibleButtons=function(){
     var box=document.getElementById('v181CalendarUrgent'),rowsEl=document.getElementById('v181CalendarUrgentRows');if(!box||!rowsEl)return;
     try{
       var d=typeof today==='function'?today():new Date().toISOString().slice(0,10);
-      var rows=await sbFetch('face_time_events?select=id,agent_name,event_date,event_time,lp,rm,notes,status&status=eq.scheduled&event_date=eq.'+d+'&order=event_time.asc&limit=200').catch(()=>[]);
+      var rows=[]; /* legacy face_time_events table is not installed */
       var bad=(rows||[]).filter(function(ev){
         if(v181CalendarConfirmed(ev))return false;
         if(!/amanda/i.test(String(ev.rm||'')))return false;
@@ -16832,7 +16488,7 @@ window.rmAuditVisibleButtons=function(){
       read('agent_profiles?select=*&limit=5000'),
       read('agent_assignments?select=*&limit=5000'),
       read('outreach_prospects?select=*&order=follow_up_date.asc.nullslast&limit=5000'),
-      read('face_time_events?select=*&limit=5000'),
+      Promise.resolve([]) /* legacy face_time_events table is not installed */,
       read('break_breads?select=*&limit=5000'),
       read((typeof RC_TABLE!=='undefined'?RC_TABLE:'reconnect_agents')+'?select=*&limit=5000')
     ]);
@@ -17422,7 +17078,7 @@ window.rmAuditVisibleButtons=function(){
       safeFetch('call_logs?flag_rm=eq.true&select=id,agent_name,lp,call_date,note,outcome,rm_note,rm_note_at&order=call_date.desc&limit=100',10000),
       safeFetch('rm_director_insights?status=eq.open&select=id,agent_name,submitted_by,insight_type,priority,note,created_at,status&order=created_at.desc&limit=250',10000),
       safeFetch('outreach_prospects?select=*&order=follow_up_date.asc.nullslast&limit=1500',10000),
-      safeFetch('face_time_events?select=*&status=eq.scheduled&event_date=gte.'+todayS()+'&order=event_date.asc,event_time.asc&limit=1000',10000)
+      Promise.resolve([]) /* legacy face_time_events table is not installed */
     ]);
 
     const amap=ownerMap(assignRows);
@@ -17535,10 +17191,39 @@ window.rmAuditVisibleButtons=function(){
  function pct(a,t){return t?Math.min(100,Math.round(a/t*100)):0}
  function scorePts(a,t,w){return t?Math.min(w,a/t*w):0}
  function actionBtns(name){const n=encodeURIComponent(String(name||''));return '<div class="rmx-actions"><button class="rmx-btn small primary" data-rmx-action="log" data-agent="'+n+'">Log</button><button class="rmx-btn small" data-rmx-action="history" data-agent="'+n+'">History</button><button class="rmx-btn small" data-rmx-action="schedule" data-agent="'+n+'">Schedule</button><button class="rmx-btn small" data-rmx-action="update" data-agent="'+n+'">Update</button></div>'}
- function nav(){return [['snapshot','⌂','Snapshot'],['myday','▣','My Day'],['amanda','♙','Amanda'],['tier','↗','Tier Growth'],['portfolio','▢','Portfolio'],['communication','▱','LP / RM Handoffs'],['reports','▤','Reports & History'],['admin','⚙','Admin / Tools']]}
+ function nav(){return [['snapshot','⌂','Snapshot'],['myday','▣','My Day'],['amanda','♙','Amanda Tracker'],['tier','↗','Tier Growth'],['portfolio','▢','Portfolio'],['communication','▱','LP / RM Handoffs'],['reports','▤','Reports & History'],['admin','⚙','Admin / Tools']]}
  function identity(){let src='';try{src=localStorage.getItem('rm_profile_photo_nyny')||''}catch(e){}if(!src){const av=$('v95NynyAvatar');src=av&&av.src?av.src:''}const h=new Date().getHours(),g=h<12?'Good morning':h<17?'Good afternoon':'Good evening';return '<div class="rmx-identity">'+(src?'<img class="rmx-avatar" id="rmxNynyAvatar" src="'+src+'">':'<div class="rmx-avatar" id="rmxNynyAvatarFallback" style="display:flex;align-items:center;justify-content:center;font-weight:800">N</div>')+'<div><div class="rmx-greet">'+g+', Nyny</div><div class="rmx-role">Director of Client Experience</div><div class="rmx-sub" id="rmxHeadSub">Loading your snapshot…</div><button class="rmx-photo" onclick=\"v95ChoosePhoto(\'nyny\')\">Change photo</button></div></div>'}
  function boot(){const view=$('view-daniel');if(!view)return;view.style.removeProperty('display');view.classList.add('rmx-on');let app=$('rmxApp');if(app&&!view.contains(app)){try{app.remove()}catch(e){}app=null}if(!app){app=document.createElement('div');app.id='rmxApp';view.appendChild(app)}app.innerHTML='<div class="rmx-shell"><aside class="rmx-side"><div class="rmx-brand"><div class="rmx-brand-icon">♧</div><div><strong>RM TRACKER</strong><span>Management View</span></div></div><nav class="rmx-nav">'+nav().map(n=>'<button data-rmx="'+n[0]+'"><span class="ico">'+n[1]+'</span>'+n[2]+'</button>').join('')+'</nav></aside><main class="rmx-main"><header class="rmx-head">'+identity()+'<div class="rmx-date"><span>▣</span><span>'+new Date(todayS()+'T12:00:00').toLocaleDateString(undefined,{month:'short',day:'numeric',year:'numeric'})+'</span><button class="rmx-btn" id="rmxRefresh">Refresh</button></div></header><div id="rmxContent"></div></main></div>';wireDirectorRouting();const rr=$('rmxRefresh');if(rr)rr.onclick=()=>{R.cache=null;R.ts=0;go(R.route,true)};go(R.route||'snapshot')}
- async function go(route,force){R.route=route;document.body.classList.add('rmx-director-active');wireDirectorRouting();document.querySelectorAll('.rmx-nav button').forEach(b=>b.classList.toggle('active',b.dataset.rmx===route));const c=$('rmxContent');if(!c)return;c.innerHTML=loading();try{const d=await load(!!force);c.innerHTML='';if(route==='snapshot')renderSnapshot(c,d);else if(route==='myday')renderMyDay(c,d);else if(route==='amanda')renderAmanda(c,d);else if(route==='tier')renderTier(c,d);else if(route==='portfolio')renderPortfolio(c,d);else if(route==='communication')renderComm(c,d);else if(route==='reports')renderReports(c,d);else if(route==='admin')renderAdmin(c,d);else renderSnapshot(c,d);if(!String(c.textContent||'').trim())c.innerHTML=empty('This section has no current items.');}catch(e){console.error('RMX',e);c.innerHTML=err(e)}}
+ async function go(route,force){
+  R.route=route;
+  document.body.classList.add('rmx-director-active');
+  wireDirectorRouting();
+  document.querySelectorAll('.rmx-nav button').forEach(b=>b.classList.toggle('active',b.dataset.rmx===route));
+  const c=$('rmxContent');if(!c)return;
+
+  // Amanda's real tracker is isolated from the Director DOM/CSS in a same-origin frame.
+  // This prevents the Director route from hiding #view-week after it briefly paints.
+  if(route==='amanda'){
+    c.innerHTML='';
+    renderAmanda(c,null);
+    return;
+  }
+
+  c.innerHTML=loading();
+  try{
+    const d=await load(!!force);
+    c.innerHTML='';
+    if(route==='snapshot')renderSnapshot(c,d);
+    else if(route==='myday')renderMyDay(c,d);
+    else if(route==='tier')renderTier(c,d);
+    else if(route==='portfolio')renderPortfolio(c,d);
+    else if(route==='communication')renderComm(c,d);
+    else if(route==='reports')renderReports(c,d);
+    else if(route==='admin')renderAdmin(c,d);
+    else renderSnapshot(c,d);
+    if(!String(c.textContent||'').trim())c.innerHTML=empty('This section has no current items.');
+  }catch(e){console.error('RMX',e);c.innerHTML=err(e)}
+ }
  window.rmxGo=(route,force)=>go(route,!!force);window.rmxOpenAmanda=()=>go('amanda',false);window.rmxRefreshCache=()=>{R.cache=null;R.ts=0;return go(R.route||'snapshot',true)};
  function wireDirectorRouting(){const app=$('rmxApp');if(!app||app.dataset.routingWired==='1')return;app.dataset.routingWired='1';app.addEventListener('click',function(e){const target=e.target.closest('[data-rmx-jump]');if(target){e.preventDefault();e.stopPropagation();go(target.dataset.rmxJump);return}const navBtn=e.target.closest('[data-rmx]');if(navBtn){e.preventDefault();e.stopPropagation();go(navBtn.dataset.rmx)}})}
  function title(c,h,p){c.innerHTML='<div class="rmx-title"><h1>'+h+'</h1><p>'+p+'</p></div>'}
@@ -17657,95 +17342,75 @@ window.rmAuditVisibleButtons=function(){
       '<div class="rmx-list">'+(rows.length?rows.slice(0,40).map(p=>'<div class="rmx-row" data-name="'+esc(p.agent_name)+'"><div><div class="name">'+esc(p.display_name||p.agent_name)+' <span class="rmx-pill">'+p._tier+'</span>'+(p.competitor_risk_flag?'<span class="rmx-pill red">RISK</span>':'')+'</div><div class="meta">'+(p.next_growth_opportunity?'Next move: '+esc(p.next_growth_opportunity):'Portfolio gap: no next growth move documented')+'</div></div><div class="meta">'+(dueNames.has(key(p.agent_name))?'Follow-up due/overdue':'Relationship work')+'</div>'+actionBtns(p.agent_name)+'</div>').join(''):empty('No Nyny-owned A/B/Channel relationships are currently surfaced.'))+'</div>')+'</div>';
   wireSearch('rmxMySearch','#rmxMyRows .rmx-row')
 }
+ function rmxAmandaUrl(){
+  try{
+    const u=new URL(window.location.href);
+    u.hash='';
+    u.searchParams.delete('director');
+    if(/\/director\.html$/i.test(u.pathname))u.pathname=u.pathname.replace(/director\.html$/i,'');
+    return u.toString();
+  }catch(e){return './'}
+ }
  function renderAmanda(c,d){
-  title(c,'Amanda','Current RM execution, required conversion work, Portfolio Execution and transaction follow-up.');
+  title(c,'Amanda Tracker','Live view of Amanda’s actual working tracker — not a recreated Management summary.');
+  const src=rmxAmandaUrl();
+  c.innerHTML+='<section class="rmx-amanda-shell">'
+    +'<div class="rmx-amanda-toolbar"><div><b>Live Amanda workspace</b><span>This is Amanda’s real Today tracker and tabs, using the same shared data.</span></div>'
+    +'<button class="rmx-btn" type="button" onclick="document.getElementById(\'rmxAmandaFrame\').contentWindow.location.reload()">Refresh Amanda</button></div>'
+    +'<iframe id="rmxAmandaFrame" class="rmx-amanda-frame" title="Amanda RM Tracker" src="'+esc(src)+'" loading="eager"></iframe>'
+    +'</section>';
+ }
 
-  const tod=todayS();
-  const wk=wstart();
-  const monthStart=tod.slice(0,7)+'-01';
-
-  const aToday=(d.recent||[]).filter(a=>String(a.act_date||'')===tod&&isAmanda(a));
-  const aWeek=(d.recent||[]).filter(a=>String(a.act_date||'')>=wk&&isAmanda(a));
-  const aMonth=(d.recent||[]).filter(a=>String(a.act_date||'')>=monthStart&&isAmanda(a));
-
-  const coldToday=coldCount(aToday);
-  const talkToday=talkCount(aToday);
-  const meetingsMonth=aMonth.filter(a=>String(a.act_type||'')==='New Realtor Meeting').length;
-  const conversion=rmxConversion(d);
-  const portfolio=rmxPortfolioExecution(d);
-  const txn=rmxTxn(d);
-
-  const dueFollowups=(d.due||[]).filter(a=>isAmanda(a));
-  const handoffs=(d.flags||[]).filter(f=>{
-    const st=String(f.status||f.resolution_status||'open').toLowerCase();
-    return !['closed','resolved','complete','completed'].includes(st);
+ function renderTier(c,d){
+  title(c,'Tier Growth','Live Channel / A / B / C roster. Click a tier to see the actual relationships behind the count.');
+  const source=(d.prod&&d.prod.length?d.prod:d.profiles)||[];
+  const groups={Channel:[],A:[],B:[],C:[]};
+  source.forEach(p=>{
+    const t=p._tier||tier(p.closes_past_year,p.total_leads_past_year);
+    if(groups[t])groups[t].push(p);
   });
+  Object.keys(groups).forEach(t=>groups[t].sort((a,b)=>String(a.display_name||a.agent_name||'').localeCompare(String(b.display_name||b.agent_name||''))));
 
-  let html='';
-
-  html+='<div class="rmx-kpis">'
-    +kpi('Cold Calls',coldToday+' / 25',(25-coldToday)+' left today','cold')
-    +kpi('Talk-to’s',talkToday+' / 20',(20-talkToday)+' left today','talk')
-    +kpi('New Realtor Meetings',meetingsMonth+' / 20',Math.max(0,20-meetingsMonth)+' left this month','meet')
-    +kpi('Week 1–4',String(conversion.outstanding||0),(conversion.overdue||0)+' overdue','conversion')
-    +kpi('Portfolio Execution',String(portfolio.missing?.length||portfolio.missing||0),'meaningful touches missing update','portfolio')
+  c.innerHTML+='<div class="rmx-grid">'
+    +stat('Channel',groups.Channel.length,'10+ closes · top relationship tier',groups.Channel.length?'rmx-good':'','tier')
+    +stat('A',groups.A.length,'4–9 closes',groups.A.length?'rmx-good':'','tier')
+    +stat('B',groups.B.length,'2–3 closes',groups.B.length?'rmx-watch':'','tier')
+    +stat('C',groups.C.length,'1 close or lead activity',groups.C.length?'':'','tier')
     +'</div>';
 
-  html+=card('Amanda execution right now',
-    '<div class="rmx-list">'
-      +row('Cold Calls',coldToday>=25?'Complete':(25-coldToday)+' left today')
-      +row('Talk-to’s',talkToday>=20?'Complete':(20-talkToday)+' left today')
-      +row('New Realtor Meetings',meetingsMonth+' / 20 MTD')
-      +row('Week 1–4 conversion',(conversion.outstanding||0)+' touches still required')
-      +row('Portfolio Execution',(portfolio.missing?.length||portfolio.missing||0)+' relationship updates missing')
-      +row('Transaction calls',(txn.open||txn.outstanding||0)+' requiring follow-up')
+  c.innerHTML+='<div class="rmx-tabs" id="rmxTierTabs">'
+    +['Channel','A','B','C'].map((t,i)=>'<button type="button" class="'+(i===0?'active':'')+'" data-tier="'+t+'">'+t+' · '+groups[t].length+'</button>').join('')
     +'</div>'
-  );
+    +'<input class="rmx-search" id="rmxTierSearch" placeholder="Search this tier by agent, owner, LP, brokerage or next move…">'
+    +'<div id="rmxTierRows"></div>';
 
-  // Today's actual activity detail
-  const todayRows=aToday.slice().sort((a,b)=>String(b.created_at||b.act_date||'').localeCompare(String(a.created_at||a.act_date||'')));
-  html+=card('Today’s logged activity',
-    todayRows.length
-      ? '<div class="rmx-table-wrap"><table class="rmx-table"><thead><tr><th>Agent</th><th>Activity</th><th>Outcome</th><th>Next follow-up</th></tr></thead><tbody>'
-        +todayRows.map(a=>'<tr><td>'+esc(a.agent_name||'')+'</td><td>'+esc(a.act_type||'')+'</td><td>'+esc(a.outcome||'')+'</td><td>'+esc(a.follow_up_date||'—')+'</td></tr>').join('')
-        +'</tbody></table></div>'
-      : empty('Amanda has no logged activity today.')
-  );
-
-  // Conversion campaigns
-  html+=card('New Realtor Meeting · Weeks 1–4',
-    conversion.campaigns&&conversion.campaigns.length
-      ? '<div class="rmx-list">'+conversion.campaigns.slice(0,12).map(x=>{
-          const next=x.next;
-          return row(x.name,next?('Week '+next.w+' · due '+next.due+(next.overdue?' · OVERDUE':'')):'4 weeks complete');
-        }).join('')+'</div>'
-      : empty('No active 4-week conversion campaigns.')
-  );
-
-  // Portfolio execution details
-  const missingNames=Array.isArray(portfolio.missing)?portfolio.missing:[];
-  html+=card('Portfolio Execution',
-    missingNames.length
-      ? '<div class="rmx-list">'+missingNames.map(x=>row(typeof x==='string'?x:(x.name||x.agent_name||'Relationship'),'Meaningful conversation needs Portfolio update')).join('')+'</div>'
-      : empty('No Portfolio Execution updates are missing.')
-  );
-
-  // Follow-ups / handoffs
-  html+='<div class="rmx-two">'
-    +card('Amanda follow-ups',
-      dueFollowups.length
-        ? '<div class="rmx-list">'+dueFollowups.slice(0,15).map(a=>row(a.agent_name||'Agent',(a.follow_up_date||'Due')+' · '+(a.act_type||'Follow-up'))).join('')+'</div>'
-        : empty('No overdue Amanda follow-ups.')
-    )
-    +card('LP / RM handoffs',
-      handoffs.length
-        ? '<div class="rmx-list">'+handoffs.slice(0,15).map(f=>row(f.agent_name||f.agent||'Agent',f.note||f.reason||'Open handoff')).join('')+'</div>'
-        : empty('No open LP / RM handoffs.')
-    )
-    +'</div>';
-
-  c.innerHTML+=html;
-}
+  let active='Channel';
+  function paint(){
+    const rows=groups[active]||[];
+    const host=$('rmxTierRows');if(!host)return;
+    host.innerHTML=rows.length?'<div class="rmx-list">'+rows.map(p=>{
+      const own=p._assign||{};
+      const meta=[
+        'RM: '+(own.rm||'Unassigned'),
+        'LP: '+(own.lp||'Unassigned'),
+        p.brokerage||p.team||p.company||'',
+        p.next_growth_opportunity?'Next move: '+p.next_growth_opportunity:'No next move documented'
+      ].filter(Boolean).join(' · ');
+      return '<div class="rmx-row" data-name="'+esc(p.agent_name||'')+'"><div><div class="name">'+esc(p.display_name||p.agent_name||'Agent')+' <span class="rmx-pill">'+active+'</span></div><div class="meta">'+esc(meta)+'</div></div><div class="meta">'+esc(String(p.closes_past_year||0))+' closes · '+esc(String(p.total_leads_past_year||0))+' leads</div>'+actionBtns(p.agent_name||'')+'</div>';
+    }).join('')+'</div>':empty('No active relationships are in '+active+' right now.');
+    wireSearch('rmxTierSearch','#rmxTierRows .rmx-row');
+    const input=$('rmxTierSearch');if(input){const ev=new Event('input');input.dispatchEvent(ev)}
+  }
+  document.querySelectorAll('#rmxTierTabs button').forEach(btn=>{
+    btn.onclick=()=>{
+      active=btn.dataset.tier;
+      document.querySelectorAll('#rmxTierTabs button').forEach(b=>b.classList.toggle('active',b===btn));
+      const q=$('rmxTierSearch');if(q)q.value='';
+      paint();
+    };
+  });
+  paint();
+ }
  function renderPortfolio(c,d){
   title(c,'Portfolio','Same relationship records Amanda updates during Portfolio Execution — ownership, health signals, growth moves and risk.');
   const plans=d.profiles.filter(p=>String(p._assign.rm||'').toLowerCase()==='nyny'&&['Channel','A','B'].includes(p._tier)&&!String(p.next_growth_opportunity||'').trim());
@@ -17928,7 +17593,14 @@ window.rmxAdminRemoveAgent=async function(name){
 
 <script id="v211-final-director-route-js">
 (function(){
- function isDirector(){try{return location.hash==='#director'||new URLSearchParams(location.search).get('director')==='1'}catch(e){return false}}
+ function isDirector(){
+  try{
+    if(typeof window.directorMode==='function')return !!window.directorMode();
+    const p=new URLSearchParams(location.search||'');
+    const path=String(location.pathname||'').toLowerCase();
+    return /\/director(?:\.html)?$/.test(path)||location.hash==='#director'||p.get('director')==='1';
+  }catch(e){return false}
+ }
  function ensureView(){let v=document.getElementById('view-daniel');if(v)return v;v=document.createElement('div');v.id='view-daniel';v.className='view';const host=document.querySelector('.app')||document.body;host.appendChild(v);return v}
  function apply(){
    const dir=isDirector();
