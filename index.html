@@ -4244,7 +4244,15 @@ async function init(){
 // FIX (2026-08-19): init() was defined but never invoked anywhere in the file, so none of the
 // core data (Week, Follow-ups, Feed, Management, Quiet, Flagged, Onboarding, Start Here,
 // connection status, offline queue, scorecard) ever loaded on page open. Restoring the bootstrap call.
-if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",()=>setTimeout(init,300),{once:true});else setTimeout(init,200);
+if(document.readyState==="loading"){
+  document.addEventListener("DOMContentLoaded",()=>{
+    const isDirector=location.hash==="#director"||new URLSearchParams(location.search).get("director")==="1";
+    if(!isDirector)setTimeout(init,300);
+  },{once:true});
+}else{
+  const isDirector=location.hash==="#director"||new URLSearchParams(location.search).get("director")==="1";
+  if(!isDirector)setTimeout(init,200);
+}
 
 // ── Snooze — lets Priority Touches respect a real decision instead of nagging daily ──
 // Writes to a "snoozes" Supabase table when it exists (so it syncs across devices), and always
@@ -17263,7 +17271,18 @@ window.rmAuditVisibleButtons=function(){
  function tier(c,l){c=Number(c||0);l=Number(l||0);return c>=10?'Channel':c>=4?'A':c>=2?'B':(c>=1||l>=1)?'C':null}
  function milestone(){const n=new Date(todayS()+'T12:00:00');return R.targets.find(t=>n<=new Date(t.date+'T23:59:59'))||R.targets[R.targets.length-1]}
  function ownerOf(a){try{const m=typeof extractRmMeta==='function'?extractRmMeta(a.notes||''):null;return m&&m.owner?m.owner:'Amanda'}catch(e){return 'Amanda'}}
- function isAmanda(a){try{return typeof isAmandaDailyActivity==='function'?isAmandaDailyActivity(a):ownerOf(a)!=='Nyny'}catch(e){return ownerOf(a)!=='Nyny'}}
+ function isAmanda(a){
+  try{
+    if(typeof isAmandaDailyActivity==='function')return isAmandaDailyActivity(a);
+  }catch(e){}
+  try{
+    const meta=typeof extractRmMeta==='function'?extractRmMeta(a&&a.notes||''):null;
+    if(meta&&Array.isArray(meta.rmAttendees))return meta.rmAttendees.includes('Amanda');
+    return !meta||meta.owner!=='Nyny';
+  }catch(e){
+    return ownerOf(a)!=='Nyny';
+  }
+}
  function meaning(a){const o=String(a.outcome||'').toLowerCase();return !/no answer|voicemail|left vm|left voicemail/.test(o)}
 
  function actDate(a){return a&&(a.act_date||a.created_at||a.updated_at)||''}
@@ -17306,69 +17325,139 @@ window.rmAuditVisibleButtons=function(){
     'Co-Marketing Discussion','New Agent Follow-up','Closed Deal Thank You',
     'Partner Meeting','Break Breads','Retention Meeting'
   ]);
-  return (rows||[]).filter(a=>TYPES.has(String(a&&a.act_type||'').trim())).length
+  return (rows||[]).filter(a=>TYPES.has(String(a&&a.act_type||'').trim())).length;
 }
 
  async function load(force){
   if(!force&&R.cache&&Date.now()-R.ts<30000)return R.cache;
   if(R.promise)return R.promise;
+
   R.promise=(async()=>{
     const since180=(()=>{const x=new Date(todayS()+'T12:00:00');x.setDate(x.getDate()-180);return x.toISOString().slice(0,10)})();
-    const [profiles,assignRows,recent,dueRaw,flags,legacy,insights,prospects,faceTimes]=await Promise.all([
-      safeFetch('agent_profiles?select=agent_name,display_name,tier,powerbi_level,powerbi_last_seen_at,closes_past_year,total_leads_past_year,relationship_status,do_not_contact,relationship_type,strategic_partner_category,next_growth_opportunity,growth_opportunity_deadline,last_meaningful_contact_date,next_meeting_date,latest_lead_date,competitor_risk_flag,high_potential_flag,satisfaction_rating,partner_goals,partner_pain_points,referral_leakage_notes,phone,email,address,birthday,brokerage&limit=5000',8000),
-      safeFetch('agent_assignments?select=agent_name,lp,rm,priority,level,added&limit=5000',7000),
-      safeFetch('amanda_activities?select=id,agent_name,act_type,act_date,outcome,notes,follow_up_date,created_at&act_date=gte.'+since180+'&act_date=lte.'+todayS()+'&order=act_date.desc&limit=5000',8000),
-      safeFetch('amanda_activities?select=id,agent_name,act_type,act_date,outcome,notes,follow_up_date,created_at&follow_up_date=lte.'+todayS()+'&follow_up_date=not.is.null&order=follow_up_date.asc&limit=1200',7000),
-      safeFetch('lp_flags?resolved=eq.false&select=*&order=created_at.desc&limit=200',6000),
-      safeFetch('call_logs?flag_rm=eq.true&select=id,agent_name,lp,call_date,note,outcome,rm_note,rm_note_at&order=call_date.desc&limit=100',6000),
-      safeFetch('rm_director_insights?status=eq.open&select=id,agent_name,submitted_by,insight_type,priority,note,created_at,status&order=created_at.desc&limit=250',6500),
-      safeFetch('outreach_prospects?select=id,agent_name,brokerage,status,follow_up_date,notes&order=follow_up_date.asc.nullslast&limit=1500',6500),
-      safeFetch('face_time_events?select=*&status=eq.scheduled&event_date=gte.'+todayS()+'&order=event_date.asc,event_time.asc&limit=1000',6500)
+
+    // CORE TRUTH FIRST.
+    // Do not use the short safeFetch timeout here. If core data cannot load,
+    // show a real load error instead of rendering fake zeros.
+    const [profiles,assignRows,recent]=await Promise.all([
+      sbFetch('agent_profiles?select=*&limit=5000'),
+      sbFetch('agent_assignments?select=*&limit=5000'),
+      sbFetch('amanda_activities?select=id,agent_name,act_type,act_date,outcome,notes,follow_up_date,created_at&act_date=gte.'+since180+'&act_date=lte.'+todayS()+'&order=act_date.desc&limit=5000')
+    ]);
+
+    if(!Array.isArray(profiles))throw new Error('Portfolio data did not load.');
+    if(!Array.isArray(assignRows))throw new Error('Ownership data did not load.');
+    if(!Array.isArray(recent))throw new Error('Amanda activity data did not load.');
+
+    // OPTIONAL MANAGEMENT DATA SECOND.
+    // These may fail independently without corrupting the core metrics.
+    const [dueRaw,flags,legacy,insights,prospects,faceTimes]=await Promise.all([
+      safeFetch('amanda_activities?select=id,agent_name,act_type,act_date,outcome,notes,follow_up_date,created_at&follow_up_date=lte.'+todayS()+'&follow_up_date=not.is.null&order=follow_up_date.asc&limit=1200',12000),
+      safeFetch('lp_flags?resolved=eq.false&select=*&order=created_at.desc&limit=200',10000),
+      safeFetch('call_logs?flag_rm=eq.true&select=id,agent_name,lp,call_date,note,outcome,rm_note,rm_note_at&order=call_date.desc&limit=100',10000),
+      safeFetch('rm_director_insights?status=eq.open&select=id,agent_name,submitted_by,insight_type,priority,note,created_at,status&order=created_at.desc&limit=250',10000),
+      safeFetch('outreach_prospects?select=*&order=follow_up_date.asc.nullslast&limit=1500',10000),
+      safeFetch('face_time_events?select=*&status=eq.scheduled&event_date=gte.'+todayS()+'&order=event_date.asc,event_time.asc&limit=1000',10000)
     ]);
 
     const amap=ownerMap(assignRows);
     const DIRECTOR_NAMES=new Set(['brian zinn','ingrid correia','lyndsay myers','micah myers','morgan stone']);
     const DIRECTOR_GROUPS=['rockford homes','sam cooper team','thrive'];
 
-    let latest=null;(profiles||[]).forEach(p=>{if(p.powerbi_last_seen_at&&(!latest||new Date(p.powerbi_last_seen_at)>new Date(latest)))latest=p.powerbi_last_seen_at});
+    let latest=null;
+    (profiles||[]).forEach(p=>{
+      if(p.powerbi_last_seen_at&&(!latest||new Date(p.powerbi_last_seen_at)>new Date(latest)))latest=p.powerbi_last_seen_at
+    });
+
     const roster=(profiles||[]).filter(p=>{
       const k=key(p.agent_name);
       const removed=(amap[k]||{}).lp==='__REMOVED__';
-      return !removed&&String(p.relationship_status||'active').toLowerCase()!=='inactive'&&p.do_not_contact!==true&&k!=='__hidden__'
+      return !removed &&
+        String(p.relationship_status||'active').toLowerCase()!=='inactive' &&
+        p.do_not_contact!==true &&
+        k!=='__hidden__';
     });
-    const prod=latest?roster.filter(p=>p.powerbi_last_seen_at&&Math.abs(new Date(p.powerbi_last_seen_at)-new Date(latest))<120000):roster;
+
+    // Use the freshest Power BI snapshot when available. If snapshot timestamps
+    // are absent, use the active roster rather than rendering a zero tier count.
+    let prod=roster;
+    if(latest){
+      const snap=roster.filter(p=>p.powerbi_last_seen_at&&Math.abs(new Date(p.powerbi_last_seen_at)-new Date(latest))<120000);
+      if(snap.length)prod=snap;
+    }
+
     const by={};
     roster.forEach(p=>{
       const k=key(p.agent_name);if(!k)return;
       const copy=Object.assign({},p);
+
       if(k==='addie ashworth'){
         copy.relationship_type='strategic_partner';
         copy.strategic_partner_category='Stager';
       }
-      const group=String(copy.brokerage||'').toLowerCase();
+
+      const group=[
+        copy.brokerage,copy.team,copy.company
+      ].map(x=>String(x||'').toLowerCase()).join(' | ');
+
       if(DIRECTOR_NAMES.has(k)||DIRECTOR_GROUPS.some(g=>group.includes(g))){
         amap[k]=Object.assign({},amap[k]||{agent_name:copy.agent_name},{rm:'Nyny'});
       }
-      if(!by[k]||new Date(copy.powerbi_last_seen_at||0)>new Date(by[k].powerbi_last_seen_at||0))by[k]=copy
+
+      if(!by[k]||new Date(copy.powerbi_last_seen_at||0)>new Date(by[k].powerbi_last_seen_at||0))by[k]=copy;
     });
-    Object.values(by).forEach(p=>{p._tier=tier(p.closes_past_year,p.total_leads_past_year);p._assign=amap[key(p.agent_name)]||{}});
+
+    Object.values(by).forEach(p=>{
+      p._tier=tier(p.closes_past_year,p.total_leads_past_year);
+      p._assign=amap[key(p.agent_name)]||{};
+    });
+
     const prodRows=prod.map(p=>{
       const copy=Object.assign({},p);
       const k=key(copy.agent_name);
-      if(k==='addie ashworth'){copy.relationship_type='strategic_partner';copy.strategic_partner_category='Stager'}
+      if(k==='addie ashworth'){
+        copy.relationship_type='strategic_partner';
+        copy.strategic_partner_category='Stager';
+      }
       copy._tier=tier(copy.closes_past_year,copy.total_leads_past_year);
       copy._assign=amap[k]||{};
-      return copy
+      return copy;
     });
+
+    // IMPORTANT: recent retains the full 180-day activity history needed for
+    // 4-week conversion and relationship logic. acts is only MTD.
     const acts=(recent||[]).filter(a=>String(a.act_date||'')>=mstart());
-    const flagsAll=[...(flags||[]).map(f=>({...f,_src:'lpflag'})),...(legacy||[]).map(f=>({...f,_src:'call',created_at:f.call_date,note:f.note}))];
-    const d={profiles:Object.values(by),prod:prodRows,assigns:amap,acts,recent:recent||[],dueRaw:dueRaw||[],flags:flagsAll,insights:insights||[],latest,prospects:prospects||[],faceTimes:faceTimes||[]};
+
+    const flagsAll=[
+      ...(flags||[]).map(f=>({...f,_src:'lpflag'})),
+      ...(legacy||[]).map(f=>({...f,_src:'call',created_at:f.call_date,note:f.note}))
+    ];
+
+    const d={
+      profiles:Object.values(by),
+      prod:prodRows,
+      assigns:amap,
+      acts,
+      recent:recent||[],
+      dueRaw:dueRaw||[],
+      flags:flagsAll,
+      insights:insights||[],
+      latest,
+      prospects:prospects||[],
+      faceTimes:faceTimes||[]
+    };
+
     d.due=effectiveDue(d);
     d.growthReviews=d.insights.filter(isGrowthReview);
     d.otherInsights=d.insights.filter(x=>!isGrowthReview(x));
+
+    // Core-load sanity markers used by Snapshot so zeros mean zero, not "failed".
+    d._coreLoaded=true;
+    d._activityRows=recent.length;
+    d._profileRows=profiles.length;
     return R.cache=d;
   })().finally(()=>{R.ts=Date.now();R.promise=null});
-  return R.promise
+
+  return R.promise;
 }
  function card(title,sub,body){return '<section class="rmx-card"><h2>'+title+'</h2>'+(sub?'<div class="sub">'+sub+'</div>':'')+body+'</section>'}
  function stat(l,v,f,cls,route){const inner='<div class="lbl">'+l+'</div><div class="val '+(cls||'')+'">'+v+'</div>'+(f?'<div class="foot">'+f+'</div>':'')+(route?'<div class="rmx-openhint">Open details →</div>':'');return route?'<button type="button" class="rmx-stat rmx-stat-click" data-rmx-jump="'+route+'">'+inner+'</button>':'<div class="rmx-stat">'+inner+'</div>'}
