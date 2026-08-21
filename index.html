@@ -8834,8 +8834,12 @@ async function confirmDelete(){
   if(!deletingId)return;
   try{
     if(deletingType==="prospect"){
+      const removedProspect=(typeof allProspects!=="undefined"?(allProspects||[]).find(p=>String(p.id)===String(deletingId)):null);
+      const removedName=removedProspect&&removedProspect.agent_name||"";
       await sbFetch("outreach_prospects?id=eq."+deletingId,{method:"DELETE",prefer:"return=minimal"});
-      toast("Prospect deleted","success");closeConfirm();loadPipeline();
+      if(removedName&&typeof rmProspectTombstone==="function")rmProspectTombstone(removedName,"Deleted by Amanda");
+      toast("Prospect removed from Amanda’s call list","success");closeConfirm();
+      if(typeof rmRefreshProspectTruth==="function")await rmRefreshProspectTruth();else await loadPipeline();
     } else {
       await sbFetch("amanda_activities?id=eq."+deletingId,{method:"DELETE",prefer:"return=minimal"});
       toast("Deleted","success");closeConfirm();loadFeed();loadFollowups();loadWeek();loadManagement();const hv=document.getElementById("historySearch");if(hv&&hv.value.trim().length>=2)doSearchHistory(hv.value.trim());
@@ -10634,13 +10638,25 @@ async function saveProspect(){
   try{
     if(editingProspectId){await sbFetch("outreach_prospects?id=eq."+editingProspectId,{method:"PATCH",prefer:"return=minimal",body:JSON.stringify(payload)});toast("Prospect updated","success");}
     else{await sbFetch("outreach_prospects",{method:"POST",prefer:"return=minimal",body:JSON.stringify(payload)});toast("Prospect added","success");}
-    toggleAddForm(false);loadPipeline();initAutocomplete();
+    if(/^(Excluded|NFM|DNC)$/i.test(payload.status)){
+      if(typeof rmProspectTombstone==="function")rmProspectTombstone(name,payload.status);
+    }else if(typeof rmProspectUntombstone==="function"){
+      rmProspectUntombstone(name);
+    }
+    toggleAddForm(false);
+    if(typeof rmRefreshProspectTruth==="function")await rmRefreshProspectTruth();else await loadPipeline();
+    initAutocomplete();
   }catch(e){toast("Save failed: "+e.message,"error");}
   finally{if(btn){btn.disabled=false;btn.textContent="Save prospect";}}
 }
 async function unmarkDNC(id){
-  try{await sbFetch("outreach_prospects?id=eq."+id,{method:"PATCH",prefer:"return=minimal",body:JSON.stringify({status:"Requires follow-up"})});toast("Reactivated","success");loadPipeline();}
-  catch(e){toast("Error: "+e.message,"error");}
+  try{
+    const p=(typeof allProspects!=="undefined"?(allProspects||[]).find(x=>String(x.id)===String(id)):null);
+    await sbFetch("outreach_prospects?id=eq."+id,{method:"PATCH",prefer:"return=minimal",body:JSON.stringify({status:"Requires follow-up"})});
+    if(p&&typeof rmProspectUntombstone==="function")rmProspectUntombstone(p.agent_name);
+    toast("Reactivated","success");
+    if(typeof rmRefreshProspectTruth==="function")await rmRefreshProspectTruth();else await loadPipeline();
+  }catch(e){toast("Error: "+e.message,"error");}
 }
 
 let editingContactName=null,editingContactOriginalName=null;
@@ -12401,10 +12417,10 @@ async function saveProspectExclude(){
     const stamp="Excluded from Amanda prospecting "+today()+" — "+reason+(detail?" · "+detail:"");
     const notes=[existingNotes,stamp].filter(Boolean).join("\n");
     await sbFetch("outreach_prospects?id=eq."+rows[0].id,{method:"PATCH",prefer:"return=minimal",body:JSON.stringify({status:"Excluded",follow_up_date:null,notes})});
+    if(typeof rmProspectTombstone==="function")rmProspectTombstone(name,"Not a prospect · "+reason);
     closeProspectExcludeModal();
-    _wp18Cache=null;_wp18CacheAt=0;
     toast(name+" removed. Pulling the next eligible prospect now…","success",3500);
-    try{if(typeof loadPipeline==="function")await loadPipeline();}catch(e){}
+    try{if(typeof rmRefreshProspectTruth==="function")await rmRefreshProspectTruth();}catch(e){}
     try{if(typeof v23LoadAmandaSnapshot==="function")await v23LoadAmandaSnapshot(true);}catch(e){}
     try{if(typeof v21LoadDailyPlan==="function"&&v21Date()===today())await v21LoadDailyPlan(true);}catch(e){}
   }catch(e){toast("Could not remove prospect: "+e.message,"error");}
@@ -16315,11 +16331,11 @@ setTimeout(()=>{try{v126SetupReconnectCleanup();v126EnhanceReconnectRows();}catc
         if(!lastAct[k] || String(a.act_date||'')>String(lastAct[k].act_date||''))lastAct[k]=a;
       });
 
-      const blockedStatus=/do not contact|dnc|inactive|removed|converted|closed|not interested/i;
+      const blockedStatus=/do not contact|dnc|inactive|removed|excluded|not a prospect|already\s*(?:with|w\/?)?\s*nfm|\bnfm\b|converted|closed|not interested/i;
       const seen=new Set();
       const eligible=(prospects||[]).filter(p=>{
         const k=key(p.agent_name);
-        if(!k||seen.has(k)||excluded.has(k)||met.has(k)||blockedStatus.test(String(p.status||''))||(typeof rmIsDirectorOwned==='function'&&rmIsDirectorOwned(p.agent_name,p.brokerage,p.team,p.company))||(typeof rmIsStrategicPartner==='function'&&rmIsStrategicPartner(p.agent_name,profilesBy[k])))return false;
+        if(!k||seen.has(k)||excluded.has(k)||met.has(k)||blockedStatus.test(String(p.status||''))||(typeof rmProspectIsTombstoned==='function'&&rmProspectIsTombstoned(p.agent_name))||(typeof rmIsDirectorOwned==='function'&&rmIsDirectorOwned(p.agent_name,p.brokerage,p.team,p.company))||(typeof rmIsStrategicPartner==='function'&&rmIsStrategicPartner(p.agent_name,profilesBy[k])))return false;
         // If this prospect has become an active profile relationship, stop prospecting them.
         const prof=profilesBy[k];
         if(prof && !isRemovedProfile(prof))return false;
@@ -17332,7 +17348,7 @@ window.rmAuditVisibleButtons=function(){
       lines.push('Note: '+val('v175TxFileNote'));
     }
 
-    return lines.join('\\n');
+    return lines.join('\n');
   };
   window.v176UpdateWhatsApp=function(){const e=document.getElementById('v175TxWhatsAppPreview');if(e)e.value=v176BuildWhatsApp()};
   window.v176CopyWhatsApp=async function(){
@@ -17598,6 +17614,38 @@ window.rmAuditVisibleButtons=function(){
   window.wp37CancelPartnerCheckin=function(){
     if(typeof wp37PendingPartnerSave!=='undefined'&&wp37PendingPartnerSave&&wp37PendingPartnerSave.resumeKind==='v177')pendingInlineTouch=null;
     return typeof priorCancel==='function'?priorCancel.apply(this,arguments):undefined;
+  };
+})();
+</script>
+
+
+<script id="v178-prospect-source-truth">
+(function(){
+  const KEY='rm_amanda_prospect_tombstones_v1';
+  const pk=n=>String(n||'').trim().toLowerCase().replace(/\s+/g,' ');
+  window.rmProspectTombstones=function(){
+    try{return JSON.parse(localStorage.getItem(KEY)||'{}')}catch(e){return{}}
+  };
+  window.rmProspectIsTombstoned=function(name){return !!rmProspectTombstones()[pk(name)]};
+  window.rmProspectTombstone=function(name,reason){
+    const k=pk(name);if(!k)return;
+    try{
+      const m=rmProspectTombstones();
+      m[k]={reason:reason||'Removed from Amanda prospecting',at:new Date().toISOString()};
+      localStorage.setItem(KEY,JSON.stringify(m));
+    }catch(e){}
+  };
+  window.rmProspectUntombstone=function(name){
+    const k=pk(name);if(!k)return;
+    try{const m=rmProspectTombstones();delete m[k];localStorage.setItem(KEY,JSON.stringify(m))}catch(e){}
+  };
+  window.rmRefreshProspectTruth=async function(){
+    try{if(typeof prospectAt!=='undefined')prospectAt=0}catch(e){}
+    try{if(typeof _wp18Cache!=='undefined')_wp18Cache=null}catch(e){}
+    try{if(typeof _wp18CacheAt!=='undefined')_wp18CacheAt=0}catch(e){}
+    try{if(typeof loadPipeline==='function')await loadPipeline()}catch(e){}
+    try{if(typeof v165LoadNewMeetingPush==='function')await v165LoadNewMeetingPush(true)}catch(e){}
+    try{if(typeof rmRefreshExecutionQueues==='function')await rmRefreshExecutionQueues()}catch(e){}
   };
 })();
 </script>
