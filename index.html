@@ -15486,5 +15486,62 @@ setTimeout(()=>{try{v126SetupReconnectCleanup();v126EnhanceReconnectRows();}catc
 })();
 </script>
 
+
+<script id="v146-share-with-nyny-repair">
+(function(){
+  // Restores the Amanda → Director handoff modal after the Amanda-only cleanup.
+  // Generic Share with Nyny and C→B review both use this single entry point.
+  window.v85OpenInsightModal=function(agent){
+    var m=document.getElementById('v85InsightModal');
+    if(!m){
+      try{toast('Share with Nyny is unavailable on this page. Refresh and try again.','error',3800);}catch(e){}
+      return;
+    }
+    var title=document.getElementById('v85InsightTitle'),
+        sub=document.getElementById('v85InsightSub'),
+        save=document.getElementById('v85InsightSaveBtn'),
+        agentEl=document.getElementById('v85InsightAgent'),
+        type=document.getElementById('v85InsightType'),
+        priority=document.getElementById('v85InsightPriority'),
+        note=document.getElementById('v85InsightNote');
+    if(title)title.textContent='Share with Nyny';
+    if(sub)sub.textContent='Use this when Nyny should know, join, strategize or follow up. It does not change relationship ownership.';
+    if(save){save.textContent='Share';save.disabled=false;save.removeAttribute('aria-busy');}
+    if(agentEl && agent!==undefined && agent!==null && String(agent).trim())agentEl.value=String(agent).trim();
+    if(type && String(type.value||'').indexOf('C → B Review')>=0)type.value='Growth opportunity';
+    if(priority)priority.value='normal';
+    m.style.setProperty('display','flex','important');
+    m.setAttribute('aria-hidden','false');
+    setTimeout(function(){try{(agentEl && !agentEl.value.trim()?agentEl:note||agentEl).focus();}catch(e){}},40);
+  };
+
+  window.v85CloseInsightModal=function(){
+    var m=document.getElementById('v85InsightModal');
+    if(m){m.style.setProperty('display','none','important');m.setAttribute('aria-hidden','true');}
+  };
+
+  // Harden save: visible busy state + no accidental double-submit.
+  var originalSave=window.v85SaveInsight;
+  window.v85SaveInsight=async function(){
+    var btn=document.getElementById('v85InsightSaveBtn');
+    if(btn && btn.disabled)return;
+    if(btn){btn.disabled=true;btn.setAttribute('aria-busy','true');btn.textContent='Sharing…';}
+    try{
+      if(typeof originalSave!=='function')throw new Error('Share function did not load');
+      return await originalSave.apply(this,arguments);
+    }catch(e){
+      console.warn('Share with Nyny failed',e);
+      try{toast('Could not share with Nyny. Please try again.','error',4200);}catch(_){}
+    }finally{
+      var b=document.getElementById('v85InsightSaveBtn');
+      if(b){b.disabled=false;b.removeAttribute('aria-busy');
+        var t=document.getElementById('v85InsightTitle');
+        b.textContent=t&&t.textContent.indexOf('C → B')>=0?'Send for review':'Share';
+      }
+    }
+  };
+})();
+</script>
+
 </body>
 </html>
