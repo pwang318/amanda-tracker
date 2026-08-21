@@ -1,6 +1,6 @@
    <!DOCTYPE html>
 <!-- v217 4-WEEK BUTTON HANDLER FIX · 2026-08-21 -->
-<!-- v223 ADMIN OWNERSHIP ASSIGNMENT FIX · 2026-08-21 -->
+<!-- v224 DIRECTOR BOOT HOTFIX · 2026-08-21 -->
 
 <!-- Cleanup pass: floating Page Guide + stale developer build logs removed; active workflow logic preserved. -->
 <!-- v140: fixes Step 2 transaction renderer race; saved/open CTC and New Contract tasks are no longer erased after successful distribution -->
@@ -17854,7 +17854,7 @@ window.rmxAdminAssign=async function(name,rm){
     return true;
   }catch(e){console.error('RMX ownership assignment failed',e);toast('Could not assign owner: '+(e.message||'Unknown error'),'error');throw e}
 };
-window.rmxAdminReactivatewindow.rmxAdminReactivate=async function(name){try{await sbFetch('agent_profiles?agent_name=eq.'+encodeURIComponent(name),{method:'PATCH',prefer:'return=minimal',body:JSON.stringify({relationship_status:'active'})});R.cache=null;R.ts=0;toast(name+' reactivated ✓','success');go('admin',true)}catch(e){toast('Could not reactivate: '+e.message,'error')}};
+window.rmxAdminReactivate=async function(name){try{await sbFetch('agent_profiles?agent_name=eq.'+encodeURIComponent(name),{method:'PATCH',prefer:'return=minimal',body:JSON.stringify({relationship_status:'active'})});R.cache=null;R.ts=0;toast(name+' reactivated ✓','success');go('admin',true)}catch(e){toast('Could not reactivate: '+e.message,'error')}};
 window.rmxAdminRemoveAgent=async function(name){if(!window.confirm('Mark '+name+' inactive? History is preserved -- this only removes them from active RM workflows.'))return;try{await sbFetch('agent_profiles?agent_name=eq.'+encodeURIComponent(name),{method:'PATCH',prefer:'return=minimal',body:JSON.stringify({relationship_status:'inactive'})});R.cache=null;R.ts=0;toast(name+' marked inactive ✓','success');go('admin',true)}catch(e){toast('Could not update that relationship: '+(e.message||'Unknown error'),'error')}};
  function wireSearch(id,sel){const i=$(id);if(!i)return;i.oninput=()=>{const q=i.value.trim().toLowerCase();document.querySelectorAll(sel).forEach(r=>r.style.display=!q||String(r.textContent||'').toLowerCase().includes(q)?'':'none')}}
  function modal(html){
