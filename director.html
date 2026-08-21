@@ -864,6 +864,52 @@ body.rmx-director-site .rmx-main{padding:24px 30px 48px!important}
 @media(max-width:1100px){body.rmx-director-site .rmx-main{padding:20px!important}}
 </style>
 
+
+<style id="rmx-tier-executive-clarity">
+.rmx-exec-score{
+  background:#fff;
+  border:1px solid #D9DED6;
+  border-radius:18px;
+  padding:22px;
+  margin-bottom:16px;
+  box-shadow:0 6px 22px rgba(33,43,31,.055);
+  border-top:4px solid #5D735A;
+}
+.rmx-exec-head{display:flex;justify-content:space-between;gap:24px;align-items:flex-start;margin-bottom:18px}
+.rmx-kicker{font-size:10px;font-weight:900;letter-spacing:.12em;color:#5D735A;margin-bottom:5px}
+.rmx-exec-head h2,.rmx-roadmap-head h3{margin:0;color:#203027}
+.rmx-exec-head h2{font-size:22px}
+.rmx-exec-head p,.rmx-roadmap-head p{margin:5px 0 0;color:#667066;font-size:13px;max-width:700px;line-height:1.5}
+.rmx-exec-total{min-width:180px;text-align:right}
+.rmx-exec-total>span{display:block;font-size:11px;font-weight:800;color:#697168;text-transform:uppercase;letter-spacing:.05em}
+.rmx-exec-total strong{display:block;font-size:34px;line-height:1.05;margin:5px 0;color:#203027}
+.rmx-exec-total strong small{font-size:16px;color:#7B827A}
+.rmx-exec-total em{display:inline-block;font-style:normal;font-size:10px;font-weight:900;padding:4px 9px;border-radius:999px}
+.rmx-exec-total em.rmx-good{background:#EAF4EC;color:#356143}
+.rmx-exec-total em.rmx-watch{background:#FBF2DC;color:#7A5A15}
+.rmx-exec-total em.rmx-bad{background:#FBE7E4;color:#A4463D}
+.rmx-exec-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.rmx-exec-tier{border:1px solid #E0E3DE;border-radius:13px;padding:15px;background:#FAFBF8}
+.rmx-exec-tier-top{display:flex;justify-content:space-between;align-items:center;font-size:12px;font-weight:850;color:#536055}
+.rmx-exec-tier-top b{font-size:22px;color:#203027}
+.rmx-exec-bar{height:7px;background:#E9ECE6;border-radius:999px;overflow:hidden;margin-top:10px}
+.rmx-exec-bar i{display:block;height:100%;background:#6C8268;border-radius:999px}
+.rmx-exec-meta{display:flex;justify-content:space-between;gap:8px;margin-top:6px;color:#727A72;font-size:10.5px}
+.rmx-exec-gap{margin-top:10px;padding:8px 9px;border-radius:8px;background:#FFF4E3;color:#7C5A20;font-size:11px;font-weight:800}
+.rmx-exec-gap.done{background:#EAF4EC;color:#356143}
+.rmx-exec-summary{margin-top:14px;padding:11px 13px;border-radius:10px;background:#F1F4EE;color:#455248;font-size:12px;line-height:1.5}
+.rmx-roadmap-card{background:#fff;border:1px solid #D9DED6;border-radius:16px;padding:20px;margin-top:16px}
+.rmx-roadmap-head{margin-bottom:12px}
+.rmx-roadmap tr.current td{background:#EEF3EA!important;font-weight:850;color:#2F4634}
+.rmx-roadmap tr.current td:first-child{box-shadow:inset 4px 0 0 #5D735A}
+.rmx-roadmap td span{font-size:9px;font-weight:900;color:#5D735A;letter-spacing:.04em}
+@media(max-width:900px){
+  .rmx-exec-head{flex-direction:column}
+  .rmx-exec-total{text-align:left}
+  .rmx-exec-grid{grid-template-columns:1fr}
+}
+</style>
+
 </head>
 <body>
 <input accept="image/*" id="v95ProfilePhotoInput" onchange="v95HandlePhotoUpload(event)" style="display:none" type="file"/>
@@ -13824,7 +13870,7 @@ body.rmx-director-site .rmx-stat-click{position:relative;z-index:4;pointer-event
  function scorePts(a,t,w){return t?Math.min(w,a/t*w):0}
  function actionBtns(name){const n=esc(name||'').replace(/'/g,"\\'");return '<div class=\"rmx-actions\"><button class=\"rmx-btn small primary\" onclick=\"rmxLog(\''+n+'\')\">Log</button><button class=\"rmx-btn small\" onclick=\"rmxHistory(\''+n+'\')\">History</button><button class=\"rmx-btn small\" onclick=\"rmxSchedule(\''+n+'\')\">Schedule</button><button class=\"rmx-btn small\" onclick=\"rmxUpdate(\''+n+'\')\">Update</button></div>'}
  function nav(){return [['snapshot','⌂','Snapshot'],['myday','▣','My Day'],['amanda','♙','Amanda'],['tier','↗','Tier Growth'],['portfolio','▢','Portfolio'],['communication','▱','LP / RM Handoffs'],['reports','▤','Reports & History'],['admin','⚙','Admin / Tools']]}
- function identity(){const av=$('v95NynyAvatar');const src=av&&av.src?av.src:'';const h=new Date().getHours(),g=h<12?'Good morning':h<17?'Good afternoon':'Good evening';return '<div class="rmx-identity">'+(src?'<img class="rmx-avatar" src="'+src+'">':'')+'<div><div class="rmx-greet">'+g+', Nyny</div><div class="rmx-role">Director of Client Experience</div><div class="rmx-sub" id="rmxHeadSub">Loading your snapshot…</div><button class="rmx-photo" onclick="try{v95ChoosePhoto(\'nyny\')}catch(e){}">Change photo</button></div></div>'}
+ function identity(){let src='';try{src=localStorage.getItem('rm_profile_photo_nyny')||''}catch(e){}if(!src){const av=$('v95NynyAvatar');src=av&&av.src?av.src:''}const h=new Date().getHours(),g=h<12?'Good morning':h<17?'Good afternoon':'Good evening';return '<div class="rmx-identity">'+(src?'<img class="rmx-avatar" id="rmxNynyAvatar" src="'+src+'">':'<div class="rmx-avatar" id="rmxNynyAvatarFallback" style="display:flex;align-items:center;justify-content:center;font-weight:800">N</div>')+'<div><div class="rmx-greet">'+g+', Nyny</div><div class="rmx-role">Director of Client Experience</div><div class="rmx-sub" id="rmxHeadSub">Loading your snapshot…</div><button class="rmx-photo" onclick="rmxChoosePhoto()">Change photo</button></div></div>'}
  function boot(){const view=$('view-daniel');if(!view||$('rmxApp'))return;view.classList.add('rmx-on');const app=document.createElement('div');app.id='rmxApp';app.innerHTML='<div class="rmx-shell"><aside class="rmx-side"><div class="rmx-brand"><div class="rmx-brand-icon">♧</div><div><strong>RM TRACKER</strong><span>Management View</span></div></div><nav class="rmx-nav">'+nav().map(n=>'<button data-rmx="'+n[0]+'"><span class="ico">'+n[1]+'</span>'+n[2]+'</button>').join('')+'</nav></aside><main class="rmx-main"><header class="rmx-head">'+identity()+'<div class="rmx-date"><span>▣</span><span>'+new Date(todayS()+'T12:00:00').toLocaleDateString(undefined,{month:'short',day:'numeric',year:'numeric'})+'</span><button class="rmx-btn" id="rmxRefresh">Refresh</button></div></header><div id="rmxContent"></div></main></div>';view.appendChild(app);wireDirectorRouting();$('rmxRefresh').onclick=()=>{R.cache=null;R.ts=0;go(R.route,true)};go('snapshot')}
  async function go(route,force){R.route=route;document.body.classList.add('rmx-director-active');wireDirectorRouting();document.querySelectorAll('.rmx-nav button').forEach(b=>b.classList.toggle('active',b.dataset.rmx===route));const c=$('rmxContent');if(!c)return;c.innerHTML=loading();try{const d=await load(!!force);c.innerHTML='';if(route==='snapshot')renderSnapshot(c,d);else if(route==='myday')renderMyDay(c,d);else if(route==='amanda')renderAmanda(c,d);else if(route==='tier')renderTier(c,d);else if(route==='portfolio')renderPortfolio(c,d);else if(route==='communication')renderComm(c,d);else if(route==='reports')renderReports(c,d);else if(route==='admin')renderAdmin(c,d);else renderSnapshot(c,d);if(!String(c.textContent||'').trim())c.innerHTML=empty('This section has no current items.');}catch(e){console.error('RMX',e);c.innerHTML=err(e)}}
  window.rmxGo=(route,force)=>go(route,!!force);
@@ -13882,22 +13928,67 @@ body.rmx-director-site .rmx-stat-click{position:relative;z-index:4;pointer-event
    c.innerHTML+='<div class="rmx-grid">'+stat('Cold calls today',calls+' / 25','Daily execution')+stat('Meaningful conversations',talk+' / 20','Today')+stat('New meetings held today',newHeld+' / 1','Held, not just booked')+stat('Amanda new MTD',monthNew+' / 10','Planning contribution to team goal')+stat('Existing meetings MTD',existing+' / 20','Relationship cadence')+stat('C → B reviews',reviews.length,'Sent to Nyny',reviews.length?'rmx-watch':'rmx-good','tier')+'</div>'+card('Coaching','Sandwich method: what is working → gap → clear ask → positive close.','<div class="rmx-note">'+(signals.length?signals.map(s=>'• '+esc(s)).join('<br>'):'Amanda is currently on pace in the main coaching signals.')+'</div><div style="margin-top:12px"><button class="rmx-btn primary" onclick="rmxCoaching()">Build coaching email</button></div>')
  }
  function renderTier(c,d){
-  title(c,'Tier Growth','Daniel’s approved net tier-count score. Individual movements explain the growth; they do not create the score.');
-  const x=counts(d),t=milestone(),ps={Channel:scorePts(x.Channel,t.Channel,15),A:scorePts(x.A,t.A,15),B:scorePts(x.B,t.B,20)},sc=ps.Channel+ps.A+ps.B;
-  c.innerHTML+='<div class="rmx-grid">'+stat('Tier Growth Score',sc.toFixed(1)+' / 50',t.label,sc>=45?'rmx-good':sc>=38?'rmx-watch':'rmx-bad','portfolio')+['Channel','A','B'].map(k=>stat(k,x[k]+' / '+t[k],ps[k].toFixed(1)+' / '+R.weights[k]+' pts')).join('')+'</div>';
+  title(c,'Tier Growth','Daniel’s scorecard view: where we are now, where we should be, and exactly what must move next.');
+  const x=counts(d),t=milestone();
+  const pts={
+    Channel:scorePts(x.Channel,t.Channel,15),
+    A:scorePts(x.A,t.A,15),
+    B:scorePts(x.B,t.B,20)
+  };
+  const total=pts.Channel+pts.A+pts.B;
+  const gap={Channel:Math.max(0,t.Channel-x.Channel),A:Math.max(0,t.A-x.A),B:Math.max(0,t.B-x.B)};
+  const pace=total>=47.5?'ON PACE':total>=40?'WATCH':'BEHIND';
+  const paceClass=pace==='ON PACE'?'rmx-good':pace==='WATCH'?'rmx-watch':'rmx-bad';
+
+  function execTier(label,actual,target,weight,points){
+    const g=Math.max(0,target-actual);
+    const pct=target?Math.min(100,Math.round(actual/target*100)):0;
+    return '<div class="rmx-exec-tier">'
+      +'<div class="rmx-exec-tier-top"><span>'+label+'</span><b>'+actual+' / '+target+'</b></div>'
+      +'<div class="rmx-exec-bar"><i style="width:'+pct+'%"></i></div>'
+      +'<div class="rmx-exec-meta"><span>'+pct+'% of current target</span><span>'+points.toFixed(1)+' / '+weight+' pts</span></div>'
+      +'<div class="rmx-exec-gap '+(g===0?'done':'')+'">'+(g===0?'✓ Target reached':'Need '+g+' more '+label+' relationship'+(g===1?'':'s')+' by '+t.label.replace(' Target','').replace(' Goal',''))+'</div>'
+      +'</div>';
+  }
+
+  c.innerHTML+='<section class="rmx-exec-score">'
+    +'<div class="rmx-exec-head">'
+      +'<div><div class="rmx-kicker">TIER GROWTH · 50% OF SCORECARD</div><h2>Current milestone: '+t.label+'</h2><p>Performance is based on the <b>net number of partners</b> in Channel, A and B — not on counting individual migrations.</p></div>'
+      +'<div class="rmx-exec-total"><span>Tier Growth Score</span><strong>'+total.toFixed(1)+' <small>/ 50</small></strong><em class="'+paceClass+'">'+pace+'</em></div>'
+    +'</div>'
+    +'<div class="rmx-exec-grid">'
+      +execTier('Channel',x.Channel,t.Channel,15,pts.Channel)
+      +execTier('A',x.A,t.A,15,pts.A)
+      +execTier('B',x.B,t.B,20,pts.B)
+    +'</div>'
+    +'<div class="rmx-exec-summary"><b>What Daniel needs to know right now:</b> '
+      +(gap.Channel+gap.A+gap.B===0
+        ?'We have reached the current milestone across Channel, A and B.'
+        :'To hit '+t.label+', we still need '+gap.Channel+' Channel, '+gap.A+' A and '+gap.B+' B relationship'+((gap.Channel+gap.A+gap.B)===1?'':'s')+'.')
+      +' C-tier relationships support the pipeline, but they do not earn direct Tier Growth points until the net B/A/Channel counts increase.</div>'
+  +'</section>';
+
   const reviews=d.growthReviews||[];
   if(reviews.length){
     c.innerHTML+=card('Amanda → Nyny graduation reviews',reviews.length+' C → B candidate'+(reviews.length===1?'':'s')+' waiting for a Director decision.',
       '<div class="rmx-list">'+reviews.map(r=>'<div class="rmx-row"><div><div class="name">'+esc(r.agent_name||'Agent')+' <span class="rmx-pill">C → B</span></div><div class="meta">'+esc(r.note||'Evidence submitted by Amanda')+'</div></div><div class="rmx-actions"><button class="rmx-btn small" onclick="rmxGrowthDecision('+JSON.stringify(String(r.id||''))+','+JSON.stringify(String(r.agent_name||''))+',\'keep\')">Keep C</button><button class="rmx-btn small primary" onclick="rmxGrowthDecision('+JSON.stringify(String(r.id||''))+','+JSON.stringify(String(r.agent_name||''))+',\'followup\')">Amanda follow-up</button><button class="rmx-btn small" onclick="rmxGrowthDecision('+JSON.stringify(String(r.id||''))+','+JSON.stringify(String(r.agent_name||''))+',\'handled\')">Handled</button></div></div>').join('')+'</div>');
   }
+
   const amandaC=d.profiles.filter(p=>p._tier==='C'&&String(p._assign.rm||'').toLowerCase()==='amanda'&&String(p.relationship_type||'realtor').toLowerCase()!=='strategic_partner');
-  const c2b=amandaC.map(p=>{const closes=Number(p.closes_past_year||0),leads=Number(p.total_leads_past_year||0);return {p,score:closes*1000+leads*100+(p.high_potential_flag?80:0)+(p.latest_lead_date?Math.max(0,60-Math.min(60,Math.floor((Date.now()-new Date(p.latest_lead_date))/86400000))):0)}}).sort((a,b)=>b.score-a.score).slice(0,12).map(x=>x.p);
-  const b2a=d.profiles.filter(p=>p._tier==='B'&&Number(p.closes_past_year||0)>=3).slice(0,12);
-  const a2ch=d.profiles.filter(p=>p._tier==='A'&&Number(p.closes_past_year||0)>=8).slice(0,12);
+  const c2b=amandaC.map(p=>{const closes=Number(p.closes_past_year||0),leads=Number(p.total_leads_past_year||0);return {p,score:closes*1000+leads*100+(p.high_potential_flag?80:0)+(p.latest_lead_date?Math.max(0,60-Math.min(60,Math.floor((Date.now()-new Date(p.latest_lead_date))/86400000))):0)}}).sort((a,b)=>b.score-a.score).slice(0,10).map(x=>x.p);
+  const b2a=d.profiles.filter(p=>p._tier==='B'&&Number(p.closes_past_year||0)>=3).slice(0,10);
+  const a2ch=d.profiles.filter(p=>p._tier==='A'&&Number(p.closes_past_year||0)>=8).slice(0,10);
+
   const block=(name,rows,sub)=>'<div class="rmx-stat"><div class="lbl">'+name+'</div><div class="foot" style="margin:4px 0 7px">'+sub+'</div><div>'+(rows.length?rows.map(p=>'<div style="padding:7px 0;border-bottom:1px solid #E9EAE5"><b>'+esc(p.agent_name)+'</b><div class="foot">'+Number(p.closes_past_year||0)+' closes · '+Number(p.total_leads_past_year||0)+' leads · RM: '+esc(p._assign.rm||'Unassigned')+'</div></div>').join(''):'<div class="foot">No immediate candidates.</div>')+'</div></div>';
-  c.innerHTML+=card('How we’re creating the growth','Diagnostic opportunities. C → B is restricted to Amanda-owned C relationships, matching her tracker.',
+
+  c.innerHTML+=card('How we create the growth','These movements are diagnostics — they explain how we reach the net-count goals above.',
     '<div class="rmx-grid">'+block('C → B',c2b,'Amanda development lane')+block('B → A',b2a,'Director growth lane')+block('A → Channel',a2ch,'Director strategic lane')+'</div>');
-  c.innerHTML+=card('Roadmap','Daniel’s milestone targets.','<div class="rmx-tablewrap"><table class="rmx-table"><thead><tr><th>Milestone</th><th>Channel</th><th>A</th><th>B</th></tr></thead><tbody><tr><td>Current baseline</td><td>1</td><td>12</td><td>18</td></tr>'+R.targets.map(z=>'<tr><td>'+z.label+'</td><td>'+z.Channel+'</td><td>'+z.A+'</td><td>'+z.B+'</td></tr>').join('')+'</tbody></table></div>')
+
+  c.innerHTML+='<section class="rmx-roadmap-card"><div class="rmx-roadmap-head"><div><div class="rmx-kicker">DANIEL’S ROADMAP</div><h3>Month-end tier targets</h3><p>Use this for the path forward. The highlighted row is the milestone currently driving the score above.</p></div></div>'
+    +'<div class="rmx-tablewrap"><table class="rmx-table rmx-roadmap"><thead><tr><th>Milestone</th><th>Channel</th><th>A</th><th>B</th></tr></thead><tbody>'
+    +'<tr><td>Current baseline</td><td>1</td><td>12</td><td>18</td></tr>'
+    +R.targets.map(z=>'<tr class="'+(z.label===t.label?'current':'')+'"><td>'+z.label+(z.label===t.label?' <span>← CURRENT</span>':'')+'</td><td>'+z.Channel+'</td><td>'+z.A+'</td><td>'+z.B+'</td></tr>').join('')
+    +'</tbody></table></div></section>';
 }
  function renderPortfolio(c,d){title(c,'Portfolio','Searchable relationship book. No endless scrolling to find one person.');const plans=d.profiles.filter(p=>p._assign.rm==='Nyny'&&['Channel','A','B'].includes(p._tier)&&!String(p.next_growth_opportunity||'').trim());const risk=d.profiles.filter(p=>p.competitor_risk_flag);c.innerHTML+='<div class="rmx-grid">'+stat('Active relationships',d.profiles.length,'Current roster')+stat('Nyny book',d.profiles.filter(p=>p._assign.rm==='Nyny').length,'Assigned to Nyny')+stat('Plan gaps',plans.length,'Nyny A/B/Channel',plans.length?'rmx-watch':'rmx-good')+stat('Competitor risk',risk.length,'Active risk flags',risk.length?'rmx-bad':'rmx-good')+'</div><input class="rmx-search" id="rmxPortSearch" placeholder="Search any agent…"><div id="rmxPortRows">'+card('Relationships','Search by agent, tier, LP, next move or risk.','<div class="rmx-list">'+d.profiles.sort((a,b)=>String(a.agent_name).localeCompare(String(b.agent_name))).map(p=>'<div class="rmx-row" data-name="'+esc(p.agent_name)+'"><div><div class="name">'+esc(p.display_name||p.agent_name)+(p._tier?'<span class="rmx-pill">'+p._tier+'</span>':'')+(p.competitor_risk_flag?'<span class="rmx-pill red">RISK</span>':'')+'</div><div class="meta">LP: '+esc(p._assign.lp||'Unassigned')+' · RM: '+esc(p._assign.rm||'Unassigned')+'</div></div><div class="meta">'+esc(p.next_growth_opportunity||'No next relationship move')+'</div>'+actionBtns(p.agent_name)+'</div>').join('')+'</div>')+'</div>';wireSearch('rmxPortSearch','#rmxPortRows .rmx-row')}
  function renderComm(c,d){title(c,'LP / RM Handoffs','Open communication that needs an RM response.');if(!d.flags.length){c.innerHTML+=empty('No open LP flags — caught up.');return}c.innerHTML+='<div class="rmx-list">'+d.flags.map(f=>'<div class="rmx-card"><div class="rmx-row"><div><div class="name">'+esc(f.agent_name||'Agent')+' <span class="rmx-pill">via '+esc(f.lp||'LP')+'</span></div><div class="meta">'+esc(f.note||f.outcome||'Open LP handoff')+'</div></div><div class="meta">'+esc(String(f.created_at||f.call_date||'').slice(0,10))+'</div><div class="rmx-actions"><button class="rmx-btn small primary" onclick="rmxLog(\''+esc(f.agent_name||'').replace(/'/g,"\\'")+'\')">Log outreach</button><button class="rmx-btn small" onclick="rmxReply(\''+f._src+'\',\''+esc(f.id).replace(/'/g,"\\'")+'\',\''+esc(f.agent_name||'').replace(/'/g,"\\'")+'\')">Reply</button><button class="rmx-btn small" onclick="rmxHandle(\''+f._src+'\',\''+esc(f.id).replace(/'/g,"\\'")+'\')">Mark handled</button></div></div></div>').join('')+'</div>'}
@@ -14000,5 +14091,70 @@ body.rmx-director-site .rmx-stat-click{position:relative;z-index:4;pointer-event
  const baseSwitch=window.switchTab;window.switchTab=function(name){if(name==='daniel'){document.body.classList.add('rmx-director-site');document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active',t.dataset.tab==='daniel'));document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));const v=$('view-daniel');if(v)v.classList.add('active');document.body.classList.add('rmx-director-active');boot();return}document.body.classList.remove('rmx-director-active','rmx-director-site');return baseSwitch?baseSwitch(name):undefined};
 })();
 </script>
+
+<script id="rmx-director-photo-fix">
+(function(){
+  function ensureInput(){
+    var input=document.getElementById('rmxDirectorPhotoInput');
+    if(input)return input;
+    input=document.createElement('input');
+    input.type='file';
+    input.accept='image/*';
+    input.id='rmxDirectorPhotoInput';
+    input.style.display='none';
+    input.addEventListener('change',function(ev){
+      var f=ev.target.files&&ev.target.files[0];
+      if(!f)return;
+      if(f.size>1800000){
+        try{toast('Please use a photo under 1.8 MB.','error',3500)}catch(e){alert('Please use a photo under 1.8 MB.')}
+        return;
+      }
+      var r=new FileReader();
+      r.onload=function(){
+        try{
+          localStorage.setItem('rm_profile_photo_nyny',String(r.result||''));
+          // Update the visible Director avatar immediately.
+          var img=document.getElementById('rmxNynyAvatar');
+          if(img){
+            if(img.tagName==='IMG'){
+              img.src=String(r.result||'');
+            }else{
+              var repl=document.createElement('img');
+              repl.id='rmxNynyAvatar';
+              repl.className='rmx-avatar';
+              repl.src=String(r.result||'');
+              img.replaceWith(repl);
+            }
+          }else{
+            var fallback=document.getElementById('rmxNynyAvatarFallback');
+            if(fallback){
+              var repl=document.createElement('img');
+              repl.id='rmxNynyAvatar';
+              repl.className='rmx-avatar';
+              repl.src=String(r.result||'');
+              fallback.replaceWith(repl);
+            }
+          }
+          // Keep the legacy hidden avatar synchronized too.
+          try{v95ApplyPhoto('nyny')}catch(e){}
+          try{toast('Photo updated on this device ✓','success',2200)}catch(e){}
+        }catch(e){
+          try{toast('Could not save that photo on this device.','error',3200)}catch(_){alert('Could not save that photo on this device.')}
+        }
+      };
+      r.readAsDataURL(f);
+    });
+    document.body.appendChild(input);
+    return input;
+  }
+  window.rmxChoosePhoto=function(){
+    var input=ensureInput();
+    input.value='';
+    input.click();
+  };
+  document.addEventListener('DOMContentLoaded',ensureInput);
+})();
+</script>
+
 </body>
 </html>
