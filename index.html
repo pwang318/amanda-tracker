@@ -1,6 +1,6 @@
    <!DOCTYPE html>
 <!-- v217 4-WEEK BUTTON HANDLER FIX · 2026-08-21 -->
-<!-- v221 COACHING + DAILY CHECK-IN SANDWICH FIX · 2026-08-21 -->
+<!-- v222 MANAGEMENT ACTION + SHARED OWNERSHIP FIX · 2026-08-21 -->
 
 <!-- Cleanup pass: floating Page Guide + stale developer build logs removed; active workflow logic preserved. -->
 <!-- v140: fixes Step 2 transaction renderer race; saved/open CTC and New Contract tasks are no longer erased after successful distribution -->
@@ -1100,7 +1100,7 @@ body.rmx-director-site #view-daniel>*:not(#rmxApp){display:none!important}
 .rmx-summary-tile.rmx-click-tile:hover,.rmx-tier-card.rmx-click-tile:hover{border-color:#cbbce8;transform:translateY(-1px);box-shadow:0 7px 18px rgba(69,45,119,.08)}
 .rmx-summary-tile.rmx-click-tile.active-filter,.rmx-tier-card.rmx-click-tile.active-filter{border-color:#8d73c4;background:#faf7ff;box-shadow:inset 0 0 0 1px #8d73c4}
 .rmx-subnav{display:flex;gap:7px;align-items:center;flex-wrap:wrap;margin:-3px 0 13px}.rmx-subnav button{border:1px solid #dddfe0;background:#fff;border-radius:999px;padding:7px 11px;font:750 10px inherit;color:#52615a;cursor:pointer}.rmx-subnav button:hover{border-color:#c6b5e5;background:#faf7ff;color:var(--rmx-purple)}
-.rmx-action-menu{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;margin-top:10px}.rmx-action-choice{border:1px solid #e1e2df;background:#fff;border-radius:11px;padding:12px;text-align:left;cursor:pointer;color:#24332b;font-family:inherit}.rmx-action-choice:hover{border-color:#c9b8e7;background:#faf7ff}.rmx-action-choice b{display:block;font-size:12px}.rmx-action-choice span{display:block;font-size:9.5px;color:var(--rmx-muted);margin-top:3px;line-height:1.4}.rmx-action-choice.primary{border-color:#bba8e3;background:#f7f2ff}.rmx-action-choice.coach{border-color:#c9ddce;background:#f6fbf7}
+.rmx-action-menu{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;margin-top:10px}.rmx-action-choice{border:1px solid #e1e2df;background:#fff;border-radius:11px;padding:12px;text-align:left;cursor:pointer;color:#24332b;font-family:inherit}.rmx-action-choice:hover{border-color:#c9b8e7;background:#faf7ff}.rmx-action-choice b{display:block;font-size:12px}.rmx-action-choice span{display:block;font-size:9.5px;color:var(--rmx-muted);margin-top:3px;line-height:1.4}.rmx-action-choice.primary{border-color:#bba8e3;background:#f7f2ff}.rmx-action-choice.coach{border-color:#c9ddce;background:#f6fbf7}.rmx-action-choice.danger{border-color:#e6b9b5;background:#fff7f6}.rmx-action-choice.danger b{color:#a33a33}
 .rmx-context-strip{display:flex;gap:6px;flex-wrap:wrap;margin:0 0 10px}.rmx-context-strip span{font-size:9px;font-weight:800;border-radius:999px;padding:4px 7px;background:#f2eff8;color:#5b4891}.rmx-context-strip span.green{background:#eaf4ed;color:#2f7049}.rmx-context-strip span.amber{background:#fff2dd;color:#966312}
 .rmx-queue-section{scroll-margin-top:18px}.rmx-queue-head{display:flex;align-items:center;gap:4px}.rmx-queue-head small{font-weight:500;color:var(--rmx-muted);margin-left:6px}
 .rmx-tier-status{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:11px 13px;border-radius:11px;margin-bottom:11px;background:#f8f6fc;border:1px solid #dfd7ef}.rmx-tier-status b{font-size:12px}.rmx-tier-status span{font-size:10px;color:var(--rmx-muted)}.rmx-tier-status .pace{font-size:10px;font-weight:900;border-radius:999px;padding:5px 9px;background:#fff}.rmx-tier-status .pace.good{color:var(--rmx-green);border:1px solid #c9e0d0}.rmx-tier-status .pace.behind{color:var(--rmx-amber);border:1px solid #ecd6aa}
@@ -11353,6 +11353,7 @@ function initRealtimeSync(){
       .on("postgres_changes",{event:"*",schema:"public",table:"agent_assignments"},function(){
         if(userTyping)return;
         loadAgentOwnership().then(()=>{loadContacts().catch(()=>{});});
+        if(typeof window.rmxRefreshManagementData==="function")window.rmxRefreshManagementData();
       })
       .on("postgres_changes",{event:"*",schema:"public",table:"lp_flags"},function(){
         if(userTyping)return;
@@ -17821,25 +17822,99 @@ window.rmxAdminAssign=async function(name,rm){try{const d=await load(),p=d.profi
 window.rmxAdminReactivate=async function(name){try{await sbFetch('agent_profiles?agent_name=eq.'+encodeURIComponent(name),{method:'PATCH',prefer:'return=minimal',body:JSON.stringify({relationship_status:'active'})});R.cache=null;R.ts=0;toast(name+' reactivated ✓','success');go('admin',true)}catch(e){toast('Could not reactivate: '+e.message,'error')}};
 window.rmxAdminRemoveAgent=async function(name){if(!window.confirm('Mark '+name+' inactive? History is preserved -- this only removes them from active RM workflows.'))return;try{await sbFetch('agent_profiles?agent_name=eq.'+encodeURIComponent(name),{method:'PATCH',prefer:'return=minimal',body:JSON.stringify({relationship_status:'inactive'})});R.cache=null;R.ts=0;toast(name+' marked inactive ✓','success');go('admin',true)}catch(e){toast('Could not update that relationship: '+(e.message||'Unknown error'),'error')}};
  function wireSearch(id,sel){const i=$(id);if(!i)return;i.oninput=()=>{const q=i.value.trim().toLowerCase();document.querySelectorAll(sel).forEach(r=>r.style.display=!q||String(r.textContent||'').toLowerCase().includes(q)?'':'none')}}
- function modal(html){let m=$('rmxModal');if(!m){m=document.createElement('div');m.id='rmxModal';m.className='rmx-modal';document.body.appendChild(m);m.addEventListener('click',e=>{if(e.target===m)m.classList.remove('open')})}m.innerHTML='<div class="rmx-modalbox">'+html+'</div>';m.classList.add('open')}
+ function modal(html){
+   let m=$('rmxModal');
+   if(!m){
+     m=document.createElement('div');m.id='rmxModal';m.className='rmx-modal';document.body.appendChild(m);
+     m.addEventListener('click',e=>{
+       if(e.target===m){m.classList.remove('open');return}
+       const b=e.target.closest('[data-rmx-manage-action]');
+       if(!b)return;
+       e.preventDefault();e.stopPropagation();
+       const action=b.dataset.rmxManageAction||'',name=decodeURIComponent(b.dataset.agent||'');
+       const fn={coach:window.rmxCoachAmandaForAgent,quick:window.rmxQuickManagerNote,portfolio:window.rmxOpenPortfolio,contact:window.rmxOpenContact,history:window.rmxHistory,schedule:window.rmxSchedule,log:window.rmxLog,ownership:window.rmxOwnershipStatus,remove:window.rmxRemoveDelete,'save-ownership':window.rmxSaveOwnership,'remove-active':window.rmxRemoveShared,'hide-duplicate':window.rmxHideBadDuplicate}[action];
+       if(typeof fn==='function')Promise.resolve(fn(name)).catch(err=>{console.error('Management action failed',action,err);toast('Could not open that action: '+(err&&err.message||'Unknown error'),'error')});
+     });
+   }
+   m.innerHTML='<div class="rmx-modalbox">'+html+'</div>';m.classList.add('open');
+ }
  window.rmxClose=()=>{$('rmxModal')?.classList.remove('open')};
  window.rmxOpenPortfolio=async name=>{try{if(typeof loadContacts==='function')await loadContacts()}catch(e){}rmxClose();if(typeof openPortfolioNotes==='function')openPortfolioNotes(name);else window.rmxUpdate(name)};
  window.rmxOpenContact=async name=>{try{if(typeof loadContacts==='function')await loadContacts()}catch(e){}rmxClose();if(typeof openContactsEdit==='function')openContactsEdit(name)};
  window.rmxManage=function(name,context){
-   const ctx=context||'relationship',isCoach=ctx==='coaching'||ctx==='review';
+   const ctx=context||'relationship',isCoach=ctx==='coaching'||ctx==='review',agent=encodeURIComponent(name||'');
+   const card=(action,title,desc,cls='')=>'<button type="button" class="rmx-action-choice '+cls+'" data-rmx-manage-action="'+action+'" data-agent="'+agent+'"><b>'+title+'</b><span>'+desc+'</span></button>';
    modal('<div class="rmx-modalhead"><h2>'+(isCoach?'Coach / review · ':'Manage relationship · ')+esc(fmtName(name))+'</h2><button class="rmx-x" onclick="rmxClose()">×</button></div>'
      +'<div class="rmx-context-strip"><span>'+esc(ctx==='coaching'?'Amanda-owned coaching item':ctx==='review'?'C → B review':'Director relationship action')+'</span>'+(isCoach?'<span class="green">Management action — not an agent call</span>':'')+'</div>'
-     +'<div class="rmx-inline-note">Choose what you are actually doing. <b>Quick Manager Note</b> and <b>Coach Amanda</b> do not count as a relationship touch. Use <b>Log My Touch</b> only when you personally contacted the agent.</div>'
+     +'<div class="rmx-inline-note">Choose what you are actually doing. <b>Quick Manager Note</b> and <b>Coach Amanda</b> do not count as a relationship touch. Use <b>Log My Relationship Touch</b> only when you personally contacted the agent.</div>'
      +'<div class="rmx-action-menu">'
-       +(isCoach?'<button class="rmx-action-choice coach" onclick="rmxCoachAmandaForAgent('+JSON.stringify(name)+')"><b>Coach Amanda</b><span>Document coaching, direction, and a follow-up without logging an agent call.</span></button>':'')
-       +'<button class="rmx-action-choice primary" onclick="rmxQuickManagerNote('+JSON.stringify(name)+')"><b>Quick Manager Note</b><span>Internal note for context, risk, or next decision. Does not reset last meaningful contact.</span></button>'
-       +'<button class="rmx-action-choice" onclick="rmxOpenPortfolio('+JSON.stringify(name)+')"><b>Portfolio & Partner Health</b><span>Open the full relationship-intelligence fields: goals, pain points, leakage, risk, next move.</span></button>'
-       +'<button class="rmx-action-choice" onclick="rmxOpenContact('+JSON.stringify(name)+')"><b>Contact Info</b><span>Phone, email, birthday, address, ownership and profile details.</span></button>'
-       +'<button class="rmx-action-choice" onclick="rmxHistory('+JSON.stringify(name)+')"><b>History</b><span>Review the activity trail before deciding what happens next.</span></button>'
-       +'<button class="rmx-action-choice" onclick="rmxSchedule('+JSON.stringify(name)+')"><b>Schedule</b><span>Add a Director meeting or work block.</span></button>'
-       +'<button class="rmx-action-choice" onclick="rmxLog('+JSON.stringify(name)+')"><b>Log My Relationship Touch</b><span>Use only when you personally called, texted, emailed, or met with this agent.</span></button>'
+       +(isCoach?card('coach','Coach Amanda','Document coaching, direction, and a manager follow-up without logging an agent call.','coach'):'')
+       +card('quick','Quick Manager Note','Internal note for context, risk, or next decision. Does not reset last meaningful contact.','primary')
+       +card('portfolio','Portfolio & Partner Health','Open goals, pain points, leakage, risk, satisfaction, and next growth move.')
+       +card('contact','Contact Info','Phone, email, birthday, address, profile details, and the full contact editor.')
+       +card('history','History','Review the complete activity trail before deciding what happens next.')
+       +card('schedule','Schedule','Add a Director meeting or work block.')
+       +card('log','Log My Relationship Touch','Only use when you personally called, texted, emailed, or met with this agent.')
+       +card('ownership','Ownership & Status','See shared LP/RM ownership and update the RM owner. LP ownership remains sourced from Core Team / LP Tracker.')
+       +card('remove','Remove / Delete','Remove from active workflows or permanently hide a bad/duplicate profile.','danger')
      +'</div>');
  };
+ window.rmxOwnershipStatus=async function(name){
+   modal('<div class="rmx-modalhead"><h2>Ownership & Status · '+esc(fmtName(name))+'</h2><button class="rmx-x" onclick="rmxClose()">×</button></div>'+loading());
+   try{
+     const d=await load(true),p=(d.profiles||[]).find(x=>key(x.agent_name)===key(name))||{},a=p._assign||{},box=$('rmxModal')&&$('rmxModal').querySelector('.rmx-modalbox');if(!box)return;
+     const rm=String(a.rm||'Unassigned'),lp=(a.lp&&a.lp!=='__REMOVED__')?String(a.lp):'Unassigned';
+     box.innerHTML='<div class="rmx-modalhead"><h2>Ownership & Status · '+esc(fmtName(name))+'</h2><button class="rmx-x" onclick="rmxClose()">×</button></div>'
+       +'<div class="rmx-inline-note"><b>Shared ownership:</b> LP and RM ownership use the shared assignment record. Changes made in Core Team / LP Tracker flow into this RM Management View. This screen only changes the RM owner so LP ownership stays controlled by the LP tracker.</div>'
+       +'<div class="rmx-grid2"><div class="rmx-field"><label>LP owner</label><input value="'+esc(lp)+'" disabled></div><div class="rmx-field"><label>RM owner</label><select id="rmxOwnershipRm"><option value="Amanda" '+(rm==='Amanda'?'selected':'')+'>Amanda</option><option value="Nyny" '+(rm==='Nyny'?'selected':'')+'>Nyny</option><option value="Unassigned" '+(rm==='Unassigned'?'selected':'')+'>Unassigned</option></select></div></div>'
+       +'<div class="rmx-field"><label>Relationship status</label><input value="'+esc(String(p.relationship_status||'active'))+'" disabled></div>'
+       +'<div class="rmx-modal-actions"><button class="rmx-btn" onclick="rmxClose()">Cancel</button><button type="button" class="rmx-btn primary" data-rmx-manage-action="save-ownership" data-agent="'+encodeURIComponent(name)+'">Save RM Owner</button></div>';
+   }catch(e){const box=$('rmxModal')&&$('rmxModal').querySelector('.rmx-modalbox');if(box)box.innerHTML='<div class="rmx-modalhead"><h2>Ownership & Status</h2><button class="rmx-x" onclick="rmxClose()">×</button></div>'+err(e)}
+ };
+ window.rmxSaveOwnership=async function(name){
+   const rm=$('rmxOwnershipRm')?.value||'Unassigned';
+   try{
+     const d=await load(true),p=(d.profiles||[]).find(x=>key(x.agent_name)===key(name))||{},old=p._assign||{};
+     const payload={agent_name:name,rm:rm,lp:(old.lp&&old.lp!=='__REMOVED__')?old.lp:'Unassigned',priority:!!old.priority,added:!!old.added,level:old.level||p._tier||p.tier||'C'};
+     await sbFetch('agent_assignments?on_conflict=agent_name',{method:'POST',prefer:'resolution=merge-duplicates,return=minimal',body:JSON.stringify(payload)});
+     try{if(typeof loadAgentOwnership==='function')await loadAgentOwnership()}catch(e){}
+     R.cache=null;R.ts=0;toast(name+' RM owner updated to '+rm+' ✓','success');rmxClose();go(R.route,true);
+   }catch(e){toast('Could not update ownership: '+(e.message||'Unknown error'),'error')}
+ };
+ window.rmxRemoveDelete=function(name){
+   const agent=encodeURIComponent(name||'');
+   modal('<div class="rmx-modalhead"><h2>Remove / Delete · '+esc(fmtName(name))+'</h2><button class="rmx-x" onclick="rmxClose()">×</button></div>'
+     +'<div class="rmx-inline-note"><b>Remove from active</b> is the normal option. It preserves history but removes the relationship from active RM/LP workflows. <b>Delete bad / duplicate</b> is only for a misspelling or duplicate profile and hides the bad record so future imports cannot resurrect it.</div>'
+     +'<div class="rmx-action-menu"><button type="button" class="rmx-action-choice primary" data-rmx-manage-action="remove-active" data-agent="'+agent+'"><b>Remove From Active</b><span>Preserve history; remove from active roster, queues, reconnect/prospecting, and future follow-ups.</span></button><button type="button" class="rmx-action-choice danger" data-rmx-manage-action="hide-duplicate" data-agent="'+agent+'"><b>Delete Bad / Duplicate</b><span>Hide this exact bad profile. Use only for spelling errors or duplicate records.</span></button></div>');
+ };
+ window.rmxRemoveShared=async function(name){
+   if(!window.confirm('Remove '+fmtName(name)+' from active RM + Core Team workflows? Historical activity will be preserved.'))return;
+   try{
+     let canonical=name;
+     if(typeof findAgentProfileByName==='function'){const r=await findAgentProfileByName(name);if(r.ambiguous)throw new Error('Multiple profiles match this name. Use Delete Bad / Duplicate on the exact record first.');if(r.exact)canonical=r.exact.agent_name;}
+     if(typeof sbProfileWrite==='function'){
+       const rs=await sbFetch('agent_profiles?agent_name=eq.'+encodeURIComponent(canonical)+'&select=agent_name&limit=1').catch(()=>[]);
+       if(rs&&rs.length)await sbProfileWrite('agent_profiles?agent_name=eq.'+encodeURIComponent(canonical),'PATCH',{relationship_status:'inactive'});else await sbProfileWrite('agent_profiles','POST',{agent_name:canonical,relationship_status:'inactive'});
+     }else await sbFetch('agent_profiles?agent_name=eq.'+encodeURIComponent(canonical),{method:'PATCH',prefer:'return=minimal',body:JSON.stringify({relationship_status:'inactive'})});
+     if(typeof removeAgentAcrossSharedTrackers==='function')await removeAgentAcrossSharedTrackers(canonical);
+     R.cache=null;R.ts=0;toast(fmtName(name)+' removed from active workflows ✓','success');rmxClose();go(R.route,true);
+   }catch(e){toast('Remove failed: '+(e.message||'Unknown error'),'error')}
+ };
+ window.rmxHideBadDuplicate=async function(name){
+   if(!window.confirm('Permanently hide '+fmtName(name)+' as a bad/duplicate profile? Use this only for a misspelling or duplicate. History is preserved behind the scenes.'))return;
+   try{
+     let canonical=name;
+     if(typeof findAgentProfileByName==='function'){const r=await findAgentProfileByName(name);if(r.ambiguous)throw new Error('Multiple profiles match this name. Open the exact Contact record first so the correct duplicate is targeted.');if(r.exact)canonical=r.exact.agent_name;}
+     const marker=(typeof HIDDEN_PROFILE_MARKER!=='undefined'?HIDDEN_PROFILE_MARKER:'__HIDDEN__');
+     if(typeof sbProfileWrite==='function'){
+       const rs=await sbFetch('agent_profiles?agent_name=eq.'+encodeURIComponent(canonical)+'&select=agent_name&limit=1').catch(()=>[]);
+       if(rs&&rs.length)await sbProfileWrite('agent_profiles?agent_name=eq.'+encodeURIComponent(canonical),'PATCH',{relationship_status:'inactive',display_name:marker});else await sbProfileWrite('agent_profiles','POST',{agent_name:canonical,relationship_status:'inactive',display_name:marker});
+     }else await sbFetch('agent_profiles?agent_name=eq.'+encodeURIComponent(canonical),{method:'PATCH',prefer:'return=minimal',body:JSON.stringify({relationship_status:'inactive',display_name:marker})});
+     if(typeof removeAgentAcrossSharedTrackers==='function')await removeAgentAcrossSharedTrackers(canonical);
+     R.cache=null;R.ts=0;toast(fmtName(name)+' hidden as bad/duplicate ✓','success');rmxClose();go(R.route,true);
+   }catch(e){toast('Delete/hide failed: '+(e.message||'Unknown error'),'error')}
+ };
+
  window.rmxQuickManagerNote=function(name){modal('<div class="rmx-modalhead"><h2>Quick Manager Note · '+esc(fmtName(name))+'</h2><button class="rmx-x" onclick="rmxClose()">×</button></div><div class="rmx-field"><label>Category</label><select id="rmxQuickNoteType"><option>Manager context</option><option>Risk / retention</option><option>Growth opportunity</option><option>Portfolio review</option><option>Coaching observation</option></select></div><div class="rmx-field"><label>Note</label><textarea id="rmxQuickNoteText" placeholder="What do you need to remember, review, or decide?"></textarea></div><div class="rmx-modal-actions"><button class="rmx-btn" onclick="rmxClose()">Cancel</button><button class="rmx-btn primary" onclick="rmxSaveQuickManagerNote('+JSON.stringify(name)+')">Save Note</button></div>')};
  window.rmxSaveQuickManagerNote=async function(name){const note=$('rmxQuickNoteText')?.value.trim()||'',cat=$('rmxQuickNoteType')?.value||'Manager context';if(!note){toast('Add the note first.','error');return}try{const raw='['+cat+'] '+note,notes=typeof appendRmMeta==='function'?appendRmMeta(raw,'Nyny','','',['Nyny'],[],''):raw;await sbFetch('amanda_activities',{method:'POST',body:JSON.stringify({agent_name:name,act_type:'RM Portfolio Review',act_date:todayS(),outcome:'Internal manager note',notes:notes,follow_up_date:null})});R.cache=null;R.ts=0;toast('Manager note saved ✓','success');rmxClose();go(R.route,true)}catch(e){toast('Could not save manager note: '+e.message,'error')}};
  window.rmxCoachAmandaForAgent=async function(name){
@@ -17950,6 +18025,7 @@ window.rmxAdminRemoveAgent=async function(name){if(!window.confirm('Mark '+name+
  window.rmxReturnToDirector=function(){try{sessionStorage.removeItem('rmx_return_director')}catch(e){}location.hash='director'};
  let ret=document.getElementById('rmxDirectorReturn');if(!ret){ret=document.createElement('button');ret.id='rmxDirectorReturn';ret.textContent='← Back to Management';ret.onclick=window.rmxReturnToDirector;document.body.appendChild(ret)}
  window.addEventListener('hashchange',()=>{const b=document.getElementById('rmxDirectorReturn');if(b)b.style.display=location.hash==='#director'?'none':(sessionStorage.getItem('rmx_return_director')==='1'?'block':'none')});
+ window.rmxRefreshManagementData=function(){R.cache=null;R.ts=0;if(document.body.classList.contains('rm-director-route'))go(R.route,true)};
 window.rmxBoot=boot;const baseSwitch=window.switchTab;window.switchTab=function(name){
    if(name==='daniel'){
      document.body.classList.add('rmx-director-site','rmx-director-active','rm-director-route');
