@@ -910,6 +910,12 @@ body.rmx-director-site .rmx-main{padding:24px 30px 48px!important}
 }
 </style>
 
+
+<style id="rmx-director-roster-cleanup-css">
+#rmxContent .rmx-btn.danger{border-color:#E3B7B2;color:#9B3F37;background:#FFF7F6}
+#rmxContent .rmx-btn.danger:hover{background:#FCEBE8}
+</style>
+
 </head>
 <body>
 <input accept="image/*" id="v95ProfilePhotoInput" onchange="v95HandlePhotoUpload(event)" style="display:none" type="file"/>
@@ -14029,7 +14035,26 @@ body.rmx-director-site .rmx-stat-click{position:relative;z-index:4;pointer-event
    document.querySelectorAll('#rmxContent th[data-sort]').forEach(th=>{th.onclick=()=>{const k=th.dataset.sort;if(state.sortKey===k){state.sortDir=state.sortDir==='asc'?'desc':'asc'}else{state.sortKey=k;state.sortDir='desc'}updateSortIndicators();apply()}});
    updateSortIndicators();apply();
  }
- function renderAdmin(c,d){title(c,'Admin / Tools','System health, ownership gaps and fast agent search.');const un=d.profiles.filter(p=>!p._assign.rm||p._assign.rm==='Unassigned'),plans=d.profiles.filter(p=>p._assign.rm==='Nyny'&&['Channel','A','B'].includes(p._tier)&&!String(p.next_growth_opportunity||'').trim());c.innerHTML+='<div class="rmx-grid">'+stat('Ownership gaps',un.length,'Active relationships without RM',un.length?'rmx-watch':'rmx-good')+stat('Plan gaps',plans.length,'Nyny A/B/Channel',plans.length?'rmx-watch':'rmx-good')+stat('Power BI snapshot',d.latest?new Date(d.latest).toLocaleDateString():'Unknown','Latest imported production')+'</div><input class="rmx-search" id="rmxAdminSearch" placeholder="Search agent to log, update or view history…"><div id="rmxAdminRows">'+card('Agent tools','Use search instead of scrolling.','<div class="rmx-list">'+d.profiles.map(p=>'<div class="rmx-row" data-name="'+esc(p.agent_name)+'"><div><div class="name">'+esc(p.agent_name)+(p._tier?'<span class="rmx-pill">'+p._tier+'</span>':'')+'</div><div class="meta">RM: '+esc(p._assign.rm||'Unassigned')+' · LP: '+esc(p._assign.lp||'Unassigned')+'</div></div><div class="meta">'+esc(p.next_growth_opportunity||'No next move')+'</div>'+actionBtns(p.agent_name)+'</div>').join('')+'</div>')+'</div>';wireSearch('rmxAdminSearch','#rmxAdminRows .rmx-row')}
+ function renderAdmin(c,d){
+  title(c,'Admin / Tools','System health, ownership cleanup and roster control.');
+
+  const unowned=d.profiles.filter(p=>!String((p._assign||{}).rm||'').trim());
+  const inactive=d.profiles.filter(p=>String(p.relationship_status||'active').toLowerCase()==='inactive');
+  const active=d.profiles.filter(p=>String(p.relationship_status||'active').toLowerCase()!=='inactive'&&p.do_not_contact!==true);
+
+  c.innerHTML+='<div class="rmx-grid">'
+    +stat('Active relationships',active.length,'Current active roster')
+    +stat('No RM owner',unowned.length,'Needs assignment',unowned.length?'rmx-watch':'rmx-good')
+    +stat('Inactive / removed',inactive.length,'Preserved history')
+    +'</div>';
+
+  c.innerHTML+=card('Roster cleanup','Use this when someone should no longer count in Amanda’s workload, Face Time, carryover or your active portfolio.',
+    '<div class="rmx-note"><b>Remove from active</b> preserves history but marks the relationship inactive and clears it from active RM workflows.</div>'
+    +'<input class="rmx-search" id="rmxAdminAgentSearch" placeholder="Search agent to remove or review…">'
+    +'<div id="rmxAdminAgentRows" style="margin-top:10px"></div>');
+
+  setTimeout(()=>rmxRenderAdminAgentRows(),0);
+}
  function wireSearch(id,sel){const i=$(id);if(!i)return;i.oninput=()=>{const q=i.value.trim().toLowerCase();document.querySelectorAll(sel).forEach(r=>r.style.display=!q||String(r.textContent||'').toLowerCase().includes(q)?'':'none')}}
  function modal(html){let m=$('rmxModal');if(!m){m=document.createElement('div');m.id='rmxModal';m.className='rmx-modal';document.body.appendChild(m);m.addEventListener('click',e=>{if(e.target===m)m.classList.remove('open')})}m.innerHTML='<div class="rmx-modalbox">'+html+'</div>';m.classList.add('open')}
  window.rmxClose=()=>{$('rmxModal')?.classList.remove('open')};
@@ -14153,6 +14178,107 @@ body.rmx-director-site .rmx-stat-click{position:relative;z-index:4;pointer-event
     input.click();
   };
   document.addEventListener('DOMContentLoaded',ensureInput);
+})();
+</script>
+
+
+<script id="rmx-director-roster-cleanup">
+(function(){
+  function ek(s){return String(s||'').trim().toLowerCase().replace(/\s+/g,' ')}
+  function escv(s){
+    try{return esc(String(s==null?'':s))}catch(e){return String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}
+  }
+
+  window.rmxRenderAdminAgentRows=function(){
+    const host=document.getElementById('rmxAdminAgentRows');
+    if(!host)return;
+    const input=document.getElementById('rmxAdminAgentSearch');
+    const q=String(input&&input.value||'').trim().toLowerCase();
+
+    if(input && !input.dataset.bound){
+      input.dataset.bound='1';
+      input.addEventListener('input',rmxRenderAdminAgentRows);
+    }
+
+    const d=R.cache;
+    if(!d||!Array.isArray(d.profiles)){
+      host.innerHTML='<div class="rmx-empty">Loading roster…</div>';
+      return;
+    }
+
+    const rows=d.profiles
+      .filter(p=>{
+        const a=p._assign||{};
+        const hay=[p.display_name,p.agent_name,p._tier,a.rm,a.lp,p.relationship_status].join(' ').toLowerCase();
+        return !q||hay.includes(q);
+      })
+      .sort((a,b)=>String(a.display_name||a.agent_name||'').localeCompare(String(b.display_name||b.agent_name||'')))
+      .slice(0,60);
+
+    host.innerHTML=rows.length?rows.map(p=>{
+      const a=p._assign||{};
+      const inactive=String(p.relationship_status||'active').toLowerCase()==='inactive'||p.do_not_contact===true;
+      return '<div class="rmx-row">'
+        +'<div><div class="name">'+escv(p.display_name||p.agent_name)+' <span class="rmx-pill">'+escv(p._tier||'')+'</span>'+(inactive?'<span class="rmx-pill red">INACTIVE</span>':'')+'</div>'
+        +'<div class="meta">RM: '+escv(a.rm||'Unassigned')+' · LP: '+escv(a.lp||'Unassigned')+(p.relationship_status?' · '+escv(p.relationship_status):'')+'</div></div>'
+        +'<div class="rmx-actions">'
+        +(inactive?'<button class="rmx-btn small" disabled>Removed</button>':'<button class="rmx-btn small danger" onclick="rmxRemoveAgent('+JSON.stringify(String(p.agent_name||''))+')">Remove from active</button>')
+        +'</div></div>';
+    }).join(''):'<div class="rmx-empty">No agents match that search.</div>';
+  };
+
+  window.rmxRemoveAgent=async function(name){
+    if(!name)return;
+    if(!confirm('Remove '+name+' from the active roster?\n\nThis preserves history but removes them from Amanda’s active queues, Face Time, carryover and active portfolio counts.'))return;
+    try{
+      // 1) Mark every profile row inactive + not retained so duplicate rows cannot resurrect them.
+      await sbFetch('agent_profiles?agent_name=eq.'+encodeURIComponent(name),{
+        method:'PATCH',prefer:'return=minimal',
+        body:JSON.stringify({relationship_status:'inactive',retained:false})
+      });
+
+      // 2) Clear future follow-ups so stale activity does not keep surfacing.
+      try{
+        await sbFetch('amanda_activities?agent_name=eq.'+encodeURIComponent(name)+'&follow_up_date=not.is.null',{
+          method:'PATCH',prefer:'return=minimal',
+          body:JSON.stringify({follow_up_date:null})
+        });
+      }catch(e){}
+
+      // 3) Shared removal marker in assignments.
+      const keyName=encodeURIComponent(name);
+      let rows=[];
+      try{rows=await sbFetch('agent_assignments?agent_name=eq.'+keyName+'&select=agent_name,lp,rm&limit=20')}catch(e){}
+      if(Array.isArray(rows)&&rows.length){
+        await sbFetch('agent_assignments?agent_name=eq.'+keyName,{
+          method:'PATCH',prefer:'return=minimal',
+          body:JSON.stringify({lp:'__REMOVED__'})
+        }).catch(()=>{});
+      }
+
+      // 4) Remove from current weekly work queue if present.
+      try{
+        await sbFetch('rm_work_queue?agent_name=eq.'+keyName,{
+          method:'DELETE',prefer:'return=minimal'
+        });
+      }catch(e){}
+
+      // 5) Remove from reconnect queue if table exists.
+      try{
+        await sbFetch('reconnect_agents?agent_name=eq.'+keyName,{
+          method:'PATCH',prefer:'return=minimal',
+          body:JSON.stringify({status:'inactive'})
+        });
+      }catch(e){}
+
+      R.cache=null;R.ts=0;
+      try{toast(name+' removed from active roster ✓','success')}catch(e){}
+      await go(R.route,true);
+      setTimeout(rmxRenderAdminAgentRows,50);
+    }catch(e){
+      try{toast('Could not remove '+name+': '+e.message,'error')}catch(_){alert('Could not remove '+name)}
+    }
+  };
 })();
 </script>
 
