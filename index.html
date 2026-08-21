@@ -1,5 +1,5 @@
    <!DOCTYPE html>
-<!-- v214 DIRECTOR LIVE-DOM AMANDA PORTAL · 2026-08-21 -->
+<!-- v215 DIRECTOR EMBEDDED-AMANDA ISOLATION FIX · 2026-08-21 -->
 
 <!-- Cleanup pass: floating Page Guide + stale developer build logs removed; active workflow logic preserved. -->
 <!-- v140: fixes Step 2 transaction renderer race; saved/open CTC and New Contract tasks are no longer erased after successful distribution -->
@@ -1088,9 +1088,10 @@ body.rmx-director-active .app-header{margin-left:0!important;padding-left:24px!i
 .rmx-amanda-localnav button{border:1px solid #DDDDE4;background:#fff;color:#514A5B;border-radius:9px;padding:7px 10px;font-size:11px;font-weight:700;cursor:pointer}
 .rmx-amanda-localnav button.active{background:#4E3D8A;color:#fff;border-color:#4E3D8A}
 #rmxAmandaPortal{background:#F8F6FB;min-height:720px;padding:0 0 24px}
-body.rm-director-route #rmxAmandaPortal .view{display:none!important;max-width:none!important;margin:0!important;padding:18px!important}
-body.rm-director-route #rmxAmandaPortal .view.active{display:block!important;visibility:visible!important;opacity:1!important}
-body.rmx-director-site #rmxAmandaPortal .view{max-width:none!important}
+#rmxAmandaPortal .rmx-embedded-view{display:none!important;max-width:none!important;margin:0!important;padding:18px!important}
+#rmxAmandaPortal .rmx-embedded-view.active{display:block!important;visibility:visible!important;opacity:1!important}
+body.rm-director-route #rmxAmandaPortal .rmx-embedded-view.active{display:block!important;visibility:visible!important;opacity:1!important}
+body.rmx-director-site #rmxAmandaPortal .rmx-embedded-view{max-width:none!important}
 @media(max-width:900px){.rmx-shell{grid-template-columns:1fr}.rmx-side{position:static;height:auto;border-right:0;border-bottom:1px solid #E3E3DC;padding:12px}.rmx-brand{display:none}.rmx-nav{flex-direction:row;overflow:auto}.rmx-nav button{white-space:nowrap;font-size:14px;padding:9px 11px}.rmx-main{padding:20px 14px}.rmx-head{align-items:flex-start}.rmx-avatar{width:56px;height:56px}.rmx-greet{font-size:20px}.rmx-date{font-size:14px}.rmx-row{grid-template-columns:1fr}.rmx-actions{justify-content:flex-start}}
 
 @media(max-width:900px){.rmx-amanda-toolbar{align-items:flex-start;flex-direction:column}.rmx-amanda-localnav{overflow-x:auto;flex-wrap:nowrap}.rmx-amanda-localnav button{white-space:nowrap}#rmxAmandaPortal{min-height:620px}}
@@ -17394,15 +17395,31 @@ window.rmAuditVisibleButtons=function(){
    if(!R.amandaMounted||!RMX_AMANDA_TABS.some(x=>x[0]===name))return false;
    const portal=$('rmxAmandaPortal');if(!portal)return false;
    R.amandaTab=name;window.rmxAmandaActiveTab=name;
-   portal.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
-   const target=$('view-'+name);if(target)target.classList.add('active');
+
+   // Amanda is deliberately NOT a generic ".view" while mounted in Management.
+   // This keeps every legacy Director view-hider/switcher away from her DOM.
+   portal.querySelectorAll('.rmx-embedded-view').forEach(v=>v.classList.remove('active'));
+   const target=$('view-'+name);
+   if(target&&portal.contains(target))target.classList.add('active');
+
+   // Reassert the Director shell in case an older async callback ran.
+   const director=$('view-daniel');
+   if(director)director.classList.add('active');
+   document.body.classList.add('rm-director-route','rmx-director-active','rmx-director-site');
+
    document.querySelectorAll('.rmx-amanda-localnav button').forEach(b=>b.classList.toggle('active',b.dataset.rmxAmandaTab===name));
    rmxRunAmandaLoader(name,force);
    return true;
  }
  function rmxUnmountAmanda(){
    if(!R.amandaMounted)return;
-   (R.amandaSlots||[]).forEach(s=>{try{if(s.marker&&s.marker.parentNode)s.marker.parentNode.insertBefore(s.node,s.marker.nextSibling)}catch(e){}});
+   (R.amandaSlots||[]).forEach(s=>{
+     try{
+       if(s.marker&&s.marker.parentNode)s.marker.parentNode.insertBefore(s.node,s.marker.nextSibling);
+       s.node.classList.remove('rmx-embedded-view');
+       if(s.hadViewClass!==false)s.node.classList.add('view');
+     }catch(e){}
+   });
    (R.amandaSlots||[]).forEach(s=>{try{s.marker&&s.marker.remove()}catch(e){}});
    R.amandaSlots=[];R.amandaMounted=false;
  }
@@ -17420,7 +17437,12 @@ window.rmAuditVisibleButtons=function(){
      const node=$('view-'+x[0]);if(!node||!node.parentNode)return;
      const marker=document.createComment('rmx-amanda-return-'+x[0]);
      node.parentNode.insertBefore(marker,node);
-     slots.push({node,marker});
+
+     const hadViewClass=node.classList.contains('view');
+     node.classList.remove('view');
+     node.classList.add('rmx-embedded-view');
+
+     slots.push({node,marker,hadViewClass});
      portal.appendChild(node);
    });
    R.amandaSlots=slots;R.amandaMounted=true;
@@ -17657,15 +17679,20 @@ window.rmxAdminRemoveAgent=async function(name){
  window.rmxCopyCoaching=async()=>{rmxBuildCoaching();try{await navigator.clipboard.writeText($('rmxCgPreview').value);toast('Coaching email copied ✓','success')}catch(e){$('rmxCgPreview').select();document.execCommand('copy');toast('Coaching email copied ✓','success')}};
  window.rmxSaveCoaching=async()=>{rmxBuildCoaching();const notes=$('rmxCgPreview').value;try{const finalNotes=typeof appendRmMeta==='function'?appendRmMeta(notes,'Nyny','','',['Nyny'],[],''):notes;await sbFetch('amanda_activities',{method:'POST',body:JSON.stringify({agent_name:'Amanda',act_type:'Amanda Coaching / Development',act_date:todayS(),outcome:'Completed',notes:finalNotes,follow_up_date:null})});R.cache=null;toast('Amanda coaching saved ✓','success');rmxClose();go('amanda',true)}catch(e){toast('Could not save coaching: '+e.message,'error')}};
  window.rmxBoot=boot;const baseSwitch=window.switchTab;window.switchTab=function(name){
-   const inDirector=!!(document.body.classList.contains('rm-director-route')||(typeof directorMode==='function'&&directorMode()));
-   if(inDirector&&R.route==='amanda'&&RMX_AMANDA_TABS.some(x=>x[0]===name))return rmxEmbeddedAmandaSwitch(name,false);
+   const embeddedAmanda=R.route==='amanda'&&R.amandaMounted&&RMX_AMANDA_TABS.some(x=>x[0]===name);
+   if(embeddedAmanda){
+     document.body.classList.add('rm-director-route','rmx-director-active','rmx-director-site');
+     return rmxEmbeddedAmandaSwitch(name,false);
+   }
    if(name==='daniel'){
      if(R.amandaMounted)rmxUnmountAmanda();
      document.body.classList.add('rmx-director-site');
      document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active',t.dataset.tab==='daniel'));
      document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
      const v=$('view-daniel');if(v){v.style.removeProperty('display');v.classList.add('active')}
-     document.body.classList.add('rmx-director-active');boot();return;
+     document.body.classList.add('rmx-director-active');
+     boot();
+     return;
    }
    if(R.amandaMounted)rmxUnmountAmanda();
    document.body.classList.remove('rmx-director-active','rmx-director-site');
@@ -17696,6 +17723,31 @@ window.rmxAdminRemoveAgent=async function(name){
  window.addEventListener('hashchange',apply);
  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',apply,{once:true});else apply();
 })();
+</script>
+
+
+<script id="v215-amanda-director-health">
+window.rmxAmandaHealth=function(){
+  const portal=document.getElementById('rmxAmandaPortal');
+  const week=document.getElementById('view-week');
+  const director=document.getElementById('view-daniel');
+  const content=document.getElementById('rmxContent');
+  const info={
+    build:'v215',
+    hash:location.hash,
+    directorClass:document.body.classList.contains('rm-director-route'),
+    portalExists:!!portal,
+    weekInsidePortal:!!(portal&&week&&portal.contains(week)),
+    weekClasses:week?week.className:null,
+    weekDisplay:week?getComputedStyle(week).display:null,
+    weekHeight:week?Math.round(week.getBoundingClientRect().height):0,
+    weekVisible:!!(week&&week.getBoundingClientRect().height>0&&getComputedStyle(week).display!=='none'),
+    directorActive:!!(director&&director.classList.contains('active')),
+    contentHasPortal:!!(content&&portal&&content.contains(portal))
+  };
+  console.log('RMX Amanda health',info);
+  return info;
+};
 </script>
 
 </body>
