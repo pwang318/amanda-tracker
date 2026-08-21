@@ -1,4 +1,4 @@
-  <!DOCTYPE html>
+ <!DOCTYPE html>
 
 <!-- Cleanup pass: floating Page Guide + stale developer build logs removed; active workflow logic preserved. -->
 <!-- v140: fixes Step 2 transaction renderer race; saved/open CTC and New Contract tasks are no longer erased after successful distribution -->
@@ -1215,17 +1215,13 @@ body.rmx-director-site .rmx-stat-click{position:relative;z-index:4;pointer-event
 @media(max-width:1050px){.rmx-snapshot-focus{grid-template-columns:1fr}.rmx-shell{grid-template-columns:210px minmax(0,1fr)}.rmx-main{padding-left:20px;padding-right:20px}}
 </style>
 
-<style id="v208-one-code-director-route-css">
-body.rm-director-route .tabs,
-body.rm-director-route .who-bar{display:none!important}
+\n<style id="v211-final-director-route-css">
+body.rm-amanda-route #view-daniel,body.rm-amanda-route #rmxApp{display:none!important}
 body.rm-director-route .view:not(#view-daniel){display:none!important}
-body.rm-director-route #view-daniel{display:block!important}
-body.rm-director-route #view-daniel.rmx-on > :not(#rmxApp){display:none!important}
-body.rm-amanda-route #view-daniel,
-body.rm-amanda-route .tab[data-tab="daniel"]{display:none!important}
-</style>
-
-</head>
+body.rm-director-route #view-daniel{display:block!important;visibility:visible!important;opacity:1!important;min-height:calc(100vh - 58px)!important}
+body.rm-director-route #rmxApp{display:block!important;visibility:visible!important;opacity:1!important;min-height:calc(100vh - 58px)!important}
+body.rm-director-route .tabs,body.rm-director-route .who-bar{display:none!important}
+</style>\n</head>
 <body>
 <input accept="image/*" id="v95ProfilePhotoInput" onchange="v95HandlePhotoUpload(event)" style="display:none" type="file"/>
 <style>
@@ -1710,6 +1706,7 @@ body.rm-amanda-route .tab[data-tab="daniel"]{display:none!important}
 <!-- LP flags belong to the RM workflow: LPs create the signal in the LP tracker; RM owns the response here. -->
 <!-- Attention items — 2 col -->
 </div>
+<div class="view" id="view-daniel"></div>
 <div class="view" id="view-log">
 <div id="logErrorBanner"></div>
 <div class="log-locked-card" id="logLockedCard" style="display:none">
@@ -16919,49 +16916,6 @@ window.rmAuditVisibleButtons=function(){
 </script>
 
 
-<script id="v193-unified-route-controller">
-(function(){
-  function isDirector(){
-    try{
-      const path=String(location.pathname||"").toLowerCase();
-      const qs=new URLSearchParams(location.search||"");
-      return /\/director(?:\.html)?$/.test(path)||qs.get("director")==="1"||location.hash==="#director";
-    }catch(e){return false}
-  }
-  function clearHidden(el){
-    if(!el)return;
-    try{el.style.removeProperty("display");el.removeAttribute("aria-hidden")}catch(e){}
-  }
-  function applyRoute(){
-    const dir=isDirector();
-    document.body.classList.toggle("rm-director-route",dir);
-    document.body.classList.toggle("rm-amanda-route",!dir);
-    const mgmt=document.getElementById("view-daniel"),week=document.getElementById("view-week"),mgmtTab=document.querySelector('.tab[data-tab="daniel"]');
-    const leadership=document.querySelectorAll(".director-nav-label,.management-nav-tab");
-    if(dir){
-      [mgmt,mgmtTab].forEach(clearHidden);leadership.forEach(clearHidden);
-      document.querySelectorAll(".view").forEach(v=>v.classList.remove("active"));
-      if(mgmt){clearHidden(mgmt);mgmt.classList.add("active")}
-      document.querySelectorAll(".tab").forEach(t=>t.classList.toggle("active",t.dataset.tab==="daniel"));
-      document.title="RM Tracker · Director";
-      try{if(typeof loadManagement==="function")loadManagement();if(typeof v84LoadPartnerGraduations==="function")v84LoadPartnerGraduations();if(typeof v85LoadCommandCenter==="function")v85LoadCommandCenter();if(typeof v91LoadDirectorOS==="function")v91LoadDirectorOS()}catch(e){console.warn("Director boot",e)}
-    }else{
-      leadership.forEach(el=>{el.style.setProperty("display","none","important");el.setAttribute("aria-hidden","true")});
-      if(mgmt){mgmt.style.setProperty("display","none","important");mgmt.setAttribute("aria-hidden","true");mgmt.classList.remove("active")}
-      if(mgmtTab){mgmtTab.style.setProperty("display","none","important");mgmtTab.setAttribute("aria-hidden","true")}
-      if(!document.querySelector(".view.active")&&week)week.classList.add("active");
-      document.title="RM Tracker";
-    }
-  }
-  const originalSwitch=window.switchTab;
-  if(typeof originalSwitch==="function")window.switchTab=function(name){if(!isDirector()&&String(name||"").toLowerCase()==="daniel")name="week";return originalSwitch.apply(this,[name].concat([].slice.call(arguments,1)))};
-  if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",applyRoute,{once:true});else applyRoute();
-  setTimeout(applyRoute,350);setTimeout(applyRoute,1200);
-})();
-</script>
-
-
-
 <script id="v195-address-helpers-only">
 (function(){
   window.v192ParseAddress=function(raw){
@@ -17426,7 +17380,7 @@ window.rmAuditVisibleButtons=function(){
  function actionBtns(name){const n=encodeURIComponent(String(name||''));return '<div class="rmx-actions"><button class="rmx-btn small primary" data-rmx-action="log" data-agent="'+n+'">Log</button><button class="rmx-btn small" data-rmx-action="history" data-agent="'+n+'">History</button><button class="rmx-btn small" data-rmx-action="schedule" data-agent="'+n+'">Schedule</button><button class="rmx-btn small" data-rmx-action="update" data-agent="'+n+'">Update</button></div>'}
  function nav(){return [['snapshot','⌂','Snapshot'],['myday','▣','My Day'],['amanda','♙','Amanda'],['tier','↗','Tier Growth'],['portfolio','▢','Portfolio'],['communication','▱','LP / RM Handoffs'],['reports','▤','Reports & History'],['admin','⚙','Admin / Tools']]}
  function identity(){let src='';try{src=localStorage.getItem('rm_profile_photo_nyny')||''}catch(e){}if(!src){const av=$('v95NynyAvatar');src=av&&av.src?av.src:''}const h=new Date().getHours(),g=h<12?'Good morning':h<17?'Good afternoon':'Good evening';return '<div class="rmx-identity">'+(src?'<img class="rmx-avatar" id="rmxNynyAvatar" src="'+src+'">':'<div class="rmx-avatar" id="rmxNynyAvatarFallback" style="display:flex;align-items:center;justify-content:center;font-weight:800">N</div>')+'<div><div class="rmx-greet">'+g+', Nyny</div><div class="rmx-role">Director of Client Experience</div><div class="rmx-sub" id="rmxHeadSub">Loading your snapshot…</div><button class="rmx-photo" onclick="rmxChoosePhoto()">Change photo</button></div></div>'}
- function boot(){const view=$('view-daniel');if(!view||$('rmxApp'))return;view.classList.add('rmx-on');const app=document.createElement('div');app.id='rmxApp';app.innerHTML='<div class="rmx-shell"><aside class="rmx-side"><div class="rmx-brand"><div class="rmx-brand-icon">♧</div><div><strong>RM TRACKER</strong><span>Management View</span></div></div><nav class="rmx-nav">'+nav().map(n=>'<button data-rmx="'+n[0]+'"><span class="ico">'+n[1]+'</span>'+n[2]+'</button>').join('')+'</nav></aside><main class="rmx-main"><header class="rmx-head">'+identity()+'<div class="rmx-date"><span>▣</span><span>'+new Date(todayS()+'T12:00:00').toLocaleDateString(undefined,{month:'short',day:'numeric',year:'numeric'})+'</span><button class="rmx-btn" id="rmxRefresh">Refresh</button></div></header><div id="rmxContent"></div></main></div>';view.appendChild(app);wireDirectorRouting();$('rmxRefresh').onclick=()=>{R.cache=null;R.ts=0;go(R.route,true)};go('snapshot')}
+ function boot(){const view=$('view-daniel');if(!view)return;view.style.removeProperty('display');view.classList.add('rmx-on');let app=$('rmxApp');if(app&&!view.contains(app)){try{app.remove()}catch(e){}app=null}if(!app){app=document.createElement('div');app.id='rmxApp';view.appendChild(app)}app.innerHTML='<div class="rmx-shell"><aside class="rmx-side"><div class="rmx-brand"><div class="rmx-brand-icon">♧</div><div><strong>RM TRACKER</strong><span>Management View</span></div></div><nav class="rmx-nav">'+nav().map(n=>'<button data-rmx="'+n[0]+'"><span class="ico">'+n[1]+'</span>'+n[2]+'</button>').join('')+'</nav></aside><main class="rmx-main"><header class="rmx-head">'+identity()+'<div class="rmx-date"><span>▣</span><span>'+new Date(todayS()+'T12:00:00').toLocaleDateString(undefined,{month:'short',day:'numeric',year:'numeric'})+'</span><button class="rmx-btn" id="rmxRefresh">Refresh</button></div></header><div id="rmxContent"></div></main></div>';wireDirectorRouting();const rr=$('rmxRefresh');if(rr)rr.onclick=()=>{R.cache=null;R.ts=0;go(R.route,true)};go(R.route||'snapshot')}
  async function go(route,force){R.route=route;document.body.classList.add('rmx-director-active');wireDirectorRouting();document.querySelectorAll('.rmx-nav button').forEach(b=>b.classList.toggle('active',b.dataset.rmx===route));const c=$('rmxContent');if(!c)return;c.innerHTML=loading();try{const d=await load(!!force);c.innerHTML='';if(route==='snapshot')renderSnapshot(c,d);else if(route==='myday')renderMyDay(c,d);else if(route==='amanda')renderAmanda(c,d);else if(route==='tier')renderTier(c,d);else if(route==='portfolio')renderPortfolio(c,d);else if(route==='communication')renderComm(c,d);else if(route==='reports')renderReports(c,d);else if(route==='admin')renderAdmin(c,d);else renderSnapshot(c,d);if(!String(c.textContent||'').trim())c.innerHTML=empty('This section has no current items.');}catch(e){console.error('RMX',e);c.innerHTML=err(e)}}
  window.rmxGo=(route,force)=>go(route,!!force);
  function wireDirectorRouting(){const app=$('rmxApp');if(!app||app.dataset.routingWired==='1')return;app.dataset.routingWired='1';app.addEventListener('click',function(e){const target=e.target.closest('[data-rmx-jump]');if(target){e.preventDefault();e.stopPropagation();go(target.dataset.rmxJump);return}const navBtn=e.target.closest('[data-rmx]');if(navBtn){e.preventDefault();e.stopPropagation();go(navBtn.dataset.rmx)}})}
@@ -17434,7 +17388,7 @@ window.rmAuditVisibleButtons=function(){
  function counts(d){const x={Channel:0,A:0,B:0,C:0};d.prod.forEach(p=>{if(x[p._tier]!=null)x[p._tier]++});return x}
  function meetings(d){return d.acts.filter(a=>a.act_type==='New Realtor Meeting').length}
 
- function rmxTalkTypes(){return new Set(['Agent Talk-to','Active Agent Talk-to','Active Agent Check-in','Reconnect Outreach','CTC Call','Under Contract Call','Birthday Outreach','Holiday Outreach','Agent Appreciation','Market Update','Market Update Call','Sent Market Report','Sent Referral','Co-Marketing Discussion','New Agent Follow-up','Closed Deal Thank You'])}
+ function rmxTalkTypes(){return new Set(['Agent Talk-to','Active Agent Talk-to','Active Agent Check-in','Reconnect Outreach','CTC Call','Under Contract Call','Birthday Outreach','Holiday Outreach','Agent Appreciation','Market Update','Market Update Call','Sent Market Report','Sent Referral','Co-Marketing Discussion','New Agent Follow-up','Closed Deal Thank You','Partner Meeting','Break Breads','Retention Meeting'])}
  function rmxConversion(d){
    const START='2026-08-21',DAY=86400000,tod=new Date(todayS()+'T12:00:00');
    const prof={};(d.profiles||[]).forEach(p=>prof[key(p.agent_name)]=p);
@@ -17806,37 +17760,32 @@ window.rmAuditVisibleButtons=function(){
  window.rmxBuildCoaching=()=>{const g=$('rmxCgGood')?.value.trim()||'',i=$('rmxCgImprove')?.value.trim()||'',a=$('rmxCgAsk')?.value.trim()||'',cl=$('rmxCgClose')?.value.trim()||'';$('rmxCgPreview').value='Amanda,\n\n'+g+'\n\n'+i+'\n\n'+a+'\n\n'+cl+'\n\nBest,\nNyny'};
  window.rmxCopyCoaching=async()=>{rmxBuildCoaching();try{await navigator.clipboard.writeText($('rmxCgPreview').value);toast('Coaching email copied ✓','success')}catch(e){$('rmxCgPreview').select();document.execCommand('copy');toast('Coaching email copied ✓','success')}};
  window.rmxSaveCoaching=async()=>{rmxBuildCoaching();const notes=$('rmxCgPreview').value;try{const finalNotes=typeof appendRmMeta==='function'?appendRmMeta(notes,'Nyny','','',['Nyny'],[],''):notes;await sbFetch('amanda_activities',{method:'POST',body:JSON.stringify({agent_name:'Amanda',act_type:'Amanda Coaching / Development',act_date:todayS(),outcome:'Completed',notes:finalNotes,follow_up_date:null})});R.cache=null;toast('Amanda coaching saved ✓','success');rmxClose();go('amanda',true)}catch(e){toast('Could not save coaching: '+e.message,'error')}};
- const baseSwitch=window.switchTab;window.switchTab=function(name){if(name==='daniel'){document.body.classList.add('rmx-director-site');document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active',t.dataset.tab==='daniel'));document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));const v=$('view-daniel');if(v)v.classList.add('active');document.body.classList.add('rmx-director-active');boot();return}document.body.classList.remove('rmx-director-active','rmx-director-site');return baseSwitch?baseSwitch(name):undefined};
+ window.rmxBoot=boot;const baseSwitch=window.switchTab;window.switchTab=function(name){if(name==='daniel'){document.body.classList.add('rmx-director-site');document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active',t.dataset.tab==='daniel'));document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));const v=$('view-daniel');if(v){v.style.removeProperty('display');v.classList.add('active')}document.body.classList.add('rmx-director-active');boot();return}document.body.classList.remove('rmx-director-active','rmx-director-site');return baseSwitch?baseSwitch(name):undefined};
 })();
 
-</script>
-
-<script id="v208-one-code-director-route-js">
+</script>\n<script id="v211-final-director-route-js">
 (function(){
-  function isDirector(){
-    try{return location.hash==='#director'||new URLSearchParams(location.search).get('director')==='1'}catch(e){return false}
-  }
-  function apply(){
-    const dir=isDirector();
-    document.body.classList.toggle('rm-director-route',dir);
-    document.body.classList.toggle('rm-amanda-route',!dir);
-    if(dir){
-      try{
-        if(typeof switchTab==='function')switchTab('daniel');
-      }catch(e){console.warn('Director route',e)}
-    }else{
-      // If hash was removed while on Director, return to Today.
-      if(document.body.classList.contains('rmx-director-active')){
-        document.body.classList.remove('rmx-director-active','rmx-director-site');
-        try{if(typeof switchTab==='function')switchTab('week')}catch(e){}
-      }
-    }
-  }
-  window.addEventListener('hashchange',apply);
-  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',apply,{once:true});else apply();
-  setTimeout(apply,250);
+ function isDirector(){try{return location.hash==='#director'||new URLSearchParams(location.search).get('director')==='1'}catch(e){return false}}
+ function ensureView(){let v=document.getElementById('view-daniel');if(v)return v;v=document.createElement('div');v.id='view-daniel';v.className='view';const host=document.querySelector('.app')||document.body;host.appendChild(v);return v}
+ function apply(){
+   const dir=isDirector();
+   document.body.classList.toggle('rm-director-route',dir);
+   document.body.classList.toggle('rm-amanda-route',!dir);
+   if(dir){
+     const v=ensureView();v.style.removeProperty('display');v.classList.add('active');
+     try{if(typeof window.rmxBoot==='function')window.rmxBoot();else if(typeof window.switchTab==='function')window.switchTab('daniel')}catch(e){console.error('Director mount failed',e)}
+     // One finite repair pass for GitHub/DOMContentLoaded ordering.
+     setTimeout(()=>{try{if(!document.getElementById('rmxApp')&&typeof window.rmxBoot==='function')window.rmxBoot()}catch(e){}},120);
+   }else{
+     document.body.classList.remove('rmx-director-active','rmx-director-site');
+     const v=document.getElementById('view-daniel');if(v){v.classList.remove('active');v.style.setProperty('display','none','important')}
+     if(!document.querySelector('.view.active')){const w=document.getElementById('view-week');if(w)w.classList.add('active')}
+   }
+ }
+ window.addEventListener('hashchange',apply);
+ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',apply,{once:true});else apply();
 })();
-</script>
+</script>\n
 
 </body>
 </html>
