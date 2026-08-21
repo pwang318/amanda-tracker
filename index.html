@@ -1,4 +1,5 @@
   <!DOCTYPE html>
+<!-- v213 ROOT CLEANUP · single Director route + live Amanda DOM portal · 2026-08-21 -->
 <!-- v212 STABLE DIRECTOR + LIVE AMANDA · 2026-08-21 -->
 
 <!-- Cleanup pass: floating Page Guide + stale developer build logs removed; active workflow logic preserved. -->
@@ -747,7 +748,7 @@ html,body,button,input,select,textarea{font-family:var(--rm-native-font)!importa
 @media(max-width:760px){#view-week .v95-amanda-greeting{padding:16px!important}.v95-amanda-copy strong{font-size:23px!important}#view-week .v21-block-grid{grid-template-columns:1fr 1fr!important}#view-week .v21-block-grid button{grid-column:1/-1!important}.v112-row-actions{width:100%;justify-content:flex-start}.v112-compact-row{display:block}.v112-row-actions{margin-top:6px}}
 </style>
 <style id="amanda-production-ui-fix">
-#directorCoachingModal,.dcoach-overlay,.director-nav-label,.management-nav-tab,.tab[data-tab="daniel"],#view-daniel,#rmxDirectorApp,#rmxApp,#op3Shell,#zenMgmtShell,#directorShell{display:none!important}
+body.rm-amanda-route #directorCoachingModal,body.rm-amanda-route .dcoach-overlay,body.rm-amanda-route .director-nav-label,body.rm-amanda-route .management-nav-tab,body.rm-amanda-route .tab[data-tab="daniel"],body.rm-amanda-route #view-daniel,body.rm-amanda-route #rmxDirectorApp,body.rm-amanda-route #rmxApp,body.rm-amanda-route #op3Shell,body.rm-amanda-route #zenMgmtShell,body.rm-amanda-route #directorShell{display:none!important}
 #view-learn{width:100%}
 #view-learn .learn-hero-card{padding:22px 24px!important;margin-bottom:20px!important;background:#fff!important;border:1px solid #E4E0EC!important;border-radius:18px!important;box-shadow:0 5px 18px rgba(61,44,95,.055)!important}
 #view-learn .workflow-eyebrow{font-size:10px!important;font-weight:800!important;letter-spacing:.12em!important;text-transform:uppercase!important;color:#7056A8!important;margin-bottom:8px!important}
@@ -1020,18 +1021,7 @@ label{font-weight:600!important}
 .v191-meta,.v191-contact,.card-sub,.v95-greeting span{font-size:11.5px!important;line-height:1.45!important}
 .v191-actions button,.v191-btn{font-weight:600!important}
 .v191-row{padding-top:12px!important;padding-bottom:12px!important}
-body.rm-amanda-route .director-nav-label,
-body.rm-amanda-route .management-nav-tab,
-body.rm-amanda-route .tab[data-tab="daniel"],
-body.rm-amanda-route #view-daniel,
-body.rm-amanda-route #rmxDirectorApp,
-body.rm-amanda-route #op3Shell,
-body.rm-amanda-route #zenMgmtShell,
-body.rm-amanda-route #directorShell{display:none!important}
-body.rm-director-route .director-nav-label,
-body.rm-director-route .management-nav-tab,
-body.rm-director-route .tab[data-tab="daniel"]{display:none!important}
-body.rm-director-route #view-daniel{display:block!important}
+/* Director/Amanda route visibility is owned by v213 canonical route CSS below. */
 </style>
 
 
@@ -1090,7 +1080,7 @@ body.rmx-director-active .app-header{margin-left:0!important;padding-left:24px!i
 @media(max-width:900px){.rmx-amanda-frame{height:78vh;min-height:620px}.rmx-amanda-toolbar{align-items:flex-start;flex-direction:column}}
 </style>
 <style id="rmx-director-production-hardening">
-/* director.html: Management View gets a clean full-width layout when active,
+/* Management View gets a clean full-width layout when active,
    but the tab bar and every other view (Amanda's real tabs) stay reachable —
    this is a shared link for Nyny + Daniel, not a locked-down Amanda-hidden shell. */
 body.rmx-director-site .app{
@@ -1222,12 +1212,17 @@ body.rmx-director-site .rmx-stat-click{position:relative;z-index:4;pointer-event
 @media(max-width:1050px){.rmx-snapshot-focus{grid-template-columns:1fr}.rmx-shell{grid-template-columns:210px minmax(0,1fr)}.rmx-main{padding-left:20px;padding-right:20px}}
 </style>
 
-\n<style id="v211-final-director-route-css">
+\n<style id="v213-canonical-route-css">
+/* ONE route owner: root = Amanda, #director = Management.
+   Only top-level Amanda surfaces are hidden in Director mode. Portaled Amanda views
+   live inside #view-daniel and therefore remain visible and usable. */
 body.rm-amanda-route #view-daniel,body.rm-amanda-route #rmxApp{display:none!important}
-body.rm-director-route .view:not(#view-daniel){display:none!important}
+body.rm-director-route > .view:not(#view-daniel){display:none!important}
+body.rm-director-route > .tabs,body.rm-director-route > .header,body.rm-director-route > #globalLockBanner{display:none!important}
 body.rm-director-route #view-daniel{display:block!important;visibility:visible!important;opacity:1!important;min-height:calc(100vh - 58px)!important}
 body.rm-director-route #rmxApp{display:block!important;visibility:visible!important;opacity:1!important;min-height:calc(100vh - 58px)!important}
-body.rm-director-route .tabs,body.rm-director-route .who-bar{display:none!important}
+body.rmx-amanda-portal-active #rmxAmandaPortal>.header{display:flex!important}
+body.rmx-amanda-portal-active #rmxAmandaPortal>.tabs{display:flex!important}
 </style>\n</head>
 <body>
 <input accept="image/*" id="v95ProfilePhotoInput" onchange="v95HandlePhotoUpload(event)" style="display:none" type="file"/>
@@ -1287,7 +1282,7 @@ body.rm-director-route .tabs,body.rm-director-route .who-bar{display:none!import
 <div class="tab" data-tab="history" onclick="switchTab('history')"><span class="nav-num">09</span><span>Agent History</span></div>
 <div class="tab" data-tab="contacts" onclick="switchTab('contacts')" title="Agent contact details, ownership and portfolio notes"><span class="nav-num">10</span><span>Contacts</span></div>
 <div class="nav-group-label director-nav-label">LEADERSHIP</div>
-<div class="tab management-nav-tab" data-tab="daniel" onclick="switchTab('daniel')"><span class="nav-num">11</span><span>Management View</span></div>
+<div class="tab management-nav-tab" data-tab="daniel" onclick="openDirectorMode()"><span class="nav-num">11</span><span>Management View</span></div>
 </div>
 <div id="globalLockBanner" style="display:none"></div>
 <div class="view active" id="view-week">
@@ -4258,26 +4253,17 @@ async function init(){
   // Heavy diagnostics stay well behind the daily workflow.
   setTimeout(()=>{try{loadContactDataQuality();}catch(e){}try{loadZeroProduction();}catch(e){}},7000);
 }
-// CLEANUP (2026-08-21): this used to be re-implemented in four separate places (here, directorMode(),
-// and twice more in the RMX/v211 routing scripts near the end of the file), which is exactly the kind
-// of "three parallel routing systems" that caused Management-route bugs. There is now ONE canonical
-// implementation; every other check in the file calls this instead of re-testing hash/query/path itself.
-function rmxIsDirectorRoute(){
-  try{
-    const p=new URLSearchParams(location.search||"");
-    const path=String(location.pathname||"").toLowerCase();
-    return /\/director(?:\.html)?$/.test(path)||location.hash==="#director"||p.get("director")==="1";
-  }catch(e){return false;}
-}
 // FIX (2026-08-19): init() was defined but never invoked anywhere in the file, so none of the
-// core data (Week, Follow-ups, Feed, Management, Quiet, Flagged, Onboarding, Start Here,
+// core Amanda data (Week, Follow-ups, Feed, Quiet, Flagged, Onboarding, Start Here,
 // connection status, offline queue, scorecard) ever loaded on page open. Restoring the bootstrap call.
 if(document.readyState==="loading"){
   document.addEventListener("DOMContentLoaded",()=>{
-    if(!rmxIsDirectorRoute())setTimeout(init,300);
+    const isDirector=location.hash==="#director";
+    if(!isDirector)setTimeout(init,300);
   },{once:true});
 }else{
-  if(!rmxIsDirectorRoute())setTimeout(init,200);
+  const isDirector=location.hash==="#director";
+  if(!isDirector)setTimeout(init,200);
 }
 
 // ── Snooze — lets Priority Touches respect a real decision instead of nagging daily ──
@@ -4976,8 +4962,7 @@ async function loadDropoffWarning(){
   try{
     const[rows,assignments]=await Promise.all([
       sbFetch(RC_TABLE+"?select=agent_name,days_since,grade,status&status=neq.removed&limit=2000").catch(()=>[]),
-      sbFetch("agent_assignments?select=agent_name,lp,rm&limit=5000").catch(()=>[]),
-      Promise.resolve([]) /* legacy face_time_events table is not installed */
+      sbFetch("agent_assignments?select=agent_name,lp,rm&limit=5000").catch(()=>[])
     ]);
     const key=n=>(n||"").trim().toLowerCase().replace(/\s+/g," ");
     const owners={};(assignments||[]).forEach(a=>{if(a&&a.agent_name)owners[key(a.agent_name)]={lp:a.lp&&a.lp!=="__REMOVED__"?a.lp:"Unassigned",rm:a.rm||"Unassigned"};});
@@ -5385,27 +5370,13 @@ async function loadRmNurtureToday(){
 }
 
 
-function directorMode(){
-  // CLEANUP (2026-08-21): delegates to the single canonical route check (see rmxIsDirectorRoute
-  // near the top of the file) instead of re-implementing the hash/query/path test a second time.
-  return rmxIsDirectorRoute();
-}
-function openDirectorMode(){
-  try{
-    const u=new URL(window.location.href);
-    u.searchParams.delete("director");
-    u.hash="director";
-    window.location.href=u.toString();
-  }catch(e){window.location.hash="director";}
-}
-function openAmandaMode(){
-  try{const u=new URL(window.location.href);const base=u.pathname.replace(/(?:index|director)\.html$/i,"");u.pathname=base;u.search="";u.hash="";window.location.href=u.toString();}
-  catch(e){window.location.href="./";}
-}
-function lockDirectorView(){if(directorMode())switchTab("daniel");else switchTab("week");}
+function directorMode(){return window.location.hash==="#director";}
+function openDirectorMode(){if(window.location.hash!=="#director")window.location.hash="director";else if(typeof window.rmxBoot==="function")window.rmxBoot();}
+function openAmandaMode(){if(typeof window.rmxExitAmandaPortal==="function")window.rmxExitAmandaPortal();history.replaceState(null,"",window.location.pathname+window.location.search);window.dispatchEvent(new HashChangeEvent("hashchange"));}
+function lockDirectorView(){if(directorMode())openDirectorMode();else switchTab("week");}
 
 function switchTab(name){
-  if(name==="daniel"&&!directorMode()){switchTab("week");return;}
+  if(name==="daniel"){if(!directorMode())openDirectorMode();else if(typeof window.rmxBoot==="function")window.rmxBoot();return;}
   const target=document.getElementById("view-"+name);
   if(!target){console.warn("Unknown tracker tab:",name);return;}
   document.querySelectorAll(".tab").forEach(t=>t.classList.toggle("active",t.dataset.tab===name));
@@ -5421,7 +5392,6 @@ function switchTab(name){
   if(name==="reconnect"){loadReconnect();loadRmNurtureQueue();}
   if(name==="feed")loadFeed();
   if(name==="history")loadHistoryLanding();
-  if(name==="daniel"){loadManagement();if(typeof v84LoadPartnerGraduations==="function")v84LoadPartnerGraduations();if(typeof v85LoadCommandCenter==="function")v85LoadCommandCenter();if(typeof v91LoadDirectorOS==="function")v91LoadDirectorOS();}
 }
 
 // One prefill path for every shortcut button that sends someone to Log Activity.
@@ -13003,7 +12973,7 @@ async function v85LoadCommandCenter(){
     inbox.innerHTML='<div style="font-size:11px;font-weight:850;color:var(--text-1);margin-bottom:6px">Nyny Needs to Know · '+rows.length+' open</div>'+rows.map(r=>'<div style="border:1px solid '+(r.priority==='high'?'#E5B8B4':'var(--border-light)')+';border-left:4px solid '+(r.priority==='high'?'#B54B42':'#8C7ABB')+';border-radius:8px;background:#fff;padding:8px 10px;margin-bottom:6px;display:flex;justify-content:space-between;gap:10px;align-items:flex-start"><div><div style="font-size:11.5px;font-weight:800;color:var(--text-1)">'+escHtml(properCase(r.agent_name||''))+' <span style="font-size:9px;font-weight:750;color:var(--text-3)">· '+escHtml(r.insight_type||'Insight')+'</span></div><div style="font-size:10.5px;color:var(--text-2);margin-top:3px;line-height:1.4">'+escHtml(r.note||'')+'</div><div style="font-size:9.5px;color:var(--text-4);margin-top:3px">Shared by '+escHtml(r.submitted_by||'RM')+(r.created_at?' · '+fmtDate(String(r.created_at).slice(0,10)):'')+'</div></div><button class="btn-sm" data-id="'+escHtml(String(r.id||''))+'" onclick="v85ResolveInsight(this.dataset.id)" style="font-size:10px;white-space:nowrap">Mark handled</button></div>').join('');
   }catch(e){console.warn('v85 command center load failed',e);inbox.innerHTML='<div class="no-data">Could not load the Director command center right now.</div>';}
 }
-setTimeout(function(){try{v85LoadCommandCenter();}catch(e){}},1600);
+/* v213: retired automatic legacy Director command-center load; RMX is the only Management renderer. */
 
 </script>
 <div class="v92-drawer-backdrop" id="v92DirectorDrawer" onclick="if(event.target===this)v92CloseDrawer()" style="display:none">
@@ -13029,21 +12999,72 @@ setTimeout(function(){try{v85LoadCommandCenter();}catch(e){}},1600);
 function v91Go(id){var el=document.getElementById(id);if(el)el.scrollIntoView({behavior:"smooth",block:"start"});}
 function v91Bool(v){return v===true||String(v||"").toLowerCase()==="true";}
 function v91OwnerMap(rows){var m={};(rows||[]).forEach(function(r){m[ownerKey(r.agent_name)]=r;});return m;}
+function v91Metric(n,label,tone){return '<div class="v91-metric '+(tone||'')+'"><div class="n">'+Number(n||0)+'</div><div class="l">'+escHtml(label)+'</div></div>';}
 function v91Row(name,copy,chip,tone){return '<div class="v91-row"><div class="v91-row-main"><div class="v91-row-title">'+escHtml(properCase(name||''))+'</div><div class="v91-row-copy">'+escHtml(copy||'')+'</div></div>'+(chip?'<span class="v91-chip '+(tone||'')+'">'+escHtml(chip)+'</span>':'')+'</div>';}
 function v91DateInMonth(raw){if(!raw)return false;var d=new Date(raw),now=new Date();return d.getFullYear()===now.getFullYear()&&d.getMonth()===now.getMonth();}
 function v91ActivityOwner(r){return String(r.rm_owner||r.owner||r.performed_by||r.logged_by||r.rm||'').trim();}
 function v91ActivityType(r){return String(r.activity_type||r.type||r.activity||'').trim();}
-// RETIRED (2026-08-21) — root cause fix: this original v91LoadDirectorOS/v91RefreshDirectorOS pair
-// targeted v91DirectorMetrics/v91DirectorPriorityList/v91GrowthList/v91RetentionList/
-// v91DirectorScorecardBody/v91SystemHealthBody — DOM ids that do not exist anywhere in this file
-// (confirmed: they belonged to the pre-RMX Director Command Center, superseded by the RMX
-// Management View). Both names were also being permanently overwritten a few dozen lines below by
-// window.v91LoadDirectorOS=v92LoadDirectorOS and a second window.v91RefreshDirectorOS assignment,
-// so this exact code could never run in practice — it was reachable in name only. The unconditional
-// setTimeout(...,550) that used to call it on every single page load (Director or not) is gone too.
-// v92LoadDirectorOS below is the live implementation; v91Row/v91DateInMonth/v91ActivityOwner/
-// v91ActivityType/v91Bool/v91OwnerMap/v91Go above are kept because v92LoadDirectorOS (and other
-// still-active code) uses them.
+async function v91LoadDirectorOS(){
+  var metrics=document.getElementById('v91DirectorMetrics'),prio=document.getElementById('v91DirectorPriorityList'),growth=document.getElementById('v91GrowthList'),ret=document.getElementById('v91RetentionList'),score=document.getElementById('v91DirectorScorecardBody'),health=document.getElementById('v91SystemHealthBody');
+  if(!metrics)return;
+  try{
+    var results=await Promise.all([
+      sbFetch('agent_profiles?select=*&limit=5000').catch(function(){return[];}),
+      sbFetch('agent_assignments?select=agent_name,rm,lp&limit=5000').catch(function(){return[];}),
+      sbFetch('rm_director_insights?status=eq.open&select=*&order=created_at.desc&limit=200').catch(function(){return[];}),
+      sbFetch('amanda_activities?select=*&order=activity_date.desc&limit=5000').catch(function(){return[];}),
+      sbFetch('lp_flags?select=*&limit=2000').catch(function(){return[];})
+    ]);
+    var profiles=results[0]||[], assignments=results[1]||[], insights=results[2]||[], acts=results[3]||[], flags=results[4]||[];
+    var owners=v91OwnerMap(assignments);
+    var active=profiles.filter(function(p){return !v91Bool(p.do_not_contact)&&String(p.relationship_status||'active').toLowerCase()!=='inactive';});
+    var strategic=active.filter(function(p){return String(p.relationship_type||'realtor').toLowerCase()==='strategic_partner';});
+    var realtors=active.filter(function(p){return String(p.relationship_type||'realtor').toLowerCase()!=='strategic_partner';});
+    var nyny=realtors.filter(function(p){return String((owners[ownerKey(p.agent_name)]||{}).rm||'').toLowerCase()==='nyny';});
+    var amanda=realtors.filter(function(p){return String((owners[ownerKey(p.agent_name)]||{}).rm||'').toLowerCase()==='amanda';});
+    var core=nyny.filter(function(p){return ['CHANNEL','A','B'].includes(String(p.tier||'').toUpperCase());});
+    var grads=active.filter(function(p){return String(p.tier||'').toUpperCase()==='B'&&['pending','intro_sent','joint_meeting_scheduled'].includes(String(p.rm_handoff_status||'').toLowerCase());});
+    var risks=core.filter(function(p){return v91Bool(p.competitor_risk_flag);});
+    var growthRows=core.filter(function(p){return String(p.next_growth_opportunity||'').trim();});
+    var planGaps=core.filter(function(p){return !String(p.next_growth_opportunity||'').trim();});
+    var openFlags=flags.filter(function(f){if(f.resolved===true||String(f.resolved||'').toLowerCase()==='true')return false;var st=String(f.status||'open').toLowerCase();return !['handled','resolved','closed'].includes(st);});
+    var highInsights=insights.filter(function(i){return String(i.priority||'normal').toLowerCase()==='high';});
+    metrics.innerHTML=v91Metric(highInsights.length,'High priority insights',highInsights.length?'risk':'good')+v91Metric(risks.length,'Competitor risks',risks.length?'risk':'good')+v91Metric(grads.length,'Graduations moving',grads.length?'warn':'good')+v91Metric(growthRows.length,'Growth opportunities','good')+v91Metric(openFlags.length,'Open LP flags',openFlags.length?'warn':'good')+v91Metric(planGaps.length,'Core plans missing',planGaps.length?'warn':'good');
+    var priorities=[];
+    highInsights.slice(0,4).forEach(function(i){priorities.push(v91Row(i.agent_name,i.note||i.insight_type,'RM escalation','risk'));});
+    risks.slice(0,4).forEach(function(p){priorities.push(v91Row(p.agent_name,'Competitor risk is active. Decide the next save / value move.','Retention','risk'));});
+    grads.slice(0,4).forEach(function(p){priorities.push(v91Row(p.agent_name,'B-tier relationship is in warm transition. Keep the handoff moving.','Graduation','warn'));});
+    planGaps.slice(0,3).forEach(function(p){priorities.push(v91Row(p.agent_name,'A/B/Channel relationship has no next relationship move documented.','Plan gap','warn'));});
+    prio.innerHTML=priorities.length?priorities.join(''):'<div class="v91-empty">Nothing urgent is asking for Director attention right now. Use the Growth board for proactive relationship moves.</div>';
+    var g=growthRows.slice().sort(function(a,b){return String(a.tier||'').localeCompare(String(b.tier||''));}).slice(0,12);
+    growth.innerHTML=g.length?'<div class="v91-list">'+g.map(function(p){return v91Row(p.agent_name,p.next_growth_opportunity,'Tier '+String(p.tier||'—'),'');}).join('')+'</div>':'<div class="v91-empty">No current growth opportunities are documented in your A/B/Channel book. That is a useful signal: add the next value move as you meet with partners.</div>';
+    var retention=[];
+    risks.forEach(function(p){retention.push(v91Row(p.agent_name,'Competitor risk is flagged. Confirm what is leaking, why, and the next recovery move.','Competitor risk','risk'));});
+    insights.filter(function(i){return /retention|service/i.test(String(i.insight_type||''));}).slice(0,8).forEach(function(i){retention.push(v91Row(i.agent_name,i.note||i.insight_type,i.insight_type||'Risk','risk'));});
+    ret.innerHTML=retention.length?'<div class="v91-list">'+retention.slice(0,12).join('')+'</div>':'<div class="v91-empty">No active competitor/service risks are surfaced right now.</div>';
+    var monthActs=acts.filter(function(a){return v91DateInMonth(a.activity_date||a.date||a.created_at);});
+    var nynyActs=monthActs.filter(function(a){var o=v91ActivityOwner(a).toLowerCase(),note=String(a.notes||'').toLowerCase();return o==='nyny'||note.indexOf('[rm_attendees:nyny')>=0||note.indexOf('rm(s): nyny')>=0;});
+    var partnerTypes=['New Realtor Meeting','Partner Meeting','Break Breads','Strategic Partner Meeting','Channel Meeting','Retention Meeting','Team / Office Presentation'];
+    var leadershipTypes=['Amanda Coaching / Development','RM Scorecard Review','RM Portfolio Review','RM Process Improvement','Tracker / System Development','RM Training','RM Leadership Escalation Support'];
+    var partnerMeet=nynyActs.filter(function(a){return partnerTypes.includes(v91ActivityType(a));}).length;
+    var leadership=nynyActs.filter(function(a){return leadershipTypes.includes(v91ActivityType(a));}).length;
+    var strategicMeet=nynyActs.filter(function(a){return ['Strategic Partner Meeting','Channel Meeting','Retention Meeting'].includes(v91ActivityType(a));}).length;
+    score.innerHTML='<div class="v91-score-grid"><div class="v91-score-item"><strong>'+partnerMeet+'</strong><span>Partner meetings MTD · planning target 20–25</span></div><div class="v91-score-item"><strong>'+strategicMeet+'</strong><span>Strategic / Channel / retention meetings</span></div><div class="v91-score-item"><strong>'+leadership+'</strong><span>Director leadership activities logged</span></div><div class="v91-score-item"><strong>'+grads.length+'</strong><span>B-tier graduations currently in transition</span></div></div><div class="v91-row-copy" style="margin-top:9px">Use this as your impact view, not a quota-only report. Relationship growth, saves, coaching and system improvement are all part of Director production.</div>';
+    var ownershipGaps=realtors.filter(function(p){var r=owners[ownerKey(p.agent_name)]||{};return !String(r.rm||'').trim();});
+    var strategicWrong=strategic.filter(function(p){return String((owners[ownerKey(p.agent_name)]||{}).rm||'').toLowerCase()!=='nyny';});
+    var bAmanda=amanda.filter(function(p){return String(p.tier||'').toUpperCase()==='B'&&!['pending','intro_sent','joint_meeting_scheduled'].includes(String(p.rm_handoff_status||'').toLowerCase());});
+    var issues=[];
+    if(ownershipGaps.length)issues.push(v91Row('Ownership coverage',ownershipGaps.length+' active Realtor relationship(s) have no RM owner.','Needs cleanup','warn'));
+    if(strategicWrong.length)issues.push(v91Row('Strategic partner routing',strategicWrong.length+' strategic partner(s) are not routed to Nyny.','Routing','risk'));
+    if(bAmanda.length)issues.push(v91Row('B-tier graduation check',bAmanda.length+' Amanda-owned B relationship(s) are not currently in a warm-handoff state.','Review','warn'));
+    if(planGaps.length)issues.push(v91Row('Relationship planning',planGaps.length+' Nyny A/B/Channel relationship(s) are missing a next relationship move.','Plan gaps','warn'));
+    health.innerHTML=issues.length?'<div class="v91-list">'+issues.join('')+'</div>':'<div class="v91-empty">No obvious ownership, strategic-routing, graduation or core-plan gaps found in the current data.</div>';
+    var lr=document.getElementById('v91LastRefresh');if(lr)lr.textContent='Updated '+new Date().toLocaleTimeString([], {hour:'numeric',minute:'2-digit'});
+  }catch(e){console.warn('v91 Director OS load failed',e);[metrics,prio,growth,ret,score,health].forEach(function(el){if(el)el.innerHTML='<div class="v91-empty">Could not load this Director section right now.</div>';});}
+}
+function v91RefreshDirectorOS(){
+  setTimeout(()=>{try{v106LoadTierGrowth(true);}catch(e){}},40);try{v91LoadDirectorOS();}catch(e){}try{v85LoadCommandCenter();}catch(e){}try{v84LoadPartnerGraduations();}catch(e){}try{loadStrategicPartnerManagement();}catch(e){}try{loadManagement();}catch(e){}}
+/* v213: retired automatic v91 Director renderer; RMX is the only Management renderer. */
 </script>
 <script>
 // v92 — interactive Director Command Center. Every top-level tile resolves to real underlying data.
@@ -13117,7 +13138,7 @@ async function v92LoadDirectorOS(){
   }catch(e){console.warn('v92 Director OS load failed',e);[metrics,prio,growth,ret,score,health,portfolio].forEach(function(el){if(el)el.innerHTML='<div class="v91-empty">Could not load this Director section right now.</div>';});}
 }
 window.v91LoadDirectorOS=v92LoadDirectorOS;window.v91RefreshDirectorOS=function(){try{v92LoadDirectorOS();}catch(e){}try{v85LoadCommandCenter();}catch(e){}try{v84LoadPartnerGraduations();}catch(e){}try{loadStrategicPartnerManagement();}catch(e){}try{loadManagement();}catch(e){}};
-setTimeout(function(){try{v92LoadDirectorOS();}catch(e){}},650);
+/* v213: retired automatic legacy Director OS paint; RMX is the only Management renderer. */
 </script>
 <script>
 // v96 — shared headshots embedded directly in this HTML; no separate image files required.
@@ -13244,6 +13265,29 @@ function v98ReturnDirector(){try{sessionStorage.removeItem('rm_return_director')
 </div>
 </div>
 <script>
+// v213: Face Time bookings use rm_day_blocks. The retired legacy Face Time table is not queried.
+function rmFaceTimeMeta(raw,key){
+  var m=String(raw||'').match(new RegExp('\\['+key+':([^\\]]*)\\]','i'));
+  return m?String(m[1]||'').trim():'';
+}
+function rmFaceTimeBlockToEvent(b){
+  if(!b)return null;
+  var notes=String(b.notes||''),agent=rmFaceTimeMeta(notes,'FT_AGENT');
+  if(!agent){var t=String(b.title||'');agent=t.replace(/^Face Time\\s*[·:-]\\s*/i,'').trim();}
+  if(!agent)return null;
+  return {id:b.id,agent_name:agent,event_date:b.work_date,event_time:b.start_time,lp:rmFaceTimeMeta(notes,'LP'),rm:rmFaceTimeMeta(notes,'FT_RM')||b.owner||'Amanda',status:'scheduled',notes:notes};
+}
+async function rmLoadFaceTimeSchedule(dateFrom){
+  var q='rm_day_blocks?select=id,work_date,owner,title,start_time,end_time,block_type,notes&block_type=eq.'+encodeURIComponent('Face Time');
+  if(dateFrom)q+='&work_date=gte.'+encodeURIComponent(dateFrom);
+  q+='&order=work_date.asc,start_time.asc&limit=2000';
+  var rows=await sbFetch(q).catch(()=>[]);
+  return (rows||[]).map(rmFaceTimeBlockToEvent).filter(Boolean);
+}
+function rmFaceTimeEndTime(time){
+  var p=String(time||'09:00').slice(0,5).split(':').map(Number),m=(p[0]||0)*60+(p[1]||0)+45;
+  m=Math.min(1439,m);return String(Math.floor(m/60)).padStart(2,'0')+':'+String(m%60).padStart(2,'0');
+}
 var V101_FT_CURRENT=null;
 async function v101OpenFaceTimeModal(name,lp,id){
   V101_FT_CURRENT=null;var m=document.getElementById('v101FaceTimeModal');if(!m)return;
@@ -13259,74 +13303,71 @@ async function v101OpenFaceTimeModal(name,lp,id){
   var ftRow=(V107_SHARED_FT_ROWS||[]).find(function(r){return String(r.name||'').trim().toUpperCase()===String(name||'').trim().toUpperCase();});
   document.getElementById('v101FtRm').value=ftRow?ftRow.rm:'Amanda';
   document.getElementById('v101FtNotes').value='';
-  // FIX (2026-08-21): face_time_events is not an installed Supabase table (confirmed 404 on every
-  // read/write). This modal only ever logs a Face Time directly into break_breads now (see
-  // v101SaveFaceTime), so there is no "existing booking" to look up by id — the Cancel/Mark
-  // completed buttons stay hidden and id is left unused.
   var cancel=document.getElementById('v101FtCancelBtn'),complete=document.getElementById('v101FtCompleteBtn');
-  cancel.style.display='none';complete.style.display='none';
+  cancel.style.display=id?'inline-block':'none';complete.style.display=id?'inline-block':'none';
+  if(id){
+    try{
+      var rows=await sbFetch('rm_day_blocks?id=eq.'+encodeURIComponent(id)+'&select=id,work_date,owner,title,start_time,end_time,block_type,notes&limit=1').catch(()=>[]);
+      if(rows&&rows[0]){
+        var e=rmFaceTimeBlockToEvent(rows[0]);V101_FT_CURRENT=e;
+        document.getElementById('v101FtDate').value=e.event_date||today();
+        document.getElementById('v101FtTime').value=String(e.event_time||'').slice(0,5);
+        document.getElementById('v101FtLp').value=e.lp||'';
+        document.getElementById('v101FtRm').value=e.rm||'Amanda';
+        var parsed=v181ParseCalendarMeta(e.notes||'');
+        document.getElementById('v101FtNotes').value=parsed.notes||'';
+        document.getElementById('v181FtLocation').value=parsed.location||'';
+        document.getElementById('v181FtAdditionalAgents').value=(parsed.agents||[]).filter(function(a){return String(a).toLowerCase()!==String(name||'').toLowerCase()}).join(', ');
+        document.getElementById('v181FtCalendarConfirmed').checked=!!parsed.confirmed;
+      }
+    }catch(e){console.warn(e);}
+  }
   m.style.display='flex';
 }
 function v101CloseFaceTimeModal(){var m=document.getElementById('v101FaceTimeModal');if(m)m.style.display='none';}
-// FIX (2026-08-21) — root cause: this used to POST/PATCH a Supabase table called face_time_events
-// that was never installed (confirmed 404 on every attempt: "Could not find the table
-// public.face_time_events in the schema cache"). Every "Schedule Face Time" click was silently
-// failing with "Meeting could not save," even though the meeting itself may really have happened.
-// Break Breads (break_breads + amanda_activities) is the current, live source of truth for Face
-// Time / partner-visit history — this now writes there directly, once per agent in the meeting,
-// exactly like every other completed-visit entry point in the tracker (v176OpenOutreach etc.).
 async function v101SaveFaceTime(){
   if(window._v139FaceTimeBooking)return;
-  var name=document.getElementById('v101FtAgent').value,
+  var id=document.getElementById('v101FtId').value,
+      name=document.getElementById('v101FtAgent').value,
       date=document.getElementById('v101FtDate').value,
       time=document.getElementById('v101FtTime').value||'',
-      lp=document.getElementById('v101FtLp').value||null,
+      lp=document.getElementById('v101FtLp').value||'',
       rm=document.getElementById('v101FtRm').value||'Amanda',
       location=(document.getElementById('v181FtLocation').value||'').trim(),
       additional=(document.getElementById('v181FtAdditionalAgents').value||'').split(',').map(function(x){return x.trim()}).filter(Boolean),
       confirmed=!!document.getElementById('v181FtCalendarConfirmed').checked,
       notes=(document.getElementById('v101FtNotes').value||'').trim();
 
-  if(!name||!date||!time||!location){
-    toast('Date, time and location are required before this Face Time can be logged.','error',4800);return;
-  }
-  if(!confirmed){
-    toast('Add the meeting to the calendar, then check “I added this meeting to the calendar.” It will not count as logged until then.','error',5600);return;
-  }
+  if(!name||!date||!time||!location){toast('Date, time and location are required before this meeting can be booked.','error',4800);return;}
+  if(!confirmed){toast('Add the meeting to the calendar, then check “I added this meeting to the calendar.” It will not count as booked until then.','error',5600);return;}
 
   var allAgents=[name].concat(additional).filter(function(v,i,a){return v&&a.findIndex(function(x){return String(x).toLowerCase()===String(v).toLowerCase()})===i;});
-  var loggedBy=rm+(lp?' + '+lp:'');
-  var fullNotes=(notes?notes:'Face Time / partner meeting.')+' [LOCATION:'+location+']'+(allAgents.length>1?' [MEETING_AGENTS:'+allAgents.join(' ; ')+']':'');
+  var group='ft-'+date+'-'+String(time).replace(':','')+'-'+String(name).toLowerCase().replace(/[^a-z0-9]+/g,'-');
+  var blockOwner=/amanda/i.test(rm)?'Amanda':'Nyny';
+  var shared=' [CAL_CONFIRMED:Y] [LOCATION:'+location+'] [MEETING_AGENTS:'+allAgents.join(' ; ')+'] [MEETING_GROUP:'+group+'] [FT_RM:'+rm+']';
   window._v139FaceTimeBooking=true;
   try{
-    for(var i=0;i<allAgents.length;i++){
-      var agent=allAgents[i];
-      var existing=await sbFetch('break_breads?agent_name=eq.'+encodeURIComponent(agent)+'&date=eq.'+encodeURIComponent(date)+'&select=id,agent_name,date&limit=5').catch(function(){return[];});
-      if(!(existing||[]).length){
-        await sbFetch('break_breads',{method:'POST',prefer:'return=minimal',body:JSON.stringify({agent_name:agent,date:date,logged_by:loggedBy,notes:fullNotes})});
-      }
-      if(/Amanda/i.test(rm)){
-        var acts=await sbFetch('amanda_activities?agent_name=eq.'+encodeURIComponent(agent)+'&act_type=eq.'+encodeURIComponent('Break Breads')+'&act_date=eq.'+encodeURIComponent(date)+'&select=id,notes&limit=10').catch(function(){return[];});
-        if(!(acts||[]).length){
-          await sbFetch('amanda_activities',{method:'POST',prefer:'return=minimal',body:JSON.stringify({agent_name:agent,act_type:'Break Breads',act_date:date,outcome:'Positive',notes:fullNotes+' [RM_ATTENDEES:'+rm+']'+(lp?' [LP_ATTENDEE:'+lp+']':''),follow_up_date:null})});
-        }
+    var existing=await rmLoadFaceTimeSchedule(date).catch(()=>[]);
+    if(id){
+      var full=(notes||'Face Time / partner meeting.')+shared+' [FT_AGENT:'+name+'] [LP:'+lp+']';
+      await sbFetch('rm_day_blocks?id=eq.'+encodeURIComponent(id),{method:'PATCH',prefer:'return=minimal',body:JSON.stringify({work_date:date,owner:blockOwner,title:'Face Time · '+name,start_time:time,end_time:rmFaceTimeEndTime(time),block_type:'Face Time',notes:full})});
+    }else{
+      for(var i=0;i<allAgents.length;i++){
+        var agent=allAgents[i];
+        var dup=(existing||[]).find(function(ev){return String(ev.agent_name||'').trim().toLowerCase()===String(agent).toLowerCase()&&String(ev.event_date||'')===String(date)&&v181CalendarConfirmed(ev)});
+        if(dup)continue;
+        var fullNotes=(notes||'Face Time / partner meeting.')+shared+' [FT_AGENT:'+agent+'] [LP:'+lp+']';
+        await sbFetch('rm_day_blocks',{method:'POST',prefer:'return=minimal',body:JSON.stringify({work_date:date,owner:blockOwner,title:'Face Time · '+agent,start_time:time,end_time:rmFaceTimeEndTime(time),block_type:'Face Time',notes:fullNotes})});
       }
     }
-    v101CloseFaceTimeModal();
-    toast('Face Time logged and shared ✓','success',3200);
-    await rmRefreshAfterMutation('Face Time logged');
-  }catch(e){
-    console.error('Face Time save failed',e);
-    toast('Face Time could not save: '+(e.message||'Unknown error'),'error',4400);
-  }finally{window._v139FaceTimeBooking=false;}
+    v101CloseFaceTimeModal();toast('Calendar confirmed · meeting booked and shared ✓','success',3200);
+    await rmRefreshAfterMutation('Calendar-confirmed Face Time booked');
+    try{await v181LoadCalendarUrgent()}catch(e){}
+  }catch(e){toast('Meeting could not save: '+(e.message||'Unknown error'),'error',4400);}
+  finally{window._v139FaceTimeBooking=false;}
 }
-// RETIRED (2026-08-21): these only ever ran from the modal's Cancel/Mark-completed buttons, which
-// are now permanently hidden (see v101OpenFaceTimeModal) because there is no face_time_events
-// table to hold an "existing booking" to cancel or complete — v101SaveFaceTime logs the Face Time
-// directly to break_breads instead. Left as safe no-ops (not deleted outright) in case anything
-// still references these names, per the "no unilateral removal of anything still reachable" rule.
-async function v101CancelFaceTime(){v101CloseFaceTimeModal();}
-async function v101CompleteFaceTime(){v101CloseFaceTimeModal();}
+async function v101CancelFaceTime(){var id=document.getElementById('v101FtId').value;if(!id)return;try{await sbFetch('rm_day_blocks?id=eq.'+encodeURIComponent(id),{method:'DELETE',prefer:'return=minimal'});v101CloseFaceTimeModal();toast('Face Time booking cancelled.','success');await rmRefreshAfterMutation('Face Time booking cancelled');}catch(e){toast('Could not cancel booking.','error');}}
+async function v101CompleteFaceTime(){if(window._v139FaceTimeSaving)return;var id=document.getElementById('v101FtId').value,name=document.getElementById('v101FtAgent').value,date=document.getElementById('v101FtDate').value||today(),lp=document.getElementById('v101FtLp').value||null,rm=document.getElementById('v101FtRm').value||'Amanda',notes=document.getElementById('v101FtNotes').value.trim()||'Face Time completed.';if(!name)return;window._v139FaceTimeSaving=true;try{var bb=await sbFetch('break_breads?agent_name=eq.'+encodeURIComponent(name)+'&date=eq.'+encodeURIComponent(date)+'&select=id,agent_name,date&limit=5').catch(()=>[]);if(!(bb||[]).length)await sbFetch('break_breads',{method:'POST',prefer:'return=minimal',body:JSON.stringify({agent_name:name,date:date,logged_by:rm+(lp?' + '+lp:''),notes:notes})});if(id)await sbFetch('rm_day_blocks?id=eq.'+encodeURIComponent(id),{method:'DELETE',prefer:'return=minimal'});if(/Amanda/i.test(rm)){var acts=await sbFetch('amanda_activities?agent_name=eq.'+encodeURIComponent(name)+'&act_type=eq.'+encodeURIComponent('Break Breads')+'&act_date=eq.'+encodeURIComponent(date)+'&select=id,notes&limit=10').catch(()=>[]);if(!(acts||[]).length)await sbFetch('amanda_activities',{method:'POST',prefer:'return=minimal',body:JSON.stringify({agent_name:name,act_type:'Break Breads',act_date:date,outcome:'Positive',notes:notes+' [RM_ATTENDEES:'+rm+']'+(lp?' [LP_ATTENDEE:'+lp+']':''),follow_up_date:null})});}v101CloseFaceTimeModal();toast('Face Time completed and shared ✓','success',3000);await rmRefreshAfterMutation('Face Time completed');}catch(e){console.error('Face Time save failed',e);toast('Could not fully save Face Time: '+(e.message||'Unknown error')+'. Nothing is being silently marked complete.','error',5200);}finally{window._v139FaceTimeSaving=false;}}
 </script>
 <script>
 function v104Jump(id){
@@ -13383,7 +13424,7 @@ async function loadBreakBreadDue(){
       sbFetch('amanda_activities?select=agent_name,act_date,notes&act_type=eq.Break Breads&order=act_date.desc&limit=4000').catch(()=>[]),
       sbFetch('break_breads?select=agent_name,date,logged_by,notes&order=date.desc&limit=4000').catch(()=>[]),
       sbFetch('agent_assignments?select=agent_name,lp,rm&limit=5000').catch(()=>[]),
-      Promise.resolve([]) /* legacy face_time_events table is not installed */
+      rmLoadFaceTimeSchedule(today()).catch(()=>[])
     ]);
     const normalize=s=>(s||'').trim().toUpperCase();
     const inactiveKeys=new Set((profiles||[]).filter(p=>p&&(p.do_not_contact===true||String(p.relationship_status||'active').toLowerCase()==='inactive'||p.display_name===HIDDEN_PROFILE_MARKER)).map(p=>normalize(p.agent_name)));
@@ -14798,7 +14839,7 @@ setTimeout(function(){v124MountAudit();v122RenderAudit();},1200);
 (function(){
   window.rmFinalIntegrityCheck=function(){
     const requiredIds=['view-week','view-log','view-portfolio','view-history','view-contacts','view-daniel','v113GrowthHost','portfolioReviewBody'];
-    const requiredFns=['switchTab','loadWeek','loadPortfolioReview','loadContacts','loadManagement','saveActivity','wpOpenContact','v101OpenFaceTimeModal','v106LoadTierGrowth','danielTierFromProduction','danielTierCountScore'];
+    const requiredFns=['switchTab','loadWeek','loadPortfolioReview','loadContacts','loadManagement','wpOpenContact','v101OpenFaceTimeModal','v106LoadTierGrowth','danielTierFromProduction','danielTierCountScore'];
     const missingIds=requiredIds.filter(id=>!document.getElementById(id));
     const missingFns=requiredFns.filter(fn=>typeof window[fn]!=='function');
     const ids=Array.from(document.querySelectorAll('[id]')).map(x=>x.id),dupes=ids.filter((id,i)=>ids.indexOf(id)!==i);
@@ -16319,7 +16360,7 @@ window.rmAuditVisibleButtons=function(){
     var s=String(raw||''),loc='',agents=[],confirmed=/\[CAL_CONFIRMED:Y\]/i.test(s);
     var lm=s.match(/\[LOCATION:([^\]]*)\]/i);if(lm)loc=lm[1].trim();
     var am=s.match(/\[MEETING_AGENTS:([^\]]*)\]/i);if(am)agents=am[1].split(';').map(x=>x.trim()).filter(Boolean);
-    var notes=s.replace(/\s*\[(?:CAL_CONFIRMED|LOCATION|MEETING_AGENTS|MEETING_GROUP):[^\]]*\]/gi,'').trim();
+    var notes=s.replace(/\s*\[(?:CAL_CONFIRMED|LOCATION|MEETING_AGENTS|MEETING_GROUP|FT_AGENT|FT_RM|LP):[^\]]*\]/gi,'').trim();
     return{confirmed:confirmed,location:loc,agents:agents,notes:notes};
   };
   window.v181CalendarConfirmed=function(ev){return !!(ev&&v181ParseCalendarMeta(ev.notes||'').confirmed)};
@@ -16357,7 +16398,7 @@ window.rmAuditVisibleButtons=function(){
     var box=document.getElementById('v181CalendarUrgent'),rowsEl=document.getElementById('v181CalendarUrgentRows');if(!box||!rowsEl)return;
     try{
       var d=typeof today==='function'?today():new Date().toISOString().slice(0,10);
-      var rows=[]; /* legacy face_time_events table is not installed */
+      var rows=await rmLoadFaceTimeSchedule(d).catch(()=>[]);
       var bad=(rows||[]).filter(function(ev){
         if(v181CalendarConfirmed(ev))return false;
         if(!/amanda/i.test(String(ev.rm||'')))return false;
@@ -16441,7 +16482,7 @@ window.rmAuditVisibleButtons=function(){
       read('agent_profiles?select=*&limit=5000'),
       read('agent_assignments?select=*&limit=5000'),
       read('outreach_prospects?select=*&order=follow_up_date.asc.nullslast&limit=5000'),
-      Promise.resolve([]) /* legacy face_time_events table is not installed */,
+      rmLoadFaceTimeSchedule(d).catch(()=>[]),
       read('break_breads?select=*&limit=5000'),
       read((typeof RC_TABLE!=='undefined'?RC_TABLE:'reconnect_agents')+'?select=*&limit=5000')
     ]);
@@ -16939,11 +16980,12 @@ window.rmAuditVisibleButtons=function(){
 <script id="rmx-stable-director-script">
 
 (function(){
- const R={cache:null,ts:0,promise:null,route:'snapshot',sub:{},targets:[{date:'2026-09-30',label:'9/30 Target',Channel:2,A:14,B:21},{date:'2026-10-31',label:'10/31 Target',Channel:2,A:16,B:24},{date:'2026-11-30',label:'11/30 Target',Channel:3,A:18,B:27},{date:'2026-12-31',label:'12/31 Goal',Channel:4,A:20,B:30}],weights:{Channel:15,A:15,B:20}};
+ const R={cache:null,ts:0,promise:null,route:'snapshot',navSeq:0,sub:{},portal:null,amandaInitStarted:false,targets:[{date:'2026-09-30',label:'9/30 Target',Channel:2,A:14,B:21},{date:'2026-10-31',label:'10/31 Target',Channel:2,A:16,B:24},{date:'2026-11-30',label:'11/30 Target',Channel:3,A:18,B:27},{date:'2026-12-31',label:'12/31 Goal',Channel:4,A:20,B:30}],weights:{Channel:15,A:15,B:20}};
  const $=id=>document.getElementById(id); const esc=s=>String(s==null?'':s).replace(/[&<>\"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;'}[c]));
  const key=s=>String(s||'').trim().toLowerCase().replace(/\s+/g,' ');
  function todayS(){try{return typeof today==='function'?today():new Date().toISOString().slice(0,10)}catch(e){return new Date().toISOString().slice(0,10)}}
- function tier(c,l){c=Number(c||0);l=Number(l||0);return c>=10?'Channel':c>=4?'A':c>=2?'B':(c>=1||l>=1)?'C':null}
+ function tier(c,l,fallback){const hc=c!==undefined&&c!==null&&c!=='';const hl=l!==undefined&&l!==null&&l!=='';if(!hc&&!hl){const f=String(fallback||'').trim();return ['Channel','A','B','C'].includes(f)?f:null}c=Number(c||0);l=Number(l||0);return c>=10?'Channel':c>=4?'A':c>=2?'B':(c>=1||l>=1)?'C':null}
+ function profileTier(p){p=p||{};try{if(typeof danielTierFromProduction==='function')return danielTierFromProduction(p)}catch(e){}return tier(p.closes_past_year!==undefined?p.closes_past_year:p.closed_past_year,p.total_leads_past_year!==undefined?p.total_leads_past_year:p.leads_past_year,p.tier||p.powerbi_level)}
  function milestone(){const n=new Date(todayS()+'T12:00:00');return R.targets.find(t=>n<=new Date(t.date+'T23:59:59'))||R.targets[R.targets.length-1]}
  function ownerOf(a){try{const m=typeof extractRmMeta==='function'?extractRmMeta(a.notes||''):null;return m&&m.owner?m.owner:'Amanda'}catch(e){return 'Amanda'}}
  function isAmanda(a){
@@ -17031,7 +17073,7 @@ window.rmAuditVisibleButtons=function(){
       safeFetch('call_logs?flag_rm=eq.true&select=id,agent_name,lp,call_date,note,outcome,rm_note,rm_note_at&order=call_date.desc&limit=100',10000),
       safeFetch('rm_director_insights?status=eq.open&select=id,agent_name,submitted_by,insight_type,priority,note,created_at,status&order=created_at.desc&limit=250',10000),
       safeFetch('outreach_prospects?select=*&order=follow_up_date.asc.nullslast&limit=1500',10000),
-      Promise.resolve([]) /* legacy face_time_events table is not installed */
+      rmLoadFaceTimeSchedule(todayS()).catch(()=>[])
     ]);
 
     const amap=ownerMap(assignRows);
@@ -17082,7 +17124,7 @@ window.rmAuditVisibleButtons=function(){
     });
 
     Object.values(by).forEach(p=>{
-      p._tier=tier(p.closes_past_year,p.total_leads_past_year);
+      p._tier=profileTier(p);
       p._assign=amap[key(p.agent_name)]||{};
     });
 
@@ -17093,7 +17135,7 @@ window.rmAuditVisibleButtons=function(){
         copy.relationship_type='strategic_partner';
         copy.strategic_partner_category='Stager';
       }
-      copy._tier=tier(copy.closes_past_year,copy.total_leads_past_year);
+      copy._tier=profileTier(copy);
       copy._assign=amap[k]||{};
       return copy;
     });
@@ -17146,54 +17188,83 @@ window.rmAuditVisibleButtons=function(){
  function actionBtns(name){const n=encodeURIComponent(String(name||''));return '<div class="rmx-actions"><button class="rmx-btn small primary" data-rmx-action="log" data-agent="'+n+'">Log</button><button class="rmx-btn small" data-rmx-action="history" data-agent="'+n+'">History</button><button class="rmx-btn small" data-rmx-action="schedule" data-agent="'+n+'">Schedule</button><button class="rmx-btn small" data-rmx-action="update" data-agent="'+n+'">Update</button></div>'}
  function nav(){return [['snapshot','⌂','Snapshot'],['myday','▣','My Day'],['amanda','♙','Amanda Tracker'],['tier','↗','Tier Growth'],['portfolio','▢','Portfolio'],['communication','▱','LP / RM Handoffs'],['reports','▤','Reports & History'],['admin','⚙','Admin / Tools']]}
  function identity(){let src='';try{src=localStorage.getItem('rm_profile_photo_nyny')||''}catch(e){}if(!src){const av=$('v95NynyAvatar');src=av&&av.src?av.src:''}const h=new Date().getHours(),g=h<12?'Good morning':h<17?'Good afternoon':'Good evening';return '<div class="rmx-identity">'+(src?'<img class="rmx-avatar" id="rmxNynyAvatar" src="'+src+'">':'<div class="rmx-avatar" id="rmxNynyAvatarFallback" style="display:flex;align-items:center;justify-content:center;font-weight:800">N</div>')+'<div><div class="rmx-greet">'+g+', Nyny</div><div class="rmx-role">Director of Client Experience</div><div class="rmx-sub" id="rmxHeadSub">Loading your snapshot…</div><button class="rmx-photo" onclick=\"v95ChoosePhoto(\'nyny\')\">Change photo</button></div></div>'}
- function boot(){const view=$('view-daniel');if(!view)return;view.style.removeProperty('display');view.classList.add('rmx-on');let app=$('rmxApp');if(app&&!view.contains(app)){try{app.remove()}catch(e){}app=null}if(!app){app=document.createElement('div');app.id='rmxApp';view.appendChild(app)}app.innerHTML='<div class="rmx-shell"><aside class="rmx-side"><div class="rmx-brand"><div class="rmx-brand-icon">♧</div><div><strong>RM TRACKER</strong><span>Management View</span></div></div><nav class="rmx-nav">'+nav().map(n=>'<button data-rmx="'+n[0]+'"><span class="ico">'+n[1]+'</span>'+n[2]+'</button>').join('')+'</nav></aside><main class="rmx-main"><header class="rmx-head">'+identity()+'<div class="rmx-date"><span>▣</span><span>'+new Date(todayS()+'T12:00:00').toLocaleDateString(undefined,{month:'short',day:'numeric',year:'numeric'})+'</span><button class="rmx-btn" id="rmxRefresh">Refresh</button></div></header><div id="rmxContent"></div></main></div>';wireDirectorRouting();const rr=$('rmxRefresh');if(rr)rr.onclick=()=>{R.cache=null;R.ts=0;go(R.route,true)};go(R.route||'snapshot')}
- // Re-asserts the Management shell's own visibility state. Called on every route change and,
- // for the Amanda route specifically, again a moment after mount — belt-and-suspenders so that
- // if anything else on the page ever clears these classes/display while the iframe is still
- // loading over the network, the Management shell (and the Amanda tracker inside it) don't
- // silently disappear out from under the Director.
- function reassertDirectorShell(){
-   document.body.classList.add('rmx-director-active','rmx-director-site');
-   const v=document.getElementById('view-daniel');
-   if(v){v.style.removeProperty('display');v.classList.add('active','rmx-on');}
+ function rmxRouteBase(route){return String(route||'snapshot').split(':')[0]}
+ function rmxAmandaViewIds(){return ['week','log','portfolio','pipeline','reconnect','growth','learn','feed','history','contacts']}
+ function rmxAmandaLoad(name){
+   const map={
+     week:()=>{try{loadWeek()}catch(e){}try{loadStartHere()}catch(e){}try{loadRmNurtureToday()}catch(e){}try{if(typeof v23LoadAmandaSnapshot==='function')v23LoadAmandaSnapshot(true)}catch(e){}try{if(typeof v84LoadPartnerGraduations==='function')v84LoadPartnerGraduations()}catch(e){}},
+     pipeline:()=>loadPipeline(),contacts:()=>loadContacts(),growth:()=>loadAgentGrowth(),portfolio:()=>loadPortfolioReview(),
+     reconnect:()=>{loadReconnect();try{loadRmNurtureQueue()}catch(e){}},feed:()=>loadFeed(),history:()=>loadHistoryLanding()
+   };
+   const fn=map[name];if(!fn)return;try{const p=fn();if(p&&p.catch)p.catch(e=>console.warn('Amanda portal load '+name+' skipped:',e))}catch(e){console.warn('Amanda portal load '+name+' skipped:',e)}
+ }
+ function rmxAmandaSwitch(name){
+   if(!R.portal||!R.portal.mounted)return false;
+   const ids=rmxAmandaViewIds();if(!ids.includes(name))return false;
+   const portal=$('rmxAmandaPortal');if(!portal)return false;
+   portal.querySelectorAll('.tabs .tab').forEach(t=>t.classList.toggle('active',t.dataset.tab===name));
+   ids.forEach(id=>{const v=$('view-'+id);if(v)v.classList.toggle('active',id===name)});
+   const mg=$('view-daniel');if(mg)mg.classList.add('active');
+   rmxAmandaLoad(name);return true;
+ }
+ function rmxEnsureAmandaInit(){
+   if(R.amandaInitStarted)return;R.amandaInitStarted=true;
+   try{if(typeof init==='function')init()}catch(e){console.warn('Amanda portal init skipped:',e)}
+ }
+ function rmxEnterAmandaPortal(c){
+   if(R.portal&&R.portal.mounted){rmxAmandaSwitch('week');return}
+   c.innerHTML='<div class="rmx-title"><h1>Amanda Tracker</h1><p>Her actual live RM Tracker workspace inside Management View.</p></div>'
+     +'<section class="rmx-amanda-shell"><div class="rmx-amanda-toolbar"><div><b>Live Amanda workspace</b><span>These are the real Today, Portfolio, New Agents, Reconnect, Growth, Training and history views — not a recreated summary.</span></div><button class="rmx-btn" type="button" id="rmxAmandaRefresh">Refresh Amanda data</button></div><div id="rmxAmandaPortal"></div></section>';
+   const portal=$('rmxAmandaPortal'),items=[];
+   const nodes=[document.querySelector('body > .header'),document.querySelector('body > .tabs'),$('globalLockBanner')].concat(rmxAmandaViewIds().map(id=>$('view-'+id))).filter(Boolean);
+   nodes.forEach((node,i)=>{if(portal.contains(node))return;const ph=document.createComment('rmx-amanda-portal-'+i);node.parentNode.insertBefore(ph,node);portal.appendChild(node);items.push({node,ph})});
+   R.portal={mounted:true,items};document.body.classList.add('rmx-amanda-portal-active');
+   const ref=$('rmxAmandaRefresh');if(ref)ref.onclick=()=>{rmxAmandaLoad((portal.querySelector('.tabs .tab.active')||{}).dataset?.tab||'week');try{if(typeof refreshAllLiveSurfaces==='function')refreshAllLiveSurfaces()}catch(e){}};
+   rmxEnsureAmandaInit();rmxAmandaSwitch('week');
+ }
+ function rmxExitAmandaPortal(){
+   const p=R.portal;if(!p||!p.mounted)return;
+   (p.items||[]).forEach(x=>{try{if(x.ph&&x.ph.parentNode)x.ph.parentNode.insertBefore(x.node,x.ph);if(x.ph)x.ph.remove()}catch(e){}});
+   R.portal=null;document.body.classList.remove('rmx-amanda-portal-active');
+ }
+ window.rmxExitAmandaPortal=rmxExitAmandaPortal;
+ function boot(){
+   const view=$('view-daniel');if(!view)return;
+   if(R.portal&&R.portal.mounted)rmxExitAmandaPortal();
+   view.style.removeProperty('display');view.classList.add('rmx-on','active');
+   let app=$('rmxApp');if(app&&!view.contains(app)){try{app.remove()}catch(e){}app=null}
+   if(!app){app=document.createElement('div');app.id='rmxApp';view.appendChild(app)}
+   app.innerHTML='<div class="rmx-shell"><aside class="rmx-side"><div class="rmx-brand"><div class="rmx-brand-icon">♧</div><div><strong>RM TRACKER</strong><span>Management View</span></div></div><nav class="rmx-nav">'+nav().map(n=>'<button data-rmx="'+n[0]+'"><span class="ico">'+n[1]+'</span>'+n[2]+'</button>').join('')+'</nav></aside><main class="rmx-main"><header class="rmx-head">'+identity()+'<div class="rmx-date"><span>▣</span><span>'+new Date(todayS()+'T12:00:00').toLocaleDateString(undefined,{month:'short',day:'numeric',year:'numeric'})+'</span><button class="rmx-btn" id="rmxRefresh">Refresh</button></div></header><div id="rmxContent"></div></main></div>';
+   wireDirectorRouting();const rr=$('rmxRefresh');if(rr)rr.onclick=()=>{R.cache=null;R.ts=0;go(R.route,true)};go(R.route||'snapshot')
  }
  async function go(route,force){
-  R.route=route;
-  reassertDirectorShell();
-  wireDirectorRouting();
-  document.querySelectorAll('.rmx-nav button').forEach(b=>b.classList.toggle('active',b.dataset.rmx===route));
-  const c=$('rmxContent');if(!c)return;
-
-  // Amanda's real tracker is isolated from the Director DOM/CSS in a same-origin frame.
-  // This prevents the Director route from hiding #view-week after it briefly paints.
-  if(route==='amanda'){
-    c.innerHTML='';
-    renderAmanda(c,null);
-    // Re-assert shortly after mount (matches the historical "renders then vanishes after ~1-2s"
-    // report) and once more a moment later, in case something async elsewhere on the page briefly
-    // clears the Director shell's own visibility while the iframe is still loading.
-    setTimeout(()=>{if(R.route==='amanda')reassertDirectorShell();},400);
-    setTimeout(()=>{if(R.route==='amanda')reassertDirectorShell();},1800);
-    return;
-  }
-
-  c.innerHTML=loading();
-  try{
-    const d=await load(!!force);
-    c.innerHTML='';
-    if(route==='snapshot')renderSnapshot(c,d);
-    else if(route==='myday')renderMyDay(c,d);
-    else if(route==='tier')renderTier(c,d);
-    else if(route==='portfolio')renderPortfolio(c,d);
-    else if(route==='communication')renderComm(c,d);
-    else if(route==='reports')renderReports(c,d);
-    else if(route==='admin')renderAdmin(c,d);
-    else renderSnapshot(c,d);
-    if(!String(c.textContent||'').trim())c.innerHTML=empty('This section has no current items.');
-  }catch(e){console.error('RMX',e);c.innerHTML=err(e)}
+   route=route||'snapshot';const seq=++R.navSeq,base=rmxRouteBase(route),arg=String(route).includes(':')?String(route).split(':').slice(1).join(':'):'';
+   if(R.portal&&R.portal.mounted&&base!=='amanda')rmxExitAmandaPortal();
+   R.route=route;document.body.classList.add('rmx-director-active');wireDirectorRouting();
+   document.querySelectorAll('.rmx-nav button').forEach(b=>b.classList.toggle('active',b.dataset.rmx===base));
+   const c=$('rmxContent');if(!c)return;
+   if(base==='amanda'){rmxEnterAmandaPortal(c);return}
+   c.innerHTML=loading();
+   try{
+     const d=await load(!!force);
+     // A slower request from a previously-open Management section must NEVER repaint
+     // over the section the Director clicked afterward. This was the 1–2 second
+     // Amanda flash/disappear bug: Snapshot's boot load finished after Amanda opened.
+     if(seq!==R.navSeq||R.route!==route)return;
+     c.innerHTML='';
+     if(base==='snapshot')renderSnapshot(c,d);else if(base==='myday')renderMyDay(c,d);else if(base==='tier')renderTier(c,d,arg);else if(base==='portfolio')renderPortfolio(c,d);else if(base==='communication')renderComm(c,d);else if(base==='reports')renderReports(c,d);else if(base==='admin')renderAdmin(c,d);else renderSnapshot(c,d);
+     if(!String(c.textContent||'').trim())c.innerHTML=empty('This section has no current items.');
+   }catch(e){if(seq!==R.navSeq||R.route!==route)return;console.error('RMX',e);c.innerHTML=err(e)}
  }
  window.rmxGo=(route,force)=>go(route,!!force);window.rmxOpenAmanda=()=>go('amanda',false);window.rmxRefreshCache=()=>{R.cache=null;R.ts=0;return go(R.route||'snapshot',true)};
- function wireDirectorRouting(){const app=$('rmxApp');if(!app||app.dataset.routingWired==='1')return;app.dataset.routingWired='1';app.addEventListener('click',function(e){const target=e.target.closest('[data-rmx-jump]');if(target){e.preventDefault();e.stopPropagation();go(target.dataset.rmxJump);return}const navBtn=e.target.closest('[data-rmx]');if(navBtn){e.preventDefault();e.stopPropagation();go(navBtn.dataset.rmx)}})}
+ function wireDirectorRouting(){
+   const app=$('rmxApp');if(!app||app.dataset.routingWired==='1')return;app.dataset.routingWired='1';
+   app.addEventListener('click',function(e){
+     const action=e.target.closest('[data-rmx-action]');if(action){e.preventDefault();e.stopPropagation();const name=decodeURIComponent(action.dataset.agent||'');const a=action.dataset.rmxAction;if(a==='log')rmxLog(name);else if(a==='history')rmxHistory(name);else if(a==='schedule')rmxSchedule(name);else if(a==='update')rmxUpdate(name);return}
+     const target=e.target.closest('[data-rmx-jump]');if(target){e.preventDefault();e.stopPropagation();go(target.dataset.rmxJump);return}
+     const navBtn=e.target.closest('[data-rmx]');if(navBtn){e.preventDefault();e.stopPropagation();go(navBtn.dataset.rmx)}
+   })
+ }
  function title(c,h,p){c.innerHTML='<div class="rmx-title"><h1>'+h+'</h1><p>'+p+'</p></div>'}
  function counts(d){const x={Channel:0,A:0,B:0,C:0};d.prod.forEach(p=>{if(x[p._tier]!=null)x[p._tier]++});return x}
  function meetings(d){return d.acts.filter(a=>a.act_type==='New Realtor Meeting').length}
@@ -17310,49 +17381,30 @@ window.rmAuditVisibleButtons=function(){
       '<div class="rmx-list">'+(rows.length?rows.slice(0,40).map(p=>'<div class="rmx-row" data-name="'+esc(p.agent_name)+'"><div><div class="name">'+esc(p.display_name||p.agent_name)+' <span class="rmx-pill">'+p._tier+'</span>'+(p.competitor_risk_flag?'<span class="rmx-pill red">RISK</span>':'')+'</div><div class="meta">'+(p.next_growth_opportunity?'Next move: '+esc(p.next_growth_opportunity):'Portfolio gap: no next growth move documented')+'</div></div><div class="meta">'+(dueNames.has(key(p.agent_name))?'Follow-up due/overdue':'Relationship work')+'</div>'+actionBtns(p.agent_name)+'</div>').join(''):empty('No Nyny-owned A/B/Channel relationships are currently surfaced.'))+'</div>')+'</div>';
   wireSearch('rmxMySearch','#rmxMyRows .rmx-row')
 }
- function rmxAmandaUrl(){
-  try{
-    const u=new URL(window.location.href);
-    u.hash='';
-    u.searchParams.delete('director');
-    if(/\/director\.html$/i.test(u.pathname))u.pathname=u.pathname.replace(/director\.html$/i,'');
-    return u.toString();
-  }catch(e){return './'}
- }
- function renderAmanda(c,d){
-  title(c,'Amanda Tracker','Live view of Amanda’s actual working tracker — not a recreated Management summary.');
-  const src=rmxAmandaUrl();
-  c.innerHTML+='<section class="rmx-amanda-shell">'
-    +'<div class="rmx-amanda-toolbar"><div><b>Live Amanda workspace</b><span>This is Amanda’s real Today tracker and tabs, using the same shared data.</span></div>'
-    +'<button class="rmx-btn" type="button" onclick="document.getElementById(\'rmxAmandaFrame\').contentWindow.location.reload()">Refresh Amanda</button></div>'
-    +'<iframe id="rmxAmandaFrame" class="rmx-amanda-frame" title="Amanda RM Tracker" src="'+esc(src)+'" loading="eager"></iframe>'
-    +'</section>';
- }
-
- function renderTier(c,d){
+ function renderTier(c,d,initialTier){
   title(c,'Tier Growth','Live Channel / A / B / C roster. Click a tier to see the actual relationships behind the count.');
   const source=(d.prod&&d.prod.length?d.prod:d.profiles)||[];
   const groups={Channel:[],A:[],B:[],C:[]};
   source.forEach(p=>{
-    const t=p._tier||tier(p.closes_past_year,p.total_leads_past_year);
+    const t=p._tier||profileTier(p);
     if(groups[t])groups[t].push(p);
   });
   Object.keys(groups).forEach(t=>groups[t].sort((a,b)=>String(a.display_name||a.agent_name||'').localeCompare(String(b.display_name||b.agent_name||''))));
 
+  let active=['Channel','A','B','C'].includes(initialTier)?initialTier:'Channel';
   c.innerHTML+='<div class="rmx-grid">'
-    +stat('Channel',groups.Channel.length,'10+ closes · top relationship tier',groups.Channel.length?'rmx-good':'','tier')
-    +stat('A',groups.A.length,'4–9 closes',groups.A.length?'rmx-good':'','tier')
-    +stat('B',groups.B.length,'2–3 closes',groups.B.length?'rmx-watch':'','tier')
-    +stat('C',groups.C.length,'1 close or lead activity',groups.C.length?'':'','tier')
+    +stat('Channel',groups.Channel.length,'10+ closes · top relationship tier',groups.Channel.length?'rmx-good':'','tier:Channel')
+    +stat('A',groups.A.length,'4–9 closes',groups.A.length?'rmx-good':'','tier:A')
+    +stat('B',groups.B.length,'2–3 closes',groups.B.length?'rmx-watch':'','tier:B')
+    +stat('C',groups.C.length,'1 close or lead activity',groups.C.length?'':'','tier:C')
     +'</div>';
 
   c.innerHTML+='<div class="rmx-tabs" id="rmxTierTabs">'
-    +['Channel','A','B','C'].map((t,i)=>'<button type="button" class="'+(i===0?'active':'')+'" data-tier="'+t+'">'+t+' · '+groups[t].length+'</button>').join('')
+    +['Channel','A','B','C'].map(t=>'<button type="button" class="'+(t===active?'active':'')+'" data-tier="'+t+'">'+t+' · '+groups[t].length+'</button>').join('')
     +'</div>'
     +'<input class="rmx-search" id="rmxTierSearch" placeholder="Search this tier by agent, owner, LP, brokerage or next move…">'
     +'<div id="rmxTierRows"></div>';
 
-  let active='Channel';
   function paint(){
     const rows=groups[active]||[];
     const host=$('rmxTierRows');if(!host)return;
@@ -17555,30 +17607,33 @@ window.rmxAdminRemoveAgent=async function(name){
  window.rmxBuildCoaching=()=>{const g=$('rmxCgGood')?.value.trim()||'',i=$('rmxCgImprove')?.value.trim()||'',a=$('rmxCgAsk')?.value.trim()||'',cl=$('rmxCgClose')?.value.trim()||'';$('rmxCgPreview').value='Amanda,\n\n'+g+'\n\n'+i+'\n\n'+a+'\n\n'+cl+'\n\nBest,\nNyny'};
  window.rmxCopyCoaching=async()=>{rmxBuildCoaching();try{await navigator.clipboard.writeText($('rmxCgPreview').value);toast('Coaching email copied ✓','success')}catch(e){$('rmxCgPreview').select();document.execCommand('copy');toast('Coaching email copied ✓','success')}};
  window.rmxSaveCoaching=async()=>{rmxBuildCoaching();const notes=$('rmxCgPreview').value;try{const finalNotes=typeof appendRmMeta==='function'?appendRmMeta(notes,'Nyny','','',['Nyny'],[],''):notes;await sbFetch('amanda_activities',{method:'POST',body:JSON.stringify({agent_name:'Amanda',act_type:'Amanda Coaching / Development',act_date:todayS(),outcome:'Completed',notes:finalNotes,follow_up_date:null})});R.cache=null;toast('Amanda coaching saved ✓','success');rmxClose();go('amanda',true)}catch(e){toast('Could not save coaching: '+e.message,'error')}};
- window.rmxBoot=boot;const baseSwitch=window.switchTab;window.switchTab=function(name){if(name==='daniel'){document.body.classList.add('rmx-director-site');document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active',t.dataset.tab==='daniel'));document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));const v=$('view-daniel');if(v){v.style.removeProperty('display');v.classList.add('active')}document.body.classList.add('rmx-director-active');boot();return}document.body.classList.remove('rmx-director-active','rmx-director-site');return baseSwitch?baseSwitch(name):undefined};
+ window.rmxBoot=boot;const baseSwitch=window.switchTab;window.switchTab=function(name){if(R.portal&&R.portal.mounted&&rmxAmandaViewIds().includes(name))return rmxAmandaSwitch(name);if(name==='daniel'){if(window.location.hash!=='#director'){window.location.hash='director';return}document.body.classList.add('rmx-director-site','rmx-director-active');const v=$('view-daniel');if(v){v.style.removeProperty('display');v.classList.add('active')}boot();return}if(R.portal&&R.portal.mounted)rmxExitAmandaPortal();document.body.classList.remove('rmx-director-active','rmx-director-site');return baseSwitch?baseSwitch(name):undefined};
 })();
 </script>
 
-<script id="v211-final-director-route-js">
+<script id="v213-retire-legacy-director-hooks">
+// Legacy Director Command Center call sites are compatibility aliases only. They may not render UI.
 (function(){
- function isDirector(){
-  // CLEANUP (2026-08-21): single canonical route check — see rmxIsDirectorRoute near the top of the file.
-  try{return !!(typeof window.rmxIsDirectorRoute==='function'?window.rmxIsDirectorRoute():window.directorMode&&window.directorMode())}catch(e){return false}
- }
- function ensureView(){let v=document.getElementById('view-daniel');if(v)return v;v=document.createElement('div');v.id='view-daniel';v.className='view';const host=document.querySelector('.app')||document.body;host.appendChild(v);return v}
+  function refresh(){try{if(typeof window.rmxRefreshCache==='function')return window.rmxRefreshCache()}catch(e){}return Promise.resolve();}
+  window.v91LoadDirectorOS=refresh;window.v91RefreshDirectorOS=refresh;window.v85LoadCommandCenter=refresh;
+})();
+</script>
+<script id="v213-final-director-route-js">
+(function(){
+ function isDirector(){return location.hash==='#director'}
+ function ensureView(){let v=document.getElementById('view-daniel');if(v)return v;v=document.createElement('div');v.id='view-daniel';v.className='view';document.body.appendChild(v);return v}
  function apply(){
    const dir=isDirector();
-   document.body.classList.toggle('rm-director-route',dir);
-   document.body.classList.toggle('rm-amanda-route',!dir);
+   document.body.classList.toggle('rm-director-route',dir);document.body.classList.toggle('rm-amanda-route',!dir);
    if(dir){
      const v=ensureView();v.style.removeProperty('display');v.classList.add('active');
-     try{if(typeof window.rmxBoot==='function')window.rmxBoot();else if(typeof window.switchTab==='function')window.switchTab('daniel')}catch(e){console.error('Director mount failed',e)}
-     // One finite repair pass for GitHub/DOMContentLoaded ordering.
-     setTimeout(()=>{try{if(!document.getElementById('rmxApp')&&typeof window.rmxBoot==='function')window.rmxBoot()}catch(e){}},120);
+     try{if(typeof window.rmxBoot==='function')window.rmxBoot()}catch(e){console.error('Director mount failed',e)}
    }else{
-     document.body.classList.remove('rmx-director-active','rmx-director-site');
-     const v=document.getElementById('view-daniel');if(v){v.classList.remove('active');v.style.setProperty('display','none','important')}
-     if(!document.querySelector('.view.active')){const w=document.getElementById('view-week');if(w)w.classList.add('active')}
+     try{if(typeof window.rmxExitAmandaPortal==='function')window.rmxExitAmandaPortal()}catch(e){}
+     document.body.classList.remove('rmx-director-active','rmx-director-site','rmx-amanda-portal-active');
+     const v=document.getElementById('view-daniel');if(v){v.classList.remove('active');v.style.removeProperty('display')}
+     const current=document.querySelector('body > .view.active:not(#view-daniel)');
+     if(!current){try{if(typeof window.switchTab==='function')window.switchTab('week');else document.getElementById('view-week')?.classList.add('active')}catch(e){document.getElementById('view-week')?.classList.add('active')}}
    }
  }
  window.addEventListener('hashchange',apply);
