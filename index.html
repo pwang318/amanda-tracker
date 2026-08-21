@@ -17314,12 +17314,26 @@ window.rmAuditVisibleButtons=function(){
         if(!pmap[k]||new Date(p.powerbi_last_seen_at||0)>new Date(pmap[k].powerbi_last_seen_at||0))pmap[k]=p;
       });
       Object.entries(own).forEach(([k,o])=>{if(o.removed)excluded.add(k)});
-      const latest={};acts.forEach(a=>{if(/Cold Calls?|New Agent Prospect/i.test(String(a.act_type||'')))return;const k=K(a.agent_name),dt=new Date(a.act_date||a.created_at||0);if(k&&!isNaN(dt)&&(!latest[k]||dt>latest[k]))latest[k]=dt});
+      const latest={};
+      const workedToday=new Set();
+      const QUALIFYING_TODAY=new Set([
+        'Agent Talk-to','Active Agent Talk-to','Active Agent Check-in',
+        'Reconnect Outreach','CTC Call','Under Contract Call',
+        'Market Update','Market Update Call','New Agent Follow-up',
+        'Partner Meeting','Break Breads','Strategic Partner Meeting',
+        'Channel Meeting','Retention Meeting'
+      ]);
+      acts.forEach(a=>{
+        if(/Cold Calls?|New Agent Prospect/i.test(String(a.act_type||'')))return;
+        const k=K(a.agent_name),dt=new Date(a.act_date||a.created_at||0);
+        if(k&&!isNaN(dt)&&(!latest[k]||dt>latest[k]))latest[k]=dt;
+        if(k&&String(a.act_date||'')===d&&QUALIFYING_TODAY.has(String(a.act_type||'').trim()))workedToday.add(k);
+      });
 
       const q={};
       function add(name,priority,why,type){
         const k=K(name),p=pmap[k],o=own[k]||{};
-        if(!k||excluded.has(k)||!p||isDirector(name,p)||isStrategic(name,p))return;
+        if(!k||excluded.has(k)||workedToday.has(k)||!p||isDirector(name,p)||isStrategic(name,p))return;
         if(String(o.rm||'').toLowerCase()!=='amanda')return;
         if(String(p.tier||p.powerbi_level||'C').toUpperCase()!=='C')return;
         const cur=q[k];if(!cur||priority<cur.priority)q[k]={name,priority,why,type:type||'Agent Talk-to'};
@@ -17339,14 +17353,14 @@ window.rmAuditVisibleButtons=function(){
       // Fill to 5 with Amanda-owned C relationships, oldest reliable touch first.
       profiles.forEach(p=>{
         const k=K(p.agent_name),o=own[k]||{};
-        if(excluded.has(k)||isDirector(p.agent_name,p)||isStrategic(p.agent_name,p)||String(o.rm||'').toLowerCase()!=='amanda'||String(p.tier||p.powerbi_level||'C').toUpperCase()!=='C')return;
+        if(excluded.has(k)||workedToday.has(k)||isDirector(p.agent_name,p)||isStrategic(p.agent_name,p)||String(o.rm||'').toLowerCase()!=='amanda'||String(p.tier||p.powerbi_level||'C').toUpperCase()!=='C')return;
         const dt=p.last_meaningful_contact_date?new Date(p.last_meaningful_contact_date):latest[k];
         const days=dt&&!isNaN(dt)?Math.max(0,Math.floor((Date.now()-dt)/86400000)):null;
         add(p.agent_name,days===null?90:50-Math.min(30,days/3),days===null?'No reliable last-touch date — review relationship record':'Intentional relationship check-in · '+days+' days since meaningful touch','Agent Talk-to');
       });
 
       const rows=Object.values(q).sort((a,b)=>a.priority-b.priority||String(a.name).localeCompare(String(b.name))).slice(0,5);
-      let html='<div class="v165-call-card"><div class="v165-call-head"><div><b>Who do I call next?</b><small>One source. Amanda-owned relationships only. Do #1, log it, then move down.</small></div><button class="v165-refresh" onclick="v179LoadCallNext(true)">Refresh</button></div>';
+      let html='<div class="v165-call-card"><div class="v165-call-head"><div><b>Who do I call next?</b><small>One source. Amanda-owned relationships only. Once a qualifying touch is logged today, that person clears and the next relationship moves up.</small></div><button class="v165-refresh" onclick="v179LoadCallNext(true)">Refresh</button></div>';
       if(rows.length){
         const f=rows[0];
         html+='<div class="v165-primary"><div class="v165-primary-label">CALL THIS PERSON NEXT</div><div class="v165-primary-row"><div class="v165-rank">1</div><div><div class="v165-name">'+E(f.name)+'</div><div class="v165-why"><b>Why:</b> '+E(f.why)+'</div></div><div class="v165-actions"><button class="primary" data-rm-action="touch" data-agent="'+encodeURIComponent(f.name)+'" data-type="'+encodeURIComponent(f.type)+'">Log touch</button><button data-rm-action="update" data-agent="'+encodeURIComponent(f.name)+'">Update</button></div></div></div>';
@@ -17391,6 +17405,35 @@ window.rmAuditVisibleButtons=function(){
     setTimeout(()=>v179LoadCallNext(true),1050);
   }
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
+})();
+</script>
+
+
+<script id="v180-call-next-completion-guard">
+(function(){
+  window.rmCallNextQualifyingType=function(type){
+    return new Set([
+      'Agent Talk-to','Active Agent Talk-to','Active Agent Check-in',
+      'Reconnect Outreach','CTC Call','Under Contract Call',
+      'Market Update','Market Update Call','New Agent Follow-up',
+      'Partner Meeting','Break Breads','Strategic Partner Meeting',
+      'Channel Meeting','Retention Meeting'
+    ]).has(String(type||'').trim());
+  };
+  // The authoritative queue already reloads after saves. This is a one-shot visual safety guard:
+  // if a qualifying touch was just saved, remove that visible row immediately while fresh data reloads.
+  window.rmOptimisticClearCallNext=function(name,type){
+    if(!rmCallNextQualifyingType(type))return;
+    const k=String(name||'').trim().toLowerCase();
+    const root=document.getElementById('v165CallNext');if(!root||!k)return;
+    root.querySelectorAll('[data-agent]').forEach(btn=>{
+      let n='';try{n=decodeURIComponent(btn.dataset.agent||'').trim().toLowerCase()}catch(e){}
+      if(n===k){
+        const row=btn.closest('.v165-primary,.v165-up-row,.v165-primary-row');
+        if(row)row.style.opacity='.35';
+      }
+    });
+  };
 })();
 </script>
 
