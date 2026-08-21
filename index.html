@@ -14383,172 +14383,7 @@ setTimeout(function(){v124MountAudit();v122RenderAudit();},1200);
   .v128-ql-box{width:100%;max-height:88vh;border-radius:16px 16px 0 0;border-bottom:0}
 }
 </style>
-<script id="v128-consistent-quick-log-js">
-(function(){
-  "use strict";
-  const V128_FULL_ONLY=new Set(["CTC Call","Under Contract Call","New Realtor Meeting","Cold Calls","Cold Call"]);
-  const V128_TYPES=["Agent Talk-to","Reconnect Outreach","Break Breads","Partner Meeting","Existing / Current Partner Meeting","Strategic Partner Meeting","Channel Meeting","Retention / At-Risk Meeting","Birthday Outreach","Market Update","Holiday Outreach","Agent Appreciation","New Agent Follow-up","Co-hosted Event","Realtor Buddy Referral Ask"];
-  const V128_OUTCOMES=["Positive","Meeting Scheduled","No answer","Left voicemail","Requires follow-up","Needs manager attention","Completed"];
-  window._v128QuickState=null;
-  window._v128PendingQuickState=null;
 
-  function esc(v){return String(v==null?"":v).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/\"/g,"&quot;");}
-  function js(v){return String(v==null?"":v).replace(/\\/g,"\\\\").replace(/'/g,"\\'").replace(/\r?\n/g," ");}
-  function normType(t){t=String(t||"Agent Talk-to").trim();if(t==="Talk-to (text/call)"||t==="Talk-to")return "Agent Talk-to";return t||"Agent Talk-to";}
-  function inferredOwner(name,fallback){
-    try{const o=typeof getAgentOwnership==="function"?getAgentOwnership(name):null;if(o&&o.rm)return o.rm;}catch(e){}
-    return fallback||"Amanda";
-  }
-  function needsTenWords(type){try{return typeof NOTES_REQUIRED_TYPES!=="undefined"&&NOTES_REQUIRED_TYPES.indexOf(type)>=0;}catch(e){return false;}}
-  function needsAnyNote(type){try{return needsTenWords(type)||(typeof NOTES_MANDATORY_NO_MIN!=="undefined"&&NOTES_MANDATORY_NO_MIN.indexOf(type)>=0);}catch(e){return true;}}
-  function currentTab(){const v=document.querySelector('.view.active');return v&&v.id?String(v.id).replace(/^view-/,''):'';}
-
-  function ensureModal(){
-    if(document.getElementById('v128QuickLogModal'))return;
-    const modal=document.createElement('div');modal.id='v128QuickLogModal';modal.setAttribute('role','dialog');modal.setAttribute('aria-modal','true');
-    modal.innerHTML='<div class="v128-ql-box" onclick="event.stopPropagation()">'
-      +'<div class="v128-ql-head"><div><div class="v128-ql-kicker">Quick Log</div><div class="v128-ql-title" id="v128QlTitle">Relationship touch</div><div class="v128-ql-sub" id="v128QlSub">Log it and stay right where you are.</div><span class="v128-ql-owner" id="v128QlOwner">Amanda</span></div><button class="v128-ql-close" type="button" onclick="v128CloseQuickLog()" aria-label="Close">×</button></div>'
-      +'<div class="v128-ql-body"><div class="v128-ql-grid">'
-      +'<div class="v128-ql-field"><label>Activity</label><select id="v128QlType" onchange="v128QuickTypeChanged()"></select></div>'
-      +'<div class="v128-ql-field"><label>Method</label><select id="v128QlMethod"><option>Call</option><option>Text</option><option>Email</option><option>In Person</option><option>Video</option></select></div>'
-      +'<div class="v128-ql-field"><label>Outcome</label><select id="v128QlOutcome" onchange="v128QuickOutcomeChanged()"></select></div>'
-      +'<div class="v128-ql-field" id="v128QlFollowWrap"><label id="v128QlFollowLabel">Follow-up date</label><input id="v128QlFollow" type="date"></div>'
-      +'<div class="v128-ql-field full"><label>Notes</label><textarea id="v128QlNotes" placeholder="What happened, what matters, and what is next?" oninput="v128QuickNoteCount()"></textarea><div class="v128-ql-note-line"><span id="v128QlNoteHint">Notes required.</span><span id="v128QlWordCount">0 words</span></div></div>'
-      +'</div></div><div class="v128-ql-msg" id="v128QlMsg"></div>'
-      +'<div class="v128-ql-foot"><button class="v128-ql-btn" type="button" onclick="v128UseFullLog()">Full log</button><button class="v128-ql-btn" type="button" onclick="v128CloseQuickLog()">Cancel</button><button class="v128-ql-btn primary" id="v128QlSave" type="button" onclick="v128SaveQuickLog()">Save touch</button></div>'
-      +'</div>';
-    modal.addEventListener('click',v128CloseQuickLog);document.body.appendChild(modal);
-  }
-
-  function optionHtml(values,current){const vals=[...values];if(current&&!vals.includes(current))vals.unshift(current);return vals.map(v=>'<option value="'+esc(v)+'"'+(v===current?' selected':'')+'>'+esc(v)+'</option>').join('');}
-  window.v128OpenQuickLog=function(name,owner,type,opts){
-    ensureModal();type=normType(type);owner=inferredOwner(name,owner||"Amanda");opts=opts||{};
-    if(V128_FULL_ONLY.has(type)){return v128OpenFullLog(name,owner,type,opts);}
-    window._v128QuickState={name:String(name||'').trim(),owner:owner,type:type,reconnectId:opts.reconnectId??null,followupId:opts.followupId??null,source:opts.source||currentTab(),returnTab:currentTab()};
-    const st=window._v128QuickState;
-    document.getElementById('v128QlTitle').textContent=(typeof properCase==='function'?properCase(st.name):st.name)||'Relationship touch';
-    document.getElementById('v128QlSub').textContent=(st.source?st.source+' · ':'')+'Log the touch without leaving this screen.';
-    document.getElementById('v128QlOwner').textContent='Logging as '+st.owner;
-    document.getElementById('v128QlType').innerHTML=optionHtml(V128_TYPES,st.type);
-    document.getElementById('v128QlOutcome').innerHTML='<option value="">Select outcome…</option>'+optionHtml(V128_OUTCOMES,'');
-    document.getElementById('v128QlMethod').value=(st.type==='Break Breads'||/Meeting/i.test(st.type))?'In Person':'Call';
-    document.getElementById('v128QlFollow').value='';document.getElementById('v128QlNotes').value='';document.getElementById('v128QlMsg').style.display='none';
-    v128QuickTypeChanged();v128QuickOutcomeChanged();v128QuickNoteCount();
-    document.getElementById('v128QuickLogModal').classList.add('open');
-    setTimeout(()=>document.getElementById('v128QlOutcome')?.focus(),40);
-  };
-  window.v128CloseQuickLog=function(){const m=document.getElementById('v128QuickLogModal');if(m)m.classList.remove('open');window._v128PendingQuickState=null;};
-  window.v128QuickTypeChanged=function(){const t=normType(document.getElementById('v128QlType')?.value);if(window._v128QuickState)window._v128QuickState.type=t;const h=document.getElementById('v128QlNoteHint');if(h)h.textContent=needsTenWords(t)?((typeof MIN_NOTE_WORDS!=='undefined'?MIN_NOTE_WORDS:10)+'-word minimum for this activity.'):needsAnyNote(t)?'A real note is required.':'Keep a short useful note so the relationship history stays clean.';};
-  window.v128QuickOutcomeChanged=function(){const o=document.getElementById('v128QlOutcome')?.value||'';const w=document.getElementById('v128QlFollowWrap');const l=document.getElementById('v128QlFollowLabel');if(!w)return;const show=o==='Requires follow-up'||o==='Meeting Scheduled';w.style.display=show?'block':'none';if(l)l.textContent=o==='Meeting Scheduled'?'Scheduled for':'Follow-up date';if(show&&!document.getElementById('v128QlFollow').value){const d=new Date(Date.now()+3*86400000);document.getElementById('v128QlFollow').value=(typeof localDateStr==='function'?localDateStr(d):d.toISOString().slice(0,10));}};
-  window.v128QuickNoteCount=function(){const n=document.getElementById('v128QlNotes')?.value||'';const c=typeof countWords==='function'?countWords(n):n.trim().split(/\s+/).filter(Boolean).length;const e=document.getElementById('v128QlWordCount');if(e)e.textContent=c+' word'+(c===1?'':'s');};
-
-  window.v128OpenFullLog=function(name,owner,type,opts){
-    const original=window._v128FullPrefillActivityLog||window.prefillActivityLog;if(typeof original!=='function')return;
-    original(name,type);setTimeout(()=>{const o=document.getElementById('activityOwner');if(o){o.value=owner||'Amanda';try{onActivityOwnerChange();}catch(e){}}},60);
-  };
-  window.v128UseFullLog=function(){
-    const st=window._v128QuickState;if(!st)return;const type=normType(document.getElementById('v128QlType')?.value||st.type),method=document.getElementById('v128QlMethod')?.value||'Call',outcome=document.getElementById('v128QlOutcome')?.value||'',notes=document.getElementById('v128QlNotes')?.value||'',fu=document.getElementById('v128QlFollow')?.value||'';
-    const original=window._v128FullPrefillActivityLog||window.prefillActivityLog;document.getElementById('v128QuickLogModal')?.classList.remove('open');if(typeof original!=='function')return;original(st.name,type);
-    setTimeout(()=>{const o=document.getElementById('activityOwner');if(o){o.value=st.owner;try{onActivityOwnerChange();}catch(e){}}const m=document.getElementById('activityContactMethod');if(m)m.value=method;const out=document.getElementById('activityOutcome');if(out){out.value=outcome;out.dispatchEvent(new Event('change',{bubbles:true}));}const nt=document.getElementById('activityNotes');if(nt)nt.value=notes;const f=document.getElementById('followupDate');if(f)f.value=fu;},80);
-  };
-
-  async function markReconnect(st){
-    if(st.type!=='Reconnect Outreach'&&st.reconnectId==null)return;
-    try{
-      if(st.reconnectId!=null)await sbFetch((typeof RC_TABLE!=='undefined'?RC_TABLE:'reconnect_agents')+'?id=eq.'+encodeURIComponent(st.reconnectId),{method:'PATCH',prefer:'return=minimal',body:JSON.stringify({status:'contacted',contacted_at:new Date().toISOString()})});
-      else await sbFetch((typeof RC_TABLE!=='undefined'?RC_TABLE:'reconnect_agents')+'?agent_name=ilike.'+encodeURIComponent(st.name)+'&status=eq.active',{method:'PATCH',prefer:'return=minimal',body:JSON.stringify({status:'contacted',contacted_at:new Date().toISOString()})}).catch(()=>{});
-      try{if(typeof rcData!=='undefined'){rcData.filter(r=>(r.agent_name||'').trim().toLowerCase()===st.name.toLowerCase()).forEach(r=>{r.status='contacted';r.contacted_at=new Date().toISOString();});}}catch(e){}
-    }catch(e){console.warn('Reconnect touch saved but queue status could not update',e);}
-  }
-
-  async function v128CommitQuickLog(){
-    const st=window._v128PendingQuickState||window._v128QuickState;if(!st)return;
-    const type=normType(st.type||document.getElementById('v128QlType')?.value),outcome=st.outcome||document.getElementById('v128QlOutcome')?.value||'',method=st.method||document.getElementById('v128QlMethod')?.value||'Call',fu=st.followupDate??(document.getElementById('v128QlFollow')?.value||null);let notes=st.notes??(document.getElementById('v128QlNotes')?.value||'').trim();
-    const btn=document.getElementById('v128QlSave');if(btn){btn.disabled=true;btn.textContent='Saving…';}
-    try{
-      try{const dupe=await sbFetch('amanda_activities?agent_name=ilike.'+encodeURIComponent(st.name)+'&act_type=eq.'+encodeURIComponent(type)+'&act_date=eq.'+(typeof today==='function'?today():new Date().toISOString().slice(0,10))+'&select=id,agent_name,act_type,act_date,notes&limit=10');if((dupe||[]).some(a=>typeof isInternalTxnTrigger!=='function'||!isInternalTxnTrigger(a))){if(!confirm(type+' is already logged for '+st.name+' today.\n\nIf this is the same touch, cancel to avoid a duplicate.\n\nLog another separate touch anyway?'))return;}}catch(e){if(typeof isNetworkFailure==='function'&&isNetworkFailure(e))throw e;console.warn('v128 duplicate check',e);}
-      const emoji={Call:'☎️',Text:'📱',Email:'✉️','In Person':'🤝',Video:'💻'}[method]||'☎️';notes=emoji+' '+notes;
-      const next=(outcome==='Requires follow-up'||outcome==='Meeting Scheduled')?st.owner:'';
-      if(typeof appendRmMeta==='function')notes=appendRmMeta(notes,st.owner,'','',[st.owner],[],next);
-      const inserted=await sbFetch('amanda_activities',{method:'POST',body:JSON.stringify({agent_name:st.name,act_type:type,act_date:(typeof today==='function'?today():new Date().toISOString().slice(0,10)),outcome:outcome,notes:notes,follow_up_date:(outcome==='Requires follow-up'||outcome==='Meeting Scheduled')?fu:null})});
-      const insertedRow=inserted&&inserted[0]?inserted[0]:null;
-      await clearOldFollowups(st.name,insertedRow&&insertedRow.id);
-      const ownerEl=document.getElementById('activityOwner'),prevOwner=ownerEl?ownerEl.value:null;if(ownerEl)ownerEl.value=st.owner;try{if(typeof completeActiveFlagAfterActivity==='function')await completeActiveFlagAfterActivity(st.name);}finally{if(ownerEl&&prevOwner!=null)ownerEl.value=prevOwner;}
-      await markReconnect({...st,type});
-      if(typeof vibrateSaved==='function')vibrateSaved();
-      window._v128PendingQuickState=null;window._v128QuickState=null;document.getElementById('v128QuickLogModal')?.classList.remove('open');toast((typeof properCase==='function'?properCase(st.name):st.name)+' logged ✓','success',3200);
-      if(typeof rmRefreshAfterMutation==='function')await rmRefreshAfterMutation('v128 contextual quick log');else{try{loadWeek?.();loadFeed?.();loadFollowups?.();loadManagement?.();}catch(e){}}
-      setTimeout(()=>{try{window.v126RefreshRelationshipWork?.();}catch(e){}try{v128MirrorRelationshipWork();}catch(e){}},120);
-    }catch(e){
-      if(typeof isNetworkFailure==='function'&&isNetworkFailure(e)&&typeof queueOffline==='function'){queueOffline(st.name,type,(typeof today==='function'?today():new Date().toISOString().slice(0,10)),outcome,notes,(outcome==='Requires follow-up'||outcome==='Meeting Scheduled')?fu:null);toast('No connection — saved offline and will sync automatically ✓','success',4200);document.getElementById('v128QuickLogModal')?.classList.remove('open');window._v128PendingQuickState=null;}
-      else toast('Save failed: '+(e&&e.message?e.message:e),'error',5000);
-    }finally{if(btn){btn.disabled=false;btn.textContent='Save touch';}}
-  }
-  window.v128CommitQuickLog=v128CommitQuickLog;
-
-  window.v128SaveQuickLog=async function(){
-    if(typeof openIntake!=='undefined'&&openIntake){toast('Finish the open checklist for '+openIntake.agent_name+' first.','error');return;}
-    const base=window._v128QuickState;if(!base||!base.name){toast('No relationship selected.','error');return;}
-    const type=normType(document.getElementById('v128QlType')?.value||base.type),outcome=document.getElementById('v128QlOutcome')?.value||'',method=document.getElementById('v128QlMethod')?.value||'Call',notes=(document.getElementById('v128QlNotes')?.value||'').trim(),fu=document.getElementById('v128QlFollow')?.value||null;
-    if(!outcome){toast('Select an outcome first.','error');return;}
-    const wc=typeof countWords==='function'?countWords(notes):notes.split(/\s+/).filter(Boolean).length,minimum=(typeof MIN_NOTE_WORDS!=='undefined'?MIN_NOTE_WORDS:10);
-    if(needsTenWords(type)&&wc<minimum){toast(type+' needs detailed notes — minimum '+minimum+' words.','error');return;}
-    if(!needsTenWords(type)&&wc<1){toast('Add a useful note before saving.','error');return;}
-    if((outcome==='Requires follow-up'||outcome==='Meeting Scheduled')&&!fu){toast(outcome==='Meeting Scheduled'?'Add the scheduled date.':'Set a real follow-up date.','error');return;}
-    if(outcome==='Needs manager attention'&&wc<minimum){toast('Explain what needs manager attention — minimum '+minimum+' words.','error');return;}
-    window._v128PendingQuickState={...base,type,outcome,method,notes,followupDate:fu};
-    if(base.owner==='Amanda'&&typeof wp37GatePartnerTouch==='function'){
-      let ok=false;try{ok=await wp37GatePartnerTouch(base.name,type,outcome,base.owner,'v128');}catch(e){toast('Could not verify partner profile: '+e.message,'error');window._v128PendingQuickState=null;return;}
-      if(!ok){const m=document.getElementById('v128QuickLogModal');if(m)m.classList.remove('open');return;}
-    }
-    await v128CommitQuickLog();
-  };
-
-  // Resume the same contextual Quick Log after the existing Partner Check-In gate.
-  const prevPartnerSave=window.wp37SavePartnerCheckin;
-  if(typeof prevPartnerSave==='function')window.wp37SavePartnerCheckin=async function(){const isV128=typeof wp37PendingPartnerSave!=='undefined'&&wp37PendingPartnerSave&&wp37PendingPartnerSave.resumeKind==='v128';const r=await prevPartnerSave.apply(this,arguments);if(isV128&&window._v128PendingQuickState&&(!wp37PendingPartnerSave)){try{if(typeof wp37PartnerGateBypass!=='undefined')wp37PartnerGateBypass=true;await v128CommitQuickLog();}finally{try{if(typeof wp37PartnerGateBypass!=='undefined')wp37PartnerGateBypass=false;}catch(e){}}}return r;};
-  const prevPartnerSkip=window.wp37SkipPartnerCheckin;
-  if(typeof prevPartnerSkip==='function')window.wp37SkipPartnerCheckin=async function(){const isV128=typeof wp37PendingPartnerSave!=='undefined'&&wp37PendingPartnerSave&&wp37PendingPartnerSave.resumeKind==='v128';const r=await prevPartnerSkip.apply(this,arguments);if(isV128&&window._v128PendingQuickState&&(!wp37PendingPartnerSave)){try{if(typeof wp37PartnerGateBypass!=='undefined')wp37PartnerGateBypass=true;await v128CommitQuickLog();}finally{try{if(typeof wp37PartnerGateBypass!=='undefined')wp37PartnerGateBypass=false;}catch(e){}}}return r;};
-  const prevPartnerCancel=window.wp37CancelPartnerCheckin;
-  if(typeof prevPartnerCancel==='function')window.wp37CancelPartnerCheckin=function(){const isV128=typeof wp37PendingPartnerSave!=='undefined'&&wp37PendingPartnerSave&&wp37PendingPartnerSave.resumeKind==='v128';const r=prevPartnerCancel.apply(this,arguments);if(isV128&&window._v128PendingQuickState){window._v128QuickState={...window._v128PendingQuickState};document.getElementById('v128QuickLogModal')?.classList.add('open');}return r;};
-
-  // Preserve the real Full Log for complex activities, but make contextual relationship buttons stay in place.
-  window._v128FullPrefillActivityLog=window.prefillActivityLog;
-  if(typeof window.prefillActivityLog==='function')window.prefillActivityLog=function(name,type){type=normType(type);if(V128_FULL_ONLY.has(type))return window._v128FullPrefillActivityLog.apply(this,arguments);return v128OpenQuickLog(name,inferredOwner(name,'Amanda'),type,{source:currentTab()});};
-  window._v128FullWpOpenLog=window.wpOpenLog;
-  if(typeof window.wpOpenLog==='function')window.wpOpenLog=function(name,owner,type){type=normType(type);if(V128_FULL_ONLY.has(type))return window._v128FullWpOpenLog.apply(this,arguments);return v128OpenQuickLog(name,owner||inferredOwner(name,'Amanda'),type,{source:currentTab()});};
-  window.v98DirectorLog=function(name,owner,type){return v128OpenQuickLog(name,owner||inferredOwner(name,'Nyny'),normType(type),{source:'Management View'});};
-  window.v127ReconnectLog=function(id,name){return v128OpenQuickLog(name,'Amanda','Reconnect Outreach',{source:'Reconnect',reconnectId:Number(id)});};
-  window.v127Go=function(tab){try{switchTab(tab);}catch(e){}setTimeout(()=>{try{window.scrollTo({top:0,behavior:'smooth'});}catch(e){}},40);};
-  window.rcToggleLog=function(id){let r=null;try{r=(typeof rcData!=='undefined'?rcData:[]).find(x=>Number(x.id)===Number(id));}catch(e){}if(!r){toast('Reconnect record not found. Refresh Reconnect and try again.','error');return;}v128OpenQuickLog(r.agent_name,'Amanda','Reconnect Outreach',{source:'Reconnect',reconnectId:Number(id)});};
-  window.toggleFuInlineLog=function(id){const row=document.getElementById('fu-'+id),name=row?.querySelector('.fu-name')?.textContent?.trim()||'';const type=document.getElementById('fu-log-type-'+id)?.value||'Agent Talk-to';if(!name){toast('Follow-up record not found. Refresh and try again.','error');return;}v128OpenQuickLog(name,'Amanda',type,{source:'Follow-up',followupId:Number(id)});};
-  window.rmNurtureLog=function(btn){const n=btn&&btn.getAttribute?btn.getAttribute('data-agent'):'';if(n)v128OpenQuickLog(n,'Amanda','Agent Talk-to',{source:'Nurture'});};
-  window.v77LogStrategicPartner=function(btn){const n=btn&&btn.dataset?btn.dataset.agent:'';if(n)v128OpenQuickLog(n,'Nyny','Strategic Partner Meeting',{source:'Strategic partners'});};
-  window.v107LogVisitEncoded=function(name){const n=decodeURIComponent(name||'');v128OpenQuickLog(n,inferredOwner(n,'Amanda'),'Break Breads',{source:'Face Time'});};
-  window.openFlagOutreach=function(source,id,agent){const n=String(agent||'').trim();window._activeLpFlagContext={source:String(source||''),id:String(id||''),agent:n};v128OpenQuickLog(n,'Amanda','Agent Talk-to',{source:'LP handoff'});};
-  window.openFlagOutreachFromButton=function(btn){if(btn)openFlagOutreach(btn.dataset.flagSource||'',btn.dataset.flagId||'',btn.dataset.agent||'');};
-
-  // Management View: mirror Amanda's exact Relationship Work output instead of recalculating it separately.
-  window.v128EnsureMgmtMirror=function(){
-    const anchor=document.getElementById('amandaDailyGoalCard');if(!anchor)return null;let card=document.getElementById('v128MgmtAmandaRelationshipCard');
-    if(!card){card=document.createElement('div');card.className='card';card.id='v128MgmtAmandaRelationshipCard';card.innerHTML='<div style="display:flex;justify-content:space-between;gap:12px;align-items:flex-start;flex-wrap:wrap;margin-bottom:10px"><div><div class="card-title" style="margin-bottom:2px">Amanda · Relationship work</div><div style="font-size:11px;color:var(--text-3)">Exact same live priority queue Amanda sees on Today. One queue, one priority order.</div></div><div style="display:flex;gap:7px;align-items:center"><span class="v128-mirror-badge">Mirrors Amanda Today</span><button class="btn-sm" onclick="switchTab(\'week\')">Open Amanda Today</button></div></div><div id="v128MgmtRelationshipMirror"><div class="no-data">Loading Amanda relationship priorities…</div></div>';anchor.insertAdjacentElement('afterend',card);}return card;
-  };
-  window.v128MirrorRelationshipWork=function(){v128EnsureMgmtMirror();const src=document.getElementById('v126RelationshipLive'),dst=document.getElementById('v128MgmtRelationshipMirror');if(!dst)return;if(!src||!src.innerHTML.trim()){dst.innerHTML='<div class="no-data">Amanda relationship priorities are still loading…</div>';return;}dst.innerHTML=src.innerHTML;v128LabelQuickButtons(dst);};
-  function v128LabelQuickButtons(root){(root||document).querySelectorAll('.v127-log-btn').forEach(b=>{if(b.textContent!=='Quick log')b.textContent='Quick log';if(b.getAttribute('title')!=='Log this touch without leaving the current screen')b.setAttribute('title','Log this touch without leaving the current screen');});}
-  function watchRelationshipWork(){v128EnsureMgmtMirror();const src=document.getElementById('v126RelationshipLive');v128LabelQuickButtons(src||document);v128MirrorRelationshipWork();}
-
-  const prevLoadManagement=window.loadManagement;if(typeof prevLoadManagement==='function')window.loadManagement=async function(){const r=await prevLoadManagement.apply(this,arguments);setTimeout(()=>{v128EnsureMgmtMirror();v128MirrorRelationshipWork();},80);return r;};
-  const prevSwitch=window.switchTab;if(typeof prevSwitch==='function')window.switchTab=function(name){const r=prevSwitch.apply(this,arguments);if(name==='daniel')setTimeout(()=>{v128EnsureMgmtMirror();v128MirrorRelationshipWork();},120);if(name==='week')setTimeout(watchRelationshipWork,120);return r;};
-
-  function init(){ensureModal();watchRelationshipWork();v128EnsureMgmtMirror();v128MirrorRelationshipWork();
-    const rail=document.querySelector('#v113StepSmart .v113-step-rail small');if(rail)rail.textContent='Priority health, reconnects, follow-ups and next moves — work the top priorities, not the whole backlog.';
-    const note=document.querySelector('#v113StepSmartBody .v113-body-note');if(note)note.textContent='Top priorities first · full counts are inventory, not today’s quota';
-  }
-  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(init,900),{once:true});else setTimeout(init,600);
-  setTimeout(init,1800);
-
-})();
-</script>
 <style id="v129-reliability-css">
 .v129-dupe-group{border:1px solid #ded8e8;border-radius:10px;padding:11px;margin-bottom:10px;background:#fff}
 .v129-dupe-head{display:flex;justify-content:space-between;gap:8px;align-items:center;margin-bottom:7px}
@@ -16198,7 +16033,7 @@ window.rmAuditVisibleButtons=function(){
   <label>Log type</label>
   <div id="v198LogModeWrap" style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
     <button type="button" id="v198QuickBtn" class="v198-mode active" onclick="v198SetLogMode('quick')">
-      <b>Quick Log</b><span>Routine touch · no Portfolio questions</span>
+      <b>Quick Log</b><span>Routine touch · outcome + notes · save and done</span>
     </button>
     <button type="button" id="v198MeaningfulBtn" class="v198-mode" onclick="v203OpenMeaningfulPortfolio()">
       <b>Meaningful Conversation</b><span>Click to open Portfolio Execution now</span>
@@ -16210,7 +16045,7 @@ window.rmAuditVisibleButtons=function(){
 <div class="v175-field"><label>Outcome</label><select id="v175OutreachOutcome">
         <option value="">Choose outcome...</option>
         <option>Connected</option><option>Meeting scheduled</option><option>Left voicemail</option><option>No answer</option><option>Follow-up needed</option><option>Not interested</option>
-      </select><div style="font-size:10px;color:var(--text-4);margin-top:4px">Click Meaningful Conversation to open Portfolio Execution immediately. Complete it, return here, then finish the outcome/notes and save the touch.</div></div>
+      </select><div style="font-size:10px;color:var(--text-4);margin-top:4px">Quick Log saves this touch with no Portfolio questions. Choose Meaningful Conversation only when you had a real relationship conversation.</div></div>
       <div class="v175-field"><label>Next follow-up</label><input id="v175OutreachFollowup" type="date"></div>
       <div class="v175-field full"><label>What happened / next move</label><textarea id="v175OutreachNotes" placeholder="What happened? What did you learn? What is the next move?"></textarea></div>
     </div>
@@ -16346,49 +16181,47 @@ window.rmAuditVisibleButtons=function(){
     document.getElementById('v175OutreachFollowup').value='';
     document.getElementById('v175OutreachNotes').value='';
     document.getElementById('v175OutreachTitle').textContent=(type==='Cold Calls'?'Log Outreach':'Log Touch');
-    // Default to Quick Log every time. Amanda deliberately chooses Meaningful Conversation when appropriate.
+
+    // Always begin as Quick Log. Nothing else opens automatically.
     window._v198PortfolioPreflight=false;
     window._v198PortfolioAgent='';
-    if(typeof v198SetLogMode==='function')v198SetLogMode('quick');
-    showErr('v175OutreachError',''); v175Open('v175OutreachModal');
+    const mode=document.getElementById('v198LogMode');if(mode)mode.value='quick';
+    const q=document.getElementById('v198QuickBtn'),mn=document.getElementById('v198MeaningfulBtn');
+    if(q)q.classList.add('active');
+    if(mn)mn.classList.remove('active');
+    showErr('v175OutreachError','');
+    v175Open('v175OutreachModal');
   };
   window.v175SaveOutreach=async function(){
-    const name=val('v175OutreachAgent'),type=val('v175OutreachType'),outcome=val('v175OutreachOutcome'),notes=val('v175OutreachNotes'),follow=val('v175OutreachFollowup');
+    const name=(document.getElementById('v175OutreachAgent')?.value||'').trim();
+    const type=(document.getElementById('v175OutreachType')?.value||'Agent Talk-to').trim();
+    const outcome=(document.getElementById('v175OutreachOutcome')?.value||'').trim();
+    const follow=(document.getElementById('v175OutreachFollowup')?.value||'').trim();
+    const notes=(document.getElementById('v175OutreachNotes')?.value||'').trim();
     const logMode=(document.getElementById('v198LogMode')?.value||'quick').trim();
     if(!name)return showErr('v175OutreachError','Agent name is required.');
     if(!outcome)return showErr('v175OutreachError','Choose an outcome.');
     if(notes.length<10)return showErr('v175OutreachError','Add a short note: what happened and what is next.');
+    if(/follow-up/i.test(outcome)&&!follow)return showErr('v175OutreachError','Set the next follow-up date.');
 
-    // Meaningful Conversation is only for a real live relationship conversation.
-    if(logMode==='meaningful' && /left voicemail|no answer|not interested/i.test(outcome)){
-      return showErr('v175OutreachError','Use Quick Log for voicemail, no answer, or not interested. Meaningful Conversation is for a real live relationship conversation.');
+    if(logMode==='meaningful' && !(window._v198PortfolioPreflight&&String(window._v198PortfolioAgent||'').toLowerCase()===name.toLowerCase())){
+      return showErr('v175OutreachError','Complete Portfolio Execution first, or switch to Quick Log.');
     }
 
-    const btn=document.getElementById('v175OutreachSave'); if(btn){btn.disabled=true;btn.textContent='Saving…'}
+    const btn=document.getElementById('v175OutreachSave');
+    if(btn){btn.disabled=true;btn.textContent='Saving…'}
     try{
-      const body={agent_name:name,act_type:type,act_date:td(),outcome,notes};
+      const body={agent_name:name,act_type:type,act_date:(typeof today==='function'?today():new Date().toISOString().slice(0,10)),outcome,notes};
       if(follow)body.follow_up_date=follow;
-
-      if(logMode==='meaningful'){
-        const owner='Amanda';
-        let needs=false;
-        try{
-          if(typeof wp37NeedsPartnerCheckin==='function')needs=await wp37NeedsPartnerCheckin(name,type,outcome,owner);
-        }catch(e){console.warn('Portfolio gate check',e)}
-        if(needs && !(window._v198PortfolioPreflight&&String(window._v198PortfolioAgent||'').toLowerCase()===name.toLowerCase())){
-          if(btn){btn.disabled=false;btn.textContent='Save touch'}
-          showErr('v175OutreachError','Complete Portfolio Execution first. Click Meaningful Conversation to open it.');
-          return;
-        }
-      }
-
-      // Quick Log saves directly. Meaningful Conversation saves after its Portfolio Execution pre-step.
       await sbFetch('amanda_activities',{method:'POST',prefer:'return=minimal',body:JSON.stringify(body)});
-      window._v198PortfolioPreflight=false;window._v198PortfolioAgent='';
+      window._v198PortfolioPreflight=false;
+      window._v198PortfolioAgent='';
       v175Close('v175OutreachModal');
       try{if(typeof rmRefreshExecutionQueues==='function')await rmRefreshExecutionQueues()}catch(e){}
+      try{if(typeof toast==='function')toast(logMode==='meaningful'?'Meaningful touch saved ✓':'Quick Log saved ✓','success',2500)}catch(e){}
     }catch(e){
-      console.warn(e);showErr('v175OutreachError','Could not save. Try again.');
+      console.warn(e);
+      showErr('v175OutreachError','Could not save. Try again.');
     }finally{
       if(btn){btn.disabled=false;btn.textContent='Save touch'}
     }
@@ -16615,174 +16448,6 @@ window.rmAuditVisibleButtons=function(){
         +'<button onclick="wp30OpenTransactionTraining()" style="font-size:9px;padding:5px 8px;background:#fff;color:#75520A;border:1px solid #D9C18B;border-radius:6px;cursor:pointer">Script</button></span></div></div>';
     };
   }
-})();
-</script>
-
-
-<script id="v177-portfolio-execution-gate">
-(function(){
-  let pendingInlineTouch=null;
-
-  function normOutcome(outcome){
-    const o=String(outcome||'').trim().toLowerCase();
-    if(o==='connected')return 'Positive';
-    if(o==='meeting scheduled')return 'Meeting Scheduled';
-    if(o==='follow-up needed')return 'Requires follow-up';
-    if(o==='requires follow-up')return 'Requires follow-up';
-    if(o==='issue / escalation')return 'Needs manager attention';
-    if(o==='needs attention')return 'Needs manager attention';
-    return outcome||'';
-  }
-  function isNoConnect(outcome){
-    return /^(left voicemail|no answer)$/i.test(String(outcome||'').trim());
-  }
-  function isExistingRelationshipType(type){
-    return [
-      'Agent Talk-to','Active Agent Talk-to','Active Agent Check-in',
-      'Reconnect Outreach','Break Breads','Partner Meeting',
-      'Strategic Partner Meeting','Channel Meeting','Retention Meeting',
-      'Market Update','Market Update Call','New Agent Follow-up'
-    ].includes(String(type||''));
-  }
-  function needsFullPortfolio(type,outcome){
-    if(!isExistingRelationshipType(type))return false;
-    if(isNoConnect(outcome)||/^not interested$/i.test(String(outcome||'').trim()))return false;
-    return /^(Connected|Positive|Meeting scheduled|Meeting Scheduled|Follow-up needed|Requires follow-up|Issue \/ escalation|Needs manager attention)$/i.test(String(outcome||''));
-  }
-
-  // Show Amanda exactly what to cover BEFORE she makes an existing-partner call.
-  const oldOpenOutreach=window.v176OpenOutreach;
-  window.v176OpenOutreach=function(name,type){
-    const r=oldOpenOutreach?oldOpenOutreach.apply(this,arguments):undefined;
-    const rule=document.getElementById('v175OutreachRule');
-    if(rule){
-      if(isExistingRelationshipType(type)){
-        rule.classList.add('v177-portfolio-call');
-        rule.innerHTML=
-          '<div class="v177-call-title">USE THE RM PLAYBOOK ON THIS CALL</div>'
-          +'<ol class="v177-call-list">'
-          +'<li>What is happening in their business / pipeline?</li>'
-          +'<li>What do they need from us right now?</li>'
-          +'<li>Are lending opportunities going anywhere else?</li>'
-          +'<li>How supported does the relationship feel?</li>'
-          +'<li>What is the next growth move and when will we do it?</li>'
-          +'</ol>'
-          +'<div style="margin-top:5px"><strong>Choose Meaningful Conversation only after a real relationship conversation. Portfolio Execution opens immediately; complete it, return here, then finish the outcome/notes and Save touch.</strong><br><span style="font-size:10px">It does not open for No answer or Left voicemail.</span></div>';
-      }else{
-        rule.classList.remove('v177-portfolio-call');
-        rule.innerHTML='<strong>Cold Call:</strong> first outreach to a brand-new prospect. Keep it focused: connect, ask for the meeting, log the outcome, move to the next name.';
-      }
-    }
-    return r;
-  };
-
-  // Tracker decides full Portfolio Execution for meaningful existing-partner conversations.
-  const oldGate=window.wp37GatePartnerTouch;
-  window.wp37GatePartnerTouch=async function(agentName,actType,outcome,owner,resumeKind){
-    try{
-      if(!(await wp37NeedsPartnerCheckin(agentName,actType,outcome,owner)))return true;
-      await wp37OpenPartnerCheckin(agentName,resumeKind,{
-        optional:false,
-        actType:actType,
-        forceHealth:needsFullPortfolio(actType,outcome)
-      });
-      if(typeof v115SetPartnerMode==='function')v115SetPartnerMode(needsFullPortfolio(actType,outcome)?'health':'quick');
-      return false;
-    }catch(e){
-      if(typeof toast==='function')toast('Could not verify this relationship. Nothing was saved. Retry when the tracker reconnects.','error',5000);
-      return false;
-    }
-  };
-
-  // Commit the inline touch only AFTER Portfolio Execution has been saved.
-  async function commitInlineTouch(){
-    if(!pendingInlineTouch)return;
-    const p=pendingInlineTouch; pendingInlineTouch=null;
-    const body={agent_name:p.name,act_type:p.type,act_date:p.date,outcome:p.outcome,notes:p.notes};
-    if(p.follow)body.follow_up_date=p.follow;
-    await sbFetch('amanda_activities',{method:'POST',prefer:'return=minimal',body:JSON.stringify(body)});
-    try{v175Close('v175OutreachModal')}catch(e){}
-    try{if(typeof rmRefreshExecutionQueues==='function')await rmRefreshExecutionQueues()}catch(e){}
-    try{if(typeof v23LoadAmandaSnapshot==='function')await v23LoadAmandaSnapshot(true)}catch(e){}
-    if(typeof toast==='function')toast('Touch + Portfolio saved ✓','success',2800);
-  }
-
-  // Replace inline Save Touch: meaningful partner connection -> Portfolio Execution first.
-  window.v175SaveOutreach=async function(){
-    const name=(document.getElementById('v175OutreachAgent')?.value||'').trim();
-    const type=(document.getElementById('v175OutreachType')?.value||'').trim();
-    const outcome=(document.getElementById('v175OutreachOutcome')?.value||'').trim();
-    const follow=(document.getElementById('v175OutreachFollowup')?.value||'').trim();
-    const notes=(document.getElementById('v175OutreachNotes')?.value||'').trim();
-    const err=document.getElementById('v175OutreachError');
-    const showErr=m=>{if(err){err.textContent=m||'';err.classList.toggle('show',!!m)}};
-    if(!name)return showErr('Agent name is required.');
-    if(!outcome)return showErr('Choose an outcome.');
-    if(notes.length<10)return showErr('Add a short note: what happened and what is next.');
-    if((/follow-up/i.test(outcome))&&!follow)return showErr('Set the next follow-up date.');
-
-    const normalized=normOutcome(outcome);
-    const btn=document.getElementById('v175OutreachSave');
-    if(btn){btn.disabled=true;btn.textContent='Saving…'}
-    try{
-      if(needsFullPortfolio(type,outcome)){
-        pendingInlineTouch={name,type,date:(typeof today==='function'?today():new Date().toISOString().slice(0,10)),outcome:normalized,notes,follow};
-        const ok=await wp37GatePartnerTouch(name,type,normalized,'Amanda','v177');
-        if(!ok){
-          // Portfolio modal is now open. Keep activity modal behind it until Portfolio saves.
-          if(btn){btn.disabled=false;btn.textContent='Save touch'}
-          return;
-        }
-      }
-      // Routine / no-connect activity saves immediately.
-      const body={agent_name:name,act_type:type,act_date:(typeof today==='function'?today():new Date().toISOString().slice(0,10)),outcome:normalized,notes};
-      if(follow)body.follow_up_date=follow;
-      await sbFetch('amanda_activities',{method:'POST',prefer:'return=minimal',body:JSON.stringify(body)});
-      v175Close('v175OutreachModal');
-      try{if(typeof rmRefreshExecutionQueues==='function')await rmRefreshExecutionQueues()}catch(e){}
-      if(typeof toast==='function')toast('Touch saved ✓','success',2500);
-    }catch(e){
-      console.warn(e);showErr('Could not save. Try again.');
-    }finally{
-      if(btn){btn.disabled=false;btn.textContent='Save touch'}
-    }
-  };
-
-  // Existing Portfolio save handlers do not know "v177"; resume it after portfolio/profile write.
-  const priorSave=window.wp37SavePartnerCheckin;
-  if(typeof priorSave==='function'){
-    window.wp37SavePartnerCheckin=async function(){
-      const isV177=typeof wp37PendingPartnerSave!=='undefined'&&wp37PendingPartnerSave&&wp37PendingPartnerSave.resumeKind==='v177';
-      const before=pendingInlineTouch;
-      const r=await priorSave.apply(this,arguments);
-      if(isV177&&before&&(!wp37PendingPartnerSave)){
-        try{await commitInlineTouch()}catch(e){
-          console.warn(e);
-          if(typeof toast==='function')toast('Portfolio saved, but the activity did not save. Retry the touch.','error',5000);
-        }
-      }
-      return r;
-    };
-  }
-
-  // There is NO skip for a meaningful v177 relationship conversation.
-  const priorSkip=window.wp37SkipPartnerCheckin;
-  if(typeof priorSkip==='function'){
-    window.wp37SkipPartnerCheckin=async function(){
-      if(typeof wp37PendingPartnerSave!=='undefined'&&wp37PendingPartnerSave&&wp37PendingPartnerSave.resumeKind==='v177'){
-        if(typeof toast==='function')toast('Portfolio Execution is required after a real partner conversation. Complete the questions, then move on.','error',4500);
-        return;
-      }
-      return priorSkip.apply(this,arguments);
-    };
-  }
-
-  // If Amanda backs out of Portfolio Execution, discard the pending activity too.
-  const priorCancel=window.wp37CancelPartnerCheckin;
-  window.wp37CancelPartnerCheckin=function(){
-    if(typeof wp37PendingPartnerSave!=='undefined'&&wp37PendingPartnerSave&&wp37PendingPartnerSave.resumeKind==='v177')pendingInlineTouch=null;
-    return typeof priorCancel==='function'?priorCancel.apply(this,arguments):undefined;
-  };
 })();
 </script>
 
@@ -17286,58 +16951,19 @@ window.rmAuditVisibleButtons=function(){
 
 <script id="v198-quick-log-controller">
 (function(){
-  window.v198SetLogMode=async function(mode){
+  window.v198SetLogMode=function(mode){
     mode=mode==='meaningful'?'meaningful':'quick';
     const hidden=document.getElementById('v198LogMode');if(hidden)hidden.value=mode;
-    const q=document.getElementById('v198QuickBtn'),m=document.getElementById('v198MeaningfulBtn');
+    const q=document.getElementById('v198QuickBtn'),mn=document.getElementById('v198MeaningfulBtn');
     if(q)q.classList.toggle('active',mode==='quick');
-    if(m)m.classList.toggle('active',mode==='meaningful');
-
+    if(mn)mn.classList.toggle('active',mode==='meaningful');
     if(mode==='quick'){
       window._v198PortfolioPreflight=false;
       window._v198PortfolioAgent='';
-      return;
-    }
-
-    const name=(document.getElementById('v175OutreachAgent')?.value||'').trim();
-    const type=(document.getElementById('v175OutreachType')?.value||'Agent Talk-to').trim();
-    if(!name){
-      try{showErr('v175OutreachError','Agent name is required.')}catch(e){}
-      return;
-    }
-
-    // If Portfolio Execution was already completed for this exact touch, don't reopen it.
-    if(window._v198PortfolioPreflight&&String(window._v198PortfolioAgent||'').toLowerCase()===name.toLowerCase())return;
-
-    // Meaningful Conversation is an intentional user choice. Do NOT gate this click behind
-    // a separate ownership/profile eligibility fetch. The Amanda work queue has already
-    // established the relationship context. Open Portfolio Execution immediately.
-    try{
       showErr('v175OutreachError','');
-      v175Close('v175OutreachModal');
-
-      // Open the Portfolio modal synchronously before any profile/network work.
-      const modal=document.getElementById('wp37PartnerCheckinModal');
-      if(modal){
-        modal.classList.add('open');
-        modal.style.display='flex';
-        modal.style.zIndex='100500';
-      }
-
-      // Hydrate asynchronously after the modal is already visible.
-      wp37OpenPartnerCheckin(name,'v198-preflight',{
-        optional:false,
-        forceHealth:true,
-        actType:type
-      }).catch(e=>console.warn('Portfolio hydration/open',e));
-    }catch(e){
-      console.warn('Open Portfolio Execution',e);
-      try{
-        v175Open('v175OutreachModal');
-        v198SetLogModeVisualOnly?.('meaningful');
-        showErr('v175OutreachError','Could not open Portfolio Execution. Try Meaningful Conversation again.');
-      }catch(_){}
+      return;
     }
+    if(typeof v203OpenMeaningfulPortfolio==='function')v203OpenMeaningfulPortfolio();
   };
 
   // Used only for restoring the visual selection if another modal fails.
