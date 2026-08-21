@@ -4258,17 +4258,26 @@ async function init(){
   // Heavy diagnostics stay well behind the daily workflow.
   setTimeout(()=>{try{loadContactDataQuality();}catch(e){}try{loadZeroProduction();}catch(e){}},7000);
 }
+// CLEANUP (2026-08-21): this used to be re-implemented in four separate places (here, directorMode(),
+// and twice more in the RMX/v211 routing scripts near the end of the file), which is exactly the kind
+// of "three parallel routing systems" that caused Management-route bugs. There is now ONE canonical
+// implementation; every other check in the file calls this instead of re-testing hash/query/path itself.
+function rmxIsDirectorRoute(){
+  try{
+    const p=new URLSearchParams(location.search||"");
+    const path=String(location.pathname||"").toLowerCase();
+    return /\/director(?:\.html)?$/.test(path)||location.hash==="#director"||p.get("director")==="1";
+  }catch(e){return false;}
+}
 // FIX (2026-08-19): init() was defined but never invoked anywhere in the file, so none of the
 // core data (Week, Follow-ups, Feed, Management, Quiet, Flagged, Onboarding, Start Here,
 // connection status, offline queue, scorecard) ever loaded on page open. Restoring the bootstrap call.
 if(document.readyState==="loading"){
   document.addEventListener("DOMContentLoaded",()=>{
-    const isDirector=location.hash==="#director"||new URLSearchParams(location.search).get("director")==="1";
-    if(!isDirector)setTimeout(init,300);
+    if(!rmxIsDirectorRoute())setTimeout(init,300);
   },{once:true});
 }else{
-  const isDirector=location.hash==="#director"||new URLSearchParams(location.search).get("director")==="1";
-  if(!isDirector)setTimeout(init,200);
+  if(!rmxIsDirectorRoute())setTimeout(init,200);
 }
 
 // ── Snooze — lets Priority Touches respect a real decision instead of nagging daily ──
@@ -5377,11 +5386,9 @@ async function loadRmNurtureToday(){
 
 
 function directorMode(){
-  try{
-    const p=new URLSearchParams(window.location.search||"");
-    const path=String(window.location.pathname||"").toLowerCase();
-    return /\/director(?:\.html)?$/.test(path)||p.get("director")==="1"||window.location.hash==="#director";
-  }catch(e){return false;}
+  // CLEANUP (2026-08-21): delegates to the single canonical route check (see rmxIsDirectorRoute
+  // near the top of the file) instead of re-implementing the hash/query/path test a second time.
+  return rmxIsDirectorRoute();
 }
 function openDirectorMode(){
   try{
@@ -13022,72 +13029,21 @@ setTimeout(function(){try{v85LoadCommandCenter();}catch(e){}},1600);
 function v91Go(id){var el=document.getElementById(id);if(el)el.scrollIntoView({behavior:"smooth",block:"start"});}
 function v91Bool(v){return v===true||String(v||"").toLowerCase()==="true";}
 function v91OwnerMap(rows){var m={};(rows||[]).forEach(function(r){m[ownerKey(r.agent_name)]=r;});return m;}
-function v91Metric(n,label,tone){return '<div class="v91-metric '+(tone||'')+'"><div class="n">'+Number(n||0)+'</div><div class="l">'+escHtml(label)+'</div></div>';}
 function v91Row(name,copy,chip,tone){return '<div class="v91-row"><div class="v91-row-main"><div class="v91-row-title">'+escHtml(properCase(name||''))+'</div><div class="v91-row-copy">'+escHtml(copy||'')+'</div></div>'+(chip?'<span class="v91-chip '+(tone||'')+'">'+escHtml(chip)+'</span>':'')+'</div>';}
 function v91DateInMonth(raw){if(!raw)return false;var d=new Date(raw),now=new Date();return d.getFullYear()===now.getFullYear()&&d.getMonth()===now.getMonth();}
 function v91ActivityOwner(r){return String(r.rm_owner||r.owner||r.performed_by||r.logged_by||r.rm||'').trim();}
 function v91ActivityType(r){return String(r.activity_type||r.type||r.activity||'').trim();}
-async function v91LoadDirectorOS(){
-  var metrics=document.getElementById('v91DirectorMetrics'),prio=document.getElementById('v91DirectorPriorityList'),growth=document.getElementById('v91GrowthList'),ret=document.getElementById('v91RetentionList'),score=document.getElementById('v91DirectorScorecardBody'),health=document.getElementById('v91SystemHealthBody');
-  if(!metrics)return;
-  try{
-    var results=await Promise.all([
-      sbFetch('agent_profiles?select=*&limit=5000').catch(function(){return[];}),
-      sbFetch('agent_assignments?select=agent_name,rm,lp&limit=5000').catch(function(){return[];}),
-      sbFetch('rm_director_insights?status=eq.open&select=*&order=created_at.desc&limit=200').catch(function(){return[];}),
-      sbFetch('amanda_activities?select=*&order=activity_date.desc&limit=5000').catch(function(){return[];}),
-      sbFetch('lp_flags?select=*&limit=2000').catch(function(){return[];})
-    ]);
-    var profiles=results[0]||[], assignments=results[1]||[], insights=results[2]||[], acts=results[3]||[], flags=results[4]||[];
-    var owners=v91OwnerMap(assignments);
-    var active=profiles.filter(function(p){return !v91Bool(p.do_not_contact)&&String(p.relationship_status||'active').toLowerCase()!=='inactive';});
-    var strategic=active.filter(function(p){return String(p.relationship_type||'realtor').toLowerCase()==='strategic_partner';});
-    var realtors=active.filter(function(p){return String(p.relationship_type||'realtor').toLowerCase()!=='strategic_partner';});
-    var nyny=realtors.filter(function(p){return String((owners[ownerKey(p.agent_name)]||{}).rm||'').toLowerCase()==='nyny';});
-    var amanda=realtors.filter(function(p){return String((owners[ownerKey(p.agent_name)]||{}).rm||'').toLowerCase()==='amanda';});
-    var core=nyny.filter(function(p){return ['CHANNEL','A','B'].includes(String(p.tier||'').toUpperCase());});
-    var grads=active.filter(function(p){return String(p.tier||'').toUpperCase()==='B'&&['pending','intro_sent','joint_meeting_scheduled'].includes(String(p.rm_handoff_status||'').toLowerCase());});
-    var risks=core.filter(function(p){return v91Bool(p.competitor_risk_flag);});
-    var growthRows=core.filter(function(p){return String(p.next_growth_opportunity||'').trim();});
-    var planGaps=core.filter(function(p){return !String(p.next_growth_opportunity||'').trim();});
-    var openFlags=flags.filter(function(f){if(f.resolved===true||String(f.resolved||'').toLowerCase()==='true')return false;var st=String(f.status||'open').toLowerCase();return !['handled','resolved','closed'].includes(st);});
-    var highInsights=insights.filter(function(i){return String(i.priority||'normal').toLowerCase()==='high';});
-    metrics.innerHTML=v91Metric(highInsights.length,'High priority insights',highInsights.length?'risk':'good')+v91Metric(risks.length,'Competitor risks',risks.length?'risk':'good')+v91Metric(grads.length,'Graduations moving',grads.length?'warn':'good')+v91Metric(growthRows.length,'Growth opportunities','good')+v91Metric(openFlags.length,'Open LP flags',openFlags.length?'warn':'good')+v91Metric(planGaps.length,'Core plans missing',planGaps.length?'warn':'good');
-    var priorities=[];
-    highInsights.slice(0,4).forEach(function(i){priorities.push(v91Row(i.agent_name,i.note||i.insight_type,'RM escalation','risk'));});
-    risks.slice(0,4).forEach(function(p){priorities.push(v91Row(p.agent_name,'Competitor risk is active. Decide the next save / value move.','Retention','risk'));});
-    grads.slice(0,4).forEach(function(p){priorities.push(v91Row(p.agent_name,'B-tier relationship is in warm transition. Keep the handoff moving.','Graduation','warn'));});
-    planGaps.slice(0,3).forEach(function(p){priorities.push(v91Row(p.agent_name,'A/B/Channel relationship has no next relationship move documented.','Plan gap','warn'));});
-    prio.innerHTML=priorities.length?priorities.join(''):'<div class="v91-empty">Nothing urgent is asking for Director attention right now. Use the Growth board for proactive relationship moves.</div>';
-    var g=growthRows.slice().sort(function(a,b){return String(a.tier||'').localeCompare(String(b.tier||''));}).slice(0,12);
-    growth.innerHTML=g.length?'<div class="v91-list">'+g.map(function(p){return v91Row(p.agent_name,p.next_growth_opportunity,'Tier '+String(p.tier||'—'),'');}).join('')+'</div>':'<div class="v91-empty">No current growth opportunities are documented in your A/B/Channel book. That is a useful signal: add the next value move as you meet with partners.</div>';
-    var retention=[];
-    risks.forEach(function(p){retention.push(v91Row(p.agent_name,'Competitor risk is flagged. Confirm what is leaking, why, and the next recovery move.','Competitor risk','risk'));});
-    insights.filter(function(i){return /retention|service/i.test(String(i.insight_type||''));}).slice(0,8).forEach(function(i){retention.push(v91Row(i.agent_name,i.note||i.insight_type,i.insight_type||'Risk','risk'));});
-    ret.innerHTML=retention.length?'<div class="v91-list">'+retention.slice(0,12).join('')+'</div>':'<div class="v91-empty">No active competitor/service risks are surfaced right now.</div>';
-    var monthActs=acts.filter(function(a){return v91DateInMonth(a.activity_date||a.date||a.created_at);});
-    var nynyActs=monthActs.filter(function(a){var o=v91ActivityOwner(a).toLowerCase(),note=String(a.notes||'').toLowerCase();return o==='nyny'||note.indexOf('[rm_attendees:nyny')>=0||note.indexOf('rm(s): nyny')>=0;});
-    var partnerTypes=['New Realtor Meeting','Partner Meeting','Break Breads','Strategic Partner Meeting','Channel Meeting','Retention Meeting','Team / Office Presentation'];
-    var leadershipTypes=['Amanda Coaching / Development','RM Scorecard Review','RM Portfolio Review','RM Process Improvement','Tracker / System Development','RM Training','RM Leadership Escalation Support'];
-    var partnerMeet=nynyActs.filter(function(a){return partnerTypes.includes(v91ActivityType(a));}).length;
-    var leadership=nynyActs.filter(function(a){return leadershipTypes.includes(v91ActivityType(a));}).length;
-    var strategicMeet=nynyActs.filter(function(a){return ['Strategic Partner Meeting','Channel Meeting','Retention Meeting'].includes(v91ActivityType(a));}).length;
-    score.innerHTML='<div class="v91-score-grid"><div class="v91-score-item"><strong>'+partnerMeet+'</strong><span>Partner meetings MTD · planning target 20–25</span></div><div class="v91-score-item"><strong>'+strategicMeet+'</strong><span>Strategic / Channel / retention meetings</span></div><div class="v91-score-item"><strong>'+leadership+'</strong><span>Director leadership activities logged</span></div><div class="v91-score-item"><strong>'+grads.length+'</strong><span>B-tier graduations currently in transition</span></div></div><div class="v91-row-copy" style="margin-top:9px">Use this as your impact view, not a quota-only report. Relationship growth, saves, coaching and system improvement are all part of Director production.</div>';
-    var ownershipGaps=realtors.filter(function(p){var r=owners[ownerKey(p.agent_name)]||{};return !String(r.rm||'').trim();});
-    var strategicWrong=strategic.filter(function(p){return String((owners[ownerKey(p.agent_name)]||{}).rm||'').toLowerCase()!=='nyny';});
-    var bAmanda=amanda.filter(function(p){return String(p.tier||'').toUpperCase()==='B'&&!['pending','intro_sent','joint_meeting_scheduled'].includes(String(p.rm_handoff_status||'').toLowerCase());});
-    var issues=[];
-    if(ownershipGaps.length)issues.push(v91Row('Ownership coverage',ownershipGaps.length+' active Realtor relationship(s) have no RM owner.','Needs cleanup','warn'));
-    if(strategicWrong.length)issues.push(v91Row('Strategic partner routing',strategicWrong.length+' strategic partner(s) are not routed to Nyny.','Routing','risk'));
-    if(bAmanda.length)issues.push(v91Row('B-tier graduation check',bAmanda.length+' Amanda-owned B relationship(s) are not currently in a warm-handoff state.','Review','warn'));
-    if(planGaps.length)issues.push(v91Row('Relationship planning',planGaps.length+' Nyny A/B/Channel relationship(s) are missing a next relationship move.','Plan gaps','warn'));
-    health.innerHTML=issues.length?'<div class="v91-list">'+issues.join('')+'</div>':'<div class="v91-empty">No obvious ownership, strategic-routing, graduation or core-plan gaps found in the current data.</div>';
-    var lr=document.getElementById('v91LastRefresh');if(lr)lr.textContent='Updated '+new Date().toLocaleTimeString([], {hour:'numeric',minute:'2-digit'});
-  }catch(e){console.warn('v91 Director OS load failed',e);[metrics,prio,growth,ret,score,health].forEach(function(el){if(el)el.innerHTML='<div class="v91-empty">Could not load this Director section right now.</div>';});}
-}
-function v91RefreshDirectorOS(){
-  setTimeout(()=>{try{v106LoadTierGrowth(true);}catch(e){}},40);try{v91LoadDirectorOS();}catch(e){}try{v85LoadCommandCenter();}catch(e){}try{v84LoadPartnerGraduations();}catch(e){}try{loadStrategicPartnerManagement();}catch(e){}try{loadManagement();}catch(e){}}
-setTimeout(function(){try{v91LoadDirectorOS();}catch(e){}},550);
+// RETIRED (2026-08-21) — root cause fix: this original v91LoadDirectorOS/v91RefreshDirectorOS pair
+// targeted v91DirectorMetrics/v91DirectorPriorityList/v91GrowthList/v91RetentionList/
+// v91DirectorScorecardBody/v91SystemHealthBody — DOM ids that do not exist anywhere in this file
+// (confirmed: they belonged to the pre-RMX Director Command Center, superseded by the RMX
+// Management View). Both names were also being permanently overwritten a few dozen lines below by
+// window.v91LoadDirectorOS=v92LoadDirectorOS and a second window.v91RefreshDirectorOS assignment,
+// so this exact code could never run in practice — it was reachable in name only. The unconditional
+// setTimeout(...,550) that used to call it on every single page load (Director or not) is gone too.
+// v92LoadDirectorOS below is the live implementation; v91Row/v91DateInMonth/v91ActivityOwner/
+// v91ActivityType/v91Bool/v91OwnerMap/v91Go above are kept because v92LoadDirectorOS (and other
+// still-active code) uses them.
 </script>
 <script>
 // v92 — interactive Director Command Center. Every top-level tile resolves to real underlying data.
@@ -13303,32 +13259,25 @@ async function v101OpenFaceTimeModal(name,lp,id){
   var ftRow=(V107_SHARED_FT_ROWS||[]).find(function(r){return String(r.name||'').trim().toUpperCase()===String(name||'').trim().toUpperCase();});
   document.getElementById('v101FtRm').value=ftRow?ftRow.rm:'Amanda';
   document.getElementById('v101FtNotes').value='';
+  // FIX (2026-08-21): face_time_events is not an installed Supabase table (confirmed 404 on every
+  // read/write). This modal only ever logs a Face Time directly into break_breads now (see
+  // v101SaveFaceTime), so there is no "existing booking" to look up by id — the Cancel/Mark
+  // completed buttons stay hidden and id is left unused.
   var cancel=document.getElementById('v101FtCancelBtn'),complete=document.getElementById('v101FtCompleteBtn');
-  cancel.style.display=id?'inline-block':'none';complete.style.display=id?'inline-block':'none';
-  if(id){
-    try{
-      var rows=await sbFetch('face_time_events?id=eq.'+encodeURIComponent(id)+'&select=*&limit=1');
-      if(rows&&rows[0]){
-        var e=rows[0];V101_FT_CURRENT=e;
-        document.getElementById('v101FtDate').value=e.event_date||today();
-        document.getElementById('v101FtTime').value=String(e.event_time||'').slice(0,5);
-        document.getElementById('v101FtLp').value=e.lp||'';
-        document.getElementById('v101FtRm').value=e.rm||'Amanda';
-        var parsed=v181ParseCalendarMeta(e.notes||'');
-        document.getElementById('v101FtNotes').value=parsed.notes||'';
-        document.getElementById('v181FtLocation').value=parsed.location||'';
-        document.getElementById('v181FtAdditionalAgents').value=(parsed.agents||[]).filter(function(a){return String(a).toLowerCase()!==String(name||'').toLowerCase()}).join(', ');
-        document.getElementById('v181FtCalendarConfirmed').checked=!!parsed.confirmed;
-      }
-    }catch(e){console.warn(e);}
-  }
+  cancel.style.display='none';complete.style.display='none';
   m.style.display='flex';
 }
 function v101CloseFaceTimeModal(){var m=document.getElementById('v101FaceTimeModal');if(m)m.style.display='none';}
+// FIX (2026-08-21) — root cause: this used to POST/PATCH a Supabase table called face_time_events
+// that was never installed (confirmed 404 on every attempt: "Could not find the table
+// public.face_time_events in the schema cache"). Every "Schedule Face Time" click was silently
+// failing with "Meeting could not save," even though the meeting itself may really have happened.
+// Break Breads (break_breads + amanda_activities) is the current, live source of truth for Face
+// Time / partner-visit history — this now writes there directly, once per agent in the meeting,
+// exactly like every other completed-visit entry point in the tracker (v176OpenOutreach etc.).
 async function v101SaveFaceTime(){
   if(window._v139FaceTimeBooking)return;
-  var id=document.getElementById('v101FtId').value,
-      name=document.getElementById('v101FtAgent').value,
+  var name=document.getElementById('v101FtAgent').value,
       date=document.getElementById('v101FtDate').value,
       time=document.getElementById('v101FtTime').value||'',
       lp=document.getElementById('v101FtLp').value||null,
@@ -13339,41 +13288,45 @@ async function v101SaveFaceTime(){
       notes=(document.getElementById('v101FtNotes').value||'').trim();
 
   if(!name||!date||!time||!location){
-    toast('Date, time and location are required before this meeting can be booked.','error',4800);return;
+    toast('Date, time and location are required before this Face Time can be logged.','error',4800);return;
   }
   if(!confirmed){
-    toast('Add the meeting to the calendar, then check “I added this meeting to the calendar.” It will not count as booked until then.','error',5600);return;
+    toast('Add the meeting to the calendar, then check “I added this meeting to the calendar.” It will not count as logged until then.','error',5600);return;
   }
 
   var allAgents=[name].concat(additional).filter(function(v,i,a){return v&&a.findIndex(function(x){return String(x).toLowerCase()===String(v).toLowerCase()})===i;});
-  var group='ft-'+date+'-'+String(time).replace(':','')+'-'+String(name).toLowerCase().replace(/[^a-z0-9]+/g,'-');
-  var meta=' [CAL_CONFIRMED:Y] [LOCATION:'+location+'] [MEETING_AGENTS:'+allAgents.join(' ; ')+'] [MEETING_GROUP:'+group+']';
-  var fullNotes=(notes?notes:'Face Time / partner meeting.')+meta;
+  var loggedBy=rm+(lp?' + '+lp:'');
+  var fullNotes=(notes?notes:'Face Time / partner meeting.')+' [LOCATION:'+location+']'+(allAgents.length>1?' [MEETING_AGENTS:'+allAgents.join(' ; ')+']':'');
   window._v139FaceTimeBooking=true;
   try{
-    var body={agent_name:name,event_date:date,event_time:time,lp:lp,rm:rm,status:'scheduled',notes:fullNotes,created_by:'RM Tracker',updated_at:new Date().toISOString()};
-    if(id){
-      await sbFetch('face_time_events?id=eq.'+encodeURIComponent(id),{method:'PATCH',prefer:'return=minimal',body:JSON.stringify(body)});
-    }else{
-      for(var i=0;i<allAgents.length;i++){
-        var agent=allAgents[i];
-        var dup=await sbFetch('face_time_events?agent_name=eq.'+encodeURIComponent(agent)+'&event_date=eq.'+encodeURIComponent(date)+'&status=eq.scheduled&select=id,notes&limit=5').catch(()=>[]);
-        var confirmedDup=(dup||[]).find(function(x){return v181CalendarConfirmed(x)});
-        if(confirmedDup)continue;
-        var row=Object.assign({},body,{agent_name:agent});
-        await sbFetch('face_time_events',{method:'POST',prefer:'return=minimal',body:JSON.stringify(row)});
+    for(var i=0;i<allAgents.length;i++){
+      var agent=allAgents[i];
+      var existing=await sbFetch('break_breads?agent_name=eq.'+encodeURIComponent(agent)+'&date=eq.'+encodeURIComponent(date)+'&select=id,agent_name,date&limit=5').catch(function(){return[];});
+      if(!(existing||[]).length){
+        await sbFetch('break_breads',{method:'POST',prefer:'return=minimal',body:JSON.stringify({agent_name:agent,date:date,logged_by:loggedBy,notes:fullNotes})});
+      }
+      if(/Amanda/i.test(rm)){
+        var acts=await sbFetch('amanda_activities?agent_name=eq.'+encodeURIComponent(agent)+'&act_type=eq.'+encodeURIComponent('Break Breads')+'&act_date=eq.'+encodeURIComponent(date)+'&select=id,notes&limit=10').catch(function(){return[];});
+        if(!(acts||[]).length){
+          await sbFetch('amanda_activities',{method:'POST',prefer:'return=minimal',body:JSON.stringify({agent_name:agent,act_type:'Break Breads',act_date:date,outcome:'Positive',notes:fullNotes+' [RM_ATTENDEES:'+rm+']'+(lp?' [LP_ATTENDEE:'+lp+']':''),follow_up_date:null})});
+        }
       }
     }
     v101CloseFaceTimeModal();
-    toast('Calendar confirmed · meeting booked and shared ✓','success',3200);
-    await rmRefreshAfterMutation('Calendar-confirmed Face Time booked');
-    try{await v181LoadCalendarUrgent()}catch(e){}
+    toast('Face Time logged and shared ✓','success',3200);
+    await rmRefreshAfterMutation('Face Time logged');
   }catch(e){
-    toast('Meeting could not save: '+(e.message||'Unknown error'),'error',4400);
+    console.error('Face Time save failed',e);
+    toast('Face Time could not save: '+(e.message||'Unknown error'),'error',4400);
   }finally{window._v139FaceTimeBooking=false;}
 }
-async function v101CancelFaceTime(){var id=document.getElementById('v101FtId').value;if(!id)return;try{await sbFetch('face_time_events?id=eq.'+encodeURIComponent(id),{method:'PATCH',prefer:'return=minimal',body:JSON.stringify({status:'cancelled',updated_at:new Date().toISOString()})});v101CloseFaceTimeModal();toast('Face Time booking cancelled.','success');await loadBreakBreadDue();}catch(e){toast('Could not cancel booking.','error');}}
-async function v101CompleteFaceTime(){if(window._v139FaceTimeSaving)return;var id=document.getElementById('v101FtId').value,name=document.getElementById('v101FtAgent').value,date=document.getElementById('v101FtDate').value||today(),lp=document.getElementById('v101FtLp').value||null,rm=document.getElementById('v101FtRm').value||'Amanda',notes=document.getElementById('v101FtNotes').value.trim()||'Face Time completed.';if(!name)return;window._v139FaceTimeSaving=true;try{var bb=await sbFetch('break_breads?agent_name=eq.'+encodeURIComponent(name)+'&date=eq.'+encodeURIComponent(date)+'&select=id,agent_name,date&limit=5').catch(()=>[]);if(!(bb||[]).length)await sbFetch('break_breads',{method:'POST',prefer:'return=minimal',body:JSON.stringify({agent_name:name,date:date,logged_by:rm+(lp?' + '+lp:''),notes:notes})});if(id)await sbFetch('face_time_events?id=eq.'+encodeURIComponent(id),{method:'PATCH',prefer:'return=minimal',body:JSON.stringify({status:'completed',completed_by:rm+(lp?' + '+lp:''),notes:notes,updated_at:new Date().toISOString()})});if(/Amanda/i.test(rm)){var acts=await sbFetch('amanda_activities?agent_name=eq.'+encodeURIComponent(name)+'&act_type=eq.'+encodeURIComponent('Break Breads')+'&act_date=eq.'+encodeURIComponent(date)+'&select=id,notes&limit=10').catch(()=>[]);if(!(acts||[]).length)await sbFetch('amanda_activities',{method:'POST',prefer:'return=minimal',body:JSON.stringify({agent_name:name,act_type:'Break Breads',act_date:date,outcome:'Positive',notes:notes+' [RM_ATTENDEES:'+rm+']'+(lp?' [LP_ATTENDEE:'+lp+']':''),follow_up_date:null})});}v101CloseFaceTimeModal();toast('Face Time completed and shared ✓','success',3000);await rmRefreshAfterMutation('Face Time completed');}catch(e){console.error('Face Time save failed',e);toast('Could not fully save Face Time: '+(e.message||'Unknown error')+'. Nothing is being silently marked complete.','error',5200);}finally{window._v139FaceTimeSaving=false;}}
+// RETIRED (2026-08-21): these only ever ran from the modal's Cancel/Mark-completed buttons, which
+// are now permanently hidden (see v101OpenFaceTimeModal) because there is no face_time_events
+// table to hold an "existing booking" to cancel or complete — v101SaveFaceTime logs the Face Time
+// directly to break_breads instead. Left as safe no-ops (not deleted outright) in case anything
+// still references these names, per the "no unilateral removal of anything still reachable" rule.
+async function v101CancelFaceTime(){v101CloseFaceTimeModal();}
+async function v101CompleteFaceTime(){v101CloseFaceTimeModal();}
 </script>
 <script>
 function v104Jump(id){
@@ -17194,9 +17147,19 @@ window.rmAuditVisibleButtons=function(){
  function nav(){return [['snapshot','⌂','Snapshot'],['myday','▣','My Day'],['amanda','♙','Amanda Tracker'],['tier','↗','Tier Growth'],['portfolio','▢','Portfolio'],['communication','▱','LP / RM Handoffs'],['reports','▤','Reports & History'],['admin','⚙','Admin / Tools']]}
  function identity(){let src='';try{src=localStorage.getItem('rm_profile_photo_nyny')||''}catch(e){}if(!src){const av=$('v95NynyAvatar');src=av&&av.src?av.src:''}const h=new Date().getHours(),g=h<12?'Good morning':h<17?'Good afternoon':'Good evening';return '<div class="rmx-identity">'+(src?'<img class="rmx-avatar" id="rmxNynyAvatar" src="'+src+'">':'<div class="rmx-avatar" id="rmxNynyAvatarFallback" style="display:flex;align-items:center;justify-content:center;font-weight:800">N</div>')+'<div><div class="rmx-greet">'+g+', Nyny</div><div class="rmx-role">Director of Client Experience</div><div class="rmx-sub" id="rmxHeadSub">Loading your snapshot…</div><button class="rmx-photo" onclick=\"v95ChoosePhoto(\'nyny\')\">Change photo</button></div></div>'}
  function boot(){const view=$('view-daniel');if(!view)return;view.style.removeProperty('display');view.classList.add('rmx-on');let app=$('rmxApp');if(app&&!view.contains(app)){try{app.remove()}catch(e){}app=null}if(!app){app=document.createElement('div');app.id='rmxApp';view.appendChild(app)}app.innerHTML='<div class="rmx-shell"><aside class="rmx-side"><div class="rmx-brand"><div class="rmx-brand-icon">♧</div><div><strong>RM TRACKER</strong><span>Management View</span></div></div><nav class="rmx-nav">'+nav().map(n=>'<button data-rmx="'+n[0]+'"><span class="ico">'+n[1]+'</span>'+n[2]+'</button>').join('')+'</nav></aside><main class="rmx-main"><header class="rmx-head">'+identity()+'<div class="rmx-date"><span>▣</span><span>'+new Date(todayS()+'T12:00:00').toLocaleDateString(undefined,{month:'short',day:'numeric',year:'numeric'})+'</span><button class="rmx-btn" id="rmxRefresh">Refresh</button></div></header><div id="rmxContent"></div></main></div>';wireDirectorRouting();const rr=$('rmxRefresh');if(rr)rr.onclick=()=>{R.cache=null;R.ts=0;go(R.route,true)};go(R.route||'snapshot')}
+ // Re-asserts the Management shell's own visibility state. Called on every route change and,
+ // for the Amanda route specifically, again a moment after mount — belt-and-suspenders so that
+ // if anything else on the page ever clears these classes/display while the iframe is still
+ // loading over the network, the Management shell (and the Amanda tracker inside it) don't
+ // silently disappear out from under the Director.
+ function reassertDirectorShell(){
+   document.body.classList.add('rmx-director-active','rmx-director-site');
+   const v=document.getElementById('view-daniel');
+   if(v){v.style.removeProperty('display');v.classList.add('active','rmx-on');}
+ }
  async function go(route,force){
   R.route=route;
-  document.body.classList.add('rmx-director-active');
+  reassertDirectorShell();
   wireDirectorRouting();
   document.querySelectorAll('.rmx-nav button').forEach(b=>b.classList.toggle('active',b.dataset.rmx===route));
   const c=$('rmxContent');if(!c)return;
@@ -17206,6 +17169,11 @@ window.rmAuditVisibleButtons=function(){
   if(route==='amanda'){
     c.innerHTML='';
     renderAmanda(c,null);
+    // Re-assert shortly after mount (matches the historical "renders then vanishes after ~1-2s"
+    // report) and once more a moment later, in case something async elsewhere on the page briefly
+    // clears the Director shell's own visibility while the iframe is still loading.
+    setTimeout(()=>{if(R.route==='amanda')reassertDirectorShell();},400);
+    setTimeout(()=>{if(R.route==='amanda')reassertDirectorShell();},1800);
     return;
   }
 
@@ -17594,12 +17562,8 @@ window.rmxAdminRemoveAgent=async function(name){
 <script id="v211-final-director-route-js">
 (function(){
  function isDirector(){
-  try{
-    if(typeof window.directorMode==='function')return !!window.directorMode();
-    const p=new URLSearchParams(location.search||'');
-    const path=String(location.pathname||'').toLowerCase();
-    return /\/director(?:\.html)?$/.test(path)||location.hash==='#director'||p.get('director')==='1';
-  }catch(e){return false}
+  // CLEANUP (2026-08-21): single canonical route check — see rmxIsDirectorRoute near the top of the file.
+  try{return !!(typeof window.rmxIsDirectorRoute==='function'?window.rmxIsDirectorRoute():window.directorMode&&window.directorMode())}catch(e){return false}
  }
  function ensureView(){let v=document.getElementById('view-daniel');if(v)return v;v=document.createElement('div');v.id='view-daniel';v.className='view';const host=document.querySelector('.app')||document.body;host.appendChild(v);return v}
  function apply(){
