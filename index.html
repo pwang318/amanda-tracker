@@ -1,6 +1,6 @@
    <!DOCTYPE html>
 <!-- v217 4-WEEK BUTTON HANDLER FIX · 2026-08-21 -->
-<!-- v220 MANAGEMENT TRUTH + DAILY CHECK-IN + LEAD-AWARE RISK · 2026-08-21 -->
+<!-- v221 COACHING + DAILY CHECK-IN SANDWICH FIX · 2026-08-21 -->
 
 <!-- Cleanup pass: floating Page Guide + stale developer build logs removed; active workflow logic preserved. -->
 <!-- v140: fixes Step 2 transaction renderer race; saved/open CTC and New Contract tasks are no longer erased after successful distribution -->
@@ -1121,6 +1121,10 @@ body.rm-director-route .view:not(#view-daniel){display:none!important}
 body.rm-director-route #view-daniel{display:block!important;visibility:visible!important;opacity:1!important;min-height:calc(100vh - 58px)!important}
 body.rm-director-route #rmxApp{display:block!important;visibility:visible!important;opacity:1!important;min-height:calc(100vh - 58px)!important}
 body.rm-director-route .tabs,body.rm-director-route .who-bar{display:none!important}
+</style>
+
+<style id="v221-coaching-ui">
+.rmx-coach-sandwich{display:grid;gap:9px;margin-top:12px}.rmx-coach-sandwich>div{border:1px solid #E5E1EC;border-radius:10px;padding:10px 12px;background:#FCFBFE}.rmx-coach-sandwich b{display:block;font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:#5A3AA8;margin-bottom:4px}.rmx-coach-sandwich span{display:block;font-size:12px;line-height:1.55;color:#39463E}.rmx-modalbox #rmxCoachGood,.rmx-modalbox #rmxCoachObs,.rmx-modalbox #rmxCoachDir,.rmx-modalbox #rmxCoachClose{min-height:96px}
 </style>
 </head>
 <body>
@@ -17094,7 +17098,9 @@ window.rmAuditVisibleButtons=function(){
       safeFetch('rm_director_insights?status=eq.open&select=id,agent_name,submitted_by,insight_type,priority,note,created_at,status&order=created_at.desc&limit=250',10000),
       safeFetch('outreach_prospects?select=*&order=follow_up_date.asc.nullslast&limit=1500',10000),
       Promise.resolve([]), /* legacy face_time_events table is not installed */
-      safeFetch('tier_migrations?select=agent_name,from_tier,to_tier,migration_date&order=migration_date.desc&limit=1000',10000)
+      safeFetch('tier_migrations?select=agent_name,from_tier,to_tier,migration_date&order=migration_date.desc&limit=1000',10000),
+      safeFetch('velocify_leads?select=referral_partner_name,date_added&order=date_added.desc&limit=5000',10000),
+      safeFetch('received_leads?select=agent_name,logged_date&order=logged_date.desc&limit=5000',10000)
     ]);
 
     const amap=ownerMap(assignRows);
@@ -17428,6 +17434,73 @@ window.rmAuditVisibleButtons=function(){
  function relationshipRow(d,r,mode){const p=r.p||r,name=p.agent_name||'',tier=p._tier||'—',owner=r.owner||ownerName(d,p),lt=r.lt||latestTouch(d,p),days=r.days!=null?r.days:daysSince(lt),reason=(r.reasons||[]).join(' · ')||'Relationship work',next=String(p.next_growth_opportunity||'').trim()||'Define next growth move';return '<tr><td><div class="rmx-name">'+esc(fmtName(name))+'</div><div class="rmx-muted">'+esc(p.brokerage||p.team||p.company||'')+'</div></td><td><span class="rmx-pill">'+esc(tier)+'</span></td><td>'+esc(owner)+'</td><td>'+(lt?esc(lt)+'<div class="rmx-muted">Touch: '+(days===0?'today':days+' days ago')+'</div>':'—')+(r.leadDate?'<div class="rmx-muted green">Lead: '+esc(r.leadDate)+' · '+(r.daysLead===0?'today':r.daysLead+'d ago')+'</div>':'')+'</td><td>'+esc(reason)+'</td><td>'+esc(next)+'</td><td>'+actionBtns(name,mode)+'</td></tr>'}
  function showCount(n){return Number(n||0).toLocaleString()}
  function migrationCounts(d){const s=mstart(),m=(d.migrations||[]).filter(x=>String(x.migration_date||'')>=s);return {all:m.length,cToB:m.filter(x=>x.from_tier==='C'&&x.to_tier==='B').length,bToA:m.filter(x=>x.from_tier==='B'&&x.to_tier==='A').length,aToChannel:m.filter(x=>x.from_tier==='A'&&x.to_tier==='Channel').length}}
+
+ function rmxNextBusinessDate(){
+   const x=new Date(todayS()+'T12:00:00');
+   do{x.setDate(x.getDate()+1)}while(x.getDay()===0||x.getDay()===6);
+   return x.toISOString().slice(0,10);
+ }
+ function rmxAmandaCoachSignals(d,relationship){
+   const rel=String(relationship||'').trim(),ta=todayAmanda(d),wa=weekAmanda(d),ma=mtdAmanda(d);
+   const coldToday=coldCount(ta),talkToday=talkCount(ta),liveToday=meaningfulCount(ta),coldWeek=coldCount(wa),talkWeek=talkCount(wa);
+   const newM=ma.filter(a=>a.act_type==='New Realtor Meeting').length,existing=ma.filter(a=>isExistingMeetingType(a.act_type)).length;
+   const booked=ta.filter(a=>String(a.outcome||'')==='Meeting Scheduled').length;
+   const notesMissing=ta.filter(a=>rmxActivityNote(a).trim().length<8).length;
+   const dueAmanda=(d.due||[]).filter(isAmanda),tx=rmxTxn(d),pe=rmxPortfolioExecution(d),conv=rmxConversion(d);
+   const wins=[],focus=[],asks=[];
+
+   // POSITIVE START: only praise what the tracker actually supports.
+   if(newM>=10&&existing>=20)wins.push('You have already hit both monthly meeting goals: '+newM+' / 10 new Realtor meetings and '+existing+' / 20 existing-partner meetings.');
+   else{
+     if(newM>=10)wins.push('You have hit the monthly new Realtor meeting goal at '+newM+' / 10.');
+     else if(newM>0)wins.push('You have '+newM+' new Realtor meeting'+(newM===1?'':'s')+' recorded month-to-date.');
+     if(existing>=20)wins.push('You have hit the existing-partner meeting goal at '+existing+' / 20.');
+     else if(existing>0)wins.push('You have '+existing+' existing-partner meeting'+(existing===1?'':'s')+' recorded month-to-date.');
+   }
+   if(liveToday>=10)wins.push('You created '+liveToday+' live / meaningful conversations today, which is strong relationship activity.');
+   else if(liveToday>0)wins.push('You logged '+liveToday+' live / meaningful conversation'+(liveToday===1?'':'s')+' today.');
+   if(booked>0)wins.push('You scheduled '+booked+' meeting'+(booked===1?'':'s')+' from today’s work.');
+   if(ta.length&&notesMissing===0)wins.push('Today’s logged activity is documented with usable notes.');
+   if(!pe.missing.length&&liveToday>0)wins.push('Portfolio next-step updates are current for today’s live conversations.');
+   if(!wins.length)wins.push('You kept the work visible in the tracker today, which gives us a clear place to coach from.');
+
+   // MIDDLE: concrete coaching gaps from the live tracker.
+   if(coldToday<25)focus.push('Cold-call pace is '+coldToday+' / 25 today.');
+   if(talkToday<20)focus.push('Talk-To pace is '+talkToday+' / 20 today.');
+   if(notesMissing)focus.push(notesMissing+' activit'+(notesMissing===1?'y has':'ies have')+' thin or missing notes.');
+   if(pe.missing.length)focus.push(pe.missing.length+' live relationship conversation'+(pe.missing.length===1?' still needs':'s still need')+' a documented portfolio next move.');
+   if(dueAmanda.length)focus.push(dueAmanda.length+' Amanda-owned follow-up'+(dueAmanda.length===1?' is':'s are')+' due or overdue.');
+   if(tx.open.length)focus.push(tx.open.length+' transaction follow-up'+(tx.open.length===1?' is':'s are')+' still open.');
+   if(conv.overdue)focus.push(conv.overdue+' required 4-week conversion touch'+(conv.overdue===1?' is':'es are')+' overdue.');
+
+   if(rel){
+     const p=(d.profiles||[]).find(x=>key(x.agent_name)===key(rel));
+     const rr=risks(d).find(x=>key(x.p&&x.p.agent_name)===key(rel));
+     const last= p?latestTouch(d,p):'';
+     const lead=p?latestLeadFor(d,p):'';
+     const next=p?String(p.next_growth_opportunity||'').trim():'';
+     if(rr&&rr.reasons&&rr.reasons.length)focus.unshift(fmtName(rel)+': '+rr.reasons.join(' · ')+'.');
+     else if(last||lead)wins.push(fmtName(rel)+' has recent engagement'+(lead?' with a lead dated '+lead:'')+(last?' and a meaningful touch dated '+last:'')+'.');
+     if(p&&!next)asks.push('For '+fmtName(rel)+', document the next relationship / growth move so the plan is visible.');
+   }
+
+   if(coldToday<25||talkToday<20)asks.push('Protect a focused prospecting block early in the next workday and work toward 25 cold calls and 20 Talk-To’s without sacrificing note quality.');
+   if(dueAmanda.length)asks.push('Close or intentionally reschedule the due follow-ups so nothing quietly rolls forward without a next step.');
+   if(notesMissing)asks.push('Tighten the thin activity notes so they capture what happened, what you learned, and the next move.');
+   if(pe.missing.length)asks.push('Update the portfolio next move for every live conversation that is still missing relationship intelligence.');
+   if(tx.open.length)asks.push('Finish the open transaction follow-up items or document exactly what remains and who owns it.');
+   if(conv.overdue)asks.push('Complete the overdue Week 1–4 conversion touches before adding optional follow-up work.');
+   if(!focus.length)focus.push('No material execution gap is showing in today’s tracker. The coaching focus is consistency and keeping the quality of documentation high.');
+   if(!asks.length)asks.push('Keep the same pace, document outcomes as you go, and protect the next relationship move on each meaningful conversation.');
+
+   const close=(newM>=10&&existing>=20)
+     ?'You have already shown you can hit the relationship-building goals. Keep that momentum and tighten the daily execution pieces so the results stay repeatable as we scale.'
+     :'I appreciate the work you are putting in and the visibility you are creating in the tracker. Keep building on the wins above while tightening the few execution pieces we identified.';
+
+   return {wins,focus,asks,close,metrics:{coldToday,talkToday,liveToday,coldWeek,talkWeek,newM,existing,booked,notesMissing,due:dueAmanda.length,tx:tx.open.length,portfolio:pe.missing.length,conversionOverdue:conv.overdue}};
+ }
+ function rmxCoachSentence(parts){return (parts||[]).filter(Boolean).join(' ')}
+
 function renderSnapshot(c,d){
   title(c,'Dashboard','Manager command center · daily execution, month-to-date meeting pace, current open work, and relationship health.');
   const ta=todayAmanda(d),wa=weekAmanda(d),ma=mtdAmanda(d),cold=coldCount(ta),talk=talkCount(ta),newM=ma.filter(a=>a.act_type==='New Realtor Meeting').length,existM=ma.filter(a=>isExistingMeetingType(a.act_type)).length;
@@ -17539,57 +17612,52 @@ function renderMyDay(c,d){
  } 
 
  function renderDailyCheckin(c,d){
-   title(c,'Daily Check-In','Today only · evening manager recap for Amanda. Review the work, copy the email, then send it at the end of the day.');
+   title(c,'Daily Check-In','Today only · evening manager recap + tracker-generated coaching draft for Amanda. Review it, edit if needed, copy, and send.');
    const ta=todayAmanda(d),ma=mtdAmanda(d),cold=coldCount(ta),talk=talkCount(ta),live=meaningfulCount(ta),tx=rmxTxn(d),pe=rmxPortfolioExecution(d);
    const newM=ma.filter(a=>a.act_type==='New Realtor Meeting').length,existing=ma.filter(a=>isExistingMeetingType(a.act_type)).length;
    const booked=ta.filter(a=>String(a.outcome||'')==='Meeting Scheduled').length;
    const followups=ta.filter(a=>a.follow_up_date&&String(a.outcome||'')!=='Meeting Scheduled').length;
    const noConnect=ta.filter(a=>/left voicemail|left vm|no answer/i.test(String(a.outcome||''))).length;
-   const notesMissing=ta.filter(a=>rmxActivityNote(a).trim().length<8).length;
-   const coaching=[];
-   if(cold<25)coaching.push('Cold-call pace: '+cold+' / 25 today.');
-   if(talk<20)coaching.push('Talk-To pace: '+talk+' / 20 today.');
-   if(notesMissing)coaching.push(notesMissing+' activity '+(notesMissing===1?'record needs':'records need')+' better notes / context.');
-   if(pe.missing.length)coaching.push(pe.missing.length+' live relationship '+(pe.missing.length===1?'conversation needs':'conversations need')+' a portfolio next step.');
-   if(!coaching.length)coaching.push('Execution and documentation are current today.');
+   const coach=rmxAmandaCoachSignals(d,'');
    const dateLabel=new Date(todayS()+'T12:00:00').toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'});
    const subject='Daily Check-In — '+dateLabel;
    const body=[
      'Hi Amanda,','',
-     'Here’s our '+dateLabel+' daily check-in recap:','',
-     'TODAY',
+     'Quick check-in for '+dateLabel+'.','',
+     'WHAT WENT WELL',
+     rmxCoachSentence(coach.wins),'',
+     'TODAY’S SNAPSHOT',
      'Cold Calls: '+cold+' / 25',
      'Talk-To’s: '+talk+' / 20',
      'Live / Meaningful Conversations: '+live,
      'Meetings Booked Today: '+booked,
-     'No-Connect Attempts: '+noConnect,
-     'Follow-Ups Set: '+followups,'',
+     'Follow-Ups Set: '+followups,
+     'No-Connect Attempts: '+noConnect,'',
      'MONTH-TO-DATE',
      'New Realtor Meetings: '+newM+' / 10',
      'Existing Partner Meetings: '+existing+' / 20','',
-     'OPEN / NEEDS ATTENTION',
-     'Follow-Ups Due: '+d.due.filter(isAmanda).length,
-     'Transaction Calls Open: '+tx.open.length,
-     'Portfolio Updates Missing Today: '+pe.missing.length,'',
      'COACHING FOCUS',
-     coaching.join(' '),'',
-     'Please update anything still open in the tracker before tomorrow so we start with a clean picture.','',
+     rmxCoachSentence(coach.focus),'',
+     'NEXT STEP / EXPECTATION',
+     rmxCoachSentence(coach.asks),'',
+     coach.close,'',
      'Thank you,','Nyny'
    ].join('\n');
    window.RMX_DAILY_EMAIL_SUBJECT=subject;window.RMX_DAILY_EMAIL_TEXT=body;
-   c.innerHTML+='<div class="rmx-inline-note"><b>Scope:</b> Everything in the first row is <b>today only</b>. Meeting goals below are <b>month-to-date</b>. Open-work counts are the current queue.</div>';
+   c.innerHTML+='<div class="rmx-inline-note"><b>Scope:</b> <b>Today</b> = daily execution · <b>MTD</b> = monthly meeting progress · <b>Now</b> = current open work. The coaching language below is generated from the same live tracker signals and is editable before you send it.</div>';
    c.innerHTML+='<section class="rmx-section-block"><div class="rmx-section-label">Today</div><div class="rmx-kpi-grid">'
      +kpiCard('Cold Calls · Today',cold,25,cold>=25?'good':cold>=15?'warn':'bad','performance','cold')
      +kpiCard('Talk-To’s · Today',talk,20,talk>=20?'good':talk>=12?'warn':'bad','performance','talk')
      +kpiCard('Live Conversations · Today',live,null,live?'good':'warn','performance','meaningful')
      +kpiCard('Meetings Booked · Today',booked,null,booked?'good':'','performance','today')
-     +kpiCard('No-Connect Attempts · Today',noConnect,null,noConnect?'warn':'','performance','today')
-     +kpiCard('Follow-Ups Set · Today',followups,null,followups?'good':'','performance','followups')+'</div></section>';
+     +kpiCard('Follow-Ups Set · Today',followups,null,followups?'good':'','performance','followups')
+     +kpiCard('Open Work · Now',coach.metrics.due+coach.metrics.tx+coach.metrics.portfolio,null,(coach.metrics.due+coach.metrics.tx+coach.metrics.portfolio)?'warn':'good','queue','')+'</div></section>';
    c.innerHTML+='<div class="rmx-two"><section class="rmx-card"><h2>Month-to-Date Progress</h2><div class="sub">Meeting goals are monthly — not today’s quota.</div>'
      +'<div class="rmx-priority"><span class="rank">1</span><div class="copy"><b>New Realtor Meetings</b><span>MTD goal</span></div><span class="count">'+newM+' / 10</span></div>'
      +'<div class="rmx-priority"><span class="rank">2</span><div class="copy"><b>Existing Partner Meetings</b><span>MTD goal</span></div><span class="count">'+existing+' / 20</span></div></section>'
-     +'<section class="rmx-card"><h2>Manager Read</h2><div class="sub">What to reinforce or coach tonight.</div><div class="rmx-coach-note">'+esc(coaching.join(' '))+'</div><div class="rmx-priority"><span class="rank">1</span><div class="copy"><b>Follow-Ups Due</b><span>Current Amanda-owned queue</span></div><span class="count">'+d.due.filter(isAmanda).length+'</span></div><div class="rmx-priority"><span class="rank">2</span><div class="copy"><b>Portfolio Updates Missing</b><span>Today’s live conversations only</span></div><span class="count">'+pe.missing.length+'</span></div></section></div>';
-   c.innerHTML+='<section class="rmx-card"><div class="rmx-card-head"><div><h2>Email Recap to Amanda</h2><div class="sub">Copy this at the end of the day and paste it into your email.</div></div><div class="rmx-actions"><button class="rmx-btn" onclick="rmxOpenDetailedCheckin()">Open Detailed Check-In</button><button class="rmx-btn primary" onclick="rmxCopyDailyEmail()">Copy Email Recap</button></div></div><div class="rmx-field"><label>Subject</label><input value="'+esc(subject)+'" readonly></div><div class="rmx-field"><label>Copy / Paste Email</label><textarea id="rmxDailyEmail" style="min-height:310px">'+esc(body)+'</textarea></div></section>';
+     +'<section class="rmx-card"><div class="rmx-card-head"><div><h2>Sandwich Coaching Draft</h2><div class="sub">Positive reinforcement → coaching / expectation → positive close.</div></div><button class="rmx-btn small" onclick="rmxCoachAmandaForAgent(\'\')">Open Coaching Note</button></div>'
+       +'<div class="rmx-coach-sandwich"><div><b>1 · Reinforce</b><span>'+esc(rmxCoachSentence(coach.wins))+'</span></div><div><b>2 · Coach</b><span>'+esc(rmxCoachSentence(coach.focus))+'</span></div><div><b>3 · Expectation</b><span>'+esc(rmxCoachSentence(coach.asks))+'</span></div><div><b>4 · Close</b><span>'+esc(coach.close)+'</span></div></div></section></div>';
+   c.innerHTML+='<section class="rmx-card"><div class="rmx-card-head"><div><h2>Email Recap to Amanda</h2><div class="sub">This is not just a numbers dump. It starts with a win, gives specific coaching from the tracker, states the expectation, and closes positively.</div></div><div class="rmx-actions"><button class="rmx-btn" onclick="rmxOpenDetailedCheckin()">Open Detailed Check-In</button><button class="rmx-btn primary" onclick="rmxCopyDailyEmail()">Copy Email Recap</button></div></div><div class="rmx-field"><label>Subject</label><input value="'+esc(subject)+'" readonly></div><div class="rmx-field"><label>Copy / Paste Email</label><textarea id="rmxDailyEmail" style="min-height:430px">'+esc(body)+'</textarea></div></section>';
  }
  window.rmxCopyDailyEmail=async function(){const text=$('rmxDailyEmail')?.value||window.RMX_DAILY_EMAIL_TEXT||'';try{await navigator.clipboard.writeText(text);toast('Daily check-in email copied ✓','success')}catch(e){const el=$('rmxDailyEmail');if(el){el.select();document.execCommand('copy');toast('Daily check-in email copied ✓','success')}}};
  window.rmxOpenDetailedCheckin=function(){try{if(typeof showDailyCheckin==='function')showDailyCheckin(todayS());else toast('Detailed Daily Check-In is unavailable.','error')}catch(e){toast('Could not open Daily Check-In: '+e.message,'error')}};
@@ -17774,8 +17842,34 @@ window.rmxAdminRemoveAgent=async function(name){if(!window.confirm('Mark '+name+
  };
  window.rmxQuickManagerNote=function(name){modal('<div class="rmx-modalhead"><h2>Quick Manager Note · '+esc(fmtName(name))+'</h2><button class="rmx-x" onclick="rmxClose()">×</button></div><div class="rmx-field"><label>Category</label><select id="rmxQuickNoteType"><option>Manager context</option><option>Risk / retention</option><option>Growth opportunity</option><option>Portfolio review</option><option>Coaching observation</option></select></div><div class="rmx-field"><label>Note</label><textarea id="rmxQuickNoteText" placeholder="What do you need to remember, review, or decide?"></textarea></div><div class="rmx-modal-actions"><button class="rmx-btn" onclick="rmxClose()">Cancel</button><button class="rmx-btn primary" onclick="rmxSaveQuickManagerNote('+JSON.stringify(name)+')">Save Note</button></div>')};
  window.rmxSaveQuickManagerNote=async function(name){const note=$('rmxQuickNoteText')?.value.trim()||'',cat=$('rmxQuickNoteType')?.value||'Manager context';if(!note){toast('Add the note first.','error');return}try{const raw='['+cat+'] '+note,notes=typeof appendRmMeta==='function'?appendRmMeta(raw,'Nyny','','',['Nyny'],[],''):raw;await sbFetch('amanda_activities',{method:'POST',body:JSON.stringify({agent_name:name,act_type:'RM Portfolio Review',act_date:todayS(),outcome:'Internal manager note',notes:notes,follow_up_date:null})});R.cache=null;R.ts=0;toast('Manager note saved ✓','success');rmxClose();go(R.route,true)}catch(e){toast('Could not save manager note: '+e.message,'error')}};
- window.rmxCoachAmandaForAgent=function(name){const rel=String(name||'').trim();modal('<div class="rmx-modalhead"><h2>Coach Amanda'+(rel?' · '+esc(fmtName(rel)):'')+'</h2><button class="rmx-x" onclick="rmxClose()">×</button></div><div class="rmx-inline-note">This logs <b>manager coaching</b>, not outreach to the agent.</div><div class="rmx-field"><label>What I observed</label><textarea id="rmxCoachObs" placeholder="What did you notice in the work, notes, pace, follow-through, or relationship handling?"></textarea></div><div class="rmx-field"><label>Direction / expectation for Amanda</label><textarea id="rmxCoachDir" placeholder="What should Amanda do differently or complete next?"></textarea></div><div class="rmx-field"><label>Manager follow-up date</label><input id="rmxCoachFollow" type="date"></div><div class="rmx-modal-actions"><button class="rmx-btn" onclick="rmxClose()">Cancel</button><button class="rmx-btn" onclick="rmxCoaching()">Open Full Coaching Builder</button><button class="rmx-btn primary" onclick="rmxSaveAmandaCoach('+JSON.stringify(rel)+')">Save Coaching Note</button></div>')};
- window.rmxSaveAmandaCoach=async function(rel){const obs=$('rmxCoachObs')?.value.trim()||'',dir=$('rmxCoachDir')?.value.trim()||'',follow=$('rmxCoachFollow')?.value||null;if(!obs&&!dir){toast('Add the coaching observation or direction first.','error');return}const body=['Relationship: '+(rel||'General RM execution'),obs?'Observation: '+obs:'',dir?'Direction: '+dir:''].filter(Boolean).join('\n');try{const notes=typeof appendRmMeta==='function'?appendRmMeta(body,'Nyny','','',['Nyny'],[],''):body;await sbFetch('amanda_activities',{method:'POST',body:JSON.stringify({agent_name:'Amanda',act_type:'Amanda Coaching / Development',act_date:todayS(),outcome:rel?'Coaching · '+rel:'Coaching',notes:notes,follow_up_date:follow})});R.cache=null;R.ts=0;toast('Amanda coaching saved ✓','success');rmxClose();go('amanda',true)}catch(e){toast('Could not save coaching: '+e.message,'error')}};
+ window.rmxCoachAmandaForAgent=async function(name){
+   const rel=String(name||'').trim();
+   modal('<div class="rmx-modalhead"><h2>Coach Amanda'+(rel?' · '+esc(fmtName(rel)):'')+'</h2><button class="rmx-x" onclick="rmxClose()">×</button></div>'+loading());
+   try{
+     const d=await load(),draft=rmxAmandaCoachSignals(d,rel),box=$('rmxModal')&&$('rmxModal').querySelector('.rmx-modalbox');if(!box)return;
+     box.innerHTML='<div class="rmx-modalhead"><h2>Coach Amanda'+(rel?' · '+esc(fmtName(rel)):'')+'</h2><button class="rmx-x" onclick="rmxClose()">×</button></div>'
+       +'<div class="rmx-inline-note"><b>Tracker-generated coaching draft.</b> These fields are pre-populated from Amanda’s current execution, meeting pace, follow-ups, documentation quality, portfolio gaps, and conversion work. Edit anything before saving.</div>'
+       +'<div class="rmx-field"><label>1 · What she is doing well</label><textarea id="rmxCoachGood">'+esc(rmxCoachSentence(draft.wins))+'</textarea></div>'
+       +'<div class="rmx-field"><label>2 · Coaching observation / opportunity</label><textarea id="rmxCoachObs">'+esc(rmxCoachSentence(draft.focus))+'</textarea></div>'
+       +'<div class="rmx-field"><label>3 · Direction / expectation for Amanda</label><textarea id="rmxCoachDir">'+esc(rmxCoachSentence(draft.asks))+'</textarea></div>'
+       +'<div class="rmx-field"><label>4 · Positive close</label><textarea id="rmxCoachClose">'+esc(draft.close)+'</textarea></div>'
+       +'<div class="rmx-field"><label>Manager follow-up date</label><input id="rmxCoachFollow" type="date" value="'+rmxNextBusinessDate()+'"></div>'
+       +'<div class="rmx-field"><label>Coaching message preview</label><textarea id="rmxCoachMessage" style="min-height:180px"></textarea></div>'
+       +'<div class="rmx-modal-actions"><button class="rmx-btn" onclick="rmxClose()">Cancel</button><button class="rmx-btn" onclick="rmxCoaching()">Open Full Coaching Builder</button><button class="rmx-btn" onclick="rmxCopyCoachMessage()">Copy Coaching Message</button><button class="rmx-btn primary" onclick="rmxSaveAmandaCoach('+JSON.stringify(rel)+')">Save Coaching Note</button></div>';
+     ['rmxCoachGood','rmxCoachObs','rmxCoachDir','rmxCoachClose'].forEach(id=>{const el=$(id);if(el)el.addEventListener('input',rmxBuildCoachMessage)});rmxBuildCoachMessage();
+   }catch(e){const box=$('rmxModal')&&$('rmxModal').querySelector('.rmx-modalbox');if(box)box.innerHTML='<div class="rmx-modalhead"><h2>Coach Amanda</h2><button class="rmx-x" onclick="rmxClose()">×</button></div>'+err(e)}
+ };
+ window.rmxBuildCoachMessage=function(){
+   const good=$('rmxCoachGood')?.value.trim()||'',obs=$('rmxCoachObs')?.value.trim()||'',dir=$('rmxCoachDir')?.value.trim()||'',close=$('rmxCoachClose')?.value.trim()||'',el=$('rmxCoachMessage');
+   if(el)el.value=['Amanda,','',good,'',obs,'',dir,'',close].filter((x,i,a)=>!(x===''&&a[i-1]==='')).join('\n');
+ };
+ window.rmxCopyCoachMessage=async function(){rmxBuildCoachMessage();const el=$('rmxCoachMessage'),txt=el?.value||'';try{await navigator.clipboard.writeText(txt);toast('Coaching message copied ✓','success')}catch(e){if(el){el.select();document.execCommand('copy');toast('Coaching message copied ✓','success')}}};
+ window.rmxSaveAmandaCoach=async function(rel){
+   const good=$('rmxCoachGood')?.value.trim()||'',obs=$('rmxCoachObs')?.value.trim()||'',dir=$('rmxCoachDir')?.value.trim()||'',close=$('rmxCoachClose')?.value.trim()||'',follow=$('rmxCoachFollow')?.value||null;
+   if(!obs&&!dir){toast('Add the coaching observation or direction first.','error');return}
+   const body=['Relationship: '+(rel||'General RM execution'),'What is going well: '+good,'Coaching focus: '+obs,'Direction / expectation: '+dir,'Positive close: '+close].filter(x=>!/:\s*$/.test(x)).join('\n\n');
+   try{const notes=typeof appendRmMeta==='function'?appendRmMeta(body,'Nyny','','',['Nyny'],[],''):body;await sbFetch('amanda_activities',{method:'POST',body:JSON.stringify({agent_name:'Amanda',act_type:'Amanda Coaching / Development',act_date:todayS(),outcome:rel?'Coaching · '+rel:'Coaching',notes:notes,follow_up_date:follow})});R.cache=null;R.ts=0;toast('Amanda coaching saved ✓','success');rmxClose();go('checkin',true)}catch(e){toast('Could not save coaching: '+e.message,'error')}
+ };
  window.rmxLog=name=>modal('<div class="rmx-modalhead"><h2>Log touch · '+esc(name)+'</h2><button class="rmx-x" onclick="rmxClose()">×</button></div>'
  +'<div class="rmx-grid"><div class="rmx-field"><label>Activity</label><select id="rmxLogType"><option>Agent Talk-to</option><option>Partner Meeting</option><option>Break Breads</option><option>Strategic Partner Meeting</option><option>Channel Meeting</option><option>Retention Meeting</option><option>New Realtor Meeting</option><option>Text</option><option>Email</option></select></div>'
  +'<div class="rmx-field"><label>Outcome</label><select id="rmxLogOutcome"><option>Connected / meaningful conversation</option><option>Meeting scheduled</option><option>Meeting held</option><option>Follow-up needed</option><option>Left voicemail + text sent</option><option>No answer + text sent</option></select></div></div>'
@@ -17827,10 +17921,21 @@ window.rmxAdminRemoveAgent=async function(name){if(!window.confirm('Mark '+name+
  window.rmxReply=(src,id,name)=>modal('<div class="rmx-modalhead"><h2>Reply to LP · '+esc(name)+'</h2><button class="rmx-x" onclick="rmxClose()">×</button></div><div class="rmx-field"><label>RM response</label><textarea id="rmxReplyText" placeholder="Type the response the LP should see…"></textarea></div><div class="rmx-modal-actions"><button class="rmx-btn" onclick="rmxClose()">Cancel</button><button class="rmx-btn primary" onclick="rmxSaveReply(\''+src+'\',\''+id+'\')">Send reply</button></div>');
  window.rmxSaveReply=async(src,id)=>{const text=$('rmxReplyText').value.trim();if(!text){toast('Type a response first.','error');return}try{if(src==='lpflag')await sbFetch('lp_flags?id=eq.'+encodeURIComponent(id),{method:'PATCH',prefer:'return=minimal',body:JSON.stringify({rm_note:text,rm_note_at:new Date().toISOString(),rm_note_by:'Nyny'})});else await sbFetch('call_logs?id=eq.'+encodeURIComponent(id),{method:'PATCH',prefer:'return=minimal',body:JSON.stringify({rm_note:text,rm_note_at:new Date().toISOString()})});R.cache=null;toast('Reply saved ✓','success');rmxClose();go('communication',true)}catch(e){toast('Reply failed: '+e.message,'error')}};
  window.rmxHandle=async(src,id)=>{try{if(src==='lpflag')await sbFetch('lp_flags?id=eq.'+encodeURIComponent(id),{method:'PATCH',prefer:'return=minimal',body:JSON.stringify({resolved:true,resolved_at:new Date().toISOString(),assigned_to:'Nyny'})});else await sbFetch('call_logs?id=eq.'+encodeURIComponent(id),{method:'PATCH',prefer:'return=minimal',body:JSON.stringify({flag_rm:false})});R.cache=null;toast('Marked handled ✓','success');go('communication',true)}catch(e){toast('Could not mark handled: '+e.message,'error')}};
- window.rmxCoaching=async()=>{const d=await load(),tod=todayS(),wk=wstart(),aToday=d.acts.filter(a=>a.act_date===tod&&isAmanda(a)),aWeek=d.acts.filter(a=>a.act_date>=wk&&isAmanda(a)),aMonth=d.acts.filter(isAmanda),calls=coldCount(aWeek),newm=aMonth.filter(a=>a.act_type==='New Realtor Meeting').length,existing=aMonth.filter(a=>['Partner Meeting','Break Breads','Strategic Partner Meeting','Channel Meeting','Team / Office Presentation','Retention Meeting'].includes(a.act_type)).length;let good=[];if(aToday.length)good.push('You are consistently using the tracker and logged '+aToday.length+' activities today.');if(newm)good.push('You have '+newm+' new Realtor meeting'+(newm===1?'':'s')+' recorded this month.');if(!good.length)good.push('I appreciate you continuing to work the plan and staying engaged with the relationship work.');let improve=[];if(calls<125)improve.push('Cold-call pace is '+calls+' / 125 this week.');if(newm<10)improve.push('New Realtor meetings are '+newm+' / 10 for the month.');if(existing<20)improve.push('Existing-partner meetings are '+existing+' / 20 for the month.');if(!improve.length)improve.push('Keep protecting the consistency that is working and continue documenting outcomes as you go.');modal('<div class="rmx-modalhead"><h2>Amanda coaching · sandwich method</h2><button class="rmx-x" onclick="rmxClose()">×</button></div><div class="rmx-field"><label>1 · What she is doing well</label><textarea id="rmxCgGood">'+esc(good.join(' '))+'</textarea></div><div class="rmx-field"><label>2 · What to improve</label><textarea id="rmxCgImprove">'+esc(improve.join(' '))+'</textarea></div><div class="rmx-field"><label>3 · Please provide / complete</label><textarea id="rmxCgAsk">Please prioritize the items above, update the tracker as you work them, and provide the missing outcomes / next steps directly in the tracker so we have a clean picture of what is complete and what is still pending.</textarea></div><div class="rmx-field"><label>4 · Positive close</label><textarea id="rmxCgClose">I appreciate the effort you are putting in. I know you can tighten these pieces up, and I am confident we can keep building on the progress you are making.</textarea></div><div class="rmx-field"><label>Email preview</label><textarea id="rmxCgPreview" style="min-height:190px"></textarea></div><div class="rmx-modal-actions"><button class="rmx-btn" onclick="rmxCopyCoaching()">Copy email</button><button class="rmx-btn primary" onclick="rmxSaveCoaching()">Save coaching log</button></div>');['rmxCgGood','rmxCgImprove','rmxCgAsk','rmxCgClose'].forEach(id=>$(id).oninput=rmxBuildCoaching);rmxBuildCoaching()};
+ window.rmxCoaching=async()=>{
+   const d=await load(),draft=rmxAmandaCoachSignals(d,'');
+   modal('<div class="rmx-modalhead"><h2>Amanda coaching · sandwich method</h2><button class="rmx-x" onclick="rmxClose()">×</button></div>'
+     +'<div class="rmx-inline-note"><b>Pre-populated from the tracker.</b> Use this as the fuller coaching / email builder. You can edit every section before copying or saving.</div>'
+     +'<div class="rmx-field"><label>1 · What she is doing well</label><textarea id="rmxCgGood">'+esc(rmxCoachSentence(draft.wins))+'</textarea></div>'
+     +'<div class="rmx-field"><label>2 · What to improve</label><textarea id="rmxCgImprove">'+esc(rmxCoachSentence(draft.focus))+'</textarea></div>'
+     +'<div class="rmx-field"><label>3 · Please provide / complete</label><textarea id="rmxCgAsk">'+esc(rmxCoachSentence(draft.asks))+'</textarea></div>'
+     +'<div class="rmx-field"><label>4 · Positive close</label><textarea id="rmxCgClose">'+esc(draft.close)+'</textarea></div>'
+     +'<div class="rmx-field"><label>Email preview</label><textarea id="rmxCgPreview" style="min-height:230px"></textarea></div>'
+     +'<div class="rmx-modal-actions"><button class="rmx-btn" onclick="rmxCopyCoaching()">Copy email</button><button class="rmx-btn primary" onclick="rmxSaveCoaching()">Save coaching log</button></div>');
+   ['rmxCgGood','rmxCgImprove','rmxCgAsk','rmxCgClose'].forEach(id=>$(id).oninput=rmxBuildCoaching);rmxBuildCoaching()
+ };
  window.rmxBuildCoaching=()=>{const g=$('rmxCgGood')?.value.trim()||'',i=$('rmxCgImprove')?.value.trim()||'',a=$('rmxCgAsk')?.value.trim()||'',cl=$('rmxCgClose')?.value.trim()||'';$('rmxCgPreview').value='Amanda,\n\n'+g+'\n\n'+i+'\n\n'+a+'\n\n'+cl+'\n\nBest,\nNyny'};
  window.rmxCopyCoaching=async()=>{rmxBuildCoaching();try{await navigator.clipboard.writeText($('rmxCgPreview').value);toast('Coaching email copied ✓','success')}catch(e){$('rmxCgPreview').select();document.execCommand('copy');toast('Coaching email copied ✓','success')}};
- window.rmxSaveCoaching=async()=>{rmxBuildCoaching();const notes=$('rmxCgPreview').value;try{const finalNotes=typeof appendRmMeta==='function'?appendRmMeta(notes,'Nyny','','',['Nyny'],[],''):notes;await sbFetch('amanda_activities',{method:'POST',body:JSON.stringify({agent_name:'Amanda',act_type:'Amanda Coaching / Development',act_date:todayS(),outcome:'Completed',notes:finalNotes,follow_up_date:null})});R.cache=null;toast('Amanda coaching saved ✓','success');rmxClose();go('amanda',true)}catch(e){toast('Could not save coaching: '+e.message,'error')}};
+ window.rmxSaveCoaching=async()=>{rmxBuildCoaching();const notes=$('rmxCgPreview').value;try{const finalNotes=typeof appendRmMeta==='function'?appendRmMeta(notes,'Nyny','','',['Nyny'],[],''):notes;await sbFetch('amanda_activities',{method:'POST',body:JSON.stringify({agent_name:'Amanda',act_type:'Amanda Coaching / Development',act_date:todayS(),outcome:'Completed',notes:finalNotes,follow_up_date:null})});R.cache=null;toast('Amanda coaching saved ✓','success');rmxClose();go('checkin',true)}catch(e){toast('Could not save coaching: '+e.message,'error')}};
  
  window.rmxRefreshProfilePhoto=function(role,src){
    if(!src)return;document.querySelectorAll('[data-rm-profile-role="'+role+'"]').forEach(img=>{if(img.tagName==='IMG')img.src=src});
