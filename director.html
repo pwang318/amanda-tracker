@@ -922,8 +922,9 @@ body.rmx-director-site .rmx-main{padding:24px 30px 48px!important}
 .rmx-align-banner b{color:#2F513A}
 </style>
 
+
 </head>
-<body>
+<body><script>window.RM_DIRECTOR_STANDALONE=false;</script>
 <input accept="image/*" id="v95ProfilePhotoInput" onchange="v95HandlePhotoUpload(event)" style="display:none" type="file"/>
 <style>
 /* v92 — functional Director workspace. Amanda UI intentionally untouched. */
@@ -4077,7 +4078,7 @@ async function init(){
 // FIX (2026-08-19): init() was defined but never invoked anywhere in the file, so none of the
 // core data (Week, Follow-ups, Feed, Management, Quiet, Flagged, Onboarding, Start Here,
 // connection status, offline queue, scorecard) ever loaded on page open. Restoring the bootstrap call.
-if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",()=>setTimeout(init,300),{once:true});else setTimeout(init,200);
+if(!window.RM_DIRECTOR_STANDALONE){if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",()=>setTimeout(init,300),{once:true});else setTimeout(init,200);}
 
 // ── Snooze — lets Priority Touches respect a real decision instead of nagging daily ──
 // Writes to a "snoozes" Supabase table when it exists (so it syncs across devices), and always
@@ -13932,7 +13933,7 @@ body.rmx-director-site .rmx-stat-click{position:relative;z-index:4;pointer-event
  function err(e){return '<div class="rmx-error">Could not load this section. '+esc(e&&e.message||'Please retry.')+'</div>'}
  function pct(a,t){return t?Math.min(100,Math.round(a/t*100)):0}
  function scorePts(a,t,w){return t?Math.min(w,a/t*w):0}
- function actionBtns(name){const n=esc(name||'').replace(/'/g,"\\'");return '<div class=\"rmx-actions\"><button class=\"rmx-btn small primary\" onclick=\"rmxLog(\''+n+'\')\">Log</button><button class=\"rmx-btn small\" onclick=\"rmxHistory(\''+n+'\')\">History</button><button class=\"rmx-btn small\" onclick=\"rmxSchedule(\''+n+'\')\">Schedule</button><button class=\"rmx-btn small\" onclick=\"rmxUpdate(\''+n+'\')\">Update</button></div>'}
+ function actionBtns(name){const n=encodeURIComponent(String(name||''));return '<div class="rmx-actions"><button class="rmx-btn small primary" data-rmx-action="log" data-agent="'+n+'">Log</button><button class="rmx-btn small" data-rmx-action="history" data-agent="'+n+'">History</button><button class="rmx-btn small" data-rmx-action="schedule" data-agent="'+n+'">Schedule</button><button class="rmx-btn small" data-rmx-action="update" data-agent="'+n+'">Update</button></div>'}
  function nav(){return [['snapshot','⌂','Snapshot'],['myday','▣','My Day'],['amanda','♙','Amanda'],['tier','↗','Tier Growth'],['portfolio','▢','Portfolio'],['communication','▱','LP / RM Handoffs'],['reports','▤','Reports & History'],['admin','⚙','Admin / Tools']]}
  function identity(){let src='';try{src=localStorage.getItem('rm_profile_photo_nyny')||''}catch(e){}if(!src){const av=$('v95NynyAvatar');src=av&&av.src?av.src:''}const h=new Date().getHours(),g=h<12?'Good morning':h<17?'Good afternoon':'Good evening';return '<div class="rmx-identity">'+(src?'<img class="rmx-avatar" id="rmxNynyAvatar" src="'+src+'">':'<div class="rmx-avatar" id="rmxNynyAvatarFallback" style="display:flex;align-items:center;justify-content:center;font-weight:800">N</div>')+'<div><div class="rmx-greet">'+g+', Nyny</div><div class="rmx-role">Director of Client Experience</div><div class="rmx-sub" id="rmxHeadSub">Loading your snapshot…</div><button class="rmx-photo" onclick="rmxChoosePhoto()">Change photo</button></div></div>'}
  function boot(){const view=$('view-daniel');if(!view||$('rmxApp'))return;view.classList.add('rmx-on');const app=document.createElement('div');app.id='rmxApp';app.innerHTML='<div class="rmx-shell"><aside class="rmx-side"><div class="rmx-brand"><div class="rmx-brand-icon">♧</div><div><strong>RM TRACKER</strong><span>Management View</span></div></div><nav class="rmx-nav">'+nav().map(n=>'<button data-rmx="'+n[0]+'"><span class="ico">'+n[1]+'</span>'+n[2]+'</button>').join('')+'</nav></aside><main class="rmx-main"><header class="rmx-head">'+identity()+'<div class="rmx-date"><span>▣</span><span>'+new Date(todayS()+'T12:00:00').toLocaleDateString(undefined,{month:'short',day:'numeric',year:'numeric'})+'</span><button class="rmx-btn" id="rmxRefresh">Refresh</button></div></header><div id="rmxContent"></div></main></div>';view.appendChild(app);wireDirectorRouting();$('rmxRefresh').onclick=()=>{R.cache=null;R.ts=0;go(R.route,true)};go('snapshot')}
@@ -14498,6 +14499,21 @@ const ab=document.createElement('div');ab.className='rmx-align-banner';ab.innerH
       }catch(e){}
     };
   }
+})();
+</script>
+
+
+<script id="rmx-director-action-delegation">
+(function(){
+  const dec=v=>{try{return decodeURIComponent(String(v||''))}catch(e){return String(v||'')}};
+  document.addEventListener('click',function(e){
+    const b=e.target.closest('[data-rmx-action]');if(!b)return;
+    const action=b.dataset.rmxAction,agent=dec(b.dataset.agent);
+    if(action==='log'){e.preventDefault();return window.rmxLog&&rmxLog(agent)}
+    if(action==='history'){e.preventDefault();return window.rmxHistory&&rmxHistory(agent)}
+    if(action==='schedule'){e.preventDefault();return window.rmxSchedule&&rmxSchedule(agent)}
+    if(action==='update'){e.preventDefault();return window.rmxUpdate&&rmxUpdate(agent)}
+  });
 })();
 </script>
 
