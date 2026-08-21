@@ -1,4 +1,6 @@
-  <!DOCTYPE html>
+ <!DOCTYPE html>
+
+<!-- v212: Director → Amanda Tracker preview routing audited/fixed; single-file #director route, no global Today hijack. -->
 
 <!-- Cleanup pass: floating Page Guide + stale developer build logs removed; active workflow logic preserved. -->
 <!-- v140: fixes Step 2 transaction renderer race; saved/open CTC and New Contract tasks are no longer erased after successful distribution -->
@@ -1266,7 +1268,7 @@ body.rm-director-route .tabs,body.rm-director-route .who-bar{display:none!import
 </div>
 <div aria-label="RM Tracker navigation" class="tabs">
 <div class="nav-group-label">DAILY</div>
-<div class="tab active" data-tab="week" onclick="rmxOpenAmanda()" title="Amanda's daily home base"><span class="nav-num">01</span><span>Today</span></div>
+<div class="tab active" data-tab="week" onclick="switchTab('week')" title="Amanda's daily home base"><span class="nav-num">01</span><span>Today</span></div>
 <div class="tab" data-tab="log" onclick="switchTab('log')" title="Record calls, texts, meetings and outcomes"><span class="nav-num">02</span><span>Log Activity</span></div>
 <div class="nav-group-label">RELATIONSHIPS</div>
 <div class="tab portfolio-priority-tab" data-tab="portfolio" onclick="switchTab('portfolio')" title="Partner Health, portfolio movement, growth opportunities and cadence"><span class="nav-num">03</span><span>Portfolio</span><span class="nav-priority-dot">●</span></div>
@@ -5367,12 +5369,12 @@ function directorMode(){
   }catch(e){return false;}
 }
 function openDirectorMode(){
-  try{const u=new URL(window.location.href);const base=u.pathname.replace(/(?:index|director)\.html$/i,"");u.pathname=base+"director.html";u.search="";u.hash="";window.location.href=u.toString();}
-  catch(e){window.location.href="director.html";}
+  try{const u=new URL(window.location.href);u.searchParams.delete("director");u.hash="#director";window.location.href=u.toString();}
+  catch(e){window.location.hash="#director";}
 }
 function openAmandaMode(){
-  try{const u=new URL(window.location.href);const base=u.pathname.replace(/(?:index|director)\.html$/i,"");u.pathname=base;u.search="";u.hash="";window.location.href=u.toString();}
-  catch(e){window.location.href="./";}
+  try{const u=new URL(window.location.href);u.searchParams.delete("director");u.hash="";if(/\/director\.html$/i.test(u.pathname))u.pathname=u.pathname.replace(/director\.html$/i,"index.html");window.location.href=u.toString();}
+  catch(e){window.location.hash="";}
 }
 function lockDirectorView(){if(directorMode())switchTab("daniel");else switchTab("week");}
 
@@ -17469,11 +17471,11 @@ window.rmAuditVisibleButtons=function(){
  function pct(a,t){return t?Math.min(100,Math.round(a/t*100)):0}
  function scorePts(a,t,w){return t?Math.min(w,a/t*w):0}
  function actionBtns(name){const n=encodeURIComponent(String(name||''));return '<div class="rmx-actions"><button class="rmx-btn small primary" data-rmx-action="log" data-agent="'+n+'">Log</button><button class="rmx-btn small" data-rmx-action="history" data-agent="'+n+'">History</button><button class="rmx-btn small" data-rmx-action="schedule" data-agent="'+n+'">Schedule</button><button class="rmx-btn small" data-rmx-action="update" data-agent="'+n+'">Update</button></div>'}
- function nav(){return [['snapshot','⌂','Snapshot'],['myday','▣','My Day'],['amanda','♙','Amanda'],['tier','↗','Tier Growth'],['portfolio','▢','Portfolio'],['communication','▱','LP / RM Handoffs'],['reports','▤','Reports & History'],['admin','⚙','Admin / Tools']]}
+ function nav(){return [['snapshot','⌂','Snapshot'],['myday','▣','My Day'],['amandatracker','♙','Amanda Tracker'],['tier','↗','Tier Growth'],['portfolio','▢','Portfolio'],['communication','▱','LP / RM Handoffs'],['reports','▤','Reports & History'],['admin','⚙','Admin / Tools']]}
  function identity(){let src='';try{src=localStorage.getItem('rm_profile_photo_nyny')||''}catch(e){}if(!src){const av=$('v95NynyAvatar');src=av&&av.src?av.src:''}const h=new Date().getHours(),g=h<12?'Good morning':h<17?'Good afternoon':'Good evening';return '<div class="rmx-identity">'+(src?'<img class="rmx-avatar" id="rmxNynyAvatar" src="'+src+'">':'<div class="rmx-avatar" id="rmxNynyAvatarFallback" style="display:flex;align-items:center;justify-content:center;font-weight:800">N</div>')+'<div><div class="rmx-greet">'+g+', Nyny</div><div class="rmx-role">Director of Client Experience</div><div class="rmx-sub" id="rmxHeadSub">Loading your snapshot…</div><button class="rmx-photo" onclick="rmxChoosePhoto()">Change photo</button></div></div>'}
  function boot(){const view=$('view-daniel');if(!view)return;view.style.removeProperty('display');view.classList.add('rmx-on');let app=$('rmxApp');if(app&&!view.contains(app)){try{app.remove()}catch(e){}app=null}if(!app){app=document.createElement('div');app.id='rmxApp';view.appendChild(app)}app.innerHTML='<div class="rmx-shell"><aside class="rmx-side"><div class="rmx-brand"><div class="rmx-brand-icon">♧</div><div><strong>RM TRACKER</strong><span>Management View</span></div></div><nav class="rmx-nav">'+nav().map(n=>'<button data-rmx="'+n[0]+'"><span class="ico">'+n[1]+'</span>'+n[2]+'</button>').join('')+'</nav></aside><main class="rmx-main"><header class="rmx-head">'+identity()+'<div class="rmx-date"><span>▣</span><span>'+new Date(todayS()+'T12:00:00').toLocaleDateString(undefined,{month:'short',day:'numeric',year:'numeric'})+'</span><button class="rmx-btn" id="rmxRefresh">Refresh</button></div></header><div id="rmxContent"></div></main></div>';wireDirectorRouting();const rr=$('rmxRefresh');if(rr)rr.onclick=()=>{R.cache=null;R.ts=0;go(R.route,true)};go(R.route||'snapshot')}
- async function go(route,force){R.route=route;document.body.classList.add('rmx-director-active');wireDirectorRouting();document.querySelectorAll('.rmx-nav button').forEach(b=>b.classList.toggle('active',b.dataset.rmx===route));const c=$('rmxContent');if(!c)return;c.innerHTML=loading();try{const d=await load(!!force);c.innerHTML='';if(route==='snapshot')renderSnapshot(c,d);else if(route==='myday')renderMyDay(c,d);else if(route==='amanda')renderAmanda(c,d);else if(route==='tier')renderTier(c,d);else if(route==='portfolio')renderPortfolio(c,d);else if(route==='communication')renderComm(c,d);else if(route==='reports')renderReports(c,d);else if(route==='admin')renderAdmin(c,d);else renderSnapshot(c,d);if(!String(c.textContent||'').trim())c.innerHTML=empty('This section has no current items.');}catch(e){console.error('RMX',e);c.innerHTML=err(e)}}
- window.rmxGo=(route,force)=>go(route,!!force);window.rmxOpenAmanda=()=>go('amanda',false);
+ async function go(route,force){if(route==='amandatracker'){if(typeof window.rmxShowAmandaTracker==='function')window.rmxShowAmandaTracker();return}R.route=route;document.body.classList.add('rmx-director-active');wireDirectorRouting();document.querySelectorAll('.rmx-nav button').forEach(b=>b.classList.toggle('active',b.dataset.rmx===route));const c=$('rmxContent');if(!c)return;c.innerHTML=loading();try{const d=await load(!!force);c.innerHTML='';if(route==='snapshot')renderSnapshot(c,d);else if(route==='myday')renderMyDay(c,d);else if(route==='amanda')renderAmanda(c,d);else if(route==='tier')renderTier(c,d);else if(route==='portfolio')renderPortfolio(c,d);else if(route==='communication')renderComm(c,d);else if(route==='reports')renderReports(c,d);else if(route==='admin')renderAdmin(c,d);else renderSnapshot(c,d);if(!String(c.textContent||'').trim())c.innerHTML=empty('This section has no current items.');}catch(e){console.error('RMX',e);c.innerHTML=err(e)}}
+ window.rmxGo=(route,force)=>go(route,!!force);window.rmxOpenAmanda=()=>window.rmxShowAmandaTracker();
  function wireDirectorRouting(){const app=$('rmxApp');if(!app||app.dataset.routingWired==='1')return;app.dataset.routingWired='1';app.addEventListener('click',function(e){const target=e.target.closest('[data-rmx-jump]');if(target){e.preventDefault();e.stopPropagation();go(target.dataset.rmxJump);return}const navBtn=e.target.closest('[data-rmx]');if(navBtn){e.preventDefault();e.stopPropagation();go(navBtn.dataset.rmx)}})}
  function title(c,h,p){c.innerHTML='<div class="rmx-title"><h1>'+h+'</h1><p>'+p+'</p></div>'}
  function counts(d){const x={Channel:0,A:0,B:0,C:0};d.prod.forEach(p=>{if(x[p._tier]!=null)x[p._tier]++});return x}
@@ -17567,7 +17569,7 @@ window.rmAuditVisibleButtons=function(){
    if(cold<25)execRows.push('<div class="rmx-mini-row"><b>Cold Calls</b><span>'+(25-cold)+' left today</span></div>');
    if(talk<20)execRows.push('<div class="rmx-mini-row"><b>Talk-to’s</b><span>'+(20-talk)+' left today</span></div>');
    c.innerHTML+='<div class="rmx-snapshot-focus">'
-     +card('Amanda execution right now','This mirrors what her Today screen is asking her to finish.','<div class="rmx-mini-list">'+(execRows.join('')||'<div class="rmx-empty" style="padding:18px">Amanda’s current daily execution is caught up.</div>')+'</div><div style="margin-top:11px"><button class="rmx-btn" data-rmx-jump="amanda">Open Amanda</button></div>')
+     +card('Amanda execution right now','This mirrors what her Today screen is asking her to finish.','<div class="rmx-mini-list">'+(execRows.join('')||'<div class="rmx-empty" style="padding:18px">Amanda’s current daily execution is caught up.</div>')+'</div><div style="margin-top:11px"><button class="rmx-btn" data-rmx-jump="amandatracker">Open Amanda Tracker</button></div>')
      +card('What needs you now','Director follow-ups + Amanda → Nyny graduation reviews.','<div class="rmx-mini-list">'+needHtml+'</div><div style="margin-top:11px"><button class="rmx-btn" data-rmx-jump="myday">Open My Day</button></div>')
      +'</div>';
  }
@@ -17827,13 +17829,32 @@ window.rmAuditVisibleButtons=function(){
  window.rmxBuildCoaching=()=>{const g=$('rmxCgGood')?.value.trim()||'',i=$('rmxCgImprove')?.value.trim()||'',a=$('rmxCgAsk')?.value.trim()||'',cl=$('rmxCgClose')?.value.trim()||'';$('rmxCgPreview').value='Amanda,\n\n'+g+'\n\n'+i+'\n\n'+a+'\n\n'+cl+'\n\nBest,\nNyny'};
  window.rmxCopyCoaching=async()=>{rmxBuildCoaching();try{await navigator.clipboard.writeText($('rmxCgPreview').value);toast('Coaching email copied ✓','success')}catch(e){$('rmxCgPreview').select();document.execCommand('copy');toast('Coaching email copied ✓','success')}};
  window.rmxSaveCoaching=async()=>{rmxBuildCoaching();const notes=$('rmxCgPreview').value;try{const finalNotes=typeof appendRmMeta==='function'?appendRmMeta(notes,'Nyny','','',['Nyny'],[],''):notes;await sbFetch('amanda_activities',{method:'POST',body:JSON.stringify({agent_name:'Amanda',act_type:'Amanda Coaching / Development',act_date:todayS(),outcome:'Completed',notes:finalNotes,follow_up_date:null})});R.cache=null;toast('Amanda coaching saved ✓','success');rmxClose();go('amanda',true)}catch(e){toast('Could not save coaching: '+e.message,'error')}};
- window.rmxBoot=boot;const baseSwitch=window.switchTab;window.switchTab=function(name){if(name==='daniel'){document.body.classList.add('rmx-director-site');document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active',t.dataset.tab==='daniel'));document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));const v=$('view-daniel');if(v){v.style.removeProperty('display');v.classList.add('active')}document.body.classList.add('rmx-director-active');boot();return}document.body.classList.remove('rmx-director-active','rmx-director-site');return baseSwitch?baseSwitch(name):undefined};
+ window.rmxShowAmandaTracker=function(){
+  try{
+    document.body.classList.remove('rm-director-route','rmx-director-active','rmx-director-site');
+    document.body.classList.add('rm-amanda-route','rmx-management-previewing-amanda');
+    const dv=$('view-daniel');if(dv){dv.classList.remove('active');dv.style.setProperty('display','none','important')}
+    if(typeof window.switchTab==='function')window.switchTab('week');
+    let bar=$('rmxAmandaPreviewBar');
+    if(!bar){bar=document.createElement('div');bar.id='rmxAmandaPreviewBar';bar.style.cssText='position:sticky;top:0;z-index:100000;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:9px 16px;background:#fff;border-bottom:1px solid #dedbd5;box-shadow:0 2px 8px rgba(0,0,0,.06);font:600 13px Calibri,Segoe UI,Arial,sans-serif';bar.innerHTML='<span>Viewing Amanda\'s live tracker</span><button type="button" onclick="rmxReturnToManagement()" style="border:1px solid #cfcfc8;background:#f7f7f3;border-radius:9px;padding:7px 11px;cursor:pointer;font:inherit">Back to Management View</button>';document.body.insertBefore(bar,document.body.firstChild)}
+    bar.style.display='flex';
+  }catch(e){console.error('Amanda tracker preview failed',e);openAmandaMode()}
+};
+window.rmxReturnToManagement=function(){
+  try{
+    const bar=$('rmxAmandaPreviewBar');if(bar)bar.style.display='none';
+    document.body.classList.remove('rm-amanda-route','rmx-management-previewing-amanda');
+    document.body.classList.add('rm-director-route');
+    if(typeof window.switchTab==='function')window.switchTab('daniel');else boot();
+  }catch(e){console.error('Return to Management failed',e);location.hash='#director'}
+};
+window.rmxBoot=boot;const baseSwitch=window.switchTab;window.switchTab=function(name){if(name==='daniel'){document.body.classList.add('rmx-director-site');document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active',t.dataset.tab==='daniel'));document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));const v=$('view-daniel');if(v){v.style.removeProperty('display');v.classList.add('active')}document.body.classList.add('rmx-director-active');boot();return}document.body.classList.remove('rmx-director-active','rmx-director-site');return baseSwitch?baseSwitch(name):undefined};
 })();
 </script>
 
 <script id="v211-final-director-route-js">
 (function(){
- function isDirector(){try{return location.hash==='#director'||new URLSearchParams(location.search).get('director')==='1'}catch(e){return false}}
+ function isDirector(){try{const path=String(location.pathname||'').toLowerCase();return /\/director(?:\.html)?$/.test(path)||location.hash==='#director'||new URLSearchParams(location.search).get('director')==='1'}catch(e){return false}}
  function ensureView(){let v=document.getElementById('view-daniel');if(v)return v;v=document.createElement('div');v.id='view-daniel';v.className='view';const host=document.querySelector('.app')||document.body;host.appendChild(v);return v}
  function apply(){
    const dir=isDirector();
