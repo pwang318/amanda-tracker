@@ -1048,6 +1048,41 @@ body.rm-director-route #view-daniel{display:block!important}
 #v198ModeHelper{font-size:10px;color:#6F6575;margin-top:5px;line-height:1.4}
 </style>
 
+
+<style id="v200-director-root-css">
+#v200DirectorRoot{display:none}
+body.rm-director-route #v200DirectorRoot{display:block!important}
+body.rm-director-route .view,
+body.rm-director-route #rmxDirectorApp,
+body.rm-director-route #rmxApp,
+body.rm-director-route #op3Shell,
+body.rm-director-route #zenMgmtShell,
+body.rm-director-route #directorShell{display:none!important}
+.v200-wrap{max-width:1220px;margin:0 auto;padding:26px 28px 46px;font-family:Calibri,"Segoe UI",Arial,sans-serif;color:#26362F}
+.v200-head{display:flex;justify-content:space-between;gap:18px;align-items:flex-start;margin-bottom:14px}.v200-head h1{font-size:28px;margin:2px 0 4px}.v200-head p{font-size:13px;color:#6F7973;margin:0}
+.v200-eyebrow{font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:#587363;font-weight:700}
+.v200-btn{background:#fff;border:1px solid #D8DFDA;border-radius:9px;padding:8px 12px;font-weight:700;cursor:pointer}
+.v200-status{background:#EEF6F0;border:1px solid #D4E5D8;border-left:4px solid #5C8A67;border-radius:10px;padding:9px 11px;font-size:11px;color:#4D6855;margin-bottom:12px}
+.v200-kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-bottom:12px}.v200-kpi{background:#fff;border:1px solid #DDE2DE;border-radius:12px;padding:14px;text-align:left;cursor:pointer}
+.v200-kpi span{display:block;font-size:10.5px;font-weight:700;color:#66726C;text-transform:uppercase}.v200-kpi strong{display:block;font-size:26px;margin:4px 0}.v200-kpi small{font-size:10.5px;color:#818985}
+.v200-card{background:#fff;border:1px solid #DDE2DE;border-radius:13px;padding:15px;margin-bottom:12px}.v200-card-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;margin-bottom:10px}.v200-card-head h2{font-size:17px;margin:0 0 2px}.v200-card-head p{font-size:11px;color:#7A837E;margin:0}.v200-score{font-size:24px;font-weight:700;color:#8E493E}
+.v200-tier-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.v200-tier{background:#F8F9F8;border:1px solid #E5E9E6;border-radius:10px;padding:11px}.v200-tier b{font-size:11px}.v200-tier strong{display:block;font-size:24px;margin:4px 0}.v200-tier span,.v200-tier small{display:block;font-size:10.5px;color:#7A837E}.v200-note{font-size:10.5px;color:#69736D;margin-top:10px}
+.v200-two{display:grid;grid-template-columns:1.3fr 1fr;gap:12px}.v200-item{display:flex;justify-content:space-between;gap:12px;padding:8px 0;border-bottom:1px solid #EDF0EE;font-size:11px}.v200-item:last-child{border-bottom:0}.v200-item b{color:#34473D}.v200-item span{color:#6F7973;text-align:right}.v200-red{color:#A2433B!important}.v200-green{color:#3D7350!important}.v200-amber{color:#8A671C!important}
+@media(max-width:900px){.v200-kpis,.v200-tier-grid,.v200-two{grid-template-columns:1fr}.v200-wrap{padding:16px}}
+</style>
+
+<style id="v201-meaningful-preflight-style">
+#v198MeaningfulBtn.v201-complete{border-color:#5D8A69!important;background:#EFF7F1!important;color:#355A40!important}
+#v198MeaningfulBtn.v201-complete span:after{content:" · Portfolio complete";font-weight:700;color:#3E6A4D}
+</style>
+
+<style id="v203-direct-modal-css">
+#wp37PartnerCheckinModal.v203-force-open,
+#wp37PartnerCheckinModal.open{
+  display:flex!important;
+}
+</style>
+
 </head>
 <body>
 <input accept="image/*" id="v95ProfilePhotoInput" onchange="v95HandlePhotoUpload(event)" style="display:none" type="file"/>
@@ -7780,8 +7815,10 @@ function wp37ClearCheckin(){
   wp37LeakageChanged();
 }
 function wp37CancelPartnerCheckin(){
-  document.getElementById("wp37PartnerCheckinModal")?.classList.remove("open");
+  const m=document.getElementById("wp37PartnerCheckinModal");
+  if(m){m.classList.remove("open");m.style.removeProperty("display");m.style.removeProperty("z-index");}
   wp37PendingPartnerSave=null;
+  try{v175Open("v175OutreachModal")}catch(e){}
 }
 async function wp37NeedsPartnerCheckin(agentName,actType,outcome,owner){
   if(wp37PartnerGateBypass||owner!=="Amanda"||!agentName||WP37_SKIP_TYPES.has(actType)||!WP37_MEANINGFUL_OUTCOMES.has(outcome))return false;
@@ -7808,25 +7845,73 @@ async function wp37OpenPartnerCheckin(agentName,resumeKind,opts){
   wp37ClearCheckin();
   opts=opts||{};
   const optional=!!opts.optional;
-  const title=document.getElementById("wp37CheckinAgent");if(title)title.textContent=properCase(agentName)+(optional?" · quick log — Partner Check-In is optional":" · complete Partner Check-In, then save the touch");
-  const modalTitle=document.getElementById("wp37ModalTitle");if(modalTitle)modalTitle.textContent=optional?"Partner Check-In — Optional for This Quick Log":"Portfolio Execution — Complete Before Moving On";
-  const modalSub=document.getElementById("wp37ModalSub");if(modalSub)modalSub.innerHTML=optional?"<strong>Quick log:</strong> save the activity now, or use this check-in if the conversation gave you useful relationship intelligence. You do not need to fill every field just to record the quick activity.":"<strong>This opened because you had a real conversation with an active relationship.</strong> Complete the RM playbook questions now so the relationship has a clear health signal, growth opportunity and next move. Use what naturally came up in the conversation. If a topic truly was not discussed, choose <strong>Not discussed today</strong> rather than guessing. Then save the touch and portfolio together.";
-  const skipBtn=document.getElementById("wp37SkipBtn");if(skipBtn)skipBtn.style.display=optional?"":"none";
+
+  // Set the pending state FIRST.
+  wp37PendingPartnerSave={agentName,resumeKind,optional};
+
+  // Paint the modal immediately. Do not wait on Supabase/profile hydration.
+  const title=document.getElementById("wp37CheckinAgent");
+  if(title)title.textContent=properCase(agentName)+(optional?" · quick log — Partner Check-In is optional":" · complete Portfolio Execution, then return to Log Touch");
+
+  const modalTitle=document.getElementById("wp37ModalTitle");
+  if(modalTitle)modalTitle.textContent=optional?"Partner Check-In — Optional for This Quick Log":"Portfolio Execution — Complete Before Moving On";
+
+  const modalSub=document.getElementById("wp37ModalSub");
+  if(modalSub)modalSub.innerHTML=optional
+    ?"<strong>Quick log:</strong> save the activity now, or use this check-in if the conversation gave you useful relationship intelligence."
+    :"<strong>You chose Meaningful Conversation.</strong> Complete the RM playbook questions now. Then save Portfolio Execution and return to Log Touch to finish the outcome/notes.";
+
+  const skipBtn=document.getElementById("wp37SkipBtn");
+  if(skipBtn)skipBtn.style.display=optional?"":"none";
+
+  const cs=document.getElementById("wp73ContactStatus");
+  if(cs)cs.textContent="Loading current contact details…";
+
+  const modal=document.getElementById("wp37PartnerCheckinModal");
+  if(modal){
+    modal.classList.add("open");
+    modal.style.display="flex";
+    modal.style.zIndex="100500";
+  }
+
+  // Force full Portfolio Health mode immediately.
+  try{if(typeof v115SetPartnerMode==="function")v115SetPartnerMode("health")}catch(e){}
+
+  // Hydrate profile/contact information AFTER the modal is already visible.
   try{
     const rows=await sbFetch("agent_profiles?agent_name=ilike."+encodeURIComponent(agentName)+"&select=agent_name,phone,email,address,birthday,partner_goals,partner_pain_points,referral_leakage_notes,next_growth_opportunity,growth_opportunity_deadline,satisfaction_rating,competitor_risk_flag&limit=5").catch(()=>[]);
-    if(rows.length===1){
-      const p=rows[0];
-      if(document.getElementById("wp37Goals"))document.getElementById("wp37Goals").placeholder=(p.partner_goals?"Last known: "+p.partner_goals:"What did you learn about their business/focus today?");
-      if(document.getElementById("wp37Pain"))document.getElementById("wp37Pain").placeholder=(p.partner_pain_points?"Last known: "+p.partner_pain_points:"What do they need from us right now?");
-      if(document.getElementById("wp37NextMove"))document.getElementById("wp37NextMove").placeholder=(p.next_growth_opportunity?"Prior move: "+p.next_growth_opportunity:"What is the next meaningful move?");
-      if(p.satisfaction_rating&&document.getElementById("wp37Satisfaction"))document.getElementById("wp37Satisfaction").value=String(p.satisfaction_rating);
-      [["wp73Phone",p.phone],["wp73Email",p.email],["wp73Address",p.address],["wp73Birthday",p.birthday]].forEach(([id,val])=>{const e=document.getElementById(id);if(e&&val)e.value=String(val);});
-      const missing=[];if(!p.phone)missing.push("phone");if(!p.email)missing.push("email");if(!p.address)missing.push("home mailing address");if(!p.birthday)missing.push("birthday");
-      const cs=document.getElementById("wp73ContactStatus");if(cs)cs.innerHTML=missing.length?"<strong>Missing:</strong> "+missing.join(", ")+". Ask for what fits naturally on this call.":"✓ Phone, email, home mailing address and birthday are already on file.";
+    if(rows.length){
+      const key=String(agentName||"").trim().toLowerCase();
+      const p=rows.find(r=>String(r.agent_name||"").trim().toLowerCase()===key)||rows[0];
+
+      if(document.getElementById("wp37Goals"))
+        document.getElementById("wp37Goals").placeholder=(p.partner_goals?"Last known: "+p.partner_goals:"What did you learn about their business/focus today?");
+      if(document.getElementById("wp37Pain"))
+        document.getElementById("wp37Pain").placeholder=(p.partner_pain_points?"Last known: "+p.partner_pain_points:"What do they need from us right now?");
+      if(document.getElementById("wp37NextMove"))
+        document.getElementById("wp37NextMove").placeholder=(p.next_growth_opportunity?"Prior move: "+p.next_growth_opportunity:"What is the next meaningful move?");
+      if(p.satisfaction_rating&&document.getElementById("wp37Satisfaction"))
+        document.getElementById("wp37Satisfaction").value=String(p.satisfaction_rating);
+
+      [["wp73Phone",p.phone],["wp73Email",p.email],["wp73Address",p.address],["wp73Birthday",p.birthday]].forEach(([id,val])=>{
+        const e=document.getElementById(id);if(e&&val)e.value=String(val);
+      });
+
+      const missing=[];
+      if(!p.phone)missing.push("phone");
+      if(!p.email)missing.push("email");
+      if(!p.address)missing.push("home mailing address");
+      if(!p.birthday)missing.push("birthday");
+      if(cs)cs.innerHTML=missing.length
+        ?"<strong>Missing:</strong> "+missing.join(", ")+". Ask for what fits naturally on this call."
+        :"✓ Phone, email, home mailing address and birthday are already on file.";
+    }else{
+      if(cs)cs.textContent="No existing contact profile found. You can still complete Portfolio Execution and add what you know.";
     }
-  }catch(e){}
-  wp37PendingPartnerSave={agentName,resumeKind,optional};
-  document.getElementById("wp37PartnerCheckinModal")?.classList.add("open");
+  }catch(e){
+    console.warn("Portfolio hydration",e);
+    if(cs)cs.textContent="Current contact details could not load. Portfolio Execution is still available.";
+  }
 }
 async function wp37GatePartnerTouch(agentName,actType,outcome,owner,resumeKind){
   try{
@@ -7915,8 +8000,21 @@ async function wp37SavePartnerCheckin(){
     if(phone)payload.phone=phone;if(email)payload.email=email;if(address)payload.address=address;if(birthday)payload.birthday=birthday;
     await sbProfileWrite("agent_profiles?agent_name=eq."+encodeURIComponent(match.exact.agent_name),"PATCH",payload);
     const pending={...wp37PendingPartnerSave};
-    document.getElementById("wp37PartnerCheckinModal")?.classList.remove("open");
+    {
+      const m=document.getElementById("wp37PartnerCheckinModal");
+      if(m){m.classList.remove("open");m.style.removeProperty("display");m.style.removeProperty("z-index");}
+    }
     wp37PendingPartnerSave=null;
+
+    if(pending.resumeKind==="v198-preflight"){
+      window._v198PortfolioPreflight=true;
+      window._v198PortfolioAgent=pending.agentName||"";
+      try{v175Open("v175OutreachModal");}catch(e){}
+      try{toast("Portfolio Execution complete. Finish the outcome and notes, then Save touch.","success",3500);}catch(e){}
+      loadPortfolioReview?.();
+      return;
+    }
+
     wp37PartnerGateBypass=true;
     try{
       if(pending.resumeKind==="quick")await quickLogSave();
@@ -16102,8 +16200,8 @@ window.rmAuditVisibleButtons=function(){
     <button type="button" id="v198QuickBtn" class="v198-mode active" onclick="v198SetLogMode('quick')">
       <b>Quick Log</b><span>Routine touch · no Portfolio questions</span>
     </button>
-    <button type="button" id="v198MeaningfulBtn" class="v198-mode" onclick="v198SetLogMode('meaningful')">
-      <b>Meaningful Conversation</b><span>Real relationship conversation · Portfolio Execution required</span>
+    <button type="button" id="v198MeaningfulBtn" class="v198-mode" onclick="v203OpenMeaningfulPortfolio()">
+      <b>Meaningful Conversation</b><span>Click to open Portfolio Execution now</span>
     </button>
   </div>
   <input type="hidden" id="v198LogMode" value="quick">
@@ -16112,7 +16210,7 @@ window.rmAuditVisibleButtons=function(){
 <div class="v175-field"><label>Outcome</label><select id="v175OutreachOutcome">
         <option value="">Choose outcome...</option>
         <option>Connected</option><option>Meeting scheduled</option><option>Left voicemail</option><option>No answer</option><option>Follow-up needed</option><option>Not interested</option>
-      </select><div style="font-size:10px;color:var(--text-4);margin-top:4px">Connected / Meeting scheduled / Follow-up needed on an active Amanda-owned relationship → Portfolio Execution opens when you save.</div></div>
+      </select><div style="font-size:10px;color:var(--text-4);margin-top:4px">Click Meaningful Conversation to open Portfolio Execution immediately. Complete it, return here, then finish the outcome/notes and save the touch.</div></div>
       <div class="v175-field"><label>Next follow-up</label><input id="v175OutreachFollowup" type="date"></div>
       <div class="v175-field full"><label>What happened / next move</label><textarea id="v175OutreachNotes" placeholder="What happened? What did you learn? What is the next move?"></textarea></div>
     </div>
@@ -16249,6 +16347,8 @@ window.rmAuditVisibleButtons=function(){
     document.getElementById('v175OutreachNotes').value='';
     document.getElementById('v175OutreachTitle').textContent=(type==='Cold Calls'?'Log Outreach':'Log Touch');
     // Default to Quick Log every time. Amanda deliberately chooses Meaningful Conversation when appropriate.
+    window._v198PortfolioPreflight=false;
+    window._v198PortfolioAgent='';
     if(typeof v198SetLogMode==='function')v198SetLogMode('quick');
     showErr('v175OutreachError',''); v175Open('v175OutreachModal');
   };
@@ -16275,21 +16375,16 @@ window.rmAuditVisibleButtons=function(){
         try{
           if(typeof wp37NeedsPartnerCheckin==='function')needs=await wp37NeedsPartnerCheckin(name,type,outcome,owner);
         }catch(e){console.warn('Portfolio gate check',e)}
-        if(needs && typeof wp37OpenPartnerCheckin==='function'){
-          // Hold the activity until Portfolio Execution is completed.
-          window._v198PendingOutreach={body,name,type,outcome,notes,follow};
-          v175Close('v175OutreachModal');
-          try{wp37OpenPartnerCheckin(name,body)}catch(e){
-            // Fallback: if portfolio modal cannot open, do not lose the touch.
-            await sbFetch('amanda_activities',{method:'POST',prefer:'return=minimal',body:JSON.stringify(body)});
-            try{if(typeof rmRefreshExecutionQueues==='function')await rmRefreshExecutionQueues()}catch(_){}
-          }
+        if(needs && !(window._v198PortfolioPreflight&&String(window._v198PortfolioAgent||'').toLowerCase()===name.toLowerCase())){
+          if(btn){btn.disabled=false;btn.textContent='Save touch'}
+          showErr('v175OutreachError','Complete Portfolio Execution first. Click Meaningful Conversation to open it.');
           return;
         }
       }
 
-      // Quick Log, or meaningful touch that does not qualify for Portfolio Execution.
+      // Quick Log saves directly. Meaningful Conversation saves after its Portfolio Execution pre-step.
       await sbFetch('amanda_activities',{method:'POST',prefer:'return=minimal',body:JSON.stringify(body)});
+      window._v198PortfolioPreflight=false;window._v198PortfolioAgent='';
       v175Close('v175OutreachModal');
       try{if(typeof rmRefreshExecutionQueues==='function')await rmRefreshExecutionQueues()}catch(e){}
     }catch(e){
@@ -16572,7 +16667,7 @@ window.rmAuditVisibleButtons=function(){
           +'<li>How supported does the relationship feel?</li>'
           +'<li>What is the next growth move and when will we do it?</li>'
           +'</ol>'
-          +'<div style="margin-top:5px"><strong>Choose Meaningful Conversation only when Amanda had a real relationship conversation. Then Portfolio Execution opens after Save touch and before the activity is finalized.</strong><br><span style="font-size:10px">It does not open for No answer or Left voicemail.</span></div>';
+          +'<div style="margin-top:5px"><strong>Choose Meaningful Conversation only after a real relationship conversation. Portfolio Execution opens immediately; complete it, return here, then finish the outcome/notes and Save touch.</strong><br><span style="font-size:10px">It does not open for No answer or Left voicemail.</span></div>';
       }else{
         rule.classList.remove('v177-portfolio-call');
         rule.innerHTML='<strong>Cold Call:</strong> first outreach to a brand-new prospect. Keep it focused: connect, ask for the meeting, log the outcome, move to the next name.';
@@ -17191,26 +17286,319 @@ window.rmAuditVisibleButtons=function(){
 
 <script id="v198-quick-log-controller">
 (function(){
-  window.v198SetLogMode=function(mode){
+  window.v198SetLogMode=async function(mode){
     mode=mode==='meaningful'?'meaningful':'quick';
     const hidden=document.getElementById('v198LogMode');if(hidden)hidden.value=mode;
     const q=document.getElementById('v198QuickBtn'),m=document.getElementById('v198MeaningfulBtn');
     if(q)q.classList.toggle('active',mode==='quick');
     if(m)m.classList.toggle('active',mode==='meaningful');
+
+    if(mode==='quick'){
+      window._v198PortfolioPreflight=false;
+      window._v198PortfolioAgent='';
+      return;
+    }
+
+    const name=(document.getElementById('v175OutreachAgent')?.value||'').trim();
+    const type=(document.getElementById('v175OutreachType')?.value||'Agent Talk-to').trim();
+    if(!name){
+      try{showErr('v175OutreachError','Agent name is required.')}catch(e){}
+      return;
+    }
+
+    // If Portfolio Execution was already completed for this exact touch, don't reopen it.
+    if(window._v198PortfolioPreflight&&String(window._v198PortfolioAgent||'').toLowerCase()===name.toLowerCase())return;
+
+    // Meaningful Conversation is an intentional user choice. Do NOT gate this click behind
+    // a separate ownership/profile eligibility fetch. The Amanda work queue has already
+    // established the relationship context. Open Portfolio Execution immediately.
+    try{
+      showErr('v175OutreachError','');
+      v175Close('v175OutreachModal');
+
+      // Open the Portfolio modal synchronously before any profile/network work.
+      const modal=document.getElementById('wp37PartnerCheckinModal');
+      if(modal){
+        modal.classList.add('open');
+        modal.style.display='flex';
+        modal.style.zIndex='100500';
+      }
+
+      // Hydrate asynchronously after the modal is already visible.
+      wp37OpenPartnerCheckin(name,'v198-preflight',{
+        optional:false,
+        forceHealth:true,
+        actType:type
+      }).catch(e=>console.warn('Portfolio hydration/open',e));
+    }catch(e){
+      console.warn('Open Portfolio Execution',e);
+      try{
+        v175Open('v175OutreachModal');
+        v198SetLogModeVisualOnly?.('meaningful');
+        showErr('v175OutreachError','Could not open Portfolio Execution. Try Meaningful Conversation again.');
+      }catch(_){}
+    }
   };
 
-  // If the existing Portfolio Execution workflow exposes its normal commit function,
-  // let that workflow remain authoritative. This bridge only ensures the pending outreach
-  // is not accidentally double-posted.
-  const originalCommit=window.wp37CommitPendingTouch;
-  if(typeof originalCommit==='function'&&!originalCommit.__v198){
+  // Used only for restoring the visual selection if another modal fails.
+  window.v198SetLogModeVisualOnly=function(mode){
+    const hidden=document.getElementById('v198LogMode');if(hidden)hidden.value=mode;
+    const q=document.getElementById('v198QuickBtn'),m=document.getElementById('v198MeaningfulBtn');
+    if(q)q.classList.toggle('active',mode==='quick');
+    if(m)m.classList.toggle('active',mode==='meaningful');
+  };
+})();
+</script>
+
+
+<div id="v200DirectorRoot">
+  <div class="v200-wrap">
+    <div class="v200-head">
+      <div>
+        <div class="v200-eyebrow">RM Tracker · Management View</div>
+        <h1>Director Dashboard</h1>
+        <p>Same live Supabase data as Amanda’s tracker. Where are we? Where should we be? Are we on pace?</p>
+      </div>
+      <button class="v200-btn" onclick="v200LoadManagement(true)">Refresh</button>
+    </div>
+    <div id="v200Status" class="v200-status">Loading management data…</div>
+
+    <div class="v200-kpis">
+      <button class="v200-kpi" onclick="v200Drill('cold')"><span>Amanda Cold Calls</span><strong id="v200Cold">—</strong><small>25/day</small></button>
+      <button class="v200-kpi" onclick="v200Drill('talk')"><span>Amanda Talk-to’s</span><strong id="v200Talk">—</strong><small>20/day</small></button>
+      <button class="v200-kpi" onclick="v200Drill('meet')"><span>New Realtor Meetings</span><strong id="v200Meet">—</strong><small>20/month team goal</small></button>
+      <button class="v200-kpi" onclick="v200Drill('portfolio')"><span>Portfolio Execution</span><strong id="v200Portfolio">—</strong><small>Missing relationship updates</small></button>
+    </div>
+
+    <div class="v200-card">
+      <div class="v200-card-head">
+        <div><h2>Tier Growth</h2><p>Daniel’s scorecard · 50% of total score</p></div>
+        <div class="v200-score" id="v200TierScore">— / 50</div>
+      </div>
+      <div class="v200-tier-grid">
+        <div class="v200-tier"><b>Channel</b><strong id="v200Channel">—</strong><span id="v200ChannelTarget">Target —</span><small>15%</small></div>
+        <div class="v200-tier"><b>A</b><strong id="v200A">—</strong><span id="v200ATarget">Target —</span><small>15%</small></div>
+        <div class="v200-tier"><b>B</b><strong id="v200B">—</strong><span id="v200BTarget">Target —</span><small>20%</small></div>
+      </div>
+      <div class="v200-note">Year-end goal: <b>4 Channel / 20 A / 30 B</b>. Individual C→B, B→A and A→Channel moves remain diagnostic; score is based on net tier counts.</div>
+    </div>
+
+    <div class="v200-two">
+      <div class="v200-card">
+        <div class="v200-card-head"><div><h2>Amanda execution right now</h2><p>What her Today screen still needs.</p></div></div>
+        <div id="v200AmandaNow"></div>
+      </div>
+      <div class="v200-card">
+        <div class="v200-card-head"><div><h2>Needs Nyny</h2><p>Director follow-ups and escalations.</p></div></div>
+        <div id="v200NeedsNyny"></div>
+      </div>
+    </div>
+
+    <div class="v200-two">
+      <div class="v200-card">
+        <div class="v200-card-head"><div><h2>Portfolio health</h2><p>Amanda-owned active relationships.</p></div></div>
+        <div id="v200Health"></div>
+      </div>
+      <div class="v200-card">
+        <div class="v200-card-head"><div><h2>LP / RM handoffs</h2><p>Open items needing response.</p></div></div>
+        <div id="v200Handoffs"></div>
+      </div>
+    </div>
+
+    <div id="v200Drill" class="v200-card" style="display:none"></div>
+  </div>
+</div>
+
+
+<script id="v200-director-root-js">
+(function(){
+ const N=s=>String(s||'').trim().toLowerCase().replace(/\s+/g,' ');
+ const D=()=>{try{return typeof today==='function'?today():new Date().toISOString().slice(0,10)}catch(e){return new Date().toISOString().slice(0,10)}};
+ const E=s=>{try{return escHtml(String(s==null?'':s))}catch(e){return String(s==null?'':s)}};
+ const qTalk=t=>new Set(['Agent Talk-to','Active Agent Talk-to','Active Agent Check-in','Reconnect Outreach','CTC Call','Under Contract Call','Birthday Outreach','Holiday Outreach','Agent Appreciation','Market Update','Market Update Call','Sent Market Report','Sent Referral','Co-Marketing Discussion','New Agent Follow-up','Closed Deal Thank You','Partner Meeting','Break Breads','Retention Meeting']).has(String(t||'').trim());
+ let cache=null,promise=null;
+ async function read(path){try{const r=await sbFetch(path);return Array.isArray(r)?r:[]}catch(e){console.warn('Mgmt read',path,e);return[]}}
+ function targetFor(date){const ym=String(date||D()).slice(0,7);if(ym<='2026-09')return{channel:2,a:14,b:21,label:'9/30 Target'};if(ym==='2026-10')return{channel:2,a:16,b:24,label:'10/31 Target'};if(ym==='2026-11')return{channel:3,a:18,b:27,label:'11/30 Target'};return{channel:4,a:20,b:30,label:'12/31 Goal'}}
+ function tierOf(p){const c=Number(p.closes_past_year||p.rolling_12m_closes||p.closes||0),l=Number(p.total_leads_past_year||p.rolling_leads||p.leads||0);if(c>=10)return'Channel';if(c>=4)return'A';if(c>=2)return'B';if(c>=1||l>=1)return'C';return String(p.tier||p.powerbi_level||'').trim()}
+ function owners(rows){const m={};(rows||[]).forEach(r=>{if(!r||!r.agent_name)return;const k=N(r.agent_name),c=m[k]||{rm:'',lp:'',removed:false};if(r.lp==='__REMOVED__')c.removed=true;else if(r.lp&&!c.lp)c.lp=r.lp;const nr=N(r.rm),cr=N(c.rm);if(nr==='nyny'||(nr==='amanda'&&cr!=='nyny')||(!c.rm&&r.rm))c.rm=r.rm||c.rm;m[k]=c});return m}
+ function part(a,t,w){return t?Math.max(0,Math.min(w,w*a/t)):w}
+ function item(a,b,c){return `<div class="v200-item"><b>${E(a)}</b><span class="${c||''}">${E(b)}</span></div>`}
+
+ window.v200LoadManagement=async function(force){
+   if(promise)return promise;if(cache&&!force){render(cache);return cache}
+   const st=document.getElementById('v200Status');if(st)st.textContent='Loading management data…';
+   promise=(async()=>{const d=D(),month=d.slice(0,7)+'-01';const [acts,profiles,assign,flags]=await Promise.all([read('amanda_activities?select=*&limit=10000'),read('agent_profiles?select=*&limit=5000'),read('agent_assignments?select=*&limit=5000'),read('lp_rm_flags?select=*&limit=5000')]);cache={d,month,acts,profiles,assign,flags};render(cache);return cache})().finally(()=>promise=null);
+   return promise;
+ };
+ function render(s){
+   const om=owners(s.assign),ta=s.acts.filter(a=>String(a.act_date||a.activity_date||'').slice(0,10)===s.d);
+   const cold=ta.filter(a=>['Cold Calls','Cold Call'].includes(String(a.act_type||'').trim())).length;
+   const talks=ta.filter(a=>qTalk(a.act_type)).length;
+   const meetings=s.acts.filter(a=>a.act_type==='New Realtor Meeting'&&String(a.act_date||a.activity_date||'').slice(0,10)>=s.month).length;
+   const seen=new Set(),cnt={Channel:0,A:0,B:0,C:0};s.profiles.forEach(p=>{const k=N(p.agent_name),o=om[k]||{};if(!k||seen.has(k)||o.removed||p.do_not_contact===true||String(p.relationship_status||'active').toLowerCase()==='inactive')return;seen.add(k);const t=tierOf(p);if(cnt[t]!=null)cnt[t]++});
+   const tg=targetFor(s.d),score=part(cnt.Channel,tg.channel,15)+part(cnt.A,tg.a,15)+part(cnt.B,tg.b,20);
+   const pm={};s.profiles.forEach(p=>{if(p&&p.agent_name)pm[N(p.agent_name)]=p});
+   const meaningful=ta.filter(a=>qTalk(a.act_type)&&!/no answer|left voicemail|not interested/i.test(String(a.outcome||'')));
+   const missing=[...new Set(meaningful.filter(a=>{const p=pm[N(a.agent_name)]||{},o=om[N(a.agent_name)]||{};return N(o.rm)==='amanda'&&!p.next_growth_opportunity}).map(a=>a.agent_name))];
+
+   document.getElementById('v200Cold').textContent=cold+' / 25';document.getElementById('v200Talk').textContent=talks+' / 20';document.getElementById('v200Meet').textContent=meetings+' / 20';document.getElementById('v200Portfolio').textContent=missing.length;
+   document.getElementById('v200Channel').textContent=cnt.Channel;document.getElementById('v200A').textContent=cnt.A;document.getElementById('v200B').textContent=cnt.B;document.getElementById('v200ChannelTarget').textContent=tg.label+': '+tg.channel;document.getElementById('v200ATarget').textContent=tg.label+': '+tg.a;document.getElementById('v200BTarget').textContent=tg.label+': '+tg.b;document.getElementById('v200TierScore').textContent=score.toFixed(1)+' / 50';
+
+   let now=[];if(cold<25)now.push(item('Cold Calls',25-cold+' left today'));if(talks<20)now.push(item('Talk-to’s',20-talks+' left today'));if(missing.length)now.push(item('Portfolio Execution',missing.length+' missing update'+(missing.length===1?'':'s'),'v200-amber'));document.getElementById('v200AmandaNow').innerHTML=now.join('')||item('Core execution','Caught up','v200-green');
+
+   const flags=(s.flags||[]).filter(f=>!['closed','resolved','complete','completed'].includes(String(f.status||'open').toLowerCase()));document.getElementById('v200Handoffs').innerHTML=flags.length?flags.slice(0,8).map(f=>item(f.agent_name||f.agent||'Open handoff',f.reason||f.notes||f.status||'Needs RM response')).join(''):item('LP / RM handoffs','None open','v200-green');
+   const needs=flags.filter(f=>/nyny|director|escalat/i.test(String(f.owner||f.assigned_to||f.reason||f.notes||'')));document.getElementById('v200NeedsNyny').innerHTML=needs.length?needs.slice(0,8).map(f=>item(f.agent_name||f.agent||'Director item',f.reason||f.notes||'Needs follow-up','v200-amber')).join(''):item('Director items','Nothing open right now','v200-green');
+
+   let red=0,yellow=0,green=0;s.profiles.forEach(p=>{const k=N(p.agent_name),o=om[k]||{};if(N(o.rm)!=='amanda'||o.removed||p.do_not_contact===true||String(p.relationship_status||'active').toLowerCase()==='inactive')return;const lead=p.latest_lead_date?Math.floor((new Date(s.d)-new Date(String(p.latest_lead_date).slice(0,10)))/86400000):999,lm=p.last_meaningful_contact_date?Math.floor((new Date(s.d)-new Date(String(p.last_meaningful_contact_date).slice(0,10)))/86400000):999;if(p.competitor_risk_flag||lead>=60)red++;else if(lead>=30||lm>=45)yellow++;else green++});
+   document.getElementById('v200Health').innerHTML=item('Red',red,'v200-red')+item('Yellow',yellow,'v200-amber')+item('Green',green,'v200-green');
+   const st=document.getElementById('v200Status');if(st)st.textContent='Live · same Supabase truth as Amanda’s tracker · '+s.d;
+ }
+ window.v200Drill=function(kind){if(!cache)return;const box=document.getElementById('v200Drill');let rows=[],title='';if(kind==='cold'){title='Cold Calls today';rows=cache.acts.filter(a=>String(a.act_date||a.activity_date||'').slice(0,10)===cache.d&&['Cold Calls','Cold Call'].includes(String(a.act_type||'').trim()))}else if(kind==='talk'){title='Talk-to’s today';rows=cache.acts.filter(a=>String(a.act_date||a.activity_date||'').slice(0,10)===cache.d&&qTalk(a.act_type))}else if(kind==='meet'){title='New Realtor Meetings this month';rows=cache.acts.filter(a=>a.act_type==='New Realtor Meeting'&&String(a.act_date||a.activity_date||'').slice(0,10)>=cache.month)}else{title='Portfolio Execution';rows=[]}box.style.display='block';box.innerHTML=`<div class="v200-card-head"><div><h2>${E(title)}</h2><p>${rows.length} records</p></div><button class="v200-btn" onclick="document.getElementById('v200Drill').style.display='none'">Close</button></div>`+(rows.length?rows.slice(0,100).map(r=>item(r.agent_name||'Unknown',(r.act_date||r.activity_date||'')+' · '+(r.outcome||r.notes||r.act_type||''))).join(''):'<div class="v200-status">No records to show.</div>')};
+
+ function boot(){
+   const dir=(typeof directorMode==='function'?directorMode():location.hash==='#director');if(!dir)return;
+   document.body.classList.add('rm-director-route');
+   const root=document.getElementById('v200DirectorRoot');if(root)root.style.display='block';
+   v200LoadManagement(false);
+ }
+ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
+ setTimeout(boot,350);
+})();
+</script>
+
+<script id="v201-meaningful-preflight-paint">
+(function(){
+  window.v201PaintMeaningfulComplete=function(){
+    const b=document.getElementById('v198MeaningfulBtn'),name=(document.getElementById('v175OutreachAgent')?.value||'').trim();
+    if(!b)return;
+    b.classList.toggle('v201-complete',!!(window._v198PortfolioPreflight&&String(window._v198PortfolioAgent||'').toLowerCase()===name.toLowerCase()));
+  };
+  const oldOpen=window.v175Open;
+  if(typeof oldOpen==='function')window.v175Open=function(id){const r=oldOpen.apply(this,arguments);if(id==='v175OutreachModal')setTimeout(v201PaintMeaningfulComplete,0);return r};
+})();
+</script>
+
+<script id="v203-direct-meaningful-opener">
+(function(){
+  window.v203OpenMeaningfulPortfolio=function(){
+    const name=(document.getElementById('v175OutreachAgent')?.value||'').trim();
+    const type=(document.getElementById('v175OutreachType')?.value||'Agent Talk-to').trim();
+
+    if(!name){
+      try{showErr('v175OutreachError','Agent name is required.')}catch(e){}
+      return;
+    }
+
+    // Mark mode as meaningful.
+    const hidden=document.getElementById('v198LogMode');
+    if(hidden)hidden.value='meaningful';
+    const q=document.getElementById('v198QuickBtn'),m=document.getElementById('v198MeaningfulBtn');
+    if(q)q.classList.remove('active');
+    if(m)m.classList.add('active');
+
+    // Preserve this touch so Portfolio can return here.
+    window._v203PendingMeaningful={name,type};
+
+    // Force Log Touch closed, regardless of inherited modal helpers.
+    const log=document.getElementById('v175OutreachModal');
+    if(log){
+      log.classList.remove('open');
+      log.style.setProperty('display','none','important');
+      log.setAttribute('aria-hidden','true');
+    }
+
+    // Force Portfolio visible immediately.
+    const portfolio=document.getElementById('wp37PartnerCheckinModal');
+    if(!portfolio){
+      try{showErr('v175OutreachError','Portfolio Execution form is missing from this build.')}catch(e){}
+      if(log){
+        log.style.removeProperty('display');
+        log.removeAttribute('aria-hidden');
+        log.classList.add('open');
+      }
+      return;
+    }
+
+    try{
+      wp37PendingPartnerSave={agentName:name,resumeKind:'v203-direct',optional:false};
+    }catch(e){}
+
+    try{wp37ClearCheckin()}catch(e){}
+
+    const agentEl=document.getElementById('wp37CheckinAgent');
+    if(agentEl)agentEl.textContent=(typeof properCase==='function'?properCase(name):name)+' · complete Portfolio Execution, then return to Log Touch';
+
+    const title=document.getElementById('wp37ModalTitle');
+    if(title)title.textContent='Portfolio Execution — Complete Before Moving On';
+
+    const sub=document.getElementById('wp37ModalSub');
+    if(sub)sub.innerHTML='<strong>You chose Meaningful Conversation.</strong> Complete the RM playbook questions now. Save Portfolio Execution, then return to Log Touch to finish the outcome and notes.';
+
+    const skip=document.getElementById('wp37SkipBtn');
+    if(skip)skip.style.display='none';
+
+    portfolio.removeAttribute('aria-hidden');
+    portfolio.classList.add('open');
+    portfolio.style.setProperty('display','flex','important');
+    portfolio.style.setProperty('z-index','200000','important');
+    portfolio.style.setProperty('visibility','visible','important');
+    portfolio.style.setProperty('opacity','1','important');
+
+    try{if(typeof v115SetPartnerMode==='function')v115SetPartnerMode('health')}catch(e){}
+
+    // Hydrate AFTER opening. Never block the modal.
+    Promise.resolve().then(async()=>{
+      try{
+        const rows=await sbFetch("agent_profiles?agent_name=ilike."+encodeURIComponent(name)+"&select=agent_name,phone,email,address,birthday,partner_goals,partner_pain_points,referral_leakage_notes,next_growth_opportunity,growth_opportunity_deadline,satisfaction_rating,competitor_risk_flag&limit=5").catch(()=>[]);
+        const key=name.toLowerCase();
+        const p=(rows||[]).find(r=>String(r.agent_name||'').trim().toLowerCase()===key)||(rows||[])[0];
+        if(!p)return;
+        if(document.getElementById('wp37Goals'))document.getElementById('wp37Goals').placeholder=p.partner_goals?'Last known: '+p.partner_goals:'What did you learn about their business/focus today?';
+        if(document.getElementById('wp37Pain'))document.getElementById('wp37Pain').placeholder=p.partner_pain_points?'Last known: '+p.partner_pain_points:'What do they need from us right now?';
+        if(document.getElementById('wp37NextMove'))document.getElementById('wp37NextMove').placeholder=p.next_growth_opportunity?'Prior move: '+p.next_growth_opportunity:'What is the next meaningful move?';
+        if(p.satisfaction_rating&&document.getElementById('wp37Satisfaction'))document.getElementById('wp37Satisfaction').value=String(p.satisfaction_rating);
+        [['wp73Phone',p.phone],['wp73Email',p.email],['wp73Address',p.address],['wp73Birthday',p.birthday]].forEach(([id,val])=>{const e=document.getElementById(id);if(e&&val)e.value=String(val)});
+      }catch(e){console.warn('Portfolio hydrate',e)}
+    });
+  };
+
+  // Return from Portfolio to the same Log Touch after save.
+  const originalSave=window.wp37SavePartnerCheckin;
+  if(typeof originalSave==='function'&&!originalSave.__v203){
     const wrapped=async function(){
-      const result=await originalCommit.apply(this,arguments);
-      window._v198PendingOutreach=null;
+      const direct=window.wp37PendingPartnerSave&&window.wp37PendingPartnerSave.resumeKind==='v203-direct';
+      const result=await originalSave.apply(this,arguments);
+      if(direct){
+        window._v198PortfolioPreflight=true;
+        window._v198PortfolioAgent=window._v203PendingMeaningful?.name||'';
+        const log=document.getElementById('v175OutreachModal');
+        if(log){
+          log.style.removeProperty('display');
+          log.removeAttribute('aria-hidden');
+          log.classList.add('open');
+        }
+        try{if(typeof v201PaintMeaningfulComplete==='function')v201PaintMeaningfulComplete()}catch(e){}
+      }
       return result;
     };
-    wrapped.__v198=true;
-    window.wp37CommitPendingTouch=wrapped;
+    wrapped.__v203=true;
+    window.wp37SavePartnerCheckin=wrapped;
+  }
+
+  const originalCancel=window.wp37CancelPartnerCheckin;
+  if(typeof originalCancel==='function'&&!originalCancel.__v203){
+    const wrapped=function(){
+      const result=originalCancel.apply(this,arguments);
+      const log=document.getElementById('v175OutreachModal');
+      if(log){
+        log.style.removeProperty('display');
+        log.removeAttribute('aria-hidden');
+        log.classList.add('open');
+      }
+      return result;
+    };
+    wrapped.__v203=true;
+    window.wp37CancelPartnerCheckin=wrapped;
   }
 })();
 </script>
