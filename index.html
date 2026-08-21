@@ -15543,5 +15543,564 @@ setTimeout(()=>{try{v126SetupReconnectCleanup();v126EnhanceReconnectRows();}catc
 })();
 </script>
 
+
+<style id="v153-one-next-best-queue">
+#v113StepGrowth{display:none!important}
+.v153-next-queue{border:1px solid #DED6E9;border-radius:12px;background:#fff;overflow:hidden}
+.v153-next-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;padding:11px 12px;background:#FAF7FD;border-bottom:1px solid #E8E0F0}
+.v153-next-head b{display:block;font-size:12.5px;color:#302240}
+.v153-next-head small{display:block;font-size:10px;line-height:1.45;color:#766B80;margin-top:3px;max-width:680px}
+.v153-count{font-size:10px;font-weight:850;color:#62418F;background:#fff;border:1px solid #D8CBE7;border-radius:999px;padding:5px 8px;white-space:nowrap}
+.v153-row{display:grid;grid-template-columns:34px minmax(0,1fr) auto;gap:10px;align-items:center;padding:10px 12px;border-bottom:1px solid #EEE9F3}
+.v153-row:last-child{border-bottom:0}
+.v153-rank{width:30px;height:30px;border-radius:10px;background:#F1EAF8;color:#62418F;font-size:12px;font-weight:900;display:flex;align-items:center;justify-content:center}
+.v153-name{font-size:12.5px;font-weight:850;color:#2B2038;line-height:1.25}
+.v153-why{font-size:10.5px;color:#675D70;line-height:1.4;margin-top:2px}
+.v153-tags{display:flex;gap:5px;flex-wrap:wrap;margin-top:5px}
+.v153-tag{font-size:9px;font-weight:800;padding:2px 6px;border-radius:999px;background:#F4F0F8;color:#5B4775;border:1px solid #E1D8EA}
+.v153-tag.hot{background:#FFF1EE;color:#8A4539;border-color:#E8C4BC}
+.v153-tag.growth{background:#EFF7F1;color:#356049;border-color:#C9DDCE}
+.v153-tag.follow{background:#F4F1FA;color:#57437A;border-color:#DCD2EA}
+.v153-actions{display:flex;gap:6px;align-items:center;justify-content:flex-end;flex-wrap:wrap}
+.v153-actions button{font:800 10px Arial,Helvetica,sans-serif;padding:7px 10px;border-radius:7px;border:1px solid #D7CBE5;background:#fff;color:#5B3B89;cursor:pointer;white-space:nowrap}
+.v153-actions button.primary{background:#62418F;color:#fff;border-color:#62418F}
+.v153-footer{display:flex;justify-content:space-between;gap:10px;align-items:center;padding:9px 12px;background:#FCFBFD;border-top:1px solid #EEE9F3;font-size:9.8px;color:#776C81}
+.v153-footer button{font:800 9.5px Arial,Helvetica,sans-serif;padding:5px 8px;border:1px solid #D8CBE7;background:#fff;color:#5D4187;border-radius:6px;cursor:pointer}
+@media(max-width:760px){
+ .v153-row{grid-template-columns:30px minmax(0,1fr)}
+ .v153-actions{grid-column:2;justify-content:flex-start}
+ .v153-next-head{flex-direction:column}
+}
+</style>
+<script id="v153-one-next-best-queue-js">
+(function(){
+  function k(n){try{return typeof agentMatchKey==='function'?agentMatchKey(n):typeof wp18Key==='function'?wp18Key(n):String(n||'').trim().toLowerCase()}catch(e){return String(n||'').trim().toLowerCase()}}
+  function nm(t){return (t&&t.name)||(t&&t.item&&t.item.name)||''}
+  function tp(t){return String((t&&t.item&&t.item.type)||'Agent Talk-to')}
+  function src(t){return String((t&&t.workBucket)||(t&&t.item&&t.item.source)||'Relationship')}
+  function why(t){return String((t&&t.why)||(t&&t.item&&t.item.reasons&&t.item.reasons[0])||'Relationship touch').replace(/^Relationship move\s*[·:-]?\s*/i,'').replace(/^Reconnect\s*[·:-]?\s*/i,'').replace(/^Follow-up\s*[·:-]?\s*/i,'')}
+  function acquisition(t){return /Cold Calls?|New Realtor Meeting|New Agent Prospect/i.test(tp(t))||/Prospect/i.test(src(t))}
+  function md(t){
+    var kind=String(t&&t.kind||''),s=src(t),p=90,l='Relationship move',c='',r=why(t);
+    if(kind==='health'){p=20;l='Partner health';c='hot'}
+    else if(kind==='tier_growth'){p=30;l='C → B growth';c='growth'}
+    else if(s==='Follow-up'||kind==='followup'){p=10;l='Follow-up due';c='follow'}
+    else if(s==='Reconnect'||kind==='reconnect'){p=40;l='Reconnect'}
+    else if(kind==='health_monitor'){p=60;l='Health watch'}
+    else{p=50;l='Relationship move'}
+    if(/overdue/i.test(r)){p=Math.min(p,5);l='Overdue follow-up';c='hot'}
+    return{priority:p,label:l,cls:c,reason:r}
+  }
+  function act(t,name){
+    var safe=typeof wpJs==='function'?wpJs(name):String(name).replace(/'/g,"\\'"),type=tp(t),ts=typeof wpJs==='function'?wpJs(type):type.replace(/'/g,"\\'");
+    return '<div class="v153-actions"><button class="primary" onclick="v98DirectorLog(\''+safe+'\',\'Amanda\',\''+ts+'\')">Log touch</button><button onclick="wpOpenContact(\''+safe+'\')">Update</button></div>'
+  }
+  function row(e,i){
+    var tags=e.labels.map(function(x){var cc=x==='Partner health'||x==='Overdue follow-up'?' hot':x==='C → B growth'?' growth':x==='Follow-up due'?' follow':'';return '<span class="v153-tag'+cc+'">'+escHtml(x)+'</span>'}).join('');
+    return '<div class="v153-row"><div class="v153-rank">'+(i+1)+'</div><div><div class="v153-name">'+escHtml(typeof resolvedDisplayName==='function'?resolvedDisplayName(e.name):e.name)+'</div><div class="v153-why"><strong>Why now:</strong> '+escHtml(e.reasons.slice(0,2).join(' · '))+'</div><div class="v153-tags">'+tags+'</div></div>'+act(e.primary,e.name)+'</div>'
+  }
+  window.v153RenderOneNextQueue=function(planned,date){
+    var urgent=[],txn=[],maint=[],by={};
+    (planned||[]).forEach(function(t){
+      if(!t||t.kind==='prospect')return;
+      if(t.kind==='escalation'){urgent.push(t);return}
+      if(t.kind==='transaction'){txn.push(t);return}
+      if(t.kind==='skill'||t.kind==='wrap'){maint.push(t);return}
+      if(acquisition(t))return;
+      var name=nm(t),kk=k(name);if(!kk)return;var m=md(t);
+      if(!by[kk])by[kk]={name:name,primary:t,best:m.priority,reasons:[],labels:[]};
+      var e=by[kk];if(m.priority<e.best){e.primary=t;e.best=m.priority}
+      if(m.reason&&!e.reasons.includes(m.reason))e.reasons.push(m.reason);
+      if(m.label&&!e.labels.includes(m.label))e.labels.push(m.label);
+    });
+    var q=Object.values(by).sort(function(a,b){if(a.best!==b.best)return a.best-b.best;var as=Number(a.primary&&a.primary.item&&a.primary.item.score||0),bs=Number(b.primary&&b.primary.item&&b.primary.item.score||0);return bs-as||String(a.name).localeCompare(String(b.name))});
+    var h='';
+    if(urgent.length)h+='<div class="v112-urgent">'+urgent.map(function(x,i){return wp33EscalationRow(x,i===0)}).join('')+'</div>';
+    if(txn.length)h+='<div class="v112-urgent">'+txn.map(function(x,i){return wp30TransactionRow(x,!urgent.length&&i===0,date)}).join('')+'</div>';
+    h+='<div class="v112-health v153-next-queue"><div class="v153-next-head"><div><b>Who to contact next</b><small>Work straight down this list. Each person appears once, even if they qualify for several relationship queues. Prospect/cold-call follow-ups stay in Step 5 New Meeting Push.</small></div><span class="v153-count">'+q.length+' priority '+(q.length===1?'relationship':'relationships')+'</span></div>';
+    if(q.length){h+=q.slice(0,8).map(row).join('')+'<div class="v153-footer"><span>'+(q.length>8?(q.length-8)+' more available in Portfolio / Reconnect.':'Complete relationship priority queue for today.')+'</span><button onclick="switchTab(\'portfolio\')">Open full Portfolio</button></div>'}
+    else h+='<div style="padding:16px 12px;font-size:11px;color:#7C7185">No relationship priority is due right now. Stay in Step 5 and keep booking new meetings.</div>';
+    h+='</div>';
+    if(maint.length)h+='<details class="v112-maintenance"><summary>Finish-up / prep · '+maint.length+'</summary><div class="v112-maint-body">'+maint.map(function(x){return v21PlanTaskRow(x,false,date)}).join('')+'</div></details>';
+    return h
+  };
+  window.v112RenderAmandaTasks=function(planned,date,stats){return window.v153RenderOneNextQueue(planned,date,stats)};
+  window.v109RenderAmandaTasks=window.v112RenderAmandaTasks;
+  function relabel(){
+    var s=document.getElementById('v113StepSmart');
+    if(s){var b=s.querySelector('.v113-step-rail b'),sm=s.querySelector('.v113-step-rail small'),bt=s.querySelector('.v113-body-title span:first-child'),nt=s.querySelector('.v113-body-note');if(b)b.textContent='Who to contact next';if(sm)sm.textContent='One ranked list. One person once. Work top to bottom.';if(bt)bt.textContent='Next best relationship actions';if(nt)nt.textContent='No duplicate names'}
+    var g=document.getElementById('v113StepGrowth');if(g)g.style.setProperty('display','none','important')
+  }
+  var old=window.v21LoadDailyPlan;
+  if(typeof old==='function')window.v21LoadDailyPlan=async function(){var r=await old.apply(this,arguments);relabel();try{if(typeof v113DistributeSmart==='function')v113DistributeSmart()}catch(e){}return r};
+  function boot(){relabel();try{if(typeof v21LoadDailyPlan==='function')v21LoadDailyPlan(true);else if(typeof v23LoadAmandaSnapshot==='function')v23LoadAmandaSnapshot(true)}catch(e){}}
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',function(){setTimeout(boot,500)},{once:true});else setTimeout(boot,500);
+  setTimeout(relabel,1400);
+})();
+</script>
+
+
+<style id="v154-final-next-queue-and-ctob">
+/* Final Amanda Today operating model: one ranked relationship list + separate C→B review lane. */
+#v113StepGrowth{display:grid!important}
+#v113StepGrowth .v113-step-rail b{font-size:12.5px!important}
+#v154RelationshipQueue{border:1px solid #DED6E9;border-radius:12px;background:#fff;overflow:hidden}
+.v154-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;padding:11px 12px;background:#FAF7FD;border-bottom:1px solid #E8E0F0}
+.v154-head b{display:block;font-size:12.5px;color:#302240}.v154-head small{display:block;font-size:10px;color:#756A80;line-height:1.45;margin-top:3px;max-width:700px}
+.v154-count{font-size:10px;font-weight:850;color:#62418F;background:#fff;border:1px solid #D8CBE7;border-radius:999px;padding:5px 8px;white-space:nowrap}
+.v154-row{display:grid;grid-template-columns:34px minmax(0,1fr) auto;gap:10px;align-items:center;padding:10px 12px;border-bottom:1px solid #EEE9F3}.v154-row:last-child{border-bottom:0}
+.v154-rank{width:30px;height:30px;border-radius:10px;background:#F1EAF8;color:#62418F;font-size:12px;font-weight:900;display:flex;align-items:center;justify-content:center}
+.v154-name{font-size:12.5px;font-weight:850;color:#2B2038}.v154-why{font-size:10.5px;color:#675D70;line-height:1.4;margin-top:2px}
+.v154-tags{display:flex;gap:5px;flex-wrap:wrap;margin-top:5px}.v154-tag{font-size:9px;font-weight:800;padding:2px 6px;border-radius:999px;background:#F4F0F8;color:#5B4775;border:1px solid #E1D8EA}.v154-tag.hot{background:#FFF1EE;color:#8A4539;border-color:#E8C4BC}.v154-tag.growth{background:#EFF7F1;color:#356049;border-color:#C9DDCE}.v154-tag.follow{background:#F4F1FA;color:#57437A;border-color:#DCD2EA}
+.v154-actions{display:flex;gap:6px;justify-content:flex-end;flex-wrap:wrap}.v154-actions button{font:800 10px Arial,Helvetica,sans-serif;padding:7px 10px;border-radius:7px;border:1px solid #D7CBE5;background:#fff;color:#5B3B89;cursor:pointer}.v154-actions .primary{background:#62418F;color:#fff;border-color:#62418F}
+.v154-foot{padding:9px 12px;background:#FCFBFD;border-top:1px solid #EEE9F3;font-size:9.8px;color:#776C81;display:flex;justify-content:space-between;gap:10px;align-items:center}.v154-foot button{font:800 9.5px Arial,Helvetica,sans-serif;padding:5px 8px;border:1px solid #D8CBE7;background:#fff;color:#5D4187;border-radius:6px;cursor:pointer}
+@media(max-width:760px){.v154-row{grid-template-columns:30px minmax(0,1fr)}.v154-actions{grid-column:2;justify-content:flex-start}.v154-head{flex-direction:column}}
+</style>
+<script id="v154-final-next-queue-and-ctob-js">
+(function(){
+  function key(n){try{return typeof agentMatchKey==='function'?agentMatchKey(n):String(n||'').trim().toLowerCase().replace(/\\s+/g,' ')}catch(e){return String(n||'').trim().toLowerCase()}}
+  function escv(s){try{return escHtml(String(s==null?'':s))}catch(e){return String(s==null?'':s).replace(/[&<>\"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;'}[c]})}}
+  function days(v){if(!v)return null;var d=new Date(v);if(isNaN(d))return null;return Math.max(0,Math.floor((Date.now()-d.getTime())/86400000))}
+  function allowed(name,p,grade,owners){try{return typeof v135AmandaRelationshipAllowed==='function'?v135AmandaRelationshipAllowed(name,p,grade,owners):true}catch(e){return true}}
+  function prospectActivity(f){var t=String(f&&f.act_type||'');return /Cold Calls?|New Realtor Meeting|New Agent Prospect/i.test(t)}
+  window.v154Log=function(n,t){try{v98DirectorLog(decodeURIComponent(n),'Amanda',decodeURIComponent(t||'Agent%20Talk-to'))}catch(e){console.warn(e)}};
+  window.v154Update=function(n){try{wpOpenContact(decodeURIComponent(n))}catch(e){console.warn(e)}};
+  function actionHtml(name,type){var n=encodeURIComponent(String(name||'')),t=encodeURIComponent(String(type||'Agent Talk-to'));return '<div class="v154-actions"><button class="primary" onclick="v154Log(this.dataset.n,this.dataset.t)" data-n="'+n+'" data-t="'+t+'">Log touch</button><button onclick="v154Update(this.dataset.n)" data-n="'+n+'">Update</button></div>'}
+  function tagHtml(labels){return '<div class="v154-tags">'+labels.map(function(x){var c=/overdue|risk|partner health/i.test(x)?' hot':/C → B/i.test(x)?' growth':/follow-up/i.test(x)?' follow':'';return '<span class="v154-tag'+c+'">'+escv(x)+'</span>'}).join('')+'</div>'}
+  function add(map,name,priority,reason,label,type,score){var k=key(name);if(!k||!name)return;var e=map[k]||(map[k]={name:name,priority:999,reasons:[],labels:[],type:type||'Agent Talk-to',score:0});if(priority<e.priority){e.priority=priority;e.type=type||e.type}if(reason&&!e.reasons.includes(reason))e.reasons.push(reason);if(label&&!e.labels.includes(label))e.labels.push(label);e.score=Math.max(e.score,Number(score||0));}
+  window.v126RefreshRelationshipWork=async function(force){
+    var host=document.getElementById('v113SmartHost')||document.getElementById('v126RelationshipLive');if(!host)return false;
+    var live=document.getElementById('v154RelationshipQueue');if(!live){live=document.createElement('div');live.id='v154RelationshipQueue';host.insertBefore(live,host.firstChild)}
+    live.innerHTML='<div style="padding:16px 12px;font-size:11px;color:#766B80">Ranking today’s best relationship actions…</div>';
+    try{
+      var todayStr=typeof today==='function'?today():new Date().toISOString().slice(0,10);
+      var timeout=function(p,ms,f){return Promise.race([p,new Promise(function(res){setTimeout(function(){res(f)},ms)})])};
+      var pp='agent_profiles?select=agent_name,tier,powerbi_level,retained,do_not_contact,relationship_status,relationship_type,competitor_risk_flag,high_potential_flag,next_growth_opportunity,latest_lead_date,last_meaningful_contact_date,closes_past_year,total_leads_past_year&retained=eq.true&limit=1200';
+      var rp=(typeof RC_TABLE!=='undefined'?RC_TABLE:'reconnect_agents')+'?select=id,agent_name,grade,days_since,status,latest_interaction,closes_past_year&status=eq.active&limit=1000';
+      var fp='amanda_activities?select=id,agent_name,act_type,act_date,outcome,notes,follow_up_date&follow_up_date=not.is.null&follow_up_date=lte.'+todayStr+'&order=follow_up_date.asc&limit=350';
+      var op='agent_assignments?select=agent_name,rm,lp,priority,added,level&limit=5000';
+      var r=await Promise.all([timeout(sbFetch(pp),12000,[]),timeout(sbFetch(rp),7000,[]),timeout(sbFetch(fp),7000,[]),timeout(sbFetch(op),7000,[])]);
+      var profiles=r[0]||[],reconnect=r[1]||[],follow=r[2]||[],owners=r[3]||[];
+      var pmap={},omap={};profiles.forEach(function(p){if(p&&p.agent_name)pmap[key(p.agent_name)]=p});owners.forEach(function(o){
+        if(!o||!o.agent_name)return;var k=key(o.agent_name),cur=omap[k],nr=String(o.rm||'').trim().toLowerCase(),cr=cur?String(cur.rm||'').trim().toLowerCase():'';
+        if(!cur||nr==='nyny'||(nr==='amanda'&&cr!=='nyny'))omap[k]=o;
+      });
+      var by={};
+      // 1) promised relationship follow-ups. Acquisition/cold-call follow-ups stay in Step 5.
+      follow.forEach(function(f){if(!f||!f.agent_name||prospectActivity(f)||String(f.follow_up_date||'')>todayStr)return;var p=pmap[key(f.agent_name)]||null;if(!allowed(f.agent_name,p,null,omap))return;try{if(typeof getNextStepOwner==='function'&&String(getNextStepOwner(f)||'').trim()==='Nyny')return}catch(e){}var overdue=String(f.follow_up_date||'')<todayStr;add(by,f.agent_name,overdue?5:10,(overdue?'Overdue promised follow-up':'Promised follow-up due today')+(f.act_type?' · '+f.act_type:''),overdue?'Overdue follow-up':'Follow-up due',f.act_type||'Agent Talk-to',100);});
+      // 2) health/risk on Amanda-owned relationships.
+      var thresholds={Channel:[14,21],A:[14,21],B:[30,45],C:[60,90]};
+      profiles.forEach(function(p){if(!p||!p.agent_name||p.do_not_contact===true||String(p.relationship_status||'active').toLowerCase()==='inactive'||!allowed(p.agent_name,p,null,omap))return;var tier=String(p.tier||p.powerbi_level||'C').toUpperCase(),pair=thresholds[tier]||thresholds.C,dl=days(p.latest_lead_date),dc=days(p.last_meaningful_contact_date);var red=!!p.competitor_risk_flag||dc===null||dc>=pair[1]||dl===null||dl>=60;var yellow=!red&&(dc>=pair[0]||dl>=30);if(red||yellow){var why=(red?'Relationship needs attention':'Relationship is approaching cadence risk')+' · '+tier+' tier'+(dc!=null?' · '+dc+'d since meaningful contact':'');add(by,p.agent_name,red?20:55,why,red?'Partner health · risk':'Partner health','Agent Talk-to',(tier==='Channel'?40:tier==='A'?30:tier==='B'?20:10)+(p.high_potential_flag?5:0));}
+        // documented next move
+        if(String(p.next_growth_opportunity||'').trim())add(by,p.agent_name,50,String(p.next_growth_opportunity).slice(0,130),'Relationship move','Agent Talk-to',Number(p.closes_past_year||0)*3+Number(p.total_leads_past_year||0));
+      });
+      // 3) warm reconnects after promised/risk work.
+      reconnect.forEach(function(x){if(!x||!x.agent_name||x.status&&x.status!=='active')return;var p=pmap[key(x.agent_name)]||null;if(!allowed(x.agent_name,p,x.grade,omap))return;add(by,x.agent_name,40,'Warm relationship went quiet'+(x.days_since!=null?' · '+x.days_since+'d since last interaction':''),'Reconnect','Reconnect Outreach',Number(x.closes_past_year||0)*4+Number(x.days_since||0)/30);});
+      var q=Object.values(by).sort(function(a,b){return a.priority-b.priority||b.score-a.score||String(a.name).localeCompare(String(b.name))});
+      var html='<div class="v154-head"><div><b>Who to contact next</b><small>One ranked list. One person once. Work top to bottom. New-prospect and cold-call follow-ups stay in Step 5. C → B graduation candidates stay in Step 7.</small></div><span class="v154-count">'+q.length+' priority '+(q.length===1?'relationship':'relationships')+'</span></div>';
+      if(q.length){html+=q.slice(0,10).map(function(e,i){return '<div class="v154-row"><div class="v154-rank">'+(i+1)+'</div><div><div class="v154-name">'+escv(typeof resolvedDisplayName==='function'?resolvedDisplayName(e.name):e.name)+'</div><div class="v154-why"><strong>Why now:</strong> '+escv(e.reasons.slice(0,2).join(' · '))+'</div>'+tagHtml(e.labels)+'</div>'+actionHtml(e.name,e.type)+'</div>'}).join('');html+='<div class="v154-foot"><span>'+(q.length>10?(q.length-10)+' more relationship priorities available.':'That is the full relationship priority queue right now.')+'</span><button onclick="switchTab(\'portfolio\')">Open Portfolio</button></div>'}
+      else html+='<div style="padding:16px 12px;font-size:11px;color:#7C7185">No existing-relationship priority is due right now. Stay in Step 5 and keep booking new meetings.</div>';
+      live.innerHTML=html;
+      // remove the legacy four-column live panel if any older renderer recreated it
+      host.querySelectorAll('.v133-columns,.v127-inventory').forEach(function(n){n.remove()});
+      return true;
+    }catch(e){console.warn('v154 ranked relationship work',e);live.innerHTML='<div style="padding:16px 12px;font-size:11px;color:#9B3434">Relationship priorities could not refresh. Use Refresh or open Portfolio; your New Meeting Push is still available above.</div>';return false}
+  };
+  function relabel(){
+    var s=document.getElementById('v113StepSmart');if(s){var b=s.querySelector('.v113-step-rail b'),sm=s.querySelector('.v113-step-rail small'),bt=s.querySelector('.v113-body-title span:first-child'),nt=s.querySelector('.v113-body-note');if(b)b.textContent='Who to contact next';if(sm)sm.textContent='One ranked list. One person once. Work top to bottom.';if(bt)bt.textContent='Next best relationship actions';if(nt)nt.textContent='No duplicate names'}
+    var g=document.getElementById('v113StepGrowth');if(g){g.style.setProperty('display','grid','important');var gb=g.querySelector('.v113-step-rail b'),gs=g.querySelector('.v113-step-rail small'),gt=g.querySelector('.v113-body-title span:first-child'),gn=g.querySelector('.v113-body-note');if(gb)gb.textContent='C → B graduation candidates';if(gs)gs.textContent='Develop the right C relationships and send them to Nyny for review.';if(gt)gt.textContent='C → B graduation';if(gn)gn.textContent='Amanda → Nyny review lane'}
+  }
+  function refresh(){relabel();try{window.v126RefreshRelationshipWork(true)}catch(e){}try{if(typeof window.v145RefreshCtoB==='function')window.v145RefreshCtoB(true);else if(typeof window.v134EnsureGrowthVisible==='function')window.v134EnsureGrowthVisible(true)}catch(e){}}
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',function(){setTimeout(refresh,650)},{once:true});else setTimeout(refresh,650);
+  setTimeout(refresh,1700);
+  // Old loaders may repaint the four-column block later. Clean/repaint whenever Step 6 changes.
+  setTimeout(function(){var h=document.getElementById('v113SmartHost');if(!h)return;var busy=false;new MutationObserver(function(){if(busy)return;if(h.querySelector('.v133-columns')){busy=true;h.querySelectorAll('.v133-columns,.v127-inventory').forEach(function(n){n.remove()});setTimeout(function(){window.v126RefreshRelationshipWork(false).finally(function(){busy=false})},20)}}).observe(h,{childList:true,subtree:true})},1000);
+})();
+</script>
+
+
+<style id="v155-amanda-ownership-graduation-authority-css">
+/* Amanda Today: Step 7 is a permanent, visible workflow. */
+#view-week #v113StepGrowth{display:grid!important;visibility:visible!important;opacity:1!important}
+#view-week #v113StepGrowth .v113-step-rail b{font-size:12.5px!important}
+#view-week #v113GrowthHost{display:block!important;min-height:78px!important}
+</style>
+<script id="v155-amanda-ownership-graduation-authority-js">
+(function(){
+  function k(s){try{return typeof wp18Key==='function'?wp18Key(s):String(s||'').trim().toLowerCase().replace(/\s+/g,' ')}catch(e){return String(s||'').trim().toLowerCase().replace(/\s+/g,' ')}}
+  function assignmentOwner(name,ownerMap){
+    var kk=k(name), rows=[];
+    if(Array.isArray(ownerMap)) rows=ownerMap.filter(function(r){return r&&k(r.agent_name)===kk});
+    else if(ownerMap&&typeof ownerMap==='object'){
+      var direct=ownerMap[kk]||ownerMap[String(name||'').trim().toLowerCase().replace(/\s+/g,' ')];
+      if(Array.isArray(direct))rows=direct;else if(direct)rows=[direct];
+    }
+    var rms=rows.map(function(r){return String(r&&r.rm||'').trim().toLowerCase()}).filter(Boolean);
+    if(rms.indexOf('nyny')>=0)return 'Nyny';
+    if(rms.indexOf('amanda')>=0)return 'Amanda';
+    try{var own=typeof getAgentOwnership==='function'?getAgentOwnership(name):null;if(own&&String(own.rm||'').trim().toLowerCase()==='nyny')return'Nyny';if(own&&String(own.rm||'').trim().toLowerCase()==='amanda')return'Amanda';}catch(e){}
+    return '';
+  }
+  window.v155AmandaRelationshipAllowed=function(name,profile,tierHint,ownerMap){
+    var nm=String(name||'').trim();if(!nm)return false;
+    // Explicit Director ownership rules always win.
+    try{if(typeof wp18StrategicNynyMatch==='function'&&wp18StrategicNynyMatch(nm,profile||{}))return false}catch(e){}
+    var tier=String(tierHint||(profile&&(profile.tier||profile.powerbi_level))||'').trim().toUpperCase();
+    if(tier==='CHANNEL'||tier==='A'||tier==='B')return false;
+    var owner=assignmentOwner(nm,ownerMap);
+    if(owner==='Nyny')return false;
+    if(owner==='Amanda')return true;
+    // Only genuinely unassigned C relationships can fall to Amanda; never override an explicit Director rule.
+    return tier===''||tier==='C';
+  };
+  window.v135AmandaRelationshipAllowed=window.v155AmandaRelationshipAllowed;
+
+  function showGraduation(){
+    var step=document.getElementById('v113StepGrowth'),host=document.getElementById('v113GrowthHost');
+    if(step){step.style.setProperty('display','grid','important');step.style.setProperty('visibility','visible','important');
+      var b=step.querySelector('.v113-step-rail b'),s=step.querySelector('.v113-step-rail small'),t=step.querySelector('.v113-body-title span:first-child');
+      if(b)b.textContent='C → B graduation candidates';
+      if(s)s.textContent='Amanda develops these C relationships, then sends the strongest candidates to Nyny for review.';
+      if(t)t.textContent='Graduation candidates';
+    }
+    if(host&&!String(host.textContent||'').trim())host.innerHTML='<div class="v113-body-empty">Loading Amanda-owned C → B candidates…</div>';
+    try{if(typeof window.v145RefreshCtoB==='function')window.v145RefreshCtoB(true);else if(typeof window.v134EnsureGrowthVisible==='function')window.v134EnsureGrowthVisible(true)}catch(e){console.warn('Graduation refresh',e)}
+  }
+
+  // Force a clean Step 6 refresh after the stronger ownership rule is installed.
+  function refreshAll(){
+    try{if(typeof window.v126RefreshRelationshipWork==='function')window.v126RefreshRelationshipWork(true)}catch(e){}
+    showGraduation();
+  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',function(){setTimeout(refreshAll,500)},{once:true});else setTimeout(refreshAll,250);
+  setTimeout(refreshAll,1400);setTimeout(showGraduation,3000);
+  window.addEventListener('pageshow',function(){setTimeout(refreshAll,250)});
+})();
+</script>
+
+
+<style id="v156-smart-signal-ctob-final-css">
+/* Final authority: Step 6 is one smart queue; Step 7 is a permanent protected C→B lane. */
+#view-week #v113StepGrowth{
+  display:grid!important;
+  visibility:visible!important;
+  opacity:1!important;
+}
+#view-week #v113GrowthHost{
+  display:block!important;
+  min-height:90px!important;
+}
+#view-week #v113StepGrowth .v113-step-rail b{
+  font-size:12.5px!important;
+}
+.v156-signal{
+  font-size:9px;
+  font-weight:800;
+  color:#536258;
+  background:#EEF6F0;
+  border:1px solid #D2E2D6;
+  border-radius:999px;
+  padding:2px 6px;
+}
+</style>
+
+<script id="v156-smart-signal-ctob-final-js">
+(function(){
+  const DAY=86400000;
+  let growthGuardBusy=false;
+
+  function k(n){
+    try{return typeof agentMatchKey==='function'?agentMatchKey(n):String(n||'').trim().toLowerCase().replace(/\s+/g,' ')}
+    catch(e){return String(n||'').trim().toLowerCase().replace(/\s+/g,' ')}
+  }
+  function d(raw){
+    if(!raw)return null;
+    const x=new Date(raw);
+    return isNaN(x)?null:x;
+  }
+  function daysSince(raw){
+    const x=d(raw);
+    return x?Math.max(0,Math.floor((Date.now()-x.getTime())/DAY)):null;
+  }
+  function newest(){
+    let best=null;
+    Array.from(arguments).forEach(function(v){
+      const x=d(v);
+      if(x&&(!best||x>best))best=x;
+    });
+    return best;
+  }
+  function escv(s){
+    try{return escHtml(String(s==null?'':s))}
+    catch(e){return String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}
+  }
+  function allowed(name,p,grade,owners){
+    try{return typeof v155AmandaRelationshipAllowed==='function'
+      ?v155AmandaRelationshipAllowed(name,p,grade,owners)
+      :(typeof v135AmandaRelationshipAllowed==='function'?v135AmandaRelationshipAllowed(name,p,grade,owners):true)}
+    catch(e){return false}
+  }
+  function prospectActivity(a){
+    return /Cold Calls?|New Realtor Meeting|New Agent Prospect/i.test(String(a&&a.act_type||''));
+  }
+  function meaningfulActivity(a){
+    const t=String(a&&a.act_type||'');
+    return !/Cold Calls?|New Agent Prospect/i.test(t);
+  }
+  function leadActivity(a){
+    return /New Lead Received|Referral Lead|Lead Received/i.test(String(a&&a.act_type||''));
+  }
+  function actDate(a){return a&&(a.act_date||a.created_at||a.updated_at)||null}
+
+  function actionHtml(name,type){
+    const n=encodeURIComponent(String(name||'')),t=encodeURIComponent(String(type||'Agent Talk-to'));
+    return '<div class="v154-actions">'
+      +'<button class="primary" onclick="v154Log(this.dataset.n,this.dataset.t)" data-n="'+n+'" data-t="'+t+'">Log touch</button>'
+      +'<button onclick="v154Update(this.dataset.n)" data-n="'+n+'">Update</button>'
+      +'</div>';
+  }
+  function tagHtml(labels,signal){
+    let h='<div class="v154-tags">';
+    (labels||[]).forEach(function(x){
+      let c=/overdue|risk|partner health/i.test(x)?' hot':/C → B/i.test(x)?' growth':/follow-up/i.test(x)?' follow':'';
+      h+='<span class="v154-tag'+c+'">'+escv(x)+'</span>';
+    });
+    if(signal)h+='<span class="v156-signal">'+escv(signal)+'</span>';
+    return h+'</div>';
+  }
+  function add(map,name,priority,reason,label,type,score,signal){
+    const kk=k(name);if(!kk||!name)return;
+    const e=map[kk]||(map[kk]={name:name,priority:999,reasons:[],labels:[],type:type||'Agent Talk-to',score:0,signal:''});
+    if(priority<e.priority){e.priority=priority;e.type=type||e.type}
+    if(reason&&!e.reasons.includes(reason))e.reasons.push(reason);
+    if(label&&!e.labels.includes(label))e.labels.push(label);
+    e.score=Math.max(e.score,Number(score||0));
+    if(signal)e.signal=signal;
+  }
+
+  /* Replace Step 6 with signal-aware ranking.
+     Key differences:
+     - later activity closes stale promised follow-ups
+     - recent lead activity prevents false "health risk"
+     - acquisition/cold-call work stays in Step 5
+     - C→B candidates stay in Step 7
+  */
+  window.v126RefreshRelationshipWork=async function(force){
+    const host=document.getElementById('v113SmartHost');
+    if(!host)return false;
+    let live=document.getElementById('v154RelationshipQueue');
+    if(!live){live=document.createElement('div');live.id='v154RelationshipQueue';host.insertBefore(live,host.firstChild)}
+    live.innerHTML='<div style="padding:16px 12px;font-size:11px;color:#766B80">Checking the freshest relationship signals…</div>';
+
+    try{
+      const todayStr=typeof today==='function'?today():new Date().toISOString().slice(0,10);
+      const cutoff=new Date(Date.now()-180*DAY).toISOString().slice(0,10);
+      const timeout=(p,ms,f)=>Promise.race([p,new Promise(res=>setTimeout(()=>res(f),ms))]);
+
+      const pp='agent_profiles?select=agent_name,tier,powerbi_level,retained,do_not_contact,relationship_status,relationship_type,competitor_risk_flag,high_potential_flag,next_growth_opportunity,latest_lead_date,last_meaningful_contact_date,closes_past_year,total_leads_past_year&retained=eq.true&limit=1500';
+      const rp=(typeof RC_TABLE!=='undefined'?RC_TABLE:'reconnect_agents')+'?select=id,agent_name,grade,days_since,status,latest_interaction,closes_past_year&status=eq.active&limit=1200';
+      const fp='amanda_activities?select=id,agent_name,act_type,act_date,outcome,notes,follow_up_date,created_at&follow_up_date=not.is.null&follow_up_date=lte.'+todayStr+'&order=follow_up_date.asc&limit=500';
+      const ap='amanda_activities?select=id,agent_name,act_type,act_date,outcome,created_at&act_date=gte.'+cutoff+'&order=act_date.desc&limit=4000';
+      const op='agent_assignments?select=agent_name,rm,lp,priority,added,level&limit=5000';
+
+      const r=await Promise.all([
+        timeout(sbFetch(pp),12000,[]),
+        timeout(sbFetch(rp),7000,[]),
+        timeout(sbFetch(fp),7000,[]),
+        timeout(sbFetch(ap),9000,[]),
+        timeout(sbFetch(op),7000,[])
+      ]);
+
+      const profiles=r[0]||[],reconnect=r[1]||[],follow=r[2]||[],acts=r[3]||[],owners=r[4]||[];
+      const pmap={},omap={},activityBy={},latestAny={},latestLead={};
+
+      profiles.forEach(p=>{if(p&&p.agent_name)pmap[k(p.agent_name)]=p});
+      owners.forEach(function(o){
+        if(!o||!o.agent_name)return;
+        const kk=k(o.agent_name),cur=omap[kk],nr=String(o.rm||'').trim().toLowerCase(),cr=cur?String(cur.rm||'').trim().toLowerCase():'';
+        if(!cur||nr==='nyny'||(nr==='amanda'&&cr!=='nyny'))omap[kk]=o;
+      });
+      acts.forEach(function(a){
+        if(!a||!a.agent_name)return;
+        const kk=k(a.agent_name);
+        (activityBy[kk]||(activityBy[kk]=[])).push(a);
+        if(meaningfulActivity(a)){
+          const x=d(actDate(a));
+          if(x&&(!latestAny[kk]||x>latestAny[kk]))latestAny[kk]=x;
+        }
+        if(leadActivity(a)){
+          const x=d(actDate(a));
+          if(x&&(!latestLead[kk]||x>latestLead[kk]))latestLead[kk]=x;
+        }
+      });
+
+      const by={};
+
+      // 1) Promised follow-ups — but suppress if a newer meaningful touch happened after the originating activity.
+      follow.forEach(function(f){
+        if(!f||!f.agent_name||prospectActivity(f)||String(f.follow_up_date||'')>todayStr)return;
+        const kk=k(f.agent_name),p=pmap[kk]||null;
+        if(!allowed(f.agent_name,p,null,omap))return;
+        try{if(typeof getNextStepOwner==='function'&&String(getNextStepOwner(f)||'').trim()==='Nyny')return}catch(e){}
+        const origin=d(actDate(f)),later=latestAny[kk];
+        if(origin&&later&&later>origin)return; // already touched again; don't resurrect stale promise
+        const overdue=String(f.follow_up_date||'')<todayStr;
+        add(by,f.agent_name,overdue?5:10,
+          (overdue?'Overdue promised follow-up':'Promised follow-up due today')+(f.act_type?' · '+f.act_type:''),
+          overdue?'Overdue follow-up':'Follow-up due',
+          f.act_type||'Agent Talk-to',100,
+          f.follow_up_date?'Due '+String(f.follow_up_date).slice(5):''
+        );
+      });
+
+      // 2) Partner health — use the freshest business signal, not just one stale profile field.
+      const thresholds={Channel:[14,21],A:[14,21],B:[30,45],C:[60,90]};
+      profiles.forEach(function(p){
+        if(!p||!p.agent_name||p.do_not_contact===true||String(p.relationship_status||'active').toLowerCase()==='inactive'||!allowed(p.agent_name,p,null,omap))return;
+        const kk=k(p.agent_name);
+        const tier=String(p.tier||p.powerbi_level||'C').toUpperCase();
+        const pair=thresholds[tier]||thresholds.C;
+
+        const profileLead=d(p.latest_lead_date);
+        const profileMeaningful=d(p.last_meaningful_contact_date);
+        const loggedMeaningful=latestAny[kk]||null;
+        const loggedLead=latestLead[kk]||null;
+        const freshestLead=newest(profileLead,loggedLead);
+        const freshestContact=newest(profileMeaningful,loggedMeaningful);
+        const dl=freshestLead?Math.max(0,Math.floor((Date.now()-freshestLead.getTime())/DAY)):null;
+        const dc=freshestContact?Math.max(0,Math.floor((Date.now()-freshestContact.getTime())/DAY)):null;
+
+        // A recent lead is a strong positive signal. It should suppress generic "health risk"
+        // unless there is an explicit competitor-risk flag.
+        const recentLead=dl!==null&&dl<=45;
+        const explicitRisk=!!p.competitor_risk_flag;
+        let red=explicitRisk||(!recentLead&&(dc===null||dc>=pair[1])&&(dl===null||dl>=60));
+        let yellow=!red&&!recentLead&&((dc!==null&&dc>=pair[0])||(dl!==null&&dl>=30));
+
+        if(red||yellow){
+          const reasonParts=[];
+          if(explicitRisk)reasonParts.push('Competitor risk flagged');
+          else reasonParts.push(red?'Relationship needs attention':'Relationship is approaching cadence risk');
+          reasonParts.push(tier+' tier');
+          if(dc!=null)reasonParts.push(dc+'d since meaningful touch');
+          if(dl!=null)reasonParts.push(dl+'d since lead');
+          add(by,p.agent_name,red?20:55,reasonParts.join(' · '),
+              red?'Partner health · risk':'Partner health','Agent Talk-to',
+              (tier==='Channel'?40:tier==='A'?30:tier==='B'?20:10)+(p.high_potential_flag?5:0),
+              recentLead?'Recent lead':''
+          );
+        }
+
+        // Documented next move can still surface even when health is healthy.
+        if(String(p.next_growth_opportunity||'').trim()){
+          add(by,p.agent_name,50,String(p.next_growth_opportunity).slice(0,130),
+              'Relationship move','Agent Talk-to',
+              Number(p.closes_past_year||0)*3+Number(p.total_leads_past_year||0),
+              recentLead?'Recent lead':'');
+        }
+      });
+
+      // 3) Reconnect — suppress if a more recent lead/touch exists than the reconnect feed knows about.
+      reconnect.forEach(function(x){
+        if(!x||!x.agent_name||(x.status&&x.status!=='active'))return;
+        const kk=k(x.agent_name),p=pmap[kk]||null;
+        if(!allowed(x.agent_name,p,x.grade,omap))return;
+
+        const reconDate=d(x.latest_interaction);
+        const fresher=newest(latestAny[kk],latestLead[kk],p&&p.latest_lead_date,p&&p.last_meaningful_contact_date);
+        if(reconDate&&fresher&&fresher>reconDate)return;
+        if(fresher&&((Date.now()-fresher.getTime())/DAY)<60)return;
+
+        add(by,x.agent_name,40,
+          'Warm relationship went quiet'+(x.days_since!=null?' · '+x.days_since+'d in reconnect feed':''),
+          'Reconnect','Reconnect Outreach',
+          Number(x.closes_past_year||0)*4+Number(x.days_since||0)/30);
+      });
+
+      const q=Object.values(by).sort((a,b)=>a.priority-b.priority||b.score-a.score||String(a.name).localeCompare(String(b.name)));
+      let html='<div class="v154-head"><div><b>Who to contact next</b><small>One ranked list. One person once. Uses the freshest lead + meaningful-touch signals. New-prospect work stays in Step 5; C → B graduation stays in Step 7.</small></div><span class="v154-count">'+q.length+' priority '+(q.length===1?'relationship':'relationships')+'</span></div>';
+      if(q.length){
+        html+=q.slice(0,10).map(function(e,i){
+          return '<div class="v154-row"><div class="v154-rank">'+(i+1)+'</div><div><div class="v154-name">'+escv(typeof resolvedDisplayName==='function'?resolvedDisplayName(e.name):e.name)+'</div><div class="v154-why"><strong>Why now:</strong> '+escv(e.reasons.slice(0,2).join(' · '))+'</div>'+tagHtml(e.labels,e.signal)+'</div>'+actionHtml(e.name,e.type)+'</div>';
+        }).join('');
+        html+='<div class="v154-foot"><span>'+(q.length>10?(q.length-10)+' more qualified relationship priorities.':'That is the full qualified relationship queue right now.')+'</span><button onclick="switchTab(\'portfolio\')">Open Portfolio</button></div>';
+      } else {
+        html+='<div style="padding:16px 12px;font-size:11px;color:#7C7185">No existing-relationship priority is actually due right now. Stay in Step 5 and keep booking new meetings.</div>';
+      }
+      live.innerHTML=html;
+      host.querySelectorAll('.v133-columns,.v127-inventory').forEach(n=>n.remove());
+      return true;
+    }catch(e){
+      console.warn('v156 relationship ranking',e);
+      live.innerHTML='<div style="padding:16px 12px;font-size:11px;color:#9B3434">Relationship priorities could not refresh. New Meeting Push above is still available.</div>';
+      return false;
+    }
+  };
+
+  function labelGrowth(){
+    const step=document.getElementById('v113StepGrowth');
+    if(!step)return;
+    step.style.setProperty('display','grid','important');
+    step.style.setProperty('visibility','visible','important');
+    const b=step.querySelector('.v113-step-rail b');
+    const s=step.querySelector('.v113-step-rail small');
+    const t=step.querySelector('.v113-body-title span:first-child');
+    if(b)b.textContent='C → B graduation candidates';
+    if(s)s.textContent='Amanda-owned C relationships with real growth evidence. Develop them and send the strongest to Nyny for review.';
+    if(t)t.textContent='Graduation candidates';
+  }
+
+  async function protectGrowth(force){
+    labelGrowth();
+    const step=document.getElementById('v113StepGrowth');
+    const host=document.getElementById('v113GrowthHost');
+    const step8=document.getElementById('v113StepMaintenance');
+    // keep Step 7 physically between Step 6 and Step 8
+    if(step&&step8&&step.nextElementSibling!==step8)step8.parentNode.insertBefore(step,step8);
+    if(!host)return;
+    if(!host.querySelector('.v112-growth-card')&&!/Loading Amanda-owned/.test(host.textContent||'')){
+      host.innerHTML='<div class="v113-body-empty">Loading Amanda-owned C → B graduation candidates…</div>';
+    }
+    try{
+      if(typeof window.v145RefreshCtoB==='function')await window.v145RefreshCtoB(!!force);
+    }catch(e){console.warn('protected C→B refresh',e)}
+  }
+
+  // Old v113 distribution can repaint the growth host. Wrap it so Step 7 reclaims its own host immediately.
+  const oldDist=window.v113DistributeSmart;
+  if(typeof oldDist==='function'){
+    window.v113DistributeSmart=function(){
+      const r=oldDist.apply(this,arguments);
+      setTimeout(()=>protectGrowth(false),25);
+      return r;
+    };
+  }
+
+  function boot(){
+    try{window.v126RefreshRelationshipWork(true)}catch(e){}
+    protectGrowth(true);
+  }
+
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(boot,450),{once:true});
+  else setTimeout(boot,180);
+  setTimeout(boot,1300);
+  setTimeout(()=>protectGrowth(true),2800);
+  window.addEventListener('pageshow',()=>setTimeout(boot,220));
+
+  // Absolute growth-host guard: if any legacy renderer wipes Step 7, put it back.
+  setTimeout(function(){
+    const host=document.getElementById('v113GrowthHost');
+    if(!host)return;
+    new MutationObserver(function(){
+      if(growthGuardBusy)return;
+      if(!host.querySelector('.v112-growth-card')&&!/Loading Amanda-owned|No Amanda-owned C → B candidate/.test(host.textContent||'')){
+        growthGuardBusy=true;
+        setTimeout(async function(){await protectGrowth(false);growthGuardBusy=false},40);
+      }
+    }).observe(host,{childList:true,subtree:true,characterData:true});
+  },700);
+})();
+</script>
+
 </body>
 </html>
