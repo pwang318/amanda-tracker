@@ -1,4 +1,4 @@
-  <!DOCTYPE html>
+   <!DOCTYPE html>
 <!-- v213 DIRECTOR RACE + PARSE-FLASH FIX · 2026-08-21 -->
 
 <!-- Cleanup pass: floating Page Guide + stale developer build logs removed; active workflow logic preserved. -->
@@ -1232,6 +1232,26 @@ body.rm-director-route .tabs,body.rm-director-route .who-bar{display:none!import
 </style>
 </head>
 <body>
+<script>
+/* v213 DIRECTOR RACE + PARSE-FLASH FIX · 2026-08-21
+   view-week ships with class="active" in the static markup (so Amanda's own
+   Today view paints immediately, before any JS runs). On a #director load
+   that meant a real flash of Amanda's view before the DOMContentLoaded
+   router (v211 script, far below) got a chance to swap it out. Setting the
+   route class here, synchronously, as the very first thing in <body>,
+   guarantees the "hide everything except #view-daniel" CSS rule (see
+   body.rm-director-route .view:not(#view-daniel)) is already active before
+   the browser paints anything — so there's nothing left to flash. */
+(function(){
+  try{
+    var p=new URLSearchParams(location.search||'');
+    var path=String(location.pathname||'').toLowerCase();
+    var dir=/\/director(?:\.html)?$/.test(path)||location.hash==='#director'||p.get('director')==='1';
+    document.body.classList.toggle('rm-director-route',dir);
+    document.body.classList.toggle('rm-amanda-route',!dir);
+  }catch(e){}
+})();
+</script>
 <input accept="image/*" id="v95ProfilePhotoInput" onchange="v95HandlePhotoUpload(event)" style="display:none" type="file"/>
 <style>
 /* v92 — functional Director workspace. Amanda UI intentionally untouched. */
@@ -17058,12 +17078,23 @@ window.rmAuditVisibleButtons=function(){
     const since180=(()=>{const x=new Date(todayS()+'T12:00:00');x.setDate(x.getDate()-180);return x.toISOString().slice(0,10)})();
 
     // CORE TRUTH FIRST.
-    // Do not use the short safeFetch timeout here. If core data cannot load,
-    // show a real load error instead of rendering fake zeros.
+    // These deliberately do NOT use the short safeFetch timeout/fallback — if core data
+    // can't load we want a real load error, not fake zeros. BUT a bare sbFetch() has no
+    // timeout at all, so a single stalled request (cold Supabase instance, flaky wifi,
+    // a tab that got backgrounded mid-request) used to hang this Promise.all forever —
+    // the page would sit on "Loading live tracker data…" indefinitely with no error and
+    // no way to retry. coreFetch keeps the "no fake zeros" behavior but bounds the wait
+    // to 20s and turns a stall into a real, retryable error instead of an infinite hang.
+    function coreFetch(path){
+      return Promise.race([
+        Promise.resolve().then(()=>sbFetch(path)),
+        new Promise((_,reject)=>setTimeout(()=>reject(new Error('Timed out loading '+path.split('?')[0]+' — check your connection and hit Refresh')),20000))
+      ]);
+    }
     const [profiles,assignRows,recent]=await Promise.all([
-      sbFetch('agent_profiles?select=*&limit=5000'),
-      sbFetch('agent_assignments?select=*&limit=5000'),
-      sbFetch('amanda_activities?select=id,agent_name,act_type,act_date,outcome,notes,follow_up_date,created_at&act_date=gte.'+since180+'&act_date=lte.'+todayS()+'&order=act_date.desc&limit=5000')
+      coreFetch('agent_profiles?select=*&limit=5000'),
+      coreFetch('agent_assignments?select=*&limit=5000'),
+      coreFetch('amanda_activities?select=id,agent_name,act_type,act_date,outcome,notes,follow_up_date,created_at&act_date=gte.'+since180+'&act_date=lte.'+todayS()+'&order=act_date.desc&limit=5000')
     ]);
 
     if(!Array.isArray(profiles))throw new Error('Portfolio data did not load.');
