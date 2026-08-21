@@ -1,6 +1,6 @@
    <!DOCTYPE html>
 <!-- v217 4-WEEK BUTTON HANDLER FIX · 2026-08-21 -->
-<!-- v224 DIRECTOR BOOT HOTFIX · 2026-08-21 -->
+<!-- v225 BULK OWNERSHIP ASSIGNMENT · 2026-08-21 -->
 
 <!-- Cleanup pass: floating Page Guide + stale developer build logs removed; active workflow logic preserved. -->
 <!-- v140: fixes Step 2 transaction renderer race; saved/open CTC and New Contract tasks are no longer erased after successful distribution -->
@@ -17301,6 +17301,8 @@ window.rmAuditVisibleButtons=function(){
  function wireDirectorRouting(){
   const app=$('rmxApp');if(!app||app.dataset.routingWired==='1')return;app.dataset.routingWired='1';
   app.addEventListener('click',function(e){
+    const bulkAction=e.target.closest('[data-rmx-admin-bulk]');
+    if(bulkAction){e.preventDefault();e.stopPropagation();const kind=bulkAction.dataset.rmxAdminBulk||'';if(kind==='select-visible')window.rmxAdminSelectVisible();else if(kind==='clear')window.rmxAdminClearSelection();else if(kind==='assign')window.rmxAdminBulkAssign(bulkAction.dataset.rm||'',bulkAction);return}
     const adminAction=e.target.closest('[data-rmx-admin-action]');
     if(adminAction){
       e.preventDefault();e.stopPropagation();
@@ -17820,39 +17822,52 @@ function renderMyDay(c,d){
     +'</div>';
   c.innerHTML+=card('Roster & ownership','Use the categories instead of hunting through one giant cleanup list.',
     '<div class="rmx-admin-tabs"><button data-admin-mode="active" onclick="rmxAdminSetMode(\'active\')">Active Roster</button><button data-admin-mode="unowned" onclick="rmxAdminSetMode(\'unowned\')">Ownership Gaps</button><button data-admin-mode="inactive" onclick="rmxAdminSetMode(\'inactive\')">Inactive / Removed</button></div>'
-    +'<div id="rmxAdminModeNote" class="rmx-note"></div><input class="rmx-search" id="rmxAdminAgentSearch" placeholder="Search agent…"><div id="rmxAdminAgentRows" style="margin-top:10px"></div>');
+    +'<div id="rmxAdminModeNote" class="rmx-note"></div>'
+    +'<div id="rmxAdminBulkBar" style="display:none;margin:10px 0;padding:10px 12px;border:1px solid #ded8ef;border-radius:10px;background:#faf8ff"><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><b style="margin-right:4px">Bulk ownership</b><button type="button" class="rmx-btn small" data-rmx-admin-bulk="select-visible">Select visible</button><button type="button" class="rmx-btn small" data-rmx-admin-bulk="clear">Clear selection</button><span id="rmxAdminSelectedCount" class="meta" style="min-width:72px">0 selected</span><span style="flex:1"></span><button type="button" class="rmx-btn small" data-rmx-admin-bulk="assign" data-rm="Amanda">Assign selected to Amanda</button><button type="button" class="rmx-btn small primary" data-rmx-admin-bulk="assign" data-rm="Nyny">Assign selected to Nyny</button></div><div class="meta" style="margin-top:6px">Tip: search by LP, team, brokerage, tier, or name first, then use <b>Select visible</b>. Strategic Nyny ownership rules are still protected.</div></div>'
+    +'<input class="rmx-search" id="rmxAdminAgentSearch" placeholder="Search agent, LP, team, brokerage, tier…"><div id="rmxAdminAgentRows" style="margin-top:10px"></div>');
   setTimeout(()=>rmxAdminSetMode(R.sub.adminMode||'active'),0);
 }
-window.rmxAdminSetMode=function(mode){R.sub.adminMode=mode||'active';document.querySelectorAll('[data-admin-mode]').forEach(b=>b.classList.toggle('active',b.dataset.adminMode===R.sub.adminMode));const note=$('rmxAdminModeNote');if(note){const copy={active:'<b>Active Roster:</b> current relationships. Remove only when the relationship should stop appearing in active RM workflows.',unowned:'<b>Ownership Gaps:</b> relationships without an RM owner. Assign Amanda or Nyny here.',inactive:'<b>Inactive / Removed:</b> history is preserved. These relationships stay out of active workload and rotation.'};note.innerHTML=copy[R.sub.adminMode]||copy.active;}rmxRenderAdminAgentRows(R.sub.adminMode)};
+window.rmxAdminSetMode=function(mode){R.sub.adminMode=mode||'active';document.querySelectorAll('[data-admin-mode]').forEach(b=>b.classList.toggle('active',b.dataset.adminMode===R.sub.adminMode));const note=$('rmxAdminModeNote'),bulk=$('rmxAdminBulkBar');if(note){const copy={active:'<b>Active Roster:</b> current relationships. Remove only when the relationship should stop appearing in active RM workflows.',unowned:'<b>Ownership Gaps:</b> relationships without an RM owner. Select several rows and assign them together.',inactive:'<b>Inactive / Removed:</b> history is preserved. These relationships stay out of active workload and rotation.'};note.innerHTML=copy[R.sub.adminMode]||copy.active;}if(bulk)bulk.style.display=R.sub.adminMode==='unowned'?'block':'none';rmxRenderAdminAgentRows(R.sub.adminMode)};
 window.rmxRenderAdminAgentRows=async function(mode){
   const host=$('rmxAdminAgentRows');if(!host)return;host.innerHTML=loading();
   try{const d=await load();mode=mode||R.sub.adminMode||'active';let rows=((mode==='inactive'?(d.allProfiles||d.profiles):d.profiles)||[]).slice();if(mode==='unowned')rows=rows.filter(p=>String(p.relationship_status||'active').toLowerCase()!=='inactive'&&p.do_not_contact!==true&&!String((p._assign||{}).rm||'').trim());else if(mode==='inactive')rows=rows.filter(p=>String(p.relationship_status||'active').toLowerCase()==='inactive');else rows=rows.filter(p=>String(p.relationship_status||'active').toLowerCase()!=='inactive'&&p.do_not_contact!==true);rows.sort((a,b)=>String(a.agent_name||'').localeCompare(String(b.agent_name||'')));
-    host.innerHTML=rows.length?rows.map(p=>{const name=p.agent_name||'',assign=p._assign||{};let actions='';if(mode==='unowned')actions='<button type="button" class="rmx-btn small" data-rmx-admin-action="assign" data-rm="Amanda" data-agent="'+encodeURIComponent(name)+'">Assign Amanda</button><button type="button" class="rmx-btn small primary" data-rmx-admin-action="assign" data-rm="Nyny" data-agent="'+encodeURIComponent(name)+'">Assign Nyny</button>';else if(mode==='inactive')actions='<button type="button" class="rmx-btn small" data-rmx-admin-action="reactivate" data-agent="'+encodeURIComponent(name)+'">Reactivate</button><button class="rmx-btn small" data-rmx-action="history" data-agent="'+encodeURIComponent(name)+'">History</button>';else actions='<button class="rmx-btn small" data-rmx-action="manage" data-agent="'+encodeURIComponent(name)+'">Manage</button><button type="button" class="rmx-btn small danger" data-rmx-admin-action="remove" data-agent="'+encodeURIComponent(name)+'">Remove from active</button>';return '<div class="rmx-row" data-name="'+esc(name)+'"><div><div class="name">'+esc(fmtName(p.display_name||name))+'</div><div class="meta">Tier: '+esc(p._tier||'—')+' · LP: '+esc(assign.lp||'Unassigned')+' · RM: '+esc(assign.rm||'Unassigned')+'</div></div><div class="meta">'+esc(p.brokerage||p.team||p.company||'')+'</div><div class="rmx-actions">'+actions+'</div></div>'}).join(''):empty(mode==='unowned'?'No ownership gaps found.':mode==='inactive'?'No inactive relationships found.':'No active relationships found.');wireSearch('rmxAdminAgentSearch','#rmxAdminAgentRows .rmx-row');
+    host.innerHTML=rows.length?rows.map(p=>{const name=p.agent_name||'',assign=p._assign||{};let actions='',lead='';if(mode==='unowned'){lead='<label style="display:flex;align-items:flex-start;gap:10px;cursor:pointer"><input type="checkbox" class="rmx-admin-select" data-agent="'+encodeURIComponent(name)+'" style="width:18px;height:18px;margin-top:2px"><span><div class="name">'+esc(fmtName(p.display_name||name))+'</div><div class="meta">Tier: '+esc(p._tier||'—')+' · LP: '+esc(assign.lp||'Unassigned')+' · RM: '+esc(assign.rm||'Unassigned')+'</div></span></label>';actions='<button type="button" class="rmx-btn small" data-rmx-admin-action="assign" data-rm="Amanda" data-agent="'+encodeURIComponent(name)+'">Assign Amanda</button><button type="button" class="rmx-btn small primary" data-rmx-admin-action="assign" data-rm="Nyny" data-agent="'+encodeURIComponent(name)+'">Assign Nyny</button>';}else{lead='<div><div class="name">'+esc(fmtName(p.display_name||name))+'</div><div class="meta">Tier: '+esc(p._tier||'—')+' · LP: '+esc(assign.lp||'Unassigned')+' · RM: '+esc(assign.rm||'Unassigned')+'</div></div>';if(mode==='inactive')actions='<button type="button" class="rmx-btn small" data-rmx-admin-action="reactivate" data-agent="'+encodeURIComponent(name)+'">Reactivate</button><button class="rmx-btn small" data-rmx-action="history" data-agent="'+encodeURIComponent(name)+'">History</button>';else actions='<button class="rmx-btn small" data-rmx-action="manage" data-agent="'+encodeURIComponent(name)+'">Manage</button><button type="button" class="rmx-btn small danger" data-rmx-admin-action="remove" data-agent="'+encodeURIComponent(name)+'">Remove from active</button>';}return '<div class="rmx-row" data-name="'+esc(name)+'">'+lead+'<div class="meta">'+esc(p.brokerage||p.team||p.company||'')+'</div><div class="rmx-actions">'+actions+'</div></div>'}).join(''):empty(mode==='unowned'?'No ownership gaps found.':mode==='inactive'?'No inactive relationships found.':'No active relationships found.');wireSearch('rmxAdminAgentSearch','#rmxAdminAgentRows .rmx-row');document.querySelectorAll('.rmx-admin-select').forEach(cb=>cb.addEventListener('change',rmxAdminUpdateSelectionCount));rmxAdminUpdateSelectionCount();
   }catch(e){host.innerHTML=err(e)}
 };
-window.rmxAdminAssign=async function(name,rm){
+window.rmxAdminAssign=async function(name,rm,opts){
+  opts=opts||{};
   try{
     rm=String(rm||'').trim();if(!name||!['Amanda','Nyny'].includes(rm))throw new Error('Choose Amanda or Nyny.');
-    const d=await load(true),p=(d.profiles||[]).find(x=>key(x.agent_name)===key(name))||{};
-    // Preserve strategic Nyny ownership rules already built into the tracker.
+    const d=opts.data||await load(true),p=(d.profiles||[]).find(x=>key(x.agent_name)===key(name))||{};
     if(typeof wp18StrategicNynyMatch==='function'&&wp18StrategicNynyMatch(name,p))rm='Nyny';
     const existing=await sbFetch('agent_assignments?agent_name=ilike.'+encodeURIComponent(name)+'&select=*&limit=10').catch(()=>[]);
     const exact=(existing||[]).find(x=>key(x.agent_name)===key(name));
-    if(exact){
-      await sbFetch('agent_assignments?agent_name=eq.'+encodeURIComponent(exact.agent_name),{method:'PATCH',prefer:'return=minimal',body:JSON.stringify({rm:rm})});
-    }else{
-      const old=p._assign||{},payload={agent_name:name,rm:rm,lp:(old.lp&&old.lp!=='__REMOVED__')?old.lp:'Unassigned',priority:!!old.priority,added:!!old.added,level:old.level||p._tier||p.tier||'C'};
-      await sbFetch('agent_assignments',{method:'POST',prefer:'return=minimal',body:JSON.stringify(payload)});
-    }
-    if(typeof loadAgentOwnership==='function')await loadAgentOwnership();
-    const verify=await sbFetch('agent_assignments?agent_name=ilike.'+encodeURIComponent(name)+'&select=agent_name,rm,lp&limit=10');
-    const saved=(verify||[]).find(x=>key(x.agent_name)===key(name));
-    if(!saved||String(saved.rm||'')!==rm)throw new Error('The shared ownership record did not confirm the change.');
+    if(exact){await sbFetch('agent_assignments?agent_name=eq.'+encodeURIComponent(exact.agent_name),{method:'PATCH',prefer:'return=minimal',body:JSON.stringify({rm:rm})});}
+    else{const old=p._assign||{},payload={agent_name:name,rm:rm,lp:(old.lp&&old.lp!=='__REMOVED__')?old.lp:'Unassigned',priority:!!old.priority,added:!!old.added,level:old.level||p._tier||p.tier||'C'};await sbFetch('agent_assignments',{method:'POST',prefer:'return=minimal',body:JSON.stringify(payload)});}
+    if(!opts.skipOwnershipReload&&typeof loadAgentOwnership==='function')await loadAgentOwnership();
+    if(!opts.skipVerify){const verify=await sbFetch('agent_assignments?agent_name=ilike.'+encodeURIComponent(name)+'&select=agent_name,rm,lp&limit=10');const saved=(verify||[]).find(x=>key(x.agent_name)===key(name));if(!saved||String(saved.rm||'')!==rm)throw new Error('The shared ownership record did not confirm the change.');}
     R.cache=null;R.ts=0;
-    toast(fmtName(name)+' assigned to '+rm+' ✓','success');
-    if(R.sub.adminMode==='unowned')await rmxRenderAdminAgentRows('unowned');else await go('admin',true);
-    return true;
-  }catch(e){console.error('RMX ownership assignment failed',e);toast('Could not assign owner: '+(e.message||'Unknown error'),'error');throw e}
+    if(!opts.silent)toast(fmtName(name)+' assigned to '+rm+' ✓','success');
+    if(!opts.skipRefresh){if(R.sub.adminMode==='unowned')await rmxRenderAdminAgentRows('unowned');else await go('admin',true);}
+    return {name,rm};
+  }catch(e){console.error('RMX ownership assignment failed',e);if(!opts.silent)toast('Could not assign owner: '+(e.message||'Unknown error'),'error');throw e}
+};
+window.rmxAdminUpdateSelectionCount=function(){const n=document.querySelectorAll('.rmx-admin-select:checked').length,el=$('rmxAdminSelectedCount');if(el)el.textContent=n+' selected';return n};
+window.rmxAdminSelectVisible=function(){document.querySelectorAll('#rmxAdminAgentRows .rmx-row').forEach(r=>{if(r.style.display!=='none'){const cb=r.querySelector('.rmx-admin-select');if(cb)cb.checked=true}});rmxAdminUpdateSelectionCount()};
+window.rmxAdminClearSelection=function(){document.querySelectorAll('.rmx-admin-select').forEach(cb=>cb.checked=false);rmxAdminUpdateSelectionCount()};
+window.rmxAdminBulkAssign=async function(rm,button){
+  const selected=Array.from(document.querySelectorAll('.rmx-admin-select:checked')),names=selected.map(cb=>decodeURIComponent(cb.dataset.agent||'')).filter(Boolean);if(!names.length){toast('Select at least one relationship first.','error');return}
+  if(!window.confirm('Assign '+names.length+' selected relationship'+(names.length===1?'':'s')+' to '+rm+'? Strategic Nyny ownership rules will still override where required.'))return;
+  const old=button?button.textContent:'',data=await load(true);let ok=0,failed=[];
+  try{
+    if(button){button.disabled=true;button.textContent='Assigning 0 / '+names.length+'…'}
+    for(let i=0;i<names.length;i++){
+      try{await rmxAdminAssign(names[i],rm,{data,skipOwnershipReload:true,skipVerify:false,skipRefresh:true,silent:true});ok++}catch(e){failed.push(names[i])}
+      if(button)button.textContent='Assigning '+(i+1)+' / '+names.length+'…';
+    }
+    if(typeof loadAgentOwnership==='function')await loadAgentOwnership();R.cache=null;R.ts=0;await rmxRenderAdminAgentRows('unowned');
+    toast(ok+' relationship'+(ok===1?'':'s')+' assigned'+(failed.length?' · '+failed.length+' failed':'')+' ✓',failed.length?'error':'success');
+  }finally{if(button&&button.isConnected){button.disabled=false;button.textContent=old}}
 };
 window.rmxAdminReactivate=async function(name){try{await sbFetch('agent_profiles?agent_name=eq.'+encodeURIComponent(name),{method:'PATCH',prefer:'return=minimal',body:JSON.stringify({relationship_status:'active'})});R.cache=null;R.ts=0;toast(name+' reactivated ✓','success');go('admin',true)}catch(e){toast('Could not reactivate: '+e.message,'error')}};
 window.rmxAdminRemoveAgent=async function(name){if(!window.confirm('Mark '+name+' inactive? History is preserved -- this only removes them from active RM workflows.'))return;try{await sbFetch('agent_profiles?agent_name=eq.'+encodeURIComponent(name),{method:'PATCH',prefer:'return=minimal',body:JSON.stringify({relationship_status:'inactive'})});R.cache=null;R.ts=0;toast(name+' marked inactive ✓','success');go('admin',true)}catch(e){toast('Could not update that relationship: '+(e.message||'Unknown error'),'error')}};
