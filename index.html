@@ -6517,6 +6517,7 @@ async function loadAmandaCoachingQueue(){
     if(noteIssues.length===0)good.push({level:"good",title:"Recent documentation is clean",detail:"No note-quality issues surfaced in the last 7 days."});
 
     const nowItems=signals.filter(x=>x.level==="now").slice(0,3),reviewItems=signals.filter(x=>x.level==="review").slice(0,4),goodItems=good.slice(0,3);
+    window._amandaCoachingContext={signals:signals.slice(),good:good.slice(),nowItems:nowItems.slice(),reviewItems:reviewItems.slice(),goodItems:goodItems.slice(),metrics:{mtdNew:mtdNew,mtdTotal:mtdTotal,coldWtd:coldWtd,talksWtd:talksWtd,overdue:aover.length,noteIssues:noteIssues.length,agedFlags:agedFlags.length,expectedNew:expectedNew,expectedTotal:expectedTotal}};
     let html='';
     if(!nowItems.length&&!reviewItems.length){html+='<div style="background:#EEF8F2;border:1px solid #B9DDC6;border-radius:9px;padding:10px 12px;font-size:11.5px;color:#2F6B46;font-weight:650">No coaching patterns surfaced right now. Keep watching the signals below instead of inventing a coaching problem.</div>';}
     if(nowItems.length){html+='<div style="font-size:10px;font-weight:800;color:#A33A2B;text-transform:uppercase;letter-spacing:.4px;margin:2px 0 6px">Coach now</div><div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px">'+nowItems.map(coachingSignalCard).join('')+'</div>';}
@@ -16651,6 +16652,531 @@ setTimeout(()=>{try{v126SetupReconnectCleanup();v126EnhanceReconnectRows();}catc
 .op3-focus-body .op3-section-body>.v91-two-col,
 .op3-focus-body .op3-section-body>details{border-radius:13px!important;box-shadow:none!important}
 @media(max-width:820px){.op3-focus-head{padding:12px}.op3-focus-body{padding:10px;max-height:none;overflow:visible}.op3-focus-workspace{min-height:0}}
+</style>
+
+<style id="op3-no-blank-sections-fix">
+/* Final routing fix: legacy Management cards may be created after the Option 3 shell boots. */
+#view-daniel > #v91DirectorHero,
+#view-daniel > #v92DirectorControlBar{display:none!important}
+#view-daniel.op3-built > :not(#op3Shell):not(script):not(style){display:none!important}
+#op3Shell{display:grid!important}
+.op3-main{font-family:Calibri,"Segoe UI",Arial,sans-serif!important}
+.op3-main button,.op3-main input,.op3-main select,.op3-main textarea{font-family:Calibri,"Segoe UI",Arial,sans-serif!important}
+.op3-true-focus{display:none;border:1px solid #DEDCD5;border-radius:18px;background:#FFFEFB;box-shadow:0 2px 10px rgba(48,54,47,.04);overflow:hidden;min-height:440px;margin-bottom:18px}
+.op3-true-focus-head{display:flex;align-items:center;gap:14px;padding:16px 18px;border-bottom:1px solid #ECE9E2;background:#FFFEFB;position:sticky;top:0;z-index:5}
+.op3-back-home{border:1px solid #DAD8D1;background:#fff;color:#4F6654;border-radius:10px;padding:8px 12px;font:700 14px/1 Calibri,"Segoe UI",Arial,sans-serif;cursor:pointer;white-space:nowrap}
+.op3-back-home:hover{background:#F2F4EE}
+.op3-true-focus-title{font-size:21px;font-weight:700;color:#253229;line-height:1.15}
+.op3-true-focus-sub{font-size:14px;color:#6C746D;margin-top:3px}
+.op3-true-focus-body{padding:18px;max-height:calc(100vh - 185px);overflow:auto;scrollbar-gutter:stable}
+.op3-true-focus-body>.op3-section{display:block!important;width:100%!important;min-height:0!important;margin:0!important;border:0!important;background:transparent!important;box-shadow:none!important}
+.op3-true-focus-body>.op3-section>summary{display:none!important}
+.op3-true-focus-body>.op3-section>.op3-section-body{display:block!important;max-height:none!important;overflow:visible!important;padding:0!important}
+.op3-section-body .op3-live-loading{padding:28px;text-align:center;color:#747A74;font-size:15px;border:1px dashed #D8D6CF;border-radius:12px;background:#FCFBF7}
+.op3-main .card-title{font-size:17px!important}.op3-main .card-sub{font-size:14px!important}
+.op3-main .field label{font-size:13px!important}.op3-main input,.op3-main select,.op3-main textarea{font-size:14px!important}
+.op3-main .btn-sm{font-size:13px!important}.op3-main .op3-section-title{font-size:17px!important}.op3-main .op3-section-desc{font-size:13px!important}
+@media(max-width:820px){.op3-true-focus-body{max-height:none;overflow:visible;padding:12px}.op3-true-focus-title{font-size:19px}.op3-true-focus-sub{font-size:13px}}
+</style>
+<script id="op3-live-routing-and-section-refresh">
+(function(){
+ 'use strict';
+ function boot(){
+  const view=document.getElementById('view-daniel'), shell=document.getElementById('op3Shell');
+  if(!view||!shell){setTimeout(boot,250);return;}
+  const bodyFor=id=>document.querySelector('#'+id+' .op3-section-body');
+  const bodies={my:bodyFor('op3MyDay'),amanda:bodyFor('op3Amanda'),tier:bodyFor('op3TierGrowth'),portfolio:bodyFor('op3Portfolio'),comm:bodyFor('op3Communication'),reports:bodyFor('op3Reports'),admin:bodyFor('op3Admin')};
+  if(!Object.values(bodies).every(Boolean)){setTimeout(boot,250);return;}
+  const explicit={
+   directorDailyCommandCard:'my',nynyQuickLogCard:'my',nynyWeeklyPlanDetails:'my',v85DirectorCommandCenter:'my',nynyDirectorManagementCard:'my',
+   zenAmandaPerformance:'amanda',amandaDailyGoalCard:'amanda',personalScorecard:'amanda',amandaCoachingQueueCard:'amanda',rmTeamOperatingCard:'amanda',
+   v106TierGrowthCenter:'tier',v84PartnerGraduationsDirectorCard:'tier',
+   v92PortfolioGlanceCard:'portfolio',strategicPartnersDirectorCard:'portfolio',v76StrategicPartnerMgmtCard:'portfolio',v91GrowthBoard:'portfolio',v91RetentionBoard:'portfolio',
+   v91ActionCenter:'comm',rmFlagHistoryCard:'comm',rmToLpHistoryCard:'comm',
+   v107DirectorFaceTimeCard:'reports',v91DirectorScorecard:'reports',danielSummaryOut:'reports',danielMomCard:'reports',
+   v91SystemHealth:'admin',v92LegacyReportTools:'admin',v92LegacyRoleSplit:'admin'
+  };
+  function classify(el){
+   if(!el||el.nodeType!==1)return null;
+   if(explicit[el.id])return explicit[el.id];
+   const txt=((el.getAttribute('data-title')||'')+' '+(el.textContent||'')).toLowerCase();
+   if(/lp\s*→\s*rm|rm\s*→\s*lp|handoff|flagged|escalation|leadership attention|feedback/.test(txt))return 'comm';
+   if(/tier growth|c\s*→\s*b|b\s*→\s*a|a\s*→\s*channel|graduation/.test(txt))return 'tier';
+   if(/portfolio|plan gap|relationship health|retention|strategic partner|partner growth/.test(txt))return 'portfolio';
+   if(/amanda|coaching|rm team operating|daily execution/.test(txt))return 'amanda';
+   if(/my day|nyny|director command|quick log|weekly plan|today.*director/.test(txt))return 'my';
+   if(/activity|history|face time|scorecard|analytics|trend|meeting history|production/.test(txt))return 'reports';
+   return 'admin';
+  }
+  function route(el){
+   if(!el||el===shell||el.id==='rmCleanDirectorApp'||el.tagName==='SCRIPT'||el.tagName==='STYLE'||el.id==='v91DirectorHero'||el.id==='v92DirectorControlBar')return;
+   if(shell.contains(el))return;
+   const k=classify(el), dest=bodies[k]||bodies.admin;
+   if(dest&&!dest.contains(el))dest.appendChild(el);
+   try{el.style.removeProperty('display')}catch(e){}
+  }
+  Array.from(view.children).forEach(route);
+  const mo=new MutationObserver(ms=>ms.forEach(m=>Array.from(m.addedNodes||[]).forEach(n=>{if(n.nodeType===1)setTimeout(()=>route(n),0)})));
+  mo.observe(view,{childList:true});
+
+  function meaningful(sec){
+   const b=sec&&sec.querySelector('.op3-section-body');if(!b)return false;
+   return Array.from(b.children).some(x=>!x.classList.contains('op3-live-loading') && (x.textContent||'').trim().length>3);
+  }
+  function loading(sec,on){
+   const b=sec&&sec.querySelector('.op3-section-body');if(!b)return;
+   let p=b.querySelector(':scope > .op3-live-loading');
+   if(on&&!meaningful(sec)){if(!p){p=document.createElement('div');p.className='op3-live-loading';p.textContent='Loading this workspace…';b.appendChild(p)}}
+   else if(p)p.remove();
+  }
+  async function refreshFor(id){
+   const sec=document.getElementById(id);loading(sec,true);
+   try{
+    if(typeof v91RefreshDirectorOS==='function')await v91RefreshDirectorOS();
+    if(id==='op3TierGrowth'&&typeof v106LoadTierGrowth==='function')await v106LoadTierGrowth();
+    if(id==='op3Portfolio'){
+      if(typeof loadPortfolioReview==='function')await loadPortfolioReview();
+      if(typeof v91RefreshPortfolio==='function')await v91RefreshPortfolio();
+    }
+    if(id==='op3Communication'){
+      if(typeof loadRmFlagResponseHistory==='function')await loadRmFlagResponseHistory();
+      if(typeof loadRmToLpHistory==='function')await loadRmToLpHistory();
+    }
+    if(id==='op3Reports'&&typeof loadPortfolioReview==='function')await loadPortfolioReview();
+   }catch(e){console.warn('Section refresh failed',id,e)}
+   setTimeout(()=>{Array.from(view.children).forEach(route);loading(sec,false)},350);
+  }
+
+  const oldOpen=window.op3OpenFocusedSection;
+  window.op3OpenFocusedSection=function(id){
+    if(typeof oldOpen==='function')oldOpen(id);
+    const main=shell.querySelector('.op3-main'),snap=document.getElementById('op3Snapshot'),tiles=document.getElementById('op3Sections'),focus=document.getElementById('op3TrueFocus');
+    if(main)main.classList.add('op3-focus-mode');
+    if(snap)snap.style.setProperty('display','none','important');
+    if(tiles)tiles.style.setProperty('display','none','important');
+    if(focus)focus.style.setProperty('display','block','important');
+    refreshFor(id);
+  };
+  const oldHome=window.op3ShowCleanSnapshot;
+  window.op3ShowCleanSnapshot=function(){
+    if(typeof oldHome==='function')oldHome();
+    const main=shell.querySelector('.op3-main'),snap=document.getElementById('op3Snapshot'),tiles=document.getElementById('op3Sections'),focus=document.getElementById('op3TrueFocus');
+    if(main)main.classList.remove('op3-focus-mode');
+    if(snap)snap.style.removeProperty('display');if(tiles)tiles.style.removeProperty('display');if(focus)focus.style.setProperty('display','none','important');
+  };
+  // Replace listeners after prior boot so every route uses the hardened opener.
+  document.querySelectorAll('.op3-section > summary,[data-open],.op3-nav button').forEach(el=>{
+    el.addEventListener('click',function(e){
+      let id='';
+      if(el.matches('.op3-section > summary'))id=el.parentElement.id;
+      else if(el.dataset.open)id=el.dataset.open;
+      else id=el.dataset.op3Target||'';
+      if(!id)return;
+      e.preventDefault();e.stopImmediatePropagation();e.stopPropagation();
+      if(id==='op3Snapshot')window.op3ShowCleanSnapshot();else window.op3OpenFocusedSection(id);
+    },true);
+  });
+  const back=document.getElementById('op3BackHome');if(back)back.onclick=function(e){e.preventDefault();window.op3ShowCleanSnapshot()};
+ }
+ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(boot,80),{once:true});else setTimeout(boot,80);
+})();
+</script>
+
+
+<!-- Director coaching builder: sandwich-method, live tracker context -->
+<div id="directorCoachingModal" class="dcoach-overlay" aria-hidden="true">
+  <div class="dcoach-card" role="dialog" aria-modal="true" aria-labelledby="dcoachTitle">
+    <div class="dcoach-head">
+      <div><div class="dcoach-kicker">AMANDA COACHING</div><h2 id="dcoachTitle">Build a clear coaching recap</h2><p>Positive → improve → clear next steps → positive close. Edit anything before you copy or log it.</p></div>
+      <button type="button" class="dcoach-x" onclick="closeDirectorCoaching()">×</button>
+    </div>
+    <div class="dcoach-grid">
+      <label><span>What she is doing well</span><textarea id="dcoachGood" rows="4"></textarea></label>
+      <label><span>What needs improvement</span><textarea id="dcoachImprove" rows="5"></textarea></label>
+      <label><span>What I need from Amanda</span><textarea id="dcoachAsk" rows="5" placeholder="Add anything specific you need completed, clarified, or followed up on."></textarea></label>
+      <label><span>Positive close</span><textarea id="dcoachClose" rows="3"></textarea></label>
+      <label class="dcoach-wide"><span>Anything else you want her to know? <small>Optional</small></span><textarea id="dcoachExtra" rows="3" placeholder="Add your own context here so the message sounds like you."></textarea></label>
+    </div>
+    <div class="dcoach-preview-wrap">
+      <div class="dcoach-preview-head"><strong>Email preview</strong><span>Copy/paste ready</span></div>
+      <textarea id="dcoachPreview" rows="13" readonly></textarea>
+    </div>
+    <div class="dcoach-actions">
+      <button type="button" class="dcoach-btn" onclick="closeDirectorCoaching()">Cancel</button>
+      <button type="button" class="dcoach-btn" onclick="copyDirectorCoachingEmail()">Copy email</button>
+      <button type="button" class="dcoach-btn primary" onclick="saveDirectorCoachingLog()">Save coaching log</button>
+    </div>
+    <div id="dcoachStatus" class="dcoach-status"></div>
+  </div>
+</div>
+<style id="director-coaching-cleanup-css">
+.dcoach-overlay{position:fixed;inset:0;background:rgba(28,33,29,.28);z-index:999999;display:none;align-items:center;justify-content:center;padding:20px;font-family:Calibri,"Segoe UI",Arial,sans-serif}
+.dcoach-overlay.open{display:flex}.dcoach-card{width:min(920px,96vw);max-height:92vh;overflow:auto;background:#FFFEFB;border:1px solid #DCD9D1;border-radius:18px;box-shadow:0 22px 70px rgba(31,38,32,.18);padding:22px}.dcoach-head{display:flex;justify-content:space-between;gap:18px;align-items:flex-start;border-bottom:1px solid #ECE8DF;padding-bottom:14px;margin-bottom:16px}.dcoach-kicker{font-size:12px;font-weight:700;letter-spacing:.08em;color:#617863}.dcoach-head h2{font-size:25px;line-height:1.1;margin:4px 0;color:#243028}.dcoach-head p{margin:5px 0 0;color:#6D746E;font-size:15px}.dcoach-x{border:0;background:#F2F1EC;border-radius:9px;width:36px;height:36px;font-size:25px;cursor:pointer;color:#49534B}.dcoach-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}.dcoach-grid label{display:flex;flex-direction:column;gap:6px;font-size:15px;font-weight:700;color:#2C372F}.dcoach-grid label span small{font-weight:400;color:#7A817B}.dcoach-grid textarea{width:100%;resize:vertical;border:1px solid #DAD8D1;border-radius:10px;background:#fff;padding:11px 12px;font:15px/1.45 Calibri,"Segoe UI",Arial,sans-serif;color:#27312A;box-sizing:border-box}.dcoach-wide{grid-column:1/-1}.dcoach-preview-wrap{margin-top:16px;border:1px solid #DAD8D1;border-radius:12px;background:#F9F8F3;padding:12px}.dcoach-preview-head{display:flex;justify-content:space-between;gap:10px;align-items:center;margin-bottom:7px;font-size:14px;color:#5F675F}.dcoach-preview-wrap textarea{width:100%;box-sizing:border-box;border:0;background:#fff;border-radius:9px;padding:13px;font:15px/1.5 Calibri,"Segoe UI",Arial,sans-serif;color:#222;resize:vertical}.dcoach-actions{display:flex;justify-content:flex-end;gap:9px;margin-top:14px;flex-wrap:wrap}.dcoach-btn{border:1px solid #D5D2CA;background:#fff;color:#425346;border-radius:9px;padding:9px 14px;font:700 14px Calibri,"Segoe UI",Arial,sans-serif;cursor:pointer}.dcoach-btn.primary{background:#58745F;color:#fff;border-color:#58745F}.dcoach-status{min-height:18px;margin-top:8px;text-align:right;font-size:13px;color:#467052;font-weight:700}
+/* Remove the skinny legacy summary cards created by the old Management layout. Their useful children are flattened by JS. */
+#op3Shell .v44-management-group,#op3Shell #nynyWeeklyPlanDetails{width:100%!important;max-width:none!important;min-width:0!important}
+#op3Shell .zen-growth-details,#op3Shell .zen-growth-details>summary,#op3Shell .zen-growth-details>summary>div,#op3Shell #v106TierPipeline{width:100%!important;max-width:none!important;min-width:0!important;box-sizing:border-box!important}
+#op3Shell .zen-growth-details>summary{display:flex!important}.op3-section-body>*{max-width:100%!important;min-width:0!important}.op3-section-body .card,.op3-section-body details{width:100%!important;box-sizing:border-box!important}
+#op3Shell button,#op3Shell summary{pointer-events:auto!important}
+@media(max-width:760px){.dcoach-grid{grid-template-columns:1fr}.dcoach-wide{grid-column:auto}.dcoach-card{padding:16px}.dcoach-head h2{font-size:22px}}
+</style>
+<script id="director-coaching-and-layout-final-fix">
+(function(){
+ 'use strict';
+ function val(id){return (document.getElementById(id)?.value||'').trim()}
+ function setv(id,v){const e=document.getElementById(id);if(e)e.value=v||''}
+ function bullets(items){return items.filter(Boolean).map(x=>'• '+x).join('\n')}
+ function updatePreview(){
+   const good=val('dcoachGood'), improve=val('dcoachImprove'), ask=val('dcoachAsk'), close=val('dcoachClose'), extra=val('dcoachExtra');
+   let s='Amanda,\n\n';
+   if(good)s+=good+'\n\n';
+   if(improve)s+=improve+'\n\n';
+   if(ask)s+='What I need from you next:\n'+ask+'\n\n';
+   if(extra)s+=extra+'\n\n';
+   if(close)s+=close+'\n\n';
+   s+='Best,\nNyny';
+   setv('dcoachPreview',s);
+ }
+ window.closeDirectorCoaching=function(){const m=document.getElementById('directorCoachingModal');if(m){m.classList.remove('open');m.setAttribute('aria-hidden','true')}};
+ window.openDirectorCoaching=function(topic,note){
+   const ctx=window._amandaCoachingContext||{}, good=(ctx.goodItems||ctx.good||[]), issues=(ctx.nowItems||[]).concat(ctx.reviewItems||[]), metrics=ctx.metrics||{};
+   const goodLines=good.length?good.map(x=>x.title+(x.detail?' — '+x.detail:'')).slice(0,3):['I appreciate the effort you are putting into the relationship work and your willingness to keep working from the tracker.'];
+   const selected=issues.find(x=>x.topic===topic)||issues[0]||null;
+   const issueLines=[];
+   if(selected)issueLines.push(selected.title+(selected.detail?' — '+selected.detail:''));
+   issues.filter(x=>!selected||x!==selected).slice(0,3).forEach(x=>issueLines.push(x.title+(x.detail?' — '+x.detail:'')));
+   if(!issueLines.length&&note)issueLines.push(note);
+   const asks=[];
+   if(selected&&selected.focus)asks.push(selected.focus);
+   issues.filter(x=>!selected||x!==selected).slice(0,3).forEach(x=>{if(x.focus)asks.push(x.focus)});
+   if(metrics.overdue>0)asks.push('Please clear the overdue follow-up queue and make sure each relationship has a real next step/date.');
+   if(metrics.noteIssues>0)asks.push('Please complete the missing activity notes so each touch clearly shows what happened and what comes next.');
+   setv('dcoachGood','I want to start with what is going well. '+goodLines.join(' '));
+   setv('dcoachImprove','The biggest opportunity I want us to improve on is:\n'+bullets(issueLines));
+   setv('dcoachAsk',bullets(Array.from(new Set(asks)).slice(0,5)));
+   setv('dcoachClose','I appreciate you continuing to lean into the process. I know there are a lot of moving pieces, and I am confident we can keep tightening this up together and finish strong.');
+   setv('dcoachExtra','');
+   updatePreview();
+   const m=document.getElementById('directorCoachingModal');if(m){m.classList.add('open');m.setAttribute('aria-hidden','false');setTimeout(()=>document.getElementById('dcoachGood')?.focus(),80)}
+ };
+ window.prefillAmandaCoaching=function(topic,note){window.openDirectorCoaching(topic,note)};
+ window.copyDirectorCoachingEmail=async function(){
+   updatePreview();const text=val('dcoachPreview');let ok=false;
+   try{await navigator.clipboard.writeText(text);ok=true}catch(e){try{const a=document.getElementById('dcoachPreview');a.removeAttribute('readonly');a.select();ok=document.execCommand('copy');a.setAttribute('readonly','')}catch(_){}}
+   const s=document.getElementById('dcoachStatus');if(s)s.textContent=ok?'Email copied ✓':'Select the preview and copy it manually.';
+ };
+ window.saveDirectorCoachingLog=async function(){
+   updatePreview();const text=val('dcoachPreview');const s=document.getElementById('dcoachStatus');
+   try{
+     const type=document.getElementById('nynyQuickType');if(type)type.value='Amanda Coaching / Development';
+     if(typeof nynyQuickTypeChange==='function')nynyQuickTypeChange();
+     const agent=document.getElementById('nynyQuickAgent');if(agent)agent.value='Amanda';
+     const out=document.getElementById('nynyQuickOutcome');if(out)out.value='Completed';
+     const notes=document.getElementById('nynyQuickNotes');if(notes)notes.value=text;
+     if(typeof nynyQuickWordCount==='function')nynyQuickWordCount();
+     if(typeof nynyQuickSave!=='function')throw new Error('Coaching save function is unavailable');
+     if(s)s.textContent='Saving coaching log…';
+     await nynyQuickSave();
+     if(s)s.textContent='Coaching log saved ✓';
+     setTimeout(()=>window.closeDirectorCoaching(),800);
+   }catch(e){if(s)s.textContent='Could not save: '+(e.message||e);}
+ };
+ ['dcoachGood','dcoachImprove','dcoachAsk','dcoachClose','dcoachExtra'].forEach(id=>document.addEventListener('input',e=>{if(e.target&&e.target.id===id)updatePreview()}));
+ document.addEventListener('keydown',e=>{if(e.key==='Escape')window.closeDirectorCoaching()});
+
+ function flattenLegacy(){
+   const shell=document.getElementById('op3Shell');if(!shell)return;
+   ['v44DirectorPlanning','v44AlertsHandoffs','v44Analytics','v44DataQuality'].forEach(id=>{
+     const d=document.getElementById(id);if(!d||!shell.contains(d))return;
+     const body=d.querySelector('.v44-management-group-body'), parent=d.parentNode;if(!body||!parent)return;
+     Array.from(body.children).forEach(ch=>parent.insertBefore(ch,d));d.remove();
+   });
+   const weekly=document.getElementById('nynyWeeklyPlanDetails');
+   if(weekly&&shell.contains(weekly)){const parent=weekly.parentNode;Array.from(weekly.children).filter(x=>x.tagName!=='SUMMARY').forEach(ch=>parent.insertBefore(ch,weekly));weekly.remove()}
+   document.querySelectorAll('#op3Shell .op3-section-body,#op3Shell .card,#op3Shell details,#op3Shell .zen-growth-details,#op3Shell .v106-stage').forEach(el=>{el.style.maxWidth='100%';el.style.minWidth='0';el.style.boxSizing='border-box'});
+ }
+ function wireUsefulCards(){
+   document.querySelectorAll('#op3Amanda .zen-amanda-grid > *,#op3Amanda #amandaDailyGoalCard .card,#op3Amanda .score-card').forEach(el=>{
+     if(el.dataset.cardWired)return;el.dataset.cardWired='1';el.style.cursor='pointer';el.title='Open Amanda Today';el.addEventListener('click',e=>{if(e.target.closest('button,a,input,select,textarea'))return;try{switchTab('week')}catch(_){}})
+   });
+   document.querySelectorAll('#op3Shell details > summary').forEach(s=>{s.style.cursor='pointer';s.style.pointerEvents='auto'});
+ }
+ function boot(){flattenLegacy();wireUsefulCards();setTimeout(()=>{flattenLegacy();wireUsefulCards()},700);setTimeout(()=>{flattenLegacy();wireUsefulCards()},2200)}
+ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
+ const mo=new MutationObserver(()=>{clearTimeout(window._dcoachMO);window._dcoachMO=setTimeout(()=>{flattenLegacy();wireUsefulCards()},120)});
+ setTimeout(()=>{const shell=document.getElementById('op3Shell');if(shell)mo.observe(shell,{childList:true,subtree:true})},300);
+})();
+</script>
+
+<style id="rm-final-org-search-style">
+/* Final Director organization/search interaction pass */
+#op3TrueFocusBody .rm-section-tools{display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:12px 14px;margin:0 0 12px;background:#fbfaf7;border:1px solid #e3dfd7;border-radius:12px;position:sticky;top:0;z-index:8}
+#op3TrueFocusBody .rm-section-search{flex:1;min-width:240px;height:40px;border:1px solid #d6d1c9;border-radius:10px;padding:0 12px;font:400 16px Calibri,Arial,sans-serif;background:#fff;color:#24362d;outline:none}
+#op3TrueFocusBody .rm-section-search:focus{border-color:#839b87;box-shadow:0 0 0 3px rgba(91,126,101,.10)}
+#op3TrueFocusBody .rm-section-count{font:600 14px Calibri,Arial,sans-serif;color:#68736c;white-space:nowrap}
+#op3TrueFocusBody .rm-subtabs{display:flex;gap:7px;flex-wrap:wrap;margin:0 0 12px;padding:4px;background:#f5f2f8;border:1px solid #e4dff0;border-radius:12px}
+#op3TrueFocusBody .rm-subtab{appearance:none;border:0;background:transparent;border-radius:9px;padding:8px 12px;font:600 15px Calibri,Arial,sans-serif;color:#5c526b;cursor:pointer}
+#op3TrueFocusBody .rm-subtab.active{background:#fff;color:#31473a;box-shadow:0 1px 4px rgba(45,38,63,.10)}
+#op3TrueFocusBody .rm-tab-hidden{display:none!important}
+#op3TrueFocusBody details.rm-tabbed-detail{border:0!important;background:transparent!important;padding:0!important;margin:0!important}
+#op3TrueFocusBody details.rm-tabbed-detail>summary{display:none!important}
+#op3TrueFocusBody details.rm-tabbed-detail>.op3-subgroup-body,#op3TrueFocusBody details.rm-tabbed-detail>.v44-management-group-body{display:block!important;padding:0!important}
+#v91DirectorMetrics .v91-metric{cursor:pointer;transition:transform .12s ease,box-shadow .12s ease,border-color .12s ease}
+#v91DirectorMetrics .v91-metric:hover{transform:translateY(-1px);box-shadow:0 5px 14px rgba(45,62,52,.09);border-color:#b8cbbb}
+#v91DirectorMetrics .v91-metric:focus{outline:3px solid rgba(91,126,101,.16);outline-offset:2px}
+#v91DirectorMetrics .v91-metric:after{content:'View';display:block;margin-top:8px;font:600 12px Calibri,Arial,sans-serif;color:#5b7e65;opacity:.8}
+#v92DirectorDrawer .rm-drawer-search-wrap{position:sticky;top:-1px;z-index:4;background:#fff;padding:0 0 12px;margin-bottom:6px;border-bottom:1px solid #ece8e1}
+#v92DirectorDrawer .rm-drawer-search{width:100%;box-sizing:border-box;height:42px;border:1px solid #d5d1ca;border-radius:10px;padding:0 12px;font:400 16px Calibri,Arial,sans-serif;color:#26382f;outline:none}
+#v92DirectorDrawer .rm-drawer-search:focus{border-color:#7f9a85;box-shadow:0 0 0 3px rgba(91,126,101,.10)}
+#v92DirectorDrawer .rm-drawer-count{font:600 13px Calibri,Arial,sans-serif;color:#727b75;margin-top:7px}
+#v92DirectorDrawer .rm-no-results{padding:22px;text-align:center;color:#7b817d;font:400 15px Calibri,Arial,sans-serif}
+/* kill old plus/minus affordances after tabs take over */
+#op3TrueFocusBody .op3-subgroup>summary:after,#op3TrueFocusBody .v44-management-group>summary:after{display:none!important}
+</style>
+<script id="rm-final-org-search-script">
+(function(){
+  function txt(el){return String((el&&el.textContent)||'').replace(/\s+/g,' ').trim();}
+  function sectionId(){
+    var f=document.getElementById('op3TrueFocus');
+    return f&&f.dataset?String(f.dataset.rmSection||''):'';
+  }
+  function visibleItems(root){
+    return Array.from(root.querySelectorAll('.v91-row,.v92-detail-item,.card,.v91-director-card,tr')).filter(function(el){
+      if(el.closest('.rm-tab-hidden'))return false;
+      if(el.closest('[style*="display: none"]'))return false;
+      return true;
+    });
+  }
+  function ensureSectionSearch(){
+    var body=document.getElementById('op3TrueFocusBody'); if(!body)return;
+    var old=body.querySelector(':scope > .rm-section-tools');if(old)old.remove();
+    var bar=document.createElement('div');bar.className='rm-section-tools';
+    bar.innerHTML='<input class="rm-section-search" type="search" autocomplete="off" placeholder="Search this section or agent name…"><span class="rm-section-count"></span>';
+    body.insertBefore(bar,body.firstChild);
+    var input=bar.querySelector('input'),count=bar.querySelector('.rm-section-count');
+    function apply(){
+      var q=input.value.trim().toLowerCase();
+      var items=visibleItems(body),shown=0;
+      items.forEach(function(el){
+        // only filter leaf-ish rows/cards, never the section tools/tab nav
+        if(el.closest('.rm-section-tools,.rm-subtabs'))return;
+        var ok=!q||txt(el).toLowerCase().indexOf(q)>=0;
+        // For nested items, prefer hiding the smallest matching row/detail.
+        if(el.matches('.v91-row,.v92-detail-item,tr')){el.style.display=ok?'':'none';if(ok)shown++;}
+      });
+      if(!q){count.textContent='';return;}
+      if(!shown){
+        // If this section has cards rather than rows, filter the top-level cards.
+        var cards=Array.from(body.querySelectorAll('.op3-section-body > .card,.op3-section-body > .v91-director-card,.op3-section-body > .v44-management-group'));
+        cards.forEach(function(el){var ok=txt(el).toLowerCase().indexOf(q)>=0;el.style.display=ok?'':'none';if(ok)shown++;});
+      }
+      count.textContent=q?(shown+' match'+(shown===1?'':'es')):'';
+    }
+    input.addEventListener('input',apply);
+  }
+  function makeTabsFromDetails(){
+    var body=document.getElementById('op3TrueFocusBody'); if(!body)return;
+    body.querySelectorAll(':scope > .rm-subtabs').forEach(function(x){x.remove();});
+    var inner=body.querySelector('.op3-section-body')||body;
+    var details=Array.from(inner.querySelectorAll(':scope > details.op3-subgroup,:scope > details.v44-management-group')).filter(function(d){return txt(d.querySelector(':scope > summary'));});
+    if(details.length<2)return;
+    var nav=document.createElement('div');nav.className='rm-subtabs';
+    details.forEach(function(d,i){
+      d.classList.add('rm-tabbed-detail');d.open=true;d.classList.toggle('rm-tab-hidden',i!==0);
+      var label=txt(d.querySelector(':scope > summary')).replace(/\s+/g,' ').trim();
+      var b=document.createElement('button');b.type='button';b.className='rm-subtab'+(i===0?' active':'');b.textContent=label;
+      b.addEventListener('click',function(){
+        details.forEach(function(x,j){x.classList.toggle('rm-tab-hidden',j!==i);});
+        nav.querySelectorAll('.rm-subtab').forEach(function(x,j){x.classList.toggle('active',j===i);});
+        var search=body.querySelector('.rm-section-search');if(search){search.value='';search.dispatchEvent(new Event('input'));}
+        body.scrollTop=0;
+      });nav.appendChild(b);
+    });
+    var tools=body.querySelector(':scope > .rm-section-tools');
+    if(tools)tools.insertAdjacentElement('afterend',nav);else body.insertBefore(nav,body.firstChild);
+  }
+  function organizeFocusedSection(id){
+    var focus=document.getElementById('op3TrueFocus');if(!focus)return;focus.dataset.rmSection=id||'';
+    setTimeout(function(){ensureSectionSearch();makeTabsFromDetails();},80);
+    setTimeout(function(){ensureSectionSearch();makeTabsFromDetails();},700);
+  }
+
+  // Harden focused opener and organize each workspace after it loads.
+  function wrapFocused(){
+    if(window.__rmOrgWrapped)return;window.__rmOrgWrapped=true;
+    var old=window.op3OpenFocusedSection;
+    window.op3OpenFocusedSection=function(id){
+      var r=typeof old==='function'?old(id):undefined;
+      organizeFocusedSection(id);
+      return r;
+    };
+  }
+
+  // Clickable Director metric tiles.
+  var METRIC_MAP={
+    'high priority insights':'highInsights','competitor risks':'risks','graduations moving':'grads',
+    'growth opportunities':'growth','open lp flags':'flags','core plans missing':'planGaps'
+  };
+  function wireMetrics(){
+    var host=document.getElementById('v91DirectorMetrics');if(!host)return;
+    Array.from(host.querySelectorAll('.v91-metric')).forEach(function(card){
+      var label=txt(card.querySelector('.l')).toLowerCase(),type=METRIC_MAP[label];if(!type)return;
+      card.tabIndex=0;card.setAttribute('role','button');card.setAttribute('aria-label','Open '+label);
+      card.onclick=function(){if(typeof v92OpenMetric==='function')v92OpenMetric(type);};
+      card.onkeydown=function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();card.click();}};
+    });
+  }
+
+  // Add search to any Director drawer that is a people/list drilldown.
+  function installDrawerSearch(){
+    var body=document.getElementById('v92DrawerBody');if(!body)return;
+    var items=Array.from(body.querySelectorAll(':scope > .v92-detail-item'));
+    if(items.length<2)return;
+    if(body.querySelector(':scope > .rm-drawer-search-wrap'))return;
+    var wrap=document.createElement('div');wrap.className='rm-drawer-search-wrap';
+    wrap.innerHTML='<input class="rm-drawer-search" type="search" autocomplete="off" placeholder="Search agent…"><div class="rm-drawer-count"></div>';
+    body.insertBefore(wrap,body.firstChild);
+    var input=wrap.querySelector('input'),count=wrap.querySelector('.rm-drawer-count');
+    function filter(){var q=input.value.trim().toLowerCase(),shown=0;items.forEach(function(el){var ok=!q||txt(el).toLowerCase().indexOf(q)>=0;el.style.display=ok?'':'none';if(ok)shown++;});count.textContent=shown+' of '+items.length+' shown';var n=body.querySelector('.rm-no-results');if(n)n.remove();if(q&&!shown){var x=document.createElement('div');x.className='rm-no-results';x.textContent='No relationships match “'+input.value+'”.';body.appendChild(x);}}
+    input.addEventListener('input',filter);filter();setTimeout(function(){input.focus();},50);
+  }
+  function wrapDrawer(){
+    if(window.__rmDrawerSearchWrapped||typeof window.v92OpenDrawer!=='function')return;window.__rmDrawerSearchWrapped=true;
+    var old=window.v92OpenDrawer;
+    window.v92OpenDrawer=function(title,subtitle,body){var r=old.apply(this,arguments);setTimeout(installDrawerSearch,20);return r;};
+    // v98 uses the lower-level captured drawer function, so watch actual body changes too.
+    var db=document.getElementById('v92DrawerBody');if(db&&window.MutationObserver)new MutationObserver(function(){setTimeout(installDrawerSearch,10);}).observe(db,{childList:true});
+  }
+
+  // Turn legacy +/more summaries into full-row clickable controls and prevent dead tiny affordances.
+  function wireDetails(){
+    document.querySelectorAll('#op3Shell details > summary').forEach(function(sm){
+      if(sm.dataset.rmFullClick)return;sm.dataset.rmFullClick='1';sm.style.cursor='pointer';
+      sm.setAttribute('role','button');
+    });
+  }
+
+  function boot(){
+    wrapFocused();wrapDrawer();wireDetails();wireMetrics();
+    var metrics=document.getElementById('v91DirectorMetrics');if(metrics&&window.MutationObserver)new MutationObserver(wireMetrics).observe(metrics,{childList:true,subtree:true});
+    var focus=document.getElementById('op3TrueFocusBody');if(focus&&window.MutationObserver)new MutationObserver(function(){wireDetails();}).observe(focus,{childList:true,subtree:true});
+    setTimeout(function(){wireMetrics();wireDetails();},800);
+    setTimeout(function(){wireMetrics();wireDetails();},1800);
+  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
+})();
+</script>
+
+
+<style id="rm-clean-rebuild-style">
+#op3Shell{display:none!important}
+#rmCleanDirectorApp{font-family:Calibri,Arial,sans-serif!important;color:#25342c;background:#f8f7f3;min-height:calc(100vh - 54px)}
+#rmCleanDirectorApp *{box-sizing:border-box;font-family:Calibri,Arial,sans-serif}
+.rmcd-wrap{display:grid;grid-template-columns:220px minmax(0,1fr);min-height:calc(100vh - 54px)}
+.rmcd-side{background:#fff;border-right:1px solid #e7e3dc;padding:24px 16px;position:sticky;top:54px;height:calc(100vh - 54px);overflow:auto}
+.rmcd-brand{display:flex;gap:10px;align-items:center;margin-bottom:24px;padding:0 6px}.rmcd-brand-mark{font-size:26px;color:#5c775f}.rmcd-brand strong{display:block;font-size:19px}.rmcd-brand span{font-size:14px;color:#758078}
+.rmcd-nav{display:grid;gap:6px}.rmcd-nav button{border:0;background:transparent;border-radius:10px;padding:12px 11px;text-align:left;font-size:16px;color:#334039;cursor:pointer;display:flex;gap:10px;align-items:center}.rmcd-nav button:hover{background:#f2f1ec}.rmcd-nav button.active{background:#ecefe5;color:#385440;font-weight:700}.rmcd-nav .ico{width:22px;text-align:center;font-size:18px}
+.rmcd-main{padding:22px 28px 42px;min-width:0}.rmcd-top{display:flex;align-items:center;justify-content:space-between;gap:18px;margin-bottom:18px}.rmcd-id{min-width:0}.rmcd-date{display:flex;gap:10px;align-items:center;font-size:16px}.rmcd-refresh{border:1px solid #d9d6cf;background:#fff;border-radius:10px;padding:9px 14px;font-weight:700;cursor:pointer;font-size:15px}
+.rmcd-pane{display:none}.rmcd-pane.active{display:block}.rmcd-pane-head{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;margin-bottom:14px}.rmcd-pane-head h1{font-size:27px;margin:0 0 2px}.rmcd-pane-head p{font-size:16px;color:#667169;margin:0}.rmcd-back{display:none}
+.rmcd-tabs{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 16px;padding:8px;background:#efeee8;border-radius:12px}.rmcd-tabs button{border:0;background:transparent;border-radius:9px;padding:9px 13px;font-size:15px;color:#59635d;cursor:pointer}.rmcd-tabs button.active{background:#fff;color:#2f4e39;font-weight:700;box-shadow:0 1px 3px rgba(45,55,45,.08)}
+.rmcd-tab{display:none}.rmcd-tab.active{display:block}.rmcd-stack{display:grid;gap:14px}.rmcd-card{background:#fff;border:1px solid #e2ded7;border-radius:14px;padding:18px}.rmcd-card h2{font-size:20px;margin:0 0 4px}.rmcd-card p{font-size:15px;color:#6c746f;margin:0 0 12px}.rmcd-empty{padding:24px;text-align:center;color:#788079;border:1px dashed #d9d6cf;border-radius:12px;background:#fbfaf7;font-size:15px}.rmcd-search{position:relative;margin-bottom:14px}.rmcd-search input{width:100%;height:44px;border:1px solid #d5d0c8;border-radius:11px;padding:0 14px;font-size:16px;background:#fff;outline:none}.rmcd-search input:focus{border-color:#7c987e;box-shadow:0 0 0 3px rgba(91,126,101,.10)}.rmcd-search span{display:block;margin-top:6px;font-size:13px;color:#79817c}
+#rmCleanDirectorApp .card,#rmCleanDirectorApp .v91-director-card,#rmCleanDirectorApp .v91-two-col{margin:0!important;box-shadow:none!important;border:1px solid #e2ded7!important;border-radius:14px!important;background:#fff!important;padding:18px!important}
+#rmCleanDirectorApp .v91-two-col{display:grid!important;grid-template-columns:1fr!important;gap:14px!important;padding:0!important;border:0!important;background:transparent!important}
+#rmCleanDirectorApp .card-title,#rmCleanDirectorApp .v91-section-head h2{font-size:20px!important;color:#2d3a32!important}
+#rmCleanDirectorApp .v91-section-head p,#rmCleanDirectorApp .card-sub{font-size:14px!important;line-height:1.45!important}
+#rmCleanDirectorApp button,#rmCleanDirectorApp input,#rmCleanDirectorApp select,#rmCleanDirectorApp textarea{font-size:15px!important}
+#rmCleanDirectorApp .no-data{font-size:15px!important;color:#7a817d!important;padding:22px!important}
+#rmCleanDirectorApp details>summary{font-size:16px!important;white-space:normal!important;writing-mode:horizontal-tb!important}
+#rmCleanDirectorApp [style*="font-size:9px"],#rmCleanDirectorApp [style*="font-size:9.5px"],#rmCleanDirectorApp [style*="font-size:10px"],#rmCleanDirectorApp [style*="font-size:10.5px"],#rmCleanDirectorApp [style*="font-size:11px"],#rmCleanDirectorApp [style*="font-size:11.5px"]{font-size:14px!important}
+#rmCleanDirectorApp #v23AmandaMgmtToday{display:block!important}
+#rmCleanDirectorApp #v23AmandaMgmtToday>summary{display:flex!important}
+#rmCleanDirectorApp .v44-management-group{display:none!important}
+.rmcd-plan-actions{display:flex;gap:9px;flex-wrap:wrap}.rmcd-plan-actions button{border:1px solid #d9d1b9;background:#fffaf0;color:#765c24;border-radius:9px;padding:9px 12px;font-weight:700;cursor:pointer}
+.rmcd-list-search-target[hidden]{display:none!important}
+@media(max-width:900px){.rmcd-wrap{grid-template-columns:1fr}.rmcd-side{position:static;height:auto;border-right:0;border-bottom:1px solid #e7e3dc;padding:12px}.rmcd-brand{margin-bottom:10px}.rmcd-nav{grid-template-columns:repeat(4,1fr)}.rmcd-nav button{font-size:0;justify-content:center}.rmcd-nav .ico{font-size:20px}.rmcd-main{padding:16px}.rmcd-top{align-items:flex-start}.rmcd-tabs{overflow:auto;flex-wrap:nowrap}.rmcd-tabs button{white-space:nowrap}}
+</style>
+<script id="rm-clean-rebuild-script">
+(function(){
+ const ROUTES={};
+ function q(id){return document.getElementById(id)}
+ function el(tag,cls,html){const x=document.createElement(tag);if(cls)x.className=cls;if(html!=null)x.innerHTML=html;return x}
+ function mountNode(id,target){const n=q(id);if(!n||!target)return null;n.style.display='';n.removeAttribute('hidden');target.appendChild(n);return n}
+ function makeCard(title,sub){const c=el('section','rmcd-card');c.innerHTML='<h2>'+title+'</h2>'+(sub?'<p>'+sub+'</p>':'');return c}
+ function addSearch(target,placeholder){const wrap=el('div','rmcd-search');wrap.innerHTML='<input type="search" placeholder="'+(placeholder||'Search agent or item…')+'"><span></span>';target.insertBefore(wrap,target.firstChild);const inp=wrap.querySelector('input'),stat=wrap.querySelector('span');inp.addEventListener('input',()=>{const term=inp.value.trim().toLowerCase();let shown=0,total=0;Array.from(target.querySelectorAll('.v91-row,.v92-detail-item,tr,.v106-growth-row,.rmcd-list-search-target')).forEach(r=>{if(r.closest('.rmcd-search'))return;total++;const ok=!term||String(r.textContent||'').toLowerCase().includes(term);r.hidden=!ok;if(ok)shown++;});stat.textContent=term?shown+' matching item'+(shown===1?'':'s'):'';});return wrap}
+ function mkPane(app,key,title,sub,tabs){const pane=el('section','rmcd-pane');pane.id='rmcd-'+key;pane.innerHTML='<div class="rmcd-pane-head"><div><h1>'+title+'</h1><p>'+sub+'</p></div></div>';const nav=el('div','rmcd-tabs');const body=el('div','rmcd-stack');pane.append(nav,body);tabs.forEach((t,i)=>{const b=el('button',i===0?'active':'',t.label);b.type='button';const panel=el('div','rmcd-tab'+(i===0?' active':''));panel.dataset.tab=t.id;b.onclick=()=>{nav.querySelectorAll('button').forEach(x=>x.classList.remove('active'));body.querySelectorAll(':scope>.rmcd-tab').forEach(x=>x.classList.remove('active'));b.classList.add('active');panel.classList.add('active');if(t.open)t.open(panel)};nav.appendChild(b);body.appendChild(panel);t.panel=panel});app.appendChild(pane);ROUTES[key]={pane,tabs};return pane}
+ function openPane(key){Object.values(ROUTES).forEach(r=>r.pane.classList.remove('active'));document.querySelectorAll('.rmcd-nav button').forEach(b=>b.classList.toggle('active',b.dataset.route===key));const r=ROUTES[key];if(!r)return;r.pane.classList.add('active');const active=r.tabs.find(t=>t.panel&&t.panel.classList.contains('active'))||r.tabs[0];if(active&&active.open)active.open(active.panel);window.scrollTo({top:0,behavior:'smooth'})}
+ function flattenGroup(groupId,target,excludeIds){const g=q(groupId);if(!g)return;const body=g.querySelector('.v44-management-group-body')||g;Array.from(body.children).forEach(n=>{if(excludeIds&&excludeIds.includes(n.id))return;n.style.display='';target.appendChild(n)});g.style.display='none'}
+ function routeAmandaWorkflow(){const d=q('v23AmandaMgmtToday');const target=q('rmcd-amanda-overview');if(d&&target&&d.parentNode!==target)target.appendChild(d);const mirror=q('v128MgmtAmandaRelationshipCard');if(mirror&&target&&mirror.parentNode!==target)target.appendChild(mirror)}
+ function build(){if(q('rmCleanDirectorApp'))return;const view=q('view-daniel');if(!view)return;view.classList.remove('op3-built');
+   const old=q('op3Shell');if(old)old.style.display='none';
+   const app=el('div','');app.id='rmCleanDirectorApp';
+   const wrap=el('div','rmcd-wrap');const side=el('aside','rmcd-side');const main=el('main','rmcd-main');wrap.append(side,main);app.appendChild(wrap);view.insertBefore(app,view.firstChild);
+   side.innerHTML='<div class="rmcd-brand"><div class="rmcd-brand-mark">♧</div><div><strong>RM TRACKER</strong><span>Management View</span></div></div><nav class="rmcd-nav"></nav>';
+   const nav=side.querySelector('.rmcd-nav');[['snapshot','⌂','Snapshot'],['myday','▣','My Day'],['amanda','♙','Amanda'],['tier','↗','Tier Growth'],['portfolio','▢','Portfolio'],['communication','▱','LP / RM Handoffs'],['reports','▤','Reports & History'],['admin','⚙','Admin / Tools']].forEach(([k,i,l])=>{const b=el('button','', '<span class="ico">'+i+'</span><span>'+l+'</span>');b.dataset.route=k;b.onclick=()=>openPane(k);nav.appendChild(b)});
+   const top=el('div','rmcd-top');top.innerHTML='<div class="rmcd-id" id="rmcdIdentity"></div><div class="rmcd-date"><span>▣</span><span id="rmcdDate"></span><button class="rmcd-refresh" type="button">Refresh</button></div>';main.appendChild(top);top.querySelector('.rmcd-refresh').onclick=()=>{try{v91RefreshDirectorOS()}catch(e){};try{loadManagement()}catch(e){};try{if(typeof loadRmTeamScorecard==='function')loadRmTeamScorecard()}catch(e){};try{if(typeof v23LoadAmandaSnapshot==='function')v23LoadAmandaSnapshot(true)}catch(e){};setTimeout(()=>{try{v106LoadTierGrowth(true)}catch(e){}},100)};
+   const greeting=view.querySelector('.v95-greeting');if(greeting)q('rmcdIdentity').appendChild(greeting);else q('rmcdIdentity').innerHTML='<div style="font-size:24px;font-weight:700">Good '+(new Date().getHours()<12?'morning':new Date().getHours()<17?'afternoon':'evening')+', Nyny</div><div style="font-size:16px;color:#68736c">Director of Client Experience</div>';q('rmcdDate').textContent=new Date().toLocaleDateString(undefined,{month:'short',day:'numeric',year:'numeric'});
+   const pages=el('div','');main.appendChild(pages);
+   // Snapshot keeps only the high-value home dashboard.
+   mkPane(pages,'snapshot','Snapshot','The handful of things you need to see all day, every day.',[{id:'home',label:'Overview',open(panel){if(!panel.dataset.ready){const snap=q('op3Snapshot');if(snap){snap.style.display='';panel.appendChild(snap)}else panel.appendChild(makeCard('Snapshot','Live snapshot is loading.'));panel.dataset.ready='1'}}}]);
+   // MY DAY - Nyny only.
+   mkPane(pages,'myday','My Day','Only your Director calls, meetings, follow-ups and leadership work.',[
+    {id:'today',label:'Today',open(panel){if(!panel.dataset.ready){mountNode('directorDailyCommandCard',panel);routeAmandaWorkflow();panel.dataset.ready='1'}try{v21LoadDailyPlan(true)}catch(e){}}},
+    {id:'score',label:'My Scorecard',open(panel){if(!panel.dataset.ready){mountNode('v91DirectorScorecard',panel);panel.dataset.ready='1'}try{v91RefreshDirectorOS()}catch(e){}}},
+    {id:'leadership',label:'Leadership',open(panel){if(!panel.dataset.ready){mountNode('v85DirectorCommandCenter',panel);flattenGroup('v44DirectorPlanning',panel);panel.dataset.ready='1'}try{v85LoadCommandCenter()}catch(e){}}},
+    {id:'facetime',label:'Face Time',open(panel){if(!panel.dataset.ready){mountNode('v107DirectorFaceTimeCard',panel);panel.dataset.ready='1'}try{v107RenderDirectorFaceTime()}catch(e){}}}
+   ]);
+   // AMANDA only.
+   mkPane(pages,'amanda','Amanda','Her execution, pace, coaching and relationship workload.',[
+    {id:'overview',label:'Today & Pace',open(panel){panel.id='rmcd-amanda-overview';if(!panel.dataset.ready){['amandaDailyGoalCard','personalScorecard','v44AmandaCheckinCard','v23AmandaMgmtToday','v128MgmtAmandaRelationshipCard'].forEach(id=>mountNode(id,panel));panel.dataset.ready='1'}routeAmandaWorkflow();try{if(typeof v23LoadAmandaSnapshot==='function')v23LoadAmandaSnapshot(true)}catch(e){};try{if(typeof loadManagement==='function')loadManagement()}catch(e){};try{if(typeof loadRmTeamScorecard==='function')loadRmTeamScorecard()}catch(e){}}},
+    {id:'coaching',label:'Coaching',open(panel){if(!panel.dataset.ready){mountNode('amandaCoachingQueueCard',panel);panel.dataset.ready='1'}try{if(typeof loadAmandaCoachingQueue==='function')loadAmandaCoachingQueue()}catch(e){};try{if(typeof loadManagement==='function')loadManagement()}catch(e){}}},
+    {id:'goals',label:'Team Goals',open(panel){if(!panel.dataset.ready){mountNode('rmTeamOperatingCard',panel);panel.dataset.ready='1'}try{if(typeof loadRmTeamScorecard==='function')loadRmTeamScorecard()}catch(e){};try{if(typeof loadManagement==='function')loadManagement()}catch(e){}}}
+   ]);
+   // Tier Growth: direct live containers, no legacy accordion shells.
+   mkPane(pages,'tier','Tier Growth','Daniel’s net tier-count score plus the work creating the growth.',[
+    {id:'score',label:'Score & Targets',open(panel){if(!panel.dataset.ready){const c=makeCard('Tier Growth Score','Channel 15% · A 15% · B 20%. Net counts determine the score.');panel.appendChild(c);mountNode('v106TierGoalCards',c);panel.dataset.ready='1'}try{v106LoadTierGrowth(true)}catch(e){}}},
+    {id:'opps',label:'Growth Opportunities',open(panel){if(!panel.dataset.ready){const c=makeCard('Growth Opportunities','C → B, B → A and A → Channel opportunities. These explain how we are creating growth; they do not create the score.');panel.appendChild(c);mountNode('v106TierPipeline',c);addSearch(c,'Search agent in growth opportunities…');panel.dataset.ready='1'}try{v106LoadTierGrowth(true)}catch(e){}}},
+    {id:'moves',label:'Movements',open(panel){if(!panel.dataset.ready){mountNode('v84PartnerGraduationsDirectorCard',panel);panel.dataset.ready='1'}try{v84LoadPartnerGraduations()}catch(e){}}}
+   ]);
+   mkPane(pages,'portfolio','Portfolio','Your book, growth, retention and relationship planning.',[
+    {id:'overview',label:'Overview',open(panel){if(!panel.dataset.ready){mountNode('v92PortfolioGlanceCard',panel);panel.dataset.ready='1'}try{v91RefreshDirectorOS()}catch(e){}}},
+    {id:'growth',label:'Growth',open(panel){if(!panel.dataset.ready){mountNode('v91GrowthBoard',panel);addSearch(panel,'Search growth relationships…');panel.dataset.ready='1'}try{v91RefreshDirectorOS()}catch(e){}}},
+    {id:'risk',label:'Retention & Risk',open(panel){if(!panel.dataset.ready){mountNode('v91RetentionBoard',panel);addSearch(panel,'Search at-risk relationships…');panel.dataset.ready='1'}try{v91RefreshDirectorOS()}catch(e){}}},
+    {id:'planning',label:'Plan Gaps',open(panel){if(!panel.dataset.ready){const c=makeCard('Relationship Plan Gaps','Nyny-owned A/B/Channel relationships missing a next relationship move.');c.innerHTML+='<div class="rmcd-plan-actions"><button type="button" id="rmcdPlanGapBtn">Open searchable plan gaps</button></div>';panel.appendChild(c);c.querySelector('#rmcdPlanGapBtn').onclick=()=>{if(typeof v92OpenMetric==='function')v92OpenMetric('planGaps')};panel.dataset.ready='1'}}},
+    {id:'strategic',label:'Strategic Partners',open(panel){if(!panel.dataset.ready){mountNode('strategicPartnersDirectorCard',panel);panel.dataset.ready='1'}try{loadStrategicPartnerManagement()}catch(e){}}}
+   ]);
+   mkPane(pages,'communication','LP / RM Handoffs','Only communication, flags, responses and handoffs.',[
+    {id:'lp',label:'LP → RM',open(panel){if(!panel.dataset.ready){mountNode('rmFlagHistoryCard',panel);panel.dataset.ready='1'}try{loadRmFlagResponseHistory()}catch(e){}}},
+    {id:'rm',label:'RM → LP',open(panel){if(!panel.dataset.ready){mountNode('rmToLpHistoryCard',panel);panel.dataset.ready='1'}try{loadRmToLpHistory()}catch(e){}}},
+    {id:'open',label:'Open Flags',open(panel){if(!panel.dataset.ready){const c=makeCard('Open LP Flags','Only unresolved handoffs needing RM attention.');c.innerHTML+='<div class="rmcd-plan-actions"><button type="button" id="rmcdOpenFlagsBtn">View open flags</button></div>';panel.appendChild(c);c.querySelector('#rmcdOpenFlagsBtn').onclick=()=>{if(typeof v92OpenMetric==='function')v92OpenMetric('flags')};panel.dataset.ready='1'}}}
+   ]);
+   mkPane(pages,'reports','Reports & History','Performance, activity and historical detail — only when you need it.',[
+    {id:'reports',label:'Report Tools',open(panel){if(!panel.dataset.ready){mountNode('v92LegacyReportTools',panel);panel.dataset.ready='1'}}},
+    {id:'analytics',label:'Analytics',open(panel){if(!panel.dataset.ready){flattenGroup('v44Analytics',panel);panel.dataset.ready='1'}try{loadManagement()}catch(e){}}},
+    {id:'history',label:'Activity History',open(panel){if(!panel.dataset.ready){const c=makeCard('Activity History','Use Agent History for a focused person-by-person view, or Activity Feed for the full stream.');c.innerHTML+='<div class="rmcd-plan-actions"><button type="button" id="rmcdHistBtn">Open Agent History</button><button type="button" id="rmcdFeedBtn">Open Activity Feed</button></div>';panel.appendChild(c);c.querySelector('#rmcdHistBtn').onclick=()=>switchTab('history');c.querySelector('#rmcdFeedBtn').onclick=()=>switchTab('feed');panel.dataset.ready='1'}}}
+   ]);
+   mkPane(pages,'admin','Admin / Tools','System health, ownership, assignments and cleanup.',[
+    {id:'health',label:'System Health',open(panel){if(!panel.dataset.ready){mountNode('v91SystemHealth',panel);panel.dataset.ready='1'}try{v91RefreshDirectorOS()}catch(e){}}},
+    {id:'audit',label:'Data Quality',open(panel){if(!panel.dataset.ready){flattenGroup('v44DataQuality',panel);panel.dataset.ready='1'}try{loadManagement()}catch(e){}}},
+    {id:'agents',label:'Agent Search',open(panel){if(!panel.dataset.ready){const c=makeCard('Agent Search','Search the full relationship history/contact workspace.');c.innerHTML+='<div class="rmcd-plan-actions"><button type="button" id="rmcdAgentSearchBtn">Open Agent Search</button><button type="button" id="rmcdContactsBtn">Open Contacts</button></div>';panel.appendChild(c);c.querySelector('#rmcdAgentSearchBtn').onclick=()=>switchTab('history');c.querySelector('#rmcdContactsBtn').onclick=()=>switchTab('contacts');panel.dataset.ready='1'}}}
+   ]);
+   // keep all other legacy Management content out of sight; live nodes above are moved into the clean app.
+   Array.from(view.children).forEach(ch=>{if(ch!==app && !ch.classList.contains('modal-overlay'))ch.style.display='none'});
+   openPane('snapshot');
+   // Keep late-created Amanda mirror in Amanda, never My Day.
+   if(window.MutationObserver)new MutationObserver(()=>routeAmandaWorkflow()).observe(view,{childList:true,subtree:true});
+   // Refresh essential data after the rebuild has finished moving nodes.
+   setTimeout(()=>{try{v91RefreshDirectorOS()}catch(e){};try{v106LoadTierGrowth(true)}catch(e){};try{if(typeof v23LoadAmandaSnapshot==='function')v23LoadAmandaSnapshot(true)}catch(e){};try{if(typeof loadManagement==='function')loadManagement()}catch(e){};try{if(typeof loadRmTeamScorecard==='function')loadRmTeamScorecard()}catch(e){}},350);
+ }
+ function start(){setTimeout(build,1200)}
+ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start,{once:true});else start();
+})();
+</script>
+
+
+<style id="rm-clean-rebuild-visibility-hotfix">
+#view-daniel.view > #rmCleanDirectorApp:not(#op3Shell){display:block!important;visibility:visible!important;opacity:1!important;width:100%!important;min-height:calc(100vh - 54px)!important}
+#view-daniel #rmCleanDirectorApp .rmcd-pane.active{display:block!important}
+#view-daniel #rmCleanDirectorApp .rmcd-tab.active{display:block!important}
+#view-daniel #op3Shell{display:none!important}
 </style>
 </body>
 </html>
