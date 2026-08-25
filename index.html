@@ -2115,6 +2115,16 @@ body.rm-director-route .tabs,body.rm-director-route .who-bar{display:none!import
 <option value="nophone">Missing phone</option>
 </select>
 </div>
+<div id="v234ContactsBulkBar" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:-2px 0 12px;padding:9px 10px;border:1px solid #DED8EF;border-radius:9px;background:#FAF8FF">
+  <strong style="font-size:11.5px;color:var(--text-2)">Bulk cleanup</strong>
+  <button type="button" class="btn-sm" onclick="v234SelectVisibleContacts()">Select visible</button>
+  <button type="button" class="btn-sm" onclick="v234ClearContactSelection()">Clear</button>
+  <span id="v234ContactSelectedCount" style="font-size:11px;color:var(--text-3);min-width:68px">0 selected</span>
+  <span style="flex:1"></span>
+  <button type="button" class="btn-sm" onclick="v234BulkRemoveFromActive(this)">Remove selected from active</button>
+  <button type="button" class="btn-sm" style="color:#9F3F39;border-color:#E3B9B5;background:#FFF8F7" onclick="v234BulkPermanentRemove(this)">Permanently remove selected</button>
+  <div style="flex-basis:100%;font-size:10px;color:var(--text-4);line-height:1.45">Use <strong>Permanent remove</strong> for bad spellings/duplicates you never want back. History stays preserved. For exact same-name duplicate rows, use <strong>Clean names</strong> so the tracker can protect the correct keeper.</div>
+</div>
 <div id="contactsDupeBanner"></div>
 <div id="contacts-list"><div class="no-data">Loading contacts...</div></div>
 </div>
@@ -18639,6 +18649,139 @@ window.rmxBoot=boot;const baseSwitch=window.switchTab;window.switchTab=function(
     if(!document.hidden&&directorOpen()&&!directorBusy())forceDirectorRefresh('automatic live check');
   },12000);
   window.addEventListener('beforeunload',function(){try{if(timer)clearInterval(timer);if(bc)bc.close()}catch(e){}});
+})();
+</script>
+
+<script id="v234-contacts-bulk-cleanup-js">
+(function(){
+  const selected=new Set();
+  window.v234ContactSelection=selected;
+  const enc=s=>encodeURIComponent(String(s||''));
+  const dec=s=>{try{return decodeURIComponent(String(s||''))}catch(e){return String(s||'')}};
+  const esc=s=>typeof escHtml==='function'?escHtml(String(s||'')):String(s||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const key=s=>typeof ownerKey==='function'?ownerKey(s):String(s||'').trim().toLowerCase();
+
+  function updateCount(){
+    const el=document.getElementById('v234ContactSelectedCount');
+    if(el)el.textContent=selected.size+' selected';
+  }
+  window.v234UpdateContactSelection=function(cb){
+    const name=dec(cb&&cb.dataset?cb.dataset.agent:'');
+    if(!name)return;
+    if(cb.checked)selected.add(name);else selected.delete(name);
+    updateCount();
+  };
+  window.v234SelectVisibleContacts=function(){
+    document.querySelectorAll('#contacts-list .v234-contact-select').forEach(cb=>{
+      const row=cb.closest('.contact-row');
+      if(!row||row.style.display==='none')return;
+      cb.checked=true;selected.add(dec(cb.dataset.agent));
+    });
+    updateCount();
+  };
+  window.v234ClearContactSelection=function(){
+    selected.clear();
+    document.querySelectorAll('#contacts-list .v234-contact-select').forEach(cb=>cb.checked=false);
+    updateCount();
+  };
+
+  function decorateRows(){
+    const rows=document.querySelectorAll('#contacts-list .contact-row');
+    rows.forEach(row=>{
+      if(row.querySelector('.v234-contact-select'))return;
+      const contactBtn=row.querySelector('button[data-name]');
+      const name=(contactBtn&&contactBtn.dataset&&contactBtn.dataset.name)||'';
+      if(!name)return;
+      const box=document.createElement('label');
+      box.className='v234-contact-selector';
+      box.style.cssText='display:flex;align-items:center;justify-content:center;flex:0 0 22px;align-self:center';
+      box.title='Select '+name;
+      box.innerHTML='<input class="v234-contact-select" type="checkbox" data-agent="'+enc(name)+'" style="width:16px;height:16px;cursor:pointer;accent-color:var(--brand)" '+(selected.has(name)?'checked':'')+' onchange="v234UpdateContactSelection(this)">';
+      row.insertBefore(box,row.firstChild);
+    });
+    updateCount();
+  }
+
+  const oldRender=window.renderContacts;
+  if(typeof oldRender==='function'&&!oldRender.__v234){
+    const wrapped=function(list){
+      const r=oldRender.apply(this,arguments);
+      decorateRows();
+      return r;
+    };
+    wrapped.__v234=true;
+    window.renderContacts=wrapped;
+  }
+
+  async function exactProfile(name){
+    if(typeof findAgentProfileByName==='function'){
+      const r=await findAgentProfileByName(name);
+      if(r.ambiguous)throw new Error('Multiple profiles match '+name+'. Use Clean names for exact duplicate groups so the correct keeper is protected.');
+      return r.exact||null;
+    }
+    const rows=await sbFetch('agent_profiles?agent_name=ilike.'+encodeURIComponent(name)+'&select=agent_name&limit=5');
+    if((rows||[]).length>1)throw new Error('Multiple profiles match '+name+'. Use Clean names first.');
+    return (rows||[])[0]||null;
+  }
+
+  async function removeActive(name){
+    const p=await exactProfile(name);
+    const canonical=(p&&p.agent_name)||name;
+    if(p)await sbProfileWrite('agent_profiles?agent_name=eq.'+encodeURIComponent(canonical),'PATCH',{relationship_status:'inactive'});
+    else await sbProfileWrite('agent_profiles','POST',{agent_name:canonical,relationship_status:'inactive'});
+    if(typeof removeAgentAcrossSharedTrackers==='function')await removeAgentAcrossSharedTrackers(canonical);
+    return canonical;
+  }
+
+  async function permanentRemove(name){
+    // Reuse the fully shared Director tombstone when present; it also clears RM/LP active ownership/work queues.
+    if(typeof window.rmxAdminPermanentRemove==='function'){
+      return window.rmxAdminPermanentRemove(name,{skipConfirm:true,skipRefresh:true,skipOwnershipReload:true,silent:true});
+    }
+    const p=await exactProfile(name),canonical=(p&&p.agent_name)||name;
+    const marker=(typeof HIDDEN_PROFILE_MARKER!=='undefined'?HIDDEN_PROFILE_MARKER:'__HIDDEN__');
+    if(p)await sbProfileWrite('agent_profiles?agent_name=eq.'+encodeURIComponent(canonical),'PATCH',{relationship_status:'inactive',display_name:marker});
+    else await sbProfileWrite('agent_profiles','POST',{agent_name:canonical,relationship_status:'inactive',display_name:marker});
+    if(typeof removeAgentAcrossSharedTrackers==='function')await removeAgentAcrossSharedTrackers(canonical);
+    const owners=await sbFetch('agent_assignments?agent_name=ilike.'+encodeURIComponent(canonical)+'&select=agent_name,lp,rm&limit=10').catch(()=>[]);
+    await Promise.all((owners||[]).filter(x=>key(x.agent_name)===key(canonical)).map(x=>sbFetch('agent_assignments?agent_name=eq.'+encodeURIComponent(x.agent_name),{method:'PATCH',prefer:'return=minimal',body:JSON.stringify({lp:'__REMOVED__',rm:'Unassigned'})}).catch(()=>{})));
+    return {name:canonical,removed:true};
+  }
+
+  async function runBulk(kind,button){
+    const names=Array.from(selected);
+    if(!names.length){if(typeof toast==='function')toast('Select at least one relationship first.','error');return;}
+    const permanent=kind==='permanent';
+    const msg=permanent
+      ?'Permanently remove '+names.length+' selected relationship'+(names.length===1?'':'s')+'?\n\nUse this for bad spellings, duplicates, or people who should never return to the active trackers. Historical activity is preserved.'
+      :'Remove '+names.length+' selected relationship'+(names.length===1?'':'s')+' from active RM/Core Team workflows?\n\nThis is reversible. Historical activity is preserved.';
+    if(!window.confirm(msg))return;
+    const old=button?button.textContent:'';let ok=0,failed=[];
+    try{
+      if(button){button.disabled=true;button.textContent=(permanent?'Removing ':'Updating ')+'0 / '+names.length+'…';}
+      for(let i=0;i<names.length;i++){
+        try{if(permanent)await permanentRemove(names[i]);else await removeActive(names[i]);ok++;}
+        catch(e){console.error('Bulk contact cleanup failed for',names[i],e);failed.push(names[i]);}
+        if(button)button.textContent=(permanent?'Removing ':'Updating ')+(i+1)+' / '+names.length+'…';
+      }
+      selected.clear();
+      try{if(typeof loadAgentOwnership==='function')await loadAgentOwnership()}catch(e){}
+      try{if(typeof loadSharedDisplayNames==='function')await loadSharedDisplayNames()}catch(e){}
+      if(typeof loadContacts==='function')await loadContacts();
+      try{if(typeof initAutocomplete==='function')initAutocomplete()}catch(e){}
+      const copy=ok+' relationship'+(ok===1?'':'s')+(permanent?' permanently removed':' removed from active')+(failed.length?' · '+failed.length+' failed':'')+' ✓';
+      if(typeof toast==='function')toast(copy,failed.length?'error':'success',failed.length?6000:3500);
+      if(failed.length&&typeof toast==='function')setTimeout(()=>toast('Could not remove: '+failed.slice(0,3).join(', ')+(failed.length>3?' +'+(failed.length-3)+' more':''),'error',6500),700);
+    }finally{
+      if(button&&button.isConnected){button.disabled=false;button.textContent=old;}
+      updateCount();
+    }
+  }
+  window.v234BulkRemoveFromActive=function(button){return runBulk('active',button)};
+  window.v234BulkPermanentRemove=function(button){return runBulk('permanent',button)};
+
+  // Initial decoration if Contacts happened to render before this final patch loads.
+  decorateRows();
 })();
 </script>
 </body>
