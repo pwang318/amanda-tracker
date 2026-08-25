@@ -1,8 +1,9 @@
-   <!DOCTYPE html>
+    <!DOCTYPE html>
 <!-- v229 ENCOMPASS XLSX IMPORT + TRANSACTION PREFILL · 2026-08-25 -->
 <!-- v217 4-WEEK BUTTON HANDLER FIX · 2026-08-21 -->
 <!-- v228 SMART NEXT-MOVE ENGINE + ACTIONABLE WORKFLOW · 2026-08-25 -->
 <!-- v226 PERMANENT ROSTER REMOVAL + BULK DELETE · 2026-08-21 -->
+<!-- v232 STABLE ACTION ROUTER + TRANSACTION REFRESH LOOP FIX · 2026-08-25 -->
 <!-- v227 DIRECTOR SAVE / RISK / TOMBSTONE / REFRESH STABILITY FIX · 2026-08-25 -->
 
 <!-- Cleanup pass: floating Page Guide + stale developer build logs removed; active workflow logic preserved. -->
@@ -12679,8 +12680,8 @@ async function v21LoadDailyPlan(force){
     v21RenderOwner("Nyny","v21NynyDayPlan","v21NynyCapacity",nb,data.nyny,data,acts,monthActs,scheduledActs,date);
     v21RenderOwner("Amanda","v21AmandaDayPlan","v21AmandaCapacity",ab,data.amanda,data,acts,monthActs,scheduledActs,date);
     // Snapshot is Amanda's TODAY workspace. Never let Nyny's Management date selector change Amanda's Snapshot to a past/future day.
-    if(date===today()&&document.getElementById("v22AmandaSnapshotPlan"))v21RenderOwner("Amanda","v22AmandaSnapshotPlan","v22AmandaSnapshotCapacity",ab,data.amanda,data,acts,monthActs,scheduledActs,date);
-  }catch(e){console.error("v21 daily plan error",e);const s=document.getElementById("v21DailyPlanStatus");if(s)s.innerHTML='<div style="font-size:10.5px;color:#6B6670;background:#F7F5FA;border:1px solid #E4E0EA;border-radius:8px;padding:7px 9px">Live schedule sync is retrying. Amanda can continue working the priority lists below.</div>';setTimeout(()=>{try{v21LoadDailyPlan(true)}catch(_){}},3500);
+    if(date===today()&&document.getElementById("v22AmandaSnapshotPlan"))v21RenderOwner("Amanda","v22AmandaSnapshotPlan","v22AmandaSnapshotCapacity",ab,data.amanda,data,acts,monthActs,scheduledActs,date); window._v233DailyRetryCount=0; window._v233AmandaRetryCount=0; setTimeout(()=>{try{if(typeof window.v113DistributeSmart==="function")window.v113DistributeSmart();if(typeof window.v231RenderTransactionWork==="function")window.v231RenderTransactionWork();}catch(_e){}},0);
+  }catch(e){console.error("v21 daily plan error",e);const s=document.getElementById("v21DailyPlanStatus");if(s)s.innerHTML='<div style="font-size:10.5px;color:#6B6670;background:#F7F5FA;border:1px solid #E4E0EA;border-radius:8px;padding:7px 9px">Live schedule sync is retrying. Amanda can continue working the priority lists below.</div>';window._v233DailyRetryCount=(window._v233DailyRetryCount||0)+1;if(window._v233DailyRetryCount===1)setTimeout(()=>{try{if(!document.hidden&&!userTyping)v21LoadDailyPlan(true)}catch(_){}},15000);
   }finally{_v21PlanLoading=false;}
 }
 async function v23SaveBlockPayload(payload){
@@ -12726,14 +12727,14 @@ async function v23LoadAmandaSnapshot(force){
       sbFetch("amanda_activities?select=agent_name,act_type,act_date,outcome,notes,follow_up_date&follow_up_date=eq."+date+"&limit=1000").catch(()=>[])
     ]);
     const ab=(blocks||[]).filter(b=>b.owner==="Amanda");
-    v21RenderOwner("Amanda","v22AmandaSnapshotPlan","v22AmandaSnapshotCapacity",ab,data.amanda,data,acts,monthActs,scheduledActs,date);
+    v21RenderOwner("Amanda","v22AmandaSnapshotPlan","v22AmandaSnapshotCapacity",ab,data.amanda,data,acts,monthActs,scheduledActs,date); window._v233AmandaRetryCount=0; setTimeout(()=>{try{if(typeof window.v113DistributeSmart==="function")window.v113DistributeSmart();if(typeof window.v231RenderTransactionWork==="function")window.v231RenderTransactionWork();}catch(_e){}},0);
   }catch(e){
     console.error("Amanda Workflow error",e);
     const existing=String(host.innerHTML||'').trim();
     if(!existing||/Loading|Unable to build/i.test(existing)){
       host.innerHTML='<div class="no-data" style="color:var(--text-3)">Core priorities are still available above. Relationship priorities are refreshing automatically…</div>';
     }
-    setTimeout(()=>{try{v23LoadAmandaSnapshot(true)}catch(_){}},3500);
+    window._v233AmandaRetryCount=(window._v233AmandaRetryCount||0)+1; if(window._v233AmandaRetryCount===1)setTimeout(()=>{try{if(!document.hidden&&!userTyping)v23LoadAmandaSnapshot(true)}catch(_){}},15000);
   }
 }
 function v21Init(){const d=document.getElementById("v21PlanDate");if(d&&!d.value)d.value=today();v21LoadDailyPlan(true);v23LoadAmandaSnapshot(true);}
@@ -13557,7 +13558,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
     s6.lastChild.innerHTML=bodyTitle('Relationship work','Today’s priority names');var sh=el('div');sh.id='v113SmartHost';s6.lastChild.appendChild(sh);
     s7.lastChild.innerHTML=bodyTitle('C → B growth','Grow the right C relationships');var gh=el('div');gh.id='v113GrowthHost';s7.lastChild.appendChild(gh);
     s8.lastChild.innerHTML=bodyTitle('Maintenance','Only if priority work is done');var mh=el('div');mh.id='v113MaintenanceHost';s8.lastChild.appendChild(mh);
-    var source=document.getElementById('v22AmandaSnapshotPlan');if(source){source.style.display='none';card.appendChild(source);var obs=new MutationObserver(function(){setTimeout(distribute,0)});obs.observe(source,{childList:true,subtree:false});}
+    var source=document.getElementById('v22AmandaSnapshotPlan');if(source){source.style.display='none';card.appendChild(source);/* v233 stability: no MutationObserver here. Successful data refreshes explicitly redistribute the snapshot once. */}
     // nurture / graduation are meaningful smart-work cards
     ['rmNurtureTodayCard','v84AmandaGraduationCard'].forEach(function(id){var n=document.getElementById(id);if(n)sh.appendChild(n);});
     distribute();
@@ -15760,8 +15761,8 @@ setTimeout(function(){v124MountAudit();v122RenderAudit();},1200);
       +'<b>CTC:</b> work both buyer agent + listing agent. If no answer, leave voicemail + send text. Log the attempt and required follow-up.<br>'
       +'<b>Complete means:</b> required calls are worked and the outcome/next step is documented. These qualifying touches count toward the 20/day Talk-to goal.'
       +'<div class="v171-tx-actions">'
-      +'<button class="primary" onclick="rmOpenNewContractLog()">Log New Contract Call</button>'
-      +'<button class="primary" onclick="rmOpenCTCLog()">Log CTC Call</button>'
+      +'<button type="button" class="primary" onclick="rmOpenNewContractLog()">Log New Contract Call</button>'
+      +'<button type="button" class="primary" onclick="rmOpenCTCLog()">Log CTC Call</button>'
       +'</div>';
     host.appendChild(box);
   }
@@ -17628,8 +17629,24 @@ function renderSnapshot(c,d){
   c.innerHTML+='<section class="rmx-card"><div class="rmx-card-head"><h2><span class="rmx-section-num">4</span>At-Risk Relationships</h2><button class="rmx-link" data-rmx-jump="risk">View Full Portfolio Risk →</button></div><div class="rmx-inline-note"><b>Risk logic:</b> recent lead activity counts as current engagement. A missing growth plan is shown as a growth gap, but does not by itself make a partner “At Risk.”</div><div class="rmx-tablewrap"><table class="rmx-table"><thead><tr><th>Agent / Partner</th><th>Tier</th><th>Owner</th><th>Last Touch / Lead</th><th>Issue</th><th>Next Step</th><th>Actions</th></tr></thead><tbody>'+(topRisk.length?topRisk.map(r=>relationshipRow(d,r)).join(''):'<tr><td colspan="7">No current risk items.</td></tr>')+'</tbody></table></div></section>';
 }
  
+function rmxFridayWeekKey(){
+  const d=new Date(todayS()+'T12:00:00'),day=d.getDay(),diff=(day===0?-6:1-day);d.setDate(d.getDate()+diff);return d.toISOString().slice(0,10);
+ }
+ function rmxFridayPreapprovalHtml(){
+  const key='rmx_friday_preapproval_'+rmxFridayWeekKey(),done=localStorage.getItem(key)==='1',d=new Date(todayS()+'T12:00:00'),day=d.getDay();
+  const status=done?'Complete':day===5?'Due today':day===6||day===0?'Past due':day<5?'Due Friday':'Due Friday';
+  const tone=done?'done':(day===5?'due':((day===6||day===0)?'overdue':''));
+  return '<section id="rmxFridayRevenueMove" class="rmx-card rmx-friday-move '+tone+'"><div class="rmx-friday-main"><div class="rmx-friday-kicker">WEEKLY REVENUE MOVE · FRIDAY</div><h2>Send preapproved-buyer opportunities to our agents</h2><div class="rmx-friday-copy">Pull the clients preapproved in the last 60 days, build the buyer-opportunity list, and send the preapproval buyer email to our agents. This is relationship + referral-generating work, not admin filler.</div><div class="rmx-friday-steps"><span>1 · Pull 60-day preapproval list</span><span>2 · Clean / verify buyer needs</span><span>3 · Send to agents Friday</span></div></div><div class="rmx-friday-side"><span class="rmx-friday-status">'+status+'</span><button type="button" class="rmx-btn '+(done?'':'primary')+'" onclick="rmxToggleFridayPreapproval()">'+(done?'Mark not done':'Mark complete')+'</button></div></section>';
+ }
+ window.rmxToggleFridayPreapproval=function(){
+  const key='rmx_friday_preapproval_'+rmxFridayWeekKey(),done=localStorage.getItem(key)==='1';
+  if(done)localStorage.removeItem(key);else localStorage.setItem(key,'1');
+  try{go('queue',false)}catch(e){const c=document.getElementById('rmxFridayRevenueMove');if(c)c.outerHTML=rmxFridayPreapprovalHtml();}
+ };
+
 function renderMyDay(c,d){
   title(c,'Director Queue','One place to manage what needs you, what Amanda needs coaching on, and what should move next.');
+  c.innerHTML+=rmxFridayPreapprovalHtml();
   const rr=risks(d),reviews=d.growthReviews||[],high=(d.otherInsights||[]).filter(x=>String(x.priority||'').toLowerCase()==='high'),nynyDue=d.due.filter(a=>String((d.assigns[key(a.agent_name)]||{}).rm||'').toLowerCase()==='nyny');
   const urgent=[];high.forEach(i=>{const p=d.profiles.find(x=>key(x.agent_name)===key(i.agent_name))||{agent_name:i.agent_name,_tier:'—',_assign:{rm:'Amanda'}};urgent.push({p,owner:ownerName(d,p),lt:latestTouch(d,p),days:daysSince(latestTouch(d,p)),reasons:[i.note||i.insight_type||'Escalation'],score:120})});rr.filter(r=>r.score>=80).slice(0,10).forEach(r=>{if(!urgent.some(x=>key(x.p.agent_name)===key(r.p.agent_name)))urgent.push(r)});
   const coaching=[];rr.filter(r=>String(r.owner||'').toLowerCase()==='amanda'&&r.score>=45).slice(0,12).forEach(r=>coaching.push(r));
@@ -18573,10 +18590,377 @@ window.rmxBoot=boot;const baseSwitch=window.switchTab;window.switchTab=function(
   var scheduled=false;
   function scheduleEnsure(){if(scheduled)return;scheduled=true;setTimeout(function(){scheduled=false;ensure()},0)}
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',scheduleEnsure,{once:true});else scheduleEnsure();
-  // Amanda Overview is rebuilt dynamically. Re-attach the upload hub whenever that happens.
-  var observer=new MutationObserver(scheduleEnsure);
-  observer.observe(document.documentElement,{childList:true,subtree:true});
-  setTimeout(ensure,400);setTimeout(ensure,1200);setTimeout(ensure,2600);
+  // v232 stability: do not watch the entire document. Re-attach after the Amanda snapshot is rebuilt.
+  var priorAmandaSnapshot=window.v23LoadAmandaSnapshot;
+  if(typeof priorAmandaSnapshot==='function'&&!priorAmandaSnapshot.__v230EnsureWrapped){
+    var wrappedAmandaSnapshot=async function(){var r=await priorAmandaSnapshot.apply(this,arguments);scheduleEnsure();return r;};
+    wrappedAmandaSnapshot.__v230EnsureWrapped=true;
+    window.v23LoadAmandaSnapshot=wrappedAmandaSnapshot;
+  }
+  setTimeout(ensure,400);setTimeout(ensure,1400);
+})();
+</script>
+
+<!-- v231 · FULL TRANSACTION WORKLIST + PREFILLED LOGGING · 2026-08-25 -->
+<style id="v231-transaction-worklist-css">
+#wp230TxnHub .wp231-summary{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-top:9px;padding-top:8px;border-top:1px solid #E9E2F1}
+#wp230TxnHub .wp231-summary b{font-size:10.5px;color:#332744}
+#wp230TxnHub .wp231-summary span{font-size:9.5px;color:#766B80}
+#wp230TxnHub .wp231-list{display:grid;gap:8px;margin-top:8px}
+#wp230TxnHub .wp231-file{border:1px solid #E4DCEA;border-radius:10px;background:#fff;overflow:hidden}
+#wp230TxnHub .wp231-file-head{display:flex;justify-content:space-between;gap:10px;align-items:flex-start;padding:9px 10px;background:#FCFBFE;border-bottom:1px solid #EEE8F3}
+#wp230TxnHub .wp231-file-main{min-width:0;flex:1}
+#wp230TxnHub .wp231-file-title{display:flex;gap:6px;align-items:center;flex-wrap:wrap;font-size:11px;font-weight:900;color:#2B2138}
+#wp230TxnHub .wp231-badge{font-size:8.5px;font-weight:900;letter-spacing:.25px;border-radius:12px;padding:3px 6px;background:#7A5600;color:#fff}
+#wp230TxnHub .wp231-badge.ctc{background:#65409D}
+#wp230TxnHub .wp231-file-meta{font-size:9.6px;color:#766B80;line-height:1.45;margin-top:3px;overflow-wrap:anywhere}
+#wp230TxnHub .wp231-call-count{font-size:9px;font-weight:850;color:#75520A;background:#FFF7E3;border:1px solid #E9D5A1;border-radius:12px;padding:3px 7px;white-space:nowrap}
+#wp230TxnHub .wp231-sides{display:grid;grid-template-columns:1fr 1fr;gap:0}
+#wp230TxnHub .wp231-side{padding:9px 10px;display:flex;justify-content:space-between;gap:9px;align-items:center;min-width:0}
+#wp230TxnHub .wp231-side+ .wp231-side{border-left:1px solid #EEE8F3}
+#wp230TxnHub .wp231-side-label{font-size:8.5px;font-weight:900;letter-spacing:.35px;color:#74677F;text-transform:uppercase}
+#wp230TxnHub .wp231-agent{font-size:10.8px;font-weight:850;color:#2C2338;margin-top:2px;overflow-wrap:anywhere}
+#wp230TxnHub .wp231-contact{font-size:9px;color:#85798F;margin-top:2px;overflow-wrap:anywhere}
+#wp230TxnHub .wp231-side button{border:0;border-radius:7px;background:#65409D;color:#fff;padding:6px 8px;font:800 9px Arial,Helvetica,sans-serif;cursor:pointer;white-space:nowrap}
+#wp230TxnHub .wp231-done{font-size:8.8px;font-weight:850;color:#2F6847;background:#EDF7F0;border:1px solid #CFE4D7;border-radius:12px;padding:4px 7px;white-space:nowrap}
+#wp230TxnHub .wp231-empty{padding:10px;border:1px dashed #DDD3E8;border-radius:9px;background:#fff;font-size:10px;color:#766B80;text-align:center}
+#wp230TxnHub #wp33ActiveTxnTriggers{display:none!important}
+@media(max-width:760px){#wp230TxnHub .wp231-sides{grid-template-columns:1fr}#wp230TxnHub .wp231-side+ .wp231-side{border-left:0;border-top:1px solid #EEE8F3}}
+</style>
+<script id="v231-transaction-worklist-js">
+(function(){
+  const esc=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+  const key=s=>{try{return typeof wp18Key==='function'?wp18Key(s):String(s||'').trim().toLowerCase()}catch(e){return String(s||'').trim().toLowerCase()}};
+  const enc=s=>encodeURIComponent(String(s||''));
+  const td=()=>{try{return typeof today==='function'?today():new Date().toISOString().slice(0,10)}catch(e){return new Date().toISOString().slice(0,10)}};
+  function currentData(){try{return typeof _wp18Cache!=='undefined'&&_wp18Cache?_wp18Cache:(window._wp18Cache||{})}catch(e){return window._wp18Cache||{}}}
+  function meta(notes,name){const m=String(notes||'').match(new RegExp('\\['+name+':([^\\]]*)\\]','i'));return m?m[1].trim():''}
+  function setVal(id,v,overwrite){const el=document.getElementById(id);if(!el||v===undefined||v===null||String(v)==='')return;if(overwrite||!String(el.value||'').trim())el.value=String(v)}
+  function profilePhone(name){try{const p=(window.allContacts||[]).find(x=>key(x.agent_name)===key(name));return p&&p.phone?String(p.phone):''}catch(e){return''}}
+
+  // Transaction calls are operational mandatory work for Amanda. This changes execution routing only;
+  // the underlying RM relationship owner is untouched.
+  const priorExecOwner=window.wp30ExecutionOwner;
+  window.wp30ExecutionOwner=function(name,data,callType){
+    if(callType==='CTC Call'||callType==='Under Contract Call')return 'Amanda';
+    return typeof priorExecOwner==='function'?priorExecOwner(name,data,callType):'Amanda';
+  };
+
+  // v229's metadata extension referenced window._wp18Cache, but the live cache is a top-level lexical
+  // binding in this build. Re-read the actual live transaction rows so imported phone/email/loan/close
+  // details follow the file into every logging workflow.
+  const priorBundle=window.wp48TxnBundle;
+  window.wp48TxnBundle=function(txnId,name,role){
+    const b=typeof priorBundle==='function'?priorBundle(txnId,name,role):{txnId:txnId||'',buyer:'',listing:'',client:'',property:'',ref:''};
+    const d=currentData(),rows=(d.transactionActs||[]).filter(t=>{
+      if(!(t.act_type==='New Contract'||t.act_type==='Clear to Close'))return false;
+      if(txnId)return typeof wp33TxnId==='function'&&wp33TxnId(t.notes)===txnId;
+      return key(t.agent_name)===key(name);
+    });
+    rows.forEach(t=>{
+      const r=typeof wp30TxnRole==='function'?wp30TxnRole(t.notes):meta(t.notes,'TXN_ROLE');
+      const n=String(t.agent_name||'').trim();
+      if(String(r).toLowerCase()==='buyer'&&!b.buyer)b.buyer=n;
+      if(String(r).toLowerCase()==='listing'&&!b.listing)b.listing=n;
+      b.client=b.client||meta(t.notes,'TXN_CLIENT');
+      b.property=b.property||meta(t.notes,'TXN_PROPERTY');
+      b.ref=b.ref||meta(t.notes,'TXN_REF');
+      b.loan=b.loan||meta(t.notes,'TXN_LOAN');
+      b.closeDate=b.closeDate||meta(t.notes,'TXN_CLOSE_DATE');
+      b.source=b.source||meta(t.notes,'TXN_SOURCE');
+      b.buyerPhone=b.buyerPhone||meta(t.notes,'TXN_BUYER_PHONE');
+      b.buyerEmail=b.buyerEmail||meta(t.notes,'TXN_BUYER_EMAIL');
+      b.listingPhone=b.listingPhone||meta(t.notes,'TXN_LISTING_PHONE');
+      b.listingEmail=b.listingEmail||meta(t.notes,'TXN_LISTING_EMAIL');
+    });
+    return b;
+  };
+
+  function openTasks(d){
+    try{return typeof wp30BuildTransactionTasks==='function'?wp30BuildTransactionTasks(d,td(),'Amanda'):[]}catch(e){console.warn('v231 transaction tasks',e);return[]}
+  }
+  function taskKey(t){const x=t.txn||{};return [x.txnId||'',x.stage||'',key(t.name),String(x.role||'Agent').toLowerCase()].join('|')}
+  function triggerRows(d,txnId,stage){return (d.transactionActs||[]).filter(r=>(r.act_type==='New Contract'||r.act_type==='Clear to Close')&&(!stage||r.act_type===stage)&&(!txnId||(typeof wp33TxnId==='function'&&wp33TxnId(r.notes)===txnId)))}
+  function groupTasks(d,tasks){
+    const map=new Map();
+    tasks.forEach(t=>{
+      const x=t.txn||{},bundle=window.wp48TxnBundle(x.txnId||'',t.name,x.role||'Agent');
+      const k=x.txnId||[x.stage||'',bundle.client||'',bundle.property||'',x.ref||'',x.triggerDate||''].join('|');
+      if(!map.has(k))map.set(k,{k,stage:x.stage||'',callType:x.callType||'',txnId:x.txnId||'',triggerDate:x.triggerDate||'',bundle,tasks:[]});
+      const g=map.get(k);g.tasks.push(t);
+      // Merge anything the first side did not contain.
+      Object.keys(bundle||{}).forEach(p=>{if(!g.bundle[p]&&bundle[p])g.bundle[p]=bundle[p]});
+    });
+    return Array.from(map.values()).sort((a,b)=>{
+      const ac=a.callType==='CTC Call'?0:1,bc=b.callType==='CTC Call'?0:1;
+      return ac-bc||String(a.bundle.closeDate||a.triggerDate||'').localeCompare(String(b.bundle.closeDate||b.triggerDate||''))||String(a.bundle.client||a.bundle.property||'').localeCompare(String(b.bundle.client||b.bundle.property||''));
+    });
+  }
+  function sideState(g,role){
+    const r=String(role).toLowerCase(),b=g.bundle||{};
+    const name=r==='buyer'?b.buyer:b.listing,phone=r==='buyer'?(b.buyerPhone||profilePhone(name)):(b.listingPhone||profilePhone(name)),email=r==='buyer'?b.buyerEmail:b.listingEmail;
+    const task=(g.tasks||[]).find(t=>String((t.txn||{}).role||'').toLowerCase()===r&&(!name||key(t.name)===key(name)))||(g.tasks||[]).find(t=>String((t.txn||{}).role||'').toLowerCase()===r);
+    return {role:r==='buyer'?'Buyer':'Listing',name:name||(task&&task.name)||'',phone:phone||'',email:email||'',task};
+  }
+  function sideHtml(g,role){
+    const s=sideState(g,role);if(!s.name)return '';
+    const action=g.callType==='CTC Call'?'ctc':'new-contract';
+    const contact=[s.phone,s.email].filter(Boolean).join(' · ');
+    return '<div class="wp231-side"><div style="min-width:0"><div class="wp231-side-label">'+esc(s.role)+' agent</div><div class="wp231-agent">'+esc(s.name)+'</div>'+(contact?'<div class="wp231-contact">'+esc(contact)+'</div>':'')+'</div>'+
+      (s.task?'<button type="button" data-rm-action="'+action+'" data-agent="'+enc(s.name)+'" data-type="'+enc(g.callType)+'" data-role="'+enc(s.role)+'" data-txn="'+enc(g.txnId)+'">Start call</button>':'<span class="wp231-done">Complete</span>')+'</div>';
+  }
+  function fileHtml(g){
+    const b=g.bundle||{},isCtc=g.callType==='CTC Call',title=b.client||b.property||b.ref||'Transaction',metaBits=[];
+    if(b.property&&b.property!==title)metaBits.push(b.property);
+    if(b.closeDate)metaBits.push('Est. close '+b.closeDate);
+    if(b.loan)metaBits.push('Loan '+b.loan);
+    const open=(g.tasks||[]).length;
+    let sides=sideHtml(g,'Buyer')+sideHtml(g,'Listing');
+    if(!sides){sides=(g.tasks||[]).map(t=>{const x=t.txn||{},action=x.callType==='CTC Call'?'ctc':'new-contract';return '<div class="wp231-side"><div><div class="wp231-side-label">'+esc(x.role||'Agent')+' agent</div><div class="wp231-agent">'+esc(t.name||'')+'</div></div><button type="button" data-rm-action="'+action+'" data-agent="'+enc(t.name||'')+'" data-type="'+enc(x.callType||'')+'" data-role="'+enc(x.role||'Agent')+'" data-txn="'+enc(x.txnId||'')+'">Start call</button></div>'}).join('')}
+    return '<div class="wp231-file"><div class="wp231-file-head"><div class="wp231-file-main"><div class="wp231-file-title"><span class="wp231-badge '+(isCtc?'ctc':'')+'">'+(isCtc?'CTC':'NEW CONTRACT')+'</span><span>'+esc(title)+'</span></div>'+(metaBits.length?'<div class="wp231-file-meta">'+esc(metaBits.join(' · '))+'</div>':'')+'</div><span class="wp231-call-count">'+open+' call'+(open===1?'':'s')+' open</span></div><div class="wp231-sides">'+sides+'</div></div>';
+  }
+  function cleanDuplicateUrgentRows(urgent){
+    Array.from(urgent.querySelectorAll('.v112-urgent')).forEach(box=>{
+      Array.from(box.children).forEach(row=>{if(row.querySelector&&row.querySelector('[data-rm-action="ctc"],[data-rm-action="new-contract"]'))row.remove()});
+      if(!box.children.length)box.remove();
+    });
+  }
+  function render(){
+    const hub=document.getElementById('wp230TxnHub'),host=document.getElementById('wp230OpenCalls'),urgent=document.getElementById('v113UrgentHost');if(!hub||!host)return;
+    const d=currentData(),tasks=openTasks(d),groups=groupTasks(d,tasks),sig=tasks.map(taskKey).sort().join('||')+'::'+groups.map(g=>[g.txnId,g.bundle.client,g.bundle.property,g.bundle.closeDate,g.bundle.loan,g.bundle.buyer,g.bundle.buyerPhone,g.bundle.buyerEmail,g.bundle.listing,g.bundle.listingPhone,g.bundle.listingEmail].join('|')).join('||');
+    if(host.dataset.v231Sig!==sig){
+      host.dataset.v231Sig=sig;
+      host.innerHTML=tasks.length?'<div class="wp231-summary"><b>'+groups.length+' open transaction'+(groups.length===1?'':'s')+'</b><span>'+tasks.length+' buyer/listing call'+(tasks.length===1?'':'s')+' remaining · open a file and log the call directly here</span></div><div class="wp231-list">'+groups.map(fileHtml).join('')+'</div>':'<div class="wp231-empty">No open New Contract or CTC calls right now.</div>';
+    }
+    if(urgent){
+      cleanDuplicateUrgentRows(urgent);
+      if(tasks.length)Array.from(urgent.querySelectorAll('.v113-body-empty[data-v113-distributed="1"]')).forEach(n=>n.remove());
+    }
+  }
+  window.v231RenderTransactionWork=render;
+  window.v231RefreshTransactionWork=async function(force){
+    try{if(force&&typeof v23LoadAmandaSnapshot==='function')await v23LoadAmandaSnapshot(true)}catch(e){console.warn('v231 refresh',e)}
+    setTimeout(render,0);setTimeout(render,180);
+  };
+
+  // Make every transaction workbench open with the full file prefilled, not just the one agent name.
+  const priorOpen=window.v176OpenTransaction;
+  window.v176OpenTransaction=function(type,agentName,role,txnId){
+    if(typeof priorOpen==='function')priorOpen(type,agentName,role,txnId);
+    setTimeout(function(){
+      const m=document.getElementById('v175TransactionModal');if(!m)return;
+      const b=window.wp48TxnBundle(txnId||'',agentName||'',role||'Agent');
+      setVal('v175TxBuyerName',b.client,true);setVal('v175TxProperty',b.property,true);
+      setVal('v175TxBuyerAgent',b.buyer,true);setVal('v175TxListingAgent',b.listing,true);
+      setVal('v175TxBuyerPhone',b.buyerPhone||profilePhone(b.buyer),true);setVal('v175TxListingPhone',b.listingPhone||profilePhone(b.listing),true);
+      const fileBits=[];if(b.closeDate)fileBits.push('Est close '+b.closeDate);if(b.loan)fileBits.push('Loan '+b.loan);if(fileBits.length)setVal('v175TxFileNote',fileBits.join(' · '),false);
+      const d=currentData(),open=openTasks(d).filter(t=>{const x=t.txn||{};return (!txnId||x.txnId===txnId)&&x.callType===type});
+      m.dataset.v231OpenSides=JSON.stringify(open.map(t=>({role:String((t.txn||{}).role||'Agent'),name:String(t.name||'')})));
+      m.dataset.txnId=txnId||'';m.dataset.v231FocusRole=role||'';
+      try{if(typeof v176UpdateWhatsApp==='function')v176UpdateWhatsApp()}catch(e){}
+      const focus=document.getElementById(String(role).toLowerCase()==='listing'?'v175TxListingOutcome':'v175TxBuyerOutcome');if(focus)focus.focus();
+    },0);
+  };
+
+  // Save transaction calls with durable transaction/role metadata. Progress may save one side at a
+  // time; Complete validates every still-open side. VM / no-answer clears only after the required text.
+  window.v176SaveTransaction=async function(complete){
+    const modal=document.getElementById('v175TransactionModal');if(!modal)return;
+    const type=modal.dataset.activityType||'CTC Call',txnId=modal.dataset.txnId||'';
+    const val=id=>(document.getElementById(id)?.value||'').trim(),chk=id=>!!document.getElementById(id)?.checked;
+    const err=msg=>{const e=document.getElementById('v175TxError');if(e){e.textContent=msg||'';e.classList.toggle('show',!!msg)}};
+    const sides=['Buyer','Listing'].map(side=>({role:side,name:val('v175Tx'+side+'Agent'),outcome:val('v175Tx'+side+'Outcome'),feedback:val('v175Tx'+side+'Feedback'),textSent:chk('v175Tx'+side+'TextSent'),phone:val('v175Tx'+side+'Phone')})).filter(s=>s.name);
+    if(!val('v175TxBuyerName')&&!val('v175TxProperty'))return err('Buyer/client name or property address is required.');
+    if(!sides.length)return err('At least one buyer or listing agent is required.');
+    let openSides=[];try{openSides=JSON.parse(modal.dataset.v231OpenSides||'[]')}catch(e){}
+    const isOpen=s=>!openSides.length||openSides.some(o=>String(o.role||'').toLowerCase()===s.role.toLowerCase()&&(!o.name||key(o.name)===key(s.name)));
+    const worked=sides.filter(s=>s.outcome);
+    if(!worked.length)return err('Choose an outcome for the call you worked.');
+    const required=complete?sides.filter(isOpen):worked;
+    for(const s of required){
+      if(!s.outcome)return err('Choose an outcome for '+s.role.toLowerCase()+' agent '+s.name+'.');
+      const noConnect=s.outcome==='Left voicemail'||s.outcome==='No answer';
+      if(complete&&noConnect&&!s.textSent)return err('Send the follow-up text to '+s.name+' and check the box before completing that required call.');
+      if(!noConnect&&s.feedback.length<3)return err('Add what happened / feedback from '+s.name+'.');
+      if(s.outcome==='Requires follow-up'&&!val('v175TxFollowup'))return err('Set the next follow-up date for '+s.name+'.');
+    }
+    const saveSides=complete?required:worked,b1=document.getElementById('v176SaveProgressBtn'),b2=document.getElementById('v176SaveCompleteBtn');if(b1)b1.disabled=true;if(b2)b2.disabled=true;err('');
+    try{
+      let saved=0;const follow=val('v175TxFollowup')||null,client=val('v175TxBuyerName'),property=val('v175TxProperty'),fileNote=val('v175TxFileNote');
+      for(const s of saveSides){
+        const noConnect=s.outcome==='Left voicemail'||s.outcome==='No answer';
+        let outcome=s.outcome;if(!complete&&noConnect&&!s.textSent)outcome='Requires follow-up';
+        let notes='[TXN_ROLE:'+s.role+']'+(txnId?'[TXN_ID:'+txnId+']':'')+(s.textSent?'[TXN_TEXT_SENT:Y]':'')+' '+(type==='CTC Call'?'CTC':'NEW CONTRACT')+' · '+s.role+' agent';
+        if(client)notes+=' | Client: '+client;if(property)notes+=' | Property: '+property;if(s.phone)notes+=' | Phone: '+s.phone;notes+=' | Contact: '+s.outcome;if(s.feedback)notes+=' | Feedback: '+s.feedback;if(fileNote)notes+=' | File note: '+fileNote;
+        try{if(typeof appendRmMeta==='function')notes=appendRmMeta(notes,'Amanda','Current Relationship')}catch(e){}
+        await sbFetch('amanda_activities',{method:'POST',prefer:'return=minimal',body:JSON.stringify({agent_name:s.name,act_type:type,act_date:td(),outcome,notes,follow_up_date:follow})});saved++;
+      }
+      try{if(typeof toast==='function')toast((complete?'Required call':'Call progress')+' saved for '+saved+' agent'+(saved===1?'':'s')+' ✓','success',3200)}catch(e){}
+      if(complete&&typeof v175Close==='function')v175Close('v175TransactionModal');
+      try{if(typeof rmRefreshExecutionQueues==='function')await rmRefreshExecutionQueues()}catch(e){}
+      try{if(typeof _wp18Cache!=='undefined'){_wp18Cache=null;_wp18CacheAt=0}}catch(e){}
+      try{if(typeof v23LoadAmandaSnapshot==='function')await v23LoadAmandaSnapshot(true)}catch(e){}
+      setTimeout(render,40);setTimeout(render,280);
+    }catch(e){console.warn(e);err('Could not save transaction call. Try again.');}
+    finally{if(b1)b1.disabled=false;if(b2)b2.disabled=false}
+  };
+
+  // Refresh the visible worklist after either import or manual transaction intake.
+  const priorImport=window.wp229ImportSelected;
+  if(typeof priorImport==='function')window.wp229ImportSelected=async function(){const r=await priorImport.apply(this,arguments);setTimeout(()=>window.v231RefreshTransactionWork(false),80);return r};
+  const priorManual=window.wp30SaveTransactionTrigger;
+  if(typeof priorManual==='function')window.wp30SaveTransactionTrigger=async function(){const r=await priorManual.apply(this,arguments);setTimeout(()=>window.v231RefreshTransactionWork(false),80);return r};
+
+  // v232 stability: event-driven refresh only. The old document-wide MutationObserver watched
+  // the DOM that render() itself rewrote, creating an endless render -> mutation -> render loop.
+  // That caused the transaction worklist to flash/disappear and could remove a button between
+  // mouse-down and click. Render only after real data/navigation events instead.
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>{setTimeout(render,450);setTimeout(render,1700)},{once:true});else{setTimeout(render,120);setTimeout(render,850)}
+  document.addEventListener('visibilitychange',()=>{if(!document.hidden)setTimeout(render,100)});
+  window.addEventListener('hashchange',()=>setTimeout(render,120));
+
+  const priorSnapshot=window.v23LoadAmandaSnapshot;
+  if(typeof priorSnapshot==='function'&&!priorSnapshot.__v232TxnStable){
+    const wrapped=async function(){
+      const r=await priorSnapshot.apply(this,arguments);
+      setTimeout(render,80);
+      return r;
+    };
+    wrapped.__v232TxnStable=true;
+    window.v23LoadAmandaSnapshot=wrapped;
+  }
+})();
+</script>
+
+<!-- v232 · STABLE ACTION ROUTER + NO SELF-REFRESH LOOP · 2026-08-25 -->
+<script id="v232-stable-action-router">
+(function(){
+  const dec=s=>{try{return decodeURIComponent(String(s||''))}catch(e){return String(s||'')}};
+
+  // One capture-phase router for every modern Amanda action button. This intentionally routes
+  // before older inline/bubble handlers so dynamically rebuilt rows cannot lose their action.
+  document.addEventListener('click',function(ev){
+    const btn=ev.target&&ev.target.closest?ev.target.closest('[data-rm-action]'):null;
+    if(!btn||btn.disabled)return;
+    const action=String(btn.dataset.rmAction||''),agent=dec(btn.dataset.agent),type=dec(btn.dataset.type),role=dec(btn.dataset.role),txn=dec(btn.dataset.txn);
+    if(!['outreach','touch','update','ctc','new-contract'].includes(action))return;
+    ev.preventDefault();
+    ev.stopImmediatePropagation();
+    try{
+      if(action==='outreach')return window.v176OpenOutreach&&window.v176OpenOutreach(agent,'Cold Calls');
+      if(action==='touch')return window.v176OpenOutreach&&window.v176OpenOutreach(agent,type||'Agent Talk-to');
+      if(action==='update')return window.v176OpenUpdate&&window.v176OpenUpdate(agent);
+      if(action==='ctc')return window.v176OpenTransaction&&window.v176OpenTransaction('CTC Call',agent,role||'Buyer',txn);
+      if(action==='new-contract')return window.v176OpenTransaction&&window.v176OpenTransaction('Under Contract Call',agent,role||'Buyer',txn);
+    }catch(e){
+      console.error('RM action failed',action,e);
+      try{if(typeof toast==='function')toast('Could not open that action. Refresh once and try again.','error',3500)}catch(_){ }
+    }
+  },true);
+
+  // Director-side actions use a separate data attribute. Route those with the same durable pattern
+  // so Log / Manage / History / Portfolio buttons survive Director page rerenders too.
+  document.addEventListener('click',function(ev){
+    const btn=ev.target&&ev.target.closest?ev.target.closest('[data-rmx-action]'):null;
+    if(!btn||btn.disabled)return;
+    const kind=String(btn.dataset.rmxAction||''),name=dec(btn.dataset.agent),ctx=btn.dataset.context||'relationship';
+    const fn={manage:window.rmxManage,log:window.rmxLog,history:window.rmxHistory,schedule:window.rmxSchedule,update:window.rmxUpdate,portfolio:window.rmxOpenPortfolio}[kind];
+    if(typeof fn!=='function')return;
+    ev.preventDefault();
+    ev.stopImmediatePropagation();
+    try{fn(name,ctx)}catch(e){console.error('Director action failed',kind,e);try{if(typeof toast==='function')toast('Could not open that action. Refresh once and try again.','error',3500)}catch(_){ }}
+  },true);
+
+  // Keep the two generic transaction log buttons on the same transaction workbench.
+  window.rmOpenCTCLog=function(){return typeof window.v176OpenTransaction==='function'?window.v176OpenTransaction('CTC Call','','Buyer',''):undefined};
+  window.rmOpenNewContractLog=function(){return typeof window.v176OpenTransaction==='function'?window.v176OpenTransaction('Under Contract Call','','Buyer',''):undefined};
+
+  // Lightweight runtime audit for console troubleshooting; it never changes tracker data.
+  window.rmV232ActionAudit=function(){
+    const modern=Array.from(document.querySelectorAll('[data-rm-action]')).map(b=>({label:String(b.textContent||'').trim(),action:b.dataset.rmAction||'',agent:dec(b.dataset.agent)}));
+    const bad=modern.filter(x=>!['outreach','touch','update','ctc','new-contract'].includes(x.action));
+    return {modernButtons:modern.length,unsupported:bad};
+  };
+})();
+</script>
+
+
+<!-- v233 · STABILITY + TRANSACTION DATA + WEEKLY REVENUE WORKFLOW · 2026-08-25 -->
+<style id="v233-stable-workflow-css">
+#wp230TxnHub .v233-script-reminder{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin:8px 0 2px;padding:8px 10px;border:1px solid #D9CBE9;background:#F8F4FC;border-radius:9px;font-size:10px;line-height:1.4;color:#5D5367}
+#wp230TxnHub .v233-script-reminder strong{color:#4E317D}
+#wp230TxnHub .v233-script-reminder button{border:1px solid #CDBCE2;background:#fff;color:#5A3987;border-radius:7px;padding:6px 8px;font:800 9px Arial,Helvetica,sans-serif;cursor:pointer;white-space:nowrap}
+.rmx-friday-move{display:flex;justify-content:space-between;gap:18px;align-items:center;margin-bottom:14px;border-left:5px solid #7A62A7!important;background:linear-gradient(100deg,#FBF8FF,#fff)!important}
+.rmx-friday-move.due{border-left-color:#8B5A00!important;background:linear-gradient(100deg,#FFF9EA,#fff)!important}
+.rmx-friday-move.overdue{border-left-color:#A3473D!important;background:linear-gradient(100deg,#FFF4F2,#fff)!important}
+.rmx-friday-move.done{border-left-color:#3E7654!important;background:linear-gradient(100deg,#F2FAF5,#fff)!important;opacity:.92}
+.rmx-friday-main{min-width:0}.rmx-friday-kicker{font-size:9px;font-weight:900;letter-spacing:.65px;color:#6C4D94;margin-bottom:4px}.rmx-friday-move h2{font-size:15px!important;margin:0 0 4px!important}.rmx-friday-copy{font-size:10.5px;line-height:1.45;color:#6F6478;max-width:760px}.rmx-friday-steps{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}.rmx-friday-steps span{font-size:9px;font-weight:750;color:#59466B;background:#F2EDF7;border-radius:12px;padding:4px 7px}.rmx-friday-side{display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:flex-end}.rmx-friday-status{font-size:9.5px;font-weight:900;color:#624783;background:#F1EAF8;border-radius:12px;padding:4px 7px;white-space:nowrap}
+@media(max-width:760px){.rmx-friday-move{align-items:flex-start;flex-direction:column}.rmx-friday-side{width:100%;justify-content:space-between}}
+</style>
+<script id="v233-transaction-data-stability">
+(function(){
+  const key=s=>{try{return typeof wp18Key==='function'?wp18Key(s):String(s||'').trim().toLowerCase()}catch(e){return String(s||'').trim().toLowerCase()}};
+  const meta=(notes,k)=>{const m=String(notes||'').match(new RegExp('\\['+k+':([^\\]]*)\\]','i'));return m?m[1].trim():''};
+  const set=(id,v)=>{const el=document.getElementById(id);if(el&&v&&!String(el.value||'').trim())el.value=String(v)};
+
+  function addScriptReminder(){
+    const hub=document.getElementById('wp230TxnHub');if(!hub||document.getElementById('v233TxnScriptReminder'))return;
+    const reminder=document.createElement('div');reminder.id='v233TxnScriptReminder';reminder.className='v233-script-reminder';
+    reminder.innerHTML='<div><strong>Amanda · open the Transaction Calls script before you start.</strong> Use the New Contract / CTC talking points, capture agent feedback, and move listing-agent conversations toward a Realtor meeting when there is an opportunity.</div><button type="button" onclick="wp30OpenTransactionTraining()">Open transaction script</button>';
+    const head=hub.querySelector('.wp230-head');if(head)head.insertAdjacentElement('afterend',reminder);else hub.prepend(reminder);
+  }
+  window.v233AddTxnScriptReminder=addScriptReminder;
+
+  async function liveTxnBundle(txnId,agentName){
+    if(!txnId&&!agentName)return null;
+    try{
+      const rows=await sbFetch('amanda_activities?select=agent_name,act_type,act_date,notes&act_type=in.(New Contract,Clear to Close)&order=act_date.desc&limit=750').catch(()=>[]);
+      const matched=(rows||[]).filter(r=>{
+        if(txnId&&typeof wp33TxnId==='function')return wp33TxnId(r.notes)===txnId;
+        return key(r.agent_name)===key(agentName);
+      });
+      if(!matched.length)return null;
+      const b={buyer:'',listing:'',buyerPhone:'',buyerEmail:'',listingPhone:'',listingEmail:'',client:'',property:'',loan:'',closeDate:''};
+      matched.forEach(r=>{
+        const role=String(typeof wp30TxnRole==='function'?wp30TxnRole(r.notes):meta(r.notes,'TXN_ROLE')).toLowerCase();
+        if(role==='buyer'&&!b.buyer)b.buyer=r.agent_name||'';
+        if(role==='listing'&&!b.listing)b.listing=r.agent_name||'';
+        b.client=b.client||meta(r.notes,'TXN_CLIENT');b.property=b.property||meta(r.notes,'TXN_PROPERTY');b.loan=b.loan||meta(r.notes,'TXN_LOAN');b.closeDate=b.closeDate||meta(r.notes,'TXN_CLOSE_DATE');
+        b.buyerPhone=b.buyerPhone||meta(r.notes,'TXN_BUYER_PHONE');b.buyerEmail=b.buyerEmail||meta(r.notes,'TXN_BUYER_EMAIL');b.listingPhone=b.listingPhone||meta(r.notes,'TXN_LISTING_PHONE');b.listingEmail=b.listingEmail||meta(r.notes,'TXN_LISTING_EMAIL');
+      });
+      return b;
+    }catch(e){console.warn('v233 live transaction bundle',e);return null}
+  }
+
+  // Cache can briefly lag the imported trigger. If a Start Call opens without contact/file details,
+  // read the saved trigger itself and fill only missing fields. This is why Chris Reed's Encompass
+  // phone/email can now recover even if he is not yet a complete agent profile.
+  const priorOpen=window.v176OpenTransaction;
+  if(typeof priorOpen==='function'&&!priorOpen.__v233LiveTxn){
+    const wrapped=function(type,agentName,role,txnId){
+      const r=priorOpen.apply(this,arguments);
+      setTimeout(async function(){
+        const m=document.getElementById('v175TransactionModal');if(!m||!m.classList.contains('open'))return;
+        let b=null;try{b=typeof window.wp48TxnBundle==='function'?window.wp48TxnBundle(txnId||'',agentName||'',role||'Agent'):null}catch(e){}
+        const needs=!b||(!b.client&&!b.property)||((String(role).toLowerCase()==='buyer')&&!b.buyerPhone)||((String(role).toLowerCase()==='listing')&&!b.listingPhone);
+        if(needs){const live=await liveTxnBundle(txnId||'',agentName||'');if(live)b=Object.assign({},b||{},Object.fromEntries(Object.entries(live).filter(([k,v])=>v)))}
+        if(!b)return;
+        set('v175TxBuyerName',b.client);set('v175TxProperty',b.property);set('v175TxBuyerAgent',b.buyer);set('v175TxListingAgent',b.listing);set('v175TxBuyerPhone',b.buyerPhone);set('v175TxListingPhone',b.listingPhone);
+        const note=document.getElementById('v175TxFileNote'),bits=[];if(b.closeDate)bits.push('Est close '+b.closeDate);if(b.loan)bits.push('Loan '+b.loan);if(note&&bits.length&&!String(note.value||'').trim())note.value=bits.join(' · ');
+        try{if(typeof v176UpdateWhatsApp==='function')v176UpdateWhatsApp()}catch(e){}
+      },60);
+      return r;
+    };
+    wrapped.__v233LiveTxn=true;window.v176OpenTransaction=wrapped;
+  }
+
+  // Keep the Step 2 helper present after real snapshot renders only. No DOM observer.
+  const snap=window.v23LoadAmandaSnapshot;
+  if(typeof snap==='function'&&!snap.__v233FinalStable){
+    const wrapped=async function(){const r=await snap.apply(this,arguments);setTimeout(()=>{try{addScriptReminder();if(typeof window.v113DistributeSmart==='function')window.v113DistributeSmart();if(typeof window.v231RenderTransactionWork==='function')window.v231RenderTransactionWork()}catch(e){}},40);return r};
+    wrapped.__v233FinalStable=true;window.v23LoadAmandaSnapshot=wrapped;
+  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(addScriptReminder,650),{once:true});else setTimeout(addScriptReminder,250);
 })();
 </script>
 
