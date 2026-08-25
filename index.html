@@ -18881,5 +18881,62 @@ window.rmxBoot=boot;const baseSwitch=window.switchTab;window.switchTab=function(
 })();
 </script>
 
+
+<script id="v239-lp-powerbi-auto-sync-js">
+(function(){
+  // v239 — RM never imports Power BI. Core Team / LP Tracker writes the shared
+  // agent_profiles + powerbi_import_log records; RM watches only the import stamp.
+  // Nothing refreshes on a timer unless the shared import stamp ACTUALLY changes.
+  let lastStamp=null,checking=false,queued=false;
+  const directorOpen=()=>{try{return location.hash==='#director'||document.body.classList.contains('rm-director-route')||document.body.classList.contains('rmx-director-active')}catch(e){return false}};
+  const busy=()=>{
+    const a=document.activeElement;
+    if(a&&/^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName))return true;
+    if(document.querySelector('.modal-overlay.open,.v175-overlay.open,#rmxModal.open'))return true;
+    return false;
+  };
+  async function refreshFromLpImport(stamp){
+    if(busy()){queued=true;return;}
+    queued=false;
+    try{
+      if(typeof _wp18Cache!=='undefined'){_wp18Cache=null;_wp18CacheAt=0;}
+      if(typeof loadAgentOwnership==='function')await loadAgentOwnership().catch(()=>{});
+      if(directorOpen()){
+        if(typeof window.rmxRefreshManagementData==='function')window.rmxRefreshManagementData();
+      }else{
+        const active=document.querySelector('.view.active');
+        const id=active&&active.id||'';
+        if(id==='view-contacts'&&typeof loadContacts==='function')await loadContacts().catch(()=>{});
+        if(id==='view-portfolio'&&typeof loadPortfolioReview==='function')await loadPortfolioReview().catch(()=>{});
+        if(id==='view-growth'&&typeof v106LoadTierGrowth==='function')await v106LoadTierGrowth(true).catch(()=>{});
+        if(id==='view-week'&&typeof rmRefreshExecutionQueues==='function')await rmRefreshExecutionQueues().catch(()=>{});
+      }
+      if(document.getElementById('v122AuditBody')&&typeof v122RenderAudit==='function')await v122RenderAudit().catch(()=>{});
+      try{if(typeof toast==='function')toast('Latest Core Team Power BI sync loaded ✓','success',2600)}catch(e){}
+      try{window.dispatchEvent(new CustomEvent('rm-powerbi-shared-refresh',{detail:{stamp}}))}catch(e){}
+    }catch(e){console.warn('RM shared Power BI refresh',e);}
+  }
+  async function checkSharedImport(initial){
+    if(checking||typeof sbFetch!=='function')return;
+    checking=true;
+    try{
+      const rows=await sbFetch('powerbi_import_log?select=imported_at,source_app&order=imported_at.desc&limit=10').catch(()=>[]);
+      const row=(rows||[]).find(r=>String(r.source_app||'').indexOf('core-team-tracker')===0);
+      const stamp=row&&row.imported_at?String(row.imported_at):null;
+      if(!stamp)return;
+      if(lastStamp===null){lastStamp=stamp;return;}
+      if(stamp!==lastStamp){lastStamp=stamp;await refreshFromLpImport(stamp);}
+    }finally{checking=false;}
+  }
+  window.rmCheckSharedPowerBiImport=()=>checkSharedImport(false);
+  // Establish the baseline silently. Then use a light stamp check; no UI rebuild unless changed.
+  setTimeout(()=>checkSharedImport(true),1200);
+  setInterval(()=>checkSharedImport(false),60000);
+  document.addEventListener('visibilitychange',()=>{if(!document.hidden)checkSharedImport(false)});
+  window.addEventListener('focus',()=>checkSharedImport(false));
+  document.addEventListener('focusout',()=>{if(queued)setTimeout(()=>refreshFromLpImport(lastStamp),250)});
+})();
+</script>
+
 </body>
 </html>
