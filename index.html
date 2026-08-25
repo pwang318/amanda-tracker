@@ -1429,7 +1429,7 @@ body.rm-director-route .tabs,body.rm-director-route .who-bar{display:none!import
 </div>
 <div id="quickLogNotesWrap" style="margin-top:9px">
 <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:4px">
-<label style="font-size:11px;font-weight:600;color:var(--text-2)">Notes <span style="font-weight:400;color:var(--text-4)">(10+ words)</span></label>
+<label style="font-size:11px;font-weight:600;color:var(--text-2)">Notes <span id="quickLogNotesRequirement" style="font-weight:400;color:var(--text-4)">(10+ words)</span></label>
 <button onclick="toggleVoiceNote('quickLogNotes',this)" style="font-size:11px;padding:4px 8px;background:var(--surface-2);color:var(--text-2);border:1px solid var(--border);border-radius:6px;cursor:pointer;font-family:inherit" title="Dictate notes" type="button">🎤 Dictate</button>
 </div>
 <textarea id="quickLogNotes" placeholder="What happened, what matters, and what is the next step?" rows="2" style="width:100%;border:1px solid var(--border);border-radius:var(--radius-sm);padding:9px 12px;font-size:13px;font-family:inherit;color:var(--text-1);outline:none;resize:vertical;box-sizing:border-box"></textarea>
@@ -3015,10 +3015,10 @@ const CTC_TYPE="CTC Call";
 // All activity types that count toward the Agent Talk-to goal
 const TALKTO_TYPES=["Agent Talk-to","Active Agent Talk-to","Active Agent Check-in","Reconnect Outreach","CTC Call","Under Contract Call","Birthday Outreach","Holiday Outreach","Agent Appreciation","Market Update","Market Update Call","Sent Market Report","Sent Referral","Co-Marketing Discussion","New Agent Follow-up","Closed Deal Thank You"];
 // Activity types that require a minimum 10-word note
-const NOTES_REQUIRED_TYPES=["Agent Talk-to","Reconnect Outreach","CTC Call","Under Contract Call","Birthday Outreach","Break Breads","Partner Meeting","Strategic Partner Meeting","Channel Meeting","Team / Office Presentation","Retention Meeting","New Lead Received","Pre-Approval Issued","New Contract","Clear to Close","Service Recovery","Partner Feedback"];
+const NOTES_REQUIRED_TYPES=["Agent Talk-to","Reconnect Outreach","Birthday Outreach","Break Breads","Partner Meeting","Strategic Partner Meeting","Channel Meeting","Team / Office Presentation","Retention Meeting","New Lead Received","Pre-Approval Issued","New Contract","Clear to Close","Service Recovery","Partner Feedback"];
 // Cold Calls: a note is always required, but no word-count minimum — just needs to say
 // something (left VM / texted / double-dialed / etc), not hit a length bar.
-const NOTES_MANDATORY_NO_MIN=["Cold Calls"];
+const NOTES_MANDATORY_NO_MIN=["Cold Calls","CTC Call","Under Contract Call"];
 const MIN_NOTE_WORDS=10;
 // Strip the ☎️/📱/✉️/🤝 contact-method tag before counting words, so the tag itself
 // doesn't count toward the word minimum.
@@ -8321,7 +8321,8 @@ async function quickLogSave(){
   let notes=(document.getElementById("quickLogNotes")?document.getElementById("quickLogNotes").value:"").trim()||null;
   if(!agentName){toast("Enter an agent name.","error");document.getElementById("quickLogAgent").focus();return;}
   if(!outcome){toast("Select an outcome before logging.","error");document.getElementById("quickLogOutcome").focus();return;}
-  if(countWords(notes)<MIN_NOTE_WORDS){toast("Notes need at least "+MIN_NOTE_WORDS+" words.","error");return;}
+  if(NOTES_REQUIRED_TYPES.indexOf(actType)>=0&&countWords(notes)<MIN_NOTE_WORDS){toast("Notes need at least "+MIN_NOTE_WORDS+" words.","error");return;}
+  if(NOTES_MANDATORY_NO_MIN.indexOf(actType)>=0&&countWords(notes)<1){toast(actType+" needs a brief note before saving.","error");return;}
   const followupDate=document.getElementById("quickLogFollowupDate")?document.getElementById("quickLogFollowupDate").value:"";
   if(outcome==="Requires follow-up"&&!followupDate){toast("Set a real follow-up date — not a junk-drawer.","error");return;}
   if(outcome==="Meeting Scheduled"&&!followupDate){toast("Add the date it’s scheduled for so the meeting is tracked.","error");return;}
@@ -18961,6 +18962,343 @@ window.rmxBoot=boot;const baseSwitch=window.switchTab;window.switchTab=function(
     wrapped.__v233FinalStable=true;window.v23LoadAmandaSnapshot=wrapped;
   }
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(addScriptReminder,650),{once:true});else setTimeout(addScriptReminder,250);
+})();
+</script>
+
+
+
+<!-- v234 · PENDING TRANSACTION RESTORE + STABLE SNAPSHOT · 2026-08-25 -->
+<style id="v234-pending-transaction-css">
+#wp230TxnHub .v234-rule{margin:8px 0 0;padding:7px 9px;border:1px solid #E5D9F1;border-radius:8px;background:#FBF8FE;color:#665873;font-size:9.7px;line-height:1.45}
+#wp230TxnHub .v234-rule strong{color:#4E317D}
+#editModal .v234-txn-note{margin:-4px 0 12px;padding:8px 9px;border:1px solid #E6D9F1;border-radius:8px;background:#FAF7FD;color:#65586F;font-size:10.5px;line-height:1.45}
+</style>
+<script id="v234-pending-transaction-restore-js">
+(function(){
+  const norm=s=>String(s||'').trim().toLowerCase();
+  const key=s=>{try{return typeof wp18Key==='function'?wp18Key(s):norm(s)}catch(e){return norm(s)}};
+  const td=()=>{try{return typeof today==='function'?today():new Date().toISOString().slice(0,10)}catch(e){return new Date().toISOString().slice(0,10)}};
+  const val=id=>(document.getElementById(id)?.value||'').trim();
+  const chk=id=>!!document.getElementById(id)?.checked;
+  const isTxnType=t=>t==='CTC Call'||t==='Under Contract Call';
+  const needsMore=o=>['requires follow-up','needs manager attention','issue / escalation'].includes(norm(o));
+  const terminalConnected=o=>['positive','connected','meeting scheduled','remove / no further contact','not interested'].includes(norm(o));
+  const txnStatus=notes=>{const m=String(notes||'').match(/\[TXN_STATUS:([^\]]+)\]/i);return m?norm(m[1]):''};
+  const setTxnStatus=(notes,status)=>{
+    let s=String(notes||'');
+    if(/\[TXN_STATUS:[^\]]*\]/i.test(s))s=s.replace(/\[TXN_STATUS:[^\]]*\]/i,'[TXN_STATUS:'+status+']');
+    else s='[TXN_STATUS:'+status+']'+s;
+    return s;
+  };
+
+  // A transaction side is complete only when the work is genuinely finished.
+  // Requires follow-up / escalation stays in Amanda's Step 2 until a later terminal update.
+  window.wp33CallCompletesTrigger=function(c,t,role){
+    if(!c||key(c.agent_name)!==key(t.agent_name)||c.act_type!==wp30TxnCallType(t.act_type)||String(c.act_date||'')<String(t.act_date||''))return false;
+    const tr=String(role||wp30TxnRole(t.notes)||'Agent'),cr=String(wp30TxnRole(c.notes)||'Agent');
+    if(tr!=='Agent'&&cr!=='Agent'&&norm(cr)!==norm(tr))return false;
+    const status=txnStatus(c.notes),out=norm(c.outcome);
+    if(status==='progress'||status==='pending'||needsMore(out))return false;
+    if(out==='no answer'||out==='left voicemail')return !!wp33TxnTextSent(c.notes)&&status!=='progress';
+    if(status==='complete')return true;
+    return terminalConnected(out);
+  };
+
+  // Add missing transaction outcomes to the generic edit modal BEFORE it is opened.
+  const editOutcome=document.getElementById('editOutcome');
+  if(editOutcome){
+    ['Connected','Meeting scheduled','Left voicemail','No answer','Issue / escalation'].forEach(v=>{
+      if(!Array.from(editOutcome.options).some(o=>o.value===v||o.text===v)){const o=document.createElement('option');o.value=v;o.text=v;editOutcome.appendChild(o)}
+    });
+  }
+
+  const priorOpenEdit=window.openEditModal;
+  if(typeof priorOpenEdit==='function'&&!priorOpenEdit.__v234Txn){
+    const wrapped=function(id){
+      const r=priorOpenEdit.apply(this,arguments);
+      try{
+        if(isTxnType(editingActivityType)){
+          const box=document.querySelector('#editModal .modal-box');
+          if(box&&!box.querySelector('.v234-txn-note')){
+            const note=document.createElement('div');note.className='v234-txn-note';
+            note.innerHTML='<strong>Transaction rule:</strong> “Requires follow-up” or an escalation stays in Amanda’s mandatory-work list. It only clears when the side is actually complete.';
+            const sub=document.getElementById('editModalAgent');if(sub)sub.insertAdjacentElement('afterend',note);
+          }
+        }
+      }catch(e){}
+      return r;
+    };
+    wrapped.__v234Txn=true;window.openEditModal=wrapped;
+  }
+
+  // Editing a transaction row must preserve whether the work is still open vs actually complete.
+  const priorSaveEdit=window.saveEditModal;
+  if(typeof priorSaveEdit==='function'&&!priorSaveEdit.__v234Txn){
+    const wrapped=async function(){
+      const editedType=editingActivityType;
+      try{
+        if(isTxnType(editedType)){
+          const out=(document.getElementById('editOutcome')?.value||'').trim();
+          const follow=(document.getElementById('editFollowupDate')?.value||'').trim();
+          if(needsMore(out)&&!follow){toast('This transaction call is still open — add the follow-up date before saving.','error',4500);return}
+          const notesEl=document.getElementById('editNotes');
+          if(notesEl){
+            let status=needsMore(out)?'PROGRESS':'COMPLETE';
+            if((norm(out)==='no answer'||norm(out)==='left voicemail')&&!/\[TXN_TEXT_SENT:Y\]/i.test(notesEl.value||''))status='PROGRESS';
+            notesEl.value=setTxnStatus(notesEl.value,status);
+          }
+        }
+      }catch(e){console.warn('v234 edit prep',e)}
+      const r=await priorSaveEdit.apply(this,arguments);
+      try{if(isTxnType(editedType)&&typeof rmRefreshAfterMutation==='function')await rmRefreshAfterMutation('transaction activity edited')}catch(e){}
+      try{if(typeof window.v231RenderTransactionWork==='function')setTimeout(window.v231RenderTransactionWork,80)}catch(e){}
+      return r;
+    };
+    wrapped.__v234Txn=true;window.saveEditModal=wrapped;
+  }
+
+  function buildNotes(type,s,txnId,status){
+    const client=val('v175TxBuyerName'),property=val('v175TxProperty'),fileNote=val('v175TxFileNote');
+    let notes='[TXN_STATUS:'+status+'][TXN_ROLE:'+s.role+']'+(txnId?'[TXN_ID:'+txnId+']':'')+(s.textSent?'[TXN_TEXT_SENT:Y]':'')+' '+(type==='CTC Call'?'CTC':'NEW CONTRACT')+' · '+s.role+' agent';
+    if(client)notes+=' | Client: '+client;if(property)notes+=' | Property: '+property;if(s.phone)notes+=' | Phone: '+s.phone;notes+=' | Contact: '+s.outcome;if(s.feedback)notes+=' | Feedback: '+s.feedback;if(fileNote)notes+=' | File note: '+fileNote;
+    try{if(typeof appendRmMeta==='function')notes=appendRmMeta(notes,'Amanda','Current Relationship')}catch(e){}
+    return notes;
+  }
+  async function upsertTxnCall(type,s,txnId,status,follow){
+    const since=new Date();since.setDate(since.getDate()-120);const sinceStr=since.toISOString().slice(0,10);
+    const rows=await sbFetch('amanda_activities?agent_name=eq.'+encodeURIComponent(s.name)+'&act_type=eq.'+encodeURIComponent(type)+'&act_date=gte.'+sinceStr+'&select=id,agent_name,act_type,act_date,outcome,notes,follow_up_date&order=act_date.desc&limit=250').catch(()=>[]);
+    const existing=(rows||[]).find(r=>{
+      const rid=typeof wp33TxnId==='function'?wp33TxnId(r.notes):'';
+      const rr=typeof wp30TxnRole==='function'?wp30TxnRole(r.notes):'Agent';
+      return (!!txnId&&rid===txnId&&norm(rr)===norm(s.role));
+    });
+    const body={agent_name:s.name,act_type:type,act_date:td(),outcome:s.outcome,notes:buildNotes(type,s,txnId,status),follow_up_date:follow||null};
+    if(existing){
+      delete body.agent_name;delete body.act_type;delete body.act_date;
+      body.edited_at=new Date().toISOString();
+      await sbFetch('amanda_activities?id=eq.'+encodeURIComponent(existing.id),{method:'PATCH',prefer:'return=minimal',body:JSON.stringify(body)});
+      return existing.id;
+    }
+    await sbFetch('amanda_activities',{method:'POST',prefer:'return=minimal',body:JSON.stringify(body)});
+    return null;
+  }
+
+  // Authoritative transaction saver: Save Progress NEVER clears a side. Complete only accepts
+  // terminal work. This also updates the same transaction/role row instead of stacking duplicates.
+  window.v176SaveTransaction=async function(complete){
+    const modal=document.getElementById('v175TransactionModal');if(!modal)return;
+    const type=modal.dataset.activityType||'CTC Call';
+    let txnId=modal.dataset.txnId||'';
+    const err=msg=>{const e=document.getElementById('v175TxError');if(e){e.textContent=msg||'';e.classList.toggle('show',!!msg)}};
+    const sides=['Buyer','Listing'].map(side=>({role:side,name:val('v175Tx'+side+'Agent'),outcome:val('v175Tx'+side+'Outcome'),feedback:val('v175Tx'+side+'Feedback'),textSent:chk('v175Tx'+side+'TextSent'),phone:val('v175Tx'+side+'Phone')})).filter(s=>s.name);
+    if(!val('v175TxBuyerName')&&!val('v175TxProperty'))return err('Buyer/client name or property address is required.');
+    if(!sides.length)return err('At least one buyer or listing agent is required.');
+    if(!txnId&&typeof wp33MakeTxnId==='function')txnId=wp33MakeTxnId(type==='CTC Call'?'Clear to Close':'New Contract',[val('v175TxBuyerName'),val('v175TxProperty')].filter(Boolean).join(' · '),val('v175TxBuyerAgent'),val('v175TxListingAgent'),td());
+    let openSides=[];try{openSides=JSON.parse(modal.dataset.v231OpenSides||'[]')}catch(e){}
+    const isOpen=s=>!openSides.length||openSides.some(o=>norm(o.role)===norm(s.role)&&(!o.name||key(o.name)===key(s.name)));
+    const worked=sides.filter(s=>s.outcome);
+    if(!worked.length)return err('Choose an outcome for the call you worked.');
+    const saveSides=complete?sides.filter(isOpen):worked;
+    const follow=val('v175TxFollowup')||null;
+    for(const s of saveSides){
+      if(!s.outcome)return err('Choose an outcome for '+s.role.toLowerCase()+' agent '+s.name+'.');
+      const noConnect=['left voicemail','no answer'].includes(norm(s.outcome));
+      if(!noConnect&&s.feedback.length<3)return err('Add what happened / feedback from '+s.name+'.');
+      if(needsMore(s.outcome)&&!follow)return err('Set the next follow-up date for '+s.name+'.');
+      if(complete&&needsMore(s.outcome))return err(s.name+' still needs follow-up / escalation. Use Save Progress so the call stays in Step 2.');
+      if(complete&&noConnect&&!s.textSent)return err('Send the follow-up text to '+s.name+' and check the box before completing that required call.');
+    }
+    const b1=document.getElementById('v176SaveProgressBtn'),b2=document.getElementById('v176SaveCompleteBtn');if(b1)b1.disabled=true;if(b2)b2.disabled=true;err('');
+    try{
+      let saved=0;
+      for(const s of saveSides){
+        const status=complete?'COMPLETE':'PROGRESS';
+        await upsertTxnCall(type,s,txnId,status,follow);saved++;
+      }
+      try{_wp18Cache=null;_wp18CacheAt=0}catch(e){}
+      if(typeof toast==='function')toast((complete?'Required call complete':'Progress saved — still open')+' for '+saved+' agent'+(saved===1?'':'s')+' ✓','success',3600);
+      if(complete&&typeof v175Close==='function')v175Close('v175TransactionModal');
+      try{if(typeof rmRefreshExecutionQueues==='function')await rmRefreshExecutionQueues()}catch(e){}
+      try{if(typeof v23LoadAmandaSnapshot==='function')await v23LoadAmandaSnapshot(true)}catch(e){}
+      try{if(typeof window.v231RenderTransactionWork==='function')setTimeout(window.v231RenderTransactionWork,100)}catch(e){}
+    }catch(e){console.warn('v234 transaction save',e);err('Could not save transaction call. Try again.');}
+    finally{if(b1)b1.disabled=false;if(b2)b2.disabled=false}
+  };
+
+  // Coalesce the many overlapping Amanda snapshot refresh requests (local save + Supabase realtime
+  // + helper refreshes) into one paint plus at most one trailing paint. This stops the visible
+  // load/disappear/load cycle without turning off live data.
+  const priorSnapshot=window.v23LoadAmandaSnapshot;
+  if(typeof priorSnapshot==='function'&&!priorSnapshot.__v234Coalesced){
+    let inflight=null,queued=false,timer=null,lastStart=0;
+    const run=function(args){
+      lastStart=Date.now();
+      inflight=Promise.resolve(priorSnapshot.apply(window,args)).finally(()=>{
+        inflight=null;
+        if(queued&&!timer){timer=setTimeout(()=>{timer=null;if(!queued)return;queued=false;run([true])},650)}
+      });
+      return inflight;
+    };
+    const wrapped=function(){
+      const args=arguments;
+      if(inflight){queued=true;return inflight}
+      if(Date.now()-lastStart<650){queued=true;if(!timer)timer=setTimeout(()=>{timer=null;if(!queued)return;queued=false;run([true])},650);return Promise.resolve()}
+      return run(args);
+    };
+    wrapped.__v234Coalesced=true;window.v23LoadAmandaSnapshot=wrapped;
+  }
+
+  function addRule(){
+    const hub=document.getElementById('wp230TxnHub');if(!hub||hub.querySelector('.v234-rule'))return;
+    const n=document.createElement('div');n.className='v234-rule';n.innerHTML='<strong>Nothing disappears just because Amanda touched it.</strong> Save Progress keeps the transaction side here. “Requires follow-up” / escalation stays open. Complete Required Calls removes a side only when the required work is truly finished.';
+    const rem=document.getElementById('v233TxnScriptReminder');if(rem)rem.insertAdjacentElement('afterend',n);else hub.appendChild(n);
+  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(addRule,700),{once:true});else setTimeout(addRule,250);
+  const priorRender=window.v231RenderTransactionWork;
+  if(typeof priorRender==='function'&&!priorRender.__v234Rule){
+    const wrapped=function(){const r=priorRender.apply(this,arguments);setTimeout(addRule,0);return r};wrapped.__v234Rule=true;window.v231RenderTransactionWork=wrapped;
+  }
+})();
+</script>
+
+
+<script id="v234-nonblocking-intake-js">
+(function(){
+  // The New Realtor Meeting checklist may still exist for a genuinely unfinished meeting, but it
+  // must never hijack Amanda's entire Log Activity tab or block transaction calls again.
+  window.toggleIntakeBlock=function(){
+    const type=document.getElementById('activityType')?.value||'',block=document.getElementById('intakeBlock'),owner=document.getElementById('activityOwner')?.value||'Amanda';
+    if(!block)return;
+    block.classList.toggle('show',type==='New Realtor Meeting'&&owner==='Amanda');
+  };
+  window.v234ResumeIntakeChecklist=function(){
+    try{switchTab('log')}catch(e){}
+    const locked=document.getElementById('logLockedCard'),normal=document.getElementById('logNormalFields'),block=document.getElementById('intakeBlock'),btn=document.getElementById('logBtn');
+    if(locked)locked.style.display='block';if(normal)normal.style.display='none';if(block)block.classList.add('show');
+    try{if(openIntake)setIntakeStates(openIntake.states)}catch(e){}
+    if(btn){btn.textContent='Mark checklist complete & continue';btn.onclick=completeIntakeChecklist}
+  };
+  window.applyLockState=function(){
+    const banner=document.getElementById('globalLockBanner'),locked=document.getElementById('logLockedCard'),normal=document.getElementById('logNormalFields'),btn=document.getElementById('logBtn');
+    if(locked)locked.style.display='none';if(normal)normal.style.display='block';
+    if(btn){btn.textContent='Log activity';btn.onclick=logActivity}
+    if(openIntake){
+      if(banner){banner.style.display='flex';banner.innerHTML='<span>New Realtor Meeting checklist still open for <strong>'+properCase(openIntake.agent_name)+'</strong>. It will not block today’s other work.</span><button class="lock-resume-btn" onclick="v234ResumeIntakeChecklist()">Finish checklist</button>'}
+    }else if(banner){banner.style.display='none'}
+    toggleIntakeBlock();
+  };
+  // Re-apply once after startup in case the pending-checklist check already ran before this patch.
+  setTimeout(()=>{try{applyLockState()}catch(e){}},500);
+})();
+</script>
+
+
+<script id="v235-transaction-note-rules-js">
+(function(){
+  const txnTypes=new Set(['CTC Call','Under Contract Call']);
+  const isTxn=t=>txnTypes.has(String(t||''));
+  const txnTagRe=/\[(?:TXN_TRIGGER|TXN_[A-Z0-9_]+(?::[^\]]*)?)\]/gi;
+  const extractTags=s=>(String(s||'').match(txnTagRe)||[]);
+  const stripTags=s=>String(s||'').replace(txnTagRe,'').replace(/\s{2,}/g,' ').trim();
+  const mergeTags=(text,tags)=>{
+    const current=extractTags(text),seen=new Set(),all=[];
+    [...(tags||[]),...current].forEach(t=>{const k=String(t).replace(/\s+/g,'').toLowerCase();if(!seen.has(k)){seen.add(k);all.push(t)}});
+    const human=stripTags(text);
+    return (all.join('')+(human?' '+human:'')).trim();
+  };
+
+  // Transaction calls use the structured workbench. They do NOT need a made-up 10-word paragraph.
+  // Manual logging still requires a brief note so there is always an auditable outcome.
+  try{
+    ['CTC Call','Under Contract Call'].forEach(t=>{
+      const i=NOTES_REQUIRED_TYPES.indexOf(t);if(i>=0)NOTES_REQUIRED_TYPES.splice(i,1);
+      if(NOTES_MANDATORY_NO_MIN.indexOf(t)<0)NOTES_MANDATORY_NO_MIN.push(t);
+    });
+  }catch(e){}
+
+  function refreshQuickNoteUi(){
+    const type=document.getElementById('quickLogType')?.value||'';
+    const req=document.getElementById('quickLogNotesRequirement');
+    const el=document.getElementById('quickLogWordCount');
+    const notes=document.getElementById('quickLogNotes')?.value||'';
+    const n=typeof countWords==='function'?countWords(notes):(notes.trim()?notes.trim().split(/\s+/).length:0);
+    if(req)req.textContent=isTxn(type)?'(brief outcome note — no 10-word minimum)':'(10+ words)';
+    if(el&&isTxn(type)){
+      el.textContent=n>0?'✓ brief note added':'brief outcome note required';
+      el.style.color=n>0?'var(--success)':'var(--warning)';
+    }
+  }
+  const priorQuickType=window.onQuickLogTypeChange;
+  if(typeof priorQuickType==='function'&&!priorQuickType.__v235Notes){
+    const wrapped=function(){const r=priorQuickType.apply(this,arguments);refreshQuickNoteUi();return r};
+    wrapped.__v235Notes=true;window.onQuickLogTypeChange=wrapped;
+  }
+  document.getElementById('quickLogNotes')?.addEventListener('input',refreshQuickNoteUi);
+  setTimeout(refreshQuickNoteUi,0);
+
+  // Full Log hint: transaction calls need a real outcome note, but not 10 filler words.
+  const priorHint=window.updateNotesRequirementHint;
+  if(typeof priorHint==='function'&&!priorHint.__v235Notes){
+    const wrapped=function(){
+      const r=priorHint.apply(this,arguments);
+      const type=document.getElementById('activityType')?.value||'';
+      if(isTxn(type)){
+        const hint=document.getElementById('notesReqHint'),notesEl=document.getElementById('activityNotes'),wc=document.getElementById('activityWordCount');
+        if(hint)hint.textContent='— brief outcome note required; no 10-word minimum';
+        if(notesEl)notesEl.placeholder='Briefly note what happened, feedback, or next step. The transaction details are tracked separately.';
+        if(wc){const n=typeof countWords==='function'?countWords(notesEl?.value||''):0;wc.textContent=n>0?'✓ brief note added':'brief outcome note required';wc.style.color=n>0?'var(--success)':'var(--warning)'}
+      }
+      return r;
+    };
+    wrapped.__v235Notes=true;window.updateNotesRequirementHint=wrapped;
+  }
+
+  // Editing a transaction activity should never expose/erase the technical transaction identity.
+  // The textarea shows only the human-written portion; role/id/status/text flags are preserved invisibly.
+  const priorOpen=window.openEditModal;
+  if(typeof priorOpen==='function'&&!priorOpen.__v235TxnTags){
+    const wrapped=function(id){
+      let row=null;try{row=(allFeedData||[]).find(x=>x.id===id)||null}catch(e){}
+      const r=priorOpen.apply(this,arguments);
+      try{
+        if(row&&isTxn(row.act_type)){
+          const modal=document.getElementById('editModal'),notes=document.getElementById('editNotes');
+          const tags=extractTags(typeof stripRmMeta==='function'?stripRmMeta(row.notes||''):row.notes||'');
+          if(modal)modal.dataset.v235TxnTags=JSON.stringify(tags);
+          if(notes)notes.value=stripTags(notes.value||'');
+          const clearBtn=notes?.parentElement?.querySelector('button');
+          if(clearBtn&&/clear note/i.test(clearBtn.textContent||'')){
+            clearBtn.textContent='Clear written note';
+            clearBtn.title='Clears only the written note. Transaction ID, side, and status are preserved automatically.';
+          }
+          const sub=document.getElementById('editModalAgent');
+          let msg=document.getElementById('v235TxnNoteHelp');
+          if(!msg&&sub){msg=document.createElement('div');msg.id='v235TxnNoteHelp';msg.style.cssText='font-size:10.5px;color:#6E607A;background:#F8F6FC;border:1px solid #DDD6EF;border-radius:8px;padding:7px 9px;margin:7px 0 10px';sub.insertAdjacentElement('afterend',msg)}
+          if(msg)msg.innerHTML='<strong>CTC / New Contract note:</strong> no 10-word minimum. Keep a brief useful outcome if needed. Transaction ID, buyer/listing side, and open/complete status are preserved automatically.';
+        }else{
+          const modal=document.getElementById('editModal');if(modal)delete modal.dataset.v235TxnTags;
+          const msg=document.getElementById('v235TxnNoteHelp');if(msg)msg.remove();
+        }
+      }catch(e){console.warn('v235 edit preload',e)}
+      return r;
+    };
+    wrapped.__v235TxnTags=true;window.openEditModal=wrapped;
+  }
+
+  const priorSave=window.saveEditModal;
+  if(typeof priorSave==='function'&&!priorSave.__v235TxnTags){
+    const wrapped=async function(){
+      try{
+        if(isTxn(editingActivityType)){
+          const modal=document.getElementById('editModal'),notes=document.getElementById('editNotes');
+          let tags=[];try{tags=JSON.parse(modal?.dataset.v235TxnTags||'[]')}catch(e){}
+          if(notes)notes.value=mergeTags(notes.value||'',tags);
+        }
+      }catch(e){console.warn('v235 transaction metadata preserve',e)}
+      return await priorSave.apply(this,arguments);
+    };
+    wrapped.__v235TxnTags=true;window.saveEditModal=wrapped;
+  }
 })();
 </script>
 
