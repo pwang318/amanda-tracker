@@ -1,4 +1,4 @@
-    <!DOCTYPE html>
+   <!DOCTYPE html>
 <!-- v229 ENCOMPASS XLSX IMPORT + TRANSACTION PREFILL · 2026-08-25 -->
 <!-- v217 4-WEEK BUTTON HANDLER FIX · 2026-08-21 -->
 <!-- v228 SMART NEXT-MOVE ENGINE + ACTIONABLE WORKFLOW · 2026-08-25 -->
@@ -1129,6 +1129,12 @@ body.rm-director-route .tabs,body.rm-director-route .who-bar{display:none!import
 
 <style id="v221-coaching-ui">
 .rmx-coach-sandwich{display:grid;gap:9px;margin-top:12px}.rmx-coach-sandwich>div{border:1px solid #E5E1EC;border-radius:10px;padding:10px 12px;background:#FCFBFE}.rmx-coach-sandwich b{display:block;font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:#5A3AA8;margin-bottom:4px}.rmx-coach-sandwich span{display:block;font-size:12px;line-height:1.55;color:#39463E}.rmx-modalbox #rmxCoachGood,.rmx-modalbox #rmxCoachObs,.rmx-modalbox #rmxCoachDir,.rmx-modalbox #rmxCoachClose{min-height:96px}
+</style>
+
+<style id="v237-no-new-meeting-flicker-css">
+html:not(.v237-rm-ready) #v109NewMeetingPush{position:relative;min-height:118px;overflow:hidden}
+html:not(.v237-rm-ready) #v109NewMeetingPush > *{visibility:hidden!important}
+html:not(.v237-rm-ready) #v109NewMeetingPush:after{content:"Loading live new-meeting queue…";position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding:18px;color:#6E5A84;font-size:11px;font-weight:750;background:#FCFAFE}
 </style>
 </head>
 <body>
@@ -16548,7 +16554,7 @@ window.rmAuditVisibleButtons=function(){
     const left=Math.max(0,25-coldToday);
     h.innerHTML=`<div class="v191-card"><div class="v191-head"><div><b>NEW MEETING PUSH · ${coldToday} / 25 COLD CALLS</b><small>${done?'Daily cold-call goal complete. New names start again tomorrow.':left+' calls left today. Work these 5; each saved cold call clears the person and pulls the next eligible name.'}</small><div class="v191-playbookbar"><button class="v191-btn" onclick="v191Playbook('book')">Booking script</button><button class="v191-btn" onclick="v191Playbook('first')">First meeting playbook</button></div></div><button class="v191-btn" onclick="v196ManualRefresh()">Refresh</button></div>`+
       (done?`<div class="v191-empty"><b>25 / 25 complete for today.</b><br>No more cold-call names are assigned until tomorrow.</div>`:
-      rows.length?rows.map((pr,i)=>{const p=pm[N(pr.agent_name)]||{},c=contact(p,pr),loc=(typeof v192Location==='function'?v192Location(Object.assign({},p,pr)):'');return `<div class="v191-row"><div class="v191-rank">${i+1}</div><div><div class="v191-name">${E(typeof displayName==="function"?displayName(pr.agent_name):pr.agent_name)}</div><div class="v191-meta">${E(loc||c.brokerage||'New prospect')}<br><b>Why this person:</b> ${E(pr.__smartWhy||'qualified prospect')}</div></div><div class="v191-contact"><b>Phone:</b> ${E(cleanPhone(c.phone)||'Missing')}<br><b>Email:</b> ${E(c.email||'Missing')}${loc?'<br><b>Location:</b> '+E(loc):''}</div><div class="v191-actions"><button class="primary" data-rm-action="outreach" data-agent="${encodeURIComponent(pr.agent_name||'')}">Log outreach</button><button onclick="v191Playbook('book')">Script</button><button class="v195-not-prospect" onclick="v196OpenNotProspect('${encodeURIComponent(pr.agent_name||'')}')">Not a prospect</button><button onclick="openPipelineContact('${encodeURIComponent(pr.agent_name||'')}')">Profile</button></div></div>`}).join(''):
+      rows.length?rows.map((pr,i)=>{const p=pm[N(pr.agent_name)]||{},c=contact(p,pr),loc=(typeof v192Location==='function'?v192Location(Object.assign({},p,pr)):'');return `<div class="v191-row"><div class="v191-rank">${i+1}</div><div><div class="v191-name">${E(typeof displayName==="function"?displayName(pr.agent_name):pr.agent_name)}</div><div class="v191-meta">${E(loc||c.brokerage||'New prospect')}<br><b>Why this person:</b> ${E(pr.__smartWhy||'qualified prospect')}</div></div><div class="v191-contact"><b>Phone:</b> ${E(cleanPhone(c.phone)||'Missing')}<br><b>Email:</b> ${E(c.email||'Missing')}${loc?'<br><b>Location:</b> '+E(loc):''}</div><div class="v191-actions"><button class="primary" data-rm-action="prospect-call" data-agent="${encodeURIComponent(pr.agent_name||'')}" data-phone="${encodeURIComponent(c.phone||'')}">Start call</button><button onclick="v191Playbook('book')">Script</button><button class="v195-not-prospect" onclick="v196OpenNotProspect('${encodeURIComponent(pr.agent_name||'')}')">Not a prospect</button><button onclick="openPipelineContact('${encodeURIComponent(pr.agent_name||'')}')">Profile</button></div></div>`}).join(''):
       `<div class="v191-empty"><b>No eligible prospects remain for today.</b><br>Add or reactivate qualified prospects in New Agents.</div>`)+`</div>`;
   }
 
@@ -19392,5 +19398,61 @@ window.rmxBoot=boot;const baseSwitch=window.switchTab;window.switchTab=function(
 })();
 </script>
 
+
+
+<!-- v237 · ONE NEW-MEETING UI + WORKING START CALL · 2026-08-25 -->
+<script id="v237-stable-new-meeting-start-call">
+(function(){
+  const dec=s=>{try{return decodeURIComponent(String(s||''))}catch(e){return String(s||'')}};
+
+  // The old daily-plan renderer used the same host and could briefly paint a second version of the
+  // New Meeting card before the live-data controller replaced it. Retire that renderer completely.
+  // The v191 live controller is now the only code allowed to paint #v109NewMeetingPush.
+  window.v109RenderNewMeetingPush=function(){
+    const h=document.getElementById('v109NewMeetingPush');
+    if(!h)return;
+    if(window._v191 && typeof window.v191Refresh==='function'){
+      try{window.v191Refresh(false)}catch(e){}
+      return;
+    }
+    h.innerHTML='<div class="v191-load">Loading live New Meeting data…</div>';
+  };
+
+  // Mark the authoritative live view ready only after its refresh resolves. This keeps the older
+  // card from flashing on screen during initial page load.
+  const priorRefresh=window.v191Refresh;
+  if(typeof priorRefresh==='function'&&!priorRefresh.__v237Stable){
+    const wrapped=async function(force){
+      try{return await priorRefresh.call(this,force)}
+      finally{document.documentElement.classList.add('v237-rm-ready')}
+    };
+    wrapped.__v237Stable=true;
+    window.v191Refresh=wrapped;
+  }else{
+    document.documentElement.classList.add('v237-rm-ready');
+  }
+
+  // Prospect Start call always opens the cold-call Quick Log, prefilled with the selected Realtor.
+  // Capture phase makes the button survive any later rerender and avoids stale inline handlers.
+  document.addEventListener('click',function(ev){
+    const btn=ev.target&&ev.target.closest?ev.target.closest('[data-rm-action="prospect-call"]'):null;
+    if(!btn||btn.disabled)return;
+    ev.preventDefault();
+    ev.stopImmediatePropagation();
+    const agent=dec(btn.dataset.agent),phone=dec(btn.dataset.phone);
+    try{
+      if(typeof window.v29OpenProspect==='function')return window.v29OpenProspect(agent,phone);
+      if(typeof window.v176OpenOutreach==='function')return window.v176OpenOutreach(agent,'Cold Calls');
+      if(typeof window.switchTab==='function')window.switchTab('log');
+    }catch(e){
+      console.error('Prospect Start call failed',e);
+      try{if(typeof window.toast==='function')window.toast('Could not open the call workspace. Refresh once and try again.','error',3500)}catch(_){}
+    }
+  },true);
+
+  // If this script loaded after the initial live refresh already completed, reveal the live card now.
+  if(window._v191)document.documentElement.classList.add('v237-rm-ready');
+})();
+</script>
 </body>
 </html>
