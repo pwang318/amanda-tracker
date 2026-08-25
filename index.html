@@ -3561,8 +3561,53 @@ function rmConnectionErrorKind(err){
 
 // FIX (2026-08-20): use the same 20s timeout everywhere. The previous 7s health check contradicted
 // the proven 15s+ Supabase response time and created false "connection issue" warnings.
+// v236 PRIVACY: loan/account numbers must never be stored or rendered by this tracker.
+// Keep this synchronous so every read/write path can sanitize before the UI sees data.
+function rmPrivacyToken(value){
+  var str=String(value||""),h1=2166136261>>>0,h2=2246822519>>>0;
+  for(var i=0;i<str.length;i++){
+    var c=str.charCodeAt(i);
+    h1=Math.imul(h1^c,16777619)>>>0;
+    h2=Math.imul(h2^c,3266489917)>>>0;
+  }
+  return (h1>>>0).toString(36)+(h2>>>0).toString(36);
+}
+function rmPrivacyStripLoanNumbersSync(value){
+  var n=String(value==null?"":value);
+  // Imported transaction metadata from older builds.
+  var loanTag=/\[TXN_LOAN:[^\]]*\]/i.test(n);
+  var idMatch=n.match(/\[TXN_ID:([^\]]*)\]/i);
+  if(idMatch&&(loanTag||/(?:^|[-_])loan[-_]/i.test(idMatch[1]))){
+    n=n.replace(/\[TXN_ID:[^\]]*\]/i,"[TXN_ID:txn-"+rmPrivacyToken(idMatch[1])+"]");
+  }
+  n=n.replace(/\s*\[TXN_LOAN:[^\]]*\]/gi,"");
+  // Human-entered/export text such as Loan # 123456789 or Loan Number: 123456789.
+  n=n.replace(/\bLoan\s*(?:Number|No\.?|#)?\s*[:\-]?\s*([A-Z0-9-]{5,})\b/gi,function(full,token){
+    return /\d{5}/.test(String(token||""))?"":full;
+  });
+  return n.replace(/[ \t]{2,}/g," ").replace(/\s+\|\s+\|/g," | ").trim();
+}
+function rmPrivacySanitizePayload(payload){
+  if(!payload||typeof payload!=="object")return payload;
+  var rows=Array.isArray(payload)?payload:[payload];
+  rows.forEach(function(row){
+    if(!row||typeof row!=="object")return;
+    if(typeof row.notes==="string")row.notes=rmPrivacyStripLoanNumbersSync(row.notes);
+    if(typeof row.note==="string")row.note=rmPrivacyStripLoanNumbersSync(row.note);
+  });
+  return payload;
+}
+
 async function sbFetch(path,options={}){
   const originalPath=path;
+  // Privacy gate: sanitize RM/LP notes before they can leave the browser.
+  if(options&&options.body&&(String(path||"").startsWith("amanda_activities")||String(path||"").startsWith("call_logs"))){
+    try{
+      var _rmPrivBody=typeof options.body==="string"?JSON.parse(options.body):options.body;
+      _rmPrivBody=rmPrivacySanitizePayload(_rmPrivBody);
+      options={...options,body:typeof options.body==="string"?JSON.stringify(_rmPrivBody):_rmPrivBody};
+    }catch(_rmPrivErr){}
+  }
   const originalOptions={...options};
   const controller=new AbortController();
   const timer=setTimeout(()=>controller.abort(),20000);
@@ -3601,7 +3646,9 @@ async function sbFetch(path,options={}){
     }
     if(Array.isArray(body) && String(path||"").startsWith("amanda_activities")){
       body=body.filter(r=>String(r&&r.agent_name||"").trim().toUpperCase()!=="__TEST__");
+      body=rmPrivacySanitizePayload(body);
     }
+    if(Array.isArray(body) && String(path||"").startsWith("call_logs"))body=rmPrivacySanitizePayload(body);
     return body;
   }catch(err){
     if(err&&err.name==="AbortError"){
@@ -8143,7 +8190,9 @@ async function ctcFillContact(role){
 }
 function ctcParsePastedUpdate(){
   const raw=ctcField("ctcPasteSource");if(!raw){toast("Paste the CTC alert first.","error");return;}
-  const one=raw.replace(/\r/g,"");
+  const safeRaw=typeof rmPrivacyStripLoanNumbersSync==="function"?rmPrivacyStripLoanNumbersSync(raw):raw;
+  ctcSet("ctcPasteSource",safeRaw);
+  const one=safeRaw.replace(/\r/g,"");
   let m=one.match(/Name\s*:\s*([^\n}]+)/i);if(m)ctcSet("ctcBorrower",m[1].trim());
   if(!ctcField("ctcBorrower")){m=one.match(/Update\s*:\s*[^\n/]*\/([^:\n]+)\s*:\s*CLEAR\s*TO\s*CLOSE/i);if(m)ctcSet("ctcBorrower",m[1].trim());}
   m=one.match(/(?:Loan\s*)?Address\s*:\s*([\s\S]*?)(?=\n\s*(?:Buyer\s*Agent|Listing\s*Agent|Seller\s*Agent|Name\s*:|Loan\s*(?:Number|#)\s*:)|$)/i);
@@ -18375,14 +18424,13 @@ window.rmxBoot=boot;const baseSwitch=window.switchTab;window.switchTab=function(
       _i:i,
       client:clean(get(raw,['Borrower Name','Borrower','Client Name','Client']),180),
       property:clean(get(raw,['Subject Property Address','Property Address','Subject Property','Address']),220),
-      loan:clean(get(raw,['Loan Number','Loan #','Loan No','Loan']),80),
       closeDate:dateText(get(raw,['Est Closing Date','Estimated Closing Date','Closing Date','Close Date'])),
       milestone:clean(get(raw,['Last Finished Milestone','Milestone','Current Milestone','Loan Milestone']),100),
       buyer:{name:clean(buyerName,180),phone:clean(get(raw,['Buyers Agent Phone','Buyer Agent Phone','Buyer Phone']),80),email:clean(get(raw,['Buyers Agent Email','Buyer Agent Email','Buyer Email']),180)},
       listing:{name:clean(listingName,180),phone:clean(get(raw,['Sellers Agent Phone','Seller Agent Phone','Listing Agent Phone','Seller Phone','Listing Phone']),80),email:clean(get(raw,['Sellers Agent Email','Seller Agent Email','Listing Agent Email','Seller Email','Listing Email']),180)}
     };
   }
-  function usable(r){return !!(r&&(r.buyer.name||r.listing.name)&&(r.client||r.property||r.loan))}
+  function usable(r){return !!(r&&(r.buyer.name||r.listing.name)&&(r.client||r.property))}
   function stage(){return document.getElementById('wp229ImportStage')?.value||document.getElementById('wp30TxnStage')?.value||'New Contract'}
   function stageLabel(v){return v==='Clear to Close'?'Clear to Close (CTC)':'New Contract'}
   function ensureXlsx(){
@@ -18399,12 +18447,12 @@ window.rmxBoot=boot;const baseSwitch=window.switchTab;window.switchTab=function(
       const rows=XLSX.utils.sheet_to_json(book.Sheets[name],{defval:'',raw:false});
       if(!rows.length)continue;
       const keys=Object.keys(rows[0]||{}).map(hkey).join('|');
-      let score=0;['buyer agent','seller agent','borrower','property address','loan number'].forEach(x=>{if(keys.includes(x))score+=2});
+      let score=0;['buyer agent','seller agent','borrower','property address'].forEach(x=>{if(keys.includes(x))score+=2});
       if(String(name).toLowerCase()==='table')score+=1;
       if(score>bestScore){bestScore=score;best={name,rows}}
     }
     if(!best)throw new Error('No data rows were found in this workbook.');
-    const rows=best.rows.map(normalize).filter(r=>r.buyer.name||r.listing.name||r.client||r.property||r.loan);
+    const rows=best.rows.map(normalize).filter(r=>r.buyer.name||r.listing.name||r.client||r.property);
     if(!rows.length)throw new Error('I could not find Buyer Agent / Listing Agent transaction columns in this workbook.');
     return {sheet:best.name,rows};
   }
@@ -18414,7 +18462,7 @@ window.rmxBoot=boot;const baseSwitch=window.switchTab;window.switchTab=function(
     m.innerHTML='<div style="width:min(980px,96vw);max-height:90vh;overflow:hidden;background:#fff;border-radius:16px;box-shadow:0 24px 70px rgba(0,0,0,.22);display:flex;flex-direction:column">'+
       '<div style="padding:16px 18px 12px;border-bottom:1px solid #ECE9F2;display:flex;justify-content:space-between;gap:12px"><div><div style="font-size:18px;font-weight:850;color:var(--text-1)">Import Encompass transaction calls</div><div style="font-size:11px;color:var(--text-3);margin-top:3px">Upload the Encompass Excel report once. The tracker will create the buyer + listing agent calls and prefill the transaction details when Amanda starts each call.</div></div><button type="button" onclick="wp229CloseImport()" style="width:34px;height:34px;border-radius:50%;border:0;background:#F4F3F1;font-size:18px;cursor:pointer">×</button></div>'+
       '<div style="padding:14px 18px;overflow:auto"><div style="display:grid;grid-template-columns:minmax(190px,.7fr) minmax(260px,1fr);gap:10px;align-items:end"><div class="field" style="margin:0"><label>These files are</label><select id="wp229ImportStage"><option value="New Contract">New Contract calls</option><option value="Clear to Close">Clear to Close / CTC calls</option></select></div><div><input id="wp229ImportFile" type="file" accept=".xlsx,.xls,.csv" style="display:none"><button type="button" class="btn-primary" onclick="document.getElementById(\'wp229ImportFile\').click()">Choose Encompass Excel</button><span id="wp229ImportFileLabel" style="font-size:10.5px;color:var(--text-3);margin-left:8px">No file selected</span></div></div>'+
-      '<div id="wp229ImportMsg" style="font-size:10.5px;color:var(--text-3);margin-top:9px">Supported automatically: borrower, property, buyer agent name/phone/email, listing/seller agent name/phone/email, estimated closing date, and loan number when included.</div>'+
+      '<div id="wp229ImportMsg" style="font-size:10.5px;color:var(--text-3);margin-top:9px"><strong>Privacy:</strong> loan numbers in the export are ignored and are never stored in this tracker. Supported: borrower, property, buyer/listing agent contact details, and estimated closing date.</div>'+
       '<div id="wp229ImportPreview" style="margin-top:12px"></div></div>'+
       '<div style="padding:12px 18px;border-top:1px solid #ECE9F2;display:flex;justify-content:space-between;gap:10px;align-items:center"><div id="wp229ImportCount" style="font-size:11px;color:var(--text-3)"></div><div style="display:flex;gap:8px"><button type="button" class="rmx-btn" onclick="wp229CloseImport()">Cancel</button><button id="wp229ImportSave" type="button" class="btn-primary" onclick="wp229ImportSelected()" disabled>Import selected calls</button></div></div></div>';
     document.body.appendChild(m);
@@ -18428,20 +18476,20 @@ window.rmxBoot=boot;const baseSwitch=window.switchTab;window.switchTab=function(
     const valid=wp229Rows.filter(usable).length,invalid=wp229Rows.length-valid,autoSelect=valid<=2;
     host.innerHTML='<div style="display:flex;justify-content:space-between;gap:8px;align-items:center;margin-bottom:7px"><div style="font-size:11px;font-weight:800;color:var(--text-1)">'+esc(stageLabel(stage()))+' preview · '+wp229Rows.length+' file'+(wp229Rows.length===1?'':'s')+'</div><label style="font-size:10.5px;color:var(--text-3);cursor:pointer"><input id="wp229ToggleAll" type="checkbox" '+(autoSelect?'checked':'')+' onchange="wp229ToggleAll(this.checked)"> Select all valid rows</label></div>'+
       '<div style="border:1px solid #E5E1ED;border-radius:10px;overflow:auto;max-height:430px"><table style="border-collapse:collapse;width:100%;font-size:10.5px"><thead style="position:sticky;top:0;background:#F8F6FC;z-index:1"><tr><th style="padding:8px;text-align:left"></th><th style="padding:8px;text-align:left">Client / property</th><th style="padding:8px;text-align:left">Buyer agent</th><th style="padding:8px;text-align:left">Listing agent</th><th style="padding:8px;text-align:left">Est. close</th><th style="padding:8px;text-align:left">Status</th></tr></thead><tbody>'+
-      wp229Rows.map((r,i)=>{const ok=usable(r),why=!r.buyer.name&&!r.listing.name?'Missing both agent names':(!r.client&&!r.property&&!r.loan?'Missing borrower/property/loan':'Ready');return '<tr style="border-top:1px solid #EEEAF3;'+(!ok?'background:#FFF8F2':'')+'"><td style="padding:8px"><input class="wp229RowCheck" data-i="'+i+'" type="checkbox" '+(ok?(autoSelect?'checked':''):'disabled')+' onchange="wp229UpdateCount()"></td><td style="padding:8px"><strong>'+esc(r.client||'—')+'</strong><div style="color:var(--text-3);margin-top:2px">'+esc(r.property||'')+(r.loan?'<br>Loan '+esc(r.loan):'')+'</div></td><td style="padding:8px"><strong>'+esc(r.buyer.name||'—')+'</strong><div style="color:var(--text-3)">'+esc(r.buyer.phone||'')+(r.buyer.email?'<br>'+esc(r.buyer.email):'')+'</div></td><td style="padding:8px"><strong>'+esc(r.listing.name||'—')+'</strong><div style="color:var(--text-3)">'+esc(r.listing.phone||'')+(r.listing.email?'<br>'+esc(r.listing.email):'')+'</div></td><td style="padding:8px;white-space:nowrap">'+esc(r.closeDate||'—')+'</td><td style="padding:8px"><span style="font-weight:750;color:'+(ok?'#2F6847':'#A45100')+'">'+esc(why)+'</span></td></tr>'}).join('')+'</tbody></table></div>'+
+      wp229Rows.map((r,i)=>{const ok=usable(r),why=!r.buyer.name&&!r.listing.name?'Missing both agent names':(!r.client&&!r.property?'Missing borrower/property':'Ready');return '<tr style="border-top:1px solid #EEEAF3;'+(!ok?'background:#FFF8F2':'')+'"><td style="padding:8px"><input class="wp229RowCheck" data-i="'+i+'" type="checkbox" '+(ok?(autoSelect?'checked':''):'disabled')+' onchange="wp229UpdateCount()"></td><td style="padding:8px"><strong>'+esc(r.client||'—')+'</strong><div style="color:var(--text-3);margin-top:2px">'+esc(r.property||'')+'</div></td><td style="padding:8px"><strong>'+esc(r.buyer.name||'—')+'</strong><div style="color:var(--text-3)">'+esc(r.buyer.phone||'')+(r.buyer.email?'<br>'+esc(r.buyer.email):'')+'</div></td><td style="padding:8px"><strong>'+esc(r.listing.name||'—')+'</strong><div style="color:var(--text-3)">'+esc(r.listing.phone||'')+(r.listing.email?'<br>'+esc(r.listing.email):'')+'</div></td><td style="padding:8px;white-space:nowrap">'+esc(r.closeDate||'—')+'</td><td style="padding:8px"><span style="font-weight:750;color:'+(ok?'#2F6847':'#A45100')+'">'+esc(why)+'</span></td></tr>'}).join('')+'</tbody></table></div>'+
       (invalid?'<div style="font-size:10px;color:#A45100;margin-top:6px">'+invalid+' row'+(invalid===1?' was':'s were')+' left unselected because required transaction data is missing.</div>':'');
     if(save)save.disabled=valid===0;wp229UpdateCount();
   }
   function selected(){return Array.from(document.querySelectorAll('.wp229RowCheck:checked')).map(x=>wp229Rows[Number(x.dataset.i)]).filter(Boolean)}
   function tag(name,v){v=clean(v,220);return v?'['+name+':'+v+']':''}
   function txnIdFor(r,st){
-    if(r.loan)return (typeof wp33TxnSafeToken==='function'?wp33TxnSafeToken(st+'-loan-'+r.loan):(st+'-loan-'+r.loan).toLowerCase().replace(/[^a-z0-9]+/g,'-'));
-    const ref=[r.client,r.property].filter(Boolean).join(' · ').slice(0,180);
-    return typeof wp33MakeTxnId==='function'?wp33MakeTxnId(st,ref,r.buyer.name,r.listing.name,(typeof today==='function'?today():'')):(st+'-'+ref).toLowerCase().replace(/[^a-z0-9]+/g,'-').slice(0,80);
+    // Stable opaque ID built without any loan/account number or readable PII.
+    const basis=[st,r.client,r.property,r.closeDate,r.buyer.name,r.listing.name].join('|').toLowerCase();
+    return 'txn-'+(typeof rmPrivacyToken==='function'?rmPrivacyToken(basis):String(Math.abs(basis.split('').reduce((h,c)=>((h<<5)-h+c.charCodeAt(0))|0,0))));
   }
   function notesFor(r,role,txnId,owner,st){
     const ref=[r.client,r.property].filter(Boolean).join(' · ').slice(0,180);
-    let notes='[TXN_TRIGGER]'+tag('TXN_ROLE',role)+tag('TXN_ID',txnId)+tag('TXN_REF',ref)+tag('TXN_CLIENT',r.client)+tag('TXN_PROPERTY',r.property)+tag('TXN_LOAN',r.loan)+tag('TXN_CLOSE_DATE',r.closeDate)+tag('TXN_BUYER_PHONE',r.buyer.phone)+tag('TXN_BUYER_EMAIL',r.buyer.email)+tag('TXN_LISTING_PHONE',r.listing.phone)+tag('TXN_LISTING_EMAIL',r.listing.email)+tag('TXN_SOURCE','Encompass Excel')+' Mandatory '+st+' transaction call trigger for the '+role.toLowerCase()+' agent. Complete the required '+(st==='Clear to Close'?'CTC Call':'Under Contract Call')+' and log the outcome in the RM tracker.';
+    let notes='[TXN_TRIGGER]'+tag('TXN_ROLE',role)+tag('TXN_ID',txnId)+tag('TXN_REF',ref)+tag('TXN_CLIENT',r.client)+tag('TXN_PROPERTY',r.property)+tag('TXN_CLOSE_DATE',r.closeDate)+tag('TXN_BUYER_PHONE',r.buyer.phone)+tag('TXN_BUYER_EMAIL',r.buyer.email)+tag('TXN_LISTING_PHONE',r.listing.phone)+tag('TXN_LISTING_EMAIL',r.listing.email)+tag('TXN_SOURCE','Encompass Excel')+' Mandatory '+st+' transaction call trigger for the '+role.toLowerCase()+' agent. Complete the required '+(st==='Clear to Close'?'CTC Call':'Under Contract Call')+' and log the outcome in the RM tracker.';
     try{notes=appendRmMeta(notes,owner,'Current Relationship')}catch(e){}return notes;
   }
   function existingKey(row){return (typeof wp33TxnId==='function'?wp33TxnId(row.notes):'')+'|'+String(typeof wp30TxnRole==='function'?wp30TxnRole(row.notes):'Agent').toLowerCase()}
@@ -18497,7 +18545,7 @@ window.rmxBoot=boot;const baseSwitch=window.switchTab;window.switchTab=function(
     const b=typeof baseBundle==='function'?baseBundle(txnId,name,role):{txnId:txnId||'',buyer:'',listing:'',client:'',property:'',ref:''};
     const data=window._wp18Cache||{},rows=(data.transactionActs||[]).filter(t=>{if(!(t.act_type==='New Contract'||t.act_type==='Clear to Close'))return false;if(txnId)return typeof wp33TxnId==='function'&&wp33TxnId(t.notes)===txnId;return typeof wp18Key==='function'&&wp18Key(t.agent_name)===wp18Key(name)});
     function meta(notes,key){const m=String(notes||'').match(new RegExp('\\['+key+':([^\\]]*)\\]','i'));return m?m[1].trim():''}
-    rows.forEach(t=>{b.buyerPhone=b.buyerPhone||meta(t.notes,'TXN_BUYER_PHONE');b.buyerEmail=b.buyerEmail||meta(t.notes,'TXN_BUYER_EMAIL');b.listingPhone=b.listingPhone||meta(t.notes,'TXN_LISTING_PHONE');b.listingEmail=b.listingEmail||meta(t.notes,'TXN_LISTING_EMAIL');b.loan=b.loan||meta(t.notes,'TXN_LOAN');b.closeDate=b.closeDate||meta(t.notes,'TXN_CLOSE_DATE');b.source=b.source||meta(t.notes,'TXN_SOURCE')});
+    rows.forEach(t=>{b.buyerPhone=b.buyerPhone||meta(t.notes,'TXN_BUYER_PHONE');b.buyerEmail=b.buyerEmail||meta(t.notes,'TXN_BUYER_EMAIL');b.listingPhone=b.listingPhone||meta(t.notes,'TXN_LISTING_PHONE');b.listingEmail=b.listingEmail||meta(t.notes,'TXN_LISTING_EMAIL');b.closeDate=b.closeDate||meta(t.notes,'TXN_CLOSE_DATE');b.source=b.source||meta(t.notes,'TXN_SOURCE')});
     return b;
   };
   window.wp48PrefillCtcTransaction=async function(name,role,txnId){
@@ -18505,7 +18553,7 @@ window.rmxBoot=boot;const baseSwitch=window.switchTab;window.switchTab=function(
     if(b.client)ctcSet('ctcBorrower',b.client);if(b.property)ctcSet('ctcProperty',b.property);if(b.buyer)ctcSet('ctcBuyerAgent',b.buyer);if(b.listing)ctcSet('ctcSellerAgent',b.listing);
     if(b.buyerPhone)ctcSet('ctcBuyerPhone',b.buyerPhone);if(b.buyerEmail)ctcSet('ctcBuyerEmail',b.buyerEmail);if(b.listingPhone)ctcSet('ctcSellerPhone',b.listingPhone);if(b.listingEmail)ctcSet('ctcSellerEmail',b.listingEmail);
     await Promise.all([b.buyer?ctcFillContact('buyer'):Promise.resolve(),b.listing?ctcFillContact('seller'):Promise.resolve()]);ctcUpdatePreview();
-    const loaded=document.getElementById('ctcLoadedContext'),bits=[];if(b.client)bits.push('Client: '+b.client);if(b.property)bits.push('Property: '+b.property);if(b.loan)bits.push('Loan: '+b.loan);if(b.closeDate)bits.push('Est close: '+b.closeDate);if(b.buyer)bits.push('Buyer agent: '+b.buyer);if(b.listing)bits.push('Listing agent: '+b.listing);
+    const loaded=document.getElementById('ctcLoadedContext'),bits=[];if(b.client)bits.push('Client: '+b.client);if(b.property)bits.push('Property: '+b.property);if(b.closeDate)bits.push('Est close: '+b.closeDate);if(b.buyer)bits.push('Buyer agent: '+b.buyer);if(b.listing)bits.push('Listing agent: '+b.listing);
     if(loaded){loaded.style.display=bits.length?'block':'none';loaded.textContent=bits.length?'✓ Loaded from '+(b.source||'the transaction')+' — '+bits.join(' · '):''}return b;
   };
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(installButton,450),{once:true});else setTimeout(installButton,450);
@@ -18649,7 +18697,7 @@ window.rmxBoot=boot;const baseSwitch=window.switchTab;window.switchTab=function(
 
   // v229's metadata extension referenced window._wp18Cache, but the live cache is a top-level lexical
   // binding in this build. Re-read the actual live transaction rows so imported phone/email/loan/close
-  // details follow the file into every logging workflow.
+  // details follow the file into every logging workflow. Loan/account numbers are intentionally excluded.
   const priorBundle=window.wp48TxnBundle;
   window.wp48TxnBundle=function(txnId,name,role){
     const b=typeof priorBundle==='function'?priorBundle(txnId,name,role):{txnId:txnId||'',buyer:'',listing:'',client:'',property:'',ref:''};
@@ -18666,7 +18714,6 @@ window.rmxBoot=boot;const baseSwitch=window.switchTab;window.switchTab=function(
       b.client=b.client||meta(t.notes,'TXN_CLIENT');
       b.property=b.property||meta(t.notes,'TXN_PROPERTY');
       b.ref=b.ref||meta(t.notes,'TXN_REF');
-      b.loan=b.loan||meta(t.notes,'TXN_LOAN');
       b.closeDate=b.closeDate||meta(t.notes,'TXN_CLOSE_DATE');
       b.source=b.source||meta(t.notes,'TXN_SOURCE');
       b.buyerPhone=b.buyerPhone||meta(t.notes,'TXN_BUYER_PHONE');
@@ -18714,7 +18761,6 @@ window.rmxBoot=boot;const baseSwitch=window.switchTab;window.switchTab=function(
     const b=g.bundle||{},isCtc=g.callType==='CTC Call',title=b.client||b.property||b.ref||'Transaction',metaBits=[];
     if(b.property&&b.property!==title)metaBits.push(b.property);
     if(b.closeDate)metaBits.push('Est. close '+b.closeDate);
-    if(b.loan)metaBits.push('Loan '+b.loan);
     const open=(g.tasks||[]).length;
     let sides=sideHtml(g,'Buyer')+sideHtml(g,'Listing');
     if(!sides){sides=(g.tasks||[]).map(t=>{const x=t.txn||{},action=x.callType==='CTC Call'?'ctc':'new-contract';return '<div class="wp231-side"><div><div class="wp231-side-label">'+esc(x.role||'Agent')+' agent</div><div class="wp231-agent">'+esc(t.name||'')+'</div></div><button type="button" data-rm-action="'+action+'" data-agent="'+enc(t.name||'')+'" data-type="'+enc(x.callType||'')+'" data-role="'+enc(x.role||'Agent')+'" data-txn="'+enc(x.txnId||'')+'">Start call</button></div>'}).join('')}
@@ -18728,7 +18774,7 @@ window.rmxBoot=boot;const baseSwitch=window.switchTab;window.switchTab=function(
   }
   function render(){
     const hub=document.getElementById('wp230TxnHub'),host=document.getElementById('wp230OpenCalls'),urgent=document.getElementById('v113UrgentHost');if(!hub||!host)return;
-    const d=currentData(),tasks=openTasks(d),groups=groupTasks(d,tasks),sig=tasks.map(taskKey).sort().join('||')+'::'+groups.map(g=>[g.txnId,g.bundle.client,g.bundle.property,g.bundle.closeDate,g.bundle.loan,g.bundle.buyer,g.bundle.buyerPhone,g.bundle.buyerEmail,g.bundle.listing,g.bundle.listingPhone,g.bundle.listingEmail].join('|')).join('||');
+    const d=currentData(),tasks=openTasks(d),groups=groupTasks(d,tasks),sig=tasks.map(taskKey).sort().join('||')+'::'+groups.map(g=>[g.txnId,g.bundle.client,g.bundle.property,g.bundle.closeDate,g.bundle.buyer,g.bundle.buyerPhone,g.bundle.buyerEmail,g.bundle.listing,g.bundle.listingPhone,g.bundle.listingEmail].join('|')).join('||');
     if(host.dataset.v231Sig!==sig){
       host.dataset.v231Sig=sig;
       host.innerHTML=tasks.length?'<div class="wp231-summary"><b>'+groups.length+' open transaction'+(groups.length===1?'':'s')+'</b><span>'+tasks.length+' buyer/listing call'+(tasks.length===1?'':'s')+' remaining · open a file and log the call directly here</span></div><div class="wp231-list">'+groups.map(fileHtml).join('')+'</div>':'<div class="wp231-empty">No open New Contract or CTC calls right now.</div>';
@@ -18754,7 +18800,7 @@ window.rmxBoot=boot;const baseSwitch=window.switchTab;window.switchTab=function(
       setVal('v175TxBuyerName',b.client,true);setVal('v175TxProperty',b.property,true);
       setVal('v175TxBuyerAgent',b.buyer,true);setVal('v175TxListingAgent',b.listing,true);
       setVal('v175TxBuyerPhone',b.buyerPhone||profilePhone(b.buyer),true);setVal('v175TxListingPhone',b.listingPhone||profilePhone(b.listing),true);
-      const fileBits=[];if(b.closeDate)fileBits.push('Est close '+b.closeDate);if(b.loan)fileBits.push('Loan '+b.loan);if(fileBits.length)setVal('v175TxFileNote',fileBits.join(' · '),false);
+      const fileBits=[];if(b.closeDate)fileBits.push('Est close '+b.closeDate);if(fileBits.length)setVal('v175TxFileNote',fileBits.join(' · '),false);
       const d=currentData(),open=openTasks(d).filter(t=>{const x=t.txn||{};return (!txnId||x.txnId===txnId)&&x.callType===type});
       m.dataset.v231OpenSides=JSON.stringify(open.map(t=>({role:String((t.txn||{}).role||'Agent'),name:String(t.name||'')})));
       m.dataset.txnId=txnId||'';m.dataset.v231FocusRole=role||'';
@@ -18787,7 +18833,7 @@ window.rmxBoot=boot;const baseSwitch=window.switchTab;window.switchTab=function(
     }
     const saveSides=complete?required:worked,b1=document.getElementById('v176SaveProgressBtn'),b2=document.getElementById('v176SaveCompleteBtn');if(b1)b1.disabled=true;if(b2)b2.disabled=true;err('');
     try{
-      let saved=0;const follow=val('v175TxFollowup')||null,client=val('v175TxBuyerName'),property=val('v175TxProperty'),fileNote=val('v175TxFileNote');
+      let saved=0;const follow=val('v175TxFollowup')||null,client=val('v175TxBuyerName'),property=val('v175TxProperty'),fileNote=(typeof rmPrivacyStripLoanNumbersSync==='function'?rmPrivacyStripLoanNumbersSync(val('v175TxFileNote')):val('v175TxFileNote'));
       for(const s of saveSides){
         const noConnect=s.outcome==='Left voicemail'||s.outcome==='No answer';
         let outcome=s.outcome;if(!complete&&noConnect&&!s.textSent)outcome='Requires follow-up';
@@ -18921,12 +18967,12 @@ window.rmxBoot=boot;const baseSwitch=window.switchTab;window.switchTab=function(
         return key(r.agent_name)===key(agentName);
       });
       if(!matched.length)return null;
-      const b={buyer:'',listing:'',buyerPhone:'',buyerEmail:'',listingPhone:'',listingEmail:'',client:'',property:'',loan:'',closeDate:''};
+      const b={buyer:'',listing:'',buyerPhone:'',buyerEmail:'',listingPhone:'',listingEmail:'',client:'',property:'',closeDate:''};
       matched.forEach(r=>{
         const role=String(typeof wp30TxnRole==='function'?wp30TxnRole(r.notes):meta(r.notes,'TXN_ROLE')).toLowerCase();
         if(role==='buyer'&&!b.buyer)b.buyer=r.agent_name||'';
         if(role==='listing'&&!b.listing)b.listing=r.agent_name||'';
-        b.client=b.client||meta(r.notes,'TXN_CLIENT');b.property=b.property||meta(r.notes,'TXN_PROPERTY');b.loan=b.loan||meta(r.notes,'TXN_LOAN');b.closeDate=b.closeDate||meta(r.notes,'TXN_CLOSE_DATE');
+        b.client=b.client||meta(r.notes,'TXN_CLIENT');b.property=b.property||meta(r.notes,'TXN_PROPERTY');b.closeDate=b.closeDate||meta(r.notes,'TXN_CLOSE_DATE');
         b.buyerPhone=b.buyerPhone||meta(r.notes,'TXN_BUYER_PHONE');b.buyerEmail=b.buyerEmail||meta(r.notes,'TXN_BUYER_EMAIL');b.listingPhone=b.listingPhone||meta(r.notes,'TXN_LISTING_PHONE');b.listingEmail=b.listingEmail||meta(r.notes,'TXN_LISTING_EMAIL');
       });
       return b;
@@ -18947,7 +18993,7 @@ window.rmxBoot=boot;const baseSwitch=window.switchTab;window.switchTab=function(
         if(needs){const live=await liveTxnBundle(txnId||'',agentName||'');if(live)b=Object.assign({},b||{},Object.fromEntries(Object.entries(live).filter(([k,v])=>v)))}
         if(!b)return;
         set('v175TxBuyerName',b.client);set('v175TxProperty',b.property);set('v175TxBuyerAgent',b.buyer);set('v175TxListingAgent',b.listing);set('v175TxBuyerPhone',b.buyerPhone);set('v175TxListingPhone',b.listingPhone);
-        const note=document.getElementById('v175TxFileNote'),bits=[];if(b.closeDate)bits.push('Est close '+b.closeDate);if(b.loan)bits.push('Loan '+b.loan);if(note&&bits.length&&!String(note.value||'').trim())note.value=bits.join(' · ');
+        const note=document.getElementById('v175TxFileNote'),bits=[];if(b.closeDate)bits.push('Est close '+b.closeDate);if(note&&bits.length&&!String(note.value||'').trim())note.value=bits.join(' · ');
         try{if(typeof v176UpdateWhatsApp==='function')v176UpdateWhatsApp()}catch(e){}
       },60);
       return r;
@@ -19058,7 +19104,7 @@ window.rmxBoot=boot;const baseSwitch=window.switchTab;window.switchTab=function(
   }
 
   function buildNotes(type,s,txnId,status){
-    const client=val('v175TxBuyerName'),property=val('v175TxProperty'),fileNote=val('v175TxFileNote');
+    const client=val('v175TxBuyerName'),property=val('v175TxProperty'),fileNote=(typeof rmPrivacyStripLoanNumbersSync==='function'?rmPrivacyStripLoanNumbersSync(val('v175TxFileNote')):val('v175TxFileNote'));
     let notes='[TXN_STATUS:'+status+'][TXN_ROLE:'+s.role+']'+(txnId?'[TXN_ID:'+txnId+']':'')+(s.textSent?'[TXN_TEXT_SENT:Y]':'')+' '+(type==='CTC Call'?'CTC':'NEW CONTRACT')+' · '+s.role+' agent';
     if(client)notes+=' | Client: '+client;if(property)notes+=' | Property: '+property;if(s.phone)notes+=' | Phone: '+s.phone;notes+=' | Contact: '+s.outcome;if(s.feedback)notes+=' | Feedback: '+s.feedback;if(fileNote)notes+=' | File note: '+fileNote;
     try{if(typeof appendRmMeta==='function')notes=appendRmMeta(notes,'Amanda','Current Relationship')}catch(e){}
@@ -19299,6 +19345,50 @@ window.rmxBoot=boot;const baseSwitch=window.switchTab;window.switchTab=function(
     };
     wrapped.__v235TxnTags=true;window.saveEditModal=wrapped;
   }
+})();
+</script>
+
+
+<!-- v236 · PRIVACY GUARD — REMOVE LOAN/ACCOUNT NUMBERS · 2026-08-25 -->
+<script id="v236-privacy-no-loan-numbers">
+(function(){
+  async function scrubTable(table,column){
+    try{
+      const res=await fetch(SB_URL+'/rest/v1/'+table+'?select=id,'+column+'&'+column+'=not.is.null&limit=10000',{headers:{apikey:SB_KEY,Authorization:'Bearer '+SB_KEY}});
+      if(!res.ok)return 0;
+      const rows=await res.json();if(!Array.isArray(rows))return 0;
+      let changed=0;
+      for(const row of rows){
+        const before=String(row&&row[column]||'');
+        if(!before)continue;
+        const after=rmPrivacyStripLoanNumbersSync(before);
+        if(after===before)continue;
+        await sbFetch(table+'?id=eq.'+encodeURIComponent(row.id),{method:'PATCH',prefer:'return=minimal',body:JSON.stringify({[column]:after})});
+        changed++;
+      }
+      return changed;
+    }catch(e){console.warn('Privacy scrub skipped for '+table,e);return 0}
+  }
+  async function scrubStored(){
+    if(window.__rmPrivacyScrubRunning)return;window.__rmPrivacyScrubRunning=true;
+    try{
+      const counts=await Promise.all([scrubTable('amanda_activities','notes'),scrubTable('call_logs','note')]);
+      const changed=(counts||[]).reduce((a,b)=>a+(Number(b)||0),0);
+      if(changed){
+        try{if(typeof _wp18Cache!=='undefined'){_wp18Cache=null;_wp18CacheAt=0}}catch(e){}
+        try{if(typeof v23LoadAmandaSnapshot==='function')await v23LoadAmandaSnapshot(true)}catch(e){}
+        try{if(typeof rmRefreshExecutionQueues==='function')await rmRefreshExecutionQueues()}catch(e){}
+        console.info('RM privacy scrub removed loan/account numbers from '+changed+' stored note'+(changed===1?'':'s')+'.');
+      }
+    }finally{window.__rmPrivacyScrubRunning=false}
+  }
+  // Prevent loan-number text from lingering in paste/status fields even before save.
+  document.addEventListener('input',function(ev){
+    const el=ev&&ev.target;if(!el||!['ctcPasteSource','v175TxFileNote'].includes(el.id))return;
+    const clean=rmPrivacyStripLoanNumbersSync(el.value||'');if(clean!==el.value)el.value=clean;
+  },true);
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(scrubStored,700),{once:true});else setTimeout(scrubStored,700);
+  window.rmPrivacyScrubStoredLoanNumbers=scrubStored;
 })();
 </script>
 
