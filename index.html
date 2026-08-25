@@ -8,7 +8,7 @@
 <!-- v137: Amanda daily snapshot restored + audit fixes; current operating goals aligned, responsive snapshot, duplicate activity icons corrected -->
 <!-- v139: save/log integrity audit; preserve follow-ups until confirmed save, harden offline replay, Face Time and handled-note history -->
 <!-- v138: transaction visibility guard; newly-added CTC/New Contract calls force-fresh and always stay visible in Step 2 -->
-<!-- v136: C-to-B Director review workflow added; Amanda can send evidence-based growth candidates to Nyny directly from Today -->
+<!-- v238: hardened Not-a-prospect action + scrubbed blocked personal phone from agent/prospect data; retains v237 RM team goal labeling. -->
 <!-- v135: Amanda Relationship Work ownership fix; all queues now exclude Nyny-owned/strategic/A-B-Channel relationships consistently -->
 <!-- v136 AMANDA SIMPLICITY PASS · 2026-08-20 -->
 <html lang="en">
@@ -3560,9 +3560,34 @@ function rmConnectionErrorKind(err){
   return "error";
 }
 
+// v238: never treat Nyny's personal number as an agent/prospect phone.
+// Keep the digits split so the personal number is not stored as a literal anywhere in this tracker file.
+const RM_BLOCKED_AGENT_PHONE_DIGITS=["614","804","6406"].join("");
+function rmPhoneDigits(v){return String(v==null?"":v).replace(/\D/g,"").replace(/^1(?=\d{10}$)/,"");}
+function rmIsBlockedAgentPhone(v){return rmPhoneDigits(v)===RM_BLOCKED_AGENT_PHONE_DIGITS;}
+function rmScrubBlockedAgentPhone(value){
+  if(Array.isArray(value)){value.forEach(rmScrubBlockedAgentPhone);return value;}
+  if(value&&typeof value==="object"){
+    Object.keys(value).forEach(k=>{
+      const v=value[k];
+      if(/^(phone|phone_number|phonenumber)$/i.test(k)&&rmIsBlockedAgentPhone(v))value[k]=null;
+      else if(v&&typeof v==="object")rmScrubBlockedAgentPhone(v);
+    });
+  }
+  return value;
+}
+function rmScrubBlockedPhoneFromWriteBody(options){
+  if(!options||!options.body)return;
+  try{
+    if(typeof options.body==="string"){const x=JSON.parse(options.body);rmScrubBlockedAgentPhone(x);options.body=JSON.stringify(x);}
+    else if(typeof options.body==="object")rmScrubBlockedAgentPhone(options.body);
+  }catch(e){}
+}
+
 // FIX (2026-08-20): use the same 20s timeout everywhere. The previous 7s health check contradicted
 // the proven 15s+ Supabase response time and created false "connection issue" warnings.
 async function sbFetch(path,options={}){
+  rmScrubBlockedPhoneFromWriteBody(options);
   const originalPath=path;
   const originalOptions={...options};
   const controller=new AbortController();
@@ -3603,6 +3628,7 @@ async function sbFetch(path,options={}){
     if(Array.isArray(body) && String(path||"").startsWith("amanda_activities")){
       body=body.filter(r=>String(r&&r.agent_name||"").trim().toUpperCase()!=="__TEST__");
     }
+    rmScrubBlockedAgentPhone(body);
     return body;
   }catch(err){
     if(err&&err.name==="AbortError"){
@@ -12347,7 +12373,7 @@ function v29ProspectRow(t,isFirst){
   return '<div style="display:flex;justify-content:space-between;gap:8px;align-items:center;padding:6px 0;border-bottom:1px solid var(--border-light)">'
     +'<div style="min-width:0;flex:1"><div style="display:flex;gap:5px;align-items:center;flex-wrap:wrap"><span style="font-size:11.5px;font-weight:760;color:var(--text-1)">'+v21Esc(t.name||p.name||"")+'</span>'+org+(isFirst?'<span style="font-size:8.5px;font-weight:850;padding:2px 6px;border-radius:10px;background:var(--brand);color:#fff">NEXT UP</span>':'')+'</div>'
     +'<div style="font-size:9.8px;color:var(--text-3);margin-top:1px">'+v21Esc(p.reason||"Ready for prospecting")+(phone?' · '+v21Esc(phone):'')+'</div></div>'
-    +'<span style="display:flex;gap:5px;align-items:center;flex-shrink:0"><button onclick="openProspectExcludeModal(\''+safe+'\','+(p.id||'null')+')" style="font-size:9px;padding:5px 7px;background:#fff;color:var(--text-3);border:1px solid var(--border);border-radius:6px;cursor:pointer;font-family:inherit;white-space:nowrap" title="Not a true prospect? Remove them and automatically pull the next eligible name">Not a prospect</button><button onclick="v29OpenProspect(\''+safe+'\',\''+wpJs(phone)+'\')" style="font-size:9.5px;padding:5px 8px;background:var(--brand);color:#fff;border:0;border-radius:6px;cursor:pointer;font-family:inherit;white-space:nowrap" title="Open the correct logging workflow for this call">Start call</button></span></div>';
+    +'<span style="display:flex;gap:5px;align-items:center;flex-shrink:0"><button data-rm-prospect-action="exclude" data-agent="'+encodeURIComponent(t.name||p.agent_name||p.name||'')+'" style="font-size:9px;padding:5px 7px;background:#fff;color:var(--text-3);border:1px solid var(--border);border-radius:6px;cursor:pointer;font-family:inherit;white-space:nowrap" title="Not a true prospect? Remove them and automatically pull the next eligible name">Not a prospect</button><button data-rm-action="outreach" data-agent="'+encodeURIComponent(t.name||p.agent_name||p.name||'')+'" style="font-size:9.5px;padding:5px 8px;background:var(--brand);color:#fff;border:0;border-radius:6px;cursor:pointer;font-family:inherit;white-space:nowrap" title="Open the cold-call logging workflow">Start call</button></span></div>';
 }
 function v108AgentBucketMeta(t){
   const src=String((t&&t.workBucket)||(t&&t.item&&t.item.source)||"Relationship");
@@ -16322,8 +16348,9 @@ setTimeout(function(){v124MountAudit();v122RenderAudit();},1200);
     return {d,month:d.slice(0,7)+'-01',acts,profiles,assign,prospects,ft,breads,reconnect};
   }
 
-  function contact(p,pr){return {phone:(pr&&pr.phone)||(p&&p.phone)||'',email:(pr&&pr.email)||(p&&p.email)||'',brokerage:(pr&&pr.brokerage)||(p&&p.brokerage)||''}}
+  function contact(p,pr){const raw=(pr&&pr.phone)||(p&&p.phone)||'';return {phone:(typeof rmIsBlockedAgentPhone==='function'&&rmIsBlockedAgentPhone(raw))?'':raw,email:(pr&&pr.email)||(p&&p.email)||'',brokerage:(pr&&pr.brokerage)||(p&&p.brokerage)||''}}
   function cleanPhone(raw){
+    if(typeof rmIsBlockedAgentPhone==='function'&&rmIsBlockedAgentPhone(raw))return '';
     let s=String(raw==null?'':raw).trim().replace(/\.0$/,'');
     const d=s.replace(/\D/g,'');
     if(d.length===10)return '('+d.slice(0,3)+') '+d.slice(3,6)+'-'+d.slice(6);
@@ -16390,7 +16417,7 @@ setTimeout(function(){v124MountAudit();v122RenderAudit();},1200);
     const left=Math.max(0,25-coldToday);
     h.innerHTML=`<div class="v191-card"><div class="v191-head"><div><b>NEW MEETING PUSH · ${coldToday} / 25 COLD CALLS</b><small>${done?'Daily cold-call goal complete. New names start again tomorrow.':left+' calls left today. Work these 5; each saved cold call clears the person and pulls the next eligible name.'}</small><div class="v191-playbookbar"><button class="v191-btn" onclick="v191Playbook('book')">Booking script</button><button class="v191-btn" onclick="v191Playbook('first')">First meeting playbook</button></div></div><button class="v191-btn" onclick="v196ManualRefresh()">Refresh</button></div>`+
       (done?`<div class="v191-empty"><b>25 / 25 complete for today.</b><br>No more cold-call names are assigned until tomorrow.</div>`:
-      rows.length?rows.map((pr,i)=>{const p=pm[N(pr.agent_name)]||{},c=contact(p,pr),loc=(typeof v192Location==='function'?v192Location(Object.assign({},p,pr)):'');return `<div class="v191-row"><div class="v191-rank">${i+1}</div><div><div class="v191-name">${E(typeof displayName==="function"?displayName(pr.agent_name):pr.agent_name)}</div><div class="v191-meta">${E(loc||c.brokerage||'New prospect')}<br><b>Why this person:</b> ${E(pr.__smartWhy||'qualified prospect')}</div></div><div class="v191-contact"><b>Phone:</b> ${E(cleanPhone(c.phone)||'Missing')}<br><b>Email:</b> ${E(c.email||'Missing')}${loc?'<br><b>Location:</b> '+E(loc):''}</div><div class="v191-actions"><button class="primary" data-rm-action="outreach" data-agent="${encodeURIComponent(pr.agent_name||'')}">Log outreach</button><button onclick="v191Playbook('book')">Script</button><button class="v195-not-prospect" onclick="v196OpenNotProspect('${encodeURIComponent(pr.agent_name||'')}')">Not a prospect</button><button onclick="openPipelineContact('${encodeURIComponent(pr.agent_name||'')}')">Profile</button></div></div>`}).join(''):
+      rows.length?rows.map((pr,i)=>{const p=pm[N(pr.agent_name)]||{},c=contact(p,pr),loc=(typeof v192Location==='function'?v192Location(Object.assign({},p,pr)):'');return `<div class="v191-row"><div class="v191-rank">${i+1}</div><div><div class="v191-name">${E(typeof displayName==="function"?displayName(pr.agent_name):pr.agent_name)}</div><div class="v191-meta">${E(loc||c.brokerage||'New prospect')}<br><b>Why this person:</b> ${E(pr.__smartWhy||'qualified prospect')}</div></div><div class="v191-contact"><b>Phone:</b> ${E(cleanPhone(c.phone)||'Missing')}<br><b>Email:</b> ${E(c.email||'Missing')}${loc?'<br><b>Location:</b> '+E(loc):''}</div><div class="v191-actions"><button class="primary" data-rm-action="outreach" data-agent="${encodeURIComponent(pr.agent_name||'')}">Log outreach</button><button onclick="v191Playbook('book')">Script</button><button class="v195-not-prospect" data-rm-prospect-action="exclude" data-agent="${encodeURIComponent(pr.agent_name||'')}">Not a prospect</button><button onclick="openPipelineContact('${encodeURIComponent(pr.agent_name||'')}')">Profile</button></div></div>`}).join(''):
       `<div class="v191-empty"><b>No eligible prospects remain for today.</b><br>Add or reactivate qualified prospects in New Agents.</div>`)+`</div>`;
   }
 
@@ -16566,20 +16593,33 @@ setTimeout(function(){v124MountAudit();v122RenderAudit();},1200);
   };
   window.v196OpenNotProspect=function(encodedName){
     let name='';try{name=decodeURIComponent(String(encodedName||''))}catch(e){name=String(encodedName||'')}
-    document.getElementById('v196NotProspectName').value=name.trim();
+    const input=document.getElementById('v196NotProspectName'),modal=document.getElementById('v196NotProspectModal');
+    if(!input||!modal){try{toast('Not-a-prospect form could not open. Refresh once and try again.','error',4500)}catch(e){};return;}
+    input.value=name.trim();
     const er=document.getElementById('v196ReasonError');if(er){er.style.display='none';er.textContent=''}
-    document.getElementById('v196NotProspectModal').classList.add('open');
+    // Close workflow popups first so no invisible overlay can sit on top of this reason picker.
+    try{if(window.rmWorkflowModal&&typeof window.rmWorkflowModal.closeAll==='function')window.rmWorkflowModal.closeAll(false)}catch(e){}
+    modal.classList.add('open');modal.removeAttribute('aria-hidden');
+    modal.style.setProperty('display','flex','important');modal.style.setProperty('pointer-events','auto','important');
+    modal.style.setProperty('visibility','visible','important');modal.style.setProperty('opacity','1','important');modal.style.setProperty('z-index','210000','important');
+    document.body.style.overflow='hidden';
   };
-  window.v196CloseNotProspect=function(){document.getElementById('v196NotProspectModal').classList.remove('open')};
+  window.v196CloseNotProspect=function(){const modal=document.getElementById('v196NotProspectModal');if(modal){modal.classList.remove('open');modal.setAttribute('aria-hidden','true');modal.style.setProperty('display','none','important');modal.style.setProperty('pointer-events','none','important')}document.body.style.removeProperty('overflow')};
   window.v196SaveNotProspect=async function(reason){
     const name=(document.getElementById('v196NotProspectName').value||'').trim();if(!name||window._v196Removing)return;
     window._v196Removing=true;
     const label=LABELS[reason]||LABELS.other;
     try{
-      const prs=await sbFetch('outreach_prospects?agent_name=ilike.'+encodeURIComponent(name)+'&select=id,notes&limit=50').catch(()=>[]);
+      let prs=await sbFetch('outreach_prospects?agent_name=ilike.'+encodeURIComponent(name)+'&select=id,notes&limit=50').catch(()=>[]);
       const status=reason==='already_nfm'?'NFM':reason==='dnc'?'DNC':'Excluded';
+      const reasonNote='[NOT_A_PROSPECT] [EXCLUSION_REASON:'+reason.toUpperCase()+'] '+label;
+      if(!(prs||[]).length){
+        // Shared fallback: a removed name must stay removed on every device, not only this browser.
+        await sbFetch('outreach_prospects',{method:'POST',prefer:'return=minimal',body:JSON.stringify({agent_name:name,status,follow_up_date:null,notes:reasonNote})}).catch(()=>{});
+        prs=[];
+      }
       for(const pr of (prs||[])){
-        const notes=((pr.notes||'')+' [NOT_A_PROSPECT] [EXCLUSION_REASON:'+reason.toUpperCase()+'] '+label).trim();
+        const notes=((pr.notes||'')+' '+reasonNote).trim();
         await sbFetch('outreach_prospects?id=eq.'+encodeURIComponent(pr.id),{method:'PATCH',prefer:'return=minimal',body:JSON.stringify({status,follow_up_date:null,notes})});
       }
       if(reason==='not_realtor'){
@@ -18316,7 +18356,7 @@ window.rmxBoot=boot;const baseSwitch=window.switchTab;window.switchTab=function(
 
 <script id="v232-workflow-modal-manager-js">
 (function(){
-  const IDS=['v175OutreachModal','v175TransactionModal','v175UpdateModal','wp37PartnerCheckinModal','v191PlaybookModal','v191Modal'];
+  const IDS=['v175OutreachModal','v175TransactionModal','v175UpdateModal','wp37PartnerCheckinModal','v191PlaybookModal','v191Modal','v196NotProspectModal'];
   const get=id=>document.getElementById(id);
 
   function hide(id){
@@ -18627,8 +18667,8 @@ window.rmxBoot=boot;const baseSwitch=window.switchTab;window.switchTab=function(
 
 <style id="v232-workflow-modal-css">
 /* v232 — one workflow modal contract: hidden means non-interactive; open means fully interactive. */
-#v175OutreachModal,#v175TransactionModal,#v175UpdateModal,#wp37PartnerCheckinModal,#v191PlaybookModal,#v191Modal{pointer-events:none}
-#v175OutreachModal.open,#v175TransactionModal.open,#v175UpdateModal.open,#wp37PartnerCheckinModal.open,#v191PlaybookModal.open,#v191Modal.open{pointer-events:auto!important}
+#v175OutreachModal,#v175TransactionModal,#v175UpdateModal,#wp37PartnerCheckinModal,#v191PlaybookModal,#v191Modal,#v196NotProspectModal{pointer-events:none}
+#v175OutreachModal.open,#v175TransactionModal.open,#v175UpdateModal.open,#wp37PartnerCheckinModal.open,#v191PlaybookModal.open,#v191Modal.open,#v196NotProspectModal.open{pointer-events:auto!important}
 #wp37PartnerCheckinModal .modal-box{max-height:calc(100vh - 32px)!important;overflow-y:auto!important;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;touch-action:pan-y}
 </style>
 
@@ -18807,5 +18847,39 @@ window.rmxBoot=boot;const baseSwitch=window.switchTab;window.switchTab=function(
 })();
 </script>
 <!-- v235: Director Admin/Tools inactive roster now supports checkbox selection, select-all-shown, bulk reactivate, and bulk permanent removal. -->
+
+<script id="v238-prospect-action-phone-cleanup-js">
+(function(){
+  // Stable routing for Not a prospect — no generated inline onclick with agent names.
+  document.addEventListener('click',function(ev){
+    const btn=ev.target.closest&&ev.target.closest('[data-rm-prospect-action="exclude"]');
+    if(!btn)return;
+    ev.preventDefault();ev.stopPropagation();
+    if(typeof v196OpenNotProspect==='function')v196OpenNotProspect(btn.dataset.agent||'');
+  });
+
+  // Backdrop + Escape close for the reason picker.
+  const modal=document.getElementById('v196NotProspectModal');
+  if(modal&&!modal.dataset.v238Bound){
+    modal.dataset.v238Bound='1';
+    modal.addEventListener('mousedown',function(ev){if(ev.target===modal&&typeof v196CloseNotProspect==='function')v196CloseNotProspect()});
+  }
+  document.addEventListener('keydown',function(ev){if(ev.key==='Escape'&&modal&&modal.classList.contains('open')){ev.preventDefault();v196CloseNotProspect()}});
+
+  // Remove the blocked personal number from the two shared sources that feed agent/prospect phone displays.
+  // This runs quietly once after deployment; all reads are also scrubbed immediately by sbFetch.
+  async function cleanSharedPhone(){
+    if(typeof sbFetch!=='function'||typeof RM_BLOCKED_AGENT_PHONE_DIGITS==='undefined')return;
+    const filter='phone=ilike.*'+RM_BLOCKED_AGENT_PHONE_DIGITS.slice(0,3)+'*'+RM_BLOCKED_AGENT_PHONE_DIGITS.slice(3,6)+'*'+RM_BLOCKED_AGENT_PHONE_DIGITS.slice(6)+'*';
+    await Promise.all([
+      sbFetch('agent_profiles?'+filter,{method:'PATCH',prefer:'return=minimal',body:JSON.stringify({phone:null})}).catch(()=>{}),
+      sbFetch('outreach_prospects?'+filter,{method:'PATCH',prefer:'return=minimal',body:JSON.stringify({phone:null})}).catch(()=>{})
+    ]);
+    try{if(typeof prospectAt!=='undefined')prospectAt=0}catch(e){}
+  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(cleanSharedPhone,1200),{once:true});else setTimeout(cleanSharedPhone,1200);
+})();
+</script>
+
 </body>
 </html>
