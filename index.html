@@ -1,6 +1,7 @@
    <!DOCTYPE html>
 <!-- v217 4-WEEK BUTTON HANDLER FIX · 2026-08-21 -->
 <!-- v226 PERMANENT ROSTER REMOVAL + BULK DELETE · 2026-08-21 -->
+<!-- v228 FULL FUNCTIONAL SWEEP · 2026-08-25 · popup logging, navigation recovery, rank cleanup -->
 
 <!-- Cleanup pass: floating Page Guide + stale developer build logs removed; active workflow logic preserved. -->
 <!-- v140: fixes Step 2 transaction renderer race; saved/open CTC and New Contract tasks are no longer erased after successful distribution -->
@@ -1754,26 +1755,19 @@ body.rm-director-route .tabs,body.rm-director-route .who-bar{display:none!import
 </div>
 <div class="form-row one">
 <div class="field intake-block" id="intakeBlock">
-<div class="intake-block-title">New Realtor Meeting — Required Meeting + Day-Of Checklist</div>
+<div class="intake-block-title">New Realtor Meeting — Quick Day-Of Follow-Through</div>
 <div class="v161-first-meeting-standard">
 <div class="v161-standard-title">FIRST MEETING STANDARD · 20–40 MINUTES MAX</div>
-<div class="v161-standard-rule"><strong>Format:</strong> In-office or structured coffee meeting. <strong>No lunch for a first meeting.</strong> In-office meetings include the office tour + team introduction.</div>
+<div class="v161-standard-rule"><strong>Format:</strong> In-office or structured coffee meeting. <strong>No lunch for a first meeting.</strong> Use the New Realtor Meeting script for the Top 3 needs, past lender pain points, Standards of Service, office/team introduction, and referral conversation. Those talking points do <strong>not</strong> need separate tracker checkboxes.</div>
 </div>
+<div style="font-size:11px;color:var(--text-3);margin:0 0 10px"><strong>This checklist is a quick reminder only.</strong> Amanda can save the meeting and leave this screen even if every box is not checked.</div>
 <label class="intake-check"><input id="intakeMeetingFormat" onchange="updateIntakeProgress()" type="checkbox"/> Followed the first-meeting format: in-office or structured coffee, 20–40 minutes max; no lunch</label>
-<label class="intake-check"><input id="intakeTourTeam" onchange="updateIntakeProgress()" type="checkbox"/> If in-office: completed office tour + introduced the team (check N/A if meeting was coffee)</label>
-<label class="intake-check"><input id="intakeTop3" onchange="updateIntakeProgress()" type="checkbox"/> Asked and documented: “What are the biggest things you need a lending partner to get right?” and narrowed it to their Top 3</label>
-<label class="intake-check"><input id="intakePainQuestion" onchange="updateIntakeProgress()" type="checkbox"/> Asked: “Have you ever had a lender hurt a deal, create extra stress, or make you look bad? What happened?”</label>
-<label class="intake-check"><input id="intakeStandards" onchange="updateIntakeProgress()" type="checkbox"/> Reviewed Standards of Service and tied our process directly back to their Top 3 needs</label>
-<label class="intake-check"><input id="intakeContactConfirm" onchange="updateIntakeProgress()" type="checkbox"/> Confirmed phone, email and mailing address/contact information</label>
+<label class="intake-check"><input id="intakeContactConfirm" onchange="updateIntakeProgress()" type="checkbox"/> Confirmed phone, email and mailing/contact information</label>
 <label class="intake-check"><input id="intakeOpportunityAsk" onchange="updateIntakeProgress()" type="checkbox"/> Asked directly for the next buyer opportunity / commitment to give our team a shot</label>
 <label class="intake-check"><input id="intakeRetainedReport" onchange="updateIntakeProgress()" type="checkbox"/> Added agent to Retained Realtor Report</label>
-<label class="intake-check"><input id="intakeSaEmail" onchange="updateIntakeProgress()" type="checkbox"/> Sent post-meeting email from Sa Team — Nyny CC'd</label>
-<label class="intake-check"><input id="intakeHomebot" onchange="updateIntakeProgress()" type="checkbox"/> Added agent to HomeBot</label>
-<label class="intake-check"><input id="intakeListreports" onchange="updateIntakeProgress()" type="checkbox"/> Added agent to ListReports</label>
-<label class="intake-check"><input id="intakeTotalExpert" onchange="updateIntakeProgress()" type="checkbox"/> Added agent to Total Expert</label>
-<label class="intake-check"><input id="intakeGroupText" onchange="updateIntakeProgress()" type="checkbox"/> Sent follow-up group text introducing Nyny</label>
-<label class="intake-check"><input id="intakeReferralAsk" onchange="updateIntakeProgress()" type="checkbox"/> Asked for the opportunity, walked through how they'll refer clients to us (see How to Refer in Scripts + Training), and CC'd the Loan Partner on the same post-meeting email above</label>
-<div id="intakeProgress" style="font-size:11px;color:#B85B00;margin-top:6px;font-weight:500">0 of 7 complete</div>
+<label class="intake-check"><input id="intakeSaEmail" onchange="updateIntakeProgress()" type="checkbox"/> Completed post-meeting follow-through: Sa Team email sent with Nyny CC'd</label>
+<label class="intake-check"><input id="intakeSystemsFollowup" onchange="updateIntakeProgress()" type="checkbox"/> Completed applicable setup/follow-through (HomeBot, ListReports, Total Expert and/or group text)</label>
+<div id="intakeProgress" style="font-size:11px;color:var(--text-3);margin-top:6px;font-weight:500">0 of 6 checked · optional</div>
 </div>
 </div>
 <button class="btn-primary" id="logBtn" onclick="logActivity()">Log activity</button>
@@ -3759,33 +3753,27 @@ function fmtDateTime(d){
 }
 
 
-const INTAKE_CHECK_IDS=["intakeMeetingFormat","intakeTourTeam","intakeTop3","intakePainQuestion","intakeStandards","intakeContactConfirm","intakeOpportunityAsk","intakeRetainedReport","intakeSaEmail","intakeHomebot","intakeListreports","intakeTotalExpert","intakeGroupText","intakeReferralAsk"];
+const INTAKE_CHECK_IDS=["intakeMeetingFormat","intakeContactConfirm","intakeOpportunityAsk","intakeRetainedReport","intakeSaEmail","intakeSystemsFollowup"];
 const INTAKE_LABELS={
   intakeMeetingFormat:"Follow first-meeting format: office/coffee, 20–40 min, no lunch",
-  intakeTourTeam:"Office tour + meet team when in-office",
-  intakeTop3:"Ask and document the Top 3 lending-partner needs",
-  intakePainQuestion:"Ask what a lender has done that hurt the experience",
-  intakeStandards:"Tie Standards of Service to their Top 3",
   intakeContactConfirm:"Confirm contact information",
   intakeOpportunityAsk:"Ask directly for the next buyer opportunity",
   intakeRetainedReport:"Add agent to Retained Realtor Report",
   intakeSaEmail:"Send post-meeting email from Sa Team (CC Nyny)",
-  intakeHomebot:"Add agent to HomeBot",
-  intakeListreports:"Add agent to ListReports",
-  intakeTotalExpert:"Add agent to Total Expert",
-  intakeGroupText:"Send follow-up group text introducing Nyny"
+  intakeSystemsFollowup:"Complete applicable systems / group-text follow-through"
 };
+// Legacy constants are kept only so older records can be released from the former blocking checklist.
 const PENDING_PREFIX="⏳ INTAKE PENDING ";
-const COMPLETE_TAG="✅ New Realtor Meeting standard complete: Structured meeting ✓ · Top 3 documented ✓ · pain-point question ✓ · Standards of Service tied back ✓ · contact info confirmed ✓ · opportunity asked ✓ · Retained Report ✓ · Sa Email+CC Nyny ✓ · HomeBot ✓ · ListReports ✓ · Total Expert ✓ · Group Text ✓";
+const COMPLETE_TAG="✅ New Realtor Meeting quick follow-through complete";
 let openIntake=null; // {id, agent_name, act_date, outcome, follow_up_date, freeNotes, states}
 
 function getIntakeStates(){
   const s={};
-  INTAKE_CHECK_IDS.forEach(id=>{s[id]=document.getElementById(id).checked;});
+  INTAKE_CHECK_IDS.forEach(id=>{const el=document.getElementById(id);s[id]=!!(el&&el.checked);});
   return s;
 }
 function setIntakeStates(states){
-  INTAKE_CHECK_IDS.forEach(id=>{document.getElementById(id).checked=!!(states&&states[id]);});
+  INTAKE_CHECK_IDS.forEach(id=>{const el=document.getElementById(id);if(el)el.checked=!!(states&&states[id]);});
   updateIntakeProgress(true);
 }
 function allIntakeDone(states){
@@ -3818,76 +3806,54 @@ function toggleIntakeBlock(){
 function updateIntakeProgress(skipPersist){
   let done=0;
   INTAKE_CHECK_IDS.forEach(id=>{
-    const el=document.getElementById(id);
+    const el=document.getElementById(id);if(!el)return;
     const label=el.closest(".intake-check");
-    if(el.checked){done++;label.classList.add("done");}
-    else{label.classList.remove("done");}
+    if(el.checked){done++;if(label)label.classList.add("done");}
+    else if(label){label.classList.remove("done");}
   });
   const prog=document.getElementById("intakeProgress");
   const total=INTAKE_CHECK_IDS.length;
-  if(done===total){
-    prog.textContent="✓ All "+total+" complete — ready to save";
-    prog.style.color="#4E3D8A";
-  }else{
-    prog.textContent=done+" of "+total+" complete";
-    prog.style.color="#B85B00";
+  if(prog){
+    prog.textContent=done+" of "+total+" checked · optional";
+    prog.style.color=done===total?"#4E3D8A":"var(--text-3)";
   }
-  // If resuming an open checklist, persist progress on every click so it survives refresh / device switch
-  if(openIntake&&!skipPersist){
-    const states=getIntakeStates();
-    openIntake.states=states;
-    const partialNotes=buildPendingNotes(states,openIntake.freeNotes);
-    sbFetch("amanda_activities?id=eq."+openIntake.id,{method:"PATCH",prefer:"return=minimal",body:JSON.stringify({notes:partialNotes})}).catch(e=>console.warn("Checklist progress save failed:",e));
-  }
+  // v227: this reminder never creates or persists a blocking pending checklist.
 }
 
 function resetIntakeChecklist(){
-  INTAKE_CHECK_IDS.forEach(id=>{document.getElementById(id).checked=false;});
+  INTAKE_CHECK_IDS.forEach(id=>{const el=document.getElementById(id);if(el)el.checked=false;});
   updateIntakeProgress(true);
 }
 
 // Checks Supabase for any "New Realtor Meeting" still tagged PENDING. If found, locks the whole
 // Log Activity tab (and shows a banner on every tab) until that single checklist is finished.
 async function checkOpenIntake(){
+  // v227: legacy pending checklists must never lock navigation or activity logging.
+  openIntake=null;
   try{
     const rows=await sbFetch("amanda_activities?act_type=eq."+encodeURIComponent("New Realtor Meeting")+"&order=act_date.desc&limit=30");
-    const pendingRow=rows.find(r=>r.notes&&r.notes.startsWith(PENDING_PREFIX));
-    if(pendingRow){
-      const parsed=parseIntakeNotes(pendingRow.notes);
-      openIntake={id:pendingRow.id,agent_name:pendingRow.agent_name,act_date:pendingRow.act_date,outcome:pendingRow.outcome,follow_up_date:pendingRow.follow_up_date,freeNotes:parsed?parsed.freeNotes:"",states:parsed?parsed.states:{}};
-    }else{
-      openIntake=null;
-    }
-  }catch(e){
-    console.warn("checkOpenIntake failed (non-critical):",e);
-  }
+    const pending=(rows||[]).filter(r=>r.notes&&r.notes.startsWith(PENDING_PREFIX));
+    await Promise.all(pending.map(async r=>{
+      const parsed=parseIntakeNotes(r.notes);
+      const clean=(parsed&&parsed.freeNotes?parsed.freeNotes:"").trim();
+      try{await sbFetch("amanda_activities?id=eq."+r.id,{method:"PATCH",prefer:"return=minimal",body:JSON.stringify({notes:clean,edited_at:new Date().toISOString()})});}catch(e){console.warn("Legacy checklist release failed",r.id,e);}
+    }));
+  }catch(e){console.warn("Legacy intake release check failed (non-critical):",e);}
   applyLockState();
 }
 
 function applyLockState(){
+  // v227: Amanda is never locked into a checklist. Navigation and Today remain available.
+  openIntake=null;
   const banner=document.getElementById("globalLockBanner");
   const lockedCard=document.getElementById("logLockedCard");
   const normalFields=document.getElementById("logNormalFields");
   const btn=document.getElementById("logBtn");
-
-  if(openIntake){
-    banner.style.display="flex";
-    banner.innerHTML='<span>🔒 Open checklist: <strong>'+properCase(openIntake.agent_name)+'</strong> — met '+fmtDate(openIntake.act_date)+'.</span><button class="lock-resume-btn" onclick="switchTab(\'log\')">Resume checklist</button>';
-    lockedCard.style.display="block";
-    document.getElementById("logLockedSub").textContent="Great job logging your meeting with "+properCase(openIntake.agent_name)+"! Before you log anything else, there are a few quick onboarding steps below. These make sure they get set up correctly and nothing falls through the cracks.";
-    normalFields.style.display="none";
-    setIntakeStates(openIntake.states);
-    document.getElementById("intakeBlock").classList.add("show");
-    btn.textContent="Mark checklist complete & continue";
-    btn.onclick=completeIntakeChecklist;
-  }else{
-    banner.style.display="none";
-    lockedCard.style.display="none";
-    normalFields.style.display="block";
-    toggleIntakeBlock();
-    btn.textContent="Log activity";
-    btn.onclick=logActivity;
-  }
+  if(banner)banner.style.display="none";
+  if(lockedCard)lockedCard.style.display="none";
+  if(normalFields)normalFields.style.display="block";
+  if(btn){btn.disabled=false;btn.textContent="Log activity";btn.onclick=logActivity;}
+  toggleIntakeBlock();
 }
 
 async function completeIntakeChecklist(){
@@ -5303,6 +5269,12 @@ function openAmandaMode(){
 function lockDirectorView(){if(directorMode())switchTab("daniel");else switchTab("week");}
 
 function switchTab(name){
+  // v227: sidebar navigation always wins over stale workflow overlays.
+  if(name!=="log"){
+    const pm=document.getElementById("wp37PartnerCheckinModal");
+    if(pm){pm.classList.remove("open");pm.style.removeProperty("display");pm.style.removeProperty("z-index");}
+    try{wp37PendingPartnerSave=null;}catch(e){}
+  }
   if(name==="daniel"&&!directorMode()){switchTab("week");return;}
   const target=document.getElementById("view-"+name);
   if(!target){console.warn("Unknown tracker tab:",name);return;}
@@ -6472,7 +6444,7 @@ async function getReferralCredit(name){
 }
 
 async function logActivity(){
-  // GUARD: cannot log anything new while a checklist is open — this is the whole point
+  // Legacy intake guard retained for old records; v227+ never creates a blocking intake.
   if(openIntake){
     toast("Finish your open checklist for "+openIntake.agent_name+" first — nothing else can be logged.","error");
     switchTab("log");
@@ -6584,8 +6556,8 @@ async function logActivity(){
   }
   
   let finalNotes=notes;
-  if(isNewRealtorMeeting){
-    finalNotes=intakeComplete?(notes?COMPLETE_TAG+"\n\n"+notes:COMPLETE_TAG):buildPendingNotes(intakeStates,notes);
+  if(isNewRealtorMeeting&&intakeComplete){
+    finalNotes=notes?COMPLETE_TAG+"\n\n"+notes:COMPLETE_TAG;
   }
   
   btn.textContent="Saving...";
@@ -6610,20 +6582,14 @@ async function logActivity(){
     updateNotesRequirementHint();
     vibrateSaved();
 
-    if(isNewRealtorMeeting&&!intakeComplete){
-      const row=insertedRow;
-      toast("Meeting logged for "+agentName+"! Just a few quick steps left below.","success");
-      if(row){
-        openIntake={id:row.id,agent_name:agentName,act_date:date,outcome,follow_up_date:followupDate,freeNotes:notes,states:intakeStates};
-      }
+    if(outcome==="Meeting Scheduled"){
+      toast("YES! Meeting booked with "+properCase(agentName)+"! Go get them!","success",5000);
+    }else if(isNewRealtorMeeting){
+      toast("New Realtor Meeting logged successfully.","success");
     }else{
-      if(outcome==="Meeting Scheduled"){
-        toast("YES! Meeting booked with "+properCase(agentName)+"! Go get them!","success",5000);
-      }else{
-        toast("Logged successfully","success");
-      }
-      resetIntakeChecklist();
+      toast("Logged successfully","success");
     }
+    resetIntakeChecklist();
     applyLockState();
     initAutocomplete();
     await rmRefreshAfterMutation("activity saved");
@@ -7678,13 +7644,7 @@ async function ccSave(){
 
     if(outcome === "Meeting Scheduled"){
       msg.style.color='var(--success)';
-      msg.textContent = '✓ '+name+' — cold call logged! Go to Log Activity to log the New Realtor Meeting.';
-      // Pre-fill the log form and switch
-      setTimeout(()=>{
-        document.getElementById('agentInput').value = name;
-        document.getElementById('activityType').value = 'New Realtor Meeting';
-        switchTab('log');
-      }, 1500);
+      msg.textContent = '✓ '+name+' — cold call + meeting scheduled. Stay on Today; log the New Realtor Meeting after it is held.';
     } else if(isDNC){
       msg.style.color='var(--danger)';
       msg.textContent = '✓ '+name+' — logged & marked Do Not Contact';
@@ -7869,7 +7829,7 @@ function parseBirthdayMD(str){
 // current relationship intelligence + a dated next move are captured in agent_profiles.
 let wp37PendingPartnerSave=null;
 let wp37PartnerGateBypass=false;
-const WP37_SKIP_TYPES=new Set(["CTC Call","Under Contract Call","Birthday Outreach","Holiday Outreach","Agent Appreciation"]);
+const WP37_SKIP_TYPES=new Set(["CTC Call","Under Contract Call","Birthday Outreach","Holiday Outreach","Agent Appreciation","New Realtor Meeting"]);
 // v74: real partner conversations still require the Partner Check-In, but honest “Not discussed today” answers are allowed and preserve prior portfolio intelligence. Quick referral-only logs remain optional.
 // v72: these are useful relationship moments, but should not force a five-field portfolio interview.
 // Amanda can still complete the Partner Check-In when she learned something worth capturing.
@@ -7888,10 +7848,13 @@ function wp37ClearCheckin(){
   wp37LeakageChanged();
 }
 function wp37CancelPartnerCheckin(){
+  const pending=wp37PendingPartnerSave?{...wp37PendingPartnerSave}:null;
   const m=document.getElementById("wp37PartnerCheckinModal");
   if(m){m.classList.remove("open");m.style.removeProperty("display");m.style.removeProperty("z-index");}
   wp37PendingPartnerSave=null;
-  try{v175Open("v175OutreachModal")}catch(e){}
+  // Only return to the outreach modal when Portfolio Execution was launched from that modal.
+  // Full Log Activity cancellation simply closes the gate so Amanda can navigate normally.
+  if(pending&&pending.resumeKind==="v198-preflight")try{v175Open("v175OutreachModal")}catch(e){}
 }
 async function wp37NeedsPartnerCheckin(agentName,actType,outcome,owner){
   if(wp37PartnerGateBypass||owner!=="Amanda"||!agentName||WP37_SKIP_TYPES.has(actType)||!WP37_MEANINGFUL_OUTCOMES.has(outcome))return false;
@@ -18261,5 +18224,194 @@ window.rmxBoot=boot;const baseSwitch=window.switchTab;window.switchTab=function(
 </script>
 
 
+
+<style id="v228-functional-sweep-css">
+/* Amanda Today should read as a work queue, not a numbered ranking report. */
+#view-week .v191-rank,
+#view-week .v164-mini-rank,
+#view-week .v165-rank,
+#view-week .v154-rank,
+#view-week .v153-rank{display:none!important}
+#view-week .v191-row{grid-template-columns:minmax(210px,1fr) minmax(210px,1fr) auto!important}
+@media(max-width:850px){
+  #view-week .v191-row{grid-template-columns:minmax(0,1fr)!important}
+  #view-week .v191-contact,#view-week .v191-actions{grid-column:1!important;padding-left:0!important}
+}
+</style>
+<script id="v228-functional-sweep-js">
+(function(){
+  const dec=s=>{try{return decodeURIComponent(String(s||''))}catch(e){return String(s||'')}};
+  const directorContext=()=>{
+    try{return location.hash==='#director'||document.body.classList.contains('rm-director-route')||document.body.classList.contains('rmx-director-active')}
+    catch(e){return false}
+  };
+  const normalizeType=t=>{
+    t=String(t||'Agent Talk-to').trim();
+    if(t==='Talk-to (text/call)')return 'Agent Talk-to';
+    if(t==='Talk-to')return 'Agent Talk-to';
+    return t;
+  };
+
+  // Close only transient overlays. Navigation must always remain usable even if an older workflow left a modal open.
+  window.rmV228CloseTransientUi=function(){
+    ['v175OutreachModal','v175TransactionModal','v175UpdateModal','wp37PartnerCheckinModal','v191PlaybookModal','v191Modal'].forEach(id=>{
+      const m=document.getElementById(id);if(!m)return;
+      m.classList.remove('open','show','active');
+      m.style.removeProperty('display');m.style.removeProperty('z-index');m.style.removeProperty('visibility');m.style.removeProperty('opacity');
+      m.removeAttribute('aria-hidden');
+    });
+    try{wp37PendingPartnerSave=null}catch(e){}
+    window._v203PendingMeaningful=null;
+    window._v198PortfolioPreflight=false;
+    window._v198PortfolioAgent='';
+    try{document.body.style.removeProperty('overflow')}catch(e){}
+  };
+
+  // Final navigation guard. A sidebar click always wins over a stale popup/legacy overlay.
+  document.addEventListener('click',function(e){
+    const tab=e.target.closest&&e.target.closest('.tab[data-tab]');
+    if(tab)rmV228CloseTransientUi();
+  },true);
+  const priorSwitch=window.switchTab;
+  if(typeof priorSwitch==='function'&&!priorSwitch.__v228){
+    const wrapped=function(name){
+      rmV228CloseTransientUi();
+      return priorSwitch.apply(this,arguments);
+    };
+    wrapped.__v228=true;window.switchTab=wrapped;
+  }
+
+  // Amanda-side legacy shortcuts must open the unified Log Touch popup, never the full Log Activity page.
+  // Director-side actions keep their Management behavior.
+  const legacyDirectorLog=window.v98DirectorLog;
+  window.v98DirectorLog=function(name,owner,type){
+    const who=String(owner||'').trim().toLowerCase();
+    if(!directorContext()||who==='amanda'){
+      if(typeof window.rmOpenUnifiedLog==='function')return window.rmOpenUnifiedLog(String(name||''),normalizeType(type));
+      if(typeof window.v176OpenOutreach==='function')return window.v176OpenOutreach(String(name||''),normalizeType(type));
+    }
+    return typeof legacyDirectorLog==='function'?legacyDirectorLog.apply(this,arguments):undefined;
+  };
+
+  // Old prefill shortcuts on Amanda's Today page now use the same popup. The explicit Log Activity nav still opens the full page.
+  const legacyPrefill=window.prefillActivityLog;
+  window.prefillActivityLog=function(name,type){
+    if(!directorContext()){
+      if(typeof window.rmOpenUnifiedLog==='function')return window.rmOpenUnifiedLog(String(name||''),normalizeType(type));
+      if(typeof window.v176OpenOutreach==='function')return window.v176OpenOutreach(String(name||''),normalizeType(type));
+    }
+    return typeof legacyPrefill==='function'?legacyPrefill.apply(this,arguments):undefined;
+  };
+
+  // Focus-mode relationship work should also stay on Today and open a popup.
+  window.focusDoneAndLog=function(name){
+    try{if(typeof vibrateOk==='function')vibrateOk()}catch(e){}
+    try{if(typeof toast==='function'&&Array.isArray(window.AFFIRMATIONS)&&window.AFFIRMATIONS.length)toast(window.AFFIRMATIONS[Math.floor(Math.random()*window.AFFIRMATIONS.length)],'success',2600)}catch(e){}
+    try{if(typeof closeFocusModal==='function')closeFocusModal()}catch(e){}
+    return typeof window.rmOpenUnifiedLog==='function'?window.rmOpenUnifiedLog(String(name||''),'Agent Talk-to'):undefined;
+  };
+
+  // C→B/current growth cards can be rendered by several legacy layers. Convert any surviving Amanda log buttons to the popup after render.
+  function repairAmandaActionButtons(root){
+    root=root||document.getElementById('view-week');if(!root)return;
+    root.querySelectorAll('button[onclick*="v98DirectorLog"]').forEach(btn=>{
+      const raw=btn.getAttribute('onclick')||'';
+      if(!/['\"]Amanda['\"]/.test(raw))return;
+      const m=raw.match(/v98DirectorLog\(\s*['\"]([^'\"]*)['\"]/);
+      if(!m)return;
+      let name=m[1];name=name.replace(/\\'/g,"'").replace(/\\\\/g,'\\');
+      btn.removeAttribute('onclick');
+      btn.dataset.rmAction='touch';btn.dataset.agent=encodeURIComponent(name);btn.dataset.type=encodeURIComponent('Agent Talk-to');
+    });
+  }
+  window.rmV228RepairAmandaActions=repairAmandaActionButtons;
+  const observer=new MutationObserver(ms=>{
+    for(const m of ms){if(m.addedNodes&&m.addedNodes.length){repairAmandaActionButtons(document.getElementById('view-week'));break}}
+  });
+  const week=document.getElementById('view-week');if(week){observer.observe(week,{childList:true,subtree:true});repairAmandaActionButtons(week)}
+
+  // Better copy now that the visible list is intentionally unnumbered.
+  function copyCleanup(){
+    document.querySelectorAll('#view-week .v191-head small').forEach(el=>{
+      if(/Work #1, log it, move on\./i.test(el.textContent||''))el.textContent='Work the first name shown, log it, and the next best relationship will move up.';
+    });
+  }
+  copyCleanup();
+  if(week)new MutationObserver(copyCleanup).observe(week,{childList:true,subtree:true});
+
+  // Escape closes the working popup instead of leaving an invisible overlay over Today.
+  document.addEventListener('keydown',function(e){
+    if(e.key!=='Escape'||directorContext())return;
+    const open=document.querySelector('#v175OutreachModal.open,#v175TransactionModal.open,#v175UpdateModal.open,#wp37PartnerCheckinModal.open');
+    if(open){e.preventDefault();rmV228CloseTransientUi()}
+  });
+})();
+</script>
+
+
+<script id="v229-modal-nav-hardening-js">
+(function(){
+  const WORKFLOW_IDS=['v175OutreachModal','v175TransactionModal','v175UpdateModal','wp37PartnerCheckinModal','v191PlaybookModal','v191Modal'];
+  function hide(id){
+    const el=document.getElementById(id); if(!el) return;
+    el.classList.remove('open','show','active');
+    el.setAttribute('aria-hidden','true');
+    el.style.setProperty('display','none','important');
+    el.style.removeProperty('visibility');
+    el.style.removeProperty('opacity');
+    el.style.removeProperty('z-index');
+    el.style.pointerEvents='none';
+  }
+  function show(id){
+    const el=document.getElementById(id); if(!el) return;
+    WORKFLOW_IDS.forEach(x=>{ if(x!==id) hide(x); });
+    el.classList.add('open');
+    el.removeAttribute('aria-hidden');
+    el.style.setProperty('display','flex','important');
+    el.style.setProperty('visibility','visible','important');
+    el.style.setProperty('opacity','1','important');
+    el.style.pointerEvents='auto';
+    if(id==='wp37PartnerCheckinModal') el.style.setProperty('z-index','200000','important');
+    document.body.style.overflow='hidden';
+  }
+  function closeAll(){
+    WORKFLOW_IDS.forEach(hide);
+    try{wp37PendingPartnerSave=null}catch(e){}
+    try{window._v203PendingMeaningful=null}catch(e){}
+    try{window._v198PortfolioPreflight=false;window._v198PortfolioAgent='';}catch(e){}
+    document.body.style.removeProperty('overflow');
+  }
+  window.rmV229CloseAllWorkflows=closeAll;
+  window.v175Open=function(id){ show(id); };
+  window.v175Close=function(id){ hide(id); if(!document.querySelector('.v175-overlay.open,.modal-overlay.open')) document.body.style.removeProperty('overflow'); };
+
+  // Backdrop click closes the popup cleanly.
+  document.querySelectorAll('.v175-overlay,.modal-overlay').forEach(function(el){
+    if(el.dataset.v229Bound==='1') return;
+    el.dataset.v229Bound='1';
+    el.addEventListener('mousedown',function(ev){ if(ev.target===el){ closeAll(); } });
+  });
+
+  // Make sure the follow-up date field is always interactive when the log popup is open.
+  const date=document.getElementById('v175OutreachFollowup');
+  if(date){ date.disabled=false; date.readOnly=false; date.style.pointerEvents='auto'; date.style.position='relative'; date.style.zIndex='2'; }
+
+  // Any tab change should kill stale overlays first, then navigate.
+  const priorSwitch=window.switchTab;
+  if(typeof priorSwitch==='function' && !priorSwitch.__v229){
+    const wrapped=function(name){ closeAll(); return priorSwitch.apply(this,arguments); };
+    wrapped.__v229=true;
+    window.switchTab=wrapped;
+  }
+  document.addEventListener('click',function(ev){
+    const tab=ev.target.closest && ev.target.closest('.tab[data-tab]');
+    if(tab){ closeAll(); }
+  },true);
+
+  // Safety: if the URL hash changes or browser history jumps, don't leave a ghost overlay behind.
+  window.addEventListener('hashchange',closeAll);
+  window.addEventListener('popstate',closeAll);
+})();
+</script>
 </body>
 </html>
