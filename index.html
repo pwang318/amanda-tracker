@@ -17224,7 +17224,7 @@ setTimeout(function(){v124MountAudit();v122RenderAudit();},1200);
   const app=$('rmxApp');if(!app||app.dataset.routingWired==='1')return;app.dataset.routingWired='1';
   app.addEventListener('click',function(e){
     const bulkAction=e.target.closest('[data-rmx-admin-bulk]');
-    if(bulkAction){e.preventDefault();e.stopPropagation();const kind=bulkAction.dataset.rmxAdminBulk||'';if(kind==='select-visible')window.rmxAdminSelectVisible();else if(kind==='clear')window.rmxAdminClearSelection();else if(kind==='assign')window.rmxAdminBulkAssign(bulkAction.dataset.rm||'',bulkAction);else if(kind==='permanent-remove')window.rmxAdminBulkPermanentRemove(bulkAction);return}
+    if(bulkAction){e.preventDefault();e.stopPropagation();const kind=bulkAction.dataset.rmxAdminBulk||'';if(kind==='select-visible')window.rmxAdminSelectVisible();else if(kind==='clear')window.rmxAdminClearSelection();else if(kind==='assign')window.rmxAdminBulkAssign(bulkAction.dataset.rm||'',bulkAction);else if(kind==='reactivate')window.rmxAdminBulkReactivate(bulkAction);else if(kind==='permanent-remove')window.rmxAdminBulkPermanentRemove(bulkAction);return}
     const adminAction=e.target.closest('[data-rmx-admin-action]');
     if(adminAction){
       e.preventDefault();e.stopPropagation();
@@ -17746,11 +17746,24 @@ function renderMyDay(c,d){
   c.innerHTML+=card('Roster & ownership','Use the categories instead of hunting through one giant cleanup list.',
     '<div class="rmx-admin-tabs"><button data-admin-mode="active" onclick="rmxAdminSetMode(\'active\')">Active Roster</button><button data-admin-mode="unowned" onclick="rmxAdminSetMode(\'unowned\')">Ownership Gaps</button><button data-admin-mode="inactive" onclick="rmxAdminSetMode(\'inactive\')">Inactive / Removed</button></div>'
     +'<div id="rmxAdminModeNote" class="rmx-note"></div>'
-    +'<div id="rmxAdminBulkBar" style="display:none;margin:10px 0;padding:10px 12px;border:1px solid #ded8ef;border-radius:10px;background:#faf8ff"><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><b style="margin-right:4px">Bulk actions</b><button type="button" class="rmx-btn small" data-rmx-admin-bulk="select-visible">Select visible</button><button type="button" class="rmx-btn small" data-rmx-admin-bulk="clear">Clear selection</button><span id="rmxAdminSelectedCount" class="meta" style="min-width:72px">0 selected</span><span style="flex:1"></span><button type="button" class="rmx-btn small" data-rmx-admin-bulk="assign" data-rm="Amanda">Assign selected to Amanda</button><button type="button" class="rmx-btn small primary" data-rmx-admin-bulk="assign" data-rm="Nyny">Assign selected to Nyny</button><button type="button" class="rmx-btn small danger" data-rmx-admin-bulk="permanent-remove">Permanently remove selected</button></div><div class="meta" style="margin-top:6px"><b>Permanent remove</b> keeps historical activity but tombstones the relationship so it stays out of Amanda’s active tracker, Core Team active workflows, reconnect/prospecting, ownership queues, and future follow-ups. Search/filter first, then use <b>Select visible</b> if you want to remove a group.</div></div>'
+    +'<div id="rmxAdminBulkBar" style="display:none;margin:10px 0;padding:10px 12px;border:1px solid #ded8ef;border-radius:10px;background:#faf8ff"><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><b style="margin-right:4px">Bulk actions</b><button type="button" class="rmx-btn small" data-rmx-admin-bulk="select-visible">Select all shown</button><button type="button" class="rmx-btn small" data-rmx-admin-bulk="clear">Clear selection</button><span id="rmxAdminSelectedCount" class="meta" style="min-width:72px">0 selected</span><span style="flex:1"></span><button type="button" class="rmx-btn small rmx-admin-assign-bulk" data-rmx-admin-bulk="assign" data-rm="Amanda">Assign selected to Amanda</button><button type="button" class="rmx-btn small primary rmx-admin-assign-bulk" data-rmx-admin-bulk="assign" data-rm="Nyny">Assign selected to Nyny</button><button type="button" class="rmx-btn small rmx-admin-reactivate-bulk" data-rmx-admin-bulk="reactivate" style="display:none">Reactivate selected</button><button type="button" class="rmx-btn small danger" data-rmx-admin-bulk="permanent-remove">Permanently remove selected</button></div><div id="rmxAdminBulkHelp" class="meta" style="margin-top:6px"><b>Permanent remove</b> keeps historical activity but tombstones the relationship so it stays out of Amanda’s active tracker, Core Team active workflows, reconnect/prospecting, ownership queues, and future follow-ups. Search/filter first, then use <b>Select all shown</b> to work the whole filtered list at once.</div></div>'
     +'<input class="rmx-search" id="rmxAdminAgentSearch" placeholder="Search agent, LP, team, brokerage, tier…"><div id="rmxAdminAgentRows" style="margin-top:10px"></div>');
   setTimeout(()=>rmxAdminSetMode(R.sub.adminMode||'active'),0);
 }
-window.rmxAdminSetMode=function(mode){R.sub.adminMode=mode||'active';document.querySelectorAll('[data-admin-mode]').forEach(b=>b.classList.toggle('active',b.dataset.adminMode===R.sub.adminMode));const note=$('rmxAdminModeNote'),bulk=$('rmxAdminBulkBar');if(note){const copy={active:'<b>Active Roster:</b> current relationships. <b>Remove from active</b> is reversible. <b>Permanent remove</b> tombstones the profile so it stays out of Amanda/Core Team active workflows.',unowned:'<b>Ownership Gaps:</b> relationships without an RM owner. Assign them, or permanently remove people who should not be in Amanda/Core Team active tracking at all.',inactive:'<b>Inactive / Removed:</b> history is preserved. Reactivate when appropriate, or permanently remove a profile so it stays tombstoned.'};note.innerHTML=copy[R.sub.adminMode]||copy.active;}if(bulk)bulk.style.display=(R.sub.adminMode==='unowned'||R.sub.adminMode==='active')?'block':'none';rmxRenderAdminAgentRows(R.sub.adminMode)};
+window.rmxAdminSetMode=function(mode){
+  R.sub.adminMode=mode||'active';
+  document.querySelectorAll('[data-admin-mode]').forEach(b=>b.classList.toggle('active',b.dataset.adminMode===R.sub.adminMode));
+  const note=$('rmxAdminModeNote'),bulk=$('rmxAdminBulkBar'),help=$('rmxAdminBulkHelp');
+  if(note){const copy={active:'<b>Active Roster:</b> current relationships. <b>Remove from active</b> is reversible. <b>Permanent remove</b> tombstones the profile so it stays out of Amanda/Core Team active workflows.',unowned:'<b>Ownership Gaps:</b> relationships without an RM owner. Assign them, or permanently remove people who should not be in Amanda/Core Team active tracking at all.',inactive:'<b>Inactive / Removed:</b> history is preserved. Use the checkboxes below to reactivate or permanently remove many records at once.'};note.innerHTML=copy[R.sub.adminMode]||copy.active;}
+  if(bulk)bulk.style.display='block';
+  const inactive=R.sub.adminMode==='inactive';
+  document.querySelectorAll('.rmx-admin-assign-bulk').forEach(b=>b.style.display=inactive?'none':'');
+  document.querySelectorAll('.rmx-admin-reactivate-bulk').forEach(b=>b.style.display=inactive?'':'none');
+  if(help)help.innerHTML=inactive
+    ?'<b>Inactive bulk cleanup:</b> search if needed, click <b>Select all shown</b>, then <b>Permanently remove selected</b>. This tombstones the profiles so they disappear from this list and stay out of active workflows while historical activity remains preserved.'
+    :'<b>Permanent remove</b> keeps historical activity but tombstones the relationship so it stays out of Amanda’s active tracker, Core Team active workflows, reconnect/prospecting, ownership queues, and future follow-ups. Search/filter first, then use <b>Select all shown</b> to work the whole filtered list at once.';
+  rmxRenderAdminAgentRows(R.sub.adminMode)
+};
 window.rmxRenderAdminAgentRows=async function(mode){
   const host=$('rmxAdminAgentRows');if(!host)return;host.innerHTML=loading();
   try{
@@ -17778,7 +17791,7 @@ window.rmxRenderAdminAgentRows=async function(mode){
           +'<button type="button" class="rmx-btn small danger" data-rmx-admin-action="remove" data-agent="'+encoded+'">Remove from active</button>'
           +'<button type="button" class="rmx-btn small danger" data-rmx-admin-action="permanent-remove" data-agent="'+encoded+'">Permanent remove</button>';
       }else{
-        lead='<div><div class="name">'+esc(fmtName(p.display_name||name))+'</div><div class="meta">Tier: '+esc(p._tier||'—')+' · LP: '+esc(assign.lp||'Unassigned')+' · RM: '+esc(assign.rm||'Unassigned')+'</div></div>';
+        lead='<label style="display:flex;align-items:flex-start;gap:10px;cursor:pointer">'+selectBox+identity+'</label>';
         actions='<button type="button" class="rmx-btn small" data-rmx-admin-action="reactivate" data-agent="'+encoded+'">Reactivate</button>'
           +'<button class="rmx-btn small" data-rmx-action="history" data-agent="'+encoded+'">History</button>'
           +'<button type="button" class="rmx-btn small danger" data-rmx-admin-action="permanent-remove" data-agent="'+encoded+'">Permanent remove</button>';
@@ -17811,7 +17824,7 @@ window.rmxAdminAssign=async function(name,rm,opts){
   }catch(e){console.error('RMX ownership assignment failed',e);if(!opts.silent)toast('Could not assign owner: '+(e.message||'Unknown error'),'error');throw e}
 };
 window.rmxAdminUpdateSelectionCount=function(){const n=document.querySelectorAll('.rmx-admin-select:checked').length,el=$('rmxAdminSelectedCount');if(el)el.textContent=n+' selected';return n};
-window.rmxAdminSelectVisible=function(){document.querySelectorAll('#rmxAdminAgentRows .rmx-row').forEach(r=>{if(r.style.display!=='none'){const cb=r.querySelector('.rmx-admin-select');if(cb)cb.checked=true}});rmxAdminUpdateSelectionCount()};
+window.rmxAdminSelectVisible=function(){document.querySelectorAll('.rmx-admin-select').forEach(cb=>cb.checked=false);document.querySelectorAll('#rmxAdminAgentRows .rmx-row').forEach(r=>{if(r.style.display!=='none'){const cb=r.querySelector('.rmx-admin-select');if(cb)cb.checked=true}});rmxAdminUpdateSelectionCount()};
 window.rmxAdminClearSelection=function(){document.querySelectorAll('.rmx-admin-select').forEach(cb=>cb.checked=false);rmxAdminUpdateSelectionCount()};
 window.rmxAdminBulkAssign=async function(rm,button){
   const selected=Array.from(document.querySelectorAll('.rmx-admin-select:checked')),names=selected.map(cb=>decodeURIComponent(cb.dataset.agent||'')).filter(Boolean);if(!names.length){toast('Select at least one relationship first.','error');return}
@@ -17825,6 +17838,27 @@ window.rmxAdminBulkAssign=async function(rm,button){
     }
     if(typeof loadAgentOwnership==='function')await loadAgentOwnership();R.cache=null;R.ts=0;await rmxRenderAdminAgentRows('unowned');
     toast(ok+' relationship'+(ok===1?'':'s')+' assigned'+(failed.length?' · '+failed.length+' failed':'')+' ✓',failed.length?'error':'success');
+  }finally{if(button&&button.isConnected){button.disabled=false;button.textContent=old}}
+};
+
+window.rmxAdminBulkReactivate=async function(button){
+  const selected=Array.from(document.querySelectorAll('.rmx-admin-select:checked'));
+  const names=selected.map(cb=>decodeURIComponent(cb.dataset.agent||'')).filter(Boolean);
+  if(!names.length){toast('Select at least one inactive relationship first.','error');return}
+  if(!window.confirm('Reactivate '+names.length+' selected relationship'+(names.length===1?'':'s')+'?'))return;
+  const old=button?button.textContent:'';let ok=0,failed=[];
+  try{
+    if(button){button.disabled=true;button.textContent='Reactivating 0 / '+names.length+'…'}
+    for(let i=0;i<names.length;i++){
+      try{
+        await sbFetch('agent_profiles?agent_name=eq.'+encodeURIComponent(names[i]),{method:'PATCH',prefer:'return=minimal',body:JSON.stringify({relationship_status:'active'})});
+        ok++;
+      }catch(e){failed.push(names[i])}
+      if(button)button.textContent='Reactivating '+(i+1)+' / '+names.length+'…';
+    }
+    R.cache=null;R.ts=0;
+    await rmxRenderAdminAgentRows('inactive');
+    toast(ok+' relationship'+(ok===1?'':'s')+' reactivated'+(failed.length?' · '+failed.length+' failed':'')+' ✓',failed.length?'error':'success');
   }finally{if(button&&button.isConnected){button.disabled=false;button.textContent=old}}
 };
 
@@ -18784,5 +18818,6 @@ window.rmxBoot=boot;const baseSwitch=window.switchTab;window.switchTab=function(
   decorateRows();
 })();
 </script>
+<!-- v235: Director Admin/Tools inactive roster now supports checkbox selection, select-all-shown, bulk reactivate, and bulk permanent removal. -->
 </body>
 </html>
