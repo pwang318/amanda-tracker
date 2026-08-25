@@ -6126,11 +6126,12 @@ async function loadWeek(){
   try{
     const now=new Date();
     const monthStart=now.getFullYear()+"-"+String(now.getMonth()+1).padStart(2,"0")+"-01";
+    const monthEnd=localDateStr(new Date(now.getFullYear(),now.getMonth()+1,0));
     const yearStart=now.getFullYear()+"-04-01";// April — role start date
     const todayStr=today();
     const[weekActsLoaded,mtdActs,ytdActs,dailyActs,everMeetings]=await Promise.all([
       sbFetch("amanda_activities?select=act_type,outcome,agent_name,notes&act_date=gte."+week.start+"&act_date=lte."+week.end),
-      sbFetch("amanda_activities?select=act_type,outcome,agent_name,notes&act_date=gte."+monthStart),
+      sbFetch("amanda_activities?select=act_type,outcome,agent_name,notes&act_date=gte."+monthStart+"&act_date=lte."+monthEnd),
       sbFetch("amanda_activities?select=act_type,outcome,agent_name,notes&act_date=gte."+yearStart),
       sbFetch("amanda_activities?select=act_type,outcome,agent_name,notes&act_date=eq."+todayStr),
       sbFetch("amanda_activities?select=agent_name&act_type=eq.New Realtor Meeting&limit=2000").catch(()=>[])
@@ -15631,42 +15632,6 @@ setTimeout(function(){v124MountAudit();v122RenderAudit();},1200);
 .v166-goal strong{color:#5E4387}
 @media(max-width:700px){.v166-goal-strip{grid-template-columns:1fr}}
 </style>
-
-<script id="v170-interaction-routing-audit">
-(function(){
-  window.rmOpenLogFor=function(name,type){
-    const act=type||'Agent Talk-to';
-    try{
-      if(typeof prefillActivityLog==='function'){
-        prefillActivityLog(name||'',act);
-        return true;
-      }
-      switchTab('log');
-      const a=document.getElementById('agentInput');
-      const t=document.getElementById('activityType');
-      if(a)a.value=name||'';
-      if(t){t.value=act;t.dispatchEvent(new Event('change',{bubbles:true}));}
-      return true;
-    }catch(e){console.warn('rmOpenLogFor',e);return false}
-  };
-  window.rmOpenContactFor=function(name){
-    try{
-      if(typeof openContactModal==='function'){openContactModal(name||'');return true}
-      switchTab('contacts');
-      const s=document.getElementById('contactsSearch');
-      if(s){s.value=name||'';if(typeof filterContacts==='function')filterContacts();}
-      return true;
-    }catch(e){console.warn('rmOpenContactFor',e);return false}
-  };
-  window.v165ProspectLog=function(name){return rmOpenLogFor(name,'Cold Calls')};
-  window.v165RelationshipLog=function(name,type){return rmOpenLogFor(name,type||'Agent Talk-to')};
-  window.v165RelationshipUpdate=function(name){return rmOpenContactFor(name)};
-  window.v154Log=function(name,type){return rmOpenLogFor(decodeURIComponent(name||''),decodeURIComponent(type||'Agent Talk-to'))};
-  window.v154Update=function(name){return rmOpenContactFor(decodeURIComponent(name||''))};
-})();
-</script>
-
-
 <style id="v171-transaction-call-clarity-css">
 #v171TransactionRules{
   margin-top:8px;padding:10px 12px;border-radius:9px;background:#FFF9E8;
@@ -15682,72 +15647,36 @@ setTimeout(function(){v124MountAudit();v122RenderAudit();},1200);
 </style>
 <script id="v171-transaction-call-clarity-js">
 (function(){
-  window.rmOpenNewContractLog=function(){
-    return typeof rmOpenLogFor==='function'
-      ? rmOpenLogFor('','Under Contract Call')
-      : false;
-  };
-  window.rmOpenCTCLog=function(){
-    return typeof rmOpenLogFor==='function'
-      ? rmOpenLogFor('','CTC Call')
-      : false;
-  };
-
   function enhance(){
-    // Find the visible transaction-call strip/card without relying on one old version's exact id.
     const nodes=[...document.querySelectorAll('#view-week div,#view-week section')];
     let host=nodes.find(el=>{
       const t=String(el.textContent||'');
       return /TRANSACTION CALLS/i.test(t) && /New Contract\s*\/\s*CTC|New Contract.*CTC/i.test(t);
     });
     if(!host)return;
-    // Avoid enhancing a giant ancestor.
     const smaller=[...host.querySelectorAll('div')].find(el=>{
       const t=String(el.textContent||'');
       return /TRANSACTION CALLS/i.test(t) && /New Contract\s*\/\s*CTC|New Contract.*CTC/i.test(t) && t.length<350;
     });
     if(smaller)host=smaller;
     if(document.getElementById('v171TransactionRules'))return;
-
     const box=document.createElement('div');
     box.id='v171TransactionRules';
     box.innerHTML=
-      '<b>REQUIRED TRANSACTION CALLS</b><br>'
-      +'<b>New Contract:</b> call when the file goes under contract. Log the relationship touch.<br>'
-      +'<b>CTC:</b> work both buyer agent + listing agent. If no answer, leave voicemail + send text. Log the attempt and required follow-up.<br>'
-      +'<b>Complete means:</b> required calls are worked and the outcome/next step is documented. These qualifying touches count toward the 20/day Talk-to goal.'
-      +'<div class="v171-tx-actions">'
-      +'<button class="primary" onclick="rmOpenNewContractLog()">Log New Contract Call</button>'
-      +'<button class="primary" onclick="rmOpenCTCLog()">Log CTC Call</button>'
-      +'</div>';
+      '<b>REQUIRED TRANSACTION CALLS</b><br>'+
+      '<b>New Contract:</b> call when the file goes under contract. Log the relationship touch.<br>'+
+      '<b>CTC:</b> work both buyer agent + listing agent. If no answer, leave voicemail + send text. Log the attempt and required follow-up.<br>'+
+      '<b>Complete means:</b> required calls are worked and the outcome/next step is documented. These qualifying touches count toward the 20/day Talk-to goal.'+
+      '<div class="v171-tx-actions">'+
+      '<button class="primary" onclick="rmOpenNewContractLog()">Log New Contract Call</button>'+
+      '<button class="primary" onclick="rmOpenCTCLog()">Log CTC Call</button>'+
+      '</div>';
     host.appendChild(box);
   }
-
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(enhance,650),{once:true});
   else setTimeout(enhance,450);
 })();
 </script>
-
-
-<script id="v173-universal-action-router">/* retired by v175 inline action router */</script>
-
-
-<script id="v174-visible-button-selfcheck">
-window.rmAuditVisibleButtons=function(){
-  const rows=[];
-  document.querySelectorAll('button,a').forEach(function(el){
-    if(el.offsetParent===null)return;
-    const label=String(el.textContent||'').trim();
-    const has=!!el.onclick || !!el.getAttribute('onclick') || el.tagName==='A'&&!!el.getAttribute('href');
-    rows.push({label:label.slice(0,80),workingHook:has,id:el.id||''});
-  });
-  const dead=rows.filter(r=>!r.workingHook && r.label);
-  console.table(dead);
-  return {visible:rows.length,dead:dead};
-};
-</script>
-
-
 <style id="v175-inline-action-modals-css">
 .v175-overlay{position:fixed;inset:0;background:rgba(27,22,35,.42);display:none;align-items:center;justify-content:center;z-index:99999;padding:18px}
 .v175-overlay.open{display:flex}
@@ -15913,10 +15842,6 @@ window.rmAuditVisibleButtons=function(){
     <div class="v175-actions"><button onclick="v175Close('v175UpdateModal')">Cancel</button><button class="primary" onclick="v175SaveUpdate()">Save changes</button></div>
   </div>
 </div>
-
-<script id="v175-inline-action-modals-js">/* retired by v176 */</script>
-
-
 <script id="v176-button-transaction-fix-js">
 (function(){
   const dec=s=>{try{return decodeURIComponent(String(s||''))}catch(e){return String(s||'')}};
@@ -16704,12 +16629,11 @@ window.rmAuditVisibleButtons=function(){
 <script id="v201-meaningful-preflight-paint">
 (function(){
   window.v201PaintMeaningfulComplete=function(){
-    const b=document.getElementById('v198MeaningfulBtn'),name=(document.getElementById('v175OutreachAgent')?.value||'').trim();
+    const b=document.getElementById('v198MeaningfulBtn');
+    const name=(document.getElementById('v175OutreachAgent')?.value||'').trim();
     if(!b)return;
     b.classList.toggle('v201-complete',!!(window._v198PortfolioPreflight&&String(window._v198PortfolioAgent||'').toLowerCase()===name.toLowerCase()));
   };
-  const oldOpen=window.v175Open;
-  if(typeof oldOpen==='function')window.v175Open=function(id){const r=oldOpen.apply(this,arguments);if(id==='v175OutreachModal')setTimeout(v201PaintMeaningfulComplete,0);return r};
 })();
 </script>
 
@@ -17031,6 +16955,7 @@ window.rmAuditVisibleButtons=function(){
  }
 
  function mstart(){const d=todayS();return d.slice(0,7)+'-01'}
+ function mend(){const d=new Date(todayS()+'T12:00:00');return new Date(d.getFullYear(),d.getMonth()+1,0,12).toISOString().slice(0,10)}
  function wstart(){const d=new Date(todayS()+'T12:00:00'),day=(d.getDay()+6)%7;d.setDate(d.getDate()-day);return d.toISOString().slice(0,10)}
  function safeFetch(path,ms){ms=ms||6500;return Promise.race([
    Promise.resolve().then(()=>sbFetch(path)),
@@ -17050,7 +16975,8 @@ window.rmAuditVisibleButtons=function(){
 }
 
  async function load(force){
-  if(!force&&R.cache&&Date.now()-R.ts<30000)return R.cache;
+  // v233: management numbers should not sit behind a 30-second stale cache.
+  if(!force&&R.cache&&Date.now()-R.ts<5000)return R.cache;
   if(R.promise)return R.promise;
 
   R.promise=(async()=>{
@@ -17059,15 +16985,21 @@ window.rmAuditVisibleButtons=function(){
     // CORE TRUTH FIRST.
     // Do not use the short safeFetch timeout here. If core data cannot load,
     // show a real load error instead of rendering fake zeros.
-    const [profiles,assignRows,recent]=await Promise.all([
+    const [profiles,assignRows,recent,mtdMetricRows]=await Promise.all([
       sbFetch('agent_profiles?select=*&limit=5000'),
       sbFetch('agent_assignments?select=*&limit=5000'),
-      sbFetch('amanda_activities?select=id,agent_name,act_type,act_date,outcome,notes,follow_up_date,created_at&act_date=gte.'+since180+'&act_date=lte.'+todayS()+'&order=act_date.desc&limit=5000')
+      sbFetch('amanda_activities?select=id,agent_name,act_type,act_date,outcome,notes,follow_up_date,created_at&act_date=gte.'+since180+'&act_date=lte.'+todayS()+'&order=act_date.desc&limit=5000'),
+      // Same current-calendar-month source used by Amanda's Snapshot. This intentionally
+      // includes a meeting dated later this month if it has already been logged there, so
+      // Management never shows 11 while Amanda shows 12. Relationship-risk logic still uses
+      // `recent`, which stops at today, so future meeting dates cannot fake a recent touch.
+      sbFetch('amanda_activities?select=id,agent_name,act_type,act_date,outcome,notes,follow_up_date,created_at&act_date=gte.'+mstart()+'&act_date=lte.'+mend()+'&order=act_date.desc&limit=5000')
     ]);
 
     if(!Array.isArray(profiles))throw new Error('Portfolio data did not load.');
     if(!Array.isArray(assignRows))throw new Error('Ownership data did not load.');
     if(!Array.isArray(recent))throw new Error('Amanda activity data did not load.');
+    if(!Array.isArray(mtdMetricRows))throw new Error('Amanda month-to-date activity data did not load.');
 
     // OPTIONAL MANAGEMENT DATA SECOND.
     // These may fail independently without corrupting the core metrics.
@@ -17157,9 +17089,10 @@ window.rmAuditVisibleButtons=function(){
       return copy;
     });
 
-    // IMPORTANT: recent retains the full 180-day activity history needed for
-    // 4-week conversion and relationship logic. acts is only MTD.
-    const acts=(recent||[]).filter(a=>String(a.act_date||'')>=mstart());
+    // IMPORTANT: recent retains the through-today history used for relationship/risk logic.
+    // acts is the exact current-month metric source used by Amanda's Snapshot, including any
+    // already-logged meeting later in the same month. Keeping these separate prevents count drift.
+    const acts=mtdMetricRows||[];
 
     const flagsAll=[
       ...(flags||[]).map(f=>({...f,_src:'lpflag'})),
@@ -18254,51 +18187,18 @@ window.rmxBoot=boot;const baseSwitch=window.switchTab;window.switchTab=function(
   #view-week .v191-contact,#view-week .v191-actions{grid-column:1!important;padding-left:0!important}
 }
 </style>
-<script id="v228-functional-sweep-js">
+<script id="v232-amanda-action-routing-js">
 (function(){
-  const dec=s=>{try{return decodeURIComponent(String(s||''))}catch(e){return String(s||'')}};
   const directorContext=()=>{
     try{return location.hash==='#director'||document.body.classList.contains('rm-director-route')||document.body.classList.contains('rmx-director-active')}
     catch(e){return false}
   };
   const normalizeType=t=>{
     t=String(t||'Agent Talk-to').trim();
-    if(t==='Talk-to (text/call)')return 'Agent Talk-to';
-    if(t==='Talk-to')return 'Agent Talk-to';
+    if(t==='Talk-to (text/call)'||t==='Talk-to')return 'Agent Talk-to';
     return t;
   };
 
-  // Close only transient overlays. Navigation must always remain usable even if an older workflow left a modal open.
-  window.rmV228CloseTransientUi=function(){
-    ['v175OutreachModal','v175TransactionModal','v175UpdateModal','wp37PartnerCheckinModal','v191PlaybookModal','v191Modal'].forEach(id=>{
-      const m=document.getElementById(id);if(!m)return;
-      m.classList.remove('open','show','active');
-      m.style.removeProperty('display');m.style.removeProperty('z-index');m.style.removeProperty('visibility');m.style.removeProperty('opacity');
-      m.removeAttribute('aria-hidden');
-    });
-    try{wp37PendingPartnerSave=null}catch(e){}
-    window._v203PendingMeaningful=null;
-    window._v198PortfolioPreflight=false;
-    window._v198PortfolioAgent='';
-    try{document.body.style.removeProperty('overflow')}catch(e){}
-  };
-
-  // Final navigation guard. A sidebar click always wins over a stale popup/legacy overlay.
-  document.addEventListener('click',function(e){
-    const tab=e.target.closest&&e.target.closest('.tab[data-tab]');
-    if(tab)rmV228CloseTransientUi();
-  },true);
-  const priorSwitch=window.switchTab;
-  if(typeof priorSwitch==='function'&&!priorSwitch.__v228){
-    const wrapped=function(name){
-      rmV228CloseTransientUi();
-      return priorSwitch.apply(this,arguments);
-    };
-    wrapped.__v228=true;window.switchTab=wrapped;
-  }
-
-  // Amanda-side legacy shortcuts must open the unified Log Touch popup, never the full Log Activity page.
-  // Director-side actions keep their Management behavior.
   const legacyDirectorLog=window.v98DirectorLog;
   window.v98DirectorLog=function(name,owner,type){
     const who=String(owner||'').trim().toLowerCase();
@@ -18309,7 +18209,6 @@ window.rmxBoot=boot;const baseSwitch=window.switchTab;window.switchTab=function(
     return typeof legacyDirectorLog==='function'?legacyDirectorLog.apply(this,arguments):undefined;
   };
 
-  // Old prefill shortcuts on Amanda's Today page now use the same popup. The explicit Log Activity nav still opens the full page.
   const legacyPrefill=window.prefillActivityLog;
   window.prefillActivityLog=function(name,type){
     if(!directorContext()){
@@ -18319,7 +18218,6 @@ window.rmxBoot=boot;const baseSwitch=window.switchTab;window.switchTab=function(
     return typeof legacyPrefill==='function'?legacyPrefill.apply(this,arguments):undefined;
   };
 
-  // Focus-mode relationship work should also stay on Today and open a popup.
   window.focusDoneAndLog=function(name){
     try{if(typeof vibrateOk==='function')vibrateOk()}catch(e){}
     try{if(typeof toast==='function'&&Array.isArray(window.AFFIRMATIONS)&&window.AFFIRMATIONS.length)toast(window.AFFIRMATIONS[Math.floor(Math.random()*window.AFFIRMATIONS.length)],'success',2600)}catch(e){}
@@ -18327,13 +18225,12 @@ window.rmxBoot=boot;const baseSwitch=window.switchTab;window.switchTab=function(
     return typeof window.rmOpenUnifiedLog==='function'?window.rmOpenUnifiedLog(String(name||''),'Agent Talk-to'):undefined;
   };
 
-  // C→B/current growth cards can be rendered by several legacy layers. Convert any surviving Amanda log buttons to the popup after render.
   function repairAmandaActionButtons(root){
     root=root||document.getElementById('view-week');if(!root)return;
     root.querySelectorAll('button[onclick*="v98DirectorLog"]').forEach(btn=>{
       const raw=btn.getAttribute('onclick')||'';
-      if(!/['\"]Amanda['\"]/.test(raw))return;
-      const m=raw.match(/v98DirectorLog\(\s*['\"]([^'\"]*)['\"]/);
+      if(!/['"]Amanda['"]/.test(raw))return;
+      const m=raw.match(/v98DirectorLog\(\s*['"]([^'"]*)['"]/);
       if(!m)return;
       let name=m[1];name=name.replace(/\\'/g,"'").replace(/\\\\/g,'\\');
       btn.removeAttribute('onclick');
@@ -18341,92 +18238,99 @@ window.rmxBoot=boot;const baseSwitch=window.switchTab;window.switchTab=function(
     });
   }
   window.rmV228RepairAmandaActions=repairAmandaActionButtons;
-  const observer=new MutationObserver(ms=>{
-    for(const m of ms){if(m.addedNodes&&m.addedNodes.length){repairAmandaActionButtons(document.getElementById('view-week'));break}}
-  });
-  const week=document.getElementById('view-week');if(week){observer.observe(week,{childList:true,subtree:true});repairAmandaActionButtons(week)}
-
-  // Better copy now that the visible list is intentionally unnumbered.
-  function copyCleanup(){
-    document.querySelectorAll('#view-week .v191-head small').forEach(el=>{
+  const week=document.getElementById('view-week');
+  if(week){
+    new MutationObserver(ms=>{for(const m of ms){if(m.addedNodes&&m.addedNodes.length){repairAmandaActionButtons(week);break}}}).observe(week,{childList:true,subtree:true});
+    repairAmandaActionButtons(week);
+    const copyCleanup=()=>document.querySelectorAll('#view-week .v191-head small').forEach(el=>{
       if(/Work #1, log it, move on\./i.test(el.textContent||''))el.textContent='Work the first name shown, log it, and the next best relationship will move up.';
     });
+    copyCleanup();new MutationObserver(copyCleanup).observe(week,{childList:true,subtree:true});
   }
-  copyCleanup();
-  if(week)new MutationObserver(copyCleanup).observe(week,{childList:true,subtree:true});
-
-  // Escape closes the working popup instead of leaving an invisible overlay over Today.
-  document.addEventListener('keydown',function(e){
-    if(e.key!=='Escape'||directorContext())return;
-    const open=document.querySelector('#v175OutreachModal.open,#v175TransactionModal.open,#v175UpdateModal.open,#wp37PartnerCheckinModal.open');
-    if(open){e.preventDefault();rmV228CloseTransientUi()}
-  });
 })();
 </script>
 
 
-<script id="v229-modal-nav-hardening-js">
+<script id="v232-workflow-modal-manager-js">
 (function(){
-  const WORKFLOW_IDS=['v175OutreachModal','v175TransactionModal','v175UpdateModal','wp37PartnerCheckinModal','v191PlaybookModal','v191Modal'];
+  const IDS=['v175OutreachModal','v175TransactionModal','v175UpdateModal','wp37PartnerCheckinModal','v191PlaybookModal','v191Modal'];
+  const get=id=>document.getElementById(id);
+
   function hide(id){
-    const el=document.getElementById(id); if(!el) return;
+    const el=get(id);if(!el)return;
     el.classList.remove('open','show','active');
     el.setAttribute('aria-hidden','true');
     el.style.setProperty('display','none','important');
+    el.style.setProperty('pointer-events','none','important');
     el.style.removeProperty('visibility');
     el.style.removeProperty('opacity');
     el.style.removeProperty('z-index');
-    el.style.pointerEvents='none';
   }
   function show(id){
-    const el=document.getElementById(id); if(!el) return;
-    WORKFLOW_IDS.forEach(x=>{ if(x!==id) hide(x); });
+    const el=get(id);if(!el)return false;
+    IDS.forEach(other=>{if(other!==id)hide(other)});
     el.classList.add('open');
     el.removeAttribute('aria-hidden');
     el.style.setProperty('display','flex','important');
+    el.style.setProperty('pointer-events','auto','important');
     el.style.setProperty('visibility','visible','important');
     el.style.setProperty('opacity','1','important');
-    el.style.pointerEvents='auto';
-    if(id==='wp37PartnerCheckinModal') el.style.setProperty('z-index','200000','important');
+    if(id==='wp37PartnerCheckinModal')el.style.setProperty('z-index','200000','important');
     document.body.style.overflow='hidden';
+    const box=el.querySelector('.modal-box');if(box&&id==='wp37PartnerCheckinModal'){box.style.overflowY='auto';box.scrollTop=0}
+    if(id==='v175OutreachModal')try{v201PaintMeaningfulComplete()}catch(e){}
+    return true;
   }
-  function closeAll(){
-    WORKFLOW_IDS.forEach(hide);
+  function clearMeaningfulState(){
     try{wp37PendingPartnerSave=null}catch(e){}
-    try{window._v203PendingMeaningful=null}catch(e){}
-    try{window._v198PortfolioPreflight=false;window._v198PortfolioAgent='';}catch(e){}
+    window._v203PendingMeaningful=null;
+    window._v198PortfolioPreflight=false;
+    window._v198PortfolioAgent='';
+  }
+  function closeAll(reset=true){
+    IDS.forEach(hide);
+    if(reset)clearMeaningfulState();
     document.body.style.removeProperty('overflow');
   }
-  window.rmV229CloseAllWorkflows=closeAll;
-  window.v175Open=function(id){ show(id); };
-  window.v175Close=function(id){ hide(id); if(!document.querySelector('.v175-overlay.open,.modal-overlay.open')) document.body.style.removeProperty('overflow'); };
+  function anyOpen(){return IDS.some(id=>get(id)?.classList.contains('open'))}
 
-  // Backdrop click closes the popup cleanly.
-  document.querySelectorAll('.v175-overlay,.modal-overlay').forEach(function(el){
-    if(el.dataset.v229Bound==='1') return;
-    el.dataset.v229Bound='1';
-    el.addEventListener('mousedown',function(ev){ if(ev.target===el){ closeAll(); } });
-  });
+  window.rmWorkflowModal={show,hide,closeAll};
+  window.v175Open=show;
+  window.v175Close=function(id){hide(id);if(!anyOpen())document.body.style.removeProperty('overflow')};
 
-  // Make sure the follow-up date field is always interactive when the log popup is open.
-  const date=document.getElementById('v175OutreachFollowup');
-  if(date){ date.disabled=false; date.readOnly=false; date.style.pointerEvents='auto'; date.style.position='relative'; date.style.zIndex='2'; }
+  // Keep the legacy card buttons alive without keeping the obsolete v170 routing layer.
+  window.v154Log=function(name,type){
+    let n='',t='Agent Talk-to';try{n=decodeURIComponent(String(name||''));t=decodeURIComponent(String(type||'Agent Talk-to'))}catch(e){n=String(name||'');t=String(type||'Agent Talk-to')}
+    return typeof rmOpenUnifiedLog==='function'?rmOpenUnifiedLog(n,t):v176OpenOutreach(n,t);
+  };
+  window.v154Update=function(name){let n='';try{n=decodeURIComponent(String(name||''))}catch(e){n=String(name||'')}return typeof v176OpenUpdate==='function'?v176OpenUpdate(n):undefined};
 
-  // Any tab change should kill stale overlays first, then navigate.
+  // One navigation guard only. Business routing wrappers from the base tracker and Management remain intact.
   const priorSwitch=window.switchTab;
-  if(typeof priorSwitch==='function' && !priorSwitch.__v229){
-    const wrapped=function(name){ closeAll(); return priorSwitch.apply(this,arguments); };
-    wrapped.__v229=true;
-    window.switchTab=wrapped;
+  if(typeof priorSwitch==='function'&&!priorSwitch.__v232){
+    const wrapped=function(name){closeAll(true);return priorSwitch.apply(this,arguments)};
+    wrapped.__v232=true;window.switchTab=wrapped;
   }
   document.addEventListener('click',function(ev){
-    const tab=ev.target.closest && ev.target.closest('.tab[data-tab]');
-    if(tab){ closeAll(); }
+    const tab=ev.target.closest&&ev.target.closest('.tab[data-tab]');
+    if(tab)closeAll(true);
   },true);
 
-  // Safety: if the URL hash changes or browser history jumps, don't leave a ghost overlay behind.
-  window.addEventListener('hashchange',closeAll);
-  window.addEventListener('popstate',closeAll);
+  // Only workflow backdrops use this manager; unrelated Contact/Admin modals keep their own close behavior.
+  IDS.forEach(id=>{
+    const el=get(id);if(!el||el.dataset.v232Bound==='1')return;
+    el.dataset.v232Bound='1';
+    el.addEventListener('mousedown',function(ev){if(ev.target===el)closeAll(true)});
+  });
+
+  const date=get('v175OutreachFollowup');
+  if(date){date.disabled=false;date.readOnly=false;date.style.setProperty('pointer-events','auto','important')}
+
+  document.addEventListener('keydown',function(ev){
+    if(ev.key==='Escape'&&anyOpen()){ev.preventDefault();closeAll(true)}
+  });
+  window.addEventListener('hashchange',()=>closeAll(true));
+  window.addEventListener('popstate',()=>closeAll(true));
 })();
 </script>
 
@@ -18658,18 +18562,84 @@ window.rmxBoot=boot;const baseSwitch=window.switchTab;window.switchTab=function(
 </script>
 
 
-<style id="v231-meaningful-modal-fix-css">
-/* v231 — Meaningful Conversation / Portfolio Execution must stay interactive and scrollable. */
-#wp37PartnerCheckinModal{pointer-events:none}
-#wp37PartnerCheckinModal.open{pointer-events:auto!important}
-#wp37PartnerCheckinModal .modal-box{
-  max-height:calc(100vh - 32px)!important;
-  overflow-y:auto!important;
-  overscroll-behavior:contain;
-  -webkit-overflow-scrolling:touch;
-  touch-action:pan-y;
-}
+<style id="v232-workflow-modal-css">
+/* v232 — one workflow modal contract: hidden means non-interactive; open means fully interactive. */
+#v175OutreachModal,#v175TransactionModal,#v175UpdateModal,#wp37PartnerCheckinModal,#v191PlaybookModal,#v191Modal{pointer-events:none}
+#v175OutreachModal.open,#v175TransactionModal.open,#v175UpdateModal.open,#wp37PartnerCheckinModal.open,#v191PlaybookModal.open,#v191Modal.open{pointer-events:auto!important}
+#wp37PartnerCheckinModal .modal-box{max-height:calc(100vh - 32px)!important;overflow-y:auto!important;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;touch-action:pan-y}
 </style>
 
+
+<script id="v233-director-live-sync-js">
+(function(){
+  const SIGNAL_KEY='rm_tracker_live_data_v233';
+  let bc=null,pending=false,lastRefresh=0,timer=null;
+  try{ if('BroadcastChannel' in window) bc=new BroadcastChannel('rm-tracker-live-data'); }catch(e){}
+
+  function directorOpen(){
+    try{return location.hash==='#director'||document.body.classList.contains('rm-director-route')||document.body.classList.contains('rmx-director-active')}catch(e){return false}
+  }
+  function directorBusy(){
+    const modal=document.getElementById('rmxModal');
+    if(modal && (modal.classList.contains('open')||modal.style.display==='flex'))return true;
+    const a=document.activeElement;
+    return !!(a && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName) && a.closest && a.closest('#rmxApp'));
+  }
+  function forceDirectorRefresh(reason){
+    if(!directorOpen())return;
+    if(directorBusy()){pending=true;return;}
+    const now=Date.now();
+    if(now-lastRefresh<1200)return;
+    lastRefresh=now;pending=false;
+    try{
+      if(typeof window.rmxRefreshManagementData==='function')window.rmxRefreshManagementData();
+      const sub=document.getElementById('rmxHeadSub');
+      if(sub)sub.dataset.liveSyncReason=reason||'live';
+    }catch(e){console.warn('Director live refresh failed',e)}
+  }
+  function publish(reason){
+    const msg={at:Date.now(),reason:reason||'tracker mutation'};
+    try{localStorage.setItem(SIGNAL_KEY,JSON.stringify(msg))}catch(e){}
+    try{if(bc)bc.postMessage(msg)}catch(e){}
+    // Same-tab Director use should update too.
+    forceDirectorRefresh(msg.reason);
+  }
+  window.rmV233PublishDataChange=publish;
+
+  // The full Log Activity save already funnels through rmRefreshAfterMutation.
+  // Broadcast that successful mutation so an already-open Director tab refreshes immediately.
+  const oldMutation=window.rmRefreshAfterMutation;
+  if(typeof oldMutation==='function'&&!oldMutation.__v233){
+    const wrapped=async function(reason){
+      const out=await oldMutation.apply(this,arguments);
+      publish(reason||'activity saved');
+      return out;
+    };
+    wrapped.__v233=true;window.rmRefreshAfterMutation=wrapped;
+  }
+
+  // Unified Today popups use this refresh path instead of rmRefreshAfterMutation.
+  const oldExec=window.rmRefreshExecutionQueues;
+  if(typeof oldExec==='function'&&!oldExec.__v233){
+    const wrapped=function(){
+      const out=oldExec.apply(this,arguments);
+      return Promise.resolve(out).finally(()=>publish('Amanda workflow updated'));
+    };
+    wrapped.__v233=true;window.rmRefreshExecutionQueues=wrapped;
+  }
+
+  window.addEventListener('storage',function(e){if(e.key===SIGNAL_KEY)forceDirectorRefresh('another tracker tab updated')});
+  if(bc)bc.onmessage=function(){forceDirectorRefresh('another tracker tab updated')};
+  window.addEventListener('focus',function(){forceDirectorRefresh('window focused')});
+  document.addEventListener('visibilitychange',function(){if(!document.hidden)forceDirectorRefresh('window visible')});
+  document.addEventListener('focusout',function(){if(pending)setTimeout(()=>forceDirectorRefresh('pending live update'),80)});
+
+  // Server-side changes from another browser/device are picked up automatically as well.
+  timer=setInterval(function(){
+    if(!document.hidden&&directorOpen()&&!directorBusy())forceDirectorRefresh('automatic live check');
+  },12000);
+  window.addEventListener('beforeunload',function(){try{if(timer)clearInterval(timer);if(bc)bc.close()}catch(e){}});
+})();
+</script>
 </body>
 </html>
