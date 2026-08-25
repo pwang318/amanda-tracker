@@ -16772,12 +16772,28 @@ window.rmAuditVisibleButtons=function(){
     const skip=document.getElementById('wp37SkipBtn');
     if(skip)skip.style.display='none';
 
-    portfolio.removeAttribute('aria-hidden');
-    portfolio.classList.add('open');
-    portfolio.style.setProperty('display','flex','important');
-    portfolio.style.setProperty('z-index','200000','important');
-    portfolio.style.setProperty('visibility','visible','important');
-    portfolio.style.setProperty('opacity','1','important');
+    // v231: open through the shared modal helper so this overlay is interactive.
+    // v229 had previously hidden this modal with pointer-events:none; the direct opener
+    // made it visible again without restoring pointer events, which looked like a freeze.
+    try{
+      if(typeof v175Open==='function')v175Open('wp37PartnerCheckinModal');
+      else{
+        portfolio.removeAttribute('aria-hidden');
+        portfolio.classList.add('open');
+        portfolio.style.setProperty('display','flex','important');
+        portfolio.style.setProperty('z-index','200000','important');
+        portfolio.style.setProperty('visibility','visible','important');
+        portfolio.style.setProperty('opacity','1','important');
+      }
+    }catch(e){
+      portfolio.removeAttribute('aria-hidden');
+      portfolio.classList.add('open');
+      portfolio.style.setProperty('display','flex','important');
+      portfolio.style.setProperty('z-index','200000','important');
+    }
+    portfolio.style.pointerEvents='auto';
+    const portfolioBox=portfolio.querySelector('.modal-box');
+    if(portfolioBox){portfolioBox.style.overflowY='auto';portfolioBox.style.webkitOverflowScrolling='touch';portfolioBox.scrollTop=0;}
 
     try{if(typeof v115SetPartnerMode==='function')v115SetPartnerMode('health')}catch(e){}
 
@@ -16808,9 +16824,9 @@ window.rmAuditVisibleButtons=function(){
         window._v198PortfolioAgent=window._v203PendingMeaningful?.name||'';
         const log=document.getElementById('v175OutreachModal');
         if(log){
-          log.style.removeProperty('display');
-          log.removeAttribute('aria-hidden');
-          log.classList.add('open');
+          try{if(typeof v175Open==='function')v175Open('v175OutreachModal');
+          else{log.style.removeProperty('display');log.removeAttribute('aria-hidden');log.classList.add('open');log.style.pointerEvents='auto';}}
+          catch(e){log.style.removeProperty('display');log.removeAttribute('aria-hidden');log.classList.add('open');log.style.pointerEvents='auto';}
         }
         try{if(typeof v201PaintMeaningfulComplete==='function')v201PaintMeaningfulComplete()}catch(e){}
       }
@@ -16826,9 +16842,9 @@ window.rmAuditVisibleButtons=function(){
       const result=originalCancel.apply(this,arguments);
       const log=document.getElementById('v175OutreachModal');
       if(log){
-        log.style.removeProperty('display');
-        log.removeAttribute('aria-hidden');
-        log.classList.add('open');
+        try{if(typeof v175Open==='function')v175Open('v175OutreachModal');
+        else{log.style.removeProperty('display');log.removeAttribute('aria-hidden');log.classList.add('open');log.style.pointerEvents='auto';}}
+        catch(e){log.style.removeProperty('display');log.removeAttribute('aria-hidden');log.classList.add('open');log.style.pointerEvents='auto';}
       }
       return result;
     };
@@ -18413,5 +18429,247 @@ window.rmxBoot=boot;const baseSwitch=window.switchTab;window.switchTab=function(
   window.addEventListener('popstate',closeAll);
 })();
 </script>
+
+<style id="v230-contact-cleanup-labels-css">
+.v230-rel-tags{display:flex;gap:5px;flex-wrap:wrap;margin-top:5px}
+.v230-tag{display:inline-flex;align-items:center;border-radius:999px;padding:2px 7px;font-size:9px;font-weight:800;line-height:1.45;border:1px solid #ded8eb;background:#faf8ff;color:#59477f}
+.v230-tag.strategic{background:#f1ecfb;border-color:#d2c5eb;color:#5b3d91}
+.v230-tag.category{background:#f7f4ee;border-color:#e6ddcb;color:#6d5b34}
+.v230-tag.marketing{background:#edf7f0;border-color:#cfe4d7;color:#315b40}
+.v230-tag.nurture{background:#fff9ec;border-color:#e8d5a8;color:#7a5a13}
+.v230-tag.potential{background:#eef5ff;border-color:#cddcf1;color:#355c9a}
+.v230-clean-mini{border:1px solid #e3d8bb;background:#fffdf7;border-radius:9px;padding:8px 10px;margin-top:7px}
+.v230-clean-pair{display:flex;align-items:center;gap:7px;flex-wrap:wrap;padding:7px 0;border-top:1px solid #eee6d1}
+.v230-clean-pair:first-child{border-top:0}
+.v230-clean-pair b{font-size:11px;min-width:190px;color:var(--text-1)}
+.v230-clean-actions{display:flex;gap:5px;flex-wrap:wrap}
+.v230-clean-actions button{font:700 10px inherit;padding:5px 8px;border-radius:6px;border:1px solid #d5c9a8;background:#fff;color:#6b551d;cursor:pointer}
+.v230-clean-actions button.primary{background:#7c5ba7;border-color:#7c5ba7;color:#fff}
+.v230-clean-actions button:hover{filter:brightness(.98)}
+@media(max-width:850px){.v230-clean-pair b{min-width:0;width:100%}.v230-clean-actions{width:100%}}
+</style>
+<script id="v230-contact-cleanup-labels-js">
+(function(){
+  const enc=s=>encodeURIComponent(String(s||''));
+  const dec=s=>{try{return decodeURIComponent(String(s||''))}catch(e){return String(s||'')}};
+  const key=s=>String(s||'').trim().toLowerCase().replace(/\s+/g,' ');
+  const nonempty=v=>v!==undefined&&v!==null&&String(v).trim()!=='';
+
+  function isStrategic(c){
+    try{if(typeof rmIsStrategicPartner==='function'&&rmIsStrategicPartner(c.agent_name,c))return true}catch(e){}
+    return String(c&&c.relationship_type||'').toLowerCase()==='strategic_partner';
+  }
+  function isCoMarketing(c){return /\bco[\s-]?marketing\b/i.test(String(c&&c.next_growth_opportunity||''));}
+  function relationshipTags(c){
+    const out=[];
+    if(isStrategic(c)){
+      out.push('<span class="v230-tag strategic">Strategic Partner</span>');
+      const cat=String(c.strategic_partner_category||'').trim();
+      if(cat)out.push('<span class="v230-tag category">'+escHtml(cat)+'</span>');
+    }
+    if(isCoMarketing(c))out.push('<span class="v230-tag marketing">Co-marketing</span>');
+    if(c.high_potential_flag===true)out.push('<span class="v230-tag potential">High potential</span>');
+    if(String(c.lp_outreach_status||'').toLowerCase()==='nurture')out.push('<span class="v230-tag nurture">RM Nurture</span>');
+    return out.length?'<div class="v230-rel-tags">'+out.join('')+'</div>':'';
+  }
+  window.v230RelationshipTags=relationshipTags;
+
+  function installControls(){
+    const add=document.querySelector('#view-contacts button[onclick="openAddAgentModal()"]');
+    if(add&&!document.getElementById('v230CleanNamesBtn')){
+      const b=document.createElement('button');
+      b.id='v230CleanNamesBtn';b.type='button';b.className='btn-sm';b.textContent='Clean names';
+      b.style.cssText='padding:8px 12px;font-weight:700;white-space:nowrap';
+      b.onclick=function(){openDupeCleanupModal()};
+      add.parentNode.insertBefore(b,add);
+    }
+    const f=document.getElementById('contactsFilter');
+    if(f&&!f.querySelector('option[value="strategic"]')){
+      const options=[
+        ['strategic','Strategic partners'],['co-marketing','Co-marketing'],['high-potential','High potential'],['rm-nurture','RM Nurture']
+      ];
+      const anchor=f.querySelector('option[value="notier"]');
+      options.reverse().forEach(([v,l])=>{const o=document.createElement('option');o.value=v;o.textContent=l;anchor?anchor.after(o):f.appendChild(o)});
+    }
+    const cat=document.getElementById('contactStrategicCategory');
+    if(cat&&!Array.from(cat.options).some(o=>o.value==='Stager')){
+      const o=document.createElement('option');o.value='Stager';o.textContent='Stager';
+      const firstReal=cat.options[1]; firstReal?cat.insertBefore(o,firstReal):cat.appendChild(o);
+    }
+  }
+
+  const oldFilter=window.filterContacts;
+  window.filterContacts=function(){
+    const q=(document.getElementById('contactsSearch')?.value||'').toLowerCase();
+    const f=document.getElementById('contactsFilter')?.value||'all';
+    let list=(window.allContacts||allContacts||[]).slice();
+    if(f==='inactive') list=list.filter(c=>String(c.relationship_status||'active').toLowerCase()==='inactive');
+    else list=list.filter(c=>String(c.relationship_status||'active').toLowerCase()!=='inactive');
+    if(q)list=list.filter(c=>[c.agent_name,c.display_name,c.phone,c.email,c.birthday,c.brokerage,c.relationship_type,c.strategic_partner_category,c.next_growth_opportunity].some(v=>String(v||'').toLowerCase().includes(q)));
+    if(f==='tier-Channel')list=list.filter(c=>c.tier==='Channel');
+    else if(f==='tier-A')list=list.filter(c=>c.tier==='A');
+    else if(f==='tier-B')list=list.filter(c=>c.tier==='B');
+    else if(f==='tier-C')list=list.filter(c=>c.tier==='C');
+    else if(f==='notier')list=list.filter(c=>!c.tier);
+    else if(f==='strategic')list=list.filter(isStrategic);
+    else if(f==='co-marketing')list=list.filter(isCoMarketing);
+    else if(f==='high-potential')list=list.filter(c=>c.high_potential_flag===true);
+    else if(f==='rm-nurture')list=list.filter(c=>String(c.lp_outreach_status||'').toLowerCase()==='nurture');
+    else if(f==='rm-nyny')list=list.filter(c=>getAgentOwnership(c.agent_name).rm==='Nyny');
+    else if(f==='rm-amanda')list=list.filter(c=>getAgentOwnership(c.agent_name).rm==='Amanda');
+    else if(f==='rm-unassigned')list=list.filter(c=>!getAgentOwnership(c.agent_name).rm);
+    else if(f==='bday')list=list.filter(c=>c.birthday);
+    else if(f==='nobday')list=list.filter(c=>!c.birthday);
+    else if(f==='noaddress')list=list.filter(c=>!c.address);
+    else if(f==='noemail')list=list.filter(c=>!c.email);
+    else if(f==='nophone')list=list.filter(c=>!c.phone);
+    renderContacts(list);
+  };
+
+  window.renderContacts=function(list){
+    const el=document.getElementById('contacts-list');if(!el)return;
+    if(!list.length){el.innerHTML='<div class="no-data">No contacts found.</div>';return;}
+    el.innerHTML=list.map(c=>{
+      const shownName=(c.display_name&&c.display_name.trim())?c.display_name.trim():resolvedDisplayName(c.agent_name);
+      const initials=(shownName||'?').split(' ').map(w=>w[0]).slice(0,2).join('').toUpperCase();
+      const agentAttr=escHtml(c.agent_name||'');
+      const o=getAgentOwnership(c.agent_name);
+      return '<div class="contact-row">'+
+        '<div class="contact-avatar">'+initials+'</div>'+
+        '<div class="contact-info">'+
+          '<div class="contact-name" style="display:flex;align-items:center;gap:7px;flex-wrap:wrap">'+escHtml(shownName)+tierBadge(c.tier)+'</div>'+
+          relationshipTags(c)+
+          '<div style="font-size:10.5px;color:var(--text-3);margin-top:2px"><strong style="color:var(--brand)">RM:</strong> '+escHtml(o.rm||'Unassigned')+' &nbsp;·&nbsp; <strong style="color:var(--text-2)">LP:</strong> '+escHtml((o.lp&&o.lp!=='Unassigned')?o.lp:'Unassigned')+'</div>'+
+          (c.brokerage?'<div style="font-size:10.5px;color:var(--text-3);margin-top:2px">'+escHtml(c.brokerage)+'</div>':'')+
+          '<div class="contact-meta">'+
+            (c.phone?'<span>'+phoneCallLink(c.agent_name,c.phone)+'</span>':'<span style="color:#ffb3b3">No phone</span>')+
+            (c.email?'<span>'+escHtml(c.email)+'</span>':'')+
+            (c.birthday?'<span class="contact-bday">'+formatBirthdayDisplay(c.birthday)+'</span>':'<span style="color:#ffb3b3">No birthday</span>')+
+          '</div></div>'+
+        '<div style="display:flex;gap:5px;align-items:center;flex-shrink:0;flex-wrap:wrap;justify-content:flex-end">'+
+          ((c.relationship_status!=='inactive'&&c.do_not_contact!==true&&!isStrategic(c))?('<button class="btn-sm" data-name="'+agentAttr+'" onclick="quickLogBuddyAsk(this)" title="Log that you asked this agent for a buddy introduction">Asked buddy</button><button class="btn-sm" data-name="'+agentAttr+'" onclick="quickLogBuddyIntro(this)" title="Log an actual buddy introduction received from this agent">Intro received</button>'):'')+
+          '<button class="btn-sm" onclick="openPortfolioNotes(this)" data-name="'+agentAttr+'" title="Open Portfolio Review / Partner Health notes">Portfolio notes</button>'+
+          '<button class="btn-sm" onclick="openContactsEdit(this)" data-name="'+agentAttr+'">Contact</button>'+
+        '</div></div>';
+    }).join('');
+  };
+
+  function currentSpelling(){
+    const pairs=typeof possibleSpellingPairs==='function'?possibleSpellingPairs(allContacts||[]):[];
+    return typeof contactsSpellingNeedsReview==='function'&&contactsSpellingNeedsReview(pairs)?pairs:[];
+  }
+  function cleanPairHtml(pair){
+    const a=pair[0],b=pair[1],an=displayName(a.agent_name),bn=displayName(b.agent_name);
+    return '<div class="v230-clean-pair"><b>'+escHtml(an)+' ↔ '+escHtml(bn)+'</b><div class="v230-clean-actions">'+
+      '<button class="primary" data-v230-clean="1" data-keep="'+enc(a.agent_name)+'" data-hide="'+enc(b.agent_name)+'">Keep '+escHtml(an)+'</button>'+
+      '<button data-v230-clean="1" data-keep="'+enc(b.agent_name)+'" data-hide="'+enc(a.agent_name)+'">Keep '+escHtml(bn)+'</button>'+
+      '</div></div>';
+  }
+
+  window.renderContactsDupeBanner=function(contacts){
+    const el=document.getElementById('contactsDupeBanner');if(!el)return;
+    const groups=typeof computeDupeGroups==='function'?computeDupeGroups():[];
+    const spelling=currentSpelling();
+    if(!groups.length&&!spelling.length){el.innerHTML='';return;}
+    let html='<div style="background:var(--warning-bg);border:1px solid #FFE69C;border-radius:9px;padding:11px 14px;margin-bottom:14px">'+
+      '<div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start;flex-wrap:wrap"><div><div style="font-size:12.5px;font-weight:800;color:#8A5B00">Name cleanup · '+(groups.length+spelling.length)+' item'+((groups.length+spelling.length)===1?'':'s')+'</div><div style="font-size:11px;color:#765A19;margin-top:3px">Keep the correct spelling and the tracker will hide the bad profile without deleting history.</div></div><button class="btn-sm" onclick="openDupeCleanupModal()">Open all cleanup</button></div>';
+    if(spelling.length)html+='<div class="v230-clean-mini">'+spelling.slice(0,4).map(cleanPairHtml).join('')+(spelling.length>4?'<div style="font-size:10px;color:#765A19;margin-top:6px">+'+(spelling.length-4)+' more in Clean names</div>':'')+'</div>';
+    if(groups.length)html+='<div style="font-size:10.5px;color:#765A19;margin-top:8px"><strong>'+groups.length+' exact duplicate group'+(groups.length===1?'':'s')+'</strong> can be cleaned with one click in Clean names.</div>';
+    html+='</div>';el.innerHTML=html;
+  };
+
+  const priorDupeRender=window.renderDupeCleanupList;
+  window.renderDupeCleanupList=function(){
+    const el=document.getElementById('dupeCleanupList');if(!el)return;
+    const groups=typeof computeDupeGroups==='function'?computeDupeGroups():[];
+    const spelling=typeof possibleSpellingPairs==='function'?possibleSpellingPairs(allContacts||[]):[];
+    let html='<div style="background:#f7f3fc;border:1px solid #d8ccef;border-radius:9px;padding:10px 12px;margin-bottom:12px;font-size:11px;color:#5e4d78"><strong>Cleanup is now actionable.</strong> Exact duplicates can be cleaned as a group. For a likely misspelling, choose the spelling you want to keep. The other profile is hidden from active trackers; history is preserved.</div>';
+    if(groups.length){
+      html+='<div style="font-size:12px;font-weight:800;margin:10px 0 7px">Exact duplicates</div>';
+      html+=groups.map(g=>{const keep=(typeof v129Keeper==='function'?v129Keeper(g):g[0]);return '<div class="v129-dupe-group"><div class="v129-dupe-head"><strong>'+escHtml(displayName(keep.agent_name))+' · '+g.length+' profiles</strong><button class="v129-clean-btn" data-keeper="'+escHtml(keep.agent_name)+'" onclick="v129CleanDuplicateGroup(this.dataset.keeper)">Clean group</button></div>'+g.map(x=>'<div class="v129-dupe-row"><div><strong>'+escHtml(x.agent_name)+'</strong>'+(x.agent_name===keep.agent_name?'<span class="v129-rec">RECOMMENDED KEEP</span>':'')+'<div class="v129-note">'+escHtml([x.phone||'',x.email||'',x.tier?'tier '+x.tier:'',x.relationship_status==='inactive'?'inactive':''].filter(Boolean).join(' · ')||'No extra contact data')+'</div></div><span class="v129-note">'+(x.agent_name===keep.agent_name?'keep':'hide extra')+'</span></div>').join('')+'</div>';}).join('');
+    }
+    if(spelling.length){html+='<div style="font-size:12px;font-weight:800;margin:14px 0 7px">Possible misspellings</div><div style="font-size:10.5px;color:var(--text-3);margin-bottom:6px">Only click Keep when these are actually the same person.</div><div class="v230-clean-mini">'+spelling.slice(0,20).map(cleanPairHtml).join('')+'</div><div style="margin-top:8px"><button class="btn-sm" onclick="markContactsSpellingReviewed()">These are different people / hide suggestions</button></div>';}
+    if(!groups.length&&!spelling.length)html='<div class="no-data">No duplicate or likely spelling issues found — all clean.</div>';
+    el.innerHTML=html;
+  };
+
+  window.v230ResolveSpelling=async function(keepName,hideName){
+    keepName=String(keepName||'').trim();hideName=String(hideName||'').trim();if(!keepName||!hideName||key(keepName)===key(hideName))return;
+    const keep=(allContacts||[]).find(x=>x.agent_name===keepName),bad=(allContacts||[]).find(x=>x.agent_name===hideName);
+    if(!keep||!bad){toast('One of those profiles changed. Reload Contacts and try again.','error');return;}
+    if(!confirm('Keep “'+displayName(keepName)+'” and remove the bad/duplicate profile “'+displayName(hideName)+'” from active trackers?\n\nMissing contact data will be copied to the kept profile. Historical activity is preserved.'))return;
+    try{
+      const fields=['phone','email','address','birthday','brokerage','tier','relationship_type','strategic_partner_category','personal_notes','next_growth_opportunity','growth_opportunity_deadline','last_meaningful_contact_date','next_meeting_date','partner_goals','partner_pain_points','referral_leakage_notes','recovery_plan','satisfaction_rating','lp_outreach_status','nurture_reason','next_rm_followup'];
+      const payload={};fields.forEach(f=>{if(!nonempty(keep[f])&&nonempty(bad[f]))payload[f]=bad[f]});
+      if(!keep.high_potential_flag&&bad.high_potential_flag===true)payload.high_potential_flag=true;
+      if(!keep.competitor_risk_flag&&bad.competitor_risk_flag===true)payload.competitor_risk_flag=true;
+      if(Object.keys(payload).length)await sbProfileWrite('agent_profiles?agent_name=eq.'+encodeURIComponent(keepName),'PATCH',payload);
+
+      const [koRows,boRows]=await Promise.all([
+        sbFetch('agent_assignments?agent_name=ilike.'+encodeURIComponent(keepName)+'&select=*&limit=10').catch(()=>[]),
+        sbFetch('agent_assignments?agent_name=ilike.'+encodeURIComponent(hideName)+'&select=*&limit=10').catch(()=>[])
+      ]);
+      const ko=(koRows||[]).find(r=>key(r.agent_name)===key(keepName))||(koRows||[])[0]||{};
+      const bo=(boRows||[]).find(r=>key(r.agent_name)===key(hideName))||(boRows||[])[0]||{};
+      const rm=(ko.rm||bo.rm||'').trim(),lp=((ko.lp&&ko.lp!=='__REMOVED__'?ko.lp:'')||(bo.lp&&bo.lp!=='__REMOVED__'?bo.lp:'')||'').trim();
+      if(rm||lp){
+        const own={agent_name:keepName,rm:rm||'',lp:lp||'Unassigned',priority:!!(ko.priority||bo.priority),added:!!(ko.added||bo.added),level:ko.level||bo.level||keep.tier||'C'};
+        await sbFetch('agent_assignments?on_conflict=agent_name',{method:'POST',prefer:'resolution=merge-duplicates,return=minimal',body:JSON.stringify(own)}).catch(()=>{});
+        try{cacheOwnershipRow(own)}catch(e){}
+      }
+      if(typeof removeAgentAcrossSharedTrackers==='function')await removeAgentAcrossSharedTrackers(hideName).catch(()=>{});
+      await sbProfileWrite('agent_profiles?agent_name=eq.'+encodeURIComponent(hideName),'PATCH',{relationship_status:'inactive',display_name:(typeof HIDDEN_PROFILE_MARKER!=='undefined'?HIDDEN_PROFILE_MARKER:'__HIDDEN__')});
+      try{if(typeof v77ApplyStrategicPartnerRouting==='function')await v77ApplyStrategicPartnerRouting(keepName,Object.assign({},keep,payload)).catch(()=>{})}catch(e){}
+      toast('Cleanup complete · kept '+displayName(keepName)+' ✓','success',3500);
+      await loadContacts();
+      if(document.getElementById('dupeCleanupModal')?.classList.contains('open'))renderDupeCleanupList();
+    }catch(e){console.warn('v230 spelling cleanup',e);toast('Could not clean that name: '+e.message,'error',5200);}
+  };
+
+  document.addEventListener('click',function(ev){
+    const b=ev.target.closest&&ev.target.closest('[data-v230-clean="1"]');if(!b)return;
+    ev.preventDefault();v230ResolveSpelling(dec(b.dataset.keep),dec(b.dataset.hide));
+  });
+
+  // Co-marketing already lives in Next Growth Opportunity. Add a simple quick toggle to the contact editor,
+  // so users can mark it without hunting through the collapsed Portfolio section.
+  function installCoMarketingToggle(){
+    if(document.getElementById('v230CoMarketingWrap'))return;
+    const rel=document.getElementById('contactStrategicCategoryWrap')?.parentElement;if(!rel)return;
+    const wrap=document.createElement('div');wrap.id='v230CoMarketingWrap';wrap.style.cssText='margin-top:9px;padding-top:8px;border-top:1px solid #e7e1ef';
+    wrap.innerHTML='<label style="display:flex;gap:8px;align-items:center;font-size:11px;font-weight:700;color:var(--text-2);cursor:pointer"><input id="v230CoMarketing" type="checkbox"> Co-marketing relationship</label><div style="font-size:10px;color:var(--text-4);margin-top:3px">Shows a Co-marketing badge on the contact list and keeps the opportunity visible in Portfolio notes.</div>';
+    rel.appendChild(wrap);
+    document.getElementById('v230CoMarketing').addEventListener('change',function(){
+      const ta=document.getElementById('contactGrowthOpp');if(!ta)return;let v=String(ta.value||'');
+      if(this.checked&&!/\bco[\s-]?marketing\b/i.test(v))ta.value=(v?v.replace(/\s*[,;|]\s*$/,'')+'; ':'')+'Co-marketing';
+      if(!this.checked)ta.value=v.replace(/(^|\s*[,;|]\s*)Co[\s-]?marketing(?=\s*[,;|]|$)/ig,'$1').replace(/^\s*[,;|]\s*|\s*[,;|]\s*$/g,'').trim();
+    });
+  }
+  function syncCoMarketingToggle(){const cb=document.getElementById('v230CoMarketing'),ta=document.getElementById('contactGrowthOpp');if(cb&&ta)cb.checked=/\bco[\s-]?marketing\b/i.test(String(ta.value||''));}
+  const oldOpenContact=window.openContactsEdit;
+  if(typeof oldOpenContact==='function'&&!oldOpenContact.__v230){window.openContactsEdit=function(){const r=oldOpenContact.apply(this,arguments);setTimeout(syncCoMarketingToggle,0);return r};window.openContactsEdit.__v230=true;}
+  const oldPortfolio=window.openPortfolioNotes;
+  if(typeof oldPortfolio==='function'&&!oldPortfolio.__v230){window.openPortfolioNotes=function(){const r=oldPortfolio.apply(this,arguments);setTimeout(syncCoMarketingToggle,0);return r};window.openPortfolioNotes.__v230=true;}
+
+  function init(){installControls();installCoMarketingToggle();try{if(typeof renderContactsDupeBanner==='function')renderContactsDupeBanner(allContacts||[])}catch(e){}}
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(init,50),{once:true});else setTimeout(init,0);
+  setTimeout(init,800);
+})();
+</script>
+
+
+<style id="v231-meaningful-modal-fix-css">
+/* v231 — Meaningful Conversation / Portfolio Execution must stay interactive and scrollable. */
+#wp37PartnerCheckinModal{pointer-events:none}
+#wp37PartnerCheckinModal.open{pointer-events:auto!important}
+#wp37PartnerCheckinModal .modal-box{
+  max-height:calc(100vh - 32px)!important;
+  overflow-y:auto!important;
+  overscroll-behavior:contain;
+  -webkit-overflow-scrolling:touch;
+  touch-action:pan-y;
+}
+</style>
+
 </body>
 </html>
