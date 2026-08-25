@@ -1,19 +1,17 @@
    <!DOCTYPE html>
 <!-- v217 4-WEEK BUTTON HANDLER FIX · 2026-08-21 -->
 <!-- v226 PERMANENT ROSTER REMOVAL + BULK DELETE · 2026-08-21 -->
-<!-- v228 FULL FUNCTIONAL SWEEP · 2026-08-25 · popup logging, navigation recovery, rank cleanup -->
 
 <!-- Cleanup pass: floating Page Guide + stale developer build logs removed; active workflow logic preserved. -->
 <!-- v140: fixes Step 2 transaction renderer race; saved/open CTC and New Contract tasks are no longer erased after successful distribution -->
 <!-- v137: Amanda daily snapshot restored + audit fixes; current operating goals aligned, responsive snapshot, duplicate activity icons corrected -->
 <!-- v139: save/log integrity audit; preserve follow-ups until confirmed save, harden offline replay, Face Time and handled-note history -->
 <!-- v138: transaction visibility guard; newly-added CTC/New Contract calls force-fresh and always stay visible in Step 2 -->
-<!-- v238: hardened Not-a-prospect action + scrubbed blocked personal phone from agent/prospect data; retains v237 RM team goal labeling. -->
+<!-- v136: C-to-B Director review workflow added; Amanda can send evidence-based growth candidates to Nyny directly from Today -->
 <!-- v135: Amanda Relationship Work ownership fix; all queues now exclude Nyny-owned/strategic/A-B-Channel relationships consistently -->
 <!-- v136 AMANDA SIMPLICITY PASS · 2026-08-20 -->
 <html lang="en">
 <head>
-<!-- v236: Director count scope clarified; quiet live sync; permanent tombstones removed from inactive counts; prospecting follow-ups infer Amanda work owner; coaching upgraded -->
 <meta content="no-cache, no-store, must-revalidate" http-equiv="Cache-Control"/>
 <meta content="no-cache" http-equiv="Pragma"/>
 <meta content="0" http-equiv="Expires"/>
@@ -1173,7 +1171,7 @@ body.rm-director-route .tabs,body.rm-director-route .who-bar{display:none!import
 </div>
 <div aria-label="RM Tracker navigation" class="tabs">
 <div class="nav-group-label">DAILY</div>
-<div class="tab active" data-tab="week" onclick="switchTab(\'week\')" title="Amanda\'s daily home base"><span class="nav-num">01</span><span>Today</span></div>
+<div class="tab active" data-tab="week" onclick="switchTab('week')" title="Amanda\'s daily home base"><span class="nav-num">01</span><span>Today</span></div>
 <div class="tab" data-tab="log" onclick="switchTab('log')" title="Record calls, texts, meetings and outcomes"><span class="nav-num">02</span><span>Log Activity</span></div>
 <div class="nav-group-label">RELATIONSHIPS</div>
 <div class="tab portfolio-priority-tab" data-tab="portfolio" onclick="switchTab('portfolio')" title="Partner Health, portfolio movement, growth opportunities and cadence"><span class="nav-num">03</span><span>Portfolio</span><span class="nav-priority-dot">●</span></div>
@@ -1553,7 +1551,7 @@ body.rm-director-route .tabs,body.rm-director-route .who-bar{display:none!import
 <div><span class="card-title">New Realtor Meeting Conversion · Weeks 1–4</span> <span class="card-sub" id="onboardingSub"></span></div>
 </div>
 <div style="background:var(--surface-2);border-radius:var(--radius-sm);padding:9px 12px;margin-bottom:12px;font-size:12px;line-height:1.4;color:var(--text-2)">
-<strong>This is required conversion work, not maintenance.</strong> Every NEW Realtor meeting starts one intentional follow-up each week for 4 weeks. All four touches are required and must be logged so the relationship keeps moving after the first meeting.
+<strong>This is required conversion work, not maintenance.</strong> Every NEW Realtor meeting logged from Aug. 21 forward gets one intentional follow-up every week for all 4 weeks. All four touches are required and must be logged. Meetings before Aug. 21 remain in history but do not create overdue work in this new conversion workbench.
     </div>
 <div id="onboardingList" style="max-height:320px;overflow-y:auto"></div>
 </div>
@@ -1756,19 +1754,26 @@ body.rm-director-route .tabs,body.rm-director-route .who-bar{display:none!import
 </div>
 <div class="form-row one">
 <div class="field intake-block" id="intakeBlock">
-<div class="intake-block-title">New Realtor Meeting — Quick Day-Of Follow-Through</div>
+<div class="intake-block-title">New Realtor Meeting — Required Meeting + Day-Of Checklist</div>
 <div class="v161-first-meeting-standard">
 <div class="v161-standard-title">FIRST MEETING STANDARD · 20–40 MINUTES MAX</div>
-<div class="v161-standard-rule"><strong>Format:</strong> In-office or structured coffee meeting. <strong>No lunch for a first meeting.</strong> Use the New Realtor Meeting script for the Top 3 needs, past lender pain points, Standards of Service, office/team introduction, and referral conversation. Those talking points do <strong>not</strong> need separate tracker checkboxes.</div>
+<div class="v161-standard-rule"><strong>Format:</strong> In-office or structured coffee meeting. <strong>No lunch for a first meeting.</strong> In-office meetings include the office tour + team introduction.</div>
 </div>
-<div style="font-size:11px;color:var(--text-3);margin:0 0 10px"><strong>This checklist is a quick reminder only.</strong> Amanda can save the meeting and leave this screen even if every box is not checked.</div>
 <label class="intake-check"><input id="intakeMeetingFormat" onchange="updateIntakeProgress()" type="checkbox"/> Followed the first-meeting format: in-office or structured coffee, 20–40 minutes max; no lunch</label>
-<label class="intake-check"><input id="intakeContactConfirm" onchange="updateIntakeProgress()" type="checkbox"/> Confirmed phone, email and mailing/contact information</label>
+<label class="intake-check"><input id="intakeTourTeam" onchange="updateIntakeProgress()" type="checkbox"/> If in-office: completed office tour + introduced the team (check N/A if meeting was coffee)</label>
+<label class="intake-check"><input id="intakeTop3" onchange="updateIntakeProgress()" type="checkbox"/> Asked and documented: “What are the biggest things you need a lending partner to get right?” and narrowed it to their Top 3</label>
+<label class="intake-check"><input id="intakePainQuestion" onchange="updateIntakeProgress()" type="checkbox"/> Asked: “Have you ever had a lender hurt a deal, create extra stress, or make you look bad? What happened?”</label>
+<label class="intake-check"><input id="intakeStandards" onchange="updateIntakeProgress()" type="checkbox"/> Reviewed Standards of Service and tied our process directly back to their Top 3 needs</label>
+<label class="intake-check"><input id="intakeContactConfirm" onchange="updateIntakeProgress()" type="checkbox"/> Confirmed phone, email and mailing address/contact information</label>
 <label class="intake-check"><input id="intakeOpportunityAsk" onchange="updateIntakeProgress()" type="checkbox"/> Asked directly for the next buyer opportunity / commitment to give our team a shot</label>
 <label class="intake-check"><input id="intakeRetainedReport" onchange="updateIntakeProgress()" type="checkbox"/> Added agent to Retained Realtor Report</label>
-<label class="intake-check"><input id="intakeSaEmail" onchange="updateIntakeProgress()" type="checkbox"/> Completed post-meeting follow-through: Sa Team email sent with Nyny CC'd</label>
-<label class="intake-check"><input id="intakeSystemsFollowup" onchange="updateIntakeProgress()" type="checkbox"/> Completed applicable setup/follow-through (HomeBot, ListReports, Total Expert and/or group text)</label>
-<div id="intakeProgress" style="font-size:11px;color:var(--text-3);margin-top:6px;font-weight:500">0 of 6 checked · optional</div>
+<label class="intake-check"><input id="intakeSaEmail" onchange="updateIntakeProgress()" type="checkbox"/> Sent post-meeting email from Sa Team — Nyny CC'd</label>
+<label class="intake-check"><input id="intakeHomebot" onchange="updateIntakeProgress()" type="checkbox"/> Added agent to HomeBot</label>
+<label class="intake-check"><input id="intakeListreports" onchange="updateIntakeProgress()" type="checkbox"/> Added agent to ListReports</label>
+<label class="intake-check"><input id="intakeTotalExpert" onchange="updateIntakeProgress()" type="checkbox"/> Added agent to Total Expert</label>
+<label class="intake-check"><input id="intakeGroupText" onchange="updateIntakeProgress()" type="checkbox"/> Sent follow-up group text introducing Nyny</label>
+<label class="intake-check"><input id="intakeReferralAsk" onchange="updateIntakeProgress()" type="checkbox"/> Asked for the opportunity, walked through how they'll refer clients to us (see How to Refer in Scripts + Training), and CC'd the Loan Partner on the same post-meeting email above</label>
+<div id="intakeProgress" style="font-size:11px;color:#B85B00;margin-top:6px;font-weight:500">0 of 7 complete</div>
 </div>
 </div>
 <button class="btn-primary" id="logBtn" onclick="logActivity()">Log activity</button>
@@ -2115,16 +2120,6 @@ body.rm-director-route .tabs,body.rm-director-route .who-bar{display:none!import
 <option value="noemail">Missing email</option>
 <option value="nophone">Missing phone</option>
 </select>
-</div>
-<div id="v234ContactsBulkBar" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:-2px 0 12px;padding:9px 10px;border:1px solid #DED8EF;border-radius:9px;background:#FAF8FF">
-  <strong style="font-size:11.5px;color:var(--text-2)">Bulk cleanup</strong>
-  <button type="button" class="btn-sm" onclick="v234SelectVisibleContacts()">Select visible</button>
-  <button type="button" class="btn-sm" onclick="v234ClearContactSelection()">Clear</button>
-  <span id="v234ContactSelectedCount" style="font-size:11px;color:var(--text-3);min-width:68px">0 selected</span>
-  <span style="flex:1"></span>
-  <button type="button" class="btn-sm" onclick="v234BulkRemoveFromActive(this)">Remove selected from active</button>
-  <button type="button" class="btn-sm" style="color:#9F3F39;border-color:#E3B9B5;background:#FFF8F7" onclick="v234BulkPermanentRemove(this)">Permanently remove selected</button>
-  <div style="flex-basis:100%;font-size:10px;color:var(--text-4);line-height:1.45">Use <strong>Permanent remove</strong> for bad spellings/duplicates you never want back. History stays preserved. For exact same-name duplicate rows, use <strong>Clean names</strong> so the tracker can protect the correct keeper.</div>
 </div>
 <div id="contactsDupeBanner"></div>
 <div id="contacts-list"><div class="no-data">Loading contacts...</div></div>
@@ -3560,34 +3555,9 @@ function rmConnectionErrorKind(err){
   return "error";
 }
 
-// v238: never treat Nyny's personal number as an agent/prospect phone.
-// Keep the digits split so the personal number is not stored as a literal anywhere in this tracker file.
-const RM_BLOCKED_AGENT_PHONE_DIGITS=["614","804","6406"].join("");
-function rmPhoneDigits(v){return String(v==null?"":v).replace(/\D/g,"").replace(/^1(?=\d{10}$)/,"");}
-function rmIsBlockedAgentPhone(v){return rmPhoneDigits(v)===RM_BLOCKED_AGENT_PHONE_DIGITS;}
-function rmScrubBlockedAgentPhone(value){
-  if(Array.isArray(value)){value.forEach(rmScrubBlockedAgentPhone);return value;}
-  if(value&&typeof value==="object"){
-    Object.keys(value).forEach(k=>{
-      const v=value[k];
-      if(/^(phone|phone_number|phonenumber)$/i.test(k)&&rmIsBlockedAgentPhone(v))value[k]=null;
-      else if(v&&typeof v==="object")rmScrubBlockedAgentPhone(v);
-    });
-  }
-  return value;
-}
-function rmScrubBlockedPhoneFromWriteBody(options){
-  if(!options||!options.body)return;
-  try{
-    if(typeof options.body==="string"){const x=JSON.parse(options.body);rmScrubBlockedAgentPhone(x);options.body=JSON.stringify(x);}
-    else if(typeof options.body==="object")rmScrubBlockedAgentPhone(options.body);
-  }catch(e){}
-}
-
 // FIX (2026-08-20): use the same 20s timeout everywhere. The previous 7s health check contradicted
 // the proven 15s+ Supabase response time and created false "connection issue" warnings.
 async function sbFetch(path,options={}){
-  rmScrubBlockedPhoneFromWriteBody(options);
   const originalPath=path;
   const originalOptions={...options};
   const controller=new AbortController();
@@ -3628,7 +3598,6 @@ async function sbFetch(path,options={}){
     if(Array.isArray(body) && String(path||"").startsWith("amanda_activities")){
       body=body.filter(r=>String(r&&r.agent_name||"").trim().toUpperCase()!=="__TEST__");
     }
-    rmScrubBlockedAgentPhone(body);
     return body;
   }catch(err){
     if(err&&err.name==="AbortError"){
@@ -3790,27 +3759,33 @@ function fmtDateTime(d){
 }
 
 
-const INTAKE_CHECK_IDS=["intakeMeetingFormat","intakeContactConfirm","intakeOpportunityAsk","intakeRetainedReport","intakeSaEmail","intakeSystemsFollowup"];
+const INTAKE_CHECK_IDS=["intakeMeetingFormat","intakeTourTeam","intakeTop3","intakePainQuestion","intakeStandards","intakeContactConfirm","intakeOpportunityAsk","intakeRetainedReport","intakeSaEmail","intakeHomebot","intakeListreports","intakeTotalExpert","intakeGroupText","intakeReferralAsk"];
 const INTAKE_LABELS={
   intakeMeetingFormat:"Follow first-meeting format: office/coffee, 20–40 min, no lunch",
+  intakeTourTeam:"Office tour + meet team when in-office",
+  intakeTop3:"Ask and document the Top 3 lending-partner needs",
+  intakePainQuestion:"Ask what a lender has done that hurt the experience",
+  intakeStandards:"Tie Standards of Service to their Top 3",
   intakeContactConfirm:"Confirm contact information",
   intakeOpportunityAsk:"Ask directly for the next buyer opportunity",
   intakeRetainedReport:"Add agent to Retained Realtor Report",
   intakeSaEmail:"Send post-meeting email from Sa Team (CC Nyny)",
-  intakeSystemsFollowup:"Complete applicable systems / group-text follow-through"
+  intakeHomebot:"Add agent to HomeBot",
+  intakeListreports:"Add agent to ListReports",
+  intakeTotalExpert:"Add agent to Total Expert",
+  intakeGroupText:"Send follow-up group text introducing Nyny"
 };
-// Legacy constants are kept only so older records can be released from the former blocking checklist.
 const PENDING_PREFIX="⏳ INTAKE PENDING ";
-const COMPLETE_TAG="✅ New Realtor Meeting quick follow-through complete";
+const COMPLETE_TAG="✅ New Realtor Meeting standard complete: Structured meeting ✓ · Top 3 documented ✓ · pain-point question ✓ · Standards of Service tied back ✓ · contact info confirmed ✓ · opportunity asked ✓ · Retained Report ✓ · Sa Email+CC Nyny ✓ · HomeBot ✓ · ListReports ✓ · Total Expert ✓ · Group Text ✓";
 let openIntake=null; // {id, agent_name, act_date, outcome, follow_up_date, freeNotes, states}
 
 function getIntakeStates(){
   const s={};
-  INTAKE_CHECK_IDS.forEach(id=>{const el=document.getElementById(id);s[id]=!!(el&&el.checked);});
+  INTAKE_CHECK_IDS.forEach(id=>{s[id]=document.getElementById(id).checked;});
   return s;
 }
 function setIntakeStates(states){
-  INTAKE_CHECK_IDS.forEach(id=>{const el=document.getElementById(id);if(el)el.checked=!!(states&&states[id]);});
+  INTAKE_CHECK_IDS.forEach(id=>{document.getElementById(id).checked=!!(states&&states[id]);});
   updateIntakeProgress(true);
 }
 function allIntakeDone(states){
@@ -3843,54 +3818,76 @@ function toggleIntakeBlock(){
 function updateIntakeProgress(skipPersist){
   let done=0;
   INTAKE_CHECK_IDS.forEach(id=>{
-    const el=document.getElementById(id);if(!el)return;
+    const el=document.getElementById(id);
     const label=el.closest(".intake-check");
-    if(el.checked){done++;if(label)label.classList.add("done");}
-    else if(label){label.classList.remove("done");}
+    if(el.checked){done++;label.classList.add("done");}
+    else{label.classList.remove("done");}
   });
   const prog=document.getElementById("intakeProgress");
   const total=INTAKE_CHECK_IDS.length;
-  if(prog){
-    prog.textContent=done+" of "+total+" checked · optional";
-    prog.style.color=done===total?"#4E3D8A":"var(--text-3)";
+  if(done===total){
+    prog.textContent="✓ All "+total+" complete — ready to save";
+    prog.style.color="#4E3D8A";
+  }else{
+    prog.textContent=done+" of "+total+" complete";
+    prog.style.color="#B85B00";
   }
-  // v227: this reminder never creates or persists a blocking pending checklist.
+  // If resuming an open checklist, persist progress on every click so it survives refresh / device switch
+  if(openIntake&&!skipPersist){
+    const states=getIntakeStates();
+    openIntake.states=states;
+    const partialNotes=buildPendingNotes(states,openIntake.freeNotes);
+    sbFetch("amanda_activities?id=eq."+openIntake.id,{method:"PATCH",prefer:"return=minimal",body:JSON.stringify({notes:partialNotes})}).catch(e=>console.warn("Checklist progress save failed:",e));
+  }
 }
 
 function resetIntakeChecklist(){
-  INTAKE_CHECK_IDS.forEach(id=>{const el=document.getElementById(id);if(el)el.checked=false;});
+  INTAKE_CHECK_IDS.forEach(id=>{document.getElementById(id).checked=false;});
   updateIntakeProgress(true);
 }
 
 // Checks Supabase for any "New Realtor Meeting" still tagged PENDING. If found, locks the whole
 // Log Activity tab (and shows a banner on every tab) until that single checklist is finished.
 async function checkOpenIntake(){
-  // v227: legacy pending checklists must never lock navigation or activity logging.
-  openIntake=null;
   try{
     const rows=await sbFetch("amanda_activities?act_type=eq."+encodeURIComponent("New Realtor Meeting")+"&order=act_date.desc&limit=30");
-    const pending=(rows||[]).filter(r=>r.notes&&r.notes.startsWith(PENDING_PREFIX));
-    await Promise.all(pending.map(async r=>{
-      const parsed=parseIntakeNotes(r.notes);
-      const clean=(parsed&&parsed.freeNotes?parsed.freeNotes:"").trim();
-      try{await sbFetch("amanda_activities?id=eq."+r.id,{method:"PATCH",prefer:"return=minimal",body:JSON.stringify({notes:clean,edited_at:new Date().toISOString()})});}catch(e){console.warn("Legacy checklist release failed",r.id,e);}
-    }));
-  }catch(e){console.warn("Legacy intake release check failed (non-critical):",e);}
+    const pendingRow=rows.find(r=>r.notes&&r.notes.startsWith(PENDING_PREFIX));
+    if(pendingRow){
+      const parsed=parseIntakeNotes(pendingRow.notes);
+      openIntake={id:pendingRow.id,agent_name:pendingRow.agent_name,act_date:pendingRow.act_date,outcome:pendingRow.outcome,follow_up_date:pendingRow.follow_up_date,freeNotes:parsed?parsed.freeNotes:"",states:parsed?parsed.states:{}};
+    }else{
+      openIntake=null;
+    }
+  }catch(e){
+    console.warn("checkOpenIntake failed (non-critical):",e);
+  }
   applyLockState();
 }
 
 function applyLockState(){
-  // v227: Amanda is never locked into a checklist. Navigation and Today remain available.
-  openIntake=null;
   const banner=document.getElementById("globalLockBanner");
   const lockedCard=document.getElementById("logLockedCard");
   const normalFields=document.getElementById("logNormalFields");
   const btn=document.getElementById("logBtn");
-  if(banner)banner.style.display="none";
-  if(lockedCard)lockedCard.style.display="none";
-  if(normalFields)normalFields.style.display="block";
-  if(btn){btn.disabled=false;btn.textContent="Log activity";btn.onclick=logActivity;}
-  toggleIntakeBlock();
+
+  if(openIntake){
+    banner.style.display="flex";
+    banner.innerHTML='<span>🔒 Open checklist: <strong>'+properCase(openIntake.agent_name)+'</strong> — met '+fmtDate(openIntake.act_date)+'.</span><button class="lock-resume-btn" onclick="switchTab(\'log\')">Resume checklist</button>';
+    lockedCard.style.display="block";
+    document.getElementById("logLockedSub").textContent="Great job logging your meeting with "+properCase(openIntake.agent_name)+"! Before you log anything else, there are a few quick onboarding steps below. These make sure they get set up correctly and nothing falls through the cracks.";
+    normalFields.style.display="none";
+    setIntakeStates(openIntake.states);
+    document.getElementById("intakeBlock").classList.add("show");
+    btn.textContent="Mark checklist complete & continue";
+    btn.onclick=completeIntakeChecklist;
+  }else{
+    banner.style.display="none";
+    lockedCard.style.display="none";
+    normalFields.style.display="block";
+    toggleIntakeBlock();
+    btn.textContent="Log activity";
+    btn.onclick=logActivity;
+  }
 }
 
 async function completeIntakeChecklist(){
@@ -5306,12 +5303,6 @@ function openAmandaMode(){
 function lockDirectorView(){if(directorMode())switchTab("daniel");else switchTab("week");}
 
 function switchTab(name){
-  // v227: sidebar navigation always wins over stale workflow overlays.
-  if(name!=="log"){
-    const pm=document.getElementById("wp37PartnerCheckinModal");
-    if(pm){pm.classList.remove("open");pm.style.removeProperty("display");pm.style.removeProperty("z-index");}
-    try{wp37PendingPartnerSave=null;}catch(e){}
-  }
   if(name==="daniel"&&!directorMode()){switchTab("week");return;}
   const target=document.getElementById("view-"+name);
   if(!target){console.warn("Unknown tracker tab:",name);return;}
@@ -6163,12 +6154,11 @@ async function loadWeek(){
   try{
     const now=new Date();
     const monthStart=now.getFullYear()+"-"+String(now.getMonth()+1).padStart(2,"0")+"-01";
-    const monthEnd=localDateStr(new Date(now.getFullYear(),now.getMonth()+1,0));
     const yearStart=now.getFullYear()+"-04-01";// April — role start date
     const todayStr=today();
     const[weekActsLoaded,mtdActs,ytdActs,dailyActs,everMeetings]=await Promise.all([
       sbFetch("amanda_activities?select=act_type,outcome,agent_name,notes&act_date=gte."+week.start+"&act_date=lte."+week.end),
-      sbFetch("amanda_activities?select=act_type,outcome,agent_name,notes&act_date=gte."+monthStart+"&act_date=lte."+monthEnd),
+      sbFetch("amanda_activities?select=act_type,outcome,agent_name,notes&act_date=gte."+monthStart),
       sbFetch("amanda_activities?select=act_type,outcome,agent_name,notes&act_date=gte."+yearStart),
       sbFetch("amanda_activities?select=act_type,outcome,agent_name,notes&act_date=eq."+todayStr),
       sbFetch("amanda_activities?select=agent_name&act_type=eq.New Realtor Meeting&limit=2000").catch(()=>[])
@@ -6482,7 +6472,7 @@ async function getReferralCredit(name){
 }
 
 async function logActivity(){
-  // Legacy intake guard retained for old records; v227+ never creates a blocking intake.
+  // GUARD: cannot log anything new while a checklist is open — this is the whole point
   if(openIntake){
     toast("Finish your open checklist for "+openIntake.agent_name+" first — nothing else can be logged.","error");
     switchTab("log");
@@ -6594,8 +6584,8 @@ async function logActivity(){
   }
   
   let finalNotes=notes;
-  if(isNewRealtorMeeting&&intakeComplete){
-    finalNotes=notes?COMPLETE_TAG+"\n\n"+notes:COMPLETE_TAG;
+  if(isNewRealtorMeeting){
+    finalNotes=intakeComplete?(notes?COMPLETE_TAG+"\n\n"+notes:COMPLETE_TAG):buildPendingNotes(intakeStates,notes);
   }
   
   btn.textContent="Saving...";
@@ -6620,14 +6610,20 @@ async function logActivity(){
     updateNotesRequirementHint();
     vibrateSaved();
 
-    if(outcome==="Meeting Scheduled"){
-      toast("YES! Meeting booked with "+properCase(agentName)+"! Go get them!","success",5000);
-    }else if(isNewRealtorMeeting){
-      toast("New Realtor Meeting logged successfully.","success");
+    if(isNewRealtorMeeting&&!intakeComplete){
+      const row=insertedRow;
+      toast("Meeting logged for "+agentName+"! Just a few quick steps left below.","success");
+      if(row){
+        openIntake={id:row.id,agent_name:agentName,act_date:date,outcome,follow_up_date:followupDate,freeNotes:notes,states:intakeStates};
+      }
     }else{
-      toast("Logged successfully","success");
+      if(outcome==="Meeting Scheduled"){
+        toast("YES! Meeting booked with "+properCase(agentName)+"! Go get them!","success",5000);
+      }else{
+        toast("Logged successfully","success");
+      }
+      resetIntakeChecklist();
     }
-    resetIntakeChecklist();
     applyLockState();
     initAutocomplete();
     await rmRefreshAfterMutation("activity saved");
@@ -7682,7 +7678,13 @@ async function ccSave(){
 
     if(outcome === "Meeting Scheduled"){
       msg.style.color='var(--success)';
-      msg.textContent = '✓ '+name+' — cold call + meeting scheduled. Stay on Today; log the New Realtor Meeting after it is held.';
+      msg.textContent = '✓ '+name+' — cold call logged! Go to Log Activity to log the New Realtor Meeting.';
+      // Pre-fill the log form and switch
+      setTimeout(()=>{
+        document.getElementById('agentInput').value = name;
+        document.getElementById('activityType').value = 'New Realtor Meeting';
+        switchTab('log');
+      }, 1500);
     } else if(isDNC){
       msg.style.color='var(--danger)';
       msg.textContent = '✓ '+name+' — logged & marked Do Not Contact';
@@ -7867,7 +7869,7 @@ function parseBirthdayMD(str){
 // current relationship intelligence + a dated next move are captured in agent_profiles.
 let wp37PendingPartnerSave=null;
 let wp37PartnerGateBypass=false;
-const WP37_SKIP_TYPES=new Set(["CTC Call","Under Contract Call","Birthday Outreach","Holiday Outreach","Agent Appreciation","New Realtor Meeting"]);
+const WP37_SKIP_TYPES=new Set(["CTC Call","Under Contract Call","Birthday Outreach","Holiday Outreach","Agent Appreciation"]);
 // v74: real partner conversations still require the Partner Check-In, but honest “Not discussed today” answers are allowed and preserve prior portfolio intelligence. Quick referral-only logs remain optional.
 // v72: these are useful relationship moments, but should not force a five-field portfolio interview.
 // Amanda can still complete the Partner Check-In when she learned something worth capturing.
@@ -7886,13 +7888,10 @@ function wp37ClearCheckin(){
   wp37LeakageChanged();
 }
 function wp37CancelPartnerCheckin(){
-  const pending=wp37PendingPartnerSave?{...wp37PendingPartnerSave}:null;
   const m=document.getElementById("wp37PartnerCheckinModal");
   if(m){m.classList.remove("open");m.style.removeProperty("display");m.style.removeProperty("z-index");}
   wp37PendingPartnerSave=null;
-  // Only return to the outreach modal when Portfolio Execution was launched from that modal.
-  // Full Log Activity cancellation simply closes the gate so Amanda can navigate normally.
-  if(pending&&pending.resumeKind==="v198-preflight")try{v175Open("v175OutreachModal")}catch(e){}
+  try{v175Open("v175OutreachModal")}catch(e){}
 }
 async function wp37NeedsPartnerCheckin(agentName,actType,outcome,owner){
   if(wp37PartnerGateBypass||owner!=="Amanda"||!agentName||WP37_SKIP_TYPES.has(actType)||!WP37_MEANINGFUL_OUTCOMES.has(outcome))return false;
@@ -12373,7 +12372,7 @@ function v29ProspectRow(t,isFirst){
   return '<div style="display:flex;justify-content:space-between;gap:8px;align-items:center;padding:6px 0;border-bottom:1px solid var(--border-light)">'
     +'<div style="min-width:0;flex:1"><div style="display:flex;gap:5px;align-items:center;flex-wrap:wrap"><span style="font-size:11.5px;font-weight:760;color:var(--text-1)">'+v21Esc(t.name||p.name||"")+'</span>'+org+(isFirst?'<span style="font-size:8.5px;font-weight:850;padding:2px 6px;border-radius:10px;background:var(--brand);color:#fff">NEXT UP</span>':'')+'</div>'
     +'<div style="font-size:9.8px;color:var(--text-3);margin-top:1px">'+v21Esc(p.reason||"Ready for prospecting")+(phone?' · '+v21Esc(phone):'')+'</div></div>'
-    +'<span style="display:flex;gap:5px;align-items:center;flex-shrink:0"><button data-rm-prospect-action="exclude" data-agent="'+encodeURIComponent(t.name||p.agent_name||p.name||'')+'" style="font-size:9px;padding:5px 7px;background:#fff;color:var(--text-3);border:1px solid var(--border);border-radius:6px;cursor:pointer;font-family:inherit;white-space:nowrap" title="Not a true prospect? Remove them and automatically pull the next eligible name">Not a prospect</button><button data-rm-action="outreach" data-agent="'+encodeURIComponent(t.name||p.agent_name||p.name||'')+'" style="font-size:9.5px;padding:5px 8px;background:var(--brand);color:#fff;border:0;border-radius:6px;cursor:pointer;font-family:inherit;white-space:nowrap" title="Open the cold-call logging workflow">Start call</button></span></div>';
+    +'<span style="display:flex;gap:5px;align-items:center;flex-shrink:0"><button onclick="openProspectExcludeModal(\''+safe+'\','+(p.id||'null')+')" style="font-size:9px;padding:5px 7px;background:#fff;color:var(--text-3);border:1px solid var(--border);border-radius:6px;cursor:pointer;font-family:inherit;white-space:nowrap" title="Not a true prospect? Remove them and automatically pull the next eligible name">Not a prospect</button><button onclick="v29OpenProspect(\''+safe+'\',\''+wpJs(phone)+'\')" style="font-size:9.5px;padding:5px 8px;background:var(--brand);color:#fff;border:0;border-radius:6px;cursor:pointer;font-family:inherit;white-space:nowrap" title="Open the correct logging workflow for this call">Start call</button></span></div>';
 }
 function v108AgentBucketMeta(t){
   const src=String((t&&t.workBucket)||(t&&t.item&&t.item.source)||"Relationship");
@@ -12405,7 +12404,7 @@ function v109RenderNewMeetingPush(planned,date,monthActs){
   const prospects=(planned||[]).filter(t=>t.kind==="prospect").slice(0,5);
   const pct=Math.min(100,Math.round(teamNew/target*100));
   const rows=prospects.length?prospects.map((t,i)=>v29ProspectRow(t,i===0)).join(""):'<div style="font-size:10.5px;color:var(--text-3);padding:9px 0">No call-ready prospect names are loaded right now. Use warm handoffs and relationship conversations above to ask for meetings, then add fresh prospects in New Agents.</div>';
-  host.innerHTML='<div style="padding:9px 12px;background:#EFF7F1;border-bottom:1px solid #CFE1D3;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap"><div><div style="font-size:11px;font-weight:850;color:#2F6847;text-transform:uppercase;letter-spacing:.35px">RM TEAM MONTHLY NEW-MEETING GOAL · '+teamNew+' / '+target+'</div><div style="font-size:10px;color:#567062;margin-top:2px">We need '+remaining+' more this month. Today’s working target: <strong>'+daily+' meeting'+(daily!==1?'s':'')+' on the calendar</strong>. Protect the warm opportunities above, then work the best new names below. Every positive conversation gets a direct meeting ask; if there is a buyer opportunity, ask for the introduction and log the new lead.</div></div><span style="font-size:10px;font-weight:800;color:#2F6847;background:#fff;border:1px solid #CFE1D3;border-radius:999px;padding:5px 8px">'+pct+'% to goal</span></div><div class="v109-meeting-grid"><div class="v109-pace"><div class="v109-big">'+remaining+'</div><div style="font-size:10px;font-weight:800;color:#355F45;margin-top:3px">MORE NEEDED</div><div style="height:6px;background:#E3ECE5;border-radius:99px;overflow:hidden;margin:9px 0 7px"><i style="display:block;height:100%;width:'+pct+'%;background:#5E8A6A"></i></div><div style="font-size:9.8px;color:#657268;line-height:1.45">'+days+' weekday'+(days!==1?'s':'')+' left in the month · pace ≈ '+(remaining?(remaining/days).toFixed(1):'0')+' per workday.</div></div><div><div style="font-size:10px;font-weight:800;color:#355F45;margin-bottom:2px">BEST NEW NAMES FOR TODAY</div><div style="font-size:9.8px;color:#6A766D;margin-bottom:3px">These are the cold/new names after the warmer meeting paths above. Start at the top.</div>'+rows+'</div></div>';
+  host.innerHTML='<div style="padding:9px 12px;background:#EFF7F1;border-bottom:1px solid #CFE1D3;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap"><div><div style="font-size:11px;font-weight:850;color:#2F6847;text-transform:uppercase;letter-spacing:.35px">Team new-meeting goal · '+teamNew+' / '+target+'</div><div style="font-size:10px;color:#567062;margin-top:2px">We need '+remaining+' more this month. Today’s working target: <strong>'+daily+' meeting'+(daily!==1?'s':'')+' on the calendar</strong>. Protect the warm opportunities above, then work the best new names below. Every positive conversation gets a direct meeting ask; if there is a buyer opportunity, ask for the introduction and log the new lead.</div></div><span style="font-size:10px;font-weight:800;color:#2F6847;background:#fff;border:1px solid #CFE1D3;border-radius:999px;padding:5px 8px">'+pct+'% to goal</span></div><div class="v109-meeting-grid"><div class="v109-pace"><div class="v109-big">'+remaining+'</div><div style="font-size:10px;font-weight:800;color:#355F45;margin-top:3px">MORE NEEDED</div><div style="height:6px;background:#E3ECE5;border-radius:99px;overflow:hidden;margin:9px 0 7px"><i style="display:block;height:100%;width:'+pct+'%;background:#5E8A6A"></i></div><div style="font-size:9.8px;color:#657268;line-height:1.45">'+days+' weekday'+(days!==1?'s':'')+' left in the month · pace ≈ '+(remaining?(remaining/days).toFixed(1):'0')+' per workday.</div></div><div><div style="font-size:10px;font-weight:800;color:#355F45;margin-bottom:2px">BEST NEW NAMES FOR TODAY</div><div style="font-size:9.8px;color:#6A766D;margin-bottom:3px">These are the cold/new names after the warmer meeting paths above. Start at the top.</div>'+rows+'</div></div>';
 }
 function v109RenderAmandaTasks(planned,date,stats){
   const list=planned||[]; if(!list.length)return '<div style="font-size:11px;color:var(--text-3);padding:8px 0">Workflow is clear. Anything unfinished will carry forward automatically.</div>';
@@ -13530,7 +13529,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
     var s2=step(2,'!','Urgent / mandatory work','Handle time-sensitive work first.','v113StepUrgent');
     var s3=step(3,'↔','LP handoffs','Work warm handoffs before broad outreach.','v113StepLP');
     var s4=step(4,'◉','Face Time to schedule','Book the next in-person touch.','v113StepFaceTime');
-    var s5=step(5,'☎','RM Team new meeting push','Shared monthly goal: 20 new Realtor meetings.','v113StepMeetings');
+    var s5=step(5,'☎','New meeting push','Book new Realtor meetings.','v113StepMeetings');
     var s6=step(6,'☆','Relationship work','Work today’s priority relationships.','v113StepSmart');
     var s7=step(7,'↗','C → B growth opportunities','Develop C relationships with growth evidence.','v113StepGrowth');
     var s8=step(8,'♡','Maintenance if time','Only after priority work is done.','v113StepMaintenance');
@@ -13547,7 +13546,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
     s3.lastChild.innerHTML=bodyTitle('LP handoffs','Warm handoffs first');var lph=el('div');lph.id='v113LpHost';s3.lastChild.appendChild(lph);if(sections[0])lph.appendChild(sections[0]);
     s4.lastChild.innerHTML=bodyTitle('Face Time to schedule','Book the next visit');var fth=el('div');fth.id='v113FaceTimeHost';s4.lastChild.appendChild(fth);if(sections[1])fth.appendChild(sections[1]);
     // meetings
-    s5.lastChild.innerHTML=bodyTitle('RM Team new meeting pace','Shared monthly goal · 20 new Realtor meetings');var mp=document.getElementById('v109NewMeetingPush');if(mp)s5.lastChild.appendChild(mp);
+    s5.lastChild.innerHTML=bodyTitle('New meeting pace','Book the meeting');var mp=document.getElementById('v109NewMeetingPush');if(mp)s5.lastChild.appendChild(mp);
     // smart placeholders; live renderer gets distributed from hidden source
     s6.lastChild.innerHTML=bodyTitle('Relationship work','Today’s priority names');var sh=el('div');sh.id='v113SmartHost';s6.lastChild.appendChild(sh);
     s7.lastChild.innerHTML=bodyTitle('C → B growth','Grow the right C relationships');var gh=el('div');gh.id='v113GrowthHost';s7.lastChild.appendChild(gh);
@@ -13666,7 +13665,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
     pros=pros.slice(0,5);
     var rows=pros.length?pros.map(function(t,i){return v29ProspectRow(t,i===0);}).join(''):'<div style="font-size:10.5px;color:var(--text-3);padding:9px 0">No eligible new-agent names are loaded right now. Add/refresh prospects in New Agents; warm handoffs and reconnect conversations can still create meetings today.</div>';
     var availability=pros.length<5?'<div style="font-size:9.5px;color:#8A5A00;margin-top:5px"><strong>'+pros.length+' eligible name'+(pros.length===1?'':'s')+' currently loaded.</strong> The tracker will not pad the list with weak/ineligible prospects just to show five.</div>':'';
-    host.innerHTML='<div style="padding:9px 12px;background:#F4ECFC;border-bottom:1px solid #D8C8EA;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap"><div><div style="font-size:11px;font-weight:850;color:#5D3E83;text-transform:uppercase;letter-spacing:.35px">RM TEAM MONTHLY NEW-MEETING GOAL · '+teamNew+' / '+target+'</div><div style="font-size:10px;color:#6A587A;margin-top:2px">We need '+remaining+' more this month. Today’s working target: <strong>'+daily+' meeting'+(daily!==1?'s':'')+' on the calendar</strong>. Work warm paths first, then keep moving through these call-ready names until the meeting target is hit.</div></div><span style="font-size:10px;font-weight:800;color:#5D3E83;background:#fff;border:1px solid #D8C8EA;border-radius:999px;padding:5px 8px">'+pct+'% to goal</span></div><div class="v109-meeting-grid"><div class="v109-pace"><div class="v109-big" style="color:#5D3E83">'+remaining+'</div><div style="font-size:10px;font-weight:800;color:#5D3E83;margin-top:3px">MORE NEEDED</div><div style="height:6px;background:#ECE4F4;border-radius:99px;overflow:hidden;margin:9px 0 7px"><i style="display:block;height:100%;width:'+pct+'%;background:#8060B3"></i></div><div style="font-size:9.8px;color:#6F6577;line-height:1.45">'+days+' weekday'+(days!==1?'s':'')+' left · pace ≈ '+(remaining?(remaining/days).toFixed(1):'0')+' per workday.</div></div><div><div style="font-size:10px;font-weight:800;color:#5D3E83;margin-bottom:2px">BEST NEW NAMES FOR TODAY</div><div style="font-size:9.8px;color:#756A7D;margin-bottom:3px">Up to five eligible new prospects. Start at the top; once someone is worked/excluded, the next eligible name replaces them.</div>'+rows+availability+'</div></div>';
+    host.innerHTML='<div style="padding:9px 12px;background:#F4ECFC;border-bottom:1px solid #D8C8EA;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap"><div><div style="font-size:11px;font-weight:850;color:#5D3E83;text-transform:uppercase;letter-spacing:.35px">Team new-meeting goal · '+teamNew+' / '+target+'</div><div style="font-size:10px;color:#6A587A;margin-top:2px">We need '+remaining+' more this month. Today’s working target: <strong>'+daily+' meeting'+(daily!==1?'s':'')+' on the calendar</strong>. Work warm paths first, then keep moving through these call-ready names until the meeting target is hit.</div></div><span style="font-size:10px;font-weight:800;color:#5D3E83;background:#fff;border:1px solid #D8C8EA;border-radius:999px;padding:5px 8px">'+pct+'% to goal</span></div><div class="v109-meeting-grid"><div class="v109-pace"><div class="v109-big" style="color:#5D3E83">'+remaining+'</div><div style="font-size:10px;font-weight:800;color:#5D3E83;margin-top:3px">MORE NEEDED</div><div style="height:6px;background:#ECE4F4;border-radius:99px;overflow:hidden;margin:9px 0 7px"><i style="display:block;height:100%;width:'+pct+'%;background:#8060B3"></i></div><div style="font-size:9.8px;color:#6F6577;line-height:1.45">'+days+' weekday'+(days!==1?'s':'')+' left · pace ≈ '+(remaining?(remaining/days).toFixed(1):'0')+' per workday.</div></div><div><div style="font-size:10px;font-weight:800;color:#5D3E83;margin-bottom:2px">BEST NEW NAMES FOR TODAY</div><div style="font-size:9.8px;color:#756A7D;margin-bottom:3px">Up to five eligible new prospects. Start at the top; once someone is worked/excluded, the next eligible name replaces them.</div>'+rows+availability+'</div></div>';
   };
 
   // 2) Make C→B evidence explicit. No mystery score.
@@ -14763,7 +14762,7 @@ setTimeout(function(){v124MountAudit();v122RenderAudit();},1200);
 <!-- Director coaching builder: sandwich-method, live tracker context -->
 <style id="v146-amanda-acquisition-audit-style">
 #view-week #v109NewMeetingPush{border:2px solid #C8B2E2!important;box-shadow:0 7px 22px rgba(86,57,130,.07)!important}
-#view-week #v109NewMeetingPush:before{content:"RM TEAM · PROTECTED PRODUCTION BLOCK";display:block;width:max-content;margin:10px 16px -4px;padding:3px 7px;border-radius:999px;background:#EEE5F8;color:#62418F;font-size:9px;font-weight:900;letter-spacing:.55px}
+#view-week #v109NewMeetingPush:before{content:"PROTECTED PRODUCTION BLOCK";display:block;width:max-content;margin:10px 16px -4px;padding:3px 7px;border-radius:999px;background:#EEE5F8;color:#62418F;font-size:9px;font-weight:900;letter-spacing:.55px}
 </style>
 <script id="v147-amanda-broken-handler-fix">
 (function(){
@@ -15498,10 +15497,10 @@ setTimeout(function(){v124MountAudit();v122RenderAudit();},1200);
           +'</div></div>';
       });
       if(!rows.length){
-        list.innerHTML='<div class="v162-empty"><strong>No active 4-week conversion campaigns yet.</strong><br>The next New Realtor Meeting logged will automatically start Week 1.</div>';
+        list.innerHTML='<div class="v164-fresh-start"><strong>Fresh start · Aug. 21, 2026</strong><span>Prior New Realtor Meetings remain in history and are cleared from this new workbench.</span></div><div class="v162-empty"><strong>No active 4-week conversion campaigns yet.</strong><br>The next New Realtor Meeting logged from today forward will automatically start Week 1.</div>';
         if(sub)sub.textContent='0 active campaigns';
       }else{
-        list.innerHTML='<div class="v162-conv-summary"><div><strong>'+rows.length+' active new-agent campaign'+(rows.length===1?'':'s')+'</strong><span> · '+outstanding+' weekly touch'+(outstanding===1?'':'es')+' still required</span></div><span>'+(overdue?overdue+' overdue':'No overdue weeks')+'</span></div>'+html;
+        list.innerHTML='<div class="v164-fresh-start"><strong>Fresh start · Aug. 21, 2026</strong><span>Only new Realtor meetings logged from today forward are tracked here. Prior meetings stay in history and do not count as overdue.</span></div><div class="v162-conv-summary"><div><strong>'+rows.length+' active new-agent campaign'+(rows.length===1?'':'s')+'</strong><span> · '+outstanding+' weekly touch'+(outstanding===1?'':'es')+' still required</span></div><span>'+(overdue?overdue+' overdue':'No overdue weeks')+'</span></div>'+html;
         if(sub)sub.textContent=rows.length+' active · '+outstanding+' required'+(overdue?' · '+overdue+' overdue':'');
       }
     }catch(e){
@@ -15669,6 +15668,42 @@ setTimeout(function(){v124MountAudit();v122RenderAudit();},1200);
 .v166-goal strong{color:#5E4387}
 @media(max-width:700px){.v166-goal-strip{grid-template-columns:1fr}}
 </style>
+
+<script id="v170-interaction-routing-audit">
+(function(){
+  window.rmOpenLogFor=function(name,type){
+    const act=type||'Agent Talk-to';
+    try{
+      if(typeof prefillActivityLog==='function'){
+        prefillActivityLog(name||'',act);
+        return true;
+      }
+      switchTab('log');
+      const a=document.getElementById('agentInput');
+      const t=document.getElementById('activityType');
+      if(a)a.value=name||'';
+      if(t){t.value=act;t.dispatchEvent(new Event('change',{bubbles:true}));}
+      return true;
+    }catch(e){console.warn('rmOpenLogFor',e);return false}
+  };
+  window.rmOpenContactFor=function(name){
+    try{
+      if(typeof openContactModal==='function'){openContactModal(name||'');return true}
+      switchTab('contacts');
+      const s=document.getElementById('contactsSearch');
+      if(s){s.value=name||'';if(typeof filterContacts==='function')filterContacts();}
+      return true;
+    }catch(e){console.warn('rmOpenContactFor',e);return false}
+  };
+  window.v165ProspectLog=function(name){return rmOpenLogFor(name,'Cold Calls')};
+  window.v165RelationshipLog=function(name,type){return rmOpenLogFor(name,type||'Agent Talk-to')};
+  window.v165RelationshipUpdate=function(name){return rmOpenContactFor(name)};
+  window.v154Log=function(name,type){return rmOpenLogFor(decodeURIComponent(name||''),decodeURIComponent(type||'Agent Talk-to'))};
+  window.v154Update=function(name){return rmOpenContactFor(decodeURIComponent(name||''))};
+})();
+</script>
+
+
 <style id="v171-transaction-call-clarity-css">
 #v171TransactionRules{
   margin-top:8px;padding:10px 12px;border-radius:9px;background:#FFF9E8;
@@ -15684,36 +15719,72 @@ setTimeout(function(){v124MountAudit();v122RenderAudit();},1200);
 </style>
 <script id="v171-transaction-call-clarity-js">
 (function(){
+  window.rmOpenNewContractLog=function(){
+    return typeof rmOpenLogFor==='function'
+      ? rmOpenLogFor('','Under Contract Call')
+      : false;
+  };
+  window.rmOpenCTCLog=function(){
+    return typeof rmOpenLogFor==='function'
+      ? rmOpenLogFor('','CTC Call')
+      : false;
+  };
+
   function enhance(){
+    // Find the visible transaction-call strip/card without relying on one old version's exact id.
     const nodes=[...document.querySelectorAll('#view-week div,#view-week section')];
     let host=nodes.find(el=>{
       const t=String(el.textContent||'');
       return /TRANSACTION CALLS/i.test(t) && /New Contract\s*\/\s*CTC|New Contract.*CTC/i.test(t);
     });
     if(!host)return;
+    // Avoid enhancing a giant ancestor.
     const smaller=[...host.querySelectorAll('div')].find(el=>{
       const t=String(el.textContent||'');
       return /TRANSACTION CALLS/i.test(t) && /New Contract\s*\/\s*CTC|New Contract.*CTC/i.test(t) && t.length<350;
     });
     if(smaller)host=smaller;
     if(document.getElementById('v171TransactionRules'))return;
+
     const box=document.createElement('div');
     box.id='v171TransactionRules';
     box.innerHTML=
-      '<b>REQUIRED TRANSACTION CALLS</b><br>'+
-      '<b>New Contract:</b> call when the file goes under contract. Log the relationship touch.<br>'+
-      '<b>CTC:</b> work both buyer agent + listing agent. If no answer, leave voicemail + send text. Log the attempt and required follow-up.<br>'+
-      '<b>Complete means:</b> required calls are worked and the outcome/next step is documented. These qualifying touches count toward the 20/day Talk-to goal.'+
-      '<div class="v171-tx-actions">'+
-      '<button class="primary" onclick="rmOpenNewContractLog()">Log New Contract Call</button>'+
-      '<button class="primary" onclick="rmOpenCTCLog()">Log CTC Call</button>'+
-      '</div>';
+      '<b>REQUIRED TRANSACTION CALLS</b><br>'
+      +'<b>New Contract:</b> call when the file goes under contract. Log the relationship touch.<br>'
+      +'<b>CTC:</b> work both buyer agent + listing agent. If no answer, leave voicemail + send text. Log the attempt and required follow-up.<br>'
+      +'<b>Complete means:</b> required calls are worked and the outcome/next step is documented. These qualifying touches count toward the 20/day Talk-to goal.'
+      +'<div class="v171-tx-actions">'
+      +'<button class="primary" onclick="rmOpenNewContractLog()">Log New Contract Call</button>'
+      +'<button class="primary" onclick="rmOpenCTCLog()">Log CTC Call</button>'
+      +'</div>';
     host.appendChild(box);
   }
+
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(enhance,650),{once:true});
   else setTimeout(enhance,450);
 })();
 </script>
+
+
+<script id="v173-universal-action-router">/* retired by v175 inline action router */</script>
+
+
+<script id="v174-visible-button-selfcheck">
+window.rmAuditVisibleButtons=function(){
+  const rows=[];
+  document.querySelectorAll('button,a').forEach(function(el){
+    if(el.offsetParent===null)return;
+    const label=String(el.textContent||'').trim();
+    const has=!!el.onclick || !!el.getAttribute('onclick') || el.tagName==='A'&&!!el.getAttribute('href');
+    rows.push({label:label.slice(0,80),workingHook:has,id:el.id||''});
+  });
+  const dead=rows.filter(r=>!r.workingHook && r.label);
+  console.table(dead);
+  return {visible:rows.length,dead:dead};
+};
+</script>
+
+
 <style id="v175-inline-action-modals-css">
 .v175-overlay{position:fixed;inset:0;background:rgba(27,22,35,.42);display:none;align-items:center;justify-content:center;z-index:99999;padding:18px}
 .v175-overlay.open{display:flex}
@@ -15879,6 +15950,10 @@ setTimeout(function(){v124MountAudit();v122RenderAudit();},1200);
     <div class="v175-actions"><button onclick="v175Close('v175UpdateModal')">Cancel</button><button class="primary" onclick="v175SaveUpdate()">Save changes</button></div>
   </div>
 </div>
+
+<script id="v175-inline-action-modals-js">/* retired by v176 */</script>
+
+
 <script id="v176-button-transaction-fix-js">
 (function(){
   const dec=s=>{try{return decodeURIComponent(String(s||''))}catch(e){return String(s||'')}};
@@ -16348,9 +16423,8 @@ setTimeout(function(){v124MountAudit();v122RenderAudit();},1200);
     return {d,month:d.slice(0,7)+'-01',acts,profiles,assign,prospects,ft,breads,reconnect};
   }
 
-  function contact(p,pr){const raw=(pr&&pr.phone)||(p&&p.phone)||'';return {phone:(typeof rmIsBlockedAgentPhone==='function'&&rmIsBlockedAgentPhone(raw))?'':raw,email:(pr&&pr.email)||(p&&p.email)||'',brokerage:(pr&&pr.brokerage)||(p&&p.brokerage)||''}}
+  function contact(p,pr){return {phone:(pr&&pr.phone)||(p&&p.phone)||'',email:(pr&&pr.email)||(p&&p.email)||'',brokerage:(pr&&pr.brokerage)||(p&&p.brokerage)||''}}
   function cleanPhone(raw){
-    if(typeof rmIsBlockedAgentPhone==='function'&&rmIsBlockedAgentPhone(raw))return '';
     let s=String(raw==null?'':raw).trim().replace(/\.0$/,'');
     const d=s.replace(/\D/g,'');
     if(d.length===10)return '('+d.slice(0,3)+') '+d.slice(3,6)+'-'+d.slice(6);
@@ -16386,14 +16460,14 @@ setTimeout(function(){v124MountAudit();v122RenderAudit();},1200);
     const mt=s.acts.filter(a=>a.act_type==='New Realtor Meeting'&&String(a.act_date||a.activity_date||'').slice(0,10)>=s.month).length;
     const target=(typeof RM_TEAM_GOALS!=='undefined'&&Number(RM_TEAM_GOALS.teamNew))||20;
     let g=document.getElementById('v191Goals');if(!g){g=document.createElement('div');g.id='v191Goals';host.parentNode.insertBefore(g,host)}
-    g.innerHTML=`<div class="v191-goal" onclick="v191Drill('meet')"><b>RM Team new meetings</b><strong>${mt} / ${target}</strong><small>Shared monthly goal · ${Math.max(0,target-mt)} left · click for data</small></div><div class="v191-goal" onclick="v191Drill('cold')"><b>Cold Calls</b><strong>${cold} / 25</strong><small>${Math.max(0,25-cold)} left today · click for data</small></div><div class="v191-goal" onclick="v191Drill('talk')"><b>Talk-to’s</b><strong>${talks} / 20</strong><small>${Math.max(0,20-talks)} left today · click for data</small></div>`;
+    g.innerHTML=`<div class="v191-goal" onclick="v191Drill('meet')"><b>New meetings</b><strong>${mt} / ${target}</strong><small>${Math.max(0,target-mt)} left · click for data</small></div><div class="v191-goal" onclick="v191Drill('cold')"><b>Cold Calls</b><strong>${cold} / 25</strong><small>${Math.max(0,25-cold)} left today · click for data</small></div><div class="v191-goal" onclick="v191Drill('talk')"><b>Talk-to’s</b><strong>${talks} / 20</strong><small>${Math.max(0,20-talks)} left today · click for data</small></div>`;
     let dr=document.getElementById('v191Drill');if(!dr){dr=document.createElement('div');dr.id='v191Drill';g.after(dr)}
   }
   window.v191Drill=function(kind){
     const s=window._v191;if(!s)return;let rows=[],title='';
     if(kind==='cold'){title='Cold Calls today';rows=s.acts.filter(a=>String(a.act_date||a.activity_date||'').slice(0,10)===s.d&&['Cold Calls','Cold Call'].includes(a.act_type))}
     else if(kind==='talk'){title='Qualifying Talk-to’s today';rows=s.acts.filter(a=>String(a.act_date||a.activity_date||'').slice(0,10)===s.d&&qTalk(a.act_type))}
-    else{title='RM Team New Realtor Meetings this month';rows=s.acts.filter(a=>a.act_type==='New Realtor Meeting'&&String(a.act_date||a.activity_date||'').slice(0,10)>=s.month)}
+    else{title='New Realtor Meetings this month';rows=s.acts.filter(a=>a.act_type==='New Realtor Meeting'&&String(a.act_date||a.activity_date||'').slice(0,10)>=s.month)}
     const d=document.getElementById('v191Drill');d.classList.add('open');d.innerHTML=`<div class="v191-drill-head"><span>${title} · ${rows.length}</span><button class="v191-btn" onclick="document.getElementById('v191Drill').classList.remove('open')">Close</button></div>`+(rows.length?rows.map(r=>`<div class="v191-drill-row"><b>${E(r.agent_name)}</b><span>${E(String(r.act_date||r.activity_date||'').slice(0,10))}</span><span>${E(r.outcome||r.notes||'Logged')}</span></div>`).join(''):`<div class="v191-empty">Nothing logged here yet.</div>`);
   };
 
@@ -16417,7 +16491,7 @@ setTimeout(function(){v124MountAudit();v122RenderAudit();},1200);
     const left=Math.max(0,25-coldToday);
     h.innerHTML=`<div class="v191-card"><div class="v191-head"><div><b>NEW MEETING PUSH · ${coldToday} / 25 COLD CALLS</b><small>${done?'Daily cold-call goal complete. New names start again tomorrow.':left+' calls left today. Work these 5; each saved cold call clears the person and pulls the next eligible name.'}</small><div class="v191-playbookbar"><button class="v191-btn" onclick="v191Playbook('book')">Booking script</button><button class="v191-btn" onclick="v191Playbook('first')">First meeting playbook</button></div></div><button class="v191-btn" onclick="v196ManualRefresh()">Refresh</button></div>`+
       (done?`<div class="v191-empty"><b>25 / 25 complete for today.</b><br>No more cold-call names are assigned until tomorrow.</div>`:
-      rows.length?rows.map((pr,i)=>{const p=pm[N(pr.agent_name)]||{},c=contact(p,pr),loc=(typeof v192Location==='function'?v192Location(Object.assign({},p,pr)):'');return `<div class="v191-row"><div class="v191-rank">${i+1}</div><div><div class="v191-name">${E(typeof displayName==="function"?displayName(pr.agent_name):pr.agent_name)}</div><div class="v191-meta">${E(loc||c.brokerage||'New prospect')}<br><b>Why this person:</b> ${E(pr.__smartWhy||'qualified prospect')}</div></div><div class="v191-contact"><b>Phone:</b> ${E(cleanPhone(c.phone)||'Missing')}<br><b>Email:</b> ${E(c.email||'Missing')}${loc?'<br><b>Location:</b> '+E(loc):''}</div><div class="v191-actions"><button class="primary" data-rm-action="outreach" data-agent="${encodeURIComponent(pr.agent_name||'')}">Log outreach</button><button onclick="v191Playbook('book')">Script</button><button class="v195-not-prospect" data-rm-prospect-action="exclude" data-agent="${encodeURIComponent(pr.agent_name||'')}">Not a prospect</button><button onclick="openPipelineContact('${encodeURIComponent(pr.agent_name||'')}')">Profile</button></div></div>`}).join(''):
+      rows.length?rows.map((pr,i)=>{const p=pm[N(pr.agent_name)]||{},c=contact(p,pr),loc=(typeof v192Location==='function'?v192Location(Object.assign({},p,pr)):'');return `<div class="v191-row"><div class="v191-rank">${i+1}</div><div><div class="v191-name">${E(typeof displayName==="function"?displayName(pr.agent_name):pr.agent_name)}</div><div class="v191-meta">${E(loc||c.brokerage||'New prospect')}<br><b>Why this person:</b> ${E(pr.__smartWhy||'qualified prospect')}</div></div><div class="v191-contact"><b>Phone:</b> ${E(cleanPhone(c.phone)||'Missing')}<br><b>Email:</b> ${E(c.email||'Missing')}${loc?'<br><b>Location:</b> '+E(loc):''}</div><div class="v191-actions"><button class="primary" data-rm-action="outreach" data-agent="${encodeURIComponent(pr.agent_name||'')}">Log outreach</button><button onclick="v191Playbook('book')">Script</button><button class="v195-not-prospect" onclick="v196OpenNotProspect('${encodeURIComponent(pr.agent_name||'')}')">Not a prospect</button><button onclick="openPipelineContact('${encodeURIComponent(pr.agent_name||'')}')">Profile</button></div></div>`}).join(''):
       `<div class="v191-empty"><b>No eligible prospects remain for today.</b><br>Add or reactivate qualified prospects in New Agents.</div>`)+`</div>`;
   }
 
@@ -16593,33 +16667,20 @@ setTimeout(function(){v124MountAudit();v122RenderAudit();},1200);
   };
   window.v196OpenNotProspect=function(encodedName){
     let name='';try{name=decodeURIComponent(String(encodedName||''))}catch(e){name=String(encodedName||'')}
-    const input=document.getElementById('v196NotProspectName'),modal=document.getElementById('v196NotProspectModal');
-    if(!input||!modal){try{toast('Not-a-prospect form could not open. Refresh once and try again.','error',4500)}catch(e){};return;}
-    input.value=name.trim();
+    document.getElementById('v196NotProspectName').value=name.trim();
     const er=document.getElementById('v196ReasonError');if(er){er.style.display='none';er.textContent=''}
-    // Close workflow popups first so no invisible overlay can sit on top of this reason picker.
-    try{if(window.rmWorkflowModal&&typeof window.rmWorkflowModal.closeAll==='function')window.rmWorkflowModal.closeAll(false)}catch(e){}
-    modal.classList.add('open');modal.removeAttribute('aria-hidden');
-    modal.style.setProperty('display','flex','important');modal.style.setProperty('pointer-events','auto','important');
-    modal.style.setProperty('visibility','visible','important');modal.style.setProperty('opacity','1','important');modal.style.setProperty('z-index','210000','important');
-    document.body.style.overflow='hidden';
+    document.getElementById('v196NotProspectModal').classList.add('open');
   };
-  window.v196CloseNotProspect=function(){const modal=document.getElementById('v196NotProspectModal');if(modal){modal.classList.remove('open');modal.setAttribute('aria-hidden','true');modal.style.setProperty('display','none','important');modal.style.setProperty('pointer-events','none','important')}document.body.style.removeProperty('overflow')};
+  window.v196CloseNotProspect=function(){document.getElementById('v196NotProspectModal').classList.remove('open')};
   window.v196SaveNotProspect=async function(reason){
     const name=(document.getElementById('v196NotProspectName').value||'').trim();if(!name||window._v196Removing)return;
     window._v196Removing=true;
     const label=LABELS[reason]||LABELS.other;
     try{
-      let prs=await sbFetch('outreach_prospects?agent_name=ilike.'+encodeURIComponent(name)+'&select=id,notes&limit=50').catch(()=>[]);
+      const prs=await sbFetch('outreach_prospects?agent_name=ilike.'+encodeURIComponent(name)+'&select=id,notes&limit=50').catch(()=>[]);
       const status=reason==='already_nfm'?'NFM':reason==='dnc'?'DNC':'Excluded';
-      const reasonNote='[NOT_A_PROSPECT] [EXCLUSION_REASON:'+reason.toUpperCase()+'] '+label;
-      if(!(prs||[]).length){
-        // Shared fallback: a removed name must stay removed on every device, not only this browser.
-        await sbFetch('outreach_prospects',{method:'POST',prefer:'return=minimal',body:JSON.stringify({agent_name:name,status,follow_up_date:null,notes:reasonNote})}).catch(()=>{});
-        prs=[];
-      }
       for(const pr of (prs||[])){
-        const notes=((pr.notes||'')+' '+reasonNote).trim();
+        const notes=((pr.notes||'')+' [NOT_A_PROSPECT] [EXCLUSION_REASON:'+reason.toUpperCase()+'] '+label).trim();
         await sbFetch('outreach_prospects?id=eq.'+encodeURIComponent(pr.id),{method:'PATCH',prefer:'return=minimal',body:JSON.stringify({status,follow_up_date:null,notes})});
       }
       if(reason==='not_realtor'){
@@ -16680,11 +16741,12 @@ setTimeout(function(){v124MountAudit();v122RenderAudit();},1200);
 <script id="v201-meaningful-preflight-paint">
 (function(){
   window.v201PaintMeaningfulComplete=function(){
-    const b=document.getElementById('v198MeaningfulBtn');
-    const name=(document.getElementById('v175OutreachAgent')?.value||'').trim();
+    const b=document.getElementById('v198MeaningfulBtn'),name=(document.getElementById('v175OutreachAgent')?.value||'').trim();
     if(!b)return;
     b.classList.toggle('v201-complete',!!(window._v198PortfolioPreflight&&String(window._v198PortfolioAgent||'').toLowerCase()===name.toLowerCase()));
   };
+  const oldOpen=window.v175Open;
+  if(typeof oldOpen==='function')window.v175Open=function(id){const r=oldOpen.apply(this,arguments);if(id==='v175OutreachModal')setTimeout(v201PaintMeaningfulComplete,0);return r};
 })();
 </script>
 
@@ -16747,28 +16809,12 @@ setTimeout(function(){v124MountAudit();v122RenderAudit();},1200);
     const skip=document.getElementById('wp37SkipBtn');
     if(skip)skip.style.display='none';
 
-    // v231: open through the shared modal helper so this overlay is interactive.
-    // v229 had previously hidden this modal with pointer-events:none; the direct opener
-    // made it visible again without restoring pointer events, which looked like a freeze.
-    try{
-      if(typeof v175Open==='function')v175Open('wp37PartnerCheckinModal');
-      else{
-        portfolio.removeAttribute('aria-hidden');
-        portfolio.classList.add('open');
-        portfolio.style.setProperty('display','flex','important');
-        portfolio.style.setProperty('z-index','200000','important');
-        portfolio.style.setProperty('visibility','visible','important');
-        portfolio.style.setProperty('opacity','1','important');
-      }
-    }catch(e){
-      portfolio.removeAttribute('aria-hidden');
-      portfolio.classList.add('open');
-      portfolio.style.setProperty('display','flex','important');
-      portfolio.style.setProperty('z-index','200000','important');
-    }
-    portfolio.style.pointerEvents='auto';
-    const portfolioBox=portfolio.querySelector('.modal-box');
-    if(portfolioBox){portfolioBox.style.overflowY='auto';portfolioBox.style.webkitOverflowScrolling='touch';portfolioBox.scrollTop=0;}
+    portfolio.removeAttribute('aria-hidden');
+    portfolio.classList.add('open');
+    portfolio.style.setProperty('display','flex','important');
+    portfolio.style.setProperty('z-index','200000','important');
+    portfolio.style.setProperty('visibility','visible','important');
+    portfolio.style.setProperty('opacity','1','important');
 
     try{if(typeof v115SetPartnerMode==='function')v115SetPartnerMode('health')}catch(e){}
 
@@ -16799,9 +16845,9 @@ setTimeout(function(){v124MountAudit();v122RenderAudit();},1200);
         window._v198PortfolioAgent=window._v203PendingMeaningful?.name||'';
         const log=document.getElementById('v175OutreachModal');
         if(log){
-          try{if(typeof v175Open==='function')v175Open('v175OutreachModal');
-          else{log.style.removeProperty('display');log.removeAttribute('aria-hidden');log.classList.add('open');log.style.pointerEvents='auto';}}
-          catch(e){log.style.removeProperty('display');log.removeAttribute('aria-hidden');log.classList.add('open');log.style.pointerEvents='auto';}
+          log.style.removeProperty('display');
+          log.removeAttribute('aria-hidden');
+          log.classList.add('open');
         }
         try{if(typeof v201PaintMeaningfulComplete==='function')v201PaintMeaningfulComplete()}catch(e){}
       }
@@ -16817,9 +16863,9 @@ setTimeout(function(){v124MountAudit();v122RenderAudit();},1200);
       const result=originalCancel.apply(this,arguments);
       const log=document.getElementById('v175OutreachModal');
       if(log){
-        try{if(typeof v175Open==='function')v175Open('v175OutreachModal');
-        else{log.style.removeProperty('display');log.removeAttribute('aria-hidden');log.classList.add('open');log.style.pointerEvents='auto';}}
-        catch(e){log.style.removeProperty('display');log.removeAttribute('aria-hidden');log.classList.add('open');log.style.pointerEvents='auto';}
+        log.style.removeProperty('display');
+        log.removeAttribute('aria-hidden');
+        log.classList.add('open');
       }
       return result;
     };
@@ -16985,14 +17031,6 @@ setTimeout(function(){v124MountAudit();v122RenderAudit();},1200);
  function latestDate(){let best=null;for(const v of arguments){if(!v)continue;const x=new Date(v);if(!isNaN(x)&&(!best||x>best))best=x}return best}
  function recentLeadActivity(a){return /New Lead Received|Referral Lead|Lead Received/i.test(String(a&&a.act_type||''))}
  function acquisitionActivity(a){return /Cold Calls?|New Agent Prospect/i.test(String(a&&a.act_type||''))}
- function rmxWorkOwner(d,a){
-   const assigned=String((d&&d.assigns&&d.assigns[key(a&&a.agent_name)]||{}).rm||'').trim();
-   if(assigned&&assigned.toLowerCase()!=='unassigned')return assigned;
-   if(acquisitionActivity(a))return 'Amanda';
-   try{if(isAmanda(a))return 'Amanda'}catch(e){}
-   const logged=ownerOf(a);return logged&&String(logged).trim()?logged:'Unassigned';
- }
- function rmxWorkOwnerLabel(d,a){const o=rmxWorkOwner(d,a);return o==='Amanda'&&acquisitionActivity(a)?'Amanda · Prospecting':o}
  function ownerMap(rows){
   const DIRECTOR_NAMES=new Set(['brian zinn','ingrid correia','lyndsay myers','micah myers','morgan stone']);
   const m={};
@@ -17014,7 +17052,6 @@ setTimeout(function(){v124MountAudit();v122RenderAudit();},1200);
  }
 
  function mstart(){const d=todayS();return d.slice(0,7)+'-01'}
- function mend(){const d=new Date(todayS()+'T12:00:00');return new Date(d.getFullYear(),d.getMonth()+1,0,12).toISOString().slice(0,10)}
  function wstart(){const d=new Date(todayS()+'T12:00:00'),day=(d.getDay()+6)%7;d.setDate(d.getDate()-day);return d.toISOString().slice(0,10)}
  function safeFetch(path,ms){ms=ms||6500;return Promise.race([
    Promise.resolve().then(()=>sbFetch(path)),
@@ -17034,8 +17071,7 @@ setTimeout(function(){v124MountAudit();v122RenderAudit();},1200);
 }
 
  async function load(force){
-  // v233: management numbers should not sit behind a 30-second stale cache.
-  if(!force&&R.cache&&Date.now()-R.ts<5000)return R.cache;
+  if(!force&&R.cache&&Date.now()-R.ts<30000)return R.cache;
   if(R.promise)return R.promise;
 
   R.promise=(async()=>{
@@ -17044,21 +17080,15 @@ setTimeout(function(){v124MountAudit();v122RenderAudit();},1200);
     // CORE TRUTH FIRST.
     // Do not use the short safeFetch timeout here. If core data cannot load,
     // show a real load error instead of rendering fake zeros.
-    const [profiles,assignRows,recent,mtdMetricRows]=await Promise.all([
+    const [profiles,assignRows,recent]=await Promise.all([
       sbFetch('agent_profiles?select=*&limit=5000'),
       sbFetch('agent_assignments?select=*&limit=5000'),
-      sbFetch('amanda_activities?select=id,agent_name,act_type,act_date,outcome,notes,follow_up_date,created_at&act_date=gte.'+since180+'&act_date=lte.'+todayS()+'&order=act_date.desc&limit=5000'),
-      // Same current-calendar-month source used by Amanda's Snapshot. This intentionally
-      // includes a meeting dated later this month if it has already been logged there, so
-      // Management never shows 11 while Amanda shows 12. Relationship-risk logic still uses
-      // `recent`, which stops at today, so future meeting dates cannot fake a recent touch.
-      sbFetch('amanda_activities?select=id,agent_name,act_type,act_date,outcome,notes,follow_up_date,created_at&act_date=gte.'+mstart()+'&act_date=lte.'+mend()+'&order=act_date.desc&limit=5000')
+      sbFetch('amanda_activities?select=id,agent_name,act_type,act_date,outcome,notes,follow_up_date,created_at&act_date=gte.'+since180+'&act_date=lte.'+todayS()+'&order=act_date.desc&limit=5000')
     ]);
 
     if(!Array.isArray(profiles))throw new Error('Portfolio data did not load.');
     if(!Array.isArray(assignRows))throw new Error('Ownership data did not load.');
     if(!Array.isArray(recent))throw new Error('Amanda activity data did not load.');
-    if(!Array.isArray(mtdMetricRows))throw new Error('Amanda month-to-date activity data did not load.');
 
     // OPTIONAL MANAGEMENT DATA SECOND.
     // These may fail independently without corrupting the core metrics.
@@ -17148,10 +17178,9 @@ setTimeout(function(){v124MountAudit();v122RenderAudit();},1200);
       return copy;
     });
 
-    // IMPORTANT: recent retains the through-today history used for relationship/risk logic.
-    // acts is the exact current-month metric source used by Amanda's Snapshot, including any
-    // already-logged meeting later in the same month. Keeping these separate prevents count drift.
-    const acts=mtdMetricRows||[];
+    // IMPORTANT: recent retains the full 180-day activity history needed for
+    // 4-week conversion and relationship logic. acts is only MTD.
+    const acts=(recent||[]).filter(a=>String(a.act_date||'')>=mstart());
 
     const flagsAll=[
       ...(flags||[]).map(f=>({...f,_src:'lpflag'})),
@@ -17244,14 +17273,14 @@ setTimeout(function(){v124MountAudit();v122RenderAudit();},1200);
   if(typeof v95LoadSharedPhoto==='function')v95LoadSharedPhoto('nyny').then(src=>{if(src)rmxRefreshProfilePhoto('nyny',src)}).catch(()=>{});
   go(R.route||'dashboard');
 }
- async function go(route,force,quiet){
+ async function go(route,force){
   const aliases={snapshot:'dashboard',myday:'queue',portfolio:'risk'};route=aliases[route]||route||'dashboard';
   const valid=new Set(nav().map(n=>n[0]));if(!valid.has(route))route='dashboard';
   const seq=++R.navSeq;R.route=route;
   document.body.classList.add('rm-director-route','rmx-director-active','rmx-director-site');
   wireDirectorRouting();
   document.querySelectorAll('.rmx-nav button').forEach(b=>b.classList.toggle('active',b.dataset.rmx===route));
-  const c=$('rmxContent');if(!c)return;if(!quiet)c.innerHTML=loading();
+  const c=$('rmxContent');if(!c)return;c.innerHTML=loading();
   try{
     const d=await load(!!force);if(seq!==R.navSeq||route!==R.route)return;c.innerHTML='';
     if(route==='dashboard')renderSnapshot(c,d);
@@ -17266,14 +17295,14 @@ setTimeout(function(){v124MountAudit();v122RenderAudit();},1200);
     else if(route==='admin')renderAdmin(c,d);
     else renderSnapshot(c,d);
     if(!String(c.textContent||'').trim())c.innerHTML=empty('This section has no current items.');
-  }catch(e){if(seq!==R.navSeq||route!==R.route)return;console.error('RMX',e);if(!quiet)c.innerHTML=err(e)}
+  }catch(e){if(seq!==R.navSeq||route!==R.route)return;console.error('RMX',e);c.innerHTML=err(e)}
 }
  window.rmxGo=(route,force)=>go(route,!!force);window.rmxOpenAmanda=()=>go('amanda',false);window.rmxRefreshCache=()=>{R.cache=null;R.ts=0;return go(R.route||'dashboard',true)};
  function wireDirectorRouting(){
   const app=$('rmxApp');if(!app||app.dataset.routingWired==='1')return;app.dataset.routingWired='1';
   app.addEventListener('click',function(e){
     const bulkAction=e.target.closest('[data-rmx-admin-bulk]');
-    if(bulkAction){e.preventDefault();e.stopPropagation();const kind=bulkAction.dataset.rmxAdminBulk||'';if(kind==='select-visible')window.rmxAdminSelectVisible();else if(kind==='clear')window.rmxAdminClearSelection();else if(kind==='assign')window.rmxAdminBulkAssign(bulkAction.dataset.rm||'',bulkAction);else if(kind==='reactivate')window.rmxAdminBulkReactivate(bulkAction);else if(kind==='permanent-remove')window.rmxAdminBulkPermanentRemove(bulkAction);return}
+    if(bulkAction){e.preventDefault();e.stopPropagation();const kind=bulkAction.dataset.rmxAdminBulk||'';if(kind==='select-visible')window.rmxAdminSelectVisible();else if(kind==='clear')window.rmxAdminClearSelection();else if(kind==='assign')window.rmxAdminBulkAssign(bulkAction.dataset.rm||'',bulkAction);else if(kind==='permanent-remove')window.rmxAdminBulkPermanentRemove(bulkAction);return}
     const adminAction=e.target.closest('[data-rmx-admin-action]');
     if(adminAction){
       e.preventDefault();e.stopPropagation();
@@ -17430,19 +17459,19 @@ setTimeout(function(){v124MountAudit();v122RenderAudit();},1200);
  function rmxAmandaCoachSignals(d,relationship){
    const rel=String(relationship||'').trim(),ta=todayAmanda(d),wa=weekAmanda(d),ma=mtdAmanda(d);
    const coldToday=coldCount(ta),talkToday=talkCount(ta),liveToday=meaningfulCount(ta),coldWeek=coldCount(wa),talkWeek=talkCount(wa);
-   const newM=ma.filter(a=>a.act_type==='New Realtor Meeting').length,existing=ma.filter(a=>isExistingMeetingType(a.act_type)).length,totalMeetings=newM+existing,teamNew=meetings(d);
+   const newM=ma.filter(a=>a.act_type==='New Realtor Meeting').length,existing=ma.filter(a=>isExistingMeetingType(a.act_type)).length;
    const booked=ta.filter(a=>String(a.outcome||'')==='Meeting Scheduled').length;
    const notesMissing=ta.filter(a=>rmxActivityNote(a).trim().length<8).length;
-   const dueAmanda=(d.due||[]).filter(a=>rmxWorkOwner(d,a)==='Amanda'),tx=rmxTxn(d),pe=rmxPortfolioExecution(d),conv=rmxConversion(d);
+   const dueAmanda=(d.due||[]).filter(isAmanda),tx=rmxTxn(d),pe=rmxPortfolioExecution(d),conv=rmxConversion(d);
    const wins=[],focus=[],asks=[];
 
-   // POSITIVE START: lead with actual meeting production, then coach the habits that keep it repeatable.
-   if(totalMeetings>=30)wins.push('You have completed '+totalMeetings+' / 30 total partner meetings this month ('+newM+' new + '+existing+' existing), so you are already above the monthly partner-meeting target.');
-   else if(totalMeetings>0)wins.push('You have completed '+totalMeetings+' / 30 total partner meetings this month ('+newM+' new + '+existing+' existing).');
-   if(newM>=10&&existing>=20)wins.push('You have also hit both individual meeting mix goals: '+newM+' / 10 new Realtor meetings and '+existing+' / 20 existing-partner meetings.');
+   // POSITIVE START: only praise what the tracker actually supports.
+   if(newM>=10&&existing>=20)wins.push('You have already hit both monthly meeting goals: '+newM+' / 10 new Realtor meetings and '+existing+' / 20 existing-partner meetings.');
    else{
      if(newM>=10)wins.push('You have hit the monthly new Realtor meeting goal at '+newM+' / 10.');
+     else if(newM>0)wins.push('You have '+newM+' new Realtor meeting'+(newM===1?'':'s')+' recorded month-to-date.');
      if(existing>=20)wins.push('You have hit the existing-partner meeting goal at '+existing+' / 20.');
+     else if(existing>0)wins.push('You have '+existing+' existing-partner meeting'+(existing===1?'':'s')+' recorded month-to-date.');
    }
    if(liveToday>=10)wins.push('You created '+liveToday+' live / meaningful conversations today, which is strong relationship activity.');
    else if(liveToday>0)wins.push('You logged '+liveToday+' live / meaningful conversation'+(liveToday===1?'':'s')+' today.');
@@ -17451,8 +17480,7 @@ setTimeout(function(){v124MountAudit();v122RenderAudit();},1200);
    if(!pe.missing.length&&liveToday>0)wins.push('Portfolio next-step updates are current for today’s live conversations.');
    if(!wins.length)wins.push('You kept the work visible in the tracker today, which gives us a clear place to coach from.');
 
-   // MIDDLE: concrete coaching gaps from the live tracker, interpreted in context of results.
-   if(totalMeetings>=30&&(coldToday<25||talkToday<20))focus.push('Meeting production is already strong at '+totalMeetings+' / 30 for the month. The coaching opportunity now is consistency in the daily prospecting engine so next month’s pipeline is being built before this month ends.');
+   // MIDDLE: concrete coaching gaps from the live tracker.
    if(coldToday<25)focus.push('Cold-call pace is '+coldToday+' / 25 today.');
    if(talkToday<20)focus.push('Talk-To pace is '+talkToday+' / 20 today.');
    if(notesMissing)focus.push(notesMissing+' activit'+(notesMissing===1?'y has':'ies have')+' thin or missing notes.');
@@ -17472,7 +17500,7 @@ setTimeout(function(){v124MountAudit();v122RenderAudit();},1200);
      if(p&&!next)asks.push('For '+fmtName(rel)+', document the next relationship / growth move so the plan is visible.');
    }
 
-   if(coldToday<25||talkToday<20)asks.push(totalMeetings>=30?'Protect a focused prospecting block early in the next workday. The purpose is to build the next wave of meetings and next month’s pipeline — not create busywork — while keeping notes and follow-ups clean.':'Protect a focused prospecting block early in the next workday and work toward 25 cold calls and 20 Talk-To’s without sacrificing note quality.');
+   if(coldToday<25||talkToday<20)asks.push('Protect a focused prospecting block early in the next workday and work toward 25 cold calls and 20 Talk-To’s without sacrificing note quality.');
    if(dueAmanda.length)asks.push('Close or intentionally reschedule the due follow-ups so nothing quietly rolls forward without a next step.');
    if(notesMissing)asks.push('Tighten the thin activity notes so they capture what happened, what you learned, and the next move.');
    if(pe.missing.length)asks.push('Update the portfolio next move for every live conversation that is still missing relationship intelligence.');
@@ -17481,11 +17509,11 @@ setTimeout(function(){v124MountAudit();v122RenderAudit();},1200);
    if(!focus.length)focus.push('No material execution gap is showing in today’s tracker. The coaching focus is consistency and keeping the quality of documentation high.');
    if(!asks.length)asks.push('Keep the same pace, document outcomes as you go, and protect the next relationship move on each meaningful conversation.');
 
-   const close=(totalMeetings>=30)
-     ?'You have already proven the meeting production is there. Keep the momentum, protect the daily habits that create future opportunities, and keep the follow-through clean so the results are repeatable month after month.'
+   const close=(newM>=10&&existing>=20)
+     ?'You have already shown you can hit the relationship-building goals. Keep that momentum and tighten the daily execution pieces so the results stay repeatable as we scale.'
      :'I appreciate the work you are putting in and the visibility you are creating in the tracker. Keep building on the wins above while tightening the few execution pieces we identified.';
 
-   return {wins,focus,asks,close,metrics:{coldToday,talkToday,liveToday,coldWeek,talkWeek,newM,existing,totalMeetings,teamNew,booked,notesMissing,due:dueAmanda.length,tx:tx.open.length,portfolio:pe.missing.length,conversionOverdue:conv.overdue}};
+   return {wins,focus,asks,close,metrics:{coldToday,talkToday,liveToday,coldWeek,talkWeek,newM,existing,booked,notesMissing,due:dueAmanda.length,tx:tx.open.length,portfolio:pe.missing.length,conversionOverdue:conv.overdue}};
  }
  function rmxCoachSentence(parts){return (parts||[]).filter(Boolean).join(' ')}
 
@@ -17572,7 +17600,7 @@ function renderMyDay(c,d){
  } 
  function renderAmanda(c,d){
   title(c,'Amanda Overview','Manager view of Amanda’s execution, pace, quality, coaching opportunities, and a direct path into her real tracker.');
-  const ta=todayAmanda(d),wa=weekAmanda(d),ma=mtdAmanda(d),cold=coldCount(ta),talk=talkCount(ta),newM=ma.filter(a=>a.act_type==='New Realtor Meeting').length,existing=ma.filter(a=>isExistingMeetingType(a.act_type)).length,totalMeetings=newM+existing,teamNew=meetings(d),meaningful=meaningfulCount(ta),tx=rmxTxn(d),pe=rmxPortfolioExecution(d);
+  const ta=todayAmanda(d),wa=weekAmanda(d),ma=mtdAmanda(d),cold=coldCount(ta),talk=talkCount(ta),newM=ma.filter(a=>a.act_type==='New Realtor Meeting').length,existing=ma.filter(a=>isExistingMeetingType(a.act_type)).length,meaningful=meaningfulCount(ta),tx=rmxTxn(d),pe=rmxPortfolioExecution(d);
   let asrc=(window.V95_SHARED_PHOTOS&&window.V95_SHARED_PHOTOS.amanda)||'';if(!asrc){try{asrc=localStorage.getItem('rm_profile_photo_amanda')||''}catch(e){}}if(!asrc){const av=$('v95AmandaAvatar');asrc=av&&av.src?av.src:''}
   const dayP=Math.round(([Math.min(1,cold/25),Math.min(1,talk/20)].reduce((a,b)=>a+b,0)/2)*100),weekP=Math.round(([Math.min(1,coldCount(wa)/125),Math.min(1,talkCount(wa)/100)].reduce((a,b)=>a+b,0)/2)*100),monthP=Math.round(([Math.min(1,newM/10),Math.min(1,existing/20)].reduce((a,b)=>a+b,0)/2)*100);
   const status=dayP>=90?'On Pace':dayP>=60?'Working':'Needs Attention';
@@ -17583,20 +17611,18 @@ function renderMyDay(c,d){
     +'<button type="button" class="rmx-quick-card manage" data-rmx-jump="performance" data-rmx-focus="followups"><b>Review Follow-Ups</b><span>See due work and ownership.</span></button>'
     +'<button type="button" class="rmx-quick-card manage" data-rmx-jump="performance" data-rmx-focus="quality"><b>Review Quality</b><span>Missing notes, outcomes and next-step gaps.</span></button>'
     +'<button type="button" class="rmx-quick-card manage" data-rmx-jump="performance" data-rmx-focus="conversion"><b>4-Week Conversion</b><span>Audit required Week 1–4 follow-up.</span></button></div>';
-  const openTasks=d.due.filter(a=>rmxWorkOwner(d,a)==='Amanda').length+tx.open.length+pe.missing.length;
-  c.innerHTML+='<div class="rmx-inline-note"><b>Meeting count scope:</b> Amanda’s purple <b>New Meeting Push</b> on her Today page is the <b>RM team goal</b> ('+teamNew+' / 20). The cards below show <b>Amanda’s individual production</b> ('+newM+' / 10 new + '+existing+' / 20 existing = '+totalMeetings+' / 30 total). Those are different scopes, so the numbers are expected to differ when Nyny also has a new meeting logged.</div>';
+  const openTasks=d.due.filter(a=>isAmanda(a)).length+tx.open.length+pe.missing.length;
   c.innerHTML+='<section id="rmxAmandaExecution" class="rmx-section-block"><div class="rmx-section-label">Execution</div><div class="rmx-kpi-grid">'
     +kpiCard('Cold Calls Today',cold,25,cold>=25?'good':cold>=15?'warn':'bad','performance','cold')
     +kpiCard('Talk-To’s Today',talk,20,talk>=20?'good':talk>=12?'warn':'bad','performance','talk')
-    +kpiCard('Amanda New Realtor Meetings · MTD',newM,10,newM>=10?'good':newM>=6?'warn':'bad','performance','new')
-    +kpiCard('Amanda Existing Partner Meetings · MTD',existing,20,existing>=20?'good':existing>=12?'warn':'bad','performance','existing')
-    +kpiCard('RM Team New Meetings · MTD',teamNew,20,teamNew>=20?'good':teamNew>=12?'warn':'bad','performance','teamnew')
+    +kpiCard('New Realtor Meetings · MTD',newM,10,newM>=10?'good':newM>=6?'warn':'bad','performance','new')
+    +kpiCard('Existing Partner Meetings · MTD',existing,20,existing>=20?'good':existing>=12?'warn':'bad','performance','existing')
     +kpiCard('Live Conversations · Today',meaningful,null,meaningful?'good':'warn','performance','meaningful')
     +kpiCard('Open Tasks',openTasks,null,openTasks?'warn':'good','performance','followups')+'</div></section>';
   const recentAmanda=(d.recent||[]).filter(isAmanda).slice(0,80),missingNotes=recentAmanda.filter(a=>meaning(a)&&String(typeof stripRmMeta==='function'?stripRmMeta(a.notes||''):a.notes||'').trim().length<8).length,missingNext=pe.missing.length,noToday=ta.length?0:1,reconnectUntouched=(d.prospects||[]).filter(p=>String(p.status||'').toLowerCase()==='active').length;
   const coach=[['Missing Notes on Activities',missingNotes,'Add what happened and why it matters.','red'],['Missing Portfolio Next Steps',missingNext,'Close the relationship-intelligence gap.','amber'],['No Activity Logged Today',noToday,'Execution should be visible in the tracker.','amber'],['Transaction Calls Needing Follow-Up',tx.open.length,'CTC / New Contract calls stay open until complete.',''],['Reconnect Work Available',reconnectUntouched,'Use this when higher-priority work is current.','']];
   const coachFocus=['quality','portfolio','today','transactions','today'];
-  c.innerHTML+='<div class="rmx-two" id="rmxAmandaCoaching"><section class="rmx-card"><h2>Coaching Opportunities</h2><div class="sub">Signals that help you coach quality, not just quantity.</div>'+coach.map((x,i)=>'<button type="button" class="rmx-priority rmx-click-priority '+x[3]+'" data-rmx-jump="performance" data-rmx-focus="'+coachFocus[i]+'"><span class="rank">'+(i+1)+'</span><div class="copy"><b>'+x[0]+'</b><span>'+x[2]+'</span></div><span class="count">'+x[1]+'</span></button>').join('')+'<div class="rmx-person-actions"><button class="rmx-btn primary" onclick="rmxCoachAmandaForAgent(\'\')">Log Coaching</button><button class="rmx-btn" data-rmx-jump="queue">Open Coaching Queue</button></div></section><section class="rmx-card"><h2>Pace vs Goal</h2><div class="sub">A fast coaching read across today, week, and month.</div><div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;text-align:center;margin-top:18px"><div><div class="rmx-donut" style="--pct:'+dayP+';margin:auto"><div><b>'+dayP+'%</b><span>Today</span></div></div><div class="rmx-muted">Calls + Talk-To’s</div></div><div><div class="rmx-donut" style="--pct:'+weekP+';margin:auto"><div><b>'+weekP+'%</b><span>This Week</span></div></div><div class="rmx-muted">125 calls / 100 talk-to’s</div></div><div><div class="rmx-donut" style="--pct:'+monthP+';margin:auto"><div><b>'+monthP+'%</b><span>This Month</span></div></div><div class="rmx-muted">'+totalMeetings+' / 30 partner meetings · '+newM+' new / '+existing+' existing</div></div></div></section></div>';
+  c.innerHTML+='<div class="rmx-two" id="rmxAmandaCoaching"><section class="rmx-card"><h2>Coaching Opportunities</h2><div class="sub">Signals that help you coach quality, not just quantity.</div>'+coach.map((x,i)=>'<button type="button" class="rmx-priority rmx-click-priority '+x[3]+'" data-rmx-jump="performance" data-rmx-focus="'+coachFocus[i]+'"><span class="rank">'+(i+1)+'</span><div class="copy"><b>'+x[0]+'</b><span>'+x[2]+'</span></div><span class="count">'+x[1]+'</span></button>').join('')+'<div class="rmx-person-actions"><button class="rmx-btn primary" onclick="rmxCoachAmandaForAgent(\'\')">Log Coaching</button><button class="rmx-btn" data-rmx-jump="queue">Open Coaching Queue</button></div></section><section class="rmx-card"><h2>Pace vs Goal</h2><div class="sub">A fast coaching read across today, week, and month.</div><div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;text-align:center;margin-top:18px"><div><div class="rmx-donut" style="--pct:'+dayP+';margin:auto"><div><b>'+dayP+'%</b><span>Today</span></div></div><div class="rmx-muted">Calls + Talk-To’s</div></div><div><div class="rmx-donut" style="--pct:'+weekP+';margin:auto"><div><b>'+weekP+'%</b><span>This Week</span></div></div><div class="rmx-muted">125 calls / 100 talk-to’s</div></div><div><div class="rmx-donut" style="--pct:'+monthP+';margin:auto"><div><b>'+monthP+'%</b><span>This Month</span></div></div><div class="rmx-muted">10 new / 20 existing meetings</div></div></div></section></div>';
   const qa=recentAmanda.slice(0,10);
   c.innerHTML+='<section class="rmx-card rmx-quality rmx-section-block" id="rmxAmandaQuality"><h2>Quality of Execution</h2><div class="sub">Recent activity with enough context to coach the work. Use History or Portfolio from Director Queue when you need the relationship detail.</div><div class="rmx-tablewrap"><table class="rmx-table"><thead><tr><th>Activity</th><th>Type</th><th>Date</th><th>Outcome</th><th>Notes Quality</th><th>Follow-Up</th></tr></thead><tbody>'+(qa.length?qa.map(a=>{const note=String(typeof stripRmMeta==='function'?stripRmMeta(a.notes||''):a.notes||'').trim(),quality=note.length>=20?'Complete':note.length?'Thin':'Missing';return '<tr><td><div class="rmx-name">'+esc(fmtName(a.agent_name||''))+'</div></td><td>'+esc(a.act_type||'')+'</td><td>'+esc(a.act_date||'')+'</td><td>'+esc(a.outcome||'')+'</td><td><span class="rmx-pill '+(quality==='Complete'?'green':quality==='Missing'?'red':'amber')+'">'+quality+'</span></td><td>'+esc(a.follow_up_date||'—')+'</td></tr>'}).join(''):'<tr><td colspan="6">No recent Amanda activity.</td></tr>')+'</tbody></table></div></section>';
  } 
@@ -17604,7 +17630,7 @@ function renderMyDay(c,d){
  function renderDailyCheckin(c,d){
    title(c,'Daily Check-In','Today only · evening manager recap + tracker-generated coaching draft for Amanda. Review it, edit if needed, copy, and send.');
    const ta=todayAmanda(d),ma=mtdAmanda(d),cold=coldCount(ta),talk=talkCount(ta),live=meaningfulCount(ta),tx=rmxTxn(d),pe=rmxPortfolioExecution(d);
-   const newM=ma.filter(a=>a.act_type==='New Realtor Meeting').length,existing=ma.filter(a=>isExistingMeetingType(a.act_type)).length,totalMeetings=newM+existing,teamNew=meetings(d);
+   const newM=ma.filter(a=>a.act_type==='New Realtor Meeting').length,existing=ma.filter(a=>isExistingMeetingType(a.act_type)).length;
    const booked=ta.filter(a=>String(a.outcome||'')==='Meeting Scheduled').length;
    const followups=ta.filter(a=>a.follow_up_date&&String(a.outcome||'')!=='Meeting Scheduled').length;
    const noConnect=ta.filter(a=>/left voicemail|left vm|no answer/i.test(String(a.outcome||''))).length;
@@ -17624,10 +17650,8 @@ function renderMyDay(c,d){
      'Follow-Ups Set: '+followups,
      'No-Connect Attempts: '+noConnect,'',
      'MONTH-TO-DATE',
-     'Total Partner Meetings: '+totalMeetings+' / 30',
      'New Realtor Meetings: '+newM+' / 10',
-     'Existing Partner Meetings: '+existing+' / 20',
-     'RM Team New Realtor Meetings: '+teamNew+' / 20','',
+     'Existing Partner Meetings: '+existing+' / 20','',
      'COACHING FOCUS',
      rmxCoachSentence(coach.focus),'',
      'NEXT STEP / EXPECTATION',
@@ -17644,11 +17668,9 @@ function renderMyDay(c,d){
      +kpiCard('Meetings Booked · Today',booked,null,booked?'good':'','performance','today')
      +kpiCard('Follow-Ups Set · Today',followups,null,followups?'good':'','performance','followups')
      +kpiCard('Open Work · Now',coach.metrics.due+coach.metrics.tx+coach.metrics.portfolio,null,(coach.metrics.due+coach.metrics.tx+coach.metrics.portfolio)?'warn':'good','queue','')+'</div></section>';
-   c.innerHTML+='<div class="rmx-two"><section class="rmx-card"><h2>Month-to-Date Progress</h2><div class="sub">Amanda individual production first; RM team new-meeting goal shown separately.</div>'
-     +'<div class="rmx-priority"><span class="rank">1</span><div class="copy"><b>Total Partner Meetings</b><span>Amanda monthly capacity goal</span></div><span class="count">'+totalMeetings+' / 30</span></div>'
-     +'<div class="rmx-priority"><span class="rank">2</span><div class="copy"><b>New Realtor Meetings</b><span>Amanda MTD goal</span></div><span class="count">'+newM+' / 10</span></div>'
-     +'<div class="rmx-priority"><span class="rank">3</span><div class="copy"><b>Existing Partner Meetings</b><span>Amanda MTD goal</span></div><span class="count">'+existing+' / 20</span></div>'
-     +'<div class="rmx-priority"><span class="rank">T</span><div class="copy"><b>RM Team New Meetings</b><span>Same 20-goal shown on Amanda’s purple New Meeting Push</span></div><span class="count">'+teamNew+' / 20</span></div></section>'
+   c.innerHTML+='<div class="rmx-two"><section class="rmx-card"><h2>Month-to-Date Progress</h2><div class="sub">Meeting goals are monthly — not today’s quota.</div>'
+     +'<div class="rmx-priority"><span class="rank">1</span><div class="copy"><b>New Realtor Meetings</b><span>MTD goal</span></div><span class="count">'+newM+' / 10</span></div>'
+     +'<div class="rmx-priority"><span class="rank">2</span><div class="copy"><b>Existing Partner Meetings</b><span>MTD goal</span></div><span class="count">'+existing+' / 20</span></div></section>'
      +'<section class="rmx-card"><div class="rmx-card-head"><div><h2>Sandwich Coaching Draft</h2><div class="sub">Positive reinforcement → coaching / expectation → positive close.</div></div><button class="rmx-btn small" onclick="rmxCoachAmandaForAgent(\'\')">Open Coaching Note</button></div>'
        +'<div class="rmx-coach-sandwich"><div><b>1 · Reinforce</b><span>'+esc(rmxCoachSentence(coach.wins))+'</span></div><div><b>2 · Coach</b><span>'+esc(rmxCoachSentence(coach.focus))+'</span></div><div><b>3 · Expectation</b><span>'+esc(rmxCoachSentence(coach.asks))+'</span></div><div><b>4 · Close</b><span>'+esc(coach.close)+'</span></div></div></section></div>';
    c.innerHTML+='<section class="rmx-card"><div class="rmx-card-head"><div><h2>Email Recap to Amanda</h2><div class="sub">This is not just a numbers dump. It starts with a win, gives specific coaching from the tracker, states the expectation, and closes positively.</div></div><div class="rmx-actions"><button class="rmx-btn" onclick="rmxOpenDetailedCheckin()">Open Detailed Check-In</button><button class="rmx-btn primary" onclick="rmxCopyDailyEmail()">Copy Email Recap</button></div></div><div class="rmx-field"><label>Subject</label><input value="'+esc(subject)+'" readonly></div><div class="rmx-field"><label>Copy / Paste Email</label><textarea id="rmxDailyEmail" style="min-height:430px">'+esc(body)+'</textarea></div></section>';
@@ -17660,15 +17682,14 @@ function renderMyDay(c,d){
  function renderPerformance(c,d){
    title(c,'Activity & Meetings','Inspect Amanda’s execution behind the numbers without leaving Management View.');
    const ta=todayAmanda(d),ma=mtdAmanda(d),tx=rmxTxn(d),pe=rmxPortfolioExecution(d),conv=rmxConversion(d);
-   const defs={today:['Today','All activity Amanda logged today'],cold:['Cold Calls','Today’s cold-call execution'],talk:['Talk-To’s','Today’s qualifying relationship conversations'],meaningful:['Live / Meaningful Conversations','Only confirmed two-way conversations or held meetings. Meeting Scheduled, VM / no answer, and Remove / No Further Contact do not count.'],new:['Amanda New Realtor Meetings','Amanda’s New Realtor meetings this month'],teamnew:['RM Team New Meetings','All RM team New Realtor meetings this month — same scope as Amanda’s purple 20-meeting New Meeting Push'],existing:['Existing Partner Meetings','Existing-partner meetings this month'],transactions:['Transaction Calls','Open CTC / New Contract follow-up'],followups:['Follow-Ups Due','Due and overdue work with owner visibility'],portfolio:['Portfolio Gaps','Today’s meaningful contacts missing relationship intelligence / next move'],quality:['Quality Review','Amanda activity with missing notes or outcomes'],conversion:['4-Week Conversion','Required Week 1–4 follow-up after new Realtor meetings']};
+   const defs={today:['Today','All activity Amanda logged today'],cold:['Cold Calls','Today’s cold-call execution'],talk:['Talk-To’s','Today’s qualifying relationship conversations'],meaningful:['Live / Meaningful Conversations','Only confirmed two-way conversations or held meetings. Meeting Scheduled, VM / no answer, and Remove / No Further Contact do not count.'],new:['New Realtor Meetings','New Realtor meetings this month'],existing:['Existing Partner Meetings','Existing-partner meetings this month'],transactions:['Transaction Calls','Open CTC / New Contract follow-up'],followups:['Follow-Ups Due','Due and overdue work with owner visibility'],portfolio:['Portfolio Gaps','Today’s meaningful contacts missing relationship intelligence / next move'],quality:['Quality Review','Amanda activity with missing notes or outcomes'],conversion:['4-Week Conversion','Required Week 1–4 follow-up after new Realtor meetings']};
    let focus=R.sub.performanceFocus||'today';if(!defs[focus])focus='today';R.sub.performanceFocus=focus;
-   const tabs=['today','cold','talk','meaningful','new','teamnew','existing','transactions','followups','portfolio','quality','conversion'];
+   const tabs=['today','cold','talk','meaningful','new','existing','transactions','followups','portfolio','quality','conversion'];
    c.innerHTML+='<div class="rmx-workbench-tabs">'+tabs.map(k=>'<button type="button" data-performance-filter="'+k+'" class="'+(focus===k?'active':'')+'" onclick="rmxPerformanceFilterTo(\''+k+'\')">'+defs[k][0]+'</button>').join('')+'</div>';
    c.innerHTML+='<div class="rmx-kpi-grid">'
      +kpiCard('Cold Calls Today',coldCount(ta),25,coldCount(ta)>=25?'good':'warn','performance','cold')
      +kpiCard('Talk-To’s Today',talkCount(ta),20,talkCount(ta)>=20?'good':'warn','performance','talk')
-     +kpiCard('Amanda New Realtor Meetings',ma.filter(a=>a.act_type==='New Realtor Meeting').length,10,'','performance','new')
-     +kpiCard('RM Team New Meetings',meetings(d),20,'','performance','teamnew')
+     +kpiCard('New Realtor Meetings',ma.filter(a=>a.act_type==='New Realtor Meeting').length,10,'','performance','new')
      +kpiCard('Existing Partner Meetings',ma.filter(a=>isExistingMeetingType(a.act_type)).length,20,'','performance','existing')
      +kpiCard('Transaction Calls Open',tx.open.length,null,tx.open.length?'bad':'good','performance','transactions')
      +kpiCard('Follow-Ups Due',d.due.length,null,d.due.length?'warn':'good','performance','followups')+'</div>';
@@ -17680,9 +17701,9 @@ function renderMyDay(c,d){
      return '<div class="rmx-detail-head"><div>Date</div><div>Agent / Partner</div><div>Activity</div><div>Outcome / Notes</div><div>Follow-Up</div><div>Manage</div></div><div class="rmx-detail-list">'+rows.slice(0,250).map(a=>{const note=rmxActivityNote(a);return '<div class="rmx-detail-row"><div class="dt">'+esc(a.act_date||String(a.created_at||'').slice(0,10)||'—')+'</div><div class="who">'+esc(fmtName(a.agent_name||'—'))+'</div><div class="type">'+esc(a.act_type||'—')+'</div><div class="copy">'+esc(a.outcome||'')+(note?'<div class="rmx-muted" style="margin-top:3px">'+esc(note)+'</div>':'')+'</div><div class="follow">'+esc(a.follow_up_date||'—')+'</div><div>'+actionBtns(a.agent_name||'','coaching')+'</div></div>'}).join('')+'</div>';
    }
    function dueRows(rows){
-     const mapped=(rows||[]).map(a=>{const p=d.profiles.find(x=>key(x.agent_name)===key(a.agent_name))||{agent_name:a.agent_name,_tier:'—'},owner=rmxWorkOwnerLabel(d,a);return {a,p,owner}}).sort((x,y)=>String(x.a.follow_up_date||'').localeCompare(String(y.a.follow_up_date||'')));
+     const mapped=(rows||[]).map(a=>{const p=d.profiles.find(x=>key(x.agent_name)===key(a.agent_name))||{agent_name:a.agent_name,_tier:'—'},owner=String((d.assigns[key(a.agent_name)]||{}).rm||ownerName(d,p)||'Unassigned');return {a,p,owner}}).sort((x,y)=>String(x.a.follow_up_date||'').localeCompare(String(y.a.follow_up_date||'')));
      if(!mapped.length)return empty('No due follow-ups right now.');
-     return '<div class="rmx-tablewrap"><table class="rmx-table"><thead><tr><th>Due</th><th>Agent / Partner</th><th>Tier</th><th>Owner</th><th>Activity / Outcome</th><th>Actions</th></tr></thead><tbody>'+mapped.slice(0,250).map(x=>'<tr><td>'+esc(x.a.follow_up_date||'—')+'</td><td><div class="rmx-name">'+esc(fmtName(x.a.agent_name||'—'))+'</div></td><td><span class="rmx-pill">'+esc(x.p._tier||'—')+'</span></td><td>'+esc(x.owner)+'</td><td>'+esc(x.a.act_type||'Follow-up')+'<div class="rmx-muted">'+esc(x.a.outcome||'')+'</div></td><td>'+actionBtns(x.a.agent_name,String(x.owner).toLowerCase().startsWith('amanda')?'coaching':'relationship')+'</td></tr>').join('')+'</tbody></table></div>';
+     return '<div class="rmx-tablewrap"><table class="rmx-table"><thead><tr><th>Due</th><th>Agent / Partner</th><th>Tier</th><th>Owner</th><th>Activity / Outcome</th><th>Actions</th></tr></thead><tbody>'+mapped.slice(0,250).map(x=>'<tr><td>'+esc(x.a.follow_up_date||'—')+'</td><td><div class="rmx-name">'+esc(fmtName(x.a.agent_name||'—'))+'</div></td><td><span class="rmx-pill">'+esc(x.p._tier||'—')+'</span></td><td>'+esc(x.owner)+'</td><td>'+esc(x.a.act_type||'Follow-up')+'<div class="rmx-muted">'+esc(x.a.outcome||'')+'</div></td><td>'+actionBtns(x.a.agent_name,String(x.owner).toLowerCase()==='amanda'?'coaching':'relationship')+'</td></tr>').join('')+'</tbody></table></div>';
    }
    function portfolioRows(rows){if(!rows.length)return empty('No portfolio update gaps from today’s meaningful contacts.');return '<div class="rmx-tablewrap"><table class="rmx-table"><thead><tr><th>Agent / Partner</th><th>Tier</th><th>Owner</th><th>Last Touch</th><th>Required Next Step</th><th>Actions</th></tr></thead><tbody>'+rows.map(p=>'<tr><td><div class="rmx-name">'+esc(fmtName(p.agent_name||'—'))+'</div></td><td><span class="rmx-pill">'+esc(p._tier||'—')+'</span></td><td>'+esc(ownerName(d,p))+'</td><td>'+esc(latestTouch(d,p)||'—')+'</td><td>'+esc(String(p.next_growth_opportunity||'').trim()||'Document relationship intelligence and next growth move')+'</td><td>'+actionBtns(p.agent_name,'coaching')+'</td></tr>').join('')+'</tbody></table></div>'}
    function conversionRows(){const rows=conv.campaigns||[];if(!rows.length)return empty('No active 4-week conversion campaigns.');return '<div class="rmx-tablewrap"><table class="rmx-table"><thead><tr><th>Agent</th><th>Meeting</th><th>Next Required</th><th>Due</th><th>Progress</th><th>Actions</th></tr></thead><tbody>'+rows.map(x=>{const done=x.weeks.filter(w=>w.done).length,next=x.next;return '<tr><td><div class="rmx-name">'+esc(fmtName(x.name))+'</div></td><td>'+esc(x.meet)+'</td><td>'+(next?'Week '+next.w:'Complete')+'</td><td>'+(next?esc(next.due):'—')+'</td><td>'+done+' / 4 complete'+(next&&next.overdue?' <span class="rmx-pill red">OVERDUE</span>':'')+'</td><td>'+actionBtns(x.name,'coaching')+'</td></tr>'}).join('')+'</tbody></table></div>'}
@@ -17696,7 +17717,6 @@ function renderMyDay(c,d){
      else if(f==='talk')host.innerHTML=activityRows(ta.filter(a=>rmxTalkTypes().has(String(a.act_type||'').trim())));
      else if(f==='meaningful')host.innerHTML=activityRows(ta.filter(meaning));
      else if(f==='new')host.innerHTML=activityRows(ma.filter(a=>a.act_type==='New Realtor Meeting'));
-     else if(f==='teamnew')host.innerHTML=activityRows((d.acts||[]).filter(a=>a.act_type==='New Realtor Meeting'));
      else if(f==='existing')host.innerHTML=activityRows(ma.filter(a=>isExistingMeetingType(a.act_type)));
      else if(f==='transactions')host.innerHTML=activityRows(tx.open.length?tx.open:ma.filter(a=>['CTC Call','Under Contract Call'].includes(a.act_type)));
      else if(f==='followups')host.innerHTML=dueRows(d.due);
@@ -17734,7 +17754,7 @@ function renderMyDay(c,d){
  } 
  function renderPortfolio(c,d){
   title(c,'Portfolio Risk','Lead-aware relationship health. Recent lead activity counts as engagement; missing growth plans are managed separately from retention risk.');
-  const rr=risks(d),high=rr.filter(r=>r.score>=80),rising=rr.filter(r=>r.score>=45&&r.score<80),no14=rr.filter(r=>r.days!=null&&r.days>=14),plan=d.profiles.filter(p=>['Channel','A','B'].includes(p._tier)&&!String(p.next_growth_opportunity||'').trim()),amandaDue=d.due.filter(a=>rmxWorkOwner(d,a)==='Amanda'),nynyDue=d.due.filter(a=>rmxWorkOwner(d,a)==='Nyny');
+  const rr=risks(d),high=rr.filter(r=>r.score>=80),rising=rr.filter(r=>r.score>=45&&r.score<80),no14=rr.filter(r=>r.days!=null&&r.days>=14),plan=d.profiles.filter(p=>['Channel','A','B'].includes(p._tier)&&!String(p.next_growth_opportunity||'').trim()),amandaDue=d.due.filter(a=>String((d.assigns[key(a.agent_name)]||{}).rm||'').toLowerCase()==='amanda'),nynyDue=d.due.filter(a=>String((d.assigns[key(a.agent_name)]||{}).rm||'').toLowerCase()==='nyny');
   c.innerHTML+='<div class="rmx-subnav"><button onclick="rmxRiskFilterTo(\'all\')">All Risk</button><button onclick="rmxRiskFilterTo(\'high\')">High Risk</button><button onclick="rmxRiskFilterTo(\'rising\')">Rising Risk</button><button onclick="rmxRiskFilterTo(\'amanda\')">Amanda Due</button><button onclick="rmxRiskFilterTo(\'mine\')">My Due</button></div>';
   c.innerHTML+='<div class="rmx-risk-grid">'
     +'<button class="rmx-summary-tile rmx-click-tile" data-risk-filter="high" onclick="rmxRiskFilterTo(\'high\')"><b>'+high.length+'</b><span>High Risk</span><small>Immediate retention attention</small></button>'
@@ -17794,8 +17814,7 @@ function renderMyDay(c,d){
  function renderAdmin(c,d){
   title(c,'Admin / Tools','System health, ownership cleanup and roster control.');
   const unowned=d.profiles.filter(p=>!String((p._assign||{}).rm||'').trim());
-  const hiddenMarker=(typeof HIDDEN_PROFILE_MARKER!=='undefined'?HIDDEN_PROFILE_MARKER:'__HIDDEN__');
-  const inactive=(d.allProfiles||d.profiles).filter(p=>String(p.relationship_status||'active').toLowerCase()==='inactive'&&String(p.display_name||'')!==hiddenMarker);
+  const inactive=(d.allProfiles||d.profiles).filter(p=>String(p.relationship_status||'active').toLowerCase()==='inactive');
   const active=d.profiles.filter(p=>String(p.relationship_status||'active').toLowerCase()!=='inactive'&&p.do_not_contact!==true);
   c.innerHTML+='<div class="rmx-grid">'
     +'<button class="rmx-stat rmx-stat-click" onclick="rmxAdminSetMode(\'active\')"><div class="lbl">Active Relationships</div><div class="val">'+active.length+'</div><div class="foot">Current active roster</div><div class="rmx-openhint">Review roster →</div></button>'
@@ -17805,24 +17824,11 @@ function renderMyDay(c,d){
   c.innerHTML+=card('Roster & ownership','Use the categories instead of hunting through one giant cleanup list.',
     '<div class="rmx-admin-tabs"><button data-admin-mode="active" onclick="rmxAdminSetMode(\'active\')">Active Roster</button><button data-admin-mode="unowned" onclick="rmxAdminSetMode(\'unowned\')">Ownership Gaps</button><button data-admin-mode="inactive" onclick="rmxAdminSetMode(\'inactive\')">Inactive / Removed</button></div>'
     +'<div id="rmxAdminModeNote" class="rmx-note"></div>'
-    +'<div id="rmxAdminBulkBar" style="display:none;margin:10px 0;padding:10px 12px;border:1px solid #ded8ef;border-radius:10px;background:#faf8ff"><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><b style="margin-right:4px">Bulk actions</b><button type="button" class="rmx-btn small" data-rmx-admin-bulk="select-visible">Select all shown</button><button type="button" class="rmx-btn small" data-rmx-admin-bulk="clear">Clear selection</button><span id="rmxAdminSelectedCount" class="meta" style="min-width:72px">0 selected</span><span style="flex:1"></span><button type="button" class="rmx-btn small rmx-admin-assign-bulk" data-rmx-admin-bulk="assign" data-rm="Amanda">Assign selected to Amanda</button><button type="button" class="rmx-btn small primary rmx-admin-assign-bulk" data-rmx-admin-bulk="assign" data-rm="Nyny">Assign selected to Nyny</button><button type="button" class="rmx-btn small rmx-admin-reactivate-bulk" data-rmx-admin-bulk="reactivate" style="display:none">Reactivate selected</button><button type="button" class="rmx-btn small danger" data-rmx-admin-bulk="permanent-remove">Permanently remove selected</button></div><div id="rmxAdminBulkHelp" class="meta" style="margin-top:6px"><b>Permanent remove</b> keeps historical activity but tombstones the relationship so it stays out of Amanda’s active tracker, Core Team active workflows, reconnect/prospecting, ownership queues, and future follow-ups. Search/filter first, then use <b>Select all shown</b> to work the whole filtered list at once.</div></div>'
+    +'<div id="rmxAdminBulkBar" style="display:none;margin:10px 0;padding:10px 12px;border:1px solid #ded8ef;border-radius:10px;background:#faf8ff"><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><b style="margin-right:4px">Bulk actions</b><button type="button" class="rmx-btn small" data-rmx-admin-bulk="select-visible">Select visible</button><button type="button" class="rmx-btn small" data-rmx-admin-bulk="clear">Clear selection</button><span id="rmxAdminSelectedCount" class="meta" style="min-width:72px">0 selected</span><span style="flex:1"></span><button type="button" class="rmx-btn small" data-rmx-admin-bulk="assign" data-rm="Amanda">Assign selected to Amanda</button><button type="button" class="rmx-btn small primary" data-rmx-admin-bulk="assign" data-rm="Nyny">Assign selected to Nyny</button><button type="button" class="rmx-btn small danger" data-rmx-admin-bulk="permanent-remove">Permanently remove selected</button></div><div class="meta" style="margin-top:6px"><b>Permanent remove</b> keeps historical activity but tombstones the relationship so it stays out of Amanda’s active tracker, Core Team active workflows, reconnect/prospecting, ownership queues, and future follow-ups. Search/filter first, then use <b>Select visible</b> if you want to remove a group.</div></div>'
     +'<input class="rmx-search" id="rmxAdminAgentSearch" placeholder="Search agent, LP, team, brokerage, tier…"><div id="rmxAdminAgentRows" style="margin-top:10px"></div>');
   setTimeout(()=>rmxAdminSetMode(R.sub.adminMode||'active'),0);
 }
-window.rmxAdminSetMode=function(mode){
-  R.sub.adminMode=mode||'active';
-  document.querySelectorAll('[data-admin-mode]').forEach(b=>b.classList.toggle('active',b.dataset.adminMode===R.sub.adminMode));
-  const note=$('rmxAdminModeNote'),bulk=$('rmxAdminBulkBar'),help=$('rmxAdminBulkHelp');
-  if(note){const copy={active:'<b>Active Roster:</b> current relationships. <b>Remove from active</b> is reversible. <b>Permanent remove</b> tombstones the profile so it stays out of Amanda/Core Team active workflows.',unowned:'<b>Ownership Gaps:</b> relationships without an RM owner. Assign them, or permanently remove people who should not be in Amanda/Core Team active tracking at all.',inactive:'<b>Inactive / Removed:</b> this list contains only recoverable inactive relationships. Permanently removed tombstones are hidden and are not counted here. Use the checkboxes below to reactivate or permanently remove many records at once.'};note.innerHTML=copy[R.sub.adminMode]||copy.active;}
-  if(bulk)bulk.style.display='block';
-  const inactive=R.sub.adminMode==='inactive';
-  document.querySelectorAll('.rmx-admin-assign-bulk').forEach(b=>b.style.display=inactive?'none':'');
-  document.querySelectorAll('.rmx-admin-reactivate-bulk').forEach(b=>b.style.display=inactive?'':'none');
-  if(help)help.innerHTML=inactive
-    ?'<b>Inactive bulk cleanup:</b> search if needed, click <b>Select all shown</b>, then <b>Permanently remove selected</b>. This tombstones the profiles so they disappear from this list and stay out of active workflows while historical activity remains preserved.'
-    :'<b>Permanent remove</b> keeps historical activity but tombstones the relationship so it stays out of Amanda’s active tracker, Core Team active workflows, reconnect/prospecting, ownership queues, and future follow-ups. Search/filter first, then use <b>Select all shown</b> to work the whole filtered list at once.';
-  rmxRenderAdminAgentRows(R.sub.adminMode)
-};
+window.rmxAdminSetMode=function(mode){R.sub.adminMode=mode||'active';document.querySelectorAll('[data-admin-mode]').forEach(b=>b.classList.toggle('active',b.dataset.adminMode===R.sub.adminMode));const note=$('rmxAdminModeNote'),bulk=$('rmxAdminBulkBar');if(note){const copy={active:'<b>Active Roster:</b> current relationships. <b>Remove from active</b> is reversible. <b>Permanent remove</b> tombstones the profile so it stays out of Amanda/Core Team active workflows.',unowned:'<b>Ownership Gaps:</b> relationships without an RM owner. Assign them, or permanently remove people who should not be in Amanda/Core Team active tracking at all.',inactive:'<b>Inactive / Removed:</b> history is preserved. Reactivate when appropriate, or permanently remove a profile so it stays tombstoned.'};note.innerHTML=copy[R.sub.adminMode]||copy.active;}if(bulk)bulk.style.display=(R.sub.adminMode==='unowned'||R.sub.adminMode==='active')?'block':'none';rmxRenderAdminAgentRows(R.sub.adminMode)};
 window.rmxRenderAdminAgentRows=async function(mode){
   const host=$('rmxAdminAgentRows');if(!host)return;host.innerHTML=loading();
   try{
@@ -17850,7 +17856,7 @@ window.rmxRenderAdminAgentRows=async function(mode){
           +'<button type="button" class="rmx-btn small danger" data-rmx-admin-action="remove" data-agent="'+encoded+'">Remove from active</button>'
           +'<button type="button" class="rmx-btn small danger" data-rmx-admin-action="permanent-remove" data-agent="'+encoded+'">Permanent remove</button>';
       }else{
-        lead='<label style="display:flex;align-items:flex-start;gap:10px;cursor:pointer">'+selectBox+identity+'</label>';
+        lead='<div><div class="name">'+esc(fmtName(p.display_name||name))+'</div><div class="meta">Tier: '+esc(p._tier||'—')+' · LP: '+esc(assign.lp||'Unassigned')+' · RM: '+esc(assign.rm||'Unassigned')+'</div></div>';
         actions='<button type="button" class="rmx-btn small" data-rmx-admin-action="reactivate" data-agent="'+encoded+'">Reactivate</button>'
           +'<button class="rmx-btn small" data-rmx-action="history" data-agent="'+encoded+'">History</button>'
           +'<button type="button" class="rmx-btn small danger" data-rmx-admin-action="permanent-remove" data-agent="'+encoded+'">Permanent remove</button>';
@@ -17883,7 +17889,7 @@ window.rmxAdminAssign=async function(name,rm,opts){
   }catch(e){console.error('RMX ownership assignment failed',e);if(!opts.silent)toast('Could not assign owner: '+(e.message||'Unknown error'),'error');throw e}
 };
 window.rmxAdminUpdateSelectionCount=function(){const n=document.querySelectorAll('.rmx-admin-select:checked').length,el=$('rmxAdminSelectedCount');if(el)el.textContent=n+' selected';return n};
-window.rmxAdminSelectVisible=function(){document.querySelectorAll('.rmx-admin-select').forEach(cb=>cb.checked=false);document.querySelectorAll('#rmxAdminAgentRows .rmx-row').forEach(r=>{if(r.style.display!=='none'){const cb=r.querySelector('.rmx-admin-select');if(cb)cb.checked=true}});rmxAdminUpdateSelectionCount()};
+window.rmxAdminSelectVisible=function(){document.querySelectorAll('#rmxAdminAgentRows .rmx-row').forEach(r=>{if(r.style.display!=='none'){const cb=r.querySelector('.rmx-admin-select');if(cb)cb.checked=true}});rmxAdminUpdateSelectionCount()};
 window.rmxAdminClearSelection=function(){document.querySelectorAll('.rmx-admin-select').forEach(cb=>cb.checked=false);rmxAdminUpdateSelectionCount()};
 window.rmxAdminBulkAssign=async function(rm,button){
   const selected=Array.from(document.querySelectorAll('.rmx-admin-select:checked')),names=selected.map(cb=>decodeURIComponent(cb.dataset.agent||'')).filter(Boolean);if(!names.length){toast('Select at least one relationship first.','error');return}
@@ -17897,27 +17903,6 @@ window.rmxAdminBulkAssign=async function(rm,button){
     }
     if(typeof loadAgentOwnership==='function')await loadAgentOwnership();R.cache=null;R.ts=0;await rmxRenderAdminAgentRows('unowned');
     toast(ok+' relationship'+(ok===1?'':'s')+' assigned'+(failed.length?' · '+failed.length+' failed':'')+' ✓',failed.length?'error':'success');
-  }finally{if(button&&button.isConnected){button.disabled=false;button.textContent=old}}
-};
-
-window.rmxAdminBulkReactivate=async function(button){
-  const selected=Array.from(document.querySelectorAll('.rmx-admin-select:checked'));
-  const names=selected.map(cb=>decodeURIComponent(cb.dataset.agent||'')).filter(Boolean);
-  if(!names.length){toast('Select at least one inactive relationship first.','error');return}
-  if(!window.confirm('Reactivate '+names.length+' selected relationship'+(names.length===1?'':'s')+'?'))return;
-  const old=button?button.textContent:'';let ok=0,failed=[];
-  try{
-    if(button){button.disabled=true;button.textContent='Reactivating 0 / '+names.length+'…'}
-    for(let i=0;i<names.length;i++){
-      try{
-        await sbFetch('agent_profiles?agent_name=eq.'+encodeURIComponent(names[i]),{method:'PATCH',prefer:'return=minimal',body:JSON.stringify({relationship_status:'active'})});
-        ok++;
-      }catch(e){failed.push(names[i])}
-      if(button)button.textContent='Reactivating '+(i+1)+' / '+names.length+'…';
-    }
-    R.cache=null;R.ts=0;
-    await rmxRenderAdminAgentRows('inactive');
-    toast(ok+' relationship'+(ok===1?'':'s')+' reactivated'+(failed.length?' · '+failed.length+' failed':'')+' ✓',failed.length?'error':'success');
   }finally{if(button&&button.isConnected){button.disabled=false;button.textContent=old}}
 };
 
@@ -17968,7 +17953,7 @@ window.rmxAdminPermanentRemove=async function(name,opts){
     R.cache=null;R.ts=0;
 
     if(!opts.silent)toast(fmtName(name)+' permanently removed from active trackers ✓','success');
-    if(!opts.skipRefresh){if(R.route==='admin')await go('admin',true,true);else await rmxRenderAdminAgentRows(R.sub.adminMode||'active');}
+    if(!opts.skipRefresh)await rmxRenderAdminAgentRows(R.sub.adminMode||'active');
     return {name:canonical,removed:true};
   }catch(e){
     console.error('Permanent roster removal failed',e);
@@ -18004,7 +17989,7 @@ window.rmxAdminBulkPermanentRemove=async function(button){
     try{if(typeof loadAgentOwnership==='function')await loadAgentOwnership()}catch(e){}
     try{if(typeof loadSharedDisplayNames==='function')await loadSharedDisplayNames()}catch(e){}
     R.cache=null;R.ts=0;
-    if(R.route==='admin')await go('admin',true,true);else await rmxRenderAdminAgentRows(R.sub.adminMode||'active');
+    await rmxRenderAdminAgentRows(R.sub.adminMode||'active');
     toast(
       removed+' relationship'+(removed===1?'':'s')+' permanently removed'
       +(failed.length?' · '+failed.length+' failed':'')+' ✓',
@@ -18221,7 +18206,7 @@ window.rmxAdminRemoveAgent=async function(name){if(!window.confirm('Mark '+name+
  window.rmxReturnToDirector=function(){try{sessionStorage.removeItem('rmx_return_director')}catch(e){}location.hash='director'};
  let ret=document.getElementById('rmxDirectorReturn');if(!ret){ret=document.createElement('button');ret.id='rmxDirectorReturn';ret.textContent='← Back to Management';ret.onclick=window.rmxReturnToDirector;document.body.appendChild(ret)}
  window.addEventListener('hashchange',()=>{const b=document.getElementById('rmxDirectorReturn');if(b)b.style.display=location.hash==='#director'?'none':(sessionStorage.getItem('rmx_return_director')==='1'?'block':'none')});
- window.rmxRefreshManagementData=function(){R.cache=null;R.ts=0;if(document.body.classList.contains('rm-director-route'))go(R.route,true,true)};
+ window.rmxRefreshManagementData=function(){R.cache=null;R.ts=0;if(document.body.classList.contains('rm-director-route'))go(R.route,true)};
 window.rmxBoot=boot;const baseSwitch=window.switchTab;window.switchTab=function(name){
    if(name==='daniel'){
      document.body.classList.add('rmx-director-site','rmx-director-active','rm-director-route');
@@ -18275,668 +18260,6 @@ window.rmxBoot=boot;const baseSwitch=window.switchTab;window.switchTab=function(
 })();
 </script>
 
-
-
-<style id="v228-functional-sweep-css">
-/* Amanda Today should read as a work queue, not a numbered ranking report. */
-#view-week .v191-rank,
-#view-week .v164-mini-rank,
-#view-week .v165-rank,
-#view-week .v154-rank,
-#view-week .v153-rank{display:none!important}
-#view-week .v191-row{grid-template-columns:minmax(210px,1fr) minmax(210px,1fr) auto!important}
-@media(max-width:850px){
-  #view-week .v191-row{grid-template-columns:minmax(0,1fr)!important}
-  #view-week .v191-contact,#view-week .v191-actions{grid-column:1!important;padding-left:0!important}
-}
-</style>
-<script id="v232-amanda-action-routing-js">
-(function(){
-  const directorContext=()=>{
-    try{return location.hash==='#director'||document.body.classList.contains('rm-director-route')||document.body.classList.contains('rmx-director-active')}
-    catch(e){return false}
-  };
-  const normalizeType=t=>{
-    t=String(t||'Agent Talk-to').trim();
-    if(t==='Talk-to (text/call)'||t==='Talk-to')return 'Agent Talk-to';
-    return t;
-  };
-
-  const legacyDirectorLog=window.v98DirectorLog;
-  window.v98DirectorLog=function(name,owner,type){
-    const who=String(owner||'').trim().toLowerCase();
-    if(!directorContext()||who==='amanda'){
-      if(typeof window.rmOpenUnifiedLog==='function')return window.rmOpenUnifiedLog(String(name||''),normalizeType(type));
-      if(typeof window.v176OpenOutreach==='function')return window.v176OpenOutreach(String(name||''),normalizeType(type));
-    }
-    return typeof legacyDirectorLog==='function'?legacyDirectorLog.apply(this,arguments):undefined;
-  };
-
-  const legacyPrefill=window.prefillActivityLog;
-  window.prefillActivityLog=function(name,type){
-    if(!directorContext()){
-      if(typeof window.rmOpenUnifiedLog==='function')return window.rmOpenUnifiedLog(String(name||''),normalizeType(type));
-      if(typeof window.v176OpenOutreach==='function')return window.v176OpenOutreach(String(name||''),normalizeType(type));
-    }
-    return typeof legacyPrefill==='function'?legacyPrefill.apply(this,arguments):undefined;
-  };
-
-  window.focusDoneAndLog=function(name){
-    try{if(typeof vibrateOk==='function')vibrateOk()}catch(e){}
-    try{if(typeof toast==='function'&&Array.isArray(window.AFFIRMATIONS)&&window.AFFIRMATIONS.length)toast(window.AFFIRMATIONS[Math.floor(Math.random()*window.AFFIRMATIONS.length)],'success',2600)}catch(e){}
-    try{if(typeof closeFocusModal==='function')closeFocusModal()}catch(e){}
-    return typeof window.rmOpenUnifiedLog==='function'?window.rmOpenUnifiedLog(String(name||''),'Agent Talk-to'):undefined;
-  };
-
-  function repairAmandaActionButtons(root){
-    root=root||document.getElementById('view-week');if(!root)return;
-    root.querySelectorAll('button[onclick*="v98DirectorLog"]').forEach(btn=>{
-      const raw=btn.getAttribute('onclick')||'';
-      if(!/['"]Amanda['"]/.test(raw))return;
-      const m=raw.match(/v98DirectorLog\(\s*['"]([^'"]*)['"]/);
-      if(!m)return;
-      let name=m[1];name=name.replace(/\\'/g,"'").replace(/\\\\/g,'\\');
-      btn.removeAttribute('onclick');
-      btn.dataset.rmAction='touch';btn.dataset.agent=encodeURIComponent(name);btn.dataset.type=encodeURIComponent('Agent Talk-to');
-    });
-  }
-  window.rmV228RepairAmandaActions=repairAmandaActionButtons;
-  const week=document.getElementById('view-week');
-  if(week){
-    new MutationObserver(ms=>{for(const m of ms){if(m.addedNodes&&m.addedNodes.length){repairAmandaActionButtons(week);break}}}).observe(week,{childList:true,subtree:true});
-    repairAmandaActionButtons(week);
-    const copyCleanup=()=>document.querySelectorAll('#view-week .v191-head small').forEach(el=>{
-      if(/Work #1, log it, move on\./i.test(el.textContent||''))el.textContent='Work the first name shown, log it, and the next best relationship will move up.';
-    });
-    copyCleanup();new MutationObserver(copyCleanup).observe(week,{childList:true,subtree:true});
-  }
-})();
-</script>
-
-
-<script id="v232-workflow-modal-manager-js">
-(function(){
-  const IDS=['v175OutreachModal','v175TransactionModal','v175UpdateModal','wp37PartnerCheckinModal','v191PlaybookModal','v191Modal','v196NotProspectModal'];
-  const get=id=>document.getElementById(id);
-
-  function hide(id){
-    const el=get(id);if(!el)return;
-    el.classList.remove('open','show','active');
-    el.setAttribute('aria-hidden','true');
-    el.style.setProperty('display','none','important');
-    el.style.setProperty('pointer-events','none','important');
-    el.style.removeProperty('visibility');
-    el.style.removeProperty('opacity');
-    el.style.removeProperty('z-index');
-  }
-  function show(id){
-    const el=get(id);if(!el)return false;
-    IDS.forEach(other=>{if(other!==id)hide(other)});
-    el.classList.add('open');
-    el.removeAttribute('aria-hidden');
-    el.style.setProperty('display','flex','important');
-    el.style.setProperty('pointer-events','auto','important');
-    el.style.setProperty('visibility','visible','important');
-    el.style.setProperty('opacity','1','important');
-    if(id==='wp37PartnerCheckinModal')el.style.setProperty('z-index','200000','important');
-    document.body.style.overflow='hidden';
-    const box=el.querySelector('.modal-box');if(box&&id==='wp37PartnerCheckinModal'){box.style.overflowY='auto';box.scrollTop=0}
-    if(id==='v175OutreachModal')try{v201PaintMeaningfulComplete()}catch(e){}
-    return true;
-  }
-  function clearMeaningfulState(){
-    try{wp37PendingPartnerSave=null}catch(e){}
-    window._v203PendingMeaningful=null;
-    window._v198PortfolioPreflight=false;
-    window._v198PortfolioAgent='';
-  }
-  function closeAll(reset=true){
-    IDS.forEach(hide);
-    if(reset)clearMeaningfulState();
-    document.body.style.removeProperty('overflow');
-  }
-  function anyOpen(){return IDS.some(id=>get(id)?.classList.contains('open'))}
-
-  window.rmWorkflowModal={show,hide,closeAll};
-  window.v175Open=show;
-  window.v175Close=function(id){hide(id);if(!anyOpen())document.body.style.removeProperty('overflow')};
-
-  // Keep the legacy card buttons alive without keeping the obsolete v170 routing layer.
-  window.v154Log=function(name,type){
-    let n='',t='Agent Talk-to';try{n=decodeURIComponent(String(name||''));t=decodeURIComponent(String(type||'Agent Talk-to'))}catch(e){n=String(name||'');t=String(type||'Agent Talk-to')}
-    return typeof rmOpenUnifiedLog==='function'?rmOpenUnifiedLog(n,t):v176OpenOutreach(n,t);
-  };
-  window.v154Update=function(name){let n='';try{n=decodeURIComponent(String(name||''))}catch(e){n=String(name||'')}return typeof v176OpenUpdate==='function'?v176OpenUpdate(n):undefined};
-
-  // One navigation guard only. Business routing wrappers from the base tracker and Management remain intact.
-  const priorSwitch=window.switchTab;
-  if(typeof priorSwitch==='function'&&!priorSwitch.__v232){
-    const wrapped=function(name){closeAll(true);return priorSwitch.apply(this,arguments)};
-    wrapped.__v232=true;window.switchTab=wrapped;
-  }
-  document.addEventListener('click',function(ev){
-    const tab=ev.target.closest&&ev.target.closest('.tab[data-tab]');
-    if(tab)closeAll(true);
-  },true);
-
-  // Only workflow backdrops use this manager; unrelated Contact/Admin modals keep their own close behavior.
-  IDS.forEach(id=>{
-    const el=get(id);if(!el||el.dataset.v232Bound==='1')return;
-    el.dataset.v232Bound='1';
-    el.addEventListener('mousedown',function(ev){if(ev.target===el)closeAll(true)});
-  });
-
-  const date=get('v175OutreachFollowup');
-  if(date){date.disabled=false;date.readOnly=false;date.style.setProperty('pointer-events','auto','important')}
-
-  document.addEventListener('keydown',function(ev){
-    if(ev.key==='Escape'&&anyOpen()){ev.preventDefault();closeAll(true)}
-  });
-  window.addEventListener('hashchange',()=>closeAll(true));
-  window.addEventListener('popstate',()=>closeAll(true));
-})();
-</script>
-
-<style id="v230-contact-cleanup-labels-css">
-.v230-rel-tags{display:flex;gap:5px;flex-wrap:wrap;margin-top:5px}
-.v230-tag{display:inline-flex;align-items:center;border-radius:999px;padding:2px 7px;font-size:9px;font-weight:800;line-height:1.45;border:1px solid #ded8eb;background:#faf8ff;color:#59477f}
-.v230-tag.strategic{background:#f1ecfb;border-color:#d2c5eb;color:#5b3d91}
-.v230-tag.category{background:#f7f4ee;border-color:#e6ddcb;color:#6d5b34}
-.v230-tag.marketing{background:#edf7f0;border-color:#cfe4d7;color:#315b40}
-.v230-tag.nurture{background:#fff9ec;border-color:#e8d5a8;color:#7a5a13}
-.v230-tag.potential{background:#eef5ff;border-color:#cddcf1;color:#355c9a}
-.v230-clean-mini{border:1px solid #e3d8bb;background:#fffdf7;border-radius:9px;padding:8px 10px;margin-top:7px}
-.v230-clean-pair{display:flex;align-items:center;gap:7px;flex-wrap:wrap;padding:7px 0;border-top:1px solid #eee6d1}
-.v230-clean-pair:first-child{border-top:0}
-.v230-clean-pair b{font-size:11px;min-width:190px;color:var(--text-1)}
-.v230-clean-actions{display:flex;gap:5px;flex-wrap:wrap}
-.v230-clean-actions button{font:700 10px inherit;padding:5px 8px;border-radius:6px;border:1px solid #d5c9a8;background:#fff;color:#6b551d;cursor:pointer}
-.v230-clean-actions button.primary{background:#7c5ba7;border-color:#7c5ba7;color:#fff}
-.v230-clean-actions button:hover{filter:brightness(.98)}
-@media(max-width:850px){.v230-clean-pair b{min-width:0;width:100%}.v230-clean-actions{width:100%}}
-</style>
-<script id="v230-contact-cleanup-labels-js">
-(function(){
-  const enc=s=>encodeURIComponent(String(s||''));
-  const dec=s=>{try{return decodeURIComponent(String(s||''))}catch(e){return String(s||'')}};
-  const key=s=>String(s||'').trim().toLowerCase().replace(/\s+/g,' ');
-  const nonempty=v=>v!==undefined&&v!==null&&String(v).trim()!=='';
-
-  function isStrategic(c){
-    try{if(typeof rmIsStrategicPartner==='function'&&rmIsStrategicPartner(c.agent_name,c))return true}catch(e){}
-    return String(c&&c.relationship_type||'').toLowerCase()==='strategic_partner';
-  }
-  function isCoMarketing(c){return /\bco[\s-]?marketing\b/i.test(String(c&&c.next_growth_opportunity||''));}
-  function relationshipTags(c){
-    const out=[];
-    if(isStrategic(c)){
-      out.push('<span class="v230-tag strategic">Strategic Partner</span>');
-      const cat=String(c.strategic_partner_category||'').trim();
-      if(cat)out.push('<span class="v230-tag category">'+escHtml(cat)+'</span>');
-    }
-    if(isCoMarketing(c))out.push('<span class="v230-tag marketing">Co-marketing</span>');
-    if(c.high_potential_flag===true)out.push('<span class="v230-tag potential">High potential</span>');
-    if(String(c.lp_outreach_status||'').toLowerCase()==='nurture')out.push('<span class="v230-tag nurture">RM Nurture</span>');
-    return out.length?'<div class="v230-rel-tags">'+out.join('')+'</div>':'';
-  }
-  window.v230RelationshipTags=relationshipTags;
-
-  function installControls(){
-    const add=document.querySelector('#view-contacts button[onclick="openAddAgentModal()"]');
-    if(add&&!document.getElementById('v230CleanNamesBtn')){
-      const b=document.createElement('button');
-      b.id='v230CleanNamesBtn';b.type='button';b.className='btn-sm';b.textContent='Clean names';
-      b.style.cssText='padding:8px 12px;font-weight:700;white-space:nowrap';
-      b.onclick=function(){openDupeCleanupModal()};
-      add.parentNode.insertBefore(b,add);
-    }
-    const f=document.getElementById('contactsFilter');
-    if(f&&!f.querySelector('option[value="strategic"]')){
-      const options=[
-        ['strategic','Strategic partners'],['co-marketing','Co-marketing'],['high-potential','High potential'],['rm-nurture','RM Nurture']
-      ];
-      const anchor=f.querySelector('option[value="notier"]');
-      options.reverse().forEach(([v,l])=>{const o=document.createElement('option');o.value=v;o.textContent=l;anchor?anchor.after(o):f.appendChild(o)});
-    }
-    const cat=document.getElementById('contactStrategicCategory');
-    if(cat&&!Array.from(cat.options).some(o=>o.value==='Stager')){
-      const o=document.createElement('option');o.value='Stager';o.textContent='Stager';
-      const firstReal=cat.options[1]; firstReal?cat.insertBefore(o,firstReal):cat.appendChild(o);
-    }
-  }
-
-  const oldFilter=window.filterContacts;
-  window.filterContacts=function(){
-    const q=(document.getElementById('contactsSearch')?.value||'').toLowerCase();
-    const f=document.getElementById('contactsFilter')?.value||'all';
-    let list=(window.allContacts||allContacts||[]).slice();
-    if(f==='inactive') list=list.filter(c=>String(c.relationship_status||'active').toLowerCase()==='inactive');
-    else list=list.filter(c=>String(c.relationship_status||'active').toLowerCase()!=='inactive');
-    if(q)list=list.filter(c=>[c.agent_name,c.display_name,c.phone,c.email,c.birthday,c.brokerage,c.relationship_type,c.strategic_partner_category,c.next_growth_opportunity].some(v=>String(v||'').toLowerCase().includes(q)));
-    if(f==='tier-Channel')list=list.filter(c=>c.tier==='Channel');
-    else if(f==='tier-A')list=list.filter(c=>c.tier==='A');
-    else if(f==='tier-B')list=list.filter(c=>c.tier==='B');
-    else if(f==='tier-C')list=list.filter(c=>c.tier==='C');
-    else if(f==='notier')list=list.filter(c=>!c.tier);
-    else if(f==='strategic')list=list.filter(isStrategic);
-    else if(f==='co-marketing')list=list.filter(isCoMarketing);
-    else if(f==='high-potential')list=list.filter(c=>c.high_potential_flag===true);
-    else if(f==='rm-nurture')list=list.filter(c=>String(c.lp_outreach_status||'').toLowerCase()==='nurture');
-    else if(f==='rm-nyny')list=list.filter(c=>getAgentOwnership(c.agent_name).rm==='Nyny');
-    else if(f==='rm-amanda')list=list.filter(c=>getAgentOwnership(c.agent_name).rm==='Amanda');
-    else if(f==='rm-unassigned')list=list.filter(c=>!getAgentOwnership(c.agent_name).rm);
-    else if(f==='bday')list=list.filter(c=>c.birthday);
-    else if(f==='nobday')list=list.filter(c=>!c.birthday);
-    else if(f==='noaddress')list=list.filter(c=>!c.address);
-    else if(f==='noemail')list=list.filter(c=>!c.email);
-    else if(f==='nophone')list=list.filter(c=>!c.phone);
-    renderContacts(list);
-  };
-
-  window.renderContacts=function(list){
-    const el=document.getElementById('contacts-list');if(!el)return;
-    if(!list.length){el.innerHTML='<div class="no-data">No contacts found.</div>';return;}
-    el.innerHTML=list.map(c=>{
-      const shownName=(c.display_name&&c.display_name.trim())?c.display_name.trim():resolvedDisplayName(c.agent_name);
-      const initials=(shownName||'?').split(' ').map(w=>w[0]).slice(0,2).join('').toUpperCase();
-      const agentAttr=escHtml(c.agent_name||'');
-      const o=getAgentOwnership(c.agent_name);
-      return '<div class="contact-row">'+
-        '<div class="contact-avatar">'+initials+'</div>'+
-        '<div class="contact-info">'+
-          '<div class="contact-name" style="display:flex;align-items:center;gap:7px;flex-wrap:wrap">'+escHtml(shownName)+tierBadge(c.tier)+'</div>'+
-          relationshipTags(c)+
-          '<div style="font-size:10.5px;color:var(--text-3);margin-top:2px"><strong style="color:var(--brand)">RM:</strong> '+escHtml(o.rm||'Unassigned')+' &nbsp;·&nbsp; <strong style="color:var(--text-2)">LP:</strong> '+escHtml((o.lp&&o.lp!=='Unassigned')?o.lp:'Unassigned')+'</div>'+
-          (c.brokerage?'<div style="font-size:10.5px;color:var(--text-3);margin-top:2px">'+escHtml(c.brokerage)+'</div>':'')+
-          '<div class="contact-meta">'+
-            (c.phone?'<span>'+phoneCallLink(c.agent_name,c.phone)+'</span>':'<span style="color:#ffb3b3">No phone</span>')+
-            (c.email?'<span>'+escHtml(c.email)+'</span>':'')+
-            (c.birthday?'<span class="contact-bday">'+formatBirthdayDisplay(c.birthday)+'</span>':'<span style="color:#ffb3b3">No birthday</span>')+
-          '</div></div>'+
-        '<div style="display:flex;gap:5px;align-items:center;flex-shrink:0;flex-wrap:wrap;justify-content:flex-end">'+
-          ((c.relationship_status!=='inactive'&&c.do_not_contact!==true&&!isStrategic(c))?('<button class="btn-sm" data-name="'+agentAttr+'" onclick="quickLogBuddyAsk(this)" title="Log that you asked this agent for a buddy introduction">Asked buddy</button><button class="btn-sm" data-name="'+agentAttr+'" onclick="quickLogBuddyIntro(this)" title="Log an actual buddy introduction received from this agent">Intro received</button>'):'')+
-          '<button class="btn-sm" onclick="openPortfolioNotes(this)" data-name="'+agentAttr+'" title="Open Portfolio Review / Partner Health notes">Portfolio notes</button>'+
-          '<button class="btn-sm" onclick="openContactsEdit(this)" data-name="'+agentAttr+'">Contact</button>'+
-        '</div></div>';
-    }).join('');
-  };
-
-  function currentSpelling(){
-    const pairs=typeof possibleSpellingPairs==='function'?possibleSpellingPairs(allContacts||[]):[];
-    return typeof contactsSpellingNeedsReview==='function'&&contactsSpellingNeedsReview(pairs)?pairs:[];
-  }
-  function cleanPairHtml(pair){
-    const a=pair[0],b=pair[1],an=displayName(a.agent_name),bn=displayName(b.agent_name);
-    return '<div class="v230-clean-pair"><b>'+escHtml(an)+' ↔ '+escHtml(bn)+'</b><div class="v230-clean-actions">'+
-      '<button class="primary" data-v230-clean="1" data-keep="'+enc(a.agent_name)+'" data-hide="'+enc(b.agent_name)+'">Keep '+escHtml(an)+'</button>'+
-      '<button data-v230-clean="1" data-keep="'+enc(b.agent_name)+'" data-hide="'+enc(a.agent_name)+'">Keep '+escHtml(bn)+'</button>'+
-      '</div></div>';
-  }
-
-  window.renderContactsDupeBanner=function(contacts){
-    const el=document.getElementById('contactsDupeBanner');if(!el)return;
-    const groups=typeof computeDupeGroups==='function'?computeDupeGroups():[];
-    const spelling=currentSpelling();
-    if(!groups.length&&!spelling.length){el.innerHTML='';return;}
-    let html='<div style="background:var(--warning-bg);border:1px solid #FFE69C;border-radius:9px;padding:11px 14px;margin-bottom:14px">'+
-      '<div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start;flex-wrap:wrap"><div><div style="font-size:12.5px;font-weight:800;color:#8A5B00">Name cleanup · '+(groups.length+spelling.length)+' item'+((groups.length+spelling.length)===1?'':'s')+'</div><div style="font-size:11px;color:#765A19;margin-top:3px">Keep the correct spelling and the tracker will hide the bad profile without deleting history.</div></div><button class="btn-sm" onclick="openDupeCleanupModal()">Open all cleanup</button></div>';
-    if(spelling.length)html+='<div class="v230-clean-mini">'+spelling.slice(0,4).map(cleanPairHtml).join('')+(spelling.length>4?'<div style="font-size:10px;color:#765A19;margin-top:6px">+'+(spelling.length-4)+' more in Clean names</div>':'')+'</div>';
-    if(groups.length)html+='<div style="font-size:10.5px;color:#765A19;margin-top:8px"><strong>'+groups.length+' exact duplicate group'+(groups.length===1?'':'s')+'</strong> can be cleaned with one click in Clean names.</div>';
-    html+='</div>';el.innerHTML=html;
-  };
-
-  const priorDupeRender=window.renderDupeCleanupList;
-  window.renderDupeCleanupList=function(){
-    const el=document.getElementById('dupeCleanupList');if(!el)return;
-    const groups=typeof computeDupeGroups==='function'?computeDupeGroups():[];
-    const spelling=typeof possibleSpellingPairs==='function'?possibleSpellingPairs(allContacts||[]):[];
-    let html='<div style="background:#f7f3fc;border:1px solid #d8ccef;border-radius:9px;padding:10px 12px;margin-bottom:12px;font-size:11px;color:#5e4d78"><strong>Cleanup is now actionable.</strong> Exact duplicates can be cleaned as a group. For a likely misspelling, choose the spelling you want to keep. The other profile is hidden from active trackers; history is preserved.</div>';
-    if(groups.length){
-      html+='<div style="font-size:12px;font-weight:800;margin:10px 0 7px">Exact duplicates</div>';
-      html+=groups.map(g=>{const keep=(typeof v129Keeper==='function'?v129Keeper(g):g[0]);return '<div class="v129-dupe-group"><div class="v129-dupe-head"><strong>'+escHtml(displayName(keep.agent_name))+' · '+g.length+' profiles</strong><button class="v129-clean-btn" data-keeper="'+escHtml(keep.agent_name)+'" onclick="v129CleanDuplicateGroup(this.dataset.keeper)">Clean group</button></div>'+g.map(x=>'<div class="v129-dupe-row"><div><strong>'+escHtml(x.agent_name)+'</strong>'+(x.agent_name===keep.agent_name?'<span class="v129-rec">RECOMMENDED KEEP</span>':'')+'<div class="v129-note">'+escHtml([x.phone||'',x.email||'',x.tier?'tier '+x.tier:'',x.relationship_status==='inactive'?'inactive':''].filter(Boolean).join(' · ')||'No extra contact data')+'</div></div><span class="v129-note">'+(x.agent_name===keep.agent_name?'keep':'hide extra')+'</span></div>').join('')+'</div>';}).join('');
-    }
-    if(spelling.length){html+='<div style="font-size:12px;font-weight:800;margin:14px 0 7px">Possible misspellings</div><div style="font-size:10.5px;color:var(--text-3);margin-bottom:6px">Only click Keep when these are actually the same person.</div><div class="v230-clean-mini">'+spelling.slice(0,20).map(cleanPairHtml).join('')+'</div><div style="margin-top:8px"><button class="btn-sm" onclick="markContactsSpellingReviewed()">These are different people / hide suggestions</button></div>';}
-    if(!groups.length&&!spelling.length)html='<div class="no-data">No duplicate or likely spelling issues found — all clean.</div>';
-    el.innerHTML=html;
-  };
-
-  window.v230ResolveSpelling=async function(keepName,hideName){
-    keepName=String(keepName||'').trim();hideName=String(hideName||'').trim();if(!keepName||!hideName||key(keepName)===key(hideName))return;
-    const keep=(allContacts||[]).find(x=>x.agent_name===keepName),bad=(allContacts||[]).find(x=>x.agent_name===hideName);
-    if(!keep||!bad){toast('One of those profiles changed. Reload Contacts and try again.','error');return;}
-    if(!confirm('Keep “'+displayName(keepName)+'” and remove the bad/duplicate profile “'+displayName(hideName)+'” from active trackers?\n\nMissing contact data will be copied to the kept profile. Historical activity is preserved.'))return;
-    try{
-      const fields=['phone','email','address','birthday','brokerage','tier','relationship_type','strategic_partner_category','personal_notes','next_growth_opportunity','growth_opportunity_deadline','last_meaningful_contact_date','next_meeting_date','partner_goals','partner_pain_points','referral_leakage_notes','recovery_plan','satisfaction_rating','lp_outreach_status','nurture_reason','next_rm_followup'];
-      const payload={};fields.forEach(f=>{if(!nonempty(keep[f])&&nonempty(bad[f]))payload[f]=bad[f]});
-      if(!keep.high_potential_flag&&bad.high_potential_flag===true)payload.high_potential_flag=true;
-      if(!keep.competitor_risk_flag&&bad.competitor_risk_flag===true)payload.competitor_risk_flag=true;
-      if(Object.keys(payload).length)await sbProfileWrite('agent_profiles?agent_name=eq.'+encodeURIComponent(keepName),'PATCH',payload);
-
-      const [koRows,boRows]=await Promise.all([
-        sbFetch('agent_assignments?agent_name=ilike.'+encodeURIComponent(keepName)+'&select=*&limit=10').catch(()=>[]),
-        sbFetch('agent_assignments?agent_name=ilike.'+encodeURIComponent(hideName)+'&select=*&limit=10').catch(()=>[])
-      ]);
-      const ko=(koRows||[]).find(r=>key(r.agent_name)===key(keepName))||(koRows||[])[0]||{};
-      const bo=(boRows||[]).find(r=>key(r.agent_name)===key(hideName))||(boRows||[])[0]||{};
-      const rm=(ko.rm||bo.rm||'').trim(),lp=((ko.lp&&ko.lp!=='__REMOVED__'?ko.lp:'')||(bo.lp&&bo.lp!=='__REMOVED__'?bo.lp:'')||'').trim();
-      if(rm||lp){
-        const own={agent_name:keepName,rm:rm||'',lp:lp||'Unassigned',priority:!!(ko.priority||bo.priority),added:!!(ko.added||bo.added),level:ko.level||bo.level||keep.tier||'C'};
-        await sbFetch('agent_assignments?on_conflict=agent_name',{method:'POST',prefer:'resolution=merge-duplicates,return=minimal',body:JSON.stringify(own)}).catch(()=>{});
-        try{cacheOwnershipRow(own)}catch(e){}
-      }
-      if(typeof removeAgentAcrossSharedTrackers==='function')await removeAgentAcrossSharedTrackers(hideName).catch(()=>{});
-      await sbProfileWrite('agent_profiles?agent_name=eq.'+encodeURIComponent(hideName),'PATCH',{relationship_status:'inactive',display_name:(typeof HIDDEN_PROFILE_MARKER!=='undefined'?HIDDEN_PROFILE_MARKER:'__HIDDEN__')});
-      try{if(typeof v77ApplyStrategicPartnerRouting==='function')await v77ApplyStrategicPartnerRouting(keepName,Object.assign({},keep,payload)).catch(()=>{})}catch(e){}
-      toast('Cleanup complete · kept '+displayName(keepName)+' ✓','success',3500);
-      await loadContacts();
-      if(document.getElementById('dupeCleanupModal')?.classList.contains('open'))renderDupeCleanupList();
-    }catch(e){console.warn('v230 spelling cleanup',e);toast('Could not clean that name: '+e.message,'error',5200);}
-  };
-
-  document.addEventListener('click',function(ev){
-    const b=ev.target.closest&&ev.target.closest('[data-v230-clean="1"]');if(!b)return;
-    ev.preventDefault();v230ResolveSpelling(dec(b.dataset.keep),dec(b.dataset.hide));
-  });
-
-  // Co-marketing already lives in Next Growth Opportunity. Add a simple quick toggle to the contact editor,
-  // so users can mark it without hunting through the collapsed Portfolio section.
-  function installCoMarketingToggle(){
-    if(document.getElementById('v230CoMarketingWrap'))return;
-    const rel=document.getElementById('contactStrategicCategoryWrap')?.parentElement;if(!rel)return;
-    const wrap=document.createElement('div');wrap.id='v230CoMarketingWrap';wrap.style.cssText='margin-top:9px;padding-top:8px;border-top:1px solid #e7e1ef';
-    wrap.innerHTML='<label style="display:flex;gap:8px;align-items:center;font-size:11px;font-weight:700;color:var(--text-2);cursor:pointer"><input id="v230CoMarketing" type="checkbox"> Co-marketing relationship</label><div style="font-size:10px;color:var(--text-4);margin-top:3px">Shows a Co-marketing badge on the contact list and keeps the opportunity visible in Portfolio notes.</div>';
-    rel.appendChild(wrap);
-    document.getElementById('v230CoMarketing').addEventListener('change',function(){
-      const ta=document.getElementById('contactGrowthOpp');if(!ta)return;let v=String(ta.value||'');
-      if(this.checked&&!/\bco[\s-]?marketing\b/i.test(v))ta.value=(v?v.replace(/\s*[,;|]\s*$/,'')+'; ':'')+'Co-marketing';
-      if(!this.checked)ta.value=v.replace(/(^|\s*[,;|]\s*)Co[\s-]?marketing(?=\s*[,;|]|$)/ig,'$1').replace(/^\s*[,;|]\s*|\s*[,;|]\s*$/g,'').trim();
-    });
-  }
-  function syncCoMarketingToggle(){const cb=document.getElementById('v230CoMarketing'),ta=document.getElementById('contactGrowthOpp');if(cb&&ta)cb.checked=/\bco[\s-]?marketing\b/i.test(String(ta.value||''));}
-  const oldOpenContact=window.openContactsEdit;
-  if(typeof oldOpenContact==='function'&&!oldOpenContact.__v230){window.openContactsEdit=function(){const r=oldOpenContact.apply(this,arguments);setTimeout(syncCoMarketingToggle,0);return r};window.openContactsEdit.__v230=true;}
-  const oldPortfolio=window.openPortfolioNotes;
-  if(typeof oldPortfolio==='function'&&!oldPortfolio.__v230){window.openPortfolioNotes=function(){const r=oldPortfolio.apply(this,arguments);setTimeout(syncCoMarketingToggle,0);return r};window.openPortfolioNotes.__v230=true;}
-
-  function init(){installControls();installCoMarketingToggle();try{if(typeof renderContactsDupeBanner==='function')renderContactsDupeBanner(allContacts||[])}catch(e){}}
-  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(init,50),{once:true});else setTimeout(init,0);
-  setTimeout(init,800);
-})();
-</script>
-
-
-<style id="v232-workflow-modal-css">
-/* v232 — one workflow modal contract: hidden means non-interactive; open means fully interactive. */
-#v175OutreachModal,#v175TransactionModal,#v175UpdateModal,#wp37PartnerCheckinModal,#v191PlaybookModal,#v191Modal,#v196NotProspectModal{pointer-events:none}
-#v175OutreachModal.open,#v175TransactionModal.open,#v175UpdateModal.open,#wp37PartnerCheckinModal.open,#v191PlaybookModal.open,#v191Modal.open,#v196NotProspectModal.open{pointer-events:auto!important}
-#wp37PartnerCheckinModal .modal-box{max-height:calc(100vh - 32px)!important;overflow-y:auto!important;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;touch-action:pan-y}
-</style>
-
-
-<script id="v236-director-live-sync-js">
-(function(){
-  const SIGNAL_KEY='rm_tracker_live_data_v236';
-  let bc=null,pending=false,lastRefresh=0,probeTimer=null,lastRemoteActivity='';
-  try{if('BroadcastChannel' in window)bc=new BroadcastChannel('rm-tracker-live-data')}catch(e){}
-  function directorOpen(){try{return location.hash==='#director'||document.body.classList.contains('rm-director-route')||document.body.classList.contains('rmx-director-active')}catch(e){return false}}
-  function directorBusy(){const modal=document.getElementById('rmxModal');if(modal&&(modal.classList.contains('open')||modal.style.display==='flex'))return true;const a=document.activeElement;return !!(a&&/^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName)&&a.closest&&a.closest('#rmxApp'))}
-  function quietRefresh(reason){
-    if(!directorOpen())return;
-    if(directorBusy()){pending=true;return}
-    const now=Date.now();if(now-lastRefresh<900)return;
-    lastRefresh=now;pending=false;
-    try{if(typeof window.rmxRefreshManagementData==='function')window.rmxRefreshManagementData();const sub=document.getElementById('rmxHeadSub');if(sub)sub.dataset.liveSyncReason=reason||'live'}catch(e){console.warn('Director quiet refresh failed',e)}
-  }
-  function publish(reason){const msg={at:Date.now(),reason:reason||'tracker mutation'};try{localStorage.setItem(SIGNAL_KEY,JSON.stringify(msg))}catch(e){}try{if(bc)bc.postMessage(msg)}catch(e){}quietRefresh(msg.reason)}
-  window.rmV233PublishDataChange=publish;window.rmV236PublishDataChange=publish;
-  const oldMutation=window.rmRefreshAfterMutation;
-  if(typeof oldMutation==='function'&&!oldMutation.__v236){const wrapped=async function(reason){const out=await oldMutation.apply(this,arguments);publish(reason||'activity saved');return out};wrapped.__v236=true;window.rmRefreshAfterMutation=wrapped}
-  const oldExec=window.rmRefreshExecutionQueues;
-  if(typeof oldExec==='function'&&!oldExec.__v236){const wrapped=function(){const out=oldExec.apply(this,arguments);return Promise.resolve(out).finally(()=>publish('Amanda workflow updated'))};wrapped.__v236=true;window.rmRefreshExecutionQueues=wrapped}
-  window.addEventListener('storage',e=>{if(e.key===SIGNAL_KEY)quietRefresh('another tracker tab updated')});
-  if(bc)bc.onmessage=()=>quietRefresh('another tracker tab updated');
-  document.addEventListener('focusout',()=>{if(pending)setTimeout(()=>quietRefresh('pending live update'),100)});
-
-  // Cross-device fallback: probe only the newest activity row. We refresh the Director screen
-  // only when that fingerprint actually changes, so there is no repeated Loading screen or blind rerender.
-  async function probeRemote(){
-    if(document.hidden||!directorOpen()||directorBusy()||typeof sbFetch!=='function')return;
-    try{
-      const rows=await sbFetch('amanda_activities?select=id,created_at,act_date,act_type,agent_name&order=created_at.desc&limit=1');
-      const r=Array.isArray(rows)&&rows[0];if(!r)return;
-      const fp=[r.id||'',r.created_at||'',r.act_date||'',r.act_type||'',r.agent_name||''].join('|');
-      if(!lastRemoteActivity){lastRemoteActivity=fp;return}
-      if(fp!==lastRemoteActivity){lastRemoteActivity=fp;quietRefresh('new activity from another device')}
-    }catch(e){}
-  }
-  probeTimer=setInterval(probeRemote,30000);
-  window.addEventListener('beforeunload',()=>{try{if(probeTimer)clearInterval(probeTimer);if(bc)bc.close()}catch(e){}});
-})();
-</script>
-
-<script id="v234-contacts-bulk-cleanup-js">
-(function(){
-  const selected=new Set();
-  window.v234ContactSelection=selected;
-  const enc=s=>encodeURIComponent(String(s||''));
-  const dec=s=>{try{return decodeURIComponent(String(s||''))}catch(e){return String(s||'')}};
-  const esc=s=>typeof escHtml==='function'?escHtml(String(s||'')):String(s||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-  const key=s=>typeof ownerKey==='function'?ownerKey(s):String(s||'').trim().toLowerCase();
-
-  function updateCount(){
-    const el=document.getElementById('v234ContactSelectedCount');
-    if(el)el.textContent=selected.size+' selected';
-  }
-  window.v234UpdateContactSelection=function(cb){
-    const name=dec(cb&&cb.dataset?cb.dataset.agent:'');
-    if(!name)return;
-    if(cb.checked)selected.add(name);else selected.delete(name);
-    updateCount();
-  };
-  window.v234SelectVisibleContacts=function(){
-    document.querySelectorAll('#contacts-list .v234-contact-select').forEach(cb=>{
-      const row=cb.closest('.contact-row');
-      if(!row||row.style.display==='none')return;
-      cb.checked=true;selected.add(dec(cb.dataset.agent));
-    });
-    updateCount();
-  };
-  window.v234ClearContactSelection=function(){
-    selected.clear();
-    document.querySelectorAll('#contacts-list .v234-contact-select').forEach(cb=>cb.checked=false);
-    updateCount();
-  };
-
-  function decorateRows(){
-    const rows=document.querySelectorAll('#contacts-list .contact-row');
-    rows.forEach(row=>{
-      if(row.querySelector('.v234-contact-select'))return;
-      const contactBtn=row.querySelector('button[data-name]');
-      const name=(contactBtn&&contactBtn.dataset&&contactBtn.dataset.name)||'';
-      if(!name)return;
-      const box=document.createElement('label');
-      box.className='v234-contact-selector';
-      box.style.cssText='display:flex;align-items:center;justify-content:center;flex:0 0 22px;align-self:center';
-      box.title='Select '+name;
-      box.innerHTML='<input class="v234-contact-select" type="checkbox" data-agent="'+enc(name)+'" style="width:16px;height:16px;cursor:pointer;accent-color:var(--brand)" '+(selected.has(name)?'checked':'')+' onchange="v234UpdateContactSelection(this)">';
-      row.insertBefore(box,row.firstChild);
-    });
-    updateCount();
-  }
-
-  const oldRender=window.renderContacts;
-  if(typeof oldRender==='function'&&!oldRender.__v234){
-    const wrapped=function(list){
-      const r=oldRender.apply(this,arguments);
-      decorateRows();
-      return r;
-    };
-    wrapped.__v234=true;
-    window.renderContacts=wrapped;
-  }
-
-  async function exactProfile(name){
-    if(typeof findAgentProfileByName==='function'){
-      const r=await findAgentProfileByName(name);
-      if(r.ambiguous)throw new Error('Multiple profiles match '+name+'. Use Clean names for exact duplicate groups so the correct keeper is protected.');
-      return r.exact||null;
-    }
-    const rows=await sbFetch('agent_profiles?agent_name=ilike.'+encodeURIComponent(name)+'&select=agent_name&limit=5');
-    if((rows||[]).length>1)throw new Error('Multiple profiles match '+name+'. Use Clean names first.');
-    return (rows||[])[0]||null;
-  }
-
-  async function removeActive(name){
-    const p=await exactProfile(name);
-    const canonical=(p&&p.agent_name)||name;
-    if(p)await sbProfileWrite('agent_profiles?agent_name=eq.'+encodeURIComponent(canonical),'PATCH',{relationship_status:'inactive'});
-    else await sbProfileWrite('agent_profiles','POST',{agent_name:canonical,relationship_status:'inactive'});
-    if(typeof removeAgentAcrossSharedTrackers==='function')await removeAgentAcrossSharedTrackers(canonical);
-    return canonical;
-  }
-
-  async function permanentRemove(name){
-    // Reuse the fully shared Director tombstone when present; it also clears RM/LP active ownership/work queues.
-    if(typeof window.rmxAdminPermanentRemove==='function'){
-      return window.rmxAdminPermanentRemove(name,{skipConfirm:true,skipRefresh:true,skipOwnershipReload:true,silent:true});
-    }
-    const p=await exactProfile(name),canonical=(p&&p.agent_name)||name;
-    const marker=(typeof HIDDEN_PROFILE_MARKER!=='undefined'?HIDDEN_PROFILE_MARKER:'__HIDDEN__');
-    if(p)await sbProfileWrite('agent_profiles?agent_name=eq.'+encodeURIComponent(canonical),'PATCH',{relationship_status:'inactive',display_name:marker});
-    else await sbProfileWrite('agent_profiles','POST',{agent_name:canonical,relationship_status:'inactive',display_name:marker});
-    if(typeof removeAgentAcrossSharedTrackers==='function')await removeAgentAcrossSharedTrackers(canonical);
-    const owners=await sbFetch('agent_assignments?agent_name=ilike.'+encodeURIComponent(canonical)+'&select=agent_name,lp,rm&limit=10').catch(()=>[]);
-    await Promise.all((owners||[]).filter(x=>key(x.agent_name)===key(canonical)).map(x=>sbFetch('agent_assignments?agent_name=eq.'+encodeURIComponent(x.agent_name),{method:'PATCH',prefer:'return=minimal',body:JSON.stringify({lp:'__REMOVED__',rm:'Unassigned'})}).catch(()=>{})));
-    return {name:canonical,removed:true};
-  }
-
-  async function runBulk(kind,button){
-    const names=Array.from(selected);
-    if(!names.length){if(typeof toast==='function')toast('Select at least one relationship first.','error');return;}
-    const permanent=kind==='permanent';
-    const msg=permanent
-      ?'Permanently remove '+names.length+' selected relationship'+(names.length===1?'':'s')+'?\n\nUse this for bad spellings, duplicates, or people who should never return to the active trackers. Historical activity is preserved.'
-      :'Remove '+names.length+' selected relationship'+(names.length===1?'':'s')+' from active RM/Core Team workflows?\n\nThis is reversible. Historical activity is preserved.';
-    if(!window.confirm(msg))return;
-    const old=button?button.textContent:'';let ok=0,failed=[];
-    try{
-      if(button){button.disabled=true;button.textContent=(permanent?'Removing ':'Updating ')+'0 / '+names.length+'…';}
-      for(let i=0;i<names.length;i++){
-        try{if(permanent)await permanentRemove(names[i]);else await removeActive(names[i]);ok++;}
-        catch(e){console.error('Bulk contact cleanup failed for',names[i],e);failed.push(names[i]);}
-        if(button)button.textContent=(permanent?'Removing ':'Updating ')+(i+1)+' / '+names.length+'…';
-      }
-      selected.clear();
-      try{if(typeof loadAgentOwnership==='function')await loadAgentOwnership()}catch(e){}
-      try{if(typeof loadSharedDisplayNames==='function')await loadSharedDisplayNames()}catch(e){}
-      if(typeof loadContacts==='function')await loadContacts();
-      try{if(typeof initAutocomplete==='function')initAutocomplete()}catch(e){}
-      const copy=ok+' relationship'+(ok===1?'':'s')+(permanent?' permanently removed':' removed from active')+(failed.length?' · '+failed.length+' failed':'')+' ✓';
-      if(typeof toast==='function')toast(copy,failed.length?'error':'success',failed.length?6000:3500);
-      if(failed.length&&typeof toast==='function')setTimeout(()=>toast('Could not remove: '+failed.slice(0,3).join(', ')+(failed.length>3?' +'+(failed.length-3)+' more':''),'error',6500),700);
-    }finally{
-      if(button&&button.isConnected){button.disabled=false;button.textContent=old;}
-      updateCount();
-    }
-  }
-  window.v234BulkRemoveFromActive=function(button){return runBulk('active',button)};
-  window.v234BulkPermanentRemove=function(button){return runBulk('permanent',button)};
-
-  // Initial decoration if Contacts happened to render before this final patch loads.
-  decorateRows();
-})();
-</script>
-<!-- v235: Director Admin/Tools inactive roster now supports checkbox selection, select-all-shown, bulk reactivate, and bulk permanent removal. -->
-
-<script id="v238-prospect-action-phone-cleanup-js">
-(function(){
-  // Stable routing for Not a prospect — no generated inline onclick with agent names.
-  document.addEventListener('click',function(ev){
-    const btn=ev.target.closest&&ev.target.closest('[data-rm-prospect-action="exclude"]');
-    if(!btn)return;
-    ev.preventDefault();ev.stopPropagation();
-    if(typeof v196OpenNotProspect==='function')v196OpenNotProspect(btn.dataset.agent||'');
-  });
-
-  // Backdrop + Escape close for the reason picker.
-  const modal=document.getElementById('v196NotProspectModal');
-  if(modal&&!modal.dataset.v238Bound){
-    modal.dataset.v238Bound='1';
-    modal.addEventListener('mousedown',function(ev){if(ev.target===modal&&typeof v196CloseNotProspect==='function')v196CloseNotProspect()});
-  }
-  document.addEventListener('keydown',function(ev){if(ev.key==='Escape'&&modal&&modal.classList.contains('open')){ev.preventDefault();v196CloseNotProspect()}});
-
-  // Remove the blocked personal number from the two shared sources that feed agent/prospect phone displays.
-  // This runs quietly once after deployment; all reads are also scrubbed immediately by sbFetch.
-  async function cleanSharedPhone(){
-    if(typeof sbFetch!=='function'||typeof RM_BLOCKED_AGENT_PHONE_DIGITS==='undefined')return;
-    const filter='phone=ilike.*'+RM_BLOCKED_AGENT_PHONE_DIGITS.slice(0,3)+'*'+RM_BLOCKED_AGENT_PHONE_DIGITS.slice(3,6)+'*'+RM_BLOCKED_AGENT_PHONE_DIGITS.slice(6)+'*';
-    await Promise.all([
-      sbFetch('agent_profiles?'+filter,{method:'PATCH',prefer:'return=minimal',body:JSON.stringify({phone:null})}).catch(()=>{}),
-      sbFetch('outreach_prospects?'+filter,{method:'PATCH',prefer:'return=minimal',body:JSON.stringify({phone:null})}).catch(()=>{})
-    ]);
-    try{if(typeof prospectAt!=='undefined')prospectAt=0}catch(e){}
-  }
-  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(cleanSharedPhone,1200),{once:true});else setTimeout(cleanSharedPhone,1200);
-})();
-</script>
-
-
-<script id="v239-lp-powerbi-auto-sync-js">
-(function(){
-  // v239 — RM never imports Power BI. Core Team / LP Tracker writes the shared
-  // agent_profiles + powerbi_import_log records; RM watches only the import stamp.
-  // Nothing refreshes on a timer unless the shared import stamp ACTUALLY changes.
-  let lastStamp=null,checking=false,queued=false;
-  const directorOpen=()=>{try{return location.hash==='#director'||document.body.classList.contains('rm-director-route')||document.body.classList.contains('rmx-director-active')}catch(e){return false}};
-  const busy=()=>{
-    const a=document.activeElement;
-    if(a&&/^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName))return true;
-    if(document.querySelector('.modal-overlay.open,.v175-overlay.open,#rmxModal.open'))return true;
-    return false;
-  };
-  async function refreshFromLpImport(stamp){
-    if(busy()){queued=true;return;}
-    queued=false;
-    try{
-      if(typeof _wp18Cache!=='undefined'){_wp18Cache=null;_wp18CacheAt=0;}
-      if(typeof loadAgentOwnership==='function')await loadAgentOwnership().catch(()=>{});
-      if(directorOpen()){
-        if(typeof window.rmxRefreshManagementData==='function')window.rmxRefreshManagementData();
-      }else{
-        const active=document.querySelector('.view.active');
-        const id=active&&active.id||'';
-        if(id==='view-contacts'&&typeof loadContacts==='function')await loadContacts().catch(()=>{});
-        if(id==='view-portfolio'&&typeof loadPortfolioReview==='function')await loadPortfolioReview().catch(()=>{});
-        if(id==='view-growth'&&typeof v106LoadTierGrowth==='function')await v106LoadTierGrowth(true).catch(()=>{});
-        if(id==='view-week'&&typeof rmRefreshExecutionQueues==='function')await rmRefreshExecutionQueues().catch(()=>{});
-      }
-      if(document.getElementById('v122AuditBody')&&typeof v122RenderAudit==='function')await v122RenderAudit().catch(()=>{});
-      try{if(typeof toast==='function')toast('Latest Core Team Power BI sync loaded ✓','success',2600)}catch(e){}
-      try{window.dispatchEvent(new CustomEvent('rm-powerbi-shared-refresh',{detail:{stamp}}))}catch(e){}
-    }catch(e){console.warn('RM shared Power BI refresh',e);}
-  }
-  async function checkSharedImport(initial){
-    if(checking||typeof sbFetch!=='function')return;
-    checking=true;
-    try{
-      const rows=await sbFetch('powerbi_import_log?select=imported_at,source_app&order=imported_at.desc&limit=10').catch(()=>[]);
-      const row=(rows||[]).find(r=>String(r.source_app||'').indexOf('core-team-tracker')===0);
-      const stamp=row&&row.imported_at?String(row.imported_at):null;
-      if(!stamp)return;
-      if(lastStamp===null){lastStamp=stamp;return;}
-      if(stamp!==lastStamp){lastStamp=stamp;await refreshFromLpImport(stamp);}
-    }finally{checking=false;}
-  }
-  window.rmCheckSharedPowerBiImport=()=>checkSharedImport(false);
-  // Establish the baseline silently. Then use a light stamp check; no UI rebuild unless changed.
-  setTimeout(()=>checkSharedImport(true),1200);
-  setInterval(()=>checkSharedImport(false),60000);
-  document.addEventListener('visibilitychange',()=>{if(!document.hidden)checkSharedImport(false)});
-  window.addEventListener('focus',()=>checkSharedImport(false));
-  document.addEventListener('focusout',()=>{if(queued)setTimeout(()=>refreshFromLpImport(lastStamp),250)});
-})();
-</script>
 
 </body>
 </html>
