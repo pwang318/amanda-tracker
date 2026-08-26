@@ -1,4 +1,4 @@
-    <!DOCTYPE html>
+   <!DOCTYPE html>
 <!-- v229 ENCOMPASS XLSX IMPORT + TRANSACTION PREFILL · 2026-08-25 -->
 <!-- v217 4-WEEK BUTTON HANDLER FIX · 2026-08-21 -->
 <!-- v228 SMART NEXT-MOVE ENGINE + ACTIONABLE WORKFLOW · 2026-08-25 -->
@@ -1291,8 +1291,8 @@ body.rm-director-route .tabs,body.rm-director-route .who-bar{display:none!import
 <div class="field" style="margin:0"><label>Buyer agent #</label><input id="wp30TxnBuyerPhone" placeholder="Phone" inputmode="tel" type="tel"/></div>
 <div class="field" style="margin:0"><label>Listing agent</label><input id="wp30TxnListingAgent" placeholder="Listing agent name" type="text"/></div>
 <div class="field" style="margin:0"><label>Listing agent #</label><input id="wp30TxnListingPhone" placeholder="Phone" inputmode="tel" type="tel"/></div>
+<div class="field" style="margin:0;grid-column:1 / -1"><button class="btn-primary" id="wp30TxnAddBtn" onclick="wp30SaveTransactionTrigger()" style="height:40px;width:100%;font-size:12px;font-weight:800;white-space:nowrap" type="button">Save + add transaction calls</button><div style="font-size:9.5px;color:#7A6A45;margin-top:5px">This saves the transaction and creates Amanda’s required buyer/listing agent call task(s).</div></div>
 </div>
-<div style="display:flex;justify-content:flex-end;padding:0 0 10px"><button class="btn-primary" id="wp30TxnAddBtn" onclick="wp30SaveTransactionTrigger()" style="height:36px;white-space:nowrap" type="button">Add transaction calls</button></div>
 </details>
 <div id="rmNurtureTodayCard" style="display:none;border:1px solid #E8D5A8;border-left:4px solid #C18B2D;border-radius:9px;background:#FFFDF7;padding:10px 12px;margin:8px 0 10px">
 <div style="font-size:11px;font-weight:800;color:#8A5A00;text-transform:uppercase;letter-spacing:.4px;margin-bottom:5px">RM Nurture due</div>
@@ -14684,7 +14684,7 @@ setTimeout(function(){v124MountAudit();v122RenderAudit();},1200);
   // Replace transaction intake with a verified-save + optimistic mandatory-task workflow.
   window.wp30SaveTransactionTrigger=async function(){
     const btn=document.getElementById('wp30TxnAddBtn');
-    if(btn){if(btn.disabled)return;btn.disabled=true;btn.textContent='Adding...';}
+    if(btn){if(btn.disabled)return;btn.disabled=true;btn.textContent='Saving...';}
     const stage=document.getElementById('wp30TxnStage')?.value||'New Contract';
     const buyer=(document.getElementById('wp30TxnBuyerAgent')?.value||'').trim();
     const listing=(document.getElementById('wp30TxnListingAgent')?.value||'').trim();
@@ -19798,11 +19798,11 @@ window.rmxBoot=boot;const baseSwitch=window.switchTab;window.switchTab=function(
     const listing=clean(document.getElementById('wp30TxnListingAgent')?.value||'');
     const listingPhone=phone(document.getElementById('wp30TxnListingPhone')?.value||'');
 
-    if(!client){toast('Add the buyer name.','error');if(btn){btn.disabled=false;btn.textContent='Add transaction calls';}return;}
-    if(!property){toast('Add the subject property address.','error');if(btn){btn.disabled=false;btn.textContent='Add transaction calls';}return;}
-    if(!buyer&&!listing){toast('Add the buyer agent, listing agent, or both.','error');if(btn){btn.disabled=false;btn.textContent='Add transaction calls';}return;}
-    if(buyer&&!buyerPhone){toast('Add the buyer agent phone number.','error');if(btn){btn.disabled=false;btn.textContent='Add transaction calls';}return;}
-    if(listing&&!listingPhone){toast('Add the listing agent phone number.','error');if(btn){btn.disabled=false;btn.textContent='Add transaction calls';}return;}
+    if(!client){toast('Add the buyer name.','error');if(btn){btn.disabled=false;btn.textContent='Save + add transaction calls';}return;}
+    if(!property){toast('Add the subject property address.','error');if(btn){btn.disabled=false;btn.textContent='Save + add transaction calls';}return;}
+    if(!buyer&&!listing){toast('Add the buyer agent, listing agent, or both.','error');if(btn){btn.disabled=false;btn.textContent='Save + add transaction calls';}return;}
+    if(buyer&&!buyerPhone){toast('Add the buyer agent phone number.','error');if(btn){btn.disabled=false;btn.textContent='Save + add transaction calls';}return;}
+    if(listing&&!listingPhone){toast('Add the listing agent phone number.','error');if(btn){btn.disabled=false;btn.textContent='Save + add transaction calls';}return;}
 
     const entries=[];
     if(buyer)entries.push({name:buyer,role:'Buyer'});
@@ -19849,7 +19849,7 @@ window.rmxBoot=boot;const baseSwitch=window.switchTab;window.switchTab=function(
       console.warn('v242 manual transaction save',e);
       toast('Could not add transaction calls: '+(e?.message||e),'error',6000);
     }finally{
-      if(btn){btn.disabled=false;btn.textContent='Add transaction calls';}
+      if(btn){btn.disabled=false;btn.textContent='Save + add transaction calls';}
     }
   };
 
@@ -19860,6 +19860,20 @@ window.rmxBoot=boot;const baseSwitch=window.switchTab;window.switchTab=function(
   }
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',decorateManual,{once:true});else decorateManual();
   setTimeout(decorateManual,500);setTimeout(decorateManual,1600);
+})();
+</script>
+
+<script id="v243-manual-save-button-js">
+/* v243 · Make manual transaction save action impossible to miss. */
+(function(){
+  function ensure(){
+    const b=document.getElementById('wp30TxnAddBtn');
+    if(!b)return;
+    b.textContent=b.disabled?'Saving...':'Save + add transaction calls';
+    b.title='Save this transaction and create Amanda’s required transaction call task(s).';
+  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',ensure,{once:true});else ensure();
+  setTimeout(ensure,700);
 })();
 </script>
 
