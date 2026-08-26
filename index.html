@@ -6,6 +6,7 @@
 <!-- v232 STABLE ACTION ROUTER + TRANSACTION REFRESH LOOP FIX · 2026-08-25 -->
 <!-- v227 DIRECTOR SAVE / RISK / TOMBSTONE / REFRESH STABILITY FIX · 2026-08-25 -->
 
+<!-- v250: New Realtor Meeting checklist cleanup only — combine CRM-system checks, remove stray literal \n UI artifact, remove gut-feel copy. -->
 <!-- Cleanup pass: floating Page Guide + stale developer build logs removed; active workflow logic preserved. -->
 <!-- v140: fixes Step 2 transaction renderer race; saved/open CTC and New Contract tasks are no longer erased after successful distribution -->
 <!-- v137: Amanda daily snapshot restored + audit fixes; current operating goals aligned, responsive snapshot, duplicate activity icons corrected -->
@@ -1761,26 +1762,19 @@ body.rm-director-route .tabs,body.rm-director-route .who-bar{display:none!import
 </div>
 <div class="form-row one">
 <div class="field intake-block" id="intakeBlock">
-<div class="intake-block-title">New Realtor Meeting — Required Meeting + Day-Of Checklist</div>
+<div class="intake-block-title">New Realtor Meeting · Quick Checklist</div>
 <div class="v161-first-meeting-standard">
 <div class="v161-standard-title">FIRST MEETING STANDARD · 20–40 MINUTES MAX</div>
-<div class="v161-standard-rule"><strong>Format:</strong> In-office or structured coffee meeting. <strong>No lunch for a first meeting.</strong> In-office meetings include the office tour + team introduction.</div>
+<div class="v161-standard-rule"><strong>Keep it simple:</strong> office or structured coffee. If in-office, include the office tour + team introduction.</div>
 </div>
-<label class="intake-check"><input id="intakeMeetingFormat" onchange="updateIntakeProgress()" type="checkbox"/> Followed the first-meeting format: in-office or structured coffee, 20–40 minutes max; no lunch</label>
-<label class="intake-check"><input id="intakeTourTeam" onchange="updateIntakeProgress()" type="checkbox"/> If in-office: completed office tour + introduced the team (check N/A if meeting was coffee)</label>
-<label class="intake-check"><input id="intakeTop3" onchange="updateIntakeProgress()" type="checkbox"/> Asked and documented: “What are the biggest things you need a lending partner to get right?” and narrowed it to their Top 3</label>
-<label class="intake-check"><input id="intakePainQuestion" onchange="updateIntakeProgress()" type="checkbox"/> Asked: “Have you ever had a lender hurt a deal, create extra stress, or make you look bad? What happened?”</label>
-<label class="intake-check"><input id="intakeStandards" onchange="updateIntakeProgress()" type="checkbox"/> Reviewed Standards of Service and tied our process directly back to their Top 3 needs</label>
-<label class="intake-check"><input id="intakeContactConfirm" onchange="updateIntakeProgress()" type="checkbox"/> Confirmed phone, email and mailing address/contact information</label>
-<label class="intake-check"><input id="intakeOpportunityAsk" onchange="updateIntakeProgress()" type="checkbox"/> Asked directly for the next buyer opportunity / commitment to give our team a shot</label>
-<label class="intake-check"><input id="intakeRetainedReport" onchange="updateIntakeProgress()" type="checkbox"/> Added agent to Retained Realtor Report</label>
-<label class="intake-check"><input id="intakeSaEmail" onchange="updateIntakeProgress()" type="checkbox"/> Sent post-meeting email from Sa Team — Nyny CC'd</label>
-<label class="intake-check"><input id="intakeHomebot" onchange="updateIntakeProgress()" type="checkbox"/> Added agent to HomeBot</label>
-<label class="intake-check"><input id="intakeListreports" onchange="updateIntakeProgress()" type="checkbox"/> Added agent to ListReports</label>
-<label class="intake-check"><input id="intakeTotalExpert" onchange="updateIntakeProgress()" type="checkbox"/> Added agent to Total Expert</label>
-<label class="intake-check"><input id="intakeGroupText" onchange="updateIntakeProgress()" type="checkbox"/> Sent follow-up group text introducing Nyny</label>
-<label class="intake-check"><input id="intakeReferralAsk" onchange="updateIntakeProgress()" type="checkbox"/> Asked for the opportunity, walked through how they'll refer clients to us (see How to Refer in Scripts + Training), and CC'd the Loan Partner on the same post-meeting email above</label>
-<div id="intakeProgress" style="font-size:11px;color:#B85B00;margin-top:6px;font-weight:500">0 of 7 complete</div>
+<label class="intake-check"><input id="intakeMeetingFormat" onchange="updateIntakeProgress()" type="checkbox"/> Followed the first-meeting format + office tour/team intro if applicable</label>
+<label class="intake-check"><input id="intakeTop3" onchange="updateIntakeProgress()" type="checkbox"/> Asked and documented their Top 3 needs from a lending partner</label>
+<label class="intake-check"><input id="intakePainQuestion" onchange="updateIntakeProgress()" type="checkbox"/> Asked what a lender has done before that hurt the deal or created stress</label>
+<label class="intake-check"><input id="intakeStandards" onchange="updateIntakeProgress()" type="checkbox"/> Connected our Standards of Service back to what matters most to them</label>
+<label class="intake-check"><input id="intakeContactConfirm" onchange="updateIntakeProgress()" type="checkbox"/> Confirmed phone, email and mailing/contact information</label>
+<label class="intake-check"><input id="intakeOpportunityAsk" onchange="updateIntakeProgress()" type="checkbox"/> Asked for the next buyer opportunity / commitment to give our team a shot</label>
+<label class="intake-check"><input id="intakeSystems" onchange="updateIntakeProgress()" type="checkbox"/> Added agent to HomeBot + ListReports + Total Expert</label>
+<div id="intakeProgress" style="font-size:11px;color:#B85B00;margin-top:8px;font-weight:600">0 of 7 complete</div>
 </div>
 </div>
 <button class="btn-primary" id="logBtn" onclick="logActivity()">Log activity</button>
@@ -3789,24 +3783,18 @@ function fmtDateTime(d){
 }
 
 
-const INTAKE_CHECK_IDS=["intakeMeetingFormat","intakeTourTeam","intakeTop3","intakePainQuestion","intakeStandards","intakeContactConfirm","intakeOpportunityAsk","intakeRetainedReport","intakeSaEmail","intakeHomebot","intakeListreports","intakeTotalExpert","intakeGroupText","intakeReferralAsk"];
+const INTAKE_CHECK_IDS=["intakeMeetingFormat","intakeTop3","intakePainQuestion","intakeStandards","intakeContactConfirm","intakeOpportunityAsk","intakeSystems"];
 const INTAKE_LABELS={
-  intakeMeetingFormat:"Follow first-meeting format: office/coffee, 20–40 min, no lunch",
-  intakeTourTeam:"Office tour + meet team when in-office",
+  intakeMeetingFormat:"Follow the first-meeting format",
   intakeTop3:"Ask and document the Top 3 lending-partner needs",
   intakePainQuestion:"Ask what a lender has done that hurt the experience",
   intakeStandards:"Tie Standards of Service to their Top 3",
   intakeContactConfirm:"Confirm contact information",
   intakeOpportunityAsk:"Ask directly for the next buyer opportunity",
-  intakeRetainedReport:"Add agent to Retained Realtor Report",
-  intakeSaEmail:"Send post-meeting email from Sa Team (CC Nyny)",
-  intakeHomebot:"Add agent to HomeBot",
-  intakeListreports:"Add agent to ListReports",
-  intakeTotalExpert:"Add agent to Total Expert",
-  intakeGroupText:"Send follow-up group text introducing Nyny"
+  intakeSystems:"Add agent to HomeBot + ListReports + Total Expert"
 };
 const PENDING_PREFIX="⏳ INTAKE PENDING ";
-const COMPLETE_TAG="✅ New Realtor Meeting standard complete: Structured meeting ✓ · Top 3 documented ✓ · pain-point question ✓ · Standards of Service tied back ✓ · contact info confirmed ✓ · opportunity asked ✓ · Retained Report ✓ · Sa Email+CC Nyny ✓ · HomeBot ✓ · ListReports ✓ · Total Expert ✓ · Group Text ✓";
+const COMPLETE_TAG="✅ New Realtor Meeting quick checklist complete: format ✓ · Top 3 ✓ · pain point ✓ · Standards of Service ✓ · contact info ✓ · opportunity ask ✓ · HomeBot/ListReports/Total Expert ✓";
 let openIntake=null; // {id, agent_name, act_date, outcome, follow_up_date, freeNotes, states}
 
 function getIntakeStates(){
@@ -3815,7 +3803,12 @@ function getIntakeStates(){
   return s;
 }
 function setIntakeStates(states){
-  INTAKE_CHECK_IDS.forEach(id=>{document.getElementById(id).checked=!!(states&&states[id]);});
+  const normalized={...(states||{})};
+  // Backward compatibility for meetings saved before the three system checks were combined.
+  if(normalized.intakeSystems===undefined){
+    normalized.intakeSystems=!!(normalized.intakeHomebot&&normalized.intakeListreports&&normalized.intakeTotalExpert);
+  }
+  INTAKE_CHECK_IDS.forEach(id=>{const el=document.getElementById(id);if(el)el.checked=!!normalized[id];});
   updateIntakeProgress(true);
 }
 function allIntakeDone(states){
@@ -5078,7 +5071,7 @@ async function loadAgentGrowth(){
     };
     let html='<div class="card">'
       +'<div class="card-title" style="margin-bottom:4px">Tier Movement ('+total+')</div>'
-      +'<div style="font-size:11px;color:var(--text-4);margin-bottom:6px">Based on real production data, not gut feel.</div>';
+      +'';
     html+='<div style="border-top:2px solid var(--success-bg);padding-top:8px;margin-top:6px">'
       +'<div style="font-size:11px;font-weight:700;color:var(--success);text-transform:uppercase;letter-spacing:.4px">B &rarr; A</div>';
     if(bToA_ready.length||bToA_close.length){
@@ -19792,7 +19785,8 @@ window.rmxBoot=boot;const baseSwitch=window.switchTab;window.switchTab=function(
   if(typeof oldSnap==='function')window.v23LoadAmandaSnapshot=async function(){const r=await oldSnap.apply(this,arguments);setTimeout(()=>v241RenderAmandaScheduleInline(),0);return r};
   setTimeout(()=>v241RenderAmandaScheduleInline(),350);
 })();
-</script>\n
+</script>
+
 <script id="v242-manual-transaction-entry-js">
 /* v242 · Manual New Contract / CTC entry uses the same trigger architecture as Excel imports. */
 (function(){
@@ -19911,7 +19905,7 @@ window.rmxBoot=boot;const baseSwitch=window.switchTab;window.switchTab=function(
   window.toggleIntakeBlock=function(){
     const block=document.getElementById('intakeBlock');
     if(!block)return;
-    block.classList.toggle('show',!!(window._v244ChecklistExpanded&&openIntake));
+    block.classList.toggle('show',!!(window._v244ChecklistExpanded&&window.openIntake));
   };
 
   function ensureChecklistAction(){
@@ -19931,12 +19925,12 @@ window.rmxBoot=boot;const baseSwitch=window.switchTab;window.switchTab=function(
   window.v244OpenChecklist=function(){
     try{switchTab('log')}catch(e){}
     window._v244ChecklistExpanded=true;
-    try{if(openIntake)setIntakeStates(openIntake.states||{})}catch(e){}
+    try{if(window.openIntake)setIntakeStates(window.openIntake.states||{})}catch(e){}
     const block=document.getElementById('intakeBlock');
     if(block){
       block.classList.add('show');
       const title=block.querySelector('.intake-block-title');
-      if(title&&openIntake)title.textContent='Finish day-of checklist · '+properCase(openIntake.agent_name||'New Realtor Meeting');
+      if(title&&window.openIntake)title.textContent='Finish day-of checklist · '+properCase(window.openIntake.agent_name||'New Realtor Meeting');
       ensureChecklistAction();
       setTimeout(()=>block.scrollIntoView({behavior:'smooth',block:'start'}),50);
     }
@@ -19953,7 +19947,7 @@ window.rmxBoot=boot;const baseSwitch=window.switchTab;window.switchTab=function(
     const lockedCard=document.getElementById('logLockedCard');
     const normalFields=document.getElementById('logNormalFields');
     const btn=document.getElementById('logBtn');
-    const oi=openIntake;
+    const oi=window.openIntake;
 
     // Never lock Amanda out of Log Activity because a meeting checklist is unfinished.
     if(lockedCard)lockedCard.style.display='none';
@@ -19994,13 +19988,13 @@ window.rmxBoot=boot;const baseSwitch=window.switchTab;window.switchTab=function(
       if(checklistBtn){checklistBtn.disabled=true;checklistBtn.textContent='Saving...';}
       try{
         await originalComplete();
-        if(!openIntake){
+        if(!window.openIntake){
           window._v244ChecklistExpanded=false;
           const block=document.getElementById('intakeBlock');if(block)block.classList.remove('show');
         }
       }finally{
         if(checklistBtn){checklistBtn.disabled=false;checklistBtn.textContent='Save completed checklist';}
-        if(normalBtn&&!openIntake){normalBtn.disabled=false;normalBtn.textContent='Log activity';normalBtn.onclick=logActivity;}
+        if(normalBtn&&!window.openIntake){normalBtn.disabled=false;normalBtn.textContent='Log activity';normalBtn.onclick=logActivity;}
         else if(normalBtn&&oldNormal){normalBtn.disabled=!!oldNormal.disabled;normalBtn.textContent=oldNormal.text||'Log activity';normalBtn.onclick=logActivity;}
       }
     };
@@ -20031,142 +20025,36 @@ window.rmxBoot=boot;const baseSwitch=window.switchTab;window.switchTab=function(
 })();
 </script>
 
-<script id="v246-new-meeting-helper-js">
+<script id="v248-compact-new-meeting-checklist-js">
+/* v248 · Keep the New Realtor Meeting workflow simple: six visible meeting-only checks. */
 (function(){
-  function helper(){
+  function syncCompactChecklist(){
     const block=document.getElementById('intakeBlock');
     const type=document.getElementById('activityType');
     const owner=document.getElementById('activityOwner');
     if(!block||!type)return;
-    let h=document.getElementById('v246NewMeetingHelper');
-    if(!h){
-      h=document.createElement('div');
-      h.id='v246NewMeetingHelper';
-      h.style.cssText='display:none;margin:0 0 12px;padding:10px 12px;background:#F8F6FC;border:1px solid #DDD6EF;border-radius:9px;font-size:11.5px;color:var(--text-2);line-height:1.45;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap';
-      h.innerHTML='<div><strong style="color:var(--brand-dark)">New Realtor Meeting</strong> · Log the meeting basics below. The same-day checklist is still required, but it will not take over this page.</div><button type="button" class="btn-sm" id="v246ChecklistToggleBtn">Open meeting checklist</button>';
-      block.parentNode.insertBefore(h,block);
-      h.querySelector('#v246ChecklistToggleBtn').onclick=function(){
-        window._v244ChecklistExpanded=!window._v244ChecklistExpanded;
-        const show=window._v244ChecklistExpanded;
-        block.classList.toggle('show',show);
-        this.textContent=show?'Hide meeting checklist':'Open meeting checklist';
-        if(show){
-          const title=block.querySelector('.intake-block-title');
-          if(title)title.textContent=openIntake?('Finish day-of checklist · '+properCase(openIntake.agent_name||'New Realtor Meeting')):'New Realtor Meeting · Same-Day Checklist';
-          if(typeof ensureChecklistAction==='function' && openIntake) try{ensureChecklistAction()}catch(e){}
-          setTimeout(()=>block.scrollIntoView({behavior:'smooth',block:'nearest'}),30);
-        }
-      };
-    }
-    const isMeeting=type.value==='New Realtor Meeting'&&(!owner||owner.value==='Amanda');
-    h.style.display=isMeeting?'flex':'none';
-    if(!isMeeting && !openIntake){window._v244ChecklistExpanded=false;block.classList.remove('show');}
+    const show=type.value==='New Realtor Meeting'&&(!owner||owner.value==='Amanda');
+    block.classList.toggle('show',show);
+    block.style.display=show?'block':'none';
+    const title=block.querySelector('.intake-block-title');
+    if(title)title.textContent='New Realtor Meeting · Quick Checklist';
   }
-
-  const priorToggle=window.toggleIntakeBlock;
-  window.toggleIntakeBlock=function(){
-    try{if(typeof priorToggle==='function')priorToggle()}catch(e){}
-    helper();
-    const type=document.getElementById('activityType');
-    const owner=document.getElementById('activityOwner');
-    const block=document.getElementById('intakeBlock');
-    if(!block||!type)return;
-    const isMeeting=type.value==='New Realtor Meeting'&&(!owner||owner.value==='Amanda');
-    if(isMeeting){block.classList.toggle('show',!!window._v244ChecklistExpanded);}
-  };
-
+  // Override the old expand/collapse behavior. This compact checklist simply lives with the meeting form.
+  window.toggleIntakeBlock=syncCompactChecklist;
+  window.v244OpenChecklist=syncCompactChecklist;
+  window.v244CloseChecklist=function(){syncCompactChecklist();};
+  window._v244ChecklistExpanded=true;
   function wire(){
     const type=document.getElementById('activityType');
     const owner=document.getElementById('activityOwner');
-    if(type&&!type.dataset.v246Wired){type.dataset.v246Wired='1';type.addEventListener('change',helper)}
-    if(owner&&!owner.dataset.v246Wired){owner.dataset.v246Wired='1';owner.addEventListener('change',helper)}
-    helper();
+    if(type&&!type.dataset.v248wired){type.dataset.v248wired='1';type.addEventListener('change',()=>setTimeout(syncCompactChecklist,0));}
+    if(owner&&!owner.dataset.v248wired){owner.dataset.v248wired='1';owner.addEventListener('change',()=>setTimeout(syncCompactChecklist,0));}
+    syncCompactChecklist();
   }
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',wire,{once:true});else wire();
-  setTimeout(wire,350);
+  setTimeout(wire,400);
 })();
 </script>
 
-<style id="v247-checklist-collapse-css">
-/* v247: New Realtor Meeting checklist is opt-in only. Older code may add .show; this wins until Amanda explicitly opens it. */
-#intakeBlock:not([data-v247-open="1"]){display:none!important}
-#intakeBlock[data-v247-open="1"]{display:block!important}
-</style>
-<script id="v247-new-meeting-checklist-collapse-js">
-(function(){
-  function block(){return document.getElementById('intakeBlock')}
-  function btn(){return document.getElementById('v246ChecklistToggleBtn')}
-  function isMeeting(){
-    const t=document.getElementById('activityType'),o=document.getElementById('activityOwner');
-    return !!t&&t.value==='New Realtor Meeting'&&(!o||o.value==='Amanda');
-  }
-  function closeChecklist(){
-    const b=block(); if(!b)return;
-    b.removeAttribute('data-v247-open');
-    b.classList.remove('show');
-    window._v244ChecklistExpanded=false;
-    const x=btn(); if(x)x.textContent='Open meeting checklist';
-  }
-  function openChecklist(){
-    const b=block(); if(!b)return;
-    b.setAttribute('data-v247-open','1');
-    b.classList.add('show');
-    window._v244ChecklistExpanded=true;
-    const x=btn(); if(x)x.textContent='Hide meeting checklist';
-    try{if(openIntake)setIntakeStates(openIntake.states||{})}catch(e){}
-    const title=b.querySelector('.intake-block-title');
-    if(title)title.textContent=openIntake?('Finish day-of checklist · '+properCase(openIntake.agent_name||'New Realtor Meeting')):'New Realtor Meeting · Same-Day Checklist';
-    try{
-      const wrap=document.getElementById('v244ChecklistActions');
-      if(wrap)wrap.style.display='flex';
-    }catch(e){}
-    setTimeout(()=>b.scrollIntoView({behavior:'smooth',block:'nearest'}),30);
-  }
-  window.v247ToggleMeetingChecklist=function(){
-    const b=block(); if(!b)return;
-    b.getAttribute('data-v247-open')==='1'?closeChecklist():openChecklist();
-  };
-  window.v244OpenChecklist=function(){
-    try{switchTab('log')}catch(e){}
-    openChecklist();
-  };
-  window.v244CloseChecklist=closeChecklist;
-  window.v234ResumeIntakeChecklist=window.v244OpenChecklist;
-
-  function wire(){
-    const b=block(),x=btn(),t=document.getElementById('activityType'),o=document.getElementById('activityOwner');
-    if(!b)return;
-    // Always start collapsed on page load. Pending checklists stay accessible from the reminder banner.
-    if(!b.dataset.v247Initialized){b.dataset.v247Initialized='1';closeChecklist();}
-    if(x&&!x.dataset.v247Wired){x.dataset.v247Wired='1';x.onclick=window.v247ToggleMeetingChecklist;}
-    const onContextChange=function(){
-      // Changing activity/owner never auto-opens the checklist.
-      closeChecklist();
-      const h=document.getElementById('v246NewMeetingHelper');
-      if(h)h.style.display=isMeeting()?'flex':'none';
-    };
-    if(t&&!t.dataset.v247Wired){t.dataset.v247Wired='1';t.addEventListener('change',onContextChange)}
-    if(o&&!o.dataset.v247Wired){o.dataset.v247Wired='1';o.addEventListener('change',onContextChange)}
-  }
-
-  // Override the legacy visibility helper so background refreshes cannot reopen the checklist.
-  window.toggleIntakeBlock=function(){
-    const b=block();if(!b)return;
-    if(b.getAttribute('data-v247-open')!=='1')b.classList.remove('show');
-  };
-
-  const priorApply=window.applyLockState;
-  window.applyLockState=function(){
-    try{if(typeof priorApply==='function')priorApply()}catch(e){console.warn('applyLockState',e)}
-    const b=block();
-    if(b&&b.getAttribute('data-v247-open')!=='1')b.classList.remove('show');
-    const x=btn(); if(x)x.textContent=(b&&b.getAttribute('data-v247-open')==='1')?'Hide meeting checklist':'Open meeting checklist';
-  };
-
-  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>{wire();setTimeout(wire,300)},{once:true});
-  else {wire();setTimeout(wire,300)}
-  setTimeout(wire,900);
-})();
-</script>
 </body>
 </html>
