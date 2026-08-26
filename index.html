@@ -18375,14 +18375,11 @@ window.rmxBoot=boot;const baseSwitch=window.switchTab;window.switchTab=function(
       _i:i,
       client:clean(get(raw,['Borrower Name','Borrower','Client Name','Client']),180),
       property:clean(get(raw,['Subject Property Address','Property Address','Subject Property','Address']),220),
-      loan:clean(get(raw,['Loan Number','Loan #','Loan No','Loan']),80),
-      closeDate:dateText(get(raw,['Est Closing Date','Estimated Closing Date','Closing Date','Close Date'])),
-      milestone:clean(get(raw,['Last Finished Milestone','Milestone','Current Milestone','Loan Milestone']),100),
-      buyer:{name:clean(buyerName,180),phone:clean(get(raw,['Buyers Agent Phone','Buyer Agent Phone','Buyer Phone']),80),email:clean(get(raw,['Buyers Agent Email','Buyer Agent Email','Buyer Email']),180)},
-      listing:{name:clean(listingName,180),phone:clean(get(raw,['Sellers Agent Phone','Seller Agent Phone','Listing Agent Phone','Seller Phone','Listing Phone']),80),email:clean(get(raw,['Sellers Agent Email','Seller Agent Email','Listing Agent Email','Seller Email','Listing Email']),180)}
+      buyer:{name:clean(buyerName,180),phone:clean(get(raw,['Buyers Agent Phone','Buyer Agent Phone','Buyer Phone']),80)},
+      listing:{name:clean(listingName,180),phone:clean(get(raw,['Sellers Agent Phone','Seller Agent Phone','Listing Agent Phone','Seller Phone','Listing Phone']),80)}
     };
   }
-  function usable(r){return !!(r&&(r.buyer.name||r.listing.name)&&(r.client||r.property||r.loan))}
+  function usable(r){return !!(r&&(r.buyer.name||r.listing.name)&&(r.client||r.property))}
   function stage(){return document.getElementById('wp229ImportStage')?.value||document.getElementById('wp30TxnStage')?.value||'New Contract'}
   function stageLabel(v){return v==='Clear to Close'?'Clear to Close (CTC)':'New Contract'}
   function ensureXlsx(){
@@ -18399,12 +18396,12 @@ window.rmxBoot=boot;const baseSwitch=window.switchTab;window.switchTab=function(
       const rows=XLSX.utils.sheet_to_json(book.Sheets[name],{defval:'',raw:false});
       if(!rows.length)continue;
       const keys=Object.keys(rows[0]||{}).map(hkey).join('|');
-      let score=0;['buyer agent','seller agent','borrower','property address','loan number'].forEach(x=>{if(keys.includes(x))score+=2});
+      let score=0;['buyer agent','seller agent','borrower','property address'].forEach(x=>{if(keys.includes(x))score+=2});
       if(String(name).toLowerCase()==='table')score+=1;
       if(score>bestScore){bestScore=score;best={name,rows}}
     }
     if(!best)throw new Error('No data rows were found in this workbook.');
-    const rows=best.rows.map(normalize).filter(r=>r.buyer.name||r.listing.name||r.client||r.property||r.loan);
+    const rows=best.rows.map(normalize).filter(r=>r.buyer.name||r.listing.name||r.client||r.property);
     if(!rows.length)throw new Error('I could not find Buyer Agent / Listing Agent transaction columns in this workbook.');
     return {sheet:best.name,rows};
   }
@@ -18414,7 +18411,7 @@ window.rmxBoot=boot;const baseSwitch=window.switchTab;window.switchTab=function(
     m.innerHTML='<div style="width:min(980px,96vw);max-height:90vh;overflow:hidden;background:#fff;border-radius:16px;box-shadow:0 24px 70px rgba(0,0,0,.22);display:flex;flex-direction:column">'+
       '<div style="padding:16px 18px 12px;border-bottom:1px solid #ECE9F2;display:flex;justify-content:space-between;gap:12px"><div><div style="font-size:18px;font-weight:850;color:var(--text-1)">Import Encompass transaction calls</div><div style="font-size:11px;color:var(--text-3);margin-top:3px">Upload the Encompass Excel report once. The tracker will create the buyer + listing agent calls and prefill the transaction details when Amanda starts each call.</div></div><button type="button" onclick="wp229CloseImport()" style="width:34px;height:34px;border-radius:50%;border:0;background:#F4F3F1;font-size:18px;cursor:pointer">×</button></div>'+
       '<div style="padding:14px 18px;overflow:auto"><div style="display:grid;grid-template-columns:minmax(190px,.7fr) minmax(260px,1fr);gap:10px;align-items:end"><div class="field" style="margin:0"><label>These files are</label><select id="wp229ImportStage"><option value="New Contract">New Contract calls</option><option value="Clear to Close">Clear to Close / CTC calls</option></select></div><div><input id="wp229ImportFile" type="file" accept=".xlsx,.xls,.csv" style="display:none"><button type="button" class="btn-primary" onclick="document.getElementById(\'wp229ImportFile\').click()">Choose Encompass Excel</button><span id="wp229ImportFileLabel" style="font-size:10.5px;color:var(--text-3);margin-left:8px">No file selected</span></div></div>'+
-      '<div id="wp229ImportMsg" style="font-size:10.5px;color:var(--text-3);margin-top:9px">Supported automatically: borrower, property, buyer agent name/phone/email, listing/seller agent name/phone/email, estimated closing date, and loan number when included.</div>'+
+      '<div id="wp229ImportMsg" style="font-size:10.5px;color:var(--text-3);margin-top:9px">The transaction importer uses only: buyer name, subject property address, buyer agent name + phone, and listing agent name + phone. All other Excel columns are ignored.</div>'+
       '<div id="wp229ImportPreview" style="margin-top:12px"></div></div>'+
       '<div style="padding:12px 18px;border-top:1px solid #ECE9F2;display:flex;justify-content:space-between;gap:10px;align-items:center"><div id="wp229ImportCount" style="font-size:11px;color:var(--text-3)"></div><div style="display:flex;gap:8px"><button type="button" class="rmx-btn" onclick="wp229CloseImport()">Cancel</button><button id="wp229ImportSave" type="button" class="btn-primary" onclick="wp229ImportSelected()" disabled>Import selected calls</button></div></div></div>';
     document.body.appendChild(m);
@@ -18427,21 +18424,20 @@ window.rmxBoot=boot;const baseSwitch=window.switchTab;window.switchTab=function(
     if(!wp229Rows.length){host.innerHTML='';if(count)count.textContent='';if(save)save.disabled=true;return}
     const valid=wp229Rows.filter(usable).length,invalid=wp229Rows.length-valid,autoSelect=valid<=2;
     host.innerHTML='<div style="display:flex;justify-content:space-between;gap:8px;align-items:center;margin-bottom:7px"><div style="font-size:11px;font-weight:800;color:var(--text-1)">'+esc(stageLabel(stage()))+' preview · '+wp229Rows.length+' file'+(wp229Rows.length===1?'':'s')+'</div><label style="font-size:10.5px;color:var(--text-3);cursor:pointer"><input id="wp229ToggleAll" type="checkbox" '+(autoSelect?'checked':'')+' onchange="wp229ToggleAll(this.checked)"> Select all valid rows</label></div>'+
-      '<div style="border:1px solid #E5E1ED;border-radius:10px;overflow:auto;max-height:430px"><table style="border-collapse:collapse;width:100%;font-size:10.5px"><thead style="position:sticky;top:0;background:#F8F6FC;z-index:1"><tr><th style="padding:8px;text-align:left"></th><th style="padding:8px;text-align:left">Client / property</th><th style="padding:8px;text-align:left">Buyer agent</th><th style="padding:8px;text-align:left">Listing agent</th><th style="padding:8px;text-align:left">Est. close</th><th style="padding:8px;text-align:left">Status</th></tr></thead><tbody>'+
-      wp229Rows.map((r,i)=>{const ok=usable(r),why=!r.buyer.name&&!r.listing.name?'Missing both agent names':(!r.client&&!r.property&&!r.loan?'Missing borrower/property/loan':'Ready');return '<tr style="border-top:1px solid #EEEAF3;'+(!ok?'background:#FFF8F2':'')+'"><td style="padding:8px"><input class="wp229RowCheck" data-i="'+i+'" type="checkbox" '+(ok?(autoSelect?'checked':''):'disabled')+' onchange="wp229UpdateCount()"></td><td style="padding:8px"><strong>'+esc(r.client||'—')+'</strong><div style="color:var(--text-3);margin-top:2px">'+esc(r.property||'')+(r.loan?'<br>Loan '+esc(r.loan):'')+'</div></td><td style="padding:8px"><strong>'+esc(r.buyer.name||'—')+'</strong><div style="color:var(--text-3)">'+esc(r.buyer.phone||'')+(r.buyer.email?'<br>'+esc(r.buyer.email):'')+'</div></td><td style="padding:8px"><strong>'+esc(r.listing.name||'—')+'</strong><div style="color:var(--text-3)">'+esc(r.listing.phone||'')+(r.listing.email?'<br>'+esc(r.listing.email):'')+'</div></td><td style="padding:8px;white-space:nowrap">'+esc(r.closeDate||'—')+'</td><td style="padding:8px"><span style="font-weight:750;color:'+(ok?'#2F6847':'#A45100')+'">'+esc(why)+'</span></td></tr>'}).join('')+'</tbody></table></div>'+
+      '<div style="border:1px solid #E5E1ED;border-radius:10px;overflow:auto;max-height:430px"><table style="border-collapse:collapse;width:100%;font-size:10.5px"><thead style="position:sticky;top:0;background:#F8F6FC;z-index:1"><tr><th style="padding:8px;text-align:left"></th><th style="padding:8px;text-align:left">Client / property</th><th style="padding:8px;text-align:left">Buyer agent</th><th style="padding:8px;text-align:left">Listing agent</th><th style="padding:8px;text-align:left">Status</th></tr></thead><tbody>'+
+      wp229Rows.map((r,i)=>{const ok=usable(r),why=!r.buyer.name&&!r.listing.name?'Missing both agent names':(!r.client&&!r.property?'Missing borrower/property':'Ready');return '<tr style="border-top:1px solid #EEEAF3;'+(!ok?'background:#FFF8F2':'')+'"><td style="padding:8px"><input class="wp229RowCheck" data-i="'+i+'" type="checkbox" '+(ok?(autoSelect?'checked':''):'disabled')+' onchange="wp229UpdateCount()"></td><td style="padding:8px"><strong>'+esc(r.client||'—')+'</strong><div style="color:var(--text-3);margin-top:2px">'+esc(r.property||'')+'</div></td><td style="padding:8px"><strong>'+esc(r.buyer.name||'—')+'</strong><div style="color:var(--text-3)">'+esc(r.buyer.phone||'')+'</div></td><td style="padding:8px"><strong>'+esc(r.listing.name||'—')+'</strong><div style="color:var(--text-3)">'+esc(r.listing.phone||'')+'</div></td><td style="padding:8px"><span style="font-weight:750;color:'+(ok?'#2F6847':'#A45100')+'">'+esc(why)+'</span></td></tr>'}).join('')+'</tbody></table></div>'+
       (invalid?'<div style="font-size:10px;color:#A45100;margin-top:6px">'+invalid+' row'+(invalid===1?' was':'s were')+' left unselected because required transaction data is missing.</div>':'');
     if(save)save.disabled=valid===0;wp229UpdateCount();
   }
   function selected(){return Array.from(document.querySelectorAll('.wp229RowCheck:checked')).map(x=>wp229Rows[Number(x.dataset.i)]).filter(Boolean)}
   function tag(name,v){v=clean(v,220);return v?'['+name+':'+v+']':''}
   function txnIdFor(r,st){
-    if(r.loan)return (typeof wp33TxnSafeToken==='function'?wp33TxnSafeToken(st+'-loan-'+r.loan):(st+'-loan-'+r.loan).toLowerCase().replace(/[^a-z0-9]+/g,'-'));
     const ref=[r.client,r.property].filter(Boolean).join(' · ').slice(0,180);
     return typeof wp33MakeTxnId==='function'?wp33MakeTxnId(st,ref,r.buyer.name,r.listing.name,(typeof today==='function'?today():'')):(st+'-'+ref).toLowerCase().replace(/[^a-z0-9]+/g,'-').slice(0,80);
   }
   function notesFor(r,role,txnId,owner,st){
     const ref=[r.client,r.property].filter(Boolean).join(' · ').slice(0,180);
-    let notes='[TXN_TRIGGER]'+tag('TXN_ROLE',role)+tag('TXN_ID',txnId)+tag('TXN_REF',ref)+tag('TXN_CLIENT',r.client)+tag('TXN_PROPERTY',r.property)+tag('TXN_LOAN',r.loan)+tag('TXN_CLOSE_DATE',r.closeDate)+tag('TXN_BUYER_PHONE',r.buyer.phone)+tag('TXN_BUYER_EMAIL',r.buyer.email)+tag('TXN_LISTING_PHONE',r.listing.phone)+tag('TXN_LISTING_EMAIL',r.listing.email)+tag('TXN_SOURCE','Encompass Excel')+' Mandatory '+st+' transaction call trigger for the '+role.toLowerCase()+' agent. Complete the required '+(st==='Clear to Close'?'CTC Call':'Under Contract Call')+' and log the outcome in the RM tracker.';
+    let notes='[TXN_TRIGGER]'+tag('TXN_ROLE',role)+tag('TXN_ID',txnId)+tag('TXN_REF',ref)+tag('TXN_CLIENT',r.client)+tag('TXN_PROPERTY',r.property)+tag('TXN_BUYER_PHONE',r.buyer.phone)+tag('TXN_LISTING_PHONE',r.listing.phone)+tag('TXN_SOURCE','Encompass Excel')+' Mandatory '+st+' transaction call trigger for the '+role.toLowerCase()+' agent. Complete the required '+(st==='Clear to Close'?'CTC Call':'Under Contract Call')+' and log the outcome in the RM tracker.';
     try{notes=appendRmMeta(notes,owner,'Current Relationship')}catch(e){}return notes;
   }
   function existingKey(row){return (typeof wp33TxnId==='function'?wp33TxnId(row.notes):'')+'|'+String(typeof wp30TxnRole==='function'?wp30TxnRole(row.notes):'Agent').toLowerCase()}
@@ -18497,15 +18493,16 @@ window.rmxBoot=boot;const baseSwitch=window.switchTab;window.switchTab=function(
     const b=typeof baseBundle==='function'?baseBundle(txnId,name,role):{txnId:txnId||'',buyer:'',listing:'',client:'',property:'',ref:''};
     const data=window._wp18Cache||{},rows=(data.transactionActs||[]).filter(t=>{if(!(t.act_type==='New Contract'||t.act_type==='Clear to Close'))return false;if(txnId)return typeof wp33TxnId==='function'&&wp33TxnId(t.notes)===txnId;return typeof wp18Key==='function'&&wp18Key(t.agent_name)===wp18Key(name)});
     function meta(notes,key){const m=String(notes||'').match(new RegExp('\\['+key+':([^\\]]*)\\]','i'));return m?m[1].trim():''}
-    rows.forEach(t=>{b.buyerPhone=b.buyerPhone||meta(t.notes,'TXN_BUYER_PHONE');b.buyerEmail=b.buyerEmail||meta(t.notes,'TXN_BUYER_EMAIL');b.listingPhone=b.listingPhone||meta(t.notes,'TXN_LISTING_PHONE');b.listingEmail=b.listingEmail||meta(t.notes,'TXN_LISTING_EMAIL');b.loan=b.loan||meta(t.notes,'TXN_LOAN');b.closeDate=b.closeDate||meta(t.notes,'TXN_CLOSE_DATE');b.source=b.source||meta(t.notes,'TXN_SOURCE')});
+    rows.forEach(t=>{b.buyerPhone=b.buyerPhone||meta(t.notes,'TXN_BUYER_PHONE');b.listingPhone=b.listingPhone||meta(t.notes,'TXN_LISTING_PHONE');b.source=b.source||meta(t.notes,'TXN_SOURCE')});
+    try{if(b&&Object.prototype.hasOwnProperty.call(b,'loan'))delete b.loan}catch(e){}
     return b;
   };
   window.wp48PrefillCtcTransaction=async function(name,role,txnId){
     const b=window.wp48TxnBundle(txnId,name,role);
     if(b.client)ctcSet('ctcBorrower',b.client);if(b.property)ctcSet('ctcProperty',b.property);if(b.buyer)ctcSet('ctcBuyerAgent',b.buyer);if(b.listing)ctcSet('ctcSellerAgent',b.listing);
-    if(b.buyerPhone)ctcSet('ctcBuyerPhone',b.buyerPhone);if(b.buyerEmail)ctcSet('ctcBuyerEmail',b.buyerEmail);if(b.listingPhone)ctcSet('ctcSellerPhone',b.listingPhone);if(b.listingEmail)ctcSet('ctcSellerEmail',b.listingEmail);
+    if(b.buyerPhone)ctcSet('ctcBuyerPhone',b.buyerPhone);if(b.listingPhone)ctcSet('ctcSellerPhone',b.listingPhone);
     await Promise.all([b.buyer?ctcFillContact('buyer'):Promise.resolve(),b.listing?ctcFillContact('seller'):Promise.resolve()]);ctcUpdatePreview();
-    const loaded=document.getElementById('ctcLoadedContext'),bits=[];if(b.client)bits.push('Client: '+b.client);if(b.property)bits.push('Property: '+b.property);if(b.loan)bits.push('Loan: '+b.loan);if(b.closeDate)bits.push('Est close: '+b.closeDate);if(b.buyer)bits.push('Buyer agent: '+b.buyer);if(b.listing)bits.push('Listing agent: '+b.listing);
+    const loaded=document.getElementById('ctcLoadedContext'),bits=[];if(b.client)bits.push('Client: '+b.client);if(b.property)bits.push('Property: '+b.property);if(b.buyer)bits.push('Buyer agent: '+b.buyer);if(b.listing)bits.push('Listing agent: '+b.listing);
     if(loaded){loaded.style.display=bits.length?'block':'none';loaded.textContent=bits.length?'✓ Loaded from '+(b.source||'the transaction')+' — '+bits.join(' · '):''}return b;
   };
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(installButton,450),{once:true});else setTimeout(installButton,450);
@@ -18666,13 +18663,10 @@ window.rmxBoot=boot;const baseSwitch=window.switchTab;window.switchTab=function(
       b.client=b.client||meta(t.notes,'TXN_CLIENT');
       b.property=b.property||meta(t.notes,'TXN_PROPERTY');
       b.ref=b.ref||meta(t.notes,'TXN_REF');
-      b.loan=b.loan||meta(t.notes,'TXN_LOAN');
-      b.closeDate=b.closeDate||meta(t.notes,'TXN_CLOSE_DATE');
+      
       b.source=b.source||meta(t.notes,'TXN_SOURCE');
       b.buyerPhone=b.buyerPhone||meta(t.notes,'TXN_BUYER_PHONE');
-      b.buyerEmail=b.buyerEmail||meta(t.notes,'TXN_BUYER_EMAIL');
       b.listingPhone=b.listingPhone||meta(t.notes,'TXN_LISTING_PHONE');
-      b.listingEmail=b.listingEmail||meta(t.notes,'TXN_LISTING_EMAIL');
     });
     return b;
   };
@@ -18714,7 +18708,7 @@ window.rmxBoot=boot;const baseSwitch=window.switchTab;window.switchTab=function(
     const b=g.bundle||{},isCtc=g.callType==='CTC Call',title=b.client||b.property||b.ref||'Transaction',metaBits=[];
     if(b.property&&b.property!==title)metaBits.push(b.property);
     if(b.closeDate)metaBits.push('Est. close '+b.closeDate);
-    if(b.loan)metaBits.push('Loan '+b.loan);
+    
     const open=(g.tasks||[]).length;
     let sides=sideHtml(g,'Buyer')+sideHtml(g,'Listing');
     if(!sides){sides=(g.tasks||[]).map(t=>{const x=t.txn||{},action=x.callType==='CTC Call'?'ctc':'new-contract';return '<div class="wp231-side"><div><div class="wp231-side-label">'+esc(x.role||'Agent')+' agent</div><div class="wp231-agent">'+esc(t.name||'')+'</div></div><button type="button" data-rm-action="'+action+'" data-agent="'+enc(t.name||'')+'" data-type="'+enc(x.callType||'')+'" data-role="'+enc(x.role||'Agent')+'" data-txn="'+enc(x.txnId||'')+'">Start call</button></div>'}).join('')}
@@ -18728,7 +18722,7 @@ window.rmxBoot=boot;const baseSwitch=window.switchTab;window.switchTab=function(
   }
   function render(){
     const hub=document.getElementById('wp230TxnHub'),host=document.getElementById('wp230OpenCalls'),urgent=document.getElementById('v113UrgentHost');if(!hub||!host)return;
-    const d=currentData(),tasks=openTasks(d),groups=groupTasks(d,tasks),sig=tasks.map(taskKey).sort().join('||')+'::'+groups.map(g=>[g.txnId,g.bundle.client,g.bundle.property,g.bundle.closeDate,g.bundle.loan,g.bundle.buyer,g.bundle.buyerPhone,g.bundle.buyerEmail,g.bundle.listing,g.bundle.listingPhone,g.bundle.listingEmail].join('|')).join('||');
+    const d=currentData(),tasks=openTasks(d),groups=groupTasks(d,tasks),sig=tasks.map(taskKey).sort().join('||')+'::'+groups.map(g=>[g.txnId,g.bundle.client,g.bundle.property,g.bundle.closeDate,g.bundle.buyer,g.bundle.buyerPhone,g.bundle.buyerEmail,g.bundle.listing,g.bundle.listingPhone,g.bundle.listingEmail].join('|')).join('||');
     if(host.dataset.v231Sig!==sig){
       host.dataset.v231Sig=sig;
       host.innerHTML=tasks.length?'<div class="wp231-summary"><b>'+groups.length+' open transaction'+(groups.length===1?'':'s')+'</b><span>'+tasks.length+' buyer/listing call'+(tasks.length===1?'':'s')+' remaining · open a file and log the call directly here</span></div><div class="wp231-list">'+groups.map(fileHtml).join('')+'</div>':'<div class="wp231-empty">No open New Contract or CTC calls right now.</div>';
@@ -18754,7 +18748,7 @@ window.rmxBoot=boot;const baseSwitch=window.switchTab;window.switchTab=function(
       setVal('v175TxBuyerName',b.client,true);setVal('v175TxProperty',b.property,true);
       setVal('v175TxBuyerAgent',b.buyer,true);setVal('v175TxListingAgent',b.listing,true);
       setVal('v175TxBuyerPhone',b.buyerPhone||profilePhone(b.buyer),true);setVal('v175TxListingPhone',b.listingPhone||profilePhone(b.listing),true);
-      const fileBits=[];if(b.closeDate)fileBits.push('Est close '+b.closeDate);if(b.loan)fileBits.push('Loan '+b.loan);if(fileBits.length)setVal('v175TxFileNote',fileBits.join(' · '),false);
+      const fileBits=[];if(b.closeDate)fileBits.push('Est close '+b.closeDate);if(fileBits.length)setVal('v175TxFileNote',fileBits.join(' · '),false);
       const d=currentData(),open=openTasks(d).filter(t=>{const x=t.txn||{};return (!txnId||x.txnId===txnId)&&x.callType===type});
       m.dataset.v231OpenSides=JSON.stringify(open.map(t=>({role:String((t.txn||{}).role||'Agent'),name:String(t.name||'')})));
       m.dataset.txnId=txnId||'';m.dataset.v231FocusRole=role||'';
@@ -18921,12 +18915,12 @@ window.rmxBoot=boot;const baseSwitch=window.switchTab;window.switchTab=function(
         return key(r.agent_name)===key(agentName);
       });
       if(!matched.length)return null;
-      const b={buyer:'',listing:'',buyerPhone:'',buyerEmail:'',listingPhone:'',listingEmail:'',client:'',property:'',loan:'',closeDate:''};
+      const b={buyer:'',listing:'',buyerPhone:'',buyerEmail:'',listingPhone:'',listingEmail:'',client:'',property:'',closeDate:''};
       matched.forEach(r=>{
         const role=String(typeof wp30TxnRole==='function'?wp30TxnRole(r.notes):meta(r.notes,'TXN_ROLE')).toLowerCase();
         if(role==='buyer'&&!b.buyer)b.buyer=r.agent_name||'';
         if(role==='listing'&&!b.listing)b.listing=r.agent_name||'';
-        b.client=b.client||meta(r.notes,'TXN_CLIENT');b.property=b.property||meta(r.notes,'TXN_PROPERTY');b.loan=b.loan||meta(r.notes,'TXN_LOAN');b.closeDate=b.closeDate||meta(r.notes,'TXN_CLOSE_DATE');
+        b.client=b.client||meta(r.notes,'TXN_CLIENT');b.property=b.property||meta(r.notes,'TXN_PROPERTY');b.closeDate=b.closeDate||meta(r.notes,'TXN_CLOSE_DATE');
         b.buyerPhone=b.buyerPhone||meta(r.notes,'TXN_BUYER_PHONE');b.buyerEmail=b.buyerEmail||meta(r.notes,'TXN_BUYER_EMAIL');b.listingPhone=b.listingPhone||meta(r.notes,'TXN_LISTING_PHONE');b.listingEmail=b.listingEmail||meta(r.notes,'TXN_LISTING_EMAIL');
       });
       return b;
@@ -18947,7 +18941,7 @@ window.rmxBoot=boot;const baseSwitch=window.switchTab;window.switchTab=function(
         if(needs){const live=await liveTxnBundle(txnId||'',agentName||'');if(live)b=Object.assign({},b||{},Object.fromEntries(Object.entries(live).filter(([k,v])=>v)))}
         if(!b)return;
         set('v175TxBuyerName',b.client);set('v175TxProperty',b.property);set('v175TxBuyerAgent',b.buyer);set('v175TxListingAgent',b.listing);set('v175TxBuyerPhone',b.buyerPhone);set('v175TxListingPhone',b.listingPhone);
-        const note=document.getElementById('v175TxFileNote'),bits=[];if(b.closeDate)bits.push('Est close '+b.closeDate);if(b.loan)bits.push('Loan '+b.loan);if(note&&bits.length&&!String(note.value||'').trim())note.value=bits.join(' · ');
+        const note=document.getElementById('v175TxFileNote'),bits=[];if(b.closeDate)bits.push('Est close '+b.closeDate);if(note&&bits.length&&!String(note.value||'').trim())note.value=bits.join(' · ');
         try{if(typeof v176UpdateWhatsApp==='function')v176UpdateWhatsApp()}catch(e){}
       },60);
       return r;
@@ -19484,5 +19478,266 @@ window.rmxBoot=boot;const baseSwitch=window.switchTab;window.switchTab=function(
 })();
 </script>
 
+
+<!-- v238 NEW REALTOR PROSPECT CALL FLOW · 2026-08-25
+     New Meeting Push prospects must open a dedicated cold/new-Realtor call workflow — never
+     New Agent Follow-up or a generic relationship touch. Lock the activity to Cold Calls, keep
+     phone + script visible, enforce voicemail/no-answer text follow-up, and save through the
+     prospect pipeline without rebuilding the whole page. -->
+<style id="v238-new-realtor-call-css">
+#v238ProspectHelp{display:none;margin:0 0 10px;background:#F8F5FC;border:1px solid #DED5ED;border-radius:9px;padding:9px 10px;font-size:10.5px;color:#51427C;line-height:1.45}
+#v238ProspectHelp .v238-row{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
+#v238ProspectHelp button{border:1px solid #CFC3DF;background:#fff;color:#5D3E83;border-radius:7px;padding:5px 8px;font:800 10px/1.2 inherit;cursor:pointer}
+#v238ProspectText{display:none;grid-column:1/-1;background:#FFF8E8;border:1px solid #E7C98A;border-radius:8px;padding:8px 9px;color:#75520A;font-size:10.5px;line-height:1.4}
+#v238ProspectText label{display:flex;gap:7px;align-items:flex-start;cursor:pointer}
+#v238ProspectText input{margin-top:2px}
+.v238-cold-locked{background:#F7F5FB!important;color:#51427C!important;font-weight:800!important}
+</style>
+<script id="v238-new-realtor-call-js">
+(function(){
+  const originalOptions=(document.getElementById('v175OutreachType')||{}).innerHTML||'<option>Cold Calls</option><option>Agent Talk-to</option><option>Reconnect Outreach</option><option>New Agent Follow-up</option>';
+  const priorOpen=window.v176OpenOutreach;
+  const priorSave=window.v175SaveOutreach;
+
+  function err(msg){
+    const e=document.getElementById('v175OutreachError');if(!e)return;
+    e.textContent=msg||'';e.classList.toggle('show',!!msg);
+  }
+  function bizDate(days){
+    const d=new Date();d.setHours(12,0,0,0);let left=Math.max(1,Number(days)||1);
+    while(left>0){d.setDate(d.getDate()+1);const w=d.getDay();if(w!==0&&w!==6)left--;}
+    try{return typeof localDateStr==='function'?localDateStr(d):d.toISOString().slice(0,10)}catch(e){return d.toISOString().slice(0,10)}
+  }
+  function normalizeOutcome(v){
+    const s=String(v||'').trim().toLowerCase();
+    if(s==='connected'||s==='positive')return 'Positive';
+    if(s==='meeting scheduled'||s==='meeting scheduled!')return 'Meeting Scheduled';
+    if(s==='follow-up needed'||s==='requires follow-up')return 'Requires follow-up';
+    if(s==='not interested'||s==='remove / no further contact')return 'Remove / No Further Contact';
+    if(s==='left voicemail')return 'Left voicemail';
+    if(s==='no answer')return 'No answer';
+    if(s==='needs manager attention')return 'Needs manager attention';
+    return v||'';
+  }
+  function isProspect(){const m=document.getElementById('v175OutreachModal');return !!(m&&m.dataset.v238Prospect==='1')}
+  function restoreGeneric(){
+    const m=document.getElementById('v175OutreachModal'),sel=document.getElementById('v175OutreachType');
+    if(m){delete m.dataset.v238Prospect;delete m.dataset.v238Phone;}
+    if(sel){sel.innerHTML=originalOptions;sel.disabled=false;sel.classList.remove('v238-cold-locked');}
+    const field=sel&&sel.closest('.v175-field');if(field)field.style.display='';
+    const mode=document.getElementById('v198LogModeWrap')?.closest('.v175-field.full');if(mode)mode.style.display='';
+    const help=document.getElementById('v238ProspectHelp');if(help)help.style.display='none';
+    const tx=document.getElementById('v238ProspectText');if(tx){tx.style.display='none';const cb=document.getElementById('v238ProspectTextSent');if(cb)cb.checked=false;}
+    const lab=document.querySelector('#v175OutreachFollowup')?.closest('.v175-field')?.querySelector('label');if(lab)lab.textContent='Next follow-up';
+  }
+  function ensureProspectUI(){
+    const modal=document.getElementById('v175OutreachModal');if(!modal)return;
+    let help=document.getElementById('v238ProspectHelp');
+    if(!help){
+      help=document.createElement('div');help.id='v238ProspectHelp';
+      help.innerHTML='<div class="v238-row"><div><b>NEW REALTOR PROSPECT CALL</b><br><span>Goal: make the outreach, ask directly for the meeting, and log the real outcome.</span></div><button type="button" onclick="v191Playbook(\'book\')">Open new-meeting script</button></div>';
+      const rule=document.getElementById('v175OutreachRule');if(rule&&rule.parentNode)rule.parentNode.insertBefore(help,rule.nextSibling);
+    }
+    let tx=document.getElementById('v238ProspectText');
+    if(!tx){
+      tx=document.createElement('div');tx.id='v238ProspectText';
+      tx.innerHTML='<label><input type="checkbox" id="v238ProspectTextSent"><span><b>Follow-up text sent</b><br>For voicemail or no answer, send the text before saving so this is not a dead-end dial.</span></label>';
+      const grid=modal.querySelector('.v175-grid');if(grid)grid.appendChild(tx);
+    }
+  }
+  function paintProspect(name,phone){
+    ensureProspectUI();
+    const m=document.getElementById('v175OutreachModal');if(!m)return;
+    m.dataset.v238Prospect='1';m.dataset.v238Phone=String(phone||'').trim();
+    const title=document.getElementById('v175OutreachTitle');if(title)title.textContent='New Realtor Prospect Call';
+    const rule=document.getElementById('v175OutreachRule');if(rule)rule.innerHTML='<b>This is NEW prospecting.</b> Call the Realtor, make the meeting ask, and log the outcome here. Do not use New Agent Follow-up until after a New Realtor Meeting has actually been held.';
+    const sel=document.getElementById('v175OutreachType');
+    if(sel){sel.innerHTML='<option value="Cold Calls" selected>Cold Call · New Realtor Prospect</option>';sel.value='Cold Calls';sel.disabled=true;sel.classList.add('v238-cold-locked');}
+    const mode=document.getElementById('v198LogModeWrap')?.closest('.v175-field.full');if(mode)mode.style.display='none';
+    const help=document.getElementById('v238ProspectHelp');if(help)help.style.display='block';
+    const out=document.getElementById('v175OutreachOutcome');
+    if(out){
+      out.innerHTML='<option value="">Choose outcome...</option><option value="Positive">Talked — positive</option><option value="Meeting Scheduled">Meeting scheduled</option><option value="Left voicemail">Left voicemail</option><option value="No answer">No answer</option><option value="Requires follow-up">Requires follow-up</option><option value="Needs manager attention">Needs manager attention</option><option value="Remove / No Further Contact">Not interested / remove</option>';
+      out.value='';
+      out.onchange=window.v238ProspectOutcomeChanged;
+    }
+    const notes=document.getElementById('v175OutreachNotes');if(notes)notes.placeholder='What happened? If connected, what did they say and did you ask for the meeting? If no answer, note VM/text.';
+    const fu=document.getElementById('v175OutreachFollowup');if(fu)fu.value='';
+    const phoneStrip=document.getElementById('v236ProspectPhone');if(phoneStrip&&phoneStrip.style.display==='none'&&phone&&typeof window.v176OpenOutreach==='function'){};
+    window.v238ProspectOutcomeChanged();
+  }
+
+  // Restore the generic relationship logger before every normal open. Prospect mode is reapplied below.
+  if(typeof priorOpen==='function'&&!priorOpen.__v238){
+    const wrapped=function(name,type,phone){restoreGeneric();return priorOpen.call(this,name,type,phone)};
+    wrapped.__v238=true;window.v176OpenOutreach=wrapped;
+  }
+
+  window.v238ProspectOutcomeChanged=function(){
+    if(!isProspect())return;
+    const out=normalizeOutcome(document.getElementById('v175OutreachOutcome')?.value||'');
+    const tx=document.getElementById('v238ProspectText'),cb=document.getElementById('v238ProspectTextSent');
+    const needsText=out==='Left voicemail'||out==='No answer';
+    if(tx)tx.style.display=needsText?'block':'none';if(!needsText&&cb)cb.checked=false;
+    const fu=document.getElementById('v175OutreachFollowup');
+    const lab=fu?.closest('.v175-field')?.querySelector('label');
+    if(lab)lab.textContent=out==='Meeting Scheduled'?'Meeting date':(out==='Requires follow-up'?'Follow-up date':'Next follow-up');
+    if(fu&&!fu.value&&(needsText||out==='Requires follow-up'))fu.value=bizDate(needsText?2:3);
+  };
+
+  // New Meeting Push always enters this dedicated new-Realtor prospect flow.
+  window.v29OpenProspect=function(name,phone){
+    name=String(name||'').trim();phone=String(phone||'').trim();
+    try{
+      if(typeof window.v176OpenOutreach==='function')window.v176OpenOutreach(name,'Cold Calls',phone);
+      paintProspect(name,phone);
+      const n=document.getElementById('v175OutreachNotes');if(n)setTimeout(()=>n.focus(),60);
+    }catch(e){console.warn('v238 prospect open failed',e);try{if(typeof toast==='function')toast('Could not open the New Realtor call log. Refresh once and try again.','error',4200)}catch(_){} }
+  };
+
+  async function saveProspect(){
+    const m=document.getElementById('v175OutreachModal');
+    const name=(document.getElementById('v175OutreachAgent')?.value||'').trim();
+    const phone=String(m?.dataset.v238Phone||'').trim();
+    const outcome=normalizeOutcome(document.getElementById('v175OutreachOutcome')?.value||'');
+    const fu=document.getElementById('v175OutreachFollowup');let follow=(fu?.value||'').trim();
+    let notes=(document.getElementById('v175OutreachNotes')?.value||'').trim();
+    const textSent=!!document.getElementById('v238ProspectTextSent')?.checked;
+    if(!name)return err('Agent name is required.');
+    if(!outcome)return err('Choose what happened on the call.');
+    if(!notes)return err('Add a quick note — even “left VM + text” is enough.');
+    if((outcome==='Left voicemail'||outcome==='No answer')&&!textSent)return err('Send the follow-up text, then check the box before saving.');
+    if(outcome==='Meeting Scheduled'&&!follow)return err('Add the scheduled meeting date.');
+    if(!follow&&(outcome==='Left voicemail'||outcome==='No answer'||outcome==='Requires follow-up')){follow=bizDate(outcome==='Requires follow-up'?3:2);if(fu)fu.value=follow;}
+    const prefix=(outcome==='Left voicemail'||outcome==='No answer')?'☎️📱 ':'☎️ ';
+    notes=prefix+notes;
+    const btn=document.getElementById('v175OutreachSave');if(btn){btn.disabled=true;btn.textContent='Saving…'}
+    try{
+      const body={agent_name:name,act_type:'Cold Calls',act_date:(typeof today==='function'?today():new Date().toISOString().slice(0,10)),outcome,notes,follow_up_date:follow||null};
+      const inserted=await sbFetch('amanda_activities',{method:'POST',body:JSON.stringify(body)});
+      const row=inserted&&inserted[0]?inserted[0]:null;
+      try{if(typeof clearOldFollowups==='function')await clearOldFollowups(name,row&&row.id)}catch(e){}
+      try{
+        const prs=await sbFetch('outreach_prospects?agent_name=ilike.'+encodeURIComponent(name)+'&select=id,agent_name&limit=5').catch(()=>[]);
+        const exact=(prs||[]).find(r=>String(r.agent_name||'').trim().toLowerCase()===name.toLowerCase())||(prs||[])[0];
+        if(exact){
+          const payload=outcome==='Remove / No Further Contact'?{status:'DNC',follow_up_date:null}:{status:'Requires follow-up',follow_up_date:(outcome==='Meeting Scheduled'?null:(follow||null))};
+          await sbFetch('outreach_prospects?id=eq.'+encodeURIComponent(exact.id),{method:'PATCH',prefer:'return=minimal',body:JSON.stringify(payload)}).catch(()=>{});
+        }else if(phone){
+          await sbFetch('outreach_prospects',{method:'POST',prefer:'return=minimal',body:JSON.stringify({agent_name:name,phone,status:outcome==='Remove / No Further Contact'?'DNC':'Requires follow-up',follow_up_date:follow||null,notes:'Added via New Meeting Push call'})}).catch(()=>{});
+        }
+      }catch(e){console.warn('v238 prospect pipeline sync',e)}
+      if(typeof v175Close==='function')v175Close('v175OutreachModal');
+      try{if(typeof toast==='function')toast(outcome==='Meeting Scheduled'?'Meeting booked with '+name+' ✓':'New Realtor outreach saved ✓','success',3000)}catch(e){}
+      setTimeout(()=>{try{if(typeof rmRefreshAfterMutation==='function')rmRefreshAfterMutation('new Realtor prospect call saved');else if(typeof v23LoadAmandaSnapshot==='function')v23LoadAmandaSnapshot(true)}catch(e){}},40);
+    }catch(e){console.warn(e);err('Could not save the call. Try again.');}
+    finally{if(btn&&document.body.contains(btn)){btn.disabled=false;btn.textContent='Save call'}}
+  }
+
+  if(typeof priorSave==='function'&&!priorSave.__v238){
+    const wrapped=async function(){if(isProspect())return saveProspect();return priorSave.apply(this,arguments)};
+    wrapped.__v238=true;window.v175SaveOutreach=wrapped;
+  }
+})();
+</script>
+
+
+
+<!-- v239 · PRIVACY HARDENING: NEVER STORE OR DISPLAY LOAN NUMBERS · 2026-08-25 -->
+<script id="v239-no-loan-numbers-js">
+(function(){
+  'use strict';
+  function hashText(s){
+    let h=2166136261>>>0; s=String(s||'');
+    for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619)>>>0;}
+    return h.toString(36);
+  }
+  function safeTxnId(id){
+    id=String(id||'').trim();
+    if(!id)return '';
+    return /(?:^|-)loan-/i.test(id)?('txn-redacted-'+hashText(id)):id;
+  }
+  function scrubLoanNumberText(notes){
+    let s=String(notes||'');
+    // Remove structured legacy loan-number metadata.
+    s=s.replace(/\s*\[TXN_LOAN:[^\]]*\]/gi,'');
+    // Replace legacy transaction IDs that were derived from a loan number with a non-reversible safe ID.
+    s=s.replace(/\[TXN_ID:([^\]]+)\]/gi,function(all,id){return '[TXN_ID:'+safeTxnId(id)+']'});
+    // Remove plain-text loan-number labels while leaving ordinary phrases such as "loan manager" alone.
+    s=s.replace(/\bLoan(?:\s*(?:Number|No\.?|#))?\s*[:#-]?\s*([A-Z0-9-]{6,})\b/gi,function(all,val){return /\d/.test(val)?'':all});
+    s=s.replace(/[ \t]{2,}/g,' ').replace(/\s+([|·])/g,' $1').trim();
+    return s;
+  }
+
+  // Even before the database scrub finishes, never expose a legacy loan-derived transaction id in DOM/data attributes.
+  const baseTxnId=window.wp33TxnId;
+  if(typeof baseTxnId==='function'&&!baseTxnId.__v239Safe){
+    const wrapped=function(notes){return safeTxnId(baseTxnId(notes))};
+    wrapped.__v239Safe=true; window.wp33TxnId=wrapped;
+  }
+
+  // Clean any already-imported transaction metadata from Supabase once. This removes the sensitive value,
+  // not merely the visible label. If the scrub cannot finish, it retries on a future page load.
+  async function scrubExisting(){
+    if(localStorage.getItem('rm_v239_loan_number_scrub_complete')==='1')return;
+    if(typeof sbFetch!=='function')return;
+    try{
+      const rows=await sbFetch('amanda_activities?select=id,notes&notes=not.is.null&limit=5000');
+      let changed=0;
+      for(const r of (rows||[])){
+        if(!r||!r.id||!r.notes)continue;
+        const cleaned=scrubLoanNumberText(r.notes);
+        if(cleaned!==String(r.notes)){
+          await sbFetch('amanda_activities?id=eq.'+encodeURIComponent(r.id),{method:'PATCH',prefer:'return=minimal',body:JSON.stringify({notes:cleaned})});
+          changed++;
+        }
+      }
+      localStorage.setItem('rm_v239_loan_number_scrub_complete','1');
+      try{if(typeof _wp18Cache!=='undefined'){_wp18Cache=null;_wp18CacheAt=0}}catch(e){}
+      if(changed&&typeof console!=='undefined')console.info('RM privacy scrub removed loan-number metadata from '+changed+' activity row(s).');
+    }catch(e){console.warn('RM loan-number privacy scrub will retry later',e)}
+  }
+  window.v239ScrubLoanNumbers=scrubExisting;
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(scrubExisting,1800),{once:true});
+  else setTimeout(scrubExisting,900);
+})();
+</script>
+
+<!-- v240 · MINIMAL TRANSACTION DATA: buyer, property, agent names + phones only -->
+<script id="v240-minimal-transaction-data-js">
+(function(){
+  'use strict';
+  function cleanTxnNotes(notes){
+    let s=String(notes||'');
+    ['TXN_CLOSE_DATE','TXN_BUYER_EMAIL','TXN_LISTING_EMAIL','TXN_MILESTONE'].forEach(function(k){
+      s=s.replace(new RegExp('\\s*\\['+k+':[^\\]]*\\]','gi'),'');
+    });
+    return s.replace(/[ \\t]{2,}/g,' ').trim();
+  }
+  async function scrubLegacyExtras(){
+    if(localStorage.getItem('rm_v240_minimal_txn_scrub_complete')==='1')return;
+    if(typeof sbFetch!=='function')return;
+    try{
+      const rows=await sbFetch('amanda_activities?select=id,notes&notes=not.is.null&limit=5000');
+      let changed=0;
+      for(const r of (rows||[])){
+        if(!r||!r.id||!r.notes)continue;
+        if(!/\[TXN_(?:CLOSE_DATE|BUYER_EMAIL|LISTING_EMAIL|MILESTONE):[^\]]*\]/i.test(r.notes))continue;
+        const cleaned=cleanTxnNotes(r.notes);
+        if(cleaned!==String(r.notes)){
+          await sbFetch('amanda_activities?id=eq.'+encodeURIComponent(r.id),{method:'PATCH',prefer:'return=minimal',body:JSON.stringify({notes:cleaned})});
+          changed++;
+        }
+      }
+      localStorage.setItem('rm_v240_minimal_txn_scrub_complete','1');
+      try{if(typeof _wp18Cache!=='undefined'){_wp18Cache=null;_wp18CacheAt=0}}catch(e){}
+      if(changed&&typeof console!=='undefined')console.info('RM transaction cleanup removed unneeded transaction metadata from '+changed+' row(s).');
+    }catch(e){console.warn('RM minimal transaction-data scrub will retry later',e)}
+  }
+  window.v240ScrubTransactionExtras=scrubLegacyExtras;
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(scrubLegacyExtras,2200),{once:true});
+  else setTimeout(scrubLegacyExtras,1200);
+})();
+</script>
 </body>
 </html>
