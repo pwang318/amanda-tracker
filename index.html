@@ -1283,14 +1283,16 @@ body.rm-director-route .tabs,body.rm-director-route .who-bar{display:none!import
 <summary style="cursor:pointer;padding:10px 1px;font-size:11px;font-weight:850;color:#75520A;display:flex;align-items:center;gap:7px;flex-wrap:wrap"><span style="background:#7A5600;color:#fff;border-radius:12px;padding:2px 7px;font-size:8.5px;letter-spacing:.35px">TRANSACTION CALLS</span> Add New Contract / CTC <span style="font-size:9px;font-weight:800;background:#FFF1C9;border:1px solid #E7C98A;border-radius:12px;padding:2px 7px">ADD IT HERE</span></summary>
 <div style="font-size:10.5px;color:#7A6A45;line-height:1.45;margin:0 0 9px"><strong>Enter the file once.</strong> The tracker creates the buyer + listing agent calls and carries these details into the call workspace when you click <strong>Start call</strong>.</div>
 <div id="wp33ActiveTxnTriggers" style="display:none;margin:0 0 8px;background:#fff;border:1px solid #E7C98A;border-radius:7px;padding:7px 8px;font-size:9.8px;color:#7A6A45"></div>
-<div class="v21-block-grid" style="display:grid;grid-template-columns:.9fr 1.1fr 1.1fr 1.05fr 1.5fr auto;gap:7px;align-items:end;padding:2px 0 10px">
-<div class="field" style="margin:0"><label>Milestone</label><select id="wp30TxnStage"><option value="New Contract">New contract</option><option value="Clear to Close">Clear to close</option></select></div>
-<div class="field" style="margin:0"><label>Buyer agent</label><input id="wp30TxnBuyerAgent" placeholder="Buyer agent" type="text"/></div>
-<div class="field" style="margin:0"><label>Listing agent</label><input id="wp30TxnListingAgent" placeholder="Listing agent" type="text"/></div>
-<div class="field" style="margin:0"><label>Client / borrower</label><input id="wp30TxnClient" placeholder="Client name" type="text"/></div>
-<div class="field" style="margin:0"><label>Property address</label><input id="wp30TxnProperty" placeholder="Property address" type="text"/></div>
-<button class="btn-primary" id="wp30TxnAddBtn" onclick="wp30SaveTransactionTrigger()" style="height:36px;white-space:nowrap" type="button">Add calls</button>
+<div class="v21-block-grid" style="display:grid;grid-template-columns:.9fr 1.15fr 1.35fr 1.1fr 1fr 1.1fr 1fr;gap:7px;align-items:end;padding:2px 0 8px">
+<div class="field" style="margin:0"><label>Call type</label><select id="wp30TxnStage"><option value="New Contract">New contract</option><option value="Clear to Close">CTC</option></select></div>
+<div class="field" style="margin:0"><label>Buyer name</label><input id="wp30TxnClient" placeholder="Buyer / borrower" type="text"/></div>
+<div class="field" style="margin:0"><label>Subject property</label><input id="wp30TxnProperty" placeholder="Property address" type="text"/></div>
+<div class="field" style="margin:0"><label>Buyer agent</label><input id="wp30TxnBuyerAgent" placeholder="Buyer agent name" type="text"/></div>
+<div class="field" style="margin:0"><label>Buyer agent #</label><input id="wp30TxnBuyerPhone" placeholder="Phone" inputmode="tel" type="tel"/></div>
+<div class="field" style="margin:0"><label>Listing agent</label><input id="wp30TxnListingAgent" placeholder="Listing agent name" type="text"/></div>
+<div class="field" style="margin:0"><label>Listing agent #</label><input id="wp30TxnListingPhone" placeholder="Phone" inputmode="tel" type="tel"/></div>
 </div>
+<div style="display:flex;justify-content:flex-end;padding:0 0 10px"><button class="btn-primary" id="wp30TxnAddBtn" onclick="wp30SaveTransactionTrigger()" style="height:36px;white-space:nowrap" type="button">Add transaction calls</button></div>
 </details>
 <div id="rmNurtureTodayCard" style="display:none;border:1px solid #E8D5A8;border-left:4px solid #C18B2D;border-radius:9px;background:#FFFDF7;padding:10px 12px;margin:8px 0 10px">
 <div style="font-size:11px;font-weight:800;color:#8A5A00;text-transform:uppercase;letter-spacing:.4px;margin-bottom:5px">RM Nurture due</div>
@@ -18581,7 +18583,7 @@ window.rmxBoot=boot;const baseSwitch=window.switchTab;window.switchTab=function(
     var hub=document.getElementById('wp230TxnHub');
     if(!hub){
       hub=document.createElement('div');hub.id='wp230TxnHub';
-      hub.innerHTML='<div class="wp230-head"><div><div class="wp230-title">Import transaction calls from Encompass</div><div class="wp230-sub">Upload the report here. The tracker previews the rows first, then creates the buyer-agent + listing-agent calls for Amanda.</div></div><div class="wp230-actions"><button type="button" class="wp230-upload" onclick="wp230UploadNewContracts()">Upload New Contracts</button><button type="button" class="wp230-upload secondary" onclick="wp230UploadCtc()">Upload CTC</button></div></div><div class="wp230-open" id="wp230OpenCalls"></div>';
+      hub.innerHTML='<div class="wp230-head"><div><div class="wp230-title">Transaction calls</div><div class="wp230-sub">For a few files, add one manually. For a batch, upload the Encompass report. Both routes create the exact same Amanda worklist.</div></div><div class="wp230-actions"><button type="button" class="wp230-upload" onclick="wp242OpenManualTxn(\'New Contract\')">+ New Contract</button><button type="button" class="wp230-upload secondary" onclick="wp242OpenManualTxn(\'Clear to Close\')">+ CTC</button><button type="button" class="wp230-upload" onclick="wp230UploadNewContracts()">Upload New Contracts</button><button type="button" class="wp230-upload secondary" onclick="wp230UploadCtc()">Upload CTC</button></div></div><div class="wp230-open" id="wp230OpenCalls"></div>';
     }
     if(urgent.firstChild!==hub)urgent.insertBefore(hub,urgent.firstChild);
     var openHost=document.getElementById('wp230OpenCalls'),active=document.getElementById('wp33ActiveTxnTriggers');
@@ -19766,5 +19768,100 @@ window.rmxBoot=boot;const baseSwitch=window.switchTab;window.switchTab=function(
   if(typeof oldSnap==='function')window.v23LoadAmandaSnapshot=async function(){const r=await oldSnap.apply(this,arguments);setTimeout(()=>v241RenderAmandaScheduleInline(),0);return r};
   setTimeout(()=>v241RenderAmandaScheduleInline(),350);
 })();
-</script>\n</body>
+</script>\n
+<script id="v242-manual-transaction-entry-js">
+/* v242 · Manual New Contract / CTC entry uses the same trigger architecture as Excel imports. */
+(function(){
+  const clean=s=>String(s||'').replace(/[\]\r\n]/g,' ').trim().slice(0,220);
+  const phone=s=>String(s||'').replace(/[\r\n\]]/g,' ').trim().slice(0,60);
+  const metaTag=(k,v)=>v?'['+k+':'+clean(v)+']':'';
+
+  window.wp242OpenManualTxn=function(stage){
+    const d=document.getElementById('wp30TxnIntakeDetails');
+    const sel=document.getElementById('wp30TxnStage');
+    if(sel)sel.value=stage==='Clear to Close'?'Clear to Close':'New Contract';
+    if(d){
+      d.open=true;
+      try{d.scrollIntoView({behavior:'smooth',block:'center'})}catch(e){}
+      setTimeout(()=>document.getElementById('wp30TxnClient')?.focus(),100);
+    }
+  };
+
+  window.wp30SaveTransactionTrigger=async function(){
+    const btn=document.getElementById('wp30TxnAddBtn');
+    if(btn){if(btn.disabled)return;btn.disabled=true;btn.textContent='Adding...';}
+    const stage=document.getElementById('wp30TxnStage')?.value||'New Contract';
+    const client=clean(document.getElementById('wp30TxnClient')?.value||'');
+    const property=clean(document.getElementById('wp30TxnProperty')?.value||'');
+    const buyer=clean(document.getElementById('wp30TxnBuyerAgent')?.value||'');
+    const buyerPhone=phone(document.getElementById('wp30TxnBuyerPhone')?.value||'');
+    const listing=clean(document.getElementById('wp30TxnListingAgent')?.value||'');
+    const listingPhone=phone(document.getElementById('wp30TxnListingPhone')?.value||'');
+
+    if(!client){toast('Add the buyer name.','error');if(btn){btn.disabled=false;btn.textContent='Add transaction calls';}return;}
+    if(!property){toast('Add the subject property address.','error');if(btn){btn.disabled=false;btn.textContent='Add transaction calls';}return;}
+    if(!buyer&&!listing){toast('Add the buyer agent, listing agent, or both.','error');if(btn){btn.disabled=false;btn.textContent='Add transaction calls';}return;}
+    if(buyer&&!buyerPhone){toast('Add the buyer agent phone number.','error');if(btn){btn.disabled=false;btn.textContent='Add transaction calls';}return;}
+    if(listing&&!listingPhone){toast('Add the listing agent phone number.','error');if(btn){btn.disabled=false;btn.textContent='Add transaction calls';}return;}
+
+    const entries=[];
+    if(buyer)entries.push({name:buyer,role:'Buyer'});
+    if(listing&&wp18Key(listing)!==wp18Key(buyer))entries.push({name:listing,role:'Listing'});
+    const td=typeof today==='function'?today():new Date().toISOString().slice(0,10);
+    const ref=[client,property].filter(Boolean).join(' · ').slice(0,180);
+    const txnId=wp33MakeTxnId(stage,ref,buyer,listing,td);
+    const callType=wp30TxnCallType(stage);
+    let added=0,already=0;
+
+    try{
+      for(const e of entries){
+        const cut=new Date();cut.setDate(cut.getDate()-45);
+        const cutStr=typeof wpDateStr==='function'?wpDateStr(cut):cut.toISOString().slice(0,10);
+        const existing=await sbFetch('amanda_activities?agent_name=eq.'+encodeURIComponent(e.name)+'&act_type=eq.'+encodeURIComponent(stage)+'&act_date=gte.'+cutStr+'&select=id,notes,act_date&limit=100');
+        const duplicate=(existing||[]).some(r=>wp30TxnRole(r.notes)===e.role&&wp33TxnId(r.notes)===txnId);
+        const ownership=(typeof getAgentOwnership==='function'?getAgentOwnership(e.name):{})||{};
+        const contacts=(typeof allContacts!=='undefined'&&Array.isArray(allContacts)?allContacts:[]);
+        const profile=contacts.find(c=>wp18Key(c.agent_name)===wp18Key(e.name))||{};
+        const owner=(stage==='Clear to Close'?'Amanda':(typeof wp18StrategicNynyMatch==='function'&&wp18StrategicNynyMatch(e.name,profile)?'Nyny':(ownership.rm==='Nyny'?'Nyny':'Amanda')));
+        let notes='[TXN_TRIGGER]'+metaTag('TXN_ROLE',e.role)+metaTag('TXN_ID',txnId)+metaTag('TXN_REF',ref)+metaTag('TXN_CLIENT',client)+metaTag('TXN_PROPERTY',property)+metaTag('TXN_BUYER_PHONE',buyerPhone)+metaTag('TXN_LISTING_PHONE',listingPhone)+metaTag('TXN_SOURCE','Manual Entry')+' Mandatory '+stage+' transaction call trigger for the '+e.role.toLowerCase()+' agent. Complete the required '+callType+' and log the outcome in the RM tracker.';
+        try{notes=appendRmMeta(notes,owner,'Current Relationship')}catch(err){}
+        const row={agent_name:e.name,act_type:stage,act_date:td,outcome:'Requires follow-up',notes,follow_up_date:null};
+        if(duplicate){
+          already++;
+          try{window.v139PendingTransactionTriggers?.remember?.(row)}catch(err){}
+          continue;
+        }
+        const saved=await sbFetch('amanda_activities',{method:'POST',prefer:'return=representation',body:JSON.stringify(row)});
+        if(!Array.isArray(saved)||!saved.length)throw new Error('The tracker did not confirm the transaction save.');
+        try{window.v139PendingTransactionTriggers?.remember?.({...row,id:saved[0].id||null})}catch(err){}
+        added++;
+      }
+
+      ['wp30TxnBuyerAgent','wp30TxnBuyerPhone','wp30TxnListingAgent','wp30TxnListingPhone','wp30TxnClient','wp30TxnProperty'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+      const d=document.getElementById('wp30TxnIntakeDetails');if(d)d.open=false;
+      try{_wp18Cache=null;_wp18CacheAt=0}catch(e){}
+      try{if(typeof v23LoadAmandaSnapshot==='function')await v23LoadAmandaSnapshot(true)}catch(e){}
+      try{window.v231RefreshTransactionWork&&await window.v231RefreshTransactionWork(true)}catch(e){}
+      try{window.v138RedistributeUrgent&&window.v138RedistributeUrgent()}catch(e){}
+      const names=entries.map(x=>typeof resolvedDisplayName==='function'?resolvedDisplayName(x.name):x.name).join(' + ');
+      toast('✓ '+(stage==='Clear to Close'?'CTC':'New Contract')+' added for '+names+'. It is now in Amanda’s transaction worklist.','success',4800);
+    }catch(e){
+      console.warn('v242 manual transaction save',e);
+      toast('Could not add transaction calls: '+(e?.message||e),'error',6000);
+    }finally{
+      if(btn){btn.disabled=false;btn.textContent='Add transaction calls';}
+    }
+  };
+
+  function decorateManual(){
+    const d=document.getElementById('wp30TxnIntakeDetails');if(!d)return;
+    const sum=d.querySelector(':scope > summary');
+    if(sum)sum.innerHTML='Add one transaction manually <span style="font-size:9px;font-weight:500;color:#8A8093">New Contract or CTC</span>';
+  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',decorateManual,{once:true});else decorateManual();
+  setTimeout(decorateManual,500);setTimeout(decorateManual,1600);
+})();
+</script>
+
+</body>
 </html>
