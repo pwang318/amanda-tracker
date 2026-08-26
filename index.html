@@ -1273,6 +1273,7 @@ body.rm-director-route .tabs,body.rm-director-route .who-bar{display:none!import
 <div class="field" id="v39AmandaCustomBlockWrap" style="display:none;margin:0 0 8px"><label>Custom name</label><input id="v23AmandaBlockTitle" maxlength="120" placeholder="Type only if none of the choices fit" type="text"/></div>
 <select id="v23AmandaBlockType" style="display:none"><option>New Realtor meeting</option><option>Break Bread</option><option>Partner meeting</option><option>Strategic partner meeting</option><option>Channel meeting</option><option>Team / office presentation</option><option>Retention meeting</option><option>Internal / team</option><option>Skillset training</option><option>Unavailable</option></select>
 <div style="font-size:9.5px;color:var(--text-4);padding:0 0 9px">Only add real meetings or unavailable time. Individual calls stay in Workflow automatically. <strong>Calendar note:</strong> this tracker does not automatically read Outlook/Google Calendar; add a meeting here if you want it on Amanda’s tracker radar.</div>
+<div id="v241AmandaScheduleInline" style="margin:0 0 10px"></div>
 </details>
 <div class="amanda-portfolio-reminder">
 <div class="copy"><strong>Portfolio reminder:</strong> A real conversation with a current partner should leave us knowing something useful — what is happening in their business, what they need, whether business is leaking elsewhere, and what we do next. <strong>The required Partner Check-In will guide you.</strong></div>
@@ -12236,10 +12237,17 @@ function v21LocalBlocks(date){try{return JSON.parse(localStorage.getItem(v21Loca
 function v21SaveLocal(date,rows){try{localStorage.setItem(v21LocalKey(date),JSON.stringify(rows||[]));}catch(e){}}
 function v21BlockId(){return "local-"+Date.now()+"-"+Math.random().toString(36).slice(2,7);}
 async function v21LoadBlocks(date){
+  const local=v21LocalBlocks(date);
   try{
     const rows=await sbFetch("rm_day_blocks?work_date=eq."+date+"&select=id,work_date,owner,title,start_time,end_time,block_type,notes&order=start_time.asc");
-    _v21BlocksSupported=true;return rows||[];
-  }catch(e){_v21BlocksSupported=false;return v21LocalBlocks(date);}
+    _v21BlocksSupported=true;
+    const merged=(rows||[]).slice();
+    const key=b=>[String(b.owner||''),String(b.title||''),String(b.start_time||'').slice(0,5),String(b.end_time||'').slice(0,5),String(b.block_type||'')].join('|').toLowerCase();
+    const seen=new Set(merged.map(key));
+    (local||[]).forEach(b=>{const k=key(b);if(!seen.has(k)){seen.add(k);merged.push(b);}});
+    merged.sort((a,b)=>v21Mins(a.start_time)-v21Mins(b.start_time));
+    return merged;
+  }catch(e){_v21BlocksSupported=false;return local;}
 }
 async function v21AddBlock(){
   const date=v21Date(),owner=document.getElementById("v21BlockOwner").value,title=(document.getElementById("v21BlockTitle").value||"").trim(),start=document.getElementById("v21BlockStart").value,end=document.getElementById("v21BlockEnd").value,type=document.getElementById("v21BlockType").value;
@@ -19739,5 +19747,24 @@ window.rmxBoot=boot;const baseSwitch=window.switchTab;window.switchTab=function(
   else setTimeout(scrubLegacyExtras,1200);
 })();
 </script>
-</body>
+
+<script id="v241-visible-day-schedule-js">
+(function(){
+  function esc241(v){return String(v==null?'':v).replace(/[&<>\"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;'}[c]})}
+  window.v241RenderAmandaScheduleInline=async function(){
+    const host=document.getElementById('v241AmandaScheduleInline');if(!host)return;
+    try{
+      const rows=(await v21LoadBlocks(today())||[]).filter(b=>String(b.owner||'').toLowerCase()==='amanda').sort((a,b)=>v21Mins(a.start_time)-v21Mins(b.start_time));
+      if(!rows.length){host.innerHTML='<div style="font-size:10.5px;color:var(--text-4);padding:3px 1px 1px">Nothing added to Amanda\'s schedule yet.</div>';return;}
+      host.innerHTML='<div style="border:1px solid #D9D2E9;background:#fff;border-radius:10px;padding:9px 10px"><div style="font-size:10px;font-weight:850;color:var(--brand-dark);text-transform:uppercase;letter-spacing:.35px;margin-bottom:5px">Amanda\'s schedule today</div>'+rows.map(function(b){return '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:6px 0;border-top:1px solid var(--border-light)"><div style="font-size:11px;color:var(--text-2)"><strong>'+esc241(v21Time(v21Mins(b.start_time)))+'–'+esc241(v21Time(v21Mins(b.end_time)))+'</strong> · '+esc241(b.title)+' <span style="color:var(--text-4)">('+esc241(b.block_type||'Block')+')</span></div><button type="button" data-v241-id="'+esc241(b.id)+'" style="font-size:9px;border:0;background:none;color:var(--danger);cursor:pointer">remove</button></div>'}).join('')+'</div>';
+      host.querySelectorAll('[data-v241-id]').forEach(function(btn){btn.onclick=async function(){const id=this.getAttribute('data-v241-id');if(String(id).startsWith('local-')){v21SaveLocal(today(),v21LocalBlocks(today()).filter(x=>String(x.id)!==String(id)));}else{try{await sbFetch('rm_day_blocks?id=eq.'+encodeURIComponent(id),{method:'DELETE',prefer:'return=minimal'});}catch(e){toast('Could not remove that block.','error');return;}}await v241RenderAmandaScheduleInline();await v23LoadAmandaSnapshot(true);};});
+    }catch(e){console.warn('v241 schedule render',e);host.innerHTML='<div style="font-size:10.5px;color:var(--text-4)">Schedule is refreshing…</div>'}
+  };
+  const oldAdd=window.v23AddAmandaSnapshotBlock;
+  if(typeof oldAdd==='function')window.v23AddAmandaSnapshotBlock=async function(){await oldAdd.apply(this,arguments);setTimeout(()=>v241RenderAmandaScheduleInline(),0)};
+  const oldSnap=window.v23LoadAmandaSnapshot;
+  if(typeof oldSnap==='function')window.v23LoadAmandaSnapshot=async function(){const r=await oldSnap.apply(this,arguments);setTimeout(()=>v241RenderAmandaScheduleInline(),0);return r};
+  setTimeout(()=>v241RenderAmandaScheduleInline(),350);
+})();
+</script>\n</body>
 </html>
