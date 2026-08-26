@@ -6,7 +6,6 @@
 <!-- v232 STABLE ACTION ROUTER + TRANSACTION REFRESH LOOP FIX · 2026-08-25 -->
 <!-- v227 DIRECTOR SAVE / RISK / TOMBSTONE / REFRESH STABILITY FIX · 2026-08-25 -->
 
-<!-- v250: New Realtor Meeting checklist cleanup only — combine CRM-system checks, remove stray literal \n UI artifact, remove gut-feel copy. -->
 <!-- Cleanup pass: floating Page Guide + stale developer build logs removed; active workflow logic preserved. -->
 <!-- v140: fixes Step 2 transaction renderer race; saved/open CTC and New Contract tasks are no longer erased after successful distribution -->
 <!-- v137: Amanda daily snapshot restored + audit fixes; current operating goals aligned, responsive snapshot, duplicate activity icons corrected -->
@@ -1260,21 +1259,24 @@ body.rm-director-route .tabs,body.rm-director-route .who-bar{display:none!import
 <div class="amanda-calm-step"><strong><span class="num">1</span>Set up today</strong><div>Add only real meetings, appointments or unavailable time. The tracker handles the rest.</div></div>
 <div class="amanda-calm-step"><strong><span class="num">2</span>Work top to bottom</strong><div>Do the first item shown. Log it. Then move to the next one. No separate list needed.</div></div>
 <div class="amanda-calm-step"><strong><span class="num">3</span>Learn something useful</strong><div>When you connect with a current partner, capture what changed + the next move so Portfolio stays current.</div></div>
-</div><div id="v104DailyOrderStrip" style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;background:#F8F6FC;border:1px solid #DDD6EF;border-radius:9px;padding:7px 9px;margin:8px 0 10px;font-size:10.5px;color:var(--text-2)"><strong>Today’s order:</strong><button class="v109-jump" onclick="v104Jump('v23AmandaAddTimeDetails')" type="button">Set my day</button><button class="v109-jump" onclick="v104Jump('rmLpCoordCard')" type="button">Warm team work</button><button class="v109-jump" onclick="v104Jump('v109NewMeetingPush')" type="button">New meeting push</button><button class="v109-jump" onclick="v104Jump('v22AmandaSnapshotPlan')" type="button">Smart relationship work</button><button class="v109-jump" onclick="v104Jump('snapshotScorecardCard')" type="button">Progress</button></div>
+</div><div id="v104DailyOrderStrip" style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;background:#F8F6FC;border:1px solid #DDD6EF;border-radius:9px;padding:7px 9px;margin:8px 0 10px;font-size:10.5px;color:var(--text-2)"><strong>Today’s order:</strong><button class="v109-jump" onclick="v104Jump('v23AmandaAddTimeDetails')" type="button">Meetings + blocked time</button><button class="v109-jump" onclick="v104Jump('rmLpCoordCard')" type="button">Warm team work</button><button class="v109-jump" onclick="v104Jump('v109NewMeetingPush')" type="button">New meeting push</button><button class="v109-jump" onclick="v104Jump('v22AmandaSnapshotPlan')" type="button">Smart relationship work</button><button class="v109-jump" onclick="v104Jump('snapshotScorecardCard')" type="button">Progress</button></div>
 <details class="amanda-schedule-box" id="v23AmandaAddTimeDetails" open="">
-<summary style="cursor:pointer;padding:8px 1px;font-size:10.5px;font-weight:750;color:var(--brand-dark)">STEP 1 · Set your day <span class="schedule-first-pill">DO THIS FIRST</span></summary>
-<div style="font-size:10.5px;color:var(--text-3);margin:0 0 8px"><strong>Pick what it is + when it starts.</strong> The tracker fills the title, type and normal length for you. Change anything only if needed.</div>
+<summary style="cursor:default;padding:8px 1px;font-size:10.5px;font-weight:750;color:var(--brand-dark);list-style:none">TODAY’S MEETINGS + BLOCKED TIME</summary>
+<div style="font-size:10.5px;color:var(--text-3);margin:0 0 8px">Add only meetings, appointments, or unavailable time. <strong>Your calls, follow-ups, transaction work, and outreach targets are already built into Today’s Workflow.</strong></div>
+<div id="v241AmandaScheduleInline" style="margin:0 0 10px"></div>
+<details id="v251AmandaAddBlockDetails" style="border-top:1px solid var(--border-light);padding-top:6px;margin-top:4px">
+<summary style="cursor:pointer;padding:6px 1px;font-size:10.5px;font-weight:750;color:var(--brand-dark)">+ Add meeting or blocked time</summary>
+<div style="font-size:10px;color:var(--text-3);margin:2px 0 8px">Use this only when something changes Amanda’s available production time.</div>
 <div class="v21-block-grid" style="display:grid;grid-template-columns:1.35fr .78fr .78fr .78fr auto;gap:7px;align-items:end;padding:2px 0 8px">
 <div class="field" style="margin:0"><label>What is it?</label><select id="v39AmandaBlockPreset" onchange="v39ApplyAmandaBlockPreset()"><option value="">Choose...</option><option value="New Realtor meeting|New Realtor meeting|45">New Realtor meeting · 45 min</option><option value="Break Bread|Break Bread|45">Break Bread · 45 min</option><option value="Partner meeting|Partner meeting|30">Partner meeting · 30 min</option><option value="Strategic partner meeting|Strategic partner meeting|45">Strategic partner meeting · 45 min</option><option value="Channel meeting|Channel meeting|45">Channel meeting · 45 min</option><option value="Team / office presentation|Team / office presentation|60">Team / office presentation · 60 min</option><option value="Retention meeting|Retention meeting|45">Retention / at-risk meeting · 45 min</option><option value="Daily huddle|Internal / team|30">Daily huddle · 30 min</option><option value="Team / internal meeting|Internal / team|30">Team / internal meeting · 30 min</option><option value="Skillset training|Skillset training|30">Skillset training · 30 min</option><option value="Appointment / unavailable|Unavailable|60">Appointment / unavailable · 60 min</option><option value="custom">Something else...</option></select></div>
 <div class="field" style="margin:0"><label>Start</label><input id="v23AmandaBlockStart" onchange="v39AutoAmandaEnd()" type="time"/></div>
 <div class="field" style="margin:0"><label>Length</label><select id="v39AmandaBlockDuration" onchange="v39AutoAmandaEnd()"><option value="15">15 min</option><option selected="" value="30">30 min</option><option value="45">45 min</option><option value="60">1 hour</option><option value="90">1.5 hours</option><option value="120">2 hours</option></select></div>
 <div class="field" style="margin:0"><label>Ends</label><input id="v23AmandaBlockEnd" type="time"/></div>
-<button class="btn-primary" onclick="v23AddAmandaSnapshotBlock()" style="height:36px;white-space:nowrap">Add to my day</button>
+<button class="btn-primary" onclick="v23AddAmandaSnapshotBlock()" style="height:36px;white-space:nowrap">Add</button>
 </div>
 <div class="field" id="v39AmandaCustomBlockWrap" style="display:none;margin:0 0 8px"><label>Custom name</label><input id="v23AmandaBlockTitle" maxlength="120" placeholder="Type only if none of the choices fit" type="text"/></div>
 <select id="v23AmandaBlockType" style="display:none"><option>New Realtor meeting</option><option>Break Bread</option><option>Partner meeting</option><option>Strategic partner meeting</option><option>Channel meeting</option><option>Team / office presentation</option><option>Retention meeting</option><option>Internal / team</option><option>Skillset training</option><option>Unavailable</option></select>
-<div style="font-size:9.5px;color:var(--text-4);padding:0 0 9px">Only add real meetings or unavailable time. Individual calls stay in Workflow automatically. <strong>Calendar note:</strong> this tracker does not automatically read Outlook/Google Calendar; add a meeting here if you want it on Amanda’s tracker radar.</div>
-<div id="v241AmandaScheduleInline" style="margin:0 0 10px"></div>
+</details>
 </details>
 <div class="amanda-portfolio-reminder">
 <div class="copy"><strong>Portfolio reminder:</strong> A real conversation with a current partner should leave us knowing something useful — what is happening in their business, what they need, whether business is leaking elsewhere, and what we do next. <strong>The required Partner Check-In will guide you.</strong></div>
@@ -13559,7 +13561,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
   function build(){
     var card=document.getElementById('weeklyCallPlanCard');if(!card||document.getElementById('v113AmandaDashboard'))return;
     var dash=el('div','v113-dashboard');dash.id='v113AmandaDashboard';
-    var s1=step(1,'▣','Set my day','Add meetings or blocked time.','v113StepSchedule');
+    var s1=step(1,'▣','Meetings + blocked time','Only add real calendar constraints.','v113StepSchedule');
     var s2=step(2,'!','Urgent / mandatory work','Handle time-sensitive work first.','v113StepUrgent');
     var s3=step(3,'↔','LP handoffs','Work warm handoffs before broad outreach.','v113StepLP');
     var s4=step(4,'◉','Face Time to schedule','Book the next in-person touch.','v113StepFaceTime');
@@ -20056,5 +20058,27 @@ window.rmxBoot=boot;const baseSwitch=window.switchTab;window.switchTab=function(
 })();
 </script>
 
+
+<script id="v251-schedule-simplification">
+(function(){
+  function keepAddFormCalm(){
+    const outer=document.getElementById('v23AmandaAddTimeDetails');
+    const inner=document.getElementById('v251AmandaAddBlockDetails');
+    if(outer)outer.open=true;
+    if(inner&&!inner.dataset.userOpened)inner.open=false;
+    if(inner&&!inner.dataset.v251wired){
+      inner.dataset.v251wired='1';
+      inner.addEventListener('toggle',function(){if(inner.open)inner.dataset.userOpened='1'});
+    }
+  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(keepAddFormCalm,0),{once:true});
+  else setTimeout(keepAddFormCalm,0);
+  const old=window.v241RenderAmandaScheduleInline;
+  if(typeof old==='function'&&!old.__v251){
+    const wrapped=function(){const r=old.apply(this,arguments);setTimeout(keepAddFormCalm,0);return r};
+    wrapped.__v251=true;window.v241RenderAmandaScheduleInline=wrapped;
+  }
+})();
+</script>
 </body>
 </html>
