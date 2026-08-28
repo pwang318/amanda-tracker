@@ -1,5 +1,6 @@
  <!-- v259: RM/LP shared-contact coordination. LP live connections now close stale RM work, count as team touches, and suppress duplicate routine outreach. -->
 <!-- v261: Easy prospect flow. New prospect entry is name/phone-first with optional details collapsed; mobile modal stacking is prevented. -->
+<!-- v263: Hard prospect-stage firewall. Any OPEN outreach prospect is excluded from Talk-To and Face Time even if stale Power BI/profile data says retained. Logging a held New Realtor Meeting converts the prospect record, then the 4-week conversion lane owns them before active-partner cadence can resume. -->
 <!-- v260: Prospect lifecycle firewall + easy New Realtor Meeting logging. Acquisition activity never triggers Portfolio Execution; active prospects stay out of Talk-To/Face Time; first-meeting conversions stay in their 4-week lane; modal cancel returns to the correct screen on desktop/mobile. -->
 <!-- v258: Face Time queue now treats held New Realtor/partner meetings as visits, honors future follow-ups/snoozes, and adds Follow up later. -->
  <!DOCTYPE html>
@@ -1360,7 +1361,7 @@ label,.workflow-eyebrow,.learn-section-label,.rmx-section-label{font-weight:600!
 </section>
 <section style="border:1px solid #D8E3DA;border-radius:10px;background:#fff;padding:10px 11px;min-width:0">
 <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:6px;flex-wrap:wrap">
-<div><div style="font-size:11px;font-weight:800;color:#365A40">Face Time · schedule next</div><div style="font-size:9.8px;color:var(--text-4)">Same urgency, last visit and booking the assigned LP sees. One shared record.</div></div>
+<div><div style="font-size:11px;font-weight:800;color:#365A40">Face Time · schedule next</div><div style="font-size:9.8px;color:var(--text-4)">Active partners only. Same urgency, last visit and booking the assigned LP sees. Prospects and 4-week conversions never appear here.</div></div>
 <span class="card-sub" id="breadSub"></span>
 </div>
 <div id="v101FaceTimeScheduled" style="margin-bottom:8px"></div>
@@ -6822,6 +6823,19 @@ async function logActivity(){
     const insertedRow=inserted&&inserted[0]?inserted[0]:null;
     await clearOldFollowups(agentName,insertedRow&&insertedRow.id);
     await completeActiveFlagAfterActivity(agentName);
+
+    // v263 lifecycle transition: once the FIRST REALTOR MEETING is actually held/logged, this
+    // person is no longer an open cold prospect. Convert every matching prospect record so the
+    // New Meeting Push / Talk-To / Face Time queues all agree on the same stage. The separate
+    // 4-week conversion workflow still keeps them out of routine relationship cadence for 28 days.
+    if(isNewRealtorMeeting){
+      try{
+        const prospectRows=await sbFetch("outreach_prospects?agent_name=ilike."+encodeURIComponent(agentName)+"&select=id,status&limit=50").catch(()=>[]);
+        for(const pr of (prospectRows||[])){
+          await sbFetch("outreach_prospects?id=eq."+encodeURIComponent(pr.id),{method:"PATCH",prefer:"return=minimal",body:JSON.stringify({status:"Converted",follow_up_date:null})}).catch(()=>{});
+        }
+      }catch(e){console.warn("Could not convert prospect lifecycle after New Realtor Meeting:",e);}
+    }
     
     document.getElementById("agentInput").value="";
     document.getElementById("activityType").selectedIndex=0;
@@ -16720,6 +16734,13 @@ window.rmAuditVisibleButtons=function(){
   function prospects(s){
     const h=document.getElementById('v109NewMeetingPush');if(!h)return;
     const om=ownerMap(s.assign),pm=profMap(s.profiles);
+    // v264: LP/Power BI active-partner status outranks prospecting labels. If the LP source says
+    // this is a current active partner, Amanda should work the relationship lane — never cold/new prospecting.
+    let currentActivePartnerKeys=new Set();
+    try{
+      const snap=(typeof v124LatestPowerBiSnapshot==='function'?v124LatestPowerBiSnapshot(s.profiles||[]):{rows:[]});
+      currentActivePartnerKeys=new Set((snap.rows||[]).filter(p=>p&&p.retained===true&&p.do_not_contact!==true&&String(p.relationship_status||'active').toLowerCase()!=='inactive').map(p=>N(p.agent_name)).filter(Boolean));
+    }catch(e){}
     const todayProspectActs=s.acts.filter(a=>String(a.act_date||a.activity_date||'').slice(0,10)===s.d);
     const coldToday=todayProspectActs.filter(a=>['Cold Calls','Cold Call'].includes(String(a.act_type||'').trim())).length;
     const worked=new Set(todayProspectActs.filter(a=>{
@@ -16730,7 +16751,7 @@ window.rmAuditVisibleButtons=function(){
     const blocked=/do not contact|dnc|inactive|removed|excluded|not a prospect|already\s*(?:with|w\/?)?\s*nfm|\bnfm\b|converted|closed|not interested/i,seen=new Set();
     const lastProspectAct={};
     s.acts.forEach(a=>{const k=N(a.agent_name);if(!k)return;if(!/cold call|prospect|new agent outreach/i.test(String(a.act_type||'')))return;const ds=String(a.act_date||a.activity_date||a.created_at||'');if(!lastProspectAct[k]||ds>String(lastProspectAct[k].act_date||lastProspectAct[k].created_at||''))lastProspectAct[k]=a});
-    const eligible=s.prospects.filter(pr=>{const k=N(pr.agent_name),p=pm[k],o=om[k]||{};if(!k||seen.has(k)||worked.has(k)||met.has(k)||o.removed||blocked.test(String(pr.status||'')))return false;if(p&&(p.do_not_contact===true||String(p.relationship_status||'').toLowerCase()==='inactive'))return false;if(typeof rmProspectIsTombstoned==='function'&&rmProspectIsTombstoned(pr.agent_name))return false;if(typeof rmIsDirectorOwned==='function'&&rmIsDirectorOwned(pr.agent_name,pr.brokerage,p&&p.brokerage))return false;if(typeof rmIsStrategicPartner==='function'&&rmIsStrategicPartner(pr.agent_name,p))return false;if(/meeting scheduled/i.test(String(pr.status||'')))return false;seen.add(k);const sig=prospectSignal(pr,lastProspectAct[k],s.d);pr.__smartScore=sig.score;pr.__smartWhy=sig.why;return true})
+    const eligible=s.prospects.filter(pr=>{const k=N(pr.agent_name),p=pm[k],o=om[k]||{};if(!k||currentActivePartnerKeys.has(k)||seen.has(k)||worked.has(k)||met.has(k)||o.removed||blocked.test(String(pr.status||'')))return false;if(p&&(p.do_not_contact===true||String(p.relationship_status||'').toLowerCase()==='inactive'))return false;if(typeof rmProspectIsTombstoned==='function'&&rmProspectIsTombstoned(pr.agent_name))return false;if(typeof rmIsDirectorOwned==='function'&&rmIsDirectorOwned(pr.agent_name,pr.brokerage,p&&p.brokerage))return false;if(typeof rmIsStrategicPartner==='function'&&rmIsStrategicPartner(pr.agent_name,p))return false;if(/meeting scheduled/i.test(String(pr.status||'')))return false;seen.add(k);const sig=prospectSignal(pr,lastProspectAct[k],s.d);pr.__smartScore=sig.score;pr.__smartWhy=sig.why;return true})
       .sort((a,b)=>(b.__smartScore-a.__smartScore)||String(a.follow_up_date||'9999-12-31').localeCompare(String(b.follow_up_date||'9999-12-31'))||String(a.agent_name||'').localeCompare(String(b.agent_name||'')));
     const done=coldToday>=25;
     const rows=done?[]:eligible.slice(0,5);
@@ -16743,9 +16764,28 @@ window.rmAuditVisibleButtons=function(){
 
   function relationships(s){
     const parent=document.getElementById('v113SmartHost');if(!parent)return;let h=document.getElementById('v165CallNext');if(!h){h=document.createElement('div');h.id='v165CallNext';parent.appendChild(h)}
-    const om=ownerMap(s.assign),pm=profMap(s.profiles),prospectKeys=new Set((s.prospects||[]).filter(pr=>!/^(?:Excluded|NFM|DNC)$/i.test(String(pr.status||''))).map(pr=>N(pr.agent_name))),recentFirstMeetingKeys=new Set();
-    (s.acts||[]).filter(a=>String(a.act_type||'').trim()==='New Realtor Meeting').forEach(a=>{const k=N(a.agent_name),d=String(a.act_date||a.activity_date||'').slice(0,10);if(!k||!d)return;const age=Math.max(0,Math.floor((new Date(s.d+'T12:00:00')-new Date(d+'T12:00:00'))/86400000));if(age<28)recentFirstMeetingKeys.add(k)});
-    function acquisitionOnly(k,p){if(recentFirstMeetingKeys.has(k))return true;if(!prospectKeys.has(k))return false;return !(Number(p&&p.closes_past_year||0)>0||Number(p&&p.total_leads_past_year||0)>0||(p&&p.retained===true)||!!String(p&&p.latest_lead_date||'').trim());}
+    const om=ownerMap(s.assign),pm=profMap(s.profiles),prospectKeys=new Set((s.prospects||[]).filter(pr=>!/^(?:Excluded|NFM|DNC|Converted|Met|Partner|Active Partner)$/i.test(String(pr.status||'').trim())).map(pr=>N(pr.agent_name))),recentFirstMeetingKeys=new Set(),lastAcquisitionDate={},lastFirstMeetingDate={};
+    (s.acts||[]).forEach(a=>{
+      const k=N(a.agent_name),t=String(a.act_type||'').trim(),d=String(a.act_date||a.activity_date||'').slice(0,10);if(!k)return;
+      if(/^(?:Cold Calls?|New Agent Prospect|New Agent Outreach)$/i.test(t)&&d&&(!lastAcquisitionDate[k]||d>lastAcquisitionDate[k]))lastAcquisitionDate[k]=d;
+      if(t==='New Realtor Meeting'&&d){
+        if(!lastFirstMeetingDate[k]||d>lastFirstMeetingDate[k])lastFirstMeetingDate[k]=d;
+        const age=Math.max(0,Math.floor((new Date(s.d+'T12:00:00')-new Date(d+'T12:00:00'))/86400000));if(age<28)recentFirstMeetingKeys.add(k)
+      }
+    });
+    function acquisitionOnly(k,p){
+      if(recentFirstMeetingKeys.has(k))return true;
+      // If the newest lifecycle event is still a Cold Call / new-prospect action, keep the person
+      // in acquisition even if a stale/thin profile says C or retained. A later held New Realtor
+      // Meeting is the event that can move them forward; after the 4-week conversion lane, active
+      // partners can re-enter normal relationship work.
+      if(lastAcquisitionDate[k]&&(!lastFirstMeetingDate[k]||lastAcquisitionDate[k]>=lastFirstMeetingDate[k]))return true;
+      // HARD LIFECYCLE FIREWALL: an OPEN prospect record always wins over stale profile/Power BI
+      // flags. A person cannot be both a cold/new prospect and a routine relationship call.
+      // The held New Realtor Meeting save explicitly converts the prospect record, after which
+      // the 4-week conversion lane owns them before normal active-partner cadence can resume.
+      return prospectKeys.has(k);
+    }
     const worked=new Set(s.acts.filter(a=>{
       const sameDay=String(a.act_date||a.activity_date||'').slice(0,10)===s.d;
       const t=String(a.act_type||'').trim();
@@ -16793,49 +16833,49 @@ window.rmAuditVisibleButtons=function(){
 
   function faceTime(s){
     const h=document.getElementById('breadDueList'),sub=document.getElementById('breadSub');if(!h)return;
-    const om=ownerMap(s.assign),pm=profMap(s.profiles),last={},sched={},futureFollow={},prospectKeys=new Set((s.prospects||[]).filter(pr=>!/^(?:Excluded|NFM|DNC)$/i.test(String(pr.status||''))).map(pr=>N(pr.agent_name))),recentFirstMeetingKeys=new Set();
-    const heldMeeting=/^(?:New Realtor Meeting|Partner Meeting|Break Breads|Strategic Partner Meeting|Channel Meeting|Retention Meeting|Team \/ Office Presentation)$/i;
-    const completedToday=new Set(s.acts.filter(a=>{
-      const sameDay=String(a.act_date||a.activity_date||'').slice(0,10)===s.d;
-      return sameDay&&heldMeeting.test(String(a.act_type||'').trim());
-    }).map(a=>N(a.agent_name)));
+    const om=ownerMap(s.assign),pm=profMap(s.profiles),now=new Date(s.d+'T12:00:00');
 
-    // Any real held partner meeting resets the Face Time clock. This intentionally includes a first
-    // New Realtor Meeting so someone Amanda met yesterday cannot immediately show as "no visit on file."
-    s.acts.forEach(a=>{
-      const k=N(a.agent_name),d=String(a.act_date||a.activity_date||'').slice(0,10),t=String(a.act_type||'').trim();
-      if(k&&d&&heldMeeting.test(t)&&(!last[k]||d>last[k]))last[k]=d;
-      if(k&&d&&t==='New Realtor Meeting'){
-        const age=Math.max(0,Math.floor((new Date(s.d+'T12:00:00')-new Date(d+'T12:00:00'))/86400000));
-        if(age<28)recentFirstMeetingKeys.add(k);
-      }
-      const fu=String(a.follow_up_date||'').slice(0,10);
-      if(k&&fu&&fu>s.d&&(!futureFollow[k]||fu<futureFollow[k]))futureFollow[k]=fu;
+    // v264: DO NOT calculate a second RM-only Face Time population. This mirrors Core Team / LP
+    // Face Time: latest Power BI snapshot + retained=true + same ownership + same Break Bread ledger
+    // + same C-tier cadence. LP data decides WHO is an active partner; RM decides WHO Amanda executes.
+    let currentRows=[];
+    try{currentRows=(typeof v124LatestPowerBiSnapshot==='function'?v124LatestPowerBiSnapshot(s.profiles||[]).rows:[])||[];}catch(e){currentRows=[];}
+    const activeKeys=new Set(currentRows.filter(p=>p&&p.retained===true&&p.do_not_contact!==true&&String(p.relationship_status||'active').toLowerCase()!=='inactive').map(p=>N(p.agent_name)).filter(Boolean));
+
+    // Exact LP Face Time visit ledger: Break Breads logged in RM + shared break_breads table.
+    const lastVisit={};
+    (s.acts||[]).forEach(a=>{
+      if(String(a.act_type||'').trim()!=='Break Breads')return;
+      const k=N(a.agent_name),d=String(a.act_date||'').slice(0,10);if(k&&d&&(!lastVisit[k]||d>lastVisit[k]))lastVisit[k]=d;
     });
-    s.breads.forEach(a=>{const k=N(a.agent_name),d=String(a.date||'').slice(0,10);if(k&&(!last[k]||d>last[k]))last[k]=d});
-    s.ft.filter(ev=>String(ev.status||'').toLowerCase()==='scheduled'&&String(ev.event_date||'')>=s.d).forEach(ev=>{if(typeof v181CalendarConfirmed==='function'&&!v181CalendarConfirmed(ev))return;const k=N(ev.agent_name);if(k&&!sched[k])sched[k]=ev});
-    const snoozeMap=(typeof getSnoozeMap==='function'?getSnoozeMap():{}),now=new Date(s.d+'T12:00:00'),rows=[];
-    Object.values(pm).forEach(p=>{
-      const k=N(p.agent_name),o=om[k]||{},tier=String(p.tier||p.powerbi_level||'C').toUpperCase();
-      const snoozedUntil=String(snoozeMap[k]||'').slice(0,10);
-      const acquisitionOnly=recentFirstMeetingKeys.has(k)||(prospectKeys.has(k)&&!(Number(p.closes_past_year||0)>0||Number(p.total_leads_past_year||0)>0||p.retained===true||!!String(p.latest_lead_date||'').trim()));
-      if(!k||acquisitionOnly||completedToday.has(k)||futureFollow[k]||snoozedUntil>s.d||o.removed||p.do_not_contact===true||String(p.relationship_status||'active').toLowerCase()==='inactive')return;
+    (s.breads||[]).forEach(b=>{const k=N(b.agent_name),d=String(b.date||'').slice(0,10);if(k&&d&&(!lastVisit[k]||d>lastVisit[k]))lastVisit[k]=d;});
+
+    // Same C cadence as LP tracker: target 60d; coming due 45d; overdue 60d; critical 90d.
+    const target=60;
+    function status(days){if(days===null)return'critical';if(days>=90)return'critical';if(days>=60)return'red';if(days>=45)return'warn';return'ok';}
+    function score(r){let sc={critical:4200,red:2700,warn:1300,ok:0}[r.status]||0;sc+=180;if(r.p.competitor_risk_flag)sc+=1500;if(r.p.high_potential_flag)sc+=650;if(String(r.p.next_growth_opportunity||'').trim())sc+=550;if(r.daysLead!==null){if(r.daysLead<=14)sc+=750;else if(r.daysLead<=30)sc+=520;else if(r.daysLead<=60)sc+=300;}sc+=Math.min(550,Number(r.p.closes_past_year||0)*100+Number(r.p.total_leads_past_year||0)*45);if(r.days===null)sc+=700;else sc+=Math.min(650,Math.max(0,r.days-target)*18);return sc;}
+    function why(r){const w=[];if(r.status==='critical')w.push(r.days===null?'no Face Time on file':'critically overdue');else if(r.status==='red')w.push('overdue');else if(r.status==='warn')w.push('coming due');if(r.p.competitor_risk_flag)w.push('retention risk');if(r.p.high_potential_flag)w.push('high potential');if(String(r.p.next_growth_opportunity||'').trim())w.push('active opportunity');if(r.daysLead!==null&&r.daysLead<=60)w.push('recent business');return w.slice(0,3).join(' · ')||'relationship cadence';}
+
+    const snoozeMap=(typeof getSnoozeMap==='function'?getSnoozeMap():{}),rows=[];
+    currentRows.forEach(p=>{
+      const k=N(p.agent_name),o=om[k]||{},tier=String(p.tier||p.powerbi_level||'').toUpperCase();
+      if(!k||!activeKeys.has(k)||o.removed||String(o.rm||'').toLowerCase()!=='amanda'||tier!=='C')return;
+      if(String(p.relationship_type||'realtor').toLowerCase()==='strategic_partner'||String(p.lp_outreach_status||'active').toLowerCase()==='nurture')return;
       if(typeof rmIsDirectorOwned==='function'&&rmIsDirectorOwned(p.agent_name,p.brokerage,p.team,p.company))return;
-      if(typeof rmIsStrategicPartner==='function'&&rmIsStrategicPartner(p.agent_name,p))return;
-      if(String(o.rm||'').toLowerCase()!=='amanda'||tier!=='C')return;
-      const ld=last[k]?new Date(last[k]+'T12:00:00'):null,days=ld?Math.max(0,Math.floor((now-ld)/86400000)):null;
-      // A just-held meeting always gets breathing room. Risk/growth flags may accelerate the next
-      // strategic touch later, but they should never put someone back into Face Time the next day.
-      if(days!==null&&days<30)return;
-      if(days!==null&&days<60&&!p.competitor_risk_flag&&!p.high_potential_flag&&!p.next_growth_opportunity)return;
-      rows.push({name:p.agent_name,p,o,days,ev:sched[k]||null});
+      const snoozedUntil=String(snoozeMap[k]||'').slice(0,10);if(snoozedUntil>s.d)return;
+      const ld=lastVisit[k]||null,days=ld?Math.max(0,Math.floor((now-new Date(ld+'T12:00:00'))/86400000)):null;
+      const leadDate=p.latest_lead_date?String(p.latest_lead_date).slice(0,10):null,daysLead=leadDate?Math.max(0,Math.floor((now-new Date(leadDate+'T12:00:00'))/86400000)):null;
+      const r={name:p.agent_name,p,o,days,status:status(days),daysLead,lastDate:ld};r.score=score(r);r.why=why(r);rows.push(r);
     });
-    rows.sort((a,b)=>{if(!!a.ev!==!!b.ev)return a.ev?1:-1;return (b.days??999)-(a.days??999)});
-    if(sub)sub.textContent=rows.filter(r=>!r.ev).length+' to schedule · '+rows.filter(r=>r.ev).length+' calendar-confirmed';
-    h.innerHTML=rows.length?rows.slice(0,12).map((r,i)=>{
-      const c=contact(r.p,null),why=r.p.competitor_risk_flag?'relationship risk':r.p.next_growth_opportunity?'active opportunity':r.days===null?'no visit on file':r.days+' days since visit',safe=encodeURIComponent(r.name);
-      return `<div class="v191-row"><div class="v191-rank">${i+1}</div><div><div class="v191-name">${E(typeof displayName==="function"?displayName(r.name):r.name)}</div><div class="v191-meta">${r.ev?'Calendar confirmed':'Needs scheduling'} · ${E(why)}</div></div><div class="v191-contact"><b>Phone:</b> ${E(c.phone||'Missing')}<br><b>Email:</b> ${E(c.email||'Missing')}<br><b>LP:</b> ${E(r.o.lp||'Unassigned')}</div><div class="v191-actions"><button onclick="v107OpenFTEncoded('${safe}','${encodeURIComponent(r.o.lp||'')}','${encodeURIComponent(r.ev?String(r.ev.id||''):'')}')">${r.ev?'Open booking':'Schedule Face Time'}</button><button onclick="v107LogVisitEncoded('${safe}')">Log visit</button><select aria-label="Follow up later for ${E(r.name)}" onchange="v258FaceTimeDelay('${safe}',this.value,this)"><option value="">Follow up later…</option><option value="1">Tomorrow</option><option value="7">Next week</option><option value="14">In 2 weeks</option><option value="30">In 30 days</option><option value="custom">Pick date…</option></select></div></div>`;
-    }).join(''):`<div class="v191-empty"><b>No Amanda Face Time is due right now.</b></div>`;
+    rows.sort((a,b)=>b.score-a.score||String(a.name).localeCompare(String(b.name)));
+
+    const needs=rows.filter(r=>r.status!=='ok');
+    if(sub)sub.textContent=needs.length+' need Face Time attention · '+rows.length+' Amanda-owned active C partners · sourced from LP/Power BI';
+    h.innerHTML=needs.length?needs.slice(0,12).map((r,i)=>{
+      const c=contact(r.p,null),safe=encodeURIComponent(r.name);
+      const cadence=r.days===null?'No prior Break Bread':r.days+' days since Face Time';
+      return `<div class="v191-row"><div class="v191-rank">${i+1}</div><div><div class="v191-name">${E(typeof displayName==='function'?displayName(r.name):r.name)}</div><div class="v191-meta"><b>${E(r.why)}</b> · ${E(cadence)}</div></div><div class="v191-contact"><b>Phone:</b> ${E(c.phone||'Missing')}<br><b>Email:</b> ${E(c.email||'Missing')}<br><b>LP:</b> ${E(r.o.lp||'Unassigned')}</div><div class="v191-actions"><button onclick="v107OpenFTEncoded('${safe}','${encodeURIComponent(r.o.lp||'')}','')">Schedule Face Time</button><button onclick="v107LogVisitEncoded('${safe}')">Log visit</button><select aria-label="Follow up later for ${E(r.name)}" onchange="v258FaceTimeDelay('${safe}',this.value,this)"><option value="">Follow up later…</option><option value="1">Tomorrow</option><option value="7">Next week</option><option value="14">In 2 weeks</option><option value="30">In 30 days</option><option value="custom">Pick date…</option></select></div></div>`;
+    }).join(''):`<div class="v191-empty"><b>No Amanda Face Time is due right now.</b><br>Face Time is being driven by the same current active-partner population and cadence as the LP tracker.</div>`;
   }
 
   let _v196RefreshPromise=null,_v196Loaded=false,_v196LastPaint=0;
@@ -20210,5 +20250,39 @@ window.rmxBoot=boot;const baseSwitch=window.switchTab;window.switchTab=function(
 .v261-prospect-actions{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
 @media(max-width:620px){#addProspectForm .form-row{grid-template-columns:1fr!important}.v261-prospect-actions{position:sticky;bottom:0;background:var(--surface);padding:8px 0 2px;z-index:2}.v261-prospect-actions .btn-primary{flex:1;min-height:42px}#addProspectForm input,#addProspectForm select,#addProspectForm textarea{font-size:16px!important}}
 </style>
+
+<script id="v264-active-partner-prospect-guard">
+(function(){
+  window.RM_SHARED_FACETIME_RULES_VERSION="20260828-v264-lp-aligned";
+  async function currentActivePartner(name){
+    name=String(name||'').trim();if(!name)return null;
+    const rows=await sbFetch("agent_profiles?agent_name=ilike."+encodeURIComponent(name)+"&select=agent_name,tier,powerbi_level,powerbi_last_seen_at,retained,do_not_contact,relationship_status&limit=5").catch(()=>[]);
+    if(!rows||rows.length!==1)return null;
+    const p=rows[0];
+    if(p.retained!==true||p.do_not_contact===true||String(p.relationship_status||'active').toLowerCase()==='inactive')return null;
+    // Must also belong to the latest shared Power BI snapshot, not merely carry an old retained flag.
+    const all=await sbFetch("agent_profiles?select=powerbi_last_seen_at&powerbi_last_seen_at=not.is.null&order=powerbi_last_seen_at.desc&limit=1").catch(()=>[]);
+    const latest=all&&all[0]&&Date.parse(all[0].powerbi_last_seen_at||'');
+    const mine=Date.parse(p.powerbi_last_seen_at||'');
+    if(!Number.isFinite(latest)||!Number.isFinite(mine)||Math.abs(latest-mine)>=120000)return null;
+    return p;
+  }
+  const originalSaveProspect=window.saveProspect;
+  if(typeof originalSaveProspect==='function')window.saveProspect=async function(){
+    if(editingProspectId)return originalSaveProspect.apply(this,arguments);
+    const name=(document.getElementById('np-name')?.value||'').trim();
+    const active=await currentActivePartner(name);
+    if(active){toast(name+' is already a current active partner in the LP/Power BI roster. Do not add them as a new prospect — use Talk-To / Face Time instead.','error',7000);return;}
+    return originalSaveProspect.apply(this,arguments);
+  };
+  const originalCcSave=window.ccSave;
+  if(typeof originalCcSave==='function')window.ccSave=async function(){
+    const name=(document.getElementById('ccName')?.value||'').trim();
+    const active=await currentActivePartner(name);
+    if(active){toast(name+' is already an active partner in the LP/Power BI roster. This is relationship outreach, not a cold prospect call. Use Talk-To / Face Time so the team does not create conflicting stages.','error',8000);return;}
+    return originalCcSave.apply(this,arguments);
+  };
+})();
+</script>
 </body>
 </html>
