@@ -1661,7 +1661,7 @@ nav a,aside a,[class*="nav"] a,[class*="sidebar"] a{
 <div class="view" id="view-daniel"></div>
 <div class="view" id="view-tuesday">
 <div class="rm-v1-tuesday-page-head">
-<div><div class="rm-v1-tuesday-kicker">TUESDAY UPDATES</div><div class="rm-v1-tuesday-page-title">Listing-agent updates</div><div class="rm-v1-tuesday-page-sub">This is the same Tuesday relationship-work card from Today, focused into its own work tab. Active-file data comes from the single Encompass upload in the Core Team tracker.</div></div>
+<div><div class="rm-v1-tuesday-kicker">TUESDAY UPDATES</div><div class="rm-v1-tuesday-page-title">Listing-agent updates</div><div class="rm-v1-tuesday-page-sub">Listing-agent updates from the weekly Core Team active-file upload.</div></div>
 <div class="rm-v1-source-pill" id="rmV1TuesdaySource">Core Team shared source</div>
 </div>
 <div id="rm-v1-tuesday-host"><div class="card" style="padding:18px;color:var(--text-3);font-size:12px">Loading Tuesday listing-agent work…</div></div>
@@ -20298,6 +20298,7 @@ window.rmxBoot=boot;const baseSwitch=window.switchTab;window.switchTab=function(
   const key=s=>{try{return typeof wp18Key==='function'?wp18Key(s):norm(s)}catch(e){return norm(s)}};
   const todayS=()=>{try{return typeof today==='function'?today():new Date().toISOString().slice(0,10)}catch(e){return new Date().toISOString().slice(0,10)}};
   function recentTuesday(){const d=new Date();d.setHours(12,0,0,0);const day=d.getDay(),back=(day+5)%7;d.setDate(d.getDate()-back);return d.toISOString().slice(0,10)}
+  function currentMonday(){const d=new Date();d.setHours(12,0,0,0);const back=(d.getDay()+6)%7;d.setDate(d.getDate()-back);return d.toISOString().slice(0,10)}
   function cutoff(days){const d=new Date();d.setDate(d.getDate()-days);return d.toISOString().slice(0,10)}
   function txnId(r){try{return typeof wp33TxnId==='function'?wp33TxnId(r.notes):meta(r.notes,'TXN_ID')}catch(e){return meta(r.notes,'TXN_ID')}}
   function role(r){try{return typeof wp30TxnRole==='function'?wp30TxnRole(r.notes):meta(r.notes,'TXN_ROLE')}catch(e){return meta(r.notes,'TXN_ROLE')}}
@@ -20306,7 +20307,7 @@ window.rmxBoot=boot;const baseSwitch=window.switchTab;window.switchTab=function(
     if(document.getElementById('v265TuesdayListingCard'))return;
     const anchor=document.getElementById('wp30TxnIntakeDetails')||document.getElementById('rmLpCoordCard');if(!anchor)return;
     const c=document.createElement('div');c.id='v265TuesdayListingCard';
-    c.innerHTML='<div class="v265-head"><div><div class="v265-kicker">RM TRANSACTION RELATIONSHIP WORK</div><div class="v265-title">Tuesday listing-agent updates</div><div class="v265-sub">RM owns the listing-agent experience on active files. Give one useful, proactive update each Tuesday, plus milestone updates when there is something meaningful to communicate. Existing partners get service; non-partners become warm relationship opportunities.</div></div><span class="v265-summary" id="v265Summary">Loading…</span></div><div class="v265-rule"><strong>Ownership split:</strong> New Contract congratulations can still go to both agents. After that, LPs own buyer/client updates and pipeline movement; RM owns listing-agent communication. At CTC, RM calls the listing agent while the LP owns the buyer/client side.</div><div id="v265ListingList" class="v265-list"><div class="v265-empty">Loading active listing-agent files…</div></div>';
+    c.innerHTML='<div class="v265-head"><div><div class="v265-kicker">RM TRANSACTION RELATIONSHIP WORK</div><div class="v265-title">Tuesday listing-agent updates</div><div class="v265-sub">Give each active listing agent one useful weekly update. Existing partners get service; non-partners become relationship opportunities.</div></div><span class="v265-summary" id="v265Summary">Loading…</span></div><div id="v265ListingList" class="v265-list"><div class="v265-empty">Loading active listing-agent files…</div></div>';
     if(anchor.id==='wp30TxnIntakeDetails')anchor.insertAdjacentElement('afterend',c);else anchor.insertAdjacentElement('beforebegin',c);
   }
   // New operating model: buyer-side CTC belongs to LPs. RM keeps listing-side CTC plus both New Contract congratulations.
@@ -20318,7 +20319,7 @@ window.rmxBoot=boot;const baseSwitch=window.switchTab;window.switchTab=function(
   async function load(force){
     injectCard();const host=document.getElementById('v265ListingList'),sum=document.getElementById('v265Summary');if(!host)return;
     if(force)host.innerHTML='<div class="v265-empty">Refreshing shared transaction data…</div>';
-    const tue=recentTuesday();
+    const tue=recentTuesday(),cycleStart=currentMonday();
     try{
       const rs=await Promise.all([
         sbFetch('amanda_activities?act_date=gte.'+cutoff(120)+'&act_type=in.(New Contract,Clear to Close,Under Contract Call,CTC Call,Listing Agent Update,LP Tuesday File Update,Transaction Snapshot)&select=id,agent_name,act_type,act_date,outcome,notes,follow_up_date,created_at&order=act_date.desc&limit=6000').catch(()=>[]),
@@ -20330,7 +20331,7 @@ window.rmxBoot=boot;const baseSwitch=window.switchTab;window.switchTab=function(
       const snapshots=acts.filter(a=>a.act_type==='Transaction Snapshot'&&/\[TXN_SNAPSHOT\]/i.test(String(a.notes||'')));
       const latestBatch=snapshots.reduce((m,a)=>{const b=meta(a.notes,'TXN_BATCH');return b>m?b:m},'');
       const activeSnap=latestBatch?snapshots.filter(a=>meta(a.notes,'TXN_BATCH')===latestBatch):[];
-      const trig=activeSnap.length?activeSnap:acts.filter(a=>(a.act_type==='New Contract'||a.act_type==='Clear to Close')&&/\[TXN_TRIGGER\]/i.test(String(a.notes||''))&&norm(role(a))==='listing');
+      const trig=activeSnap;
       const groups=new Map();
       trig.forEach(r=>{const id=txnId(r)||[key(r.agent_name),meta(r.notes,'TXN_CLIENT'),meta(r.notes,'TXN_PROPERTY')].join('|');if(!groups.has(id))groups.set(id,[]);groups.get(id).push(r)});
       const rows=[];cache=new Map();
@@ -20346,19 +20347,19 @@ window.rmxBoot=boot;const baseSwitch=window.switchTab;window.switchTab=function(
         const callType=reqTrig?(reqTrig.act_type==='Clear to Close'?'CTC Call':'Under Contract Call'):'';
         const related=acts.filter(a=>txnId(a)===id&&(norm(role(a))==='listing'||a.act_type==='Listing Agent Update'));
         const reqDone=!reqTrig||related.some(a=>a.act_type===callType&&status(a.notes)==='COMPLETE'&&String(a.act_date)>=String(reqTrig.act_date));
-        const weekly=related.find(a=>a.act_type==='Listing Agent Update'&&String(a.act_date)>=tue);
-        const reqThisWeek=related.find(a=>a.act_type===callType&&status(a.notes)==='COMPLETE'&&String(a.act_date)>=tue);
+        const weekly=related.find(a=>a.act_type==='Listing Agent Update'&&String(a.act_date)>=cycleStart);
+        const transactionTouchThisWeek=related.find(a=>(a.act_type==='Under Contract Call'||a.act_type==='CTC Call')&&status(a.notes)==='COMPLETE'&&String(a.act_date)>=cycleStart);
         const lpUpdate=acts.find(a=>a.act_type==='LP Tuesday File Update'&&txnId(a)===id&&String(a.act_date)>=tue);
         const p=pm[key(name)]||null,a=am[key(name)]||{};
         const partner=!!(p&&p.retained===true&&p.do_not_contact!==true&&norm(p.relationship_status||'active')!=='inactive');
         const owner=partner&&(a.rm||'').toLowerCase()==='nyny'?'Nyny':'Amanda';
-        const item={id,name,client,property,closeDate,milestone,stage:(reqTrig?reqTrig.act_type:'Active Transaction'),callType,triggerDate:(reqTrig?reqTrig.act_date:t.act_date),reqDone,weeklyDone:!!(weekly||reqThisWeek),lpUpdate,partner,owner,lp:meta(t.notes,'TXN_LP')||a.lp||'',phone:meta(t.notes,'TXN_LISTING_PHONE'),email:meta(t.notes,'TXN_LISTING_EMAIL')};cache.set(id,item);rows.push(item);
+        const item={id,name,client,property,closeDate,milestone,stage:(reqTrig?reqTrig.act_type:'Active Transaction'),callType,triggerDate:(reqTrig?reqTrig.act_date:t.act_date),reqDone,weeklyDone:!!(weekly||transactionTouchThisWeek),lpUpdate,partner,owner,lp:meta(t.notes,'TXN_LP')||a.lp||'',phone:meta(t.notes,'TXN_LISTING_PHONE'),email:meta(t.notes,'TXN_LISTING_EMAIL')};cache.set(id,item);rows.push(item);
       });
       rows.sort((a,b)=>(Number(a.weeklyDone)-Number(b.weeklyDone))||(Number(a.reqDone)-Number(b.reqDone))||((a.owner==='Amanda'?0:1)-(b.owner==='Amanda'?0:1))||String(a.closeDate||a.triggerDate).localeCompare(String(b.closeDate||b.triggerDate)));
       const due=rows.filter(r=>!r.weeklyDone).length,done=rows.length-due;
-      if(sum)sum.textContent=due+' due · '+done+' handled · week of '+tue+(latestBatch?' · Encompass snapshot '+latestBatch.slice(4,6)+'/'+latestBatch.slice(6,8):' · legacy transaction source');
+      if(sum)sum.textContent=latestBatch?(due+' due · '+done+' handled · week of '+tue+' · Encompass snapshot '+latestBatch.slice(4,6)+'/'+latestBatch.slice(6,8)):'No weekly Core Team upload yet';
       const show=rows.filter(r=>!r.weeklyDone);
-      if(!show.length){host.innerHTML='<div class="v265-empty"><strong>Listing-agent updates complete.</strong><br>The tracker adds new milestones here and resets the list next Tuesday.</div>';return}
+      if(!latestBatch){host.innerHTML='<div class="v265-empty"><strong>No Tuesday active-file upload yet.</strong><br>Upload this week’s Encompass active-file report in Core Team → Tuesday Updates.</div>';return}if(!show.length){host.innerHTML='<div class="v265-empty"><strong>Listing-agent updates complete.</strong><br>No additional listing-agent updates are due from this week’s shared snapshot.</div>';return}
       host.innerHTML=show.map(r=>{
         const file=[r.client,r.property].filter(Boolean).join(' · ')||'Active file';
         let action='',statusCopy='';
