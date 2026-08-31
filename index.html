@@ -1,33 +1,16 @@
- <!-- v259: RM/LP shared-contact coordination. LP live connections now close stale RM work, count as team touches, and suppress duplicate routine outreach. -->
-<!-- v261: Easy prospect flow. New prospect entry is name/phone-first with optional details collapsed; mobile modal stacking is prevented. -->
-<!-- v263: Hard prospect-stage firewall. Any OPEN outreach prospect is excluded from Talk-To and Face Time even if stale Power BI/profile data says retained. Logging a held New Realtor Meeting converts the prospect record, then the 4-week conversion lane owns them before active-partner cadence can resume. -->
-<!-- v260: Prospect lifecycle firewall + easy New Realtor Meeting logging. Acquisition activity never triggers Portfolio Execution; active prospects stay out of Talk-To/Face Time; first-meeting conversions stay in their 4-week lane; modal cancel returns to the correct screen on desktop/mobile. -->
-<!-- v258: Face Time queue now treats held New Realtor/partner meetings as visits, honors future follow-ups/snoozes, and adds Follow up later. -->
- <!DOCTYPE html>
+ 
+<!DOCTYPE html>
 
-<!-- v229 ENCOMPASS XLSX IMPORT + TRANSACTION PREFILL · 2026-08-25 -->
-<!-- v217 4-WEEK BUTTON HANDLER FIX · 2026-08-21 -->
-<!-- v228 SMART NEXT-MOVE ENGINE + ACTIONABLE WORKFLOW · 2026-08-25 -->
-<!-- v226 PERMANENT ROSTER REMOVAL + BULK DELETE · 2026-08-21 -->
-<!-- v232 STABLE ACTION ROUTER + TRANSACTION REFRESH LOOP FIX · 2026-08-25 -->
-<!-- v227 DIRECTOR SAVE / RISK / TOMBSTONE / REFRESH STABILITY FIX · 2026-08-25 -->
-<!-- Cleanup pass: floating Page Guide + stale developer build logs removed; active workflow logic preserved. -->
-<!-- v140: fixes Step 2 transaction renderer race; saved/open CTC and New Contract tasks are no longer erased after successful distribution -->
-<!-- v137: Amanda daily snapshot restored + audit fixes; current operating goals aligned, responsive snapshot, duplicate activity icons corrected -->
-<!-- v139: save/log integrity audit; preserve follow-ups until confirmed save, harden offline replay, Face Time and handled-note history -->
-<!-- v138: transaction visibility guard; newly-added CTC/New Contract calls force-fresh and always stay visible in Step 2 -->
-<!-- v136: C-to-B Director review workflow added; Amanda can send evidence-based growth candidates to Nyny directly from Today -->
-<!-- v135: Amanda Relationship Work ownership fix; all queues now exclude Nyny-owned/strategic/A-B-Channel relationships consistently -->
-<!-- v136 AMANDA SIMPLICITY PASS · 2026-08-20 -->
 <html lang="en">
 <head>
-<meta content="no-cache, no-store, must-revalidate" http-equiv="Cache-Control"/>
-<meta content="no-cache" http-equiv="Pragma"/>
+<meta content="aligned-v1-rm" name="version"/>
+<meta content="Aligned Version 1 baseline. Preserves v266 behavior; adds dedicated Tuesday Updates navigation and makes Core Team the sole Tuesday active-file upload source. Reads smart Core Team Tuesday snapshot fields including transaction LP and buyer/listing email/phone; no loan numbers." name="build-notes"/>
+<meta content="no-cache, no-store, must-revalidate" http-equiv="Cache-Control">
+<meta content="no-cache" http-equiv="Pragma">
 <meta content="0" http-equiv="Expires"/>
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-<title>RM Tracker</title>
-<!-- v24 FINAL EASY DAILY OPS · 2026-08-17 -->
+<title>RM Tracker · Version 1 · Aligned</title>
 <link href="data:application/manifest+json;base64,eyJuYW1lIjogIkFtYW5kYSB8IFJNIFRyYWNrZXIiLCAic2hvcnRfbmFtZSI6ICJSTSBUcmFja2VyIiwgInN0YXJ0X3VybCI6ICIuIiwgImRpc3BsYXkiOiAic3RhbmRhbG9uZSIsICJiYWNrZ3JvdW5kX2NvbG9yIjogIiNGNUYzRkEiLCAidGhlbWVfY29sb3IiOiAiIzRFM0Q4QSIsICJpY29ucyI6IFt7InNyYyI6ICJkYXRhOmltYWdlL3BuZztiYXNlNjQsaVZCT1J3MEtHZ29BQUFBTlNVaEVVZ0FBQU1BQUFBREFDQUlBQUFEZHZ2dFFBQUFRajBsRVFWUjRuTzJkV1hOVVNYYUF6OGw3YnkxYTBZSVFrdENHdGhJN1loRkNDNXNtWWlMc0NULzRZWjdHYi9aLzhCOXd4RHo1M1RHUGpuRFlFWTRZZXh5T3NjY05kTE0zMEVBM2RFc0NzUWdFclJZZ0VLanVtc2NQS2VHeDZjWmtaVW5VdlhXKzBBTkVjS3R1VVoveTVEMTVUaWIrWXV6WHdEQ0ZJajcxRFREeGhnVmlqR0NCR0NOWUlNWUlGb2d4Z2dWaWpHQ0JHQ05ZSU1ZSUZvZ3hnZ1ZpakdDQkdDTllJTVlJRm9neGdnVmlqR0NCR0NOWUlNWUlGb2d4Z2dWaWpHQ0JHQ05ZSU1ZSUZvZ3hnZ1ZpakdDQkdDTllJTVlJRm9neGdnVmlqR0NCR0NOWUlNWUlGb2d4Z2dWaWpHQ0JHQ05ZSU1ZSUZvZ3hnZ1ZpakdDQkdDTllJTVlJRm9neGdnVmlqR0NCR0NOWUlNWUlGb2d4Z2dWaWpHQ0JHQ05ZSU1ZSUZvZ3hnZ1ZpakdDQkdDTllJTVlJRm9neGdnVmlqR0NCR0NQc1QzMERud3dVaU1WN05TbXBlQzhXSjhwVUlFVDAzQ0FNSkNDQXlWZVBBQVMyTGRJWmg2Z2NIU3BIZ1JBaERLS3U3VTMxalZWRWhBWWpFUUVoNEt1WEsvZnZMZGkyS0VPRnlsRWdJaENXK091LytiTzI5b2Fpdk9Eekg1Yi84cGQvRjNnaFdtZzBuc1dRc3B0RUM0SDV2TDlqVDF2cnR2b29rbEtTNFU4VXlvYk4xWHNQZE9ienZoRGw5Ly81cVc5Z3cwR1VrUnlmektuSUpRUWEvZ0FDQUV4TTVnQVJ5aStHbFpkQWlCRDRVV05UemZCb0R3QUlVWVRuTURYcTdCL3VhbW1yOC8yd21JOTJjYUM4QkJKQ3VLNC9kTGlycnFGS1NxUHA4enNRUVVxcXFzb2NQdHJqNW9OeWkyTGw5V21KeUJKaTRtZUQ2cy9GZmZIeHlWd3FiWmRiUXFpTUJFS0JuaGUyZHpYc0dlcUF0ZEJURkZRb3pPMXM3ZWx2ZHQyZ0tKRXhMcFNSUUFMUmM0UGg4YjUweHBHUkxPNWtSVWJTc3NYUjQvMkJIeFlsTXNhRk1oSW9rakpia1JvL09RQUFVT3p2V0VremVyeS9walliUmxINUtGUXVBZ21CYmo3bzM5SFNNOUJNVkp6bnJ6OEdCUkpSVzBmRHpyM2IzSldnZkFhaGNoRUlFY01nR2pzNWdJaFN5dlY0Q3pWOW5wak1TVWxGSCtGS2xySVFDQUdDSUtwdnFCcVo2SU1pcFgvZVI3M3N3YU05VzdiV2xzOU1xRHdFc29TYjkvY2M2R2hxcmkxVyt1ZEgzZ1ZSU3FyZFZERjBwTnZOQjFnZXoySmxJUkFBQU9MRTVMcWtmLzRYUkFCd2JITFF0a1daTEdza1h5QkU5TjJndGExdWFMZ0xpcHIrK1pIM0VnSUFkdTdiMXJsOXMrZVd4U0NVZklHRVFOY05EbzMyVkZTbXBhUjFuWmtnUWhUSlZNbytNdEhuZVdGUmF4NUxsT1FMSktWTXArMkp5ZHpHdkoyYVlJMmZ6RlZXcGFOb1hSNzNTb3FFQ3lRRXVtN1kwOTg4c0xNVjlOTS9STm96R1NHUWlEcDdtbkk3VzkxODhwYzFFaTRRSWdaK2VQUkV2MldKU0QvOWcxaElRa2NGeXJGVHVUQ1VpWCtZVDdoQVlTaHJhck9qeHdjQVFHdEdvZ2FlcDQ5ZjNwOVpBTTFuTnpYcURJLzNObTZ1Q29LRVZ3Z2xXU0FoME0zN3UvYTF0N2JYa3lTdFp5S1ZyVDd6SDNkKzk4OWZBUURwRkdtb2hGRGo1dXA5aDdyY2ZJQ0pyaEJLOG1jRFJDbHBmRElIQUZKekxxTkdrV3VYWnE5Zm5nMURLU3pOL3loYVhkWkFUSGlaZldJRlFvVEFEN2UwMUI0YTJRNmF5eGVxMTJkKzd1WHMzWVZuODB2VHQrZEJzM1ZRalRyN0RuVnQ2Mmp3dkNTdnJTWlhJQ0hjZkhCZ3VMdG1VNFdVZXBOWjVjcWxjek52WHJ0UktNK2ZtUVlBcmVjeFJKQ1J6R1NkdzJPOVhxSkx6QklyRUJEWnRxV3FWM1dEaU1wV1h6bzdZMW5vcE95ckYrLzVmaWdzb2ZjNktpRTBtY3RtblNpNWRhN0pGQWdSUFRmczdHbmN0WGNickFXVWowUTloRCtjL1dIcXpud3E3YVJTMXFQN2k5OSsvUVRXWnRZZmlSQUlCSDI1cmIyNXJWNXkxMWFUS1pBUTZIbkJ5RVMvazdJanplcFY5Y1IrNmZPN2I1WmR5eEtBNlB2UkJSWEZOSkZTQ29HakozTkJrTmhsaldRS0ZFV3lzaXF0cWxkMUo3QkNDQ25wMGhjenRtTVJFVWxLWit4cmwyWmROeWdzaWgyZDZOdFVYeG1HRVNSUm9RUUtwS3BYYzd0YU83WnYxcTFlVmZIci9zekMzYWxubVl3akpSRlJPbTAvZnZqODlvMDUwSTlpVWxKejY2WTkrenZjbFdTMmpDWHdJeUZpRkVYanAzS0ZWSzhTQWNERno2ZFgzbnJXV3U0SEVZTmdMWXBwam1jcUlJNVA1Z2owMTlYaVFOSUVRb1FnaUJvMlZ4OFpWOVdyZWg4UWhRaERlZm5jM1ZUS2ZwZDdsSkl5V2VmNjVmc3JiejBoVUVzRGRRTUhqblJ2YmEzei9RUjJheVJPSUNIY0ZYL2ZvYTc2eGlyZDZoLzE3KzlOUGJzL3M1RE9PTytXTDRnb2xiTG5INy80K3F0SG9CbkZWRUtvcWpwejhPaDIxMDNnOWgxSit6eEFoQUtQVGFyMGoyYklJQUtBQzJlbjgzbi8vODZjRUtPSVZFWlJPNjJNQ0FBVGs0T3BWQUlibnhNbEVDTDZYcml0czJIdndVN1FUUDhBZ0xCRUVFUlh6dDk5LzVzbUtUTVo1OGFYRDk0c3UvcFJESUZnY0ZkcmQrK1c1R1dsRXlXUXFsNGRIdXZOWkIwcDlkSS95cGlwMi9NUDd5Mit2K0VoRVRncDY5bVRwWnRYSDRKbUZBT0FTRXJic1k0ZTYvTVQxKzZUS0lHa2xKbHNhbHpGTDkyc2k0cGZaNlk5N3ljR0NVUXA2ZnlaS1Nna3Q0UUFNSFl5VjEyVERjTkUxYmttUnlDVi91a2JiTzd0MTI5ZUpoQ1c4TDN3NnNWNzZiVHpvOVUvSkdVbTY5eTgrdkQxMG9wdUZFTkVJdHJXMmJCalQ1dnJ2amZCaWpQSkVVaGxhOFpPNUlTbG5mNlJKQUhnOXEzSGp4NHNwalAyanhZUEVZSGpXQXZQWGwyLzhnRDBvNWdLa2VPbmNqSktWT056UWdSQ2hDQ002dW9yUjQ3MVF5SE55d2dBRjA1UEIzNzBvZkNFQ0FBWENub1dVN2QwZUt5M3Fia21TWTNQaVJGSXVDdkI3cUgyNXBaYTBteGVWdkV1ditKZnV6eXJsaTkrOGw5S21jazR0NjQvZXZuOHJlcSswTGxEbEpJMjFWVU1EU2VxOFRraEFnRVFBQlhXdkV4U0FzQTNOK2FlUEhxZVN0c2Z1SndJbkpTOXVQRDYycVZaMEN5VWZzZkVxVnlTR3ArVElCQWlCbjYwdGExdWFMZ2I5Tk0vS2pDZFB6MFZmY1RzUkZXN1hqZzdEUUM2bzRpS1lydUhPdHE3R3hOVDU1b0VnZFRlNFlkR3RsZFZaM1NYTDFUOGV2UEcrK3JLL1hURy9uOEhGVW1VeVRyZjNKaGJYRmhXejFaYXR5b2ptVXJiUjhiN1BEZE14ck5ZRWdTU2tsSnBlN1Y2VmZ0YUNRQTNyejU0K21RcGxmcFEvRnFGd0hHc0Y0dkxWeS9lZ3dJTzZWRjFycWR5RlpVSmFYeU92VUFvMEhPRDdYMWJjcnZhUVAvNVM4V1JDNmVuUDM1Yk1TSVNRcXhHTWYxbk1TTHE3bWthMk5tU2pNYm4yQXNrRUgwL1BIcXMzN2FGN3UrMGlsK3ZsL0kzcnozSVpCMzZ1TlNPbEpUT09IZHVQdjcrNlpJcUdkTjZVeWtKQlk2ZHpJWGhCMU1HTVNIMkFrV2hySzdKanA0b3BIcFZ4YS9yVis1Ly8vU1Y0MWdmUDU5eEhHdnB4ZHN2ejgrQy9rT2ZHblZHSm5vYkdxdUNJUFlWUXZFV2FQWG9uYjF0MnpvYmlLakErSFZtU3YzbDR5OGtJbUdMaTU5UEY3RGp4MnJqYzFQTjNvT2RidndQK0luMzNhc0Z6b2xUT2RDZnp5cmhYajUvZSt2NlhDYnpzZkZMSVNWbE1zNjNYeitaZi93Q0VYWDdwdGNhbndjTGVJNHJOV0lzRUNLRWZ0alVYSE5vdEJmMHA4L3FpZjM2bGZzdkZwZFRhUWNBdFhBYysvV3IvSlVMaFdRVVZRSnAzNkd1MXZaNjM0djNza2FNQlJKQzVQUEIwSEQzcHJxS0F2WmVWZC9pWi8vK2plY0dydXQ3YnFEMTQrYjlLSXpPL1A2MmxLUmRlWTBvSTFsUm1UbzgydVBHUENFVTR5TXZpY2l5eGNUL1ZLOXFiNSt3OU9MdDI3ZmV3TTVXWVFuZC9tY0VrQVJCRVAzdzdQV1dsbHJ0czFmWDZsei85Wit1eGJyT05hNENJYUxuQlIxZGpidjJ0WVArOG9YNnNtczJWZnp0Yi83QzhFNVUvTkpPQ0NFU1FkL2cxcDZCNXFrN1Q3UFpEeTNpbGpKeERXRkNvT2VHSXhOOTZZeGQ4TkU3UllrZEJhNnJJMGdwTFV1TW5oaUlkWFZIWEFXS0lsbFJtUjQ3bFFNby90RTdHOE83QTM1cTZ5ckNNUHJVdDFNZ3NSUklWYThPN0d6cDd0MnlIa2Z2YkF3cWk3MjFyVzdYdnZiNExtdkVVaUJFak1Kby9HUU9VYnUwdEtTZ3RZUVFVVnpyWEdNb0VFSVFSUFdicTRiWDgraWRqV0cxOFhta3U3bGxVK0RGY2ovWCtBa2toSER6L3Q2RFhadWJxbldyVjBzTmRlSnpUVTMyd01oMjE0M2xmcTd4dTJNZ1FrUjFkRUhjMXdFQVFPV2ZqazBPT281VldJM3NweVZtQXFubTVkYjIrbjJIT3FHQTZ0WFNRMFd4d1QxdG5UMU5uaHUvT3RlWWZRR3J6Y3VqdlJVVjYzNzB6b1loSStrNDF0SGpmYjRmdjJXTm1BbWtsc0hITityb25RMENFUURHVHVTcXFqTlJKT08xRTE2Y0JCSUNYZGZ2R2RqYVA3ZzF2dW1mOTFGMXJoM2RqWU83Mjl5OEx6QldYOHFudmdFTlZQdk82SWwrWVlsWXAzL2U1MTNqY3hUR2JBU0t6V0lxSW9SaFZGdFhjZlI0WWMzTEFBQ2tYZnBWQ0FYYzIrb0JQMk05alZ0cTNpNjd3cmJpMG5rWW14RUlVYmo1WVBlKzlwYTJ1b0xUUHloUXJQOVBRWjhPcGFTNmhxcWg0YTU4UHJEaUU1MWpNd0lCQUJGTnJCMjlZMmtPOUZLU0VQamJmN3o2K1IrK3JheE1yMGZ0QkFwMFYveGQrOXQvOVZmamhheE1FQUhneE9UZ0gvN3RteGpsdCtJaEVDTDZRZGpjc3VtQS90RTdvTnAzRUQwdi9PMC9mSGx2WnVIRE95Z1kzQ1NFWVRSN2QrRlAvM3lvcnFGU3Q4Uk01YlIyNys5bzcycDRNdmZ5bzdvY1M0QjRDQ1FFZXZuZzRNajI2cHFzR2t1MExpY3AwUkszYjh6TlAxbHEzRnk5ZmhOd3l4S3ZsdkpYTDk2Yi9KUGRVcEpsNlFpRUVFVXlrM1dPalBmOS9XL09aVEpPRk1WQW9Iak1nU1NSNDFpckp5OFg4SHVKQUFCZi9OZDNZUkJKSWluWDZ5ZVNoQWpuVGsrQjVnbWJxN2VwRWtLbmN0bUtWRndhbjJNZ2tHcGU3dXB0MnJGbkcranZIYTQ2a2Q4c3U5Y3V6Zjd4N3Mvcmdkb0c3NXNiYzgvbVg2RkEzZmRTQ2FIdC9WdjZkN1M0TWRuUE5RWUNDVVRmQzBjbSttekhLaUJScTZZNzF5L2ZmL3JrNVllMy96R0hDR3piV25yeDl0SVgwNkIvemlhb3lUN2kyTW1CTUloSDQzTU1CSW9pV1YyZEdUdVpnd0kyK1Y2NzVJdlB2Z1BRUG5tdUFJakl0cTBMWjZZTDZKU0Z0Y0EzTXQ1WDMxQVZoakZvZkM1MWdWVHpjbTUzVzBkM1l3RmZpYnBrY1dINTFyV0htV3lLYU4wbkZ1cGdqYW5iOHc5bkYxVjJSK3R5RkNnbE5XMnQzWE9nSTcvaWwvNGdWT29DSWFLTTFrNWUxcCsrcUV1dW5MLzcvSWRscmUwVFRMQXM4V2JaVmZ1L0ZERGxmMWZuQ29qYXUxMXZPQ1V0a0RwNWVYTlR6WEJCemN2dkxqbjMyWGRDaUExTHF4Q1JrN0l2bnAyT0NqZ3ZmTzJlOXgvdWFtMnI4LzFTcnhBcWJZR0V5T2VEL1llNzZob3FDMmhlVnBmTVBYeCs1OWFUYkVWcXd6cjNwS1JNeHA2ZCtYNzYyNmVnUDNDcXh1ZktxdlNoMFo3Uzc5WW9hWUdBeUxLdzRQUVByWjFlc1B3NmIrbVBCQ1lJSWR4OGNQNzBGQmpVM1U1TTV0THJrelF2SXFVckVDSjZYdGpXMGJCcnFKMGtBU0pKK25qVThDTWp1bmgyMm5Hc0RWNFdrSkxTYWZ2eStidWVHNnFwdEJacTI1cSt3WmJ1M2liWDlVdDVVK25TRlVnSTlOemcyTThHczltVVdrVkhvYkg5aWxvWXZ6ZnovY3gzVHpNYjNubE9ST21NODJoMjhjN1hqOVdkYUtFdWNSenI1TTkzQm41VXlpYytsKzVhbUpReVc1SHE3R21hbjN0WndQcVhsRklJOGZ0L3VlbDdZU3J0MEtkWUdaQ1Mvdk4zdDdZMDE2cWIwYnBXcmNXMmRUUlUxMmFqS0NyWnh6SDh4ZGl2UC9VOS9DU0lDRUFtZ3dkSkt1QTVxSWpJU0pvRUlEVWdsZkt5Zk9tT1FBQ3dOaDhvL0FzUXR0NjVURVhIc29YSkRSREJScVRQRFNqZE9aRENNUHAvOGw5ZHd4c280Y25QS3FVdUVGUGlzRUNNRVN3UVl3UUx4QmpCQWpGR3NFQ01FU3dRWXdRTHhCakJBakZHc0VDTUVTd1FZd1FMeEJqQkFqRkdzRUNNRVN3UVl3UUx4QmpCQWpGR3NFQ01FU3dRWXdRTHhCakJBakZHc0VDTUVTd1FZd1FMeEJqQkFqRkdzRUNNRVN3UVl3UUx4QmpCQWpGR3NFQ01FU3dRWXdRTHhCakJBakZHc0VDTUVTd1FZd1FMeEJqQkFqRkdzRUNNRVN3UVl3UUx4QmpCQWpGR3NFQ01FU3dRWXdRTHhCakJBakZHc0VDTUVTd1FZd1FMeEJqQkFqRkdzRUNNRVN3UVl3UUx4Qmp4M3lzVkgyZ3cwVjJMQUFBQUFFbEZUa1N1UW1DQyIsICJzaXplcyI6ICIxOTJ4MTkyIiwgInR5cGUiOiAiaW1hZ2UvcG5nIn0sIHsic3JjIjogImRhdGE6aW1hZ2UvcG5nO2Jhc2U2NCxpVkJPUncwS0dnb0FBQUFOU1VoRVVnQUFBZ0FBQUFJQUNBSUFBQUI3R2tPdEFBQWJrVWxFUVZSNG5PM2RTVk5VNlpyQThaeElFaEtaWjVCQkJvR3NRa1JGa0NsQnhUSTY0a1owUjNkL2dZN3VkYTk3MWF0ZTNPZ1AwTDN2WlM5NjF4Rjl5MUpCME5LeUxNc3FCMUJ4TE9laEZCU1pzaGZlYTZrRlpKS2NQTS83bnVmLzI5MHFMenhSUXY3enZQbWU5L2ovTVBoSEh3QkFuNEQwQUFBQUdRUUFBSlFpQUFDZ0ZBRUFBS1VJQUFBb1JRQUFRQ2tDQUFCS0VRQUFVSW9BQUlCU0JBQUFsQ0lBQUtBVUFRQUFwUWdBQUNoRkFBQkFLUUlBQUVvUkFBQlFpZ0FBZ0ZJRUFBQ1VJZ0FBb0JRQkFBQ2xDQUFBS0VVQUFFQXBBZ0FBU2hFQUFGQ0tBQUNBVWdRQUFKUWlBQUNnRkFFQUFLVUlBQUFvUlFBQVFDa0NBQUJLRVFBQVVJb0FBSUJTQkFBQWxDSUFBS0FVQVFBQXBRZ0FBQ2hGQUFCQUtRSUFBRW9SQUFCUWlnQUFnRklFQUFDVUlnQUFvQlFCQUFDbENBQUFLRVVBQUVBcEFnQUFTaEVBQUZDS0FBQ0FVZ1FBQUpRaUFBQ2dGQUVBQUtVSUFBQW9SUUFBUUNrQ0FBQktFUUFBVUlvQUFJQlNCQUFBbENJQUFLQVVBUUFBcFFnQUFDaEZBQUJBS1FJQUFFb1JBQUJRaWdBQWdGSUVBQUNVSWdBQW9CUUJBQUNsQ0FBQUtFVUFBRUFwQWdBQVNoRUFBRkNLQUFDQVVnUUFBSlFpQUFDZ0ZBRUFBS1VJQUFBb1JRQUFRQ2tDQUFCS0VRQUFVSW9BQUlCU0JBQUFsQ0lBQUtBVUFRQUFwUWdBQUNoRkFBQkFLUUlBQUVvUkFBQlFpZ0FBZ0ZJRUFBQ1VJZ0FBb0JRQkFBQ2xDQUFBS0VVQUFFQXBBZ0FBU2hFQUFGQ0tBQUNBVWdRQUFKUWlBQUNnRkFFQUFLVUlBQUFvUlFBQVFDa0NBQUJLRVFBQVVJb0FBSUJTQkFBQWxDSUFBS0FVQVFBQXBRZ0FBQ2hGQUFCQUtRSUFBRW9SQUFCUWlnQUFnRklFQUFDVUlnQUFvQlFCQUFDbENBQUFLRVVBQUVBcEFnQUFTaEVBQUZDS0FBQ0FVZ1FBQUpRaUFBQ2dGQUVBQUtVSUFBQW9SUUFBUUNrQ0FBQktFUUFBVUlvQUFJQlNCQUFBbENJQUFLQVVBUUFBcFFnQUFDaEZBQUJBS1FJQUFFb1JBQUJRaWdBQWdGSUVBQUNVSWdBQW9CUUJBQUNsQ0FBQUtFVUFBRUFwQWdBQVNoRUFBRkNLQUFDQVVpSHBBWUMxL2V1Ly8rM3Vua2JwS1J6dzVOR3JmL3o3LzB3a3BPY0Fmb2NyQUppb3FDUzZhMitEOUJUT0tLdkkvNktyVG5vS1lBMEVBQ2FLajhVQ0FiLzBGSTRaUFJxVEhnRllBd0dBaVVhKzh0UXI1b0hoMWtna1Mzb0s0SE1FQU1acGFxMm9ieXlWbnNKSmtaeHczM0NyOUJUQTV3Z0FqRFA2MVJmU0l6alBZOWMwOEFZQ0FMTUVRNEhCUTIzU1V6aXZjM2RkYWZrMjZTbUFUeEFBbUdYUC9oMEZoYm5TVXpqUEgvREh4N2dJZ0ZrSUFNemk0UTB6bzZ3Q3dUQUVBQWJKeTQvczYydVNuaUpUYXVxS1d6dXFwS2NBZmtNQVlKQ2hnKzJocktEMEZCbmt5YyszWVM4Q0FJTjRmcEZrY0xUTjI0V0RYUWdBVEZGVFY5elM3dkVWa3J6OFNNOEJ6NjV4d1RvRUFLYncvTnYvOTFnRmdqa0lBSXlnWjVka2QyK2pKL2U1d2tZRUFFYm83Tlp5bjFRd0dCZzYxQzQ5QmVEekVRQVlZdVNJaXJmLzc0MGVaUlVJUmlBQWtLZnRyTFFkTGVVZU8rME9saUlBa05jZlYzZGE4Z2dYQVRBQUFZQThoUnRqNG9jN3ZQVEVHMWlLQUVCWVdVVityR3U3OUJSdUt5cUo3dTVwa0o0QzJoRUFDQnM1RXZPcmZDczhja1RkZFE5TVF3QWdUTzJUVXZZUE51ZEdzNlduZ0dvRUFKTGFZdFhWdFVYU1U4Z0loME1Eb3p1bHA0QnFCQUNTbE8rSVYzWDNBd3hFQUNBbUt5czRNT3JCcHorbXJxT3p0ckttVUhvSzZFVUFJS1pub0RtYXAzMFJmSlNMQU1naEFCQ2pjUHYvNzhXMWJvS0NDUWdBWkJRVTViSVIzdWZ6VlZRVmRIVFdTazhCcFFnQVpBd2Y3Z2dHK2ZIeitiZ1NnaHgrQXlGRHllTmZVdEUvc2pPY0haS2VBaG9SQUFob2FDcHJiQzZYbnNJVU9ibmgzc0VXNlNtZ0VRR0FBQlk5UHFQOGZnaElJUUJ3V3lEZ0h4N2prVmlmNk5wVFgxeWFKejBGMUNFQWNGdjMvc2JDb3FqMEZHYnhCL3p4c1E3cEthQU9BWURiUmxqL1dRdkxZbkFmQVlDcm9ublpQZjFOMGxPWWFIdERTWE5icGZRVTBJVUF3RlVEbzIzaE1Gc2UxOGJXV0xpTUFNQlZiSGZad09EQjltQ0lYMG00aDU4MnVLZXFwcWd0VmkwOWhibnlDM0wyOWJFK0J2Y1FBTGhuOUNoTEhFbW9mVDRhUkJBQXVNVHY5OFhIZUhWTFlsOWYwN2I4SE9rcG9BVUJnRXRpWGR2TEsvT2xwekJkTUJRWU9zUmRjbkFKQVlCTDJPZWVJdllDd1RVRUFHN0lqbVQxeDF1bHA3QkRjMXZsOW9ZUzZTbWdBZ0dBRy9xR1dpSTVZZWtwck1IRDR1RU9BZ0Ezc1A2ektmR3htRC9BZ3lLUmNRUUFHVmRTdHEyenUwNTZDcHVVbE9WMTdhbVhuZ0xlUndDUWNmR3hEdDdQYmhZM0JNQUZCQUFaeDdhV05QUU90dVRrOHFrSk1vc0FJTE5hMnF0cTY5blRzbW5aa2F6K2taM1NVOERqQ0FBeXkvQzMvNjlmdlpVZVlWM3NCVUttRVFCa1VDZ3JPSGl3VFhxS2RkMisrZVIvLytjSDZTbldGZHUxdmFLcVFIb0tlQmtCUUFZWmZyTE54TEdycDQ1ZGxaNWlYWDYvTDg1RkFES0pBQ0NERE4vS012SE4xZHV6VCsvTVBwVWVaRjJqQkFDWlJBQ1FLZmtGT1h0N2QwaFBzYTdyVng4K3ZQL1M1L09kK3NiY2k0REttc0wyTDJ1a3A0Qm5FUUJreXRCaG81OXZOZkdYeFo4Smd3UGc0eVpxWkpLNXY1K3duY212WEluRWI2Lzd2OXg5Y1hQbXNldzhHeGdZM2NsVGxKRWhCQUFaVWRkWTJ0UmFJVDNGdXE1Y3V2ZnN5ZXNQLzlQa1ZhRGNhSGJQUUxQMEZQQW1Bb0NNTUh6Ny84U25tMzhtRE40TDVEUDdXZ3BXSXdCd1hpRGdIejdjSVQzRnVsWlhFMU1ucGovK0o0OGYvanA5K1lIVVBFbnQ3bWtvS281S1R3RVBJZ0J3M3E2OURjV2xlZEpUck92U2hUc3ZYOHgvOWc4bmpsMFJHU1lWaGdjVjlpSUFjSjVkNnovdm5UcCtMYkdhY0grWUZJMGVOZm8vS1N4RkFPQ3czR2k0ZDdCRmVvcDFyU3l2bmg2Zi92MC9mLzUwN3ZLbCsrN1BrNkw2SFdVN1dzcWxwNERYRUFBNHJEKytNNXh0N3JiRkMrZHV6YjFhV1BOZm1id1h5T2Z6alI3bG8yQTRqQURBWVlhL1RtMncxajk1L05xcXdhdEFRd2ZiZzBGK1llRWtmcDdncElxcWd2WXZhNlduV05maTR2SzNwNjZ2OTI5L2Zmbm0wdmQzM0p4blV3cUtjcnQ3RzZXbmdLY1FBRGhwNUt1WTMrQ0hQNTQvYy9QdG04VU4vb0RKZTRGODNCQUFweEVBT01ud1o1Z2t2ZUhyOVBqTXl2S3FPOE9rWWQrQnByeHRFZWtwNEIwRUFJN3A2S3l0ckM2VW5tSmRDMjhYejAzZDJQalB6TDFldUhEdWxpdmpwQ1BMN0Fmc3dEb0VBSTR4ZlB2LzJja2JpKytXay80eDAvY0NzUW9FNXhBQU9DT2NIVEw4SWVianFhM3ZuNW1ZV1Z4TTNna3ByUjFWTlhYRjBsUEFJd2dBbk5FNzJKSWJ6WmFlWWwzemMrOHVuTDJWeXA5OCsyYngrek96R1I1blN3ei9vQVVXSVFCd2h1SHJQMmZHcDVlWFZsTDh3NGJ2QlJvNUV2TUhETjVyQlhzUUFEaWdxQ1M2YTIrRDlCUWIyZFNCeitkTzMxeFlXTXJjTUZ0VVdyNnRjM2VkOUJUd0FnSUFCOFRIWWdHRDM1UCsrdkxOeGZPM1UvL3o3eGFXemswbTJTOGtpMVVnT0lJQXdBRWpacS8vVEoyWTN1d1pENGJ2QmVxTHQwWnl3dEpUd0hvRUFGdlYxRnBSMzFncVBjVkcwbGpUUDMvbTVwdjVqZTRabGhXSlpCMFlicFdlQXRZakFOZ3F3M2VtUDNzeWQvbkhlNXY5ZnkwdHJYdzdNWk9KZVp4aStGVVhyRUFBc0NYQlVHRHdrTkgzcGs0ZXY1cEk2NGpQaVcrTTNndjA1ZTY2c29wODZTbGdOd0tBTGRtemYwZEJZYTcwRkJ1WlNIYzEvNGZ2YnI5KzlkYlpZUnprOS92aVIzaE9KTGFFQUdCTERIOVU0YU1INlQvdGZXVjU5ZlJKbzFlQlJvOFl2ZmdHOHhFQXBDOHZQN0t2cjBsNmlvMXNjVE9QNFh1QnFyY1g3WXhWUzA4Qml4RUFwRy9vWUhzb0t5Zzl4VVkyZGYvWDcxMjZjT2ZsaTNtbmhza0V3Mi9BaHVFSUFOSm4rS3ZQdlR2UFo2OC8zc3BYV0YxTlRKMVk0d255NWhnWWJjc3l1OEV3R1FGQW1tcnFpbHZhcTZTbjJJZ2pSL3BzOFJvaTAvSzJSZmIxTjB0UEFWc1JBS1RKOExmL1BvZGV1NjljdXZmc3lldXRmNTNNTWY4dkFzWWlBRWlIUCtDUGp4bjl1ak43L2ZIOU84KzMvblVTQ2QvazhXdGIvenFaMDcyL3NhREk2SjI0TUJZQlFEbzZ1K3RLeTdkSlQ3RVJCNWR1eHMxZUJRb0dBOE9IMnFXbmdKVUlBTkpoL21tVUR1N2duTG55NE5HRFg1MzZhcGxnK0drY01CWUJ3S1pGY3NKOVpwOUVObjNaNFpkc3cyOElhR3dwYjJncWs1NEM5aUVBMkxUK2VHc2traVU5eFVZY2Y2UlgydWRKdUlhejRaQUdBb0JOTTN6QkliR2FPT1gweDdhek04NThwSnc1dzRjN1RING1EOHhFQUxBNVpSWDVzYTd0MGxOczVQS2wrOCtmempuK1pRMWZCU29xanU3dWFaU2VBcFloQU5pY2tTTXh2OWx2TkRQMFNIZkQ5d0w1Zkw3Um8wWmZtY0ZBQkFDYlkvaGE4OHJLYW9ZT2I3aDMrOW50bTA4eThaV2QwdFBmRk0zTGxwNENOaUVBMklTMldIVjFiWkgwRkJ2NThmczd2NzU4azZFdmJ2aXhFT0Z3YUdEVTZJZnp3RFFFQUp0Zy9pSkRSbCtqemQ4THhMRVEyQlFDZ0ZSbFpRVU5mNE81dkxSeVpqeURoM2MrdlAveSt0V0htZnY2VzlmMlJVMVZqZEdYYURBS0FVQ3FlZ2FhRFY5aS92N3M3UHpjdTR4K0M4UDNBdm1NLzVBR1JpRUFTSlhoMi85OXJxelJUM3lUNWlQbVhXUCtOaTJZZ3dBZ0pRVkZ1YnQ3R3FTbjJNaml1K1d6a3pjeS9WMmVQbjU5N2VmN21mNHVXMUZlYWZxTkdqQUhBVUJLaGc5M0JJTkcvN1NjbTdxeDhIYlJoVzlrK0Y0Z244ODNhdnhSZlRDRTBiL1NNSWY1MjB0Y2UxMmVQSDR0c1dyME10Q0IrTTVzc3c5cmdpRUlBSkpyYUNwcmJDNlhubUlqYjk4c25qOXowNTN2OWVMNS9FOFg3N3J6dmRLVGt4dnVHMnFSbmdJV0lBQkl6dnlQZjg5TXpDd3VMcnYyN2N4ZkJXSXZFRkpCQUpCRUlPQWZIalA5Z1ZNdTc4NmNPakc5c3JMcTVuZmNyRjNkOVNWbFJqK3lEU1lnQUVpaWUzOWpZVkZVZW9xTnpMMWF1SER1bHB2ZjhmV3J0eitldiszbWQ5d3NmOEFmSCt1UW5nS21Jd0JJWXNUNDlaL1Q0OU1yeTI2L0h6ZC9GY2o4eiswaGpnQmdJOUc4N0o3K0p1a3BraEI1TFQ0OVByTzh0T0wrOTAxZGJYMUpTMXVsOUJRd0dnSEFSZ1pHMjhMaGtQUVVHM241WXY3U2hUdnVmOTgzOCsrK1B6dnIvdmZkRlBNUDc0TXNBb0NObVA4S01ubjgycXJRcm56elY0RUdEN2FGc29MU1U4QmNCQURycXFvcGFvdFZTMCtSaE9DcjhObkpHNHZ2M050N21vWnQrVGw3KzNaSVR3RnpFUUNzYS9TbzZaOGlQbjM4K3VwUFlpZnpMTHhkL081MHhrOGYyaUx6NytHQUlBS0F0Zm45dnZpWTZRRTRkVno0Yk02SmI2NUpmdnNVN08zZGtWK1FJejBGREVVQXNMWlkxL2J5eW56cEtaSVFYNFgvN3JSTEo5Q2xMUmdLREIweS9UNCtTQ0VBV0p2NVN3Y1A3cjhRZno2WE8yZFFiNUg1ZjVXUVFnQ3dodXhJVm4rOFZYcUtKRTRkTTJMNVpmellGZWtSa21qYVdWSFhXQ285QlV4RUFMQ0d2cUdXU0U1WWVvb2tKc3g0NWIxdzlsYW1uME81ZFNNOElRQnJJUUJZZy9tTEJuZHZQYnM5KzFSNkNwOHY4MCtpZDBSOHJDTVE0RUdSK0J3QndPZEt5cloxZHRkSlQ1R0VJVy8vM3pOL0wxQnhhZDZ1dlEzU1U4QTRCQUNmaTQ5MStJMS90eWkrLytkalA1Ni8vZXJYdDlKVEpNSFpjUGc5QW9EUG1mOUtjV1A2MFMvM1hraFA4WnVWbGRYVEowMWZCZW9kYk1tTm12NjVEbHhHQVBDSmx2YXEydm9TNlNtU01PcnQvM3ZtN3dVS1o0ZjY0enVscDRCWkNBQStZZjdiLzBUQzdlZC9wZUxuaS9kZVBKdVhuaUlKODQvMmc4c0lBSDRUeWdvT0hteVRuaUtKYXovZmYvTG9sZlFVbjB1c0ppYVBtLzVSY1B1WHRSVlZCZEpUd0NBRUFML1oxOWUwTGQvMGMyTW16SHY3LzU2eGczM2c5L093ZUh5Q0FPQTM1cjg2SkZZVGs2YnV1VFR6MHVRekkwZGlmdE4zZU1FOUJBQi9sbCtRczdmWDlMUGpmN3A0OThWelE1ZmFFd25mS2VOWGdTcXJDOXUvckpXZUFxWWdBUGl6b2NQdHdaRHBQdzhHN3YvNW1GRzNwNjNIL00vNTRSclRmK0hoR3ZPUGYxaFpXWjA2WWZSMit4dlhIajI0YjlBTkNtdnFIMmtMWnh2OW5HZTRoZ0RBNS9QNTZocExtMW9ycEtkSTRvZHp0MSsvTXYyR1cwUE9LTjFBYmpUY085Z2lQUVdNUUFEZzgxbXlMRER4alFVTExPYnZCZkp4T0NqK2dnREFGd2o0aHc5M1NFK1J4TkxTeXJjVE05SlRKSGY3NXBPN3Q1NUpUNUZFMTc2R29wS285QlNRUndEZzI3VzNvYmcwVDNxS0pNNmZ1ZmxtM3VpSEwzNWcva1ZBSU9BMy80SFBjQUVCZ0NYclAyYnYvL21ZRlh1QnpML25BeTRnQU5wWjhaSGd3c0xTdVNuVEg3Mzd3UzkzWDh6T1BKYWVJb2w2R3o3MlI2WVJBTzM2NHp2TjN4UjRidkxHdTRVbDZTazJ3ZnhWSUo4TkczK1JhUVJBT3l0T2lMUmlVZVZqVml4WURSNXFNLy9XUDJTVTZXLzlrRkVWVlFWV0hBendMLy8yMTlJamVGQkJZZTZlL1R2T1RsNlhIZ1JpNkw5cUkxOXhOSmhxbzBmNUtGZzFBcUFhTndRcHQ2K3ZLUzgvSWowRnhCQUF2VG82YXl1ckM2V25nS1JRVm5Eb1lMdjBGQkJEQVBTeVl2cy9NbzBmQTgwSWdGTGg3RkQvQ0k4SWg2K2x2YXEycmxoNkNzZ2dBRXIxRHJia1JyT2xwNEFSdUN0WUxRS2dGQmYrK0dEa1NNd2ZZRGVZUmdSQW82S1M2SzY5RGRKVHdCUWxaZHM2dSt1a3A0QUFBcUJSZkN3VzRCMGZQc0t4RURvUkFJMVk4OFZuZW9kYUlqbGg2U25nTmdLZ1RsTnJSWDFqcWZRVU1Fc2trdFVmYjVXZUFtNGpBT3B3c1k4MThZT2hFQUhRSlJnS0RCNXFrNTRDSm9wMWJTK3Z6SmVlQXE0aUFMcnMyYitqb0RCWGVncVl5Ty8zOFp4SWJRaUFMcHoraUEyd08wQWJBcUJJWG41a1gxK1Q5QlF3VjNWdFVWdXNXbm9LdUljQUtESjBzRDJVRlpTZUFrYXo0Z2x4Y0FvQlVJVGpINURVd0doYkZ1OFMxQ0FBV3RUVUZiZTBWMGxQQWRORjg3TDNEelJMVHdHWEVBQXRlUHVQRkkxd1E0QWFCRUFGZjhEUERqK2thSGRQUTJGUlZIb0t1SUVBcU5EWlhWZGF2azE2Q3RnaEdBd01qL0djU0JVSWdBbzgvQjJid2crTUVnVEEreUk1NGI1aHp2bkNKalEybHpjMmwwdFBnWXdqQU43WEgyK05STEtrcDRCbDJEV2dBUUh3UGs1NVJCcUdEcmNIZzd3K2VCeC93UjVYVnBFZjY5b3VQUVhzVTFnVTNkM1RJRDBGTW9zQWVOeklrWmlmaHo4aUxWdzdlaDRCOERqT2QwVGFlZ2FhbzNuWjBsTWdnd2lBbDdYRnFxdHJpNlNuZ0syeXNvSURvencreU1zSWdKZHhzaU8yaUI4aGJ5TUFuc1hiTjJ3ZEY1SGVSZ0E4aXdWY09JS1BrVHlNQUhnV1d6amdpUGdZRzhrOGl3QjRVMEZSTHB1NDRZanl5dnd2dXVxa3AwQkdFQUJ2R2o3Y3dXMmNjTXJvVVZhQnZJblhDRy9pSUJjNDZNQXd4MGw1RXdId29JYW1NbzV5aElNNFVOYXJDSUFIOGZFdkhNZGVJRThpQUY0VENQaDVuQk1jMTdtYmg4cDVVRWg2QURpc2UzK2pGUTkwZmZaazdoLys3ajhTcXducFFlVDkwejhmL0t1LzZaYWVJb24zajVYKzcvODZJejBJbk1RVmdOZU1XTEwrTS83MVpWNzkzeHYvMHhYcEVWTEN6Z0x2SVFDZUVzM0w3dWx2a3A0aUpTY3RlZFZ6d2RXZmYzbjR5MHZwS1pLcnFTdHVhYStTbmdKT0lnQ2VNakRhRmc1YnNLeDNaL2JwN1BYSDBsTVlaT0xycTlJanBJU0xBSThoQUo1aXk5bU5KLzd2c3ZRSVpqbnhKenYrZ3d3ZGJBOWxCYVduZ0dNSWdIZFUxUlMxeGFxbHAwZ3VrZkNOZjgzNnp5ZnUzWDQyTzJQQkpWRmVmcVRuZ0IxcmpFZ0ZBZkFPVys3WHYvemp2U2VQWGtsUFlaeVRsbHdFY0VPQWx4QUFqL0Q3ZmZFeE8zNHpiWG1sYzluNHNTdFdiSXZhczM5SFFXR3U5QlJ3QmdId2lGalg5dkxLZk9rcGtsdGVXcGs4ZmsxNkNoTTllekwzODhWNzBsTWtGd3dGaGc1eHA2RkhFQUNQc09YNGgrL08zSng3dlNBOWhhRk9mbTNIdFJHclFKNUJBTHdnTzVMVkg3ZmpyQzYyLzI5ZzZzVDA4dEtLOUJUSk5iVlcxRGVXU2s4QkJ4QUFMK2diYW9ua2hLV25TTzdOL0x2dnBtNUlUMkd1dWRjTDU3K2RsWjRpSlNPV2JEakd4Z2lBRjlpeS9qTjFZbnB4Y1ZsNkNxT05XL0lKZWZ4d1J5REFneUt0UndDc1YxSzJyYlBiamlmMmNmOVhVbWVuYnJ4OXN5ZzlSWEpGSmRHdWZRM1NVMkNyQ0lEMTRtTWRmaHZlaXoxN012ZlR4YnZTVTVodThkM3ltZkVaNlNsU1lzdDFKelpBQUt4bnkvRXN0dXh6RjJmTGZSTDdCNXR6bzluU1UyQkxDSURkV3RxcmF1dExwS2RJeVVuV2YxSno4Znp0bHkvbXBhZElMaHdPOVkvc2xKNENXMElBN0diTDIzK08vMHpkNm1yaTFERTc3cFd6NWNjUDZ5RUFGZ3RsQlFjUHRrbFBrUksyLzIrS0xYZUVkWFRXVmxZWFNrK0I5QkVBaSszcmE5cVdueU05UlhLSmhHL2NrbGMwUTB4ZmZ2RGcvZ3ZwS1ZJeWNvU0xBSXNSQUl2WmNrZitsVXYzSGovaytNL05HYmZrRVRFalg4WDhGdXhCdzlvSWdLM3lDM0wyOXU2UW5pSWxiUDlQZ3kxN2dTcXFDam82YTZXblFKb0lnSzJHRHJjSFF4Yjg5UzB2clV5ZXNPTWpUYVBjdi9QOHh2UWo2U2xTd2cwQjlyTGdGUVJyc3VXMzd2eTNzM092T1A0ekhiWmNCQnlJN3d4blcvQWthdndlQWJCU1hXTnBVMnVGOUJRcFlmMG5iUlBIcmxweDYxeHVOTnc3MkNJOUJkSkJBS3hreS81cmp2L2NpdWRQclRrOFk1VERRZTFFQU93VENQaUhEM2RJVDVFU2p2L2NJbHR1bis3YVUxOWNtaWM5QlRhTkFOaG4xOTRHVzM3WmJGbkZOdGJVeWVrbEd4NFI0dy80NDJOMnZDbkJ4d2lBZld4Wi8zbjJaTzdTRDNhc1lCaHJmdTdkK2RNM3BhZElpUzI3RXZBeEFtQVppejV3NC9oUFI1ejgybzVUTkxZM2xEVHR0R05qQWo0Z0FKYnB0MmZMSGVzL2p2aHU2c2FiK1hmU1U2U0Vpd0RyRUFETDJMTGQ0dTZ0WjdNekhQL3BnTVhGNWRPV1BDSm02SkFkTnlmaUEvNjJiRkpSVmREK3BSMjMzYlA5MzBHMlhFdmxGK1RzNjJ1U25nS2JRQUJzWXN2Qld4ei82YXdmdjcvejRya0ZqNGp4Y1Rpb2JRaUFUV3o1N2VMNFQyY2xWaE1UeCt3NEhIUnYzdzRyamlqSGV3VEFHaFk5ZklQMUg4ZU5XN0lLRk1vS0RoMXFsNTRDcVNJQTFyQmwrei9IZjJiQ3pOV0h2OXkxNUJFeGx2eWd3a2NBYkJIT3R1WUIzQnovbVNIamx0d1EwTkpXV1Z0ZklqMEZVa0lBN05BNzJKSWJ6WmFlSWlXMmJGbXhqa1gvWVcyNVdvWC9ENE4vbEo0QkFDQ0FLd0FBVUlvQUFJQlNCQUFBbENJQUFLQVVBUUFBcFFnQUFDaEZBQUJBS1FJQUFFb1JBQUJRaWdBQWdGSUVBQUNVSWdBQW9CUUJBQUNsQ0FBQUtFVUFBRUFwQWdBQVNoRUFBRkNLQUFDQVVnUUFBSlFpQUFDZ0ZBRUFBS1VJQUFBb1JRQUFRQ2tDQUFCS0VRQUFVSW9BQUlCU0JBQUFsQ0lBQUtBVUFRQUFwUWdBQUNoRkFBQkFLUUlBQUVvUkFBQlFpZ0FBZ0ZJRUFBQ1VJZ0FBb0JRQkFBQ2xDQUFBS0VVQUFFQXBBZ0FBU2hFQUFGQ0tBQUNBVWdRQUFKUWlBQUNnRkFFQUFLVUlBQUFvUlFBQVFDa0NBQUJLRVFBQVVJb0FBSUJTQkFBQWxDSUFBS0FVQVFBQXBRZ0FBQ2hGQUFCQUtRSUFBRW9SQUFCUWlnQUFnRklFQUFDVUlnQUFvQlFCQUFDbENBQUFLRVVBQUVBcEFnQUFTaEVBQUZDS0FBQ0FVZ1FBQUpRaUFBQ2dGQUVBQUtVSUFBQW9SUUFBUUNrQ0FBQktFUUFBVUlvQUFJQlNCQUFBbENJQUFLQVVBUUFBcFFnQUFDaEZBQUJBS1FJQUFFb1JBQUJRaWdBQWdGSUVBQUNVSWdBQW9CUUJBQUNsQ0FBQUtFVUFBRUFwQWdBQVNoRUFBRkNLQUFDQVVnUUFBSlFpQUFDZ0ZBRUFBS1VJQUFBb1JRQUFRQ2tDQUFCS0VRQUFVSW9BQUlCU0JBQUFsQ0lBQUtBVUFRQUFwUWdBQUNoRkFBQkFLUUlBQUVvUkFBQlFpZ0FBZ0ZJRUFBQ1VJZ0FBb0JRQkFBQ2xDQUFBS0VVQUFFQXBBZ0FBU2hFQUFGQ0tBQUNBVWdRQUFKUWlBQUNnRkFFQUFLVUlBQUFvUlFBQVFDa0NBQUJLRVFBQVVJb0FBSUJTQkFBQWxDSUFBS0FVQVFBQXBRZ0FBQ2hGQUFCQUtRSUFBRW9SQUFCUWlnQUFnRklFQUFDVUlnQUFvQlFCQUFDbENBQUFLRVVBQUVBcEFnQUFTaEVBQUZDS0FBQ0FVZ1FBQUpRaUFBQ2dGQUVBQUtVSUFBQW9SUUFBUUNrQ0FBQktFUUFBVUlvQUFJQlMvdzhuYVQrNXBEYlBZd0FBQUFCSlJVNUVya0pnZ2c9PSIsICJzaXplcyI6ICI1MTJ4NTEyIiwgInR5cGUiOiAiaW1hZ2UvcG5nIn1dfQ==" rel="manifest"/>
 <meta content="#4E3D8A" name="theme-color"/>
 <meta content="yes" name="mobile-web-app-capable"/>
@@ -434,10 +417,6 @@ body{font-family:var(--ui-font);background:var(--bg);color:var(--text-1);min-hei
 
 @media(max-width:900px){.rm-lp-coord-grid{grid-template-columns:1fr!important}}
 </style>
-<!-- Realtime pass: loads the Supabase client ONLY for postgres_changes subscriptions below.
-     Everything else in this app still uses the existing sbFetch()/raw-fetch REST calls,
-     unchanged — this is additive, not a rewrite. If this script fails to load (offline, CDN
-     blocked, etc.) the app is unaffected: the existing near-real-time polling still runs. -->
 <style>
 @media(max-width:700px){#rmTeamOperatingCard #rmTeamScorecard>div[style*="grid-template-columns:repeat(3"]{grid-template-columns:1fr!important}#rmTeamOperatingCard #rmTeamScorecard>div[style*="grid-template-columns:1fr 1fr"]{grid-template-columns:1fr!important}#rmTeamOperatingCard #rmTeamScorecard>div[style*="grid-template-columns:1.25fr"]{grid-template-columns:1fr!important}}
 </style>
@@ -445,7 +424,6 @@ body{font-family:var(--ui-font);background:var(--bg);color:var(--text-1);min-hei
 @media(max-width:900px){.v21-plan-grid{grid-template-columns:1fr!important}.v21-block-grid{grid-template-columns:1fr 1fr!important}}
 @media(max-width:560px){.v21-block-grid{grid-template-columns:1fr!important}}
 </style>
-<!-- v38: calmer Amanda Snapshot · visible schedule setup · daily Portfolio reminder | v35: visible Portfolio Control Center · RM/LP shared-source reconciliation · exact Partner Health parity · drill-down UI mounted | v34: Partner Health live in daily workflows · Skillset wording · clickable help/tips | v33: workflow guardrails · role-safe transaction completion · escalation-first · calm carry-forward -->
 <style>
 /* v38 — calmer Amanda Snapshot + visible morning setup */
 .amanda-calm-steps{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:10px 0 12px}
@@ -608,7 +586,6 @@ html,body,button,input,select,textarea{font-family:var(--rm-native-font)!importa
 /* Management data can be denser, but stays in the same purple/white visual family. */
 #view-daniel .card{border-radius:13px}
 </style>
-<!-- v111: Amanda visual refresh — lavender workspace, clearer readable typography, preserved smart-work logic + LP handoff fix. -->
 <style id="v109Styles">
 .v109-jump{font-size:10px;font-weight:750;color:var(--brand-dark);background:#fff;border:1px solid var(--border);border-radius:999px;padding:4px 8px;cursor:pointer;font-family:inherit}
 #v109NewMeetingPush .v109-meeting-grid{display:grid;grid-template-columns:180px 1fr;gap:12px;padding:12px}
@@ -1163,8 +1140,50 @@ label,.workflow-eyebrow,.learn-section-label,.rmx-section-label{font-weight:600!
 @media(max-width:900px){.v257-tier-cards{grid-template-columns:repeat(2,minmax(0,1fr))}.v257-roadmap{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:760px){.v254-scorecard-shell{padding:12px}.v254-scorecard-head h1{font-size:21px}#view-scorecard #amandaRmScorecardBody>div[style*="repeat(3"]{grid-template-columns:1fr!important}.v257-score-parts{grid-template-columns:1fr}.v257-tier-cards{grid-template-columns:1fr}.v257-roadmap{grid-template-columns:1fr}}
 </style>
-
-</head>
+<style id="aligned-v1-readable-type-system">
+/* Version 1 shared readability layer. Visual-only: no workflow/data selectors or behavior changes. */
+:root{
+  --aligned-ui-font:"Aptos","Segoe UI Variable Text","Segoe UI Variable","Segoe UI",system-ui,-apple-system,BlinkMacSystemFont,Arial,sans-serif;
+}
+html,body,button,input,select,textarea,p,span,div,a,label,strong,small,h1,h2,h3,h4,h5,h6,table,th,td{
+  font-family:var(--aligned-ui-font)!important;
+}
+body{
+  font-size:14px!important;
+  line-height:1.48!important;
+  letter-spacing:-.006em;
+  text-rendering:optimizeLegibility;
+  -webkit-font-smoothing:antialiased;
+  -moz-osx-font-smoothing:grayscale;
+}
+h1,h2,h3,h4,h5,h6{
+  font-weight:650!important;
+  letter-spacing:-.022em!important;
+  line-height:1.22!important;
+}
+button,.btn,[class*="btn"],a[role="button"]{
+  font-weight:600!important;
+  letter-spacing:-.008em!important;
+}
+input,select,textarea{
+  font-size:14px!important;
+  line-height:1.4!important;
+}
+small,.small,[class*="subtext"],[class*="helper"],[class*="meta"]{
+  line-height:1.42!important;
+}
+/* Keep compact navigation readable without the heavy/blocky look. */
+nav a,aside a,[class*="nav"] a,[class*="sidebar"] a{
+  font-weight:560!important;
+  letter-spacing:-.006em!important;
+}
+/* Section labels stay distinct but less shouty. */
+[class*="eyebrow"],[class*="kicker"],[class*="section-label"],[class*="nav-section"]{
+  letter-spacing:.045em!important;
+  font-weight:650!important;
+}
+</style>
+</meta></meta></head>
 <body>
 <input accept="image/*" id="v95ProfilePhotoInput" onchange="v95HandlePhotoUpload(event)" style="display:none" type="file"/>
 <style>
@@ -1200,7 +1219,7 @@ label,.workflow-eyebrow,.learn-section-label,.rmx-section-label{font-weight:600!
 <div class="header">
 <div class="brand-wrap">
 <span class="brand-chip">RM TRACKER</span>
-<span class="brand-sub">Daniel Sa Team</span>
+<span class="brand-sub">Daniel Sa Team · Version 1</span>
 </div>
 <div class="header-right">
 <span class="week-chip" id="weekPill"></span>
@@ -1211,6 +1230,8 @@ label,.workflow-eyebrow,.learn-section-label,.rmx-section-label{font-weight:600!
 <div class="nav-group-label">DAILY</div>
 <div class="tab active" data-tab="week" onclick="switchTab('week')" title="Amanda\'s daily home base"><span class="nav-num">01</span><span>Today</span></div>
 <div class="tab" data-tab="log" onclick="switchTab('log')" title="Record calls, texts, meetings and outcomes"><span class="nav-num">02</span><span>Log Activity</span></div>
+<div class="nav-group-label">WEEKLY WORKFLOW</div>
+<div class="tab rm-v1-tuesday-nav" data-tab="tuesday" onclick="switchTab('tuesday')" title="Listing-agent Tuesday updates from the shared Core Team active-file snapshot"><span class="nav-num">TUE</span><span>Tuesday Updates</span><span class="rm-v1-tue-badge" id="rmV1TuesdayBadge">…</span></div>
 <div class="nav-group-label">PERFORMANCE</div>
 <div class="tab scorecard-nav-tab" data-tab="scorecard" onclick="switchTab('scorecard')" title="Amanda’s WTD, MTD and YTD RM scorecard"><span class="nav-num">★</span><span>My Scorecard</span></div>
 <div class="nav-group-label">RELATIONSHIPS</div>
@@ -1248,13 +1269,11 @@ label,.workflow-eyebrow,.learn-section-label,.rmx-section-label{font-weight:600!
 </div>
 <button class="v95-photo-link v111-photo-link" onclick="v95ChoosePhoto('amanda')" type="button">Change photo</button>
 </div>
-<!-- DAILY QUOTE / DAD JOKE -->
 <div id="dailyQuoteCard" style="display:block;padding:14px 18px;border-radius:12px;background:linear-gradient(135deg,#4E3D8A,#7B6BAE);margin-bottom:12px">
 <div style="font-size:11px;font-weight:600;color:rgba(255,255,255,.6);text-transform:uppercase;letter-spacing:.8px;margin-bottom:6px">Today's reminder</div>
 <div id="quoteText" style="font-size:14px;font-weight:500;color:#fff;line-height:1.5;font-style:italic"></div>
 <div id="quoteAuthor" style="font-size:11px;color:rgba(255,255,255,.65);margin-top:6px"></div>
 </div>
-<!-- START HERE -->
 <div class="card" id="startHereOuterCard" style="display:none;background:linear-gradient(135deg,#EEEBF8,#DDD8F0);border:1px solid #C8C0E0">
 <div style="display:flex;justify-content:space-between;align-items:center">
 <div>
@@ -1265,7 +1284,6 @@ label,.workflow-eyebrow,.learn-section-label,.rmx-section-label{font-weight:600!
 </div>
 <div id="startHereCard"><div class="no-data">Loading...</div></div>
 </div>
-<!-- WEEKLY BACKLOG PLAN — turns inventory into a realistic Mon–Fri execution list -->
 <div class="card" id="snapshotScorecardCard"><div style="font-size:10px;font-weight:850;letter-spacing:.45px;color:var(--brand-dark);text-transform:uppercase;margin-bottom:7px">TODAY AT A GLANCE</div>
 <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
 <div>
@@ -1478,7 +1496,6 @@ label,.workflow-eyebrow,.learn-section-label,.rmx-section-label{font-weight:600!
 <div id="quickLogWordCount" style="font-size:10px;color:var(--text-4);margin-top:3px"></div>
 <div id="quickLogDoubleDialWarn" style="display:none;font-size:11px;color:var(--warning);margin-top:4px;font-weight:600"></div>
 </div>
-<!-- Dedicated CTC workflow — keeps transaction details, both agent contacts, feedback, and WhatsApp copy together -->
 <div id="ctcWorkflowPanel" style="display:none;margin-top:10px;border:2px solid #8D78C5;border-radius:14px;padding:15px;background:#FBFAFE;box-shadow:0 5px 18px rgba(78,61,138,.10)">
 <div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start;flex-wrap:wrap;margin-bottom:10px;padding-bottom:10px;border-bottom:1px solid #DDD6EF">
 <div>
@@ -1597,11 +1614,10 @@ label,.workflow-eyebrow,.learn-section-label,.rmx-section-label{font-weight:600!
 <div><span class="card-title">New Realtor Meeting Conversion · Weeks 1–4</span> <span class="card-sub" id="onboardingSub"></span></div>
 </div>
 <div style="background:var(--surface-2);border-radius:var(--radius-sm);padding:9px 12px;margin-bottom:12px;font-size:12px;line-height:1.4;color:var(--text-2)">
-<strong>This is required conversion work, not maintenance.</strong> Every New Realtor Meeting starts a 4-week conversion plan with one intentional follow-up each week. All four touches are required and must be logged.
+<strong>This is required conversion work, not maintenance.</strong> Every New Realtor Meeting starts a 4-week conversion plan with one intentional follow-up each week. Complete and log all four touches.
     </div>
 <div id="onboardingList" style="max-height:320px;overflow-y:auto"></div>
 </div>
-<!-- Falling off / reactivation — one place for prevention + win-back -->
 <div class="card" id="dropoffCard" style="display:none;border:1px solid #D7C9A8">
 <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap;margin-bottom:8px">
 <div>
@@ -1612,34 +1628,25 @@ label,.workflow-eyebrow,.learn-section-label,.rmx-section-label{font-weight:600!
 </div>
 <div id="dropoffList" style="max-height:390px;overflow-y:auto"></div>
 </div>
-<!-- Zero production — retained agents who've never actually closed. Different problem than
-       "gone quiet": these are relationships that exist but never converted. Prioritized by who's
-       actually receiving leads but not closing them — that's the most fixable subset. -->
 <div class="card" id="zeroProductionCard" style="display:none;border:1px solid var(--border-danger)">
 <div class="card-title" style="margin-bottom:4px">🎯 Never Converted — Zero Closes</div>
 <div style="font-size:11px;color:var(--text-4);margin-bottom:12px">Retained relationships with zero closes in the past year. Sorted by who's actually getting leads sent to them but not converting — that's the most fixable group, work those first.</div>
 <div id="zeroProductionList" style="max-height:300px;overflow-y:auto"></div>
 </div>
-<!-- Contact info gaps — missing data isn't just a data-quality problem, it's a legitimate reason to reach out -->
 <div class="card" id="contactDataCard" style="display:none;border:1px solid #FFE69C">
 <div class="card-title" style="margin-bottom:4px">📇 Contact Info Needs Updating</div>
 <div style="font-size:11px;color:var(--text-4);margin-bottom:12px">Missing phone, email, address, or birthday on an active agent. Address matters for gifts and mail, birthday for outreach timing — and honestly, "just confirming your info is current" is a perfectly good reason to call.</div>
 <div id="contactDataList" style="max-height:300px;overflow-y:auto"></div>
 </div>
-<!-- Legacy radar/risk visibility retained, but intentionally secondary to the locked daily queue -->
 <div class="week-bottom">
 <div class="card" id="onYourRadarCard">
 <div class="card-title" style="margin-bottom:4px">On Your Radar</div>
 <div style="font-size:11px;color:var(--text-4);margin-bottom:12px">Items with an explicit action attached: a follow-up date you set, an upcoming next step, or a recent close not yet thanked with a CTC call. This does not check Encompass — check Encompass separately for files currently at CTC.</div>
-<!-- Each trigger below gets its own bounded, visually separated box so this card reads as
-           distinct sections instead of one continuous scrolling wall -->
 <div id="weekCtcTrigger" style="max-height:220px;overflow-y:auto;margin-top:10px"></div>
 <div id="buddyAskTrigger" style="margin-top:10px"></div>
 <div id="deadEndTrigger" style="max-height:260px;overflow-y:auto;margin-top:10px"></div>
-<!-- Follow-ups due -->
 <div id="followupsSectionLabel" style="display:none;font-size:11px;font-weight:700;color:var(--text-3);text-transform:uppercase;letter-spacing:.4px;margin:10px 0 6px;padding-top:8px;border-top:1px solid var(--border-light)">📅 Follow-ups you scheduled</div>
 <div id="weekFollowups" style="max-height:280px;overflow-y:auto"></div>
-<!-- Birthdays -->
 <div id="bdayAlertList" style="margin-top:8px"></div>
 </div>
 <div class="card" id="atRiskCard">
@@ -1650,14 +1657,15 @@ label,.workflow-eyebrow,.learn-section-label,.rmx-section-label{font-weight:600!
 </div>
 </div>
 </details>
-<!-- AMANDA QUICK LOG -->
-<!-- SNAPSHOT SCORECARD -->
-<!-- Today's scorecard -->
-<!-- v104: Amanda Today reordered into a clear workday flow: glance → schedule → highest-value work → LP/Face Time → quick log → optional maintenance. -->
-<!-- LP flags belong to the RM workflow: LPs create the signal in the LP tracker; RM owns the response here. -->
-<!-- Attention items — 2 col -->
 </div>
 <div class="view" id="view-daniel"></div>
+<div class="view" id="view-tuesday">
+<div class="rm-v1-tuesday-page-head">
+<div><div class="rm-v1-tuesday-kicker">TUESDAY UPDATES</div><div class="rm-v1-tuesday-page-title">Listing-agent updates</div><div class="rm-v1-tuesday-page-sub">This is the same Tuesday relationship-work card from Today, focused into its own work tab. Active-file data comes from the single Encompass upload in the Core Team tracker.</div></div>
+<div class="rm-v1-source-pill" id="rmV1TuesdaySource">Core Team shared source</div>
+</div>
+<div id="rm-v1-tuesday-host"><div class="card" style="padding:18px;color:var(--text-3);font-size:12px">Loading Tuesday listing-agent work…</div></div>
+</div>
 <div class="view" id="view-scorecard">
 <div class="v254-scorecard-shell">
 <div class="v254-scorecard-head">
@@ -1942,7 +1950,6 @@ label,.workflow-eyebrow,.learn-section-label,.rmx-section-label{font-weight:600!
 </div>
 </div>
 <div class="view" id="view-reconnect">
-<!-- Clean header - no upload zone visible to the RM -->
 <div class="card">
 <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
 <div>
@@ -1962,13 +1969,11 @@ label,.workflow-eyebrow,.learn-section-label,.rmx-section-label{font-weight:600!
 <div style="display:flex;justify-content:space-between;gap:10px;align-items:center;margin-bottom:10px"><div><div class="card-title" style="margin-bottom:2px">RM Nurture</div><div style="font-size:11px;color:var(--text-3)">Agents intentionally paused from LP recurring outreach. They stay in the relationship book and come back here for the RM check-in date you chose.</div></div><button class="btn-sm" onclick="loadRmNurtureQueue()">Refresh</button></div>
 <div id="rmNurtureList"><div class="no-data">Loading...</div></div>
 </div>
-<!-- Outreach tip -->
 <div class="card" style="background:var(--surface-2);padding:10px 16px;margin-bottom:0">
 <div style="font-size:12.5px;color:var(--text-2);margin-bottom:6px">Before you dial — pull up <button onclick="openScriptsModal()" style="background:none;border:none;color:var(--brand);font-weight:600;cursor:pointer;font-family:inherit;font-size:12.5px;padding:0" title="Open scripts, objections, transaction-call talk tracks, and practice tips">Scripts + Training</button> for the reconnect opener. These are existing relationships, so this is reactivation outreach, not a cold call.</div>
 <div style="font-size:11.5px;color:var(--text-3);margin-bottom:4px">Work top to bottom. Add prospects from your admin call list, then dial in order. Mark DNC or Remove anyone not worth calling again so the list stays clean.</div>
 <div style="font-size:11.5px;color:var(--brand);font-weight:600">Before each call: look them up on RETR. A recent sale mention turns a cold call into a warm one.</div>
 </div>
-<!-- Filters -->
 <div class="card" id="rcFiltersCard" style="display:none">
 <div class="rc-filters">
 <select id="rcGradeFilter" onchange="renderReconnect()">
@@ -2014,7 +2019,7 @@ label,.workflow-eyebrow,.learn-section-label,.rmx-section-label{font-weight:600!
 <button onclick="rcClearSelection()" style="font-size:11px;padding:5px 10px;background:none;color:var(--text-3);border:none;cursor:pointer;font-family:inherit">Clear</button>
 </div>
 <div id="rcRecentUndo" style="display:none;margin-top:10px"></div>
-<div id="rcList" style="max-height:500px;overflow-y:auto;border-top:0.5px solid var(--border);margin-top:12px"><div class="no-data">Reconnect data will appear after the Core Team / LP Tracker Power BI sync.</div></div>
+<div id="rcList" style="max-height:500px;overflow-y:auto;border-top:0.5px solid var(--border);margin-top:12px"><div class="no-data">Sync Power BI in the Core Team / LP Tracker to load reconnect data.</div></div>
 </div>
 </div>
 <div class="view" id="view-history">
@@ -2052,7 +2057,7 @@ label,.workflow-eyebrow,.learn-section-label,.rmx-section-label{font-weight:600!
 <div class="field"><label>Brokerage <span class="v261-optional">optional</span></label><input id="np-brokerage" placeholder="Company / Brokerage" type="text"/></div>
 <div class="field"><label>Email <span class="v261-optional">optional</span></label><input id="np-email" placeholder="Email address" type="email"/></div>
 </div>
-<details id="npMoreDetails" class="v261-prospect-more">
+<details class="v261-prospect-more" id="npMoreDetails">
 <summary>More details / change call-list status</summary>
 <div class="form-row" style="margin-top:10px">
 <div class="field"><label>Status</label><select id="np-status"><option value="Requires follow-up">Active prospect</option><option value="Excluded">Not a prospect / exclude from call list</option><option value="DNC">Do Not Contact</option><option value="NFM">Already with NFM Team</option></select></div>
@@ -2195,7 +2200,6 @@ label,.workflow-eyebrow,.learn-section-label,.rmx-section-label{font-weight:600!
 </div>
 <div id="growthMovementPanel"><div class="no-data">Loading...</div></div>
 </div>
-<!-- Add Agent Modal -->
 <div class="modal-overlay" id="addAgentModal">
 <div class="modal-box">
 <div class="modal-header"><span class="modal-title">Add relationship</span><button class="modal-close" onclick="closeAddAgentModal()">×</button></div>
@@ -2446,13 +2450,13 @@ A real live conversation with an Amanda-owned active partner triggers Portfolio 
 </div>
 <div id="wp37CheckinAgent" style="font-size:14px;font-weight:800;color:var(--brand-dark);margin-bottom:10px"></div>
 <div style="background:var(--brand-light);border:1px solid #D8D1EE;border-radius:9px;padding:10px 12px;margin-bottom:12px;font-size:11.5px;color:var(--text-2);line-height:1.5">
-<strong>RM PLAYBOOK · COVER THESE ON THE CONVERSATION.</strong><br>
-      1. Business: “What are you focused on right now / what’s coming up?”<br>
-      2. Support: “Anything making business harder or anything we could do better?”<br>
-      3. Opportunity / leakage: “Are we getting most of your lending opportunities, or are some going elsewhere?”<br/>
-      4. Growth + next move: “What’s the best next move for us to help you?”<br/>
-<span style="display:inline-block;margin-top:6px;color:var(--text-3)"><strong>If something genuinely did not come up, choose “Not discussed today.”</strong> Do not guess or force the question. Existing portfolio information will be preserved.</span>
-</br></br></br></div>
+<strong>RM PLAYBOOK · COVER THESE ON THE CONVERSATION.</strong><br/>
+      1. Business: “What are you focused on right now / what’s coming up?”<br/>
+      2. Support: “Anything making business harder or anything we could do better?”<br/>
+      3. Opportunity / leakage: “Are we getting most of your lending opportunities, or are some going elsewhere?”<br>
+      4. Growth + next move: “What’s the best next move for us to help you?”<br>
+<span style="display:inline-block;margin-top:6px;color:var(--text-3)"><strong>If something genuinely did not come up, choose “Not discussed today.”</strong> Do not guess or force the question. The tracker keeps existing portfolio information.</span>
+</br></br></div>
 <div class="field"><label>1. What are they focused on / what’s happening in their business? <span style="color:var(--danger)">*</span></label><div class="wp39-choice-row"><button onclick="wp39SetChoice('wp37Goals','More buyers / active buyers')" type="button">More buyers</button><button onclick="wp39SetChoice('wp37Goals','More listings / listing growth')" type="button">More listings</button><button onclick="wp39SetChoice('wp37Goals','Pipeline is busy / growing')" type="button">Busy / growing</button><button onclick="wp39SetChoice('wp37Goals','Pipeline is steady')" type="button">Steady</button><button onclick="wp39SetChoice('wp37Goals','Business is slower right now')" type="button">Slower</button><button onclick="wp39SetChoice('wp37Goals','Building business / prospecting')" type="button">Building business</button><button onclick="wp39SetChoice('wp37Goals','Not discussed today')" type="button">Not discussed today</button></div><textarea id="wp37Goals" placeholder="Tap a choice above, then add a detail only if useful." rows="2"></textarea></div>
 <div class="field"><label>2. What do they need from us / what pain point did you uncover? <span style="color:var(--danger)">*</span></label><div class="wp39-choice-row"><button onclick="wp39SetChoice('wp37Pain','No issue raised — relationship feels supported')" type="button">No issue</button><button onclick="wp39SetChoice('wp37Pain','Needs payment / financing options for a listing')" type="button">Listing help</button><button onclick="wp39SetChoice('wp37Pain','Needs faster or clearer communication')" type="button">Communication</button><button onclick="wp39SetChoice('wp37Pain','Needs help converting buyers / pre-approvals')" type="button">Buyer conversion</button><button onclick="wp39SetChoice('wp37Pain','Needs marketing / co-marketing support')" type="button">Marketing</button><button onclick="wp39SetChoice('wp37Pain','Transaction or service concern needs follow-up')" type="button">Service concern</button><button onclick="wp39SetChoice('wp37Pain','Not discussed today')" type="button">Not discussed today</button></div><textarea id="wp37Pain" placeholder="Choose the closest answer; add specifics only when needed." rows="2"></textarea></div>
 <div class="field"><label>3. Are opportunities going to another lender? <span style="color:var(--danger)">*</span></label>
@@ -2529,7 +2533,7 @@ A real live conversation with an Amanda-owned active partner triggers Portfolio 
 <tr><td style="padding:5px 8px 5px 0;font-weight:600;white-space:nowrap;vertical-align:top">Agent Appreciation <span style="color:var(--brand);font-weight:400">counts as Talk-to</span></td><td style="padding:5px 0;color:var(--text-2)">Recognizing a top producer or celebrating a milestone.</td></tr>
 <tr><td style="padding:5px 8px 5px 0;font-weight:600;white-space:nowrap;vertical-align:top">Market Update <span style="color:var(--brand);font-weight:400">counts as Talk-to</span></td><td style="padding:5px 0;color:var(--text-2)">Sharing what's happening in the market: inventory, days on market, buyer demand, listing trends. This isn't financing or rates; that stays with the LP team.</td></tr>
 <tr><td style="padding:5px 8px 5px 0;font-weight:600;white-space:nowrap;vertical-align:top">Break Breads <span style="color:var(--brand);font-weight:400">note required, 10+ words</span></td><td style="padding:5px 0;color:var(--text-2)">More than a meal: sitting down with the agent to get real feedback and confirm the relationship is genuinely solid. Its own goal (5/week), separate from Talk-to's. To figure out who's due, check the Break Bread Due List on Snapshot (or the Face Time Tracker on the LP tracker), it shows last touch date per agent across both you and the LPs. Consider bringing the assigned LP along when it makes sense.</td></tr>
-<tr><td style="padding:5px 8px 5px 0;font-weight:600;white-space:nowrap;vertical-align:top">Realtor Buddy Referral Ask</td><td style="padding:5px 0;color:var(--text-2)">Ask an existing happy agent to introduce you to someone else they know. Log the ask when you make it; do not create a follow-up obligation for that agent. Outcome goal: 3 actual buddy introductions received per week. When an intro arrives, use “Buddy intro received” so the result is tracked separately from the ask.</td></tr>
+<tr><td style="padding:5px 8px 5px 0;font-weight:600;white-space:nowrap;vertical-align:top">Realtor Buddy Referral Ask</td><td style="padding:5px 0;color:var(--text-2)">Ask an existing happy agent to introduce you to someone else they know. Log the ask when you make it; do not create a follow-up obligation for that agent. Outcome goal: 3 actual buddy introductions received per week. When an intro arrives, use “Buddy intro received” so the tracker records the result separately from the ask.</td></tr>
 <tr><td style="padding:5px 8px 5px 0;font-weight:600;white-space:nowrap;vertical-align:top">Co-hosted Event</td><td style="padding:5px 0;color:var(--text-2)">Hosting something together with the agent.</td></tr>
 <tr><td style="padding:5px 8px 5px 0;font-weight:600;white-space:nowrap;vertical-align:top">Team / Office Presentation</td><td style="padding:5px 0;color:var(--text-2)">A presentation or relationship meeting with a Realtor team, brokerage, builder office, or partner group. Count the event once as one partner meeting regardless of how many people attend; it does not count as multiple New Realtor Meetings.</td></tr>
 </table>
@@ -2751,7 +2755,7 @@ A real live conversation with an Amanda-owned active partner triggers Portfolio 
 <ol>
 <li><strong>Check Power BI / Active Agent Search first.</strong> If the listing agent already works with an NFM loan officer, protect that relationship. Represent NFM well and do not pursue them as a new retained relationship.</li>
 <li>Have the buyer name, subject property, buyer agent and listing agent contact information in front of you.</li>
-<li>If there is a transaction coordinator, ask who should be kept informed. Do not add extra file data to the tracker just to store it.</li>
+<li>If there is a transaction coordinator, ask who needs updates. Do not add extra file data to the tracker just to store it.</li>
 </ol>
 <h4>NEW CONTRACT · BUYER AGENT</h4>
 <div class="rm-script-say">“Hi [Agent], it’s Amanda with the Daniel Sa Team. Congratulations on getting [Buyer] under contract on [Property]. I wanted to reach out personally, make sure you know who to call on our side, and see if there is anything you want us watching closely as we move through the file.”</div>
@@ -2766,7 +2770,7 @@ A real live conversation with an Amanda-owned active partner triggers Portfolio 
 <li>Which milestones do you specifically want a direct update on?</li>
 <li>Is there anything you are concerned about or want us watching closely?</li>
 <li>Is this a simultaneous closing for your seller?</li>
-<li>Who else on your team should be kept informed?</li>
+<li>Who else on your team needs updates?</li>
 </ol>
 <h4>SET THE STANDARD</h4>
 <div class="rm-script-say">“Our goal is simple: close on time, communicate proactively, and make sure there are no surprises. If we miss something, I want you to tell me. If we deliver, I’m going to ask for a few minutes of your time because I’d love the opportunity to earn more business together.”</div>
@@ -2800,7 +2804,7 @@ A real live conversation with an Amanda-owned active partner triggers Portfolio 
 <h4>ASK FOR A REALTOR INTRODUCTION</h4>
 <div class="rm-script-say">“Who are 2 or 3 agents you respect that you think I should meet?”</div>
 <h4>DONE =</h4>
-<p><strong>The opportunity or introduction is made OR the next follow-up is scheduled and logged.</strong></p>
+<p><strong>Make the opportunity or introduction OR schedule and log the next follow-up.</strong></p>
 </div>
 </details>
 <button class="btn-sm" onclick="closeScriptsModal()" style="margin-top:8px">Close</button>
@@ -2850,8 +2854,8 @@ A real live conversation with an Amanda-owned active partner triggers Portfolio 
 </table>
 <div style="font-size:12px;font-weight:700;color:var(--brand);text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px">Conditions — what they mean</div>
 <table style="width:100%;border-collapse:collapse;font-size:12.5px;margin-bottom:16px">
-<tr style="border-bottom:1px solid var(--border-light)"><td style="padding:6px 10px 6px 0;font-weight:600;white-space:nowrap;vertical-align:top">Prior to Docs</td><td style="padding:6px 0;color:var(--text-2)">Must be satisfied before closing docs can be sent. File cannot move forward until these are cleared.</td></tr>
-<tr><td style="padding:6px 10px 6px 0;font-weight:600;white-space:nowrap;vertical-align:top">Prior to Funding</td><td style="padding:6px 0;color:var(--text-2)">Must be cleared before funds are released. Closing can happen but money doesn't move until these are done.</td></tr>
+<tr style="border-bottom:1px solid var(--border-light)"><td style="padding:6px 10px 6px 0;font-weight:600;white-space:nowrap;vertical-align:top">Prior to Docs</td><td style="padding:6px 0;color:var(--text-2)">Clear these before sending closing docs. The file cannot move forward until you clear them.</td></tr>
+<tr><td style="padding:6px 10px 6px 0;font-weight:600;white-space:nowrap;vertical-align:top">Prior to Funding</td><td style="padding:6px 0;color:var(--text-2)">Clear these before releasing funds. Closing can happen, but funds do not move until you finish them.</td></tr>
 </table>
 <div style="font-size:12px;font-weight:700;color:var(--brand);text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px">Rate lock</div>
 <div style="font-size:12.5px;color:var(--text-2);margin-bottom:16px">Find the lock status and expiration date in the loan file under Rate Lock or Pricing. If a lock is expiring soon and the file isn't close to closing, flag it to the LP. Rate conversations stay with the LP team.</div>
@@ -4584,7 +4588,7 @@ async function loadStartHere(){
     }else if(coldCallsToday<coldCallGoal){
       focusLine="☎️ Cold calls: "+coldCallsToday+"/"+coldCallGoal+" so far today — "+(coldCallGoal-coldCallsToday)+" to go.";
     }else{
-      focusLine="✅ Nothing urgent right now — you're caught up.";
+      focusLine="✅ No urgent work. Move to the next priority.";
     }
     const focusHtml='<div style="background:linear-gradient(135deg,#2D2456,#4E3D8A);border-radius:8px;padding:12px 14px;margin-bottom:10px">'
       +'<div style="font-size:10px;font-weight:700;color:rgba(255,255,255,.6);text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px">Amanda — do this first</div>'
@@ -4831,7 +4835,7 @@ async function loadFlagged(){
     const flagCard=document.getElementById("lpFlagInboxCard");
     if(!flagged.length){
       if(flagCard)flagCard.style.display="none";
-      document.getElementById("weekFlagged").innerHTML='<div class="no-data" style="padding:14px">No open LP flags — you are caught up.</div>';
+      document.getElementById("weekFlagged").innerHTML='<div class="no-data" style="padding:14px">No open LP flags.</div>';
       return;
     }
     if(flagCard)flagCard.style.display="block";
@@ -6194,7 +6198,7 @@ async function loadOnboarding(){
     if(!count){document.getElementById("onboardingCard").style.display="none";return;}
     document.getElementById("onboardingCard").style.display="block";
     document.getElementById("onboardingSub").textContent=count+" agent"+(count!==1?"s":"")+" this cycle"+(outstanding>0?" · "+outstanding+" outstanding":" · all done ✓");
-    document.getElementById("onboardingList").innerHTML=html||'<div class="no-data">All caught up!</div>';
+    document.getElementById("onboardingList").innerHTML=html||'<div class="no-data">No open follow-ups.</div>';
   }catch(e){console.error("Onboarding error:",e);}
 }
 
@@ -6746,9 +6750,9 @@ async function logActivity(){
     return;
   }
 
-  // VALIDATION: Date required when outcome = "Meeting Scheduled" so the scheduled meeting is tracked
+  // VALIDATION: Date required when outcome = "Meeting Scheduled" so the tracker records the scheduled meeting
   if(outcome==="Meeting Scheduled"&&!followupDate){
-    toast("Add the date it’s scheduled for so the meeting is tracked.","error");
+    toast("Add the date it’s scheduled for so the tracker records the meeting.","error");
     return;
   }
   
@@ -7877,7 +7881,7 @@ async function ccSave(){
     }
   }catch(e){}
   if(countWords(notes)<1){toast("Add a note before saving — e.g. left VM, texted, double-dialed.","error");return;}
-  if(outcome==="Meeting Scheduled"&&!scheduledDate){toast("Add the date it’s scheduled for so the meeting is tracked.","error");return;}
+  if(outcome==="Meeting Scheduled"&&!scheduledDate){toast("Add the date it’s scheduled for so the tracker records the meeting.","error");return;}
   const methodEmoji={Call:"☎️","Call + Text":"☎️📱",Text:"📱"}[contactMethod]||"☎️";
   notes=methodEmoji+" "+notes;
   if(referredBy)notes="🌾 Referred by: "+referredBy+" — "+notes;
@@ -8586,7 +8590,7 @@ async function quickLogSave(){
   if(NOTES_MANDATORY_NO_MIN.indexOf(actType)>=0&&countWords(notes)<1){toast(actType+" needs a brief note before saving.","error");return;}
   const followupDate=document.getElementById("quickLogFollowupDate")?document.getElementById("quickLogFollowupDate").value:"";
   if(outcome==="Requires follow-up"&&!followupDate){toast("Set a real follow-up date — not a junk-drawer.","error");return;}
-  if(outcome==="Meeting Scheduled"&&!followupDate){toast("Add the date it’s scheduled for so the meeting is tracked.","error");return;}
+  if(outcome==="Meeting Scheduled"&&!followupDate){toast("Add the date it’s scheduled for so the tracker records the meeting.","error");return;}
   // Legacy Quick Log is intentionally quick: it never opens Portfolio Execution.
   // Meaningful relationship conversations must be logged through the unified Log Touch modal.
 const methodEmoji={Call:"☎️",Text:"📱",Email:"✉️"}[contactMethod]||"☎️";
@@ -8783,10 +8787,10 @@ async function loadReconnect(){
     rcData=rows.filter(r=>!isReconnectInternalLoExclusion(r.agent_name)&&!rcStrategicRosterNames.has((r.agent_name||"").trim().toLowerCase()));
 
     if(!rows.length){
-      meta.textContent="No agents loaded yet — list will appear after Power BI sync";
+      meta.textContent="Sync Power BI to load the agent list";
       document.getElementById("rcSummary").style.display="none";
       document.getElementById("rcFiltersCard").style.display="none";
-      document.getElementById("rcList").innerHTML='<div class="no-data" style="padding:24px;text-align:center"><div style="font-size:32px;margin-bottom:8px">🔁</div><div style="font-weight:500;color:#9585C0;margin-bottom:4px">Reconnect list is empty</div><div style="font-size:12px;color:#aaa">Agents who have gone quiet will appear here once the list is synced.</div></div>';
+      document.getElementById("rcList").innerHTML='<div class="no-data" style="padding:24px;text-align:center"><div style="font-size:32px;margin-bottom:8px">🔁</div><div style="font-weight:500;color:#9585C0;margin-bottom:4px">Reconnect list is empty</div><div style="font-size:12px;color:#aaa">Sync the list to load agents who have gone quiet.</div></div>';
       return;
     }
 
@@ -9351,14 +9355,14 @@ let deletingId=null,deletingType=null;
 function openConfirm(id,agent,type){
   deletingId=id;deletingType="activity";
   document.getElementById("confirmTitle").textContent="Delete this activity?";
-  document.getElementById("confirmSub").textContent='"'+agent+" — "+type+'" will be gone forever.';
+  document.getElementById("confirmSub").textContent='"'+agent+" — "+type+'" will be deleted permanently.';
   document.getElementById("confirmModal").classList.add("open");
 }
 function openConfirmProspect(id,nameOrBtn){
   const name=typeof nameOrBtn==="string"?nameOrBtn:(nameOrBtn&&nameOrBtn.dataset?nameOrBtn.dataset.name:String(id));
   deletingId=id;deletingType="prospect";
   document.getElementById("confirmTitle").textContent="Delete this prospect?";
-  document.getElementById("confirmSub").textContent=name+" will be permanently removed.";
+  document.getElementById("confirmSub").textContent=name+" will be removed permanently.";
   document.getElementById("confirmModal").classList.add("open");
 }
 function closeConfirm(){document.getElementById("confirmModal").classList.remove("open");deletingId=null;deletingType=null;}
@@ -11000,7 +11004,7 @@ async function deleteAgent(){
   const name=editingContactOriginalName||editingContactName;
   const displayLabel=document.getElementById("contactModalName").textContent||name;
   if(!name)return;
-  if(!confirm("Remove "+displayLabel+" from BOTH the RM Tracker and Core Team Tracker? They will disappear from active rosters, assignments, daily queues, reconnect/prospecting and future follow-ups. Historical activity will be preserved."))return;
+  if(!confirm("Remove "+displayLabel+" from BOTH the RM Tracker and Core Team Tracker? They will disappear from active rosters, assignments, daily queues, reconnect/prospecting and future follow-ups. The tracker keeps historical activity."))return;
   const btn=document.getElementById("deleteAgentBtn");
   if(btn){if(btn.disabled)return;btn.disabled=true;btn.textContent="Removing...";}
   try{
@@ -12465,7 +12469,7 @@ function wp18RenderOwner(hostId,paceId,items,data,owner,quota){
   else html+='<div style="font-size:10px;color:#557565;margin-bottom:8px">🔒 Weekly assignments synced in Supabase · one agent can belong to only one of you this week.</div>';
   if(prior.length)html+='<div style="background:#FFF8E8;border:1px solid #E7C98A;border-radius:9px;padding:9px 11px;margin-bottom:10px"><div style="font-size:11px;font-weight:800;color:#8A5D00;margin-bottom:5px">Carryover from earlier this week · '+prior.length+'</div>'+prior.map(x=>wp18AgentRow(x,data,true)).join("")+'</div>';
   const bg=owner==="Nyny"?'#EFF8F3':'var(--brand-light)',bd=owner==="Nyny"?'#B8D8C7':'#C8C0E0',fg=owner==="Nyny"?'#245B43':'var(--brand-dark)';
-  html+='<div style="background:'+bg+';border:1px solid '+bd+';border-radius:9px;padding:9px 11px"><div style="display:flex;justify-content:space-between;gap:8px;align-items:center;margin-bottom:5px"><div style="font-size:12px;font-weight:800;color:'+fg+'">TODAY · '+wpDayLabel(i)+'</div><div style="font-size:10px;color:var(--text-3)">'+todayList.length+' assigned · max '+quota+'</div></div>'+(todayList.length?todayList.map(x=>wp18AgentRow(x,data,false)).join(""):'<div style="font-size:11px;color:var(--text-3);padding:7px 0">No new assigned agents today'+(owner==="Nyny"?'. Protect your Director time.':'. Work any carryover above first.')+'</div>')+'</div>';
+  html+='<div style="background:'+bg+';border:1px solid '+bd+';border-radius:9px;padding:9px 11px"><div style="display:flex;justify-content:space-between;gap:8px;align-items:center;margin-bottom:5px"><div style="font-size:12px;font-weight:800;color:'+fg+'">TODAY · '+wpDayLabel(i)+'</div><div style="font-size:10px;color:var(--text-3)">'+todayList.length+' assigned · max '+quota+'</div></div>'+(todayList.length?todayList.map(x=>wp18AgentRow(x,data,false)).join(""):'<div style="font-size:11px;color:var(--text-3);padding:7px 0">Today’s plan adds no new agents'+(owner==="Nyny"?'. Protect your Director time.':'. Work any carryover above first.')+'</div>')+'</div>';
   html+='<details style="margin-top:9px"><summary style="cursor:pointer;font-size:11px;font-weight:700;color:var(--text-2);padding:5px 0">See the full Monday–Friday assignment map</summary><div style="display:grid;grid-template-columns:repeat(5,minmax(145px,1fr));gap:7px;overflow-x:auto;margin-top:6px">'+days.map((list,di)=>'<div style="min-width:145px;border:1px solid '+(di===i?bd:'var(--border-light)')+';border-radius:8px;padding:8px;background:#fff"><div style="font-size:10.5px;font-weight:800;color:'+(di===i?fg:'var(--text-2)')+';margin-bottom:4px">'+wpDayLabel(di)+'</div>'+list.map(x=>'<div style="font-size:10.5px;padding:4px 0;border-bottom:1px solid var(--border-light);color:'+(wp18Worked(x,data)?'var(--success)':'var(--text-2)')+'">'+(wp18Worked(x,data)?'✓ ':'')+escHtml(resolvedDisplayName(x.name))+'</div>').join("")+'</div>').join("")+'</div></details>';
   host.innerHTML=html;
 }
@@ -12689,7 +12693,7 @@ function v109RenderNewMeetingPush(planned,date,monthActs){
   host.innerHTML='<div style="padding:9px 12px;background:#EFF7F1;border-bottom:1px solid #CFE1D3;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap"><div><div style="font-size:11px;font-weight:850;color:#2F6847;text-transform:uppercase;letter-spacing:.35px">Team new-meeting goal · '+teamNew+' / '+target+'</div><div style="font-size:10px;color:#567062;margin-top:2px">We need '+remaining+' more this month. Today’s working target: <strong>'+daily+' meeting'+(daily!==1?'s':'')+' on the calendar</strong>. Protect the warm opportunities above, then work the best new names below. Every positive conversation gets a direct meeting ask; if there is a buyer opportunity, ask for the introduction and log the new lead.</div></div><span style="font-size:10px;font-weight:800;color:#2F6847;background:#fff;border:1px solid #CFE1D3;border-radius:999px;padding:5px 8px">'+pct+'% to goal</span></div><div class="v109-meeting-grid"><div class="v109-pace"><div class="v109-big">'+remaining+'</div><div style="font-size:10px;font-weight:800;color:#355F45;margin-top:3px">MORE NEEDED</div><div style="height:6px;background:#E3ECE5;border-radius:99px;overflow:hidden;margin:9px 0 7px"><i style="display:block;height:100%;width:'+pct+'%;background:#5E8A6A"></i></div><div style="font-size:9.8px;color:#657268;line-height:1.45">'+days+' weekday'+(days!==1?'s':'')+' left in the month · pace ≈ '+(remaining?(remaining/days).toFixed(1):'0')+' per workday.</div></div><div><div style="font-size:10px;font-weight:800;color:#355F45;margin-bottom:2px">BEST NEW NAMES FOR TODAY</div><div style="font-size:9.8px;color:#6A766D;margin-bottom:3px">These are the cold/new names after the warmer meeting paths above. Start at the top.</div>'+rows+'</div></div>';
 }
 function v109RenderAmandaTasks(planned,date,stats){
-  const list=planned||[]; if(!list.length)return '<div style="font-size:11px;color:var(--text-3);padding:8px 0">Workflow is clear. Anything unfinished will carry forward automatically.</div>';
+  const list=planned||[]; if(!list.length)return '<div style="font-size:11px;color:var(--text-3);padding:8px 0">Finish today’s priorities. The tracker carries unfinished work forward automatically.</div>';
   const groups={escalation:[],transaction:[],health:[],tier_growth:[],followup:[],reconnect:[],relationship:[],health_monitor:[],skill:[],wrap:[]};
   list.forEach(t=>{if(t.kind==="prospect")return;if(t.kind==="escalation"||t.kind==="transaction"||t.kind==="health"||t.kind==="health_monitor"||t.kind==="tier_growth"||t.kind==="skill"||t.kind==="wrap")groups[t.kind].push(t);else{const k=v108AgentBucketMeta(t).key;groups[k]||(groups[k]=[]);groups[k].push(t);}});
   let html='',first=true;
@@ -12930,7 +12934,7 @@ function v21RenderOwner(owner,hostId,capId,blocks,items,data,acts,monthActs,sche
   html+='<div style="font-size:10px;font-weight:800;color:var(--text-3);text-transform:uppercase;letter-spacing:.4px;margin:9px 0 2px">'+(owner==="Amanda"?"Work top to bottom":"AUTO PLAN · Suggested work order")+'</div>';
   if(owner==="Nyny")html+='<div style="font-size:10px;color:#655B7A;background:#F4F1FA;border:1px solid #DDD7EC;border-radius:7px;padding:6px 8px;margin:4px 0 6px"><strong style="color:var(--brand-dark)">Tracker-generated suggestions.</strong> These are not meetings you scheduled and they do not count as activity until you log the actual work. Durations are planning estimates only.</div>';
   if(owner==="Amanda")v109RenderNewMeetingPush(alloc.planned,date,monthActs);
-  html+=owner==="Amanda"?v109RenderAmandaTasks(alloc.planned,date,st):(alloc.planned.length?alloc.planned.map((t,i)=>v21PlanTaskRow(t,i===0,date)).join(""):'<div style="font-size:11px;color:var(--text-3);padding:8px 0">You are clear for the flexible work that fits today. Any unfinished assigned agents will carry forward automatically.</div>');
+  html+=owner==="Amanda"?v109RenderAmandaTasks(alloc.planned,date,st):(alloc.planned.length?alloc.planned.map((t,i)=>v21PlanTaskRow(t,i===0,date)).join(""):'<div style="font-size:11px;color:var(--text-3);padding:8px 0">Move to the flexible work that fits today. The tracker carries unfinished assigned agents forward automatically.</div>');
   if(alloc.overflow.length){
     if(owner==="Amanda"){const carry=alloc.overflow.filter(x=>x.kind!=="prospect");if(carry.length)html+='<div style="margin-top:8px;background:var(--surface-2);border:1px solid var(--border-light);border-radius:8px;padding:8px;font-size:10px;color:var(--text-3)"><strong style="color:var(--text-2)">Already handled for you:</strong> '+carry.length+' lower-priority item'+(carry.length!==1?"s":"")+' can carry forward automatically. No cramming.</div>';}
     else html+='<div style="margin-top:8px;background:#FFF8E8;border:1px solid #E7C98A;border-radius:8px;padding:8px"><div style="font-size:10px;font-weight:800;color:#8A5D00">CAPACITY OVERFLOW · '+alloc.overflow.length+'</div><div style="font-size:10px;color:#7A5600;margin-top:3px">Do not cram these in. Re-prioritize, move a flexible block, or let the queue carry the agent forward: '+alloc.overflow.slice(0,5).map(x=>v21Esc(x.title)).join(" · ")+(alloc.overflow.length>5?' · +'+(alloc.overflow.length-5)+' more':'')+'</div></div>';
@@ -13593,7 +13597,7 @@ function v107LogVisitEncoded(name){return v176OpenOutreach(decodeURIComponent(na
 function v107FaceTimeRowHtml(r,forDirector){
   var safeName=String(r.name||'').replace(/'/g,"\\'");
   var colors={critical:'var(--danger)',red:'var(--danger)',warn:'var(--warning)'};
-  var statusText=r.days===null?'No visit recorded':r.days+'d since visit';
+  var statusText=r.days===null?'Book first visit':r.days+'d since visit';
   return '<div style="display:grid;grid-template-columns:minmax(180px,1.3fr) minmax(180px,1fr) auto;gap:10px;align-items:center;padding:9px 0;border-bottom:1px solid var(--border-light);font-size:12.5px">'
     +'<div><strong style="color:var(--text-1)">'+properCase(r.name)+'</strong> <span style="color:var(--text-3);font-size:10.5px">'+escHtml(r.tier)+'</span><div style="font-size:10.5px;color:var(--text-3);margin-top:2px">LP: '+escHtml(r.lp)+' · RM: '+escHtml(r.rm)+'</div></div>'
     +'<div><div style="color:'+(colors[r.status]||'var(--text-2)')+';font-weight:700">'+statusText+'</div>'+(r.by?'<div style="font-size:10.5px;color:var(--text-3);margin-top:2px">Last logged by '+escHtml(r.by)+'</div>':'')+'<div style="font-size:10.5px;color:#536258;font-weight:700;margin-top:2px">Why now: '+escHtml(r.priorityWhy||'shared Face Time priority')+'</div>'+(r.scheduled?'<div style="font-size:10.5px;color:#41604B;font-weight:750;margin-top:2px">Booked '+escHtml(r.scheduled.event_date||'')+(r.scheduled.event_time?' · '+escHtml(String(r.scheduled.event_time).slice(0,5)):'')+' with '+escHtml(r.scheduled.lp||'LP')+'</div>':'')+'</div>'
@@ -13850,7 +13854,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
       // BUGFIX (2026-08-20): distinguish "no real candidates" from "candidates exist but today's
       // time budget is full" — these got conflated into one misleading empty-state message before.
       if(gDiag&&gDiag.overflowed>0){
-        gMsg=gDiag.overflowed+' C → B growth candidate'+(gDiag.overflowed!==1?'s':'')+' ready, but today\'s schedule is full — higher-priority work filled the available time. They will carry forward automatically.';
+        gMsg=gDiag.overflowed+' C → B growth candidate'+(gDiag.overflowed!==1?'s':'')+' ready, but today\'s schedule is full — higher-priority work filled the available time. The tracker carries them forward automatically.';
       }else{
         gMsg='No strong C → B candidate is ready right now.';
         if(gDiag)gMsg+=' ('+gDiag.totalC+' C-tier total · '+gDiag.ownedByAmanda+' owned by Amanda · '+gDiag.excludedDupe+' already shown elsewhere in today\'s Workflow)';
@@ -14243,13 +14247,6 @@ if(_v120ProtectHtml)window.v119ProtectHtml=function(){
 };
 
 </script>
-<script id="v121AuditScript">
-// v121 smart-work invariants:
-// 1) Protect/retain true risk first. 2) Amanda executes every CTC call regardless of tier.
-// 3) LP handoffs and shared Face Time stay warm/high-value work. 4) Meeting conversion and tier migration outrank generic maintenance.
-// 5) Ownership controls recurring relationship work; activity/attendance never silently changes ownership.
-
-</script>
 <style id="v122Style">
 #v122DataAuditCard{border:1px solid #d8d1ee;background:linear-gradient(180deg,#fff 0%,#fbfafe 100%)}
 .v122-audit-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap}
@@ -14568,7 +14565,7 @@ setTimeout(function(){v124MountAudit();v122RenderAudit();},1200);
   window.v129CleanDuplicateGroup=async function(keeperName){
     const key=agentMatchKey(keeperName),group=computeDupeGroups().find(g=>agentMatchKey(g[0].agent_name)===key);if(!group||group.length<2){toast('That duplicate group is already clean.','success');return;}
     const keeper=group.find(x=>x.agent_name===keeperName)||v129Keeper(group),extras=group.filter(x=>x.agent_name!==keeper.agent_name);
-    if(!confirm('Keep '+displayName(keeper.agent_name)+' and hide '+extras.length+' duplicate profile'+(extras.length===1?'':'s')+'?\n\nContact data will be preserved. Historical activity is NOT deleted.'))return;
+    if(!confirm('Keep '+displayName(keeper.agent_name)+' and hide '+extras.length+' duplicate profile'+(extras.length===1?'':'s')+'?\n\nThe tracker keeps contact data. Historical activity is NOT deleted.'))return;
     try{
       const fields=['phone','email','address','birthday','tier','relationship_type','strategic_partner_category','closes_past_year','total_leads_past_year','latest_lead_date','latest_close_date','retained'];const payload={};
       fields.forEach(f=>{if(keeper[f]!==undefined&&keeper[f]!==null&&String(keeper[f]).trim()!=='')return;const src=group.find(x=>x[f]!==undefined&&x[f]!==null&&String(x[f]).trim()!=='');if(src)payload[f]=src[f];});
@@ -14607,7 +14604,6 @@ setTimeout(function(){v124MountAudit();v122RenderAudit();},1200);
 
 })();
 </script>
-<!-- v133 ALIGNED OPERATING MODEL · 2026-08-19 -->
 <style id="v134-mobile-safe-fallback">
 /* v134 — Never let Today go blank. The enhanced dashboard may hide legacy blocks ONLY after it mounts. */
 #view-week:not(.v113-ready) #weeklyCallPlanCard{display:block!important;min-height:240px!important;padding:14px!important;background:#fff!important;border:1px solid #E4DDED!important;border-radius:14px!important;margin:0 10px 18px!important}
@@ -14866,14 +14862,6 @@ setTimeout(function(){v124MountAudit();v122RenderAudit();},1200);
 .v136-review-btn.v136-sent,.v136-review-btn:disabled{background:#EEF8F2!important;color:#2F6847!important;border-color:#C9DED1!important;cursor:default!important;opacity:1!important}
 .v136-review-btn.v136-followup{background:#FFF7E8!important;color:#8A5A00!important;border-color:#E6C987!important}
 </style>
-<!-- v137 AUDIT NOTES
-  - Daily snapshot restored and mobile-safe.
-  - Snapshot Today/WTD/MTD targets aligned to Amanda execution + RM operating model.
-  - CTC/Agent Talk-to duplicate icon keys removed.
-  - Snapshot default period now matches Today.
-  - Existing-partner snapshot counts all qualifying existing meetings, not only Break Breads.
-  - Role-to-date goal scaling is date-safe across calendar years.
--->
 <script id="v138-transaction-visibility-guard">
 (function(){
   window.v138RedistributeUrgent=function(){
@@ -15039,7 +15027,6 @@ setTimeout(function(){v124MountAudit();v122RenderAudit();},1200);
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(window.rmFinalIntegrityCheck,900),{once:true});else setTimeout(window.rmFinalIntegrityCheck,900);
 })();
 </script>
-<!-- Director coaching builder: sandwich-method, live tracker context -->
 <style id="v146-amanda-acquisition-audit-style">
 #view-week #v109NewMeetingPush{border:2px solid #C8B2E2!important;box-shadow:0 7px 22px rgba(86,57,130,.07)!important}
 #view-week #v109NewMeetingPush:before{content:"PROTECTED PRODUCTION BLOCK";display:block;width:max-content;margin:10px 16px -4px;padding:3px 7px;border-radius:999px;background:#EEE5F8;color:#62418F;font-size:9px;font-weight:900;letter-spacing:.55px}
@@ -16055,7 +16042,6 @@ setTimeout(function(){v124MountAudit();v122RenderAudit();},1200);
   else setTimeout(enhance,450);
 })();
 </script>
-<script id="v173-universal-action-router">/* retired by v175 inline action router */</script>
 <script id="v174-visible-button-selfcheck">
 window.rmAuditVisibleButtons=function(){
   const rows=[];
@@ -16224,7 +16210,6 @@ window.rmAuditVisibleButtons=function(){
 <div class="v175-actions"><button onclick="v175Close('v175UpdateModal')">Cancel</button><button class="primary" onclick="v175SaveUpdate()">Save changes</button></div>
 </div>
 </div>
-<script id="v175-inline-action-modals-js">/* retired by v176 */</script>
 <script id="v176-button-transaction-fix-js">
 (function(){
   const dec=s=>{try{return decodeURIComponent(String(s||''))}catch(e){return String(s||'')}};
@@ -16633,7 +16618,6 @@ window.rmAuditVisibleButtons=function(){
   }
 })();
 </script>
-
 <div class="v191-modal" id="v191Playbook">
 <div class="v191-modal-card"><button class="v191-btn" onclick="v191ClosePlaybook()" style="float:right">Close</button><h2 id="v191PBTitle"></h2><div id="v191PBBody"></div></div>
 </div>
@@ -16875,7 +16859,7 @@ window.rmAuditVisibleButtons=function(){
       const c=contact(r.p,null),safe=encodeURIComponent(r.name);
       const cadence=r.days===null?'No prior Break Bread':r.days+' days since Face Time';
       return `<div class="v191-row"><div class="v191-rank">${i+1}</div><div><div class="v191-name">${E(typeof displayName==='function'?displayName(r.name):r.name)}</div><div class="v191-meta"><b>${E(r.why)}</b> · ${E(cadence)}</div></div><div class="v191-contact"><b>Phone:</b> ${E(c.phone||'Missing')}<br><b>Email:</b> ${E(c.email||'Missing')}<br><b>LP:</b> ${E(r.o.lp||'Unassigned')}</div><div class="v191-actions"><button onclick="v107OpenFTEncoded('${safe}','${encodeURIComponent(r.o.lp||'')}','')">Schedule Face Time</button><button onclick="v107LogVisitEncoded('${safe}')">Log visit</button><select aria-label="Follow up later for ${E(r.name)}" onchange="v258FaceTimeDelay('${safe}',this.value,this)"><option value="">Follow up later…</option><option value="1">Tomorrow</option><option value="7">Next week</option><option value="14">In 2 weeks</option><option value="30">In 30 days</option><option value="custom">Pick date…</option></select></div></div>`;
-    }).join(''):`<div class="v191-empty"><b>No Amanda Face Time is due right now.</b><br>Face Time is being driven by the same current active-partner population and cadence as the LP tracker.</div>`;
+    }).join(''):`<div class="v191-empty"><b>No Amanda Face Time is due right now.</b><br>The same current active-partner population and cadence drives Face Time in both trackers.</div>`;
   }
 
   let _v196RefreshPromise=null,_v196Loaded=false,_v196LastPaint=0;
@@ -18155,7 +18139,7 @@ function renderMyDay(c,d){
     +'<button class="rmx-summary-tile rmx-click-tile" onclick="rmxTierFilterTo(\'risk\',\'touch\')"><b>'+needsTouch+'</b><span>Needs Touch</span><small>Cadence due, but not an urgent retention risk</small></button>'
     +'<button class="rmx-summary-tile rmx-click-tile" onclick="rmxTierFilterTo(\'risk\',\'review\')"><b>'+reviews+'</b><span>Pending C → B Reviews</span><small>Diagnostic workflow, not score points</small></button>'
     +'<button class="rmx-summary-tile rmx-click-tile" onclick="rmxShowMigrations()"><b>'+mig.all+'</b><span>Tier Movements This Month</span><small>Open movement history</small></button></div>'
-    +'<div class="rmx-inline-note"><b>How status is calculated:</b> a recent meaningful touch <i>or</i> lead counts as engagement. <b>Needs Touch</b> starts at 14 days for Channel/A, 30 for B, 60 for C. <b>At Risk</b> starts at 21 / 21 / 45 / 90 days respectively, or immediately for a competitor/trust flag. A missing growth plan is tracked separately and does not create risk by itself. <b>Suggested</b> next moves use the actual lead/touch/tier/follow-up/risk data and are not saved until you approve them.</div></section>';
+    +'<div class="rmx-inline-note"><b>How status is calculated:</b> a recent meaningful touch <i>or</i> lead counts as engagement. <b>Needs Touch</b> starts at 14 days for Channel/A, 30 for B, 60 for C. <b>At Risk</b> starts at 21 / 21 / 45 / 90 days respectively, or immediately for a competitor/trust flag. Track a missing growth plan separately; it does not create risk by itself. <b>Suggested</b> next moves use the actual lead/touch/tier/follow-up/risk data and are not saved until you approve them.</div></section>';
   c.innerHTML+='<section id="rmxTierRoster" class="rmx-section-block"><div class="rmx-section-label">Relationship Roster</div><div class="rmx-filters"><select id="rmxTierFilter"><option value="">All Tiers</option><option>Channel</option><option>A</option><option>B</option><option>C</option></select><select id="rmxTierOwner"><option value="">All RM Owners</option><option>Amanda</option><option>Nyny</option><option>Unassigned</option></select><select id="rmxTierRisk"><option value="">All Signals</option><option value="risk">At Risk</option><option value="touch">Needs Touch</option><option value="notouch">No Touch 14+ Days</option><option value="plan">Missing Plan</option><option value="review">Ready for Review</option></select><input id="rmxTierSearch" placeholder="Search agent, LP, brokerage, next move…" style="flex:1;min-width:220px"></div><div class="rmx-tablewrap"><table class="rmx-table"><thead><tr><th>Agent</th><th>Tier</th><th>RM</th><th>LP</th><th>Closes</th><th>Leads</th><th>Last Touch</th><th>Next Growth Move</th><th>Status</th><th>Actions</th></tr></thead><tbody id="rmxTierBody"></tbody></table></div></section>';
   const reviewKeys=new Set((d.growthReviews||[]).map(r=>key(r.agent_name))),riskMap=new Map(rr.map(r=>[key(r.p.agent_name),r]));
   function paint(){const ft=$('rmxTierFilter').value,fo=$('rmxTierOwner').value,fr=$('rmxTierRisk').value,q=$('rmxTierSearch').value.trim().toLowerCase();let rows=(d.prod||[]).filter(p=>p._tier);rows=rows.filter(p=>!ft||p._tier===ft).filter(p=>!fo||ownerName(d,p)===fo).filter(p=>{const r=riskMap.get(key(p.agent_name));if(fr==='risk')return r&&r.score>=80;if(fr==='touch')return r&&r.score>=45&&r.score<80;if(fr==='notouch')return r&&r.days!=null&&r.days>=14;if(fr==='plan')return ['Channel','A','B'].includes(p._tier)&&!String(p.next_growth_opportunity||'').trim();if(fr==='review')return reviewKeys.has(key(p.agent_name));return true}).filter(p=>!q||[p.agent_name,p.brokerage,p.team,p.company,ownerName(d,p),(p._assign||{}).lp,p.next_growth_opportunity].some(v=>String(v||'').toLowerCase().includes(q))).sort((a,b)=>({Channel:4,A:3,B:2,C:1}[b._tier]-({Channel:4,A:3,B:2,C:1}[a._tier]))||String(a.agent_name).localeCompare(String(b.agent_name)));$('rmxTierBody').innerHTML=rows.length?rows.slice(0,250).map(p=>{const r=riskMap.get(key(p.agent_name)),lt=latestTouch(d,p),days=daysSince(lt),leadDate=latestLeadFor(d,p),daysLead=daysSince(leadDate),status=r&&r.score>=80?'<span class="rmx-pill red">At Risk</span>':r&&r.score>=45?'<span class="rmx-pill amber">Needs Touch</span>':reviewKeys.has(key(p.agent_name))?'<span class="rmx-pill blue">Review</span>':'<span class="rmx-pill green">On Track</span>';return '<tr><td><div class="rmx-name">'+esc(fmtName(p.agent_name))+'</div><div class="rmx-muted">'+esc(p.brokerage||p.team||p.company||'')+'</div></td><td><span class="rmx-pill">'+p._tier+'</span></td><td>'+esc(ownerName(d,p))+'</td><td>'+esc((p._assign||{}).lp||'Unassigned')+'</td><td>'+Number(p.closes_past_year||0)+'</td><td>'+Number(p.total_leads_past_year||0)+'</td><td>'+(lt?esc(lt)+'<div class="rmx-muted">Touch: '+days+' days ago</div>':'—')+(leadDate?'<div class="rmx-muted green">Lead: '+esc(leadDate)+' · '+(daysLead===0?'today':daysLead+'d ago')+'</div>':'')+'</td><td>'+nextMoveCell(p.agent_name,p.next_growth_opportunity,d,p)+'</td><td>'+status+'</td><td>'+actionBtns(p.agent_name,'relationship')+'</td></tr>'}).join(''):'<tr><td colspan="10">No relationships match these filters.</td></tr>';}
@@ -18184,7 +18168,7 @@ function renderMyDay(c,d){
   window.rmxRiskFilterTo=function(f){filter=f||'all';document.querySelectorAll('[data-risk-filter]').forEach(b=>b.classList.toggle('active-filter',b.dataset.riskFilter===filter));const labels={all:'All relationships with an active risk or follow-up signal.',high:'High-risk relationships needing immediate retention attention.',rising:'Rising-risk relationships to address before they become critical.',notouch:'Relationships with a 14+ day meaningful-contact gap.',plan:'Channel / A / B relationships missing a documented next growth move.',amanda:'Amanda-owned follow-ups that are due or overdue.',mine:'Your Director-owned follow-ups that are due or overdue.'};const ex=$('rmxRiskExplain');if(ex)ex.innerHTML='<b>Showing:</b> '+labels[filter];paint();};
   $('rmxRiskSearch').oninput=paint;rmxRiskFilterTo(filter);
  } 
- function renderComm(c,d){title(c,'LP / RM Handoffs','Open communication that needs an RM response.');if(!d.flags.length){c.innerHTML+=empty('No open LP flags — caught up.');return}c.innerHTML+='<div class="rmx-list">'+d.flags.map(f=>'<div class="rmx-card"><div class="rmx-row"><div><div class="name">'+esc(fmtName(f.agent_name||'Agent'))+' <span class="rmx-pill">via '+esc(f.lp||'LP')+'</span></div><div class="meta">'+esc(f.note||f.outcome||'Open LP handoff')+'</div></div><div class="meta">'+esc(String(f.created_at||f.call_date||'').slice(0,10))+'</div><div class="rmx-actions"><button class="rmx-btn small primary" onclick="rmxLog(\''+esc(f.agent_name||'').replace(/'/g,"\\'")+'\')">Log outreach</button><button class="rmx-btn small" onclick="rmxReply(\''+f._src+'\',\''+esc(f.id).replace(/'/g,"\\'")+'\',\''+esc(f.agent_name||'').replace(/'/g,"\\'")+'\')">Reply</button><button class="rmx-btn small" onclick="rmxHandle(\''+f._src+'\',\''+esc(f.id).replace(/'/g,"\\'")+'\')">Mark handled</button></div></div></div>').join('')+'</div>'}
+ function renderComm(c,d){title(c,'LP / RM Handoffs','Open communication that needs an RM response.');if(!d.flags.length){c.innerHTML+=empty('No open LP flags.');return}c.innerHTML+='<div class="rmx-list">'+d.flags.map(f=>'<div class="rmx-card"><div class="rmx-row"><div><div class="name">'+esc(fmtName(f.agent_name||'Agent'))+' <span class="rmx-pill">via '+esc(f.lp||'LP')+'</span></div><div class="meta">'+esc(f.note||f.outcome||'Open LP handoff')+'</div></div><div class="meta">'+esc(String(f.created_at||f.call_date||'').slice(0,10))+'</div><div class="rmx-actions"><button class="rmx-btn small primary" onclick="rmxLog(\''+esc(f.agent_name||'').replace(/'/g,"\\'")+'\')">Log outreach</button><button class="rmx-btn small" onclick="rmxReply(\''+f._src+'\',\''+esc(f.id).replace(/'/g,"\\'")+'\',\''+esc(f.agent_name||'').replace(/'/g,"\\'")+'\')">Reply</button><button class="rmx-btn small" onclick="rmxHandle(\''+f._src+'\',\''+esc(f.id).replace(/'/g,"\\'")+'\')">Mark handled</button></div></div></div>').join('')+'</div>'}
  function renderReports(c,d){
    title(c,'Reports & History','Search recent RM activity and verify what happened, when, and with whom.');
    const wk=d.acts.filter(a=>a.act_date>=wstart()),all=d.acts.slice();
@@ -18481,7 +18465,7 @@ window.rmxAdminRemoveAgent=async function(name){if(!window.confirm('Mark '+name+
      +'<div class="rmx-action-menu"><button type="button" class="rmx-action-choice primary" data-rmx-manage-action="remove-active" data-agent="'+agent+'"><b>Remove From Active</b><span>Preserve history; remove from active roster, queues, reconnect/prospecting, and future follow-ups.</span></button><button type="button" class="rmx-action-choice danger" data-rmx-manage-action="hide-duplicate" data-agent="'+agent+'"><b>Delete Bad / Duplicate</b><span>Hide this exact bad profile. Use only for spelling errors or duplicate records.</span></button></div>');
  };
  window.rmxRemoveShared=async function(name){
-   if(!window.confirm('Remove '+fmtName(name)+' from active RM + Core Team workflows? Historical activity will be preserved.'))return;
+   if(!window.confirm('Remove '+fmtName(name)+' from active RM + Core Team workflows? The tracker keeps historical activity.'))return;
    try{
      let canonical=name;
      if(typeof findAgentProfileByName==='function'){const r=await findAgentProfileByName(name);if(r.ambiguous)throw new Error('Multiple profiles match this name. Use Delete Bad / Duplicate on the exact record first.');if(r.exact)canonical=r.exact.agent_name;}
@@ -18702,12 +18686,15 @@ window.rmxBoot=boot;const baseSwitch=window.switchTab;window.switchTab=function(
       client:clean(get(raw,['Borrower Name','Borrower','Client Name','Client']),180),
       property:clean(get(raw,['Subject Property Address','Property Address','Subject Property','Address']),220),
       buyer:{name:clean(buyerName,180),phone:clean(get(raw,['Buyers Agent Phone','Buyer Agent Phone','Buyer Phone']),80)},
-      listing:{name:clean(listingName,180),phone:clean(get(raw,['Sellers Agent Phone','Seller Agent Phone','Listing Agent Phone','Seller Phone','Listing Phone']),80)}
+      listing:{name:clean(listingName,180),phone:clean(get(raw,['Sellers Agent Phone','Seller Agent Phone','Listing Agent Phone','Seller Phone','Listing Phone']),80)},
+      closeDate:dateText(get(raw,['Closing Date','Scheduled Closing Date','Close Date'])),
+      milestone:clean(get(raw,['Milestone','Current Milestone','Loan Milestone','Milestone Name']),100),
+      loanStatus:clean(get(raw,['Loan Status','Current Status','File Status']),100)
     };
   }
   function usable(r){return !!(r&&(r.buyer.name||r.listing.name)&&(r.client||r.property))}
   function stage(){return document.getElementById('wp229ImportStage')?.value||document.getElementById('wp30TxnStage')?.value||'New Contract'}
-  function stageLabel(v){return v==='Clear to Close'?'Clear to Close (CTC)':'New Contract'}
+  function stageLabel(v){return v==='Tuesday Active Files'?'Tuesday active-file snapshot':(v==='Clear to Close'?'Clear to Close (CTC)':'New Contract')}
   function ensureXlsx(){
     if(window.XLSX)return Promise.resolve(window.XLSX);
     if(window._wp229XlsxPromise)return window._wp229XlsxPromise;
@@ -18735,20 +18722,20 @@ window.rmxBoot=boot;const baseSwitch=window.switchTab;window.switchTab=function(
     let m=document.getElementById('wp229EncompassModal');if(m)return m;
     m=document.createElement('div');m.id='wp229EncompassModal';m.style.cssText='position:fixed;inset:0;z-index:30000;background:rgba(24,23,29,.48);display:none;align-items:center;justify-content:center;padding:18px';
     m.innerHTML='<div style="width:min(980px,96vw);max-height:90vh;overflow:hidden;background:#fff;border-radius:16px;box-shadow:0 24px 70px rgba(0,0,0,.22);display:flex;flex-direction:column">'+
-      '<div style="padding:16px 18px 12px;border-bottom:1px solid #ECE9F2;display:flex;justify-content:space-between;gap:12px"><div><div style="font-size:18px;font-weight:850;color:var(--text-1)">Import Encompass transaction calls</div><div style="font-size:11px;color:var(--text-3);margin-top:3px">Upload the Encompass Excel report once. The tracker will create the buyer + listing agent calls and prefill the transaction details when Amanda starts each call.</div></div><button type="button" onclick="wp229CloseImport()" style="width:34px;height:34px;border-radius:50%;border:0;background:#F4F3F1;font-size:18px;cursor:pointer">×</button></div>'+
-      '<div style="padding:14px 18px;overflow:auto"><div style="display:grid;grid-template-columns:minmax(190px,.7fr) minmax(260px,1fr);gap:10px;align-items:end"><div class="field" style="margin:0"><label>These files are</label><select id="wp229ImportStage"><option value="New Contract">New Contract calls</option><option value="Clear to Close">Clear to Close / CTC calls</option></select></div><div><input id="wp229ImportFile" type="file" accept=".xlsx,.xls,.csv" style="display:none"><button type="button" class="btn-primary" onclick="document.getElementById(\'wp229ImportFile\').click()">Choose Encompass Excel</button><span id="wp229ImportFileLabel" style="font-size:10.5px;color:var(--text-3);margin-left:8px">No file selected</span></div></div>'+
-      '<div id="wp229ImportMsg" style="font-size:10.5px;color:var(--text-3);margin-top:9px">The transaction importer uses only: buyer name, subject property address, buyer agent name + phone, and listing agent name + phone. All other Excel columns are ignored.</div>'+
+      '<div style="padding:16px 18px 12px;border-bottom:1px solid #ECE9F2;display:flex;justify-content:space-between;gap:12px"><div><div style="font-size:18px;font-weight:850;color:var(--text-1)">Import Encompass transaction data</div><div style="font-size:11px;color:var(--text-3);margin-top:3px">For Tuesday, upload the ACTIVE FILE report as the weekly snapshot. New Contract / CTC modes remain available for milestone call triggers.</div></div><button type="button" onclick="wp229CloseImport()" style="width:34px;height:34px;border-radius:50%;border:0;background:#F4F3F1;font-size:18px;cursor:pointer">×</button></div>'+
+      '<div style="padding:14px 18px;overflow:auto"><div style="display:grid;grid-template-columns:minmax(190px,.7fr) minmax(260px,1fr);gap:10px;align-items:end"><div class="field" style="margin:0"><label>These files are</label><select id="wp229ImportStage"><option value="Tuesday Active Files">Tuesday active files (weekly)</option><option value="New Contract">New Contract calls</option><option value="Clear to Close">Clear to Close / CTC calls</option></select></div><div><input id="wp229ImportFile" type="file" accept=".xlsx,.xls,.csv" style="display:none"><button type="button" class="btn-primary" onclick="document.getElementById(\'wp229ImportFile\').click()">Choose Encompass Excel</button><span id="wp229ImportFileLabel" style="font-size:10.5px;color:var(--text-3);margin-left:8px">No file selected</span></div></div>'+
+      '<div id="wp229ImportMsg" style="font-size:10.5px;color:var(--text-3);margin-top:9px">Uses buyer name, property, buyer agent, listing agent, and—when present—closing date / milestone / file status. Loan numbers are not stored.</div>'+
       '<div id="wp229ImportPreview" style="margin-top:12px"></div></div>'+
       '<div style="padding:12px 18px;border-top:1px solid #ECE9F2;display:flex;justify-content:space-between;gap:10px;align-items:center"><div id="wp229ImportCount" style="font-size:11px;color:var(--text-3)"></div><div style="display:flex;gap:8px"><button type="button" class="rmx-btn" onclick="wp229CloseImport()">Cancel</button><button id="wp229ImportSave" type="button" class="btn-primary" onclick="wp229ImportSelected()" disabled>Import selected calls</button></div></div></div>';
     document.body.appendChild(m);
     document.getElementById('wp229ImportFile').addEventListener('change',window.wp229FileChosen);
-    document.getElementById('wp229ImportStage').addEventListener('change',()=>{const old=document.getElementById('wp30TxnStage');if(old)old.value=stage();renderPreview()});
+    document.getElementById('wp229ImportStage').addEventListener('change',()=>{const old=document.getElementById('wp30TxnStage');if(old&&stage()!=='Tuesday Active Files')old.value=stage();renderPreview()});
     return m;
   }
   function renderPreview(){
     const host=document.getElementById('wp229ImportPreview'),count=document.getElementById('wp229ImportCount'),save=document.getElementById('wp229ImportSave');if(!host)return;
     if(!wp229Rows.length){host.innerHTML='';if(count)count.textContent='';if(save)save.disabled=true;return}
-    const valid=wp229Rows.filter(usable).length,invalid=wp229Rows.length-valid,autoSelect=valid<=2;
+    const valid=wp229Rows.filter(usable).length,invalid=wp229Rows.length-valid,autoSelect=(stage()==='Tuesday Active Files'||valid<=2);
     host.innerHTML='<div style="display:flex;justify-content:space-between;gap:8px;align-items:center;margin-bottom:7px"><div style="font-size:11px;font-weight:800;color:var(--text-1)">'+esc(stageLabel(stage()))+' preview · '+wp229Rows.length+' file'+(wp229Rows.length===1?'':'s')+'</div><label style="font-size:10.5px;color:var(--text-3);cursor:pointer"><input id="wp229ToggleAll" type="checkbox" '+(autoSelect?'checked':'')+' onchange="wp229ToggleAll(this.checked)"> Select all valid rows</label></div>'+
       '<div style="border:1px solid #E5E1ED;border-radius:10px;overflow:auto;max-height:430px"><table style="border-collapse:collapse;width:100%;font-size:10.5px"><thead style="position:sticky;top:0;background:#F8F6FC;z-index:1"><tr><th style="padding:8px;text-align:left"></th><th style="padding:8px;text-align:left">Client / property</th><th style="padding:8px;text-align:left">Buyer agent</th><th style="padding:8px;text-align:left">Listing agent</th><th style="padding:8px;text-align:left">Status</th></tr></thead><tbody>'+
       wp229Rows.map((r,i)=>{const ok=usable(r),why=!r.buyer.name&&!r.listing.name?'Missing both agent names':(!r.client&&!r.property?'Missing borrower/property':'Ready');return '<tr style="border-top:1px solid #EEEAF3;'+(!ok?'background:#FFF8F2':'')+'"><td style="padding:8px"><input class="wp229RowCheck" data-i="'+i+'" type="checkbox" '+(ok?(autoSelect?'checked':''):'disabled')+' onchange="wp229UpdateCount()"></td><td style="padding:8px"><strong>'+esc(r.client||'—')+'</strong><div style="color:var(--text-3);margin-top:2px">'+esc(r.property||'')+'</div></td><td style="padding:8px"><strong>'+esc(r.buyer.name||'—')+'</strong><div style="color:var(--text-3)">'+esc(r.buyer.phone||'')+'</div></td><td style="padding:8px"><strong>'+esc(r.listing.name||'—')+'</strong><div style="color:var(--text-3)">'+esc(r.listing.phone||'')+'</div></td><td style="padding:8px"><span style="font-weight:750;color:'+(ok?'#2F6847':'#A45100')+'">'+esc(why)+'</span></td></tr>'}).join('')+'</tbody></table></div>'+
@@ -18758,8 +18745,10 @@ window.rmxBoot=boot;const baseSwitch=window.switchTab;window.switchTab=function(
   function selected(){return Array.from(document.querySelectorAll('.wp229RowCheck:checked')).map(x=>wp229Rows[Number(x.dataset.i)]).filter(Boolean)}
   function tag(name,v){v=clean(v,220);return v?'['+name+':'+v+']':''}
   function txnIdFor(r,st){
-    const ref=[r.client,r.property].filter(Boolean).join(' · ').slice(0,180);
-    return typeof wp33MakeTxnId==='function'?wp33MakeTxnId(st,ref,r.buyer.name,r.listing.name,(typeof today==='function'?today():'')):(st+'-'+ref).toLowerCase().replace(/[^a-z0-9]+/g,'-').slice(0,80);
+    // Stable across weekly uploads and milestone changes. Deliberately does NOT use a loan number.
+    const raw=[r.client,r.property].filter(Boolean).join(' · ')||[r.buyer.name,r.listing.name].filter(Boolean).join(' · ');
+    const slug=String(raw||'transaction').toLowerCase().normalize('NFKD').replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'').slice(0,110);
+    return 'txn-'+slug;
   }
   function notesFor(r,role,txnId,owner,st){
     const ref=[r.client,r.property].filter(Boolean).join(' · ').slice(0,180);
@@ -18769,10 +18758,30 @@ window.rmxBoot=boot;const baseSwitch=window.switchTab;window.switchTab=function(
   function existingKey(row){return (typeof wp33TxnId==='function'?wp33TxnId(row.notes):'')+'|'+String(typeof wp30TxnRole==='function'?wp30TxnRole(row.notes):'Agent').toLowerCase()}
   async function importSelected(){
     const rows=selected(),st=stage(),btn=document.getElementById('wp229ImportSave');if(!rows.length){toast('Select at least one transaction to import.','error');return}
-    if(btn){btn.disabled=true;btn.textContent='Importing...'}
+    if(btn){btn.disabled=true;btn.textContent=st==='Tuesday Active Files'?'Saving active-file snapshot...':'Importing...'}
     const td=typeof today==='function'?today():new Date().toISOString().slice(0,10),cut=new Date();cut.setDate(cut.getDate()-120);const cutStr=typeof wpDateStr==='function'?wpDateStr(cut):cut.toISOString().slice(0,10);
     let added=0,skipped=0,filesAdded=0,errors=[];
     try{
+      // WEEKLY TUESDAY SNAPSHOT: every selected row is the authoritative active-file set for this upload.
+      // A new batch is written each upload. Both RM + LP trackers read ONLY the newest batch, so:
+      // same open loan reappears next Tuesday; a file absent from the newest upload falls off automatically.
+      if(st==='Tuesday Active Files'){
+        const batch=(new Date()).toISOString().replace(/[^0-9]/g,'').slice(0,14);
+        for(const r of rows){
+          try{
+            const tid=txnIdFor(r,st),agent=r.listing.name||r.buyer.name||r.client||'Active transaction';
+            const notes='[TXN_SNAPSHOT][TXN_BATCH:'+batch+']'+tag('TXN_ID',tid)+tag('TXN_CLIENT',r.client)+tag('TXN_PROPERTY',r.property)+tag('TXN_BUYER_AGENT',r.buyer.name)+tag('TXN_BUYER_PHONE',r.buyer.phone)+tag('TXN_LISTING_AGENT',r.listing.name)+tag('TXN_LISTING_PHONE',r.listing.phone)+tag('TXN_CLOSE_DATE',r.closeDate)+tag('TXN_MILESTONE',r.milestone)+tag('TXN_LOAN_STATUS',r.loanStatus)+tag('TXN_SOURCE','Encompass Excel')+' Weekly active-file snapshot. No loan number stored.';
+            await sbFetch('amanda_activities',{method:'POST',prefer:'return=minimal',body:JSON.stringify({agent_name:agent,act_type:'Transaction Snapshot',act_date:td,outcome:'Active',notes:notes,follow_up_date:null})});
+            added++;
+          }catch(err){errors.push((r.client||r.property||'File')+': '+(err&&err.message?err.message:String(err)))}
+        }
+        try{_wp18Cache=null;_wp18CacheAt=0}catch(e){}
+        if(typeof window.v265RefreshListingUpdates==='function')setTimeout(()=>window.v265RefreshListingUpdates(),120);
+        toast(errors.length?'Saved '+added+' active files; '+errors.length+' need review.':'Tuesday active-file snapshot saved: '+added+' file'+(added===1?'':'s')+' ✓','success',5200);
+        wp229CloseImport();
+        return;
+      }
+
       const existing=await sbFetch('amanda_activities?act_type=eq.'+encodeURIComponent(st)+'&act_date=gte.'+cutStr+'&select=id,agent_name,act_date,notes&limit=5000').catch(()=>[]);
       const seen=new Set((existing||[]).map(existingKey));
       for(const r of rows){
@@ -18783,7 +18792,8 @@ window.rmxBoot=boot;const baseSwitch=window.switchTab;window.switchTab=function(
           try{
             let owner='Amanda';
             if(st!=='Clear to Close'){const o=typeof getAgentOwnership==='function'?getAgentOwnership(e.name):null,p=(window.allContacts||[]).find(c=>typeof wp18Key==='function'&&wp18Key(c.agent_name)===wp18Key(e.name))||{};owner=(typeof wp18StrategicNynyMatch==='function'&&wp18StrategicNynyMatch(e.name,p))?'Nyny':((o&&o.rm==='Nyny')?'Nyny':'Amanda')}
-            await sbFetch('amanda_activities',{method:'POST',prefer:'return=minimal',body:JSON.stringify({agent_name:e.name,act_type:st,act_date:td,outcome:'Requires follow-up',notes:notesFor(r,e.role,tid,owner,st),follow_up_date:null})});
+            let n=notesFor(r,e.role,tid,owner,st)+tag('TXN_CLOSE_DATE',r.closeDate)+tag('TXN_MILESTONE',r.milestone)+tag('TXN_LOAN_STATUS',r.loanStatus);
+            await sbFetch('amanda_activities',{method:'POST',prefer:'return=minimal',body:JSON.stringify({agent_name:e.name,act_type:st,act_date:td,outcome:'Requires follow-up',notes:n,follow_up_date:null})});
             seen.add(key);added++;fileNew=true;
           }catch(err){errors.push(e.name+': '+(err&&err.message?err.message:String(err)))}
         }
@@ -18796,16 +18806,17 @@ window.rmxBoot=boot;const baseSwitch=window.switchTab;window.switchTab=function(
       if(errors.length)toast('Imported '+added+' call trigger'+(added===1?'':'s')+', skipped '+skipped+' duplicate'+(skipped===1?'':'s')+'. '+errors.length+' item'+(errors.length===1?' needs':'s need')+' review.','error',6500);
       else toast('Imported '+filesAdded+' Encompass file'+(filesAdded===1?'':'s')+' → '+added+' mandatory '+(st==='Clear to Close'?'CTC':'Under Contract')+' call'+(added===1?'':'s')+(skipped?' · '+skipped+' duplicate'+(skipped===1?'':'s')+' skipped':'')+' ✓','success',5200);
       wp229CloseImport();
-    }catch(e){toast('Could not import Encompass calls: '+(e.message||e),'error',6000)}
-    finally{if(btn){btn.disabled=false;btn.textContent='Import selected calls'}}
+    }catch(e){toast('Could not import Encompass data: '+(e.message||e),'error',6000)}
+    finally{if(btn){btn.disabled=false;btn.textContent=st==='Tuesday Active Files'?'Save active-file snapshot':'Import selected calls'}}
   }
   function installButton(){
     const details=document.getElementById('wp30TxnIntakeDetails');if(!details||document.getElementById('wp229ImportBar'))return;
     const active=document.getElementById('wp33ActiveTxnTriggers');const bar=document.createElement('div');bar.id='wp229ImportBar';bar.style.cssText='display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap;background:#F7F4FC;border:1px solid #D8D0EB;border-radius:8px;padding:8px 9px;margin:0 0 9px';
-    bar.innerHTML='<div style="font-size:10.5px;color:var(--text-2);line-height:1.4"><strong style="color:var(--brand-dark)">Have the Encompass Excel?</strong> Upload it once instead of entering each buyer/listing agent by hand. You will preview every row before anything saves.</div><button type="button" class="btn-sm" onclick="wp229OpenImport()" style="white-space:nowrap;background:var(--brand);color:#fff;border-color:var(--brand)">Import Encompass Excel</button>';
+    bar.innerHTML='<div style="font-size:10.5px;color:var(--text-2);line-height:1.4"><strong style="color:var(--brand-dark)">Tuesday active-file source:</strong> synced automatically from the single Encompass ACTIVE FILE upload in the Core Team tracker. Amanda does not upload the Tuesday report here.</div><div style="display:flex;gap:6px;flex-wrap:wrap"><button type="button" class="btn-sm" onclick="wp229OpenImport()" style="white-space:nowrap">New Contract / CTC import</button></div>';
     if(active)active.insertAdjacentElement('afterend',bar);else details.querySelector('summary')?.insertAdjacentElement('afterend',bar);
   }
   window.wp229OpenImport=function(){const m=modal(),s=document.getElementById('wp229ImportStage'),manual=document.getElementById('wp30TxnStage');if(s&&manual)s.value=manual.value||'New Contract';m.style.display='flex';renderPreview()};
+  window.wp266OpenTuesdayImport=function(){const m=modal(),s=document.getElementById('wp229ImportStage');if(s)s.value='Tuesday Active Files';m.style.display='flex';renderPreview()};
   window.wp229CloseImport=function(){const m=document.getElementById('wp229EncompassModal');if(m)m.style.display='none'};
   window.wp229ToggleAll=function(on){document.querySelectorAll('.wp229RowCheck:not(:disabled)').forEach(x=>x.checked=!!on);wp229UpdateCount()};
   window.wp229UpdateCount=function(){const n=selected().length,el=document.getElementById('wp229ImportCount'),save=document.getElementById('wp229ImportSave');if(el)el.textContent=n+' transaction'+(n===1?'':'s')+' selected · creates up to '+(n*2)+' buyer/listing calls';if(save)save.disabled=n===0};
@@ -18834,7 +18845,6 @@ window.rmxBoot=boot;const baseSwitch=window.switchTab;window.switchTab=function(
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(installButton,450),{once:true});else setTimeout(installButton,450);
 })();
 </script>
-<!-- v230 · CLEAN ENCOMPASS UPLOAD + TRANSACTION CALLS UI · 2026-08-25 -->
 <style id="v230-encompass-clean-ui">
 /* Keep transaction intake obvious and compact inside Amanda Overview → Step 2. */
 #v113UrgentHost #wp229ImportBar{display:none!important}
@@ -18922,7 +18932,6 @@ window.rmxBoot=boot;const baseSwitch=window.switchTab;window.switchTab=function(
   setTimeout(ensure,400);setTimeout(ensure,1400);
 })();
 </script>
-<!-- v231 · FULL TRANSACTION WORKLIST + PREFILLED LOGGING · 2026-08-25 -->
 <style id="v231-transaction-worklist-css">
 #wp230TxnHub .wp231-summary{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-top:9px;padding-top:8px;border-top:1px solid #E9E2F1}
 #wp230TxnHub .wp231-summary b{font-size:10.5px;color:#332744}
@@ -19149,7 +19158,6 @@ window.rmxBoot=boot;const baseSwitch=window.switchTab;window.switchTab=function(
   }
 })();
 </script>
-<!-- v232 · STABLE ACTION ROUTER + NO SELF-REFRESH LOOP · 2026-08-25 -->
 <script id="v232-stable-action-router">
 (function(){
   const dec=s=>{try{return decodeURIComponent(String(s||''))}catch(e){return String(s||'')}};
@@ -19200,7 +19208,6 @@ window.rmxBoot=boot;const baseSwitch=window.switchTab;window.switchTab=function(
   };
 })();
 </script>
-<!-- v233 · STABILITY + TRANSACTION DATA + WEEKLY REVENUE WORKFLOW · 2026-08-25 -->
 <style id="v233-stable-workflow-css">
 #wp230TxnHub .v233-script-reminder{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin:8px 0 2px;padding:8px 10px;border:1px solid #D9CBE9;background:#F8F4FC;border-radius:9px;font-size:10px;line-height:1.4;color:#5D5367}
 #wp230TxnHub .v233-script-reminder strong{color:#4E317D}
@@ -19278,7 +19285,6 @@ window.rmxBoot=boot;const baseSwitch=window.switchTab;window.switchTab=function(
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(addScriptReminder,650),{once:true});else setTimeout(addScriptReminder,250);
 })();
 </script>
-<!-- v234 · PENDING TRANSACTION RESTORE + STABLE SNAPSHOT · 2026-08-25 -->
 <style id="v234-pending-transaction-css">
 #wp230TxnHub .v234-rule{margin:8px 0 0;padding:7px 9px;border:1px solid #E5D9F1;border-radius:8px;background:#FBF8FE;color:#665873;font-size:9.7px;line-height:1.45}
 #wp230TxnHub .v234-rule strong{color:#4E317D}
@@ -19471,7 +19477,6 @@ window.rmxBoot=boot;const baseSwitch=window.switchTab;window.switchTab=function(
   }
 })();
 </script>
-
 <script id="v235-transaction-note-rules-js">
 (function(){
   const txnTypes=new Set(['CTC Call','Under Contract Call']);
@@ -19524,7 +19529,7 @@ window.rmxBoot=boot;const baseSwitch=window.switchTab;window.switchTab=function(
       if(isTxn(type)){
         const hint=document.getElementById('notesReqHint'),notesEl=document.getElementById('activityNotes'),wc=document.getElementById('activityWordCount');
         if(hint)hint.textContent='— brief outcome note required; no 10-word minimum';
-        if(notesEl)notesEl.placeholder='Briefly note what happened, feedback, or next step. The transaction details are tracked separately.';
+        if(notesEl)notesEl.placeholder='Briefly note what happened, feedback, or next step. The tracker stores transaction details separately.';
         if(wc){const n=typeof countWords==='function'?countWords(notesEl?.value||''):0;wc.textContent=n>0?'✓ brief note added':'brief outcome note required';wc.style.color=n>0?'var(--success)':'var(--warning)'}
       }
       return r;
@@ -19580,9 +19585,6 @@ window.rmxBoot=boot;const baseSwitch=window.switchTab;window.switchTab=function(
   }
 })();
 </script>
-<!-- v236 START CALL FIX · 2026-08-25
-     New Meeting Push was still using the retired Quick Log reveal path. Route prospect Start call
-     directly into the current unified outreach modal and keep the prospect phone visible/clickable. -->
 <style id="v236-start-call-fix-css">
 #v236ProspectPhone{display:none;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
 #v236ProspectPhone .v236-phone-label{font-weight:800;color:#51427C}
@@ -19653,10 +19655,6 @@ window.rmxBoot=boot;const baseSwitch=window.switchTab;window.switchTab=function(
   // No DOM rebuild or observer is used here, so this cannot restart the disappearing-page loop.
 })();
 </script>
-<!-- v237 FAST SAVE / DELETE UX · 2026-08-25
-     Saves must not feel like the tracker froze. Keep the server write authoritative,
-     close successful modals immediately, refresh only the visible surface first,
-     and defer broad reconciliation work until after the interaction is complete. -->
 <script id="v237-fast-save-delete-js">
 (function(){
   let bgTimer=null;
@@ -19756,11 +19754,6 @@ window.rmxBoot=boot;const baseSwitch=window.switchTab;window.switchTab=function(
   };
 })();
 </script>
-<!-- v238 NEW REALTOR PROSPECT CALL FLOW · 2026-08-25
-     New Meeting Push prospects must open a dedicated cold/new-Realtor call workflow — never
-     New Agent Follow-up or a generic relationship touch. Lock the activity to Cold Calls, keep
-     phone + script visible, enforce voicemail/no-answer text follow-up, and save through the
-     prospect pipeline without rebuilding the whole page. -->
 <style id="v238-new-realtor-call-css">
 #v238ProspectHelp{display:none;margin:0 0 10px;background:#F8F5FC;border:1px solid #DED5ED;border-radius:9px;padding:9px 10px;font-size:10.5px;color:#51427C;line-height:1.45}
 #v238ProspectHelp .v238-row{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
@@ -19917,7 +19910,6 @@ window.rmxBoot=boot;const baseSwitch=window.switchTab;window.switchTab=function(
   }
 })();
 </script>
-<!-- v239 · PRIVACY HARDENING: NEVER STORE OR DISPLAY LOAN NUMBERS · 2026-08-25 -->
 <script id="v239-no-loan-numbers-js">
 (function(){
   'use strict';
@@ -19976,7 +19968,6 @@ window.rmxBoot=boot;const baseSwitch=window.switchTab;window.switchTab=function(
   else setTimeout(scrubExisting,900);
 })();
 </script>
-<!-- v240 · MINIMAL TRANSACTION DATA: buyer, property, agent names + phones only -->
 <script id="v240-minimal-transaction-data-js">
 (function(){
   'use strict';
@@ -20137,7 +20128,6 @@ window.rmxBoot=boot;const baseSwitch=window.switchTab;window.switchTab=function(
   setTimeout(ensure,700);
 })();
 </script>
-
 <script id="v245-transaction-scripts-js">
 (function(){
   window.v245OpenTxnScriptFromWorkbench=function(){
@@ -20156,7 +20146,6 @@ window.rmxBoot=boot;const baseSwitch=window.switchTab;window.switchTab=function(
   window.wp30OpenTransactionTraining=function(){window.v245OpenTxnScriptFromWorkbench()};
 })();
 </script>
-
 <script id="v257-new-meeting-checklist">
 (function(){
   function checklistBlock(){return document.getElementById('intakeBlock')}
@@ -20223,8 +20212,6 @@ window.rmxBoot=boot;const baseSwitch=window.switchTab;window.switchTab=function(
   }
 })();
 </script>
-<!-- v257 current build: unified typography, detailed clickable scorecard, consolidated checklist behavior -->
-
 <script id="v260-prospect-lifecycle-guard">
 (function(){
   const acquisition=new Set(['Cold Calls','Cold Call','New Realtor Meeting','New Agent Follow-up']);
@@ -20238,7 +20225,6 @@ window.rmxBoot=boot;const baseSwitch=window.switchTab;window.switchTab=function(
   }
 })();
 </script>
-
 <style id="v261-easy-prospect-css">
 .v261-prospect-help{font-size:11px;line-height:1.45;color:#355F45;background:#F7FBF8;border:1px solid #C9DED1;border-radius:8px;padding:8px 10px;margin:0 0 10px}
 .v261-optional{font-size:9px;font-weight:500;color:var(--text-4);text-transform:none;letter-spacing:0}
@@ -20250,7 +20236,6 @@ window.rmxBoot=boot;const baseSwitch=window.switchTab;window.switchTab=function(
 .v261-prospect-actions{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
 @media(max-width:620px){#addProspectForm .form-row{grid-template-columns:1fr!important}.v261-prospect-actions{position:sticky;bottom:0;background:var(--surface);padding:8px 0 2px;z-index:2}.v261-prospect-actions .btn-primary{flex:1;min-height:42px}#addProspectForm input,#addProspectForm select,#addProspectForm textarea{font-size:16px!important}}
 </style>
-
 <script id="v264-active-partner-prospect-guard">
 (function(){
   window.RM_SHARED_FACETIME_RULES_VERSION="20260828-v264-lp-aligned";
@@ -20281,6 +20266,230 @@ window.rmxBoot=boot;const baseSwitch=window.switchTab;window.switchTab=function(
     const active=await currentActivePartner(name);
     if(active){toast(name+' is already an active partner in the LP/Power BI roster. This is relationship outreach, not a cold prospect call. Use Talk-To / Face Time so the team does not create conflicting stages.','error',8000);return;}
     return originalCcSave.apply(this,arguments);
+  };
+})();
+</script>
+<style id="v265-tuesday-listing-css">
+#v265TuesdayListingCard{border:1px solid #CFC2E8;border-left:5px solid #6D4AA5;border-radius:12px;background:linear-gradient(100deg,#FBF8FF,#fff);padding:12px 13px;margin:10px 0 12px;box-shadow:0 3px 14px rgba(77,54,116,.055)}
+#v265TuesdayListingCard .v265-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;flex-wrap:wrap;margin-bottom:9px}
+#v265TuesdayListingCard .v265-kicker{font-size:9px;font-weight:900;letter-spacing:.55px;text-transform:uppercase;color:#704AA2;margin-bottom:3px}
+#v265TuesdayListingCard .v265-title{font-size:13px;font-weight:900;color:#2E2439}
+#v265TuesdayListingCard .v265-sub{font-size:10.4px;color:#74687E;line-height:1.45;margin-top:2px;max-width:860px}
+#v265TuesdayListingCard .v265-summary{font-size:9.6px;font-weight:850;color:#5D427D;background:#F2EBFA;border:1px solid #D9C9EB;border-radius:999px;padding:5px 8px;white-space:nowrap}
+#v265TuesdayListingCard .v265-rule{font-size:10px;color:#625870;background:#fff;border:1px solid #E4DCEC;border-radius:8px;padding:7px 9px;line-height:1.45;margin-bottom:8px}
+#v265TuesdayListingCard .v265-list{display:grid;gap:8px}
+#v265TuesdayListingCard .v265-row{background:#fff;border:1px solid #E7E0EE;border-radius:10px;padding:10px 11px;display:grid;grid-template-columns:minmax(230px,1.25fr) minmax(220px,1fr) auto;gap:10px;align-items:center}
+#v265TuesdayListingCard .v265-name{font-size:11.6px;font-weight:900;color:#2E2538}
+#v265TuesdayListingCard .v265-file{font-size:9.7px;color:#7A6F83;margin-top:2px;line-height:1.4}
+#v265TuesdayListingCard .v265-badges{display:flex;gap:5px;flex-wrap:wrap;margin-top:5px}.v265-pill{font-size:8.7px;font-weight:850;border-radius:999px;padding:3px 6px;background:#F3EEF8;color:#60477A;border:1px solid #DED2EA}.v265-pill.partner{background:#EDF7F0;color:#356348;border-color:#CDE1D4}.v265-pill.convert{background:#FFF6E6;color:#7E5A13;border-color:#EBD7A8}.v265-pill.nyny{background:#EEF4FB;color:#35577A;border-color:#D5E1EE}
+#v265TuesdayListingCard .v265-status{font-size:9.8px;color:#685C72;line-height:1.45}.v265-status strong{color:#49375F}.v265-lpdone{margin-top:4px;color:#356348;font-weight:750}
+#v265TuesdayListingCard .v265-actions{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}#v265TuesdayListingCard .v265-actions button{border:1px solid #D8CBE7;background:#fff;color:#5D3F82;border-radius:8px;padding:7px 9px;font:800 9.5px/1.1 inherit;cursor:pointer;white-space:nowrap}#v265TuesdayListingCard .v265-actions button.primary{background:#65409D;color:#fff;border-color:#65409D}
+#v265TuesdayListingCard .v265-empty{padding:13px;text-align:center;color:#7C7185;font-size:10.5px;background:#fff;border:1px dashed #DDD2E8;border-radius:9px}
+#v265ListingModal{display:none;position:fixed;inset:0;z-index:10020;background:rgba(37,27,48,.48);align-items:center;justify-content:center;padding:16px}#v265ListingModal.open{display:flex}#v265ListingModal .v265-modal{width:min(650px,100%);max-height:90vh;overflow:auto;background:#fff;border-radius:14px;padding:17px;border:1px solid #DCCFEB;box-shadow:0 25px 70px rgba(34,24,47,.28)}
+#v265ListingModal .v265-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px}#v265ListingModal label{display:block;font-size:9.4px;font-weight:850;text-transform:uppercase;letter-spacing:.04em;color:#70627D;margin-bottom:4px}#v265ListingModal select,#v265ListingModal textarea{width:100%;box-sizing:border-box;border:1px solid #DCD3E5;border-radius:8px;padding:9px;font:inherit;font-size:12px;background:#fff}#v265ListingModal textarea{min-height:88px;resize:vertical}#v265ListingModal .v265-modal-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:12px}#v265ListingModal .v265-modal-actions button{border:1px solid #D8CDE2;border-radius:8px;padding:8px 11px;font:800 10.5px inherit;cursor:pointer;background:#fff;color:#5B4C67}#v265ListingModal .v265-modal-actions button.primary{background:#65409D;color:#fff;border-color:#65409D}
+@media(max-width:760px){#v265TuesdayListingCard .v265-row{grid-template-columns:1fr}#v265TuesdayListingCard .v265-actions{justify-content:flex-start}#v265ListingModal .v265-grid{grid-template-columns:1fr}#v265TuesdayListingCard{padding:10px}}
+</style>
+<div aria-hidden="true" id="v265ListingModal"><div class="v265-modal"><div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start;margin-bottom:12px"><div><div class="v265-kicker">Tuesday listing-agent update</div><div id="v265ModalTitle" style="font-size:16px;font-weight:900;color:#2E2538">Listing agent</div><div id="v265ModalFile" style="font-size:10.5px;color:#7B7084;margin-top:3px"></div></div><button onclick="v265CloseListingUpdate()" style="border:0;background:none;font-size:22px;cursor:pointer;color:#8A7E92" type="button">×</button></div><div style="font-size:10.6px;color:#64586E;background:#F9F6FC;border:1px solid #E4DBEC;border-radius:8px;padding:8px 9px;line-height:1.5;margin-bottom:10px"><strong>Goal:</strong> give the listing agent the most relevant update for where the file is today — appraisal, underwriting, conditions, CTC/closing, or simply that the file remains on track. Share useful file-level status only. Do not share borrower-sensitive information or appraisal value. If the experience is going well and they are not already a partner, turn the service experience into the next relationship move.</div><div class="v265-grid"><div><label>Contact outcome</label><select id="v265Outcome"><option value="Reached">Reached / talked</option><option value="Text Conversation">Text conversation</option><option value="Left Voicemail + Text">Left voicemail + follow-up text</option><option value="No Answer + Text">No answer + follow-up text</option></select></div><div><label>Useful update</label><select id="v265UpdateKind"><option value="On track">File is on track / no action needed</option><option value="Appraisal ordered / scheduled">Appraisal ordered / scheduled</option><option value="Appraisal received / reviewed">Appraisal received / reviewed</option><option value="Underwriting / conditions">Underwriting / conditions update</option><option value="CTC / closing">CTC / closing status</option><option value="Needs attention">Issue / seller-side action needed</option></select></div><div><label>Relationship opportunity</label><select id="v265Opportunity"><option value="Current partner">Current partner — service touch</option><option value="No opportunity yet">Not a partner — no opportunity yet</option><option value="Warm / receptive">Not a partner — warm / receptive</option><option value="Ask for meeting">Ask for a meeting</option><option value="Meeting booked">Meeting booked</option></select></div><div><label>Next follow-up</label><input id="v265Followup" style="width:100%;box-sizing:border-box;border:1px solid #DCD3E5;border-radius:8px;padding:9px;font:inherit;font-size:12px" type="date"/></div></div><div style="margin-top:9px"><label>What did you communicate / learn?</label><textarea id="v265Notes" placeholder="Example: File remains on track. Appraisal is scheduled Thursday. Agent appreciated the proactive update and said seller has no concerns."></textarea></div><div id="v265Err" style="display:none;color:#A43C35;font-size:10px;margin-top:7px"></div><div class="v265-modal-actions"><button onclick="v265CloseListingUpdate()" type="button">Cancel</button><button class="primary" id="v265SaveBtn" onclick="v265SaveListingUpdate()" type="button">Save listing update</button></div></div></div>
+<script id="v265-tuesday-listing-js">
+(function(){
+  const norm=s=>String(s||'').trim().toLowerCase();
+  const esc=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+  const meta=(notes,k)=>{const m=String(notes||'').match(new RegExp('\\['+k+':([^\\]]*)\\]','i'));return m?m[1].trim():''};
+  const key=s=>{try{return typeof wp18Key==='function'?wp18Key(s):norm(s)}catch(e){return norm(s)}};
+  const todayS=()=>{try{return typeof today==='function'?today():new Date().toISOString().slice(0,10)}catch(e){return new Date().toISOString().slice(0,10)}};
+  function recentTuesday(){const d=new Date();d.setHours(12,0,0,0);const day=d.getDay(),back=(day+5)%7;d.setDate(d.getDate()-back);return d.toISOString().slice(0,10)}
+  function cutoff(days){const d=new Date();d.setDate(d.getDate()-days);return d.toISOString().slice(0,10)}
+  function txnId(r){try{return typeof wp33TxnId==='function'?wp33TxnId(r.notes):meta(r.notes,'TXN_ID')}catch(e){return meta(r.notes,'TXN_ID')}}
+  function role(r){try{return typeof wp30TxnRole==='function'?wp30TxnRole(r.notes):meta(r.notes,'TXN_ROLE')}catch(e){return meta(r.notes,'TXN_ROLE')}}
+  function status(notes){return meta(notes,'TXN_STATUS').toUpperCase()}
+  function injectCard(){
+    if(document.getElementById('v265TuesdayListingCard'))return;
+    const anchor=document.getElementById('wp30TxnIntakeDetails')||document.getElementById('rmLpCoordCard');if(!anchor)return;
+    const c=document.createElement('div');c.id='v265TuesdayListingCard';
+    c.innerHTML='<div class="v265-head"><div><div class="v265-kicker">RM TRANSACTION RELATIONSHIP WORK</div><div class="v265-title">Tuesday listing-agent updates</div><div class="v265-sub">RM owns the listing-agent experience on active files. Give one useful, proactive update each Tuesday, plus milestone updates when there is something meaningful to communicate. Existing partners get service; non-partners become warm relationship opportunities.</div></div><span class="v265-summary" id="v265Summary">Loading…</span></div><div class="v265-rule"><strong>Ownership split:</strong> New Contract congratulations can still go to both agents. After that, LPs own buyer/client updates and pipeline movement; RM owns listing-agent communication. At CTC, RM calls the listing agent while the LP owns the buyer/client side.</div><div id="v265ListingList" class="v265-list"><div class="v265-empty">Loading active listing-agent files…</div></div>';
+    if(anchor.id==='wp30TxnIntakeDetails')anchor.insertAdjacentElement('afterend',c);else anchor.insertAdjacentElement('beforebegin',c);
+  }
+  // New operating model: buyer-side CTC belongs to LPs. RM keeps listing-side CTC plus both New Contract congratulations.
+  const oldBuild=window.wp30BuildTransactionTasks;
+  if(typeof oldBuild==='function'&&!oldBuild.__v265Split){
+    const wrapped=function(data,date,owner){const rows=oldBuild.apply(this,arguments)||[];return rows.filter(t=>!(String(t?.txn?.callType||'')==='CTC Call'&&norm(t?.txn?.role)==='buyer'))};wrapped.__v265Split=true;window.wp30BuildTransactionTasks=wrapped;
+  }
+  let cache=new Map(),current=null;
+  async function load(force){
+    injectCard();const host=document.getElementById('v265ListingList'),sum=document.getElementById('v265Summary');if(!host)return;
+    if(force)host.innerHTML='<div class="v265-empty">Refreshing shared transaction data…</div>';
+    const tue=recentTuesday();
+    try{
+      const rs=await Promise.all([
+        sbFetch('amanda_activities?act_date=gte.'+cutoff(120)+'&act_type=in.(New Contract,Clear to Close,Under Contract Call,CTC Call,Listing Agent Update,LP Tuesday File Update,Transaction Snapshot)&select=id,agent_name,act_type,act_date,outcome,notes,follow_up_date,created_at&order=act_date.desc&limit=6000').catch(()=>[]),
+        sbFetch('agent_profiles?select=agent_name,display_name,tier,powerbi_level,retained,relationship_status,do_not_contact&limit=5000').catch(()=>[]),
+        sbFetch('agent_assignments?select=agent_name,rm,lp&limit=5000').catch(()=>[])
+      ]);
+      const acts=rs[0]||[],profiles=rs[1]||[],assign=rs[2]||[];
+      const pm={};profiles.forEach(p=>pm[key(p.agent_name)]=p);const am={};assign.forEach(a=>am[key(a.agent_name)]=a);
+      const snapshots=acts.filter(a=>a.act_type==='Transaction Snapshot'&&/\[TXN_SNAPSHOT\]/i.test(String(a.notes||'')));
+      const latestBatch=snapshots.reduce((m,a)=>{const b=meta(a.notes,'TXN_BATCH');return b>m?b:m},'');
+      const activeSnap=latestBatch?snapshots.filter(a=>meta(a.notes,'TXN_BATCH')===latestBatch):[];
+      const trig=activeSnap.length?activeSnap:acts.filter(a=>(a.act_type==='New Contract'||a.act_type==='Clear to Close')&&/\[TXN_TRIGGER\]/i.test(String(a.notes||''))&&norm(role(a))==='listing');
+      const groups=new Map();
+      trig.forEach(r=>{const id=txnId(r)||[key(r.agent_name),meta(r.notes,'TXN_CLIENT'),meta(r.notes,'TXN_PROPERTY')].join('|');if(!groups.has(id))groups.set(id,[]);groups.get(id).push(r)});
+      const rows=[];cache=new Map();
+      groups.forEach((arr,id)=>{
+        arr.sort((a,b)=>String(b.created_at||b.act_date).localeCompare(String(a.created_at||a.act_date)));const t=arr[0];
+        if(String(t.act_date)<cutoff(75))return;
+        const isSnap=t.act_type==='Transaction Snapshot';
+        const name=String(isSnap?(meta(t.notes,'TXN_LISTING_AGENT')||''):t.agent_name||'').trim();if(!name)return;
+        const client=meta(t.notes,'TXN_CLIENT'),property=meta(t.notes,'TXN_PROPERTY'),closeDate=meta(t.notes,'TXN_CLOSE_DATE'),milestone=meta(t.notes,'TXN_MILESTONE');
+        if(closeDate&&closeDate<cutoff(2))return;
+        const triggerRows=acts.filter(a=>(a.act_type==='New Contract'||a.act_type==='Clear to Close')&&/\[TXN_TRIGGER\]/i.test(String(a.notes||''))&&txnId(a)===id&&norm(role(a))==='listing').sort((a,b)=>String(b.act_date).localeCompare(String(a.act_date)));
+        const reqTrig=triggerRows[0]||null;
+        const callType=reqTrig?(reqTrig.act_type==='Clear to Close'?'CTC Call':'Under Contract Call'):'';
+        const related=acts.filter(a=>txnId(a)===id&&(norm(role(a))==='listing'||a.act_type==='Listing Agent Update'));
+        const reqDone=!reqTrig||related.some(a=>a.act_type===callType&&status(a.notes)==='COMPLETE'&&String(a.act_date)>=String(reqTrig.act_date));
+        const weekly=related.find(a=>a.act_type==='Listing Agent Update'&&String(a.act_date)>=tue);
+        const reqThisWeek=related.find(a=>a.act_type===callType&&status(a.notes)==='COMPLETE'&&String(a.act_date)>=tue);
+        const lpUpdate=acts.find(a=>a.act_type==='LP Tuesday File Update'&&txnId(a)===id&&String(a.act_date)>=tue);
+        const p=pm[key(name)]||null,a=am[key(name)]||{};
+        const partner=!!(p&&p.retained===true&&p.do_not_contact!==true&&norm(p.relationship_status||'active')!=='inactive');
+        const owner=partner&&(a.rm||'').toLowerCase()==='nyny'?'Nyny':'Amanda';
+        const item={id,name,client,property,closeDate,milestone,stage:(reqTrig?reqTrig.act_type:'Active Transaction'),callType,triggerDate:(reqTrig?reqTrig.act_date:t.act_date),reqDone,weeklyDone:!!(weekly||reqThisWeek),lpUpdate,partner,owner,lp:meta(t.notes,'TXN_LP')||a.lp||'',phone:meta(t.notes,'TXN_LISTING_PHONE'),email:meta(t.notes,'TXN_LISTING_EMAIL')};cache.set(id,item);rows.push(item);
+      });
+      rows.sort((a,b)=>(Number(a.weeklyDone)-Number(b.weeklyDone))||(Number(a.reqDone)-Number(b.reqDone))||((a.owner==='Amanda'?0:1)-(b.owner==='Amanda'?0:1))||String(a.closeDate||a.triggerDate).localeCompare(String(b.closeDate||b.triggerDate)));
+      const due=rows.filter(r=>!r.weeklyDone).length,done=rows.length-due;
+      if(sum)sum.textContent=due+' due · '+done+' handled · week of '+tue+(latestBatch?' · Encompass snapshot '+latestBatch.slice(4,6)+'/'+latestBatch.slice(6,8):' · legacy transaction source');
+      const show=rows.filter(r=>!r.weeklyDone);
+      if(!show.length){host.innerHTML='<div class="v265-empty"><strong>Listing-agent updates complete.</strong><br>The tracker adds new milestones here and resets the list next Tuesday.</div>';return}
+      host.innerHTML=show.map(r=>{
+        const file=[r.client,r.property].filter(Boolean).join(' · ')||'Active file';
+        let action='',statusCopy='';
+        {const m=norm(r.milestone);statusCopy=m.includes('appraisal')?'<strong>Suggested update:</strong> '+esc(r.milestone)+'. Share status only; never share appraisal value before buyer-side communication is handled.':m.includes('underwrit')||m.includes('condition')?'<strong>Suggested update:</strong> underwriting / condition status, whether the file remains on track, and whether anything is needed from the seller side.':r.stage==='Clear to Close'||m.includes('clear to close')||m==='ctc'?'<strong>Suggested update:</strong> CTC / closing readiness and whether anything is needed from the seller side.':'<strong>Suggested update:</strong> file status, next meaningful milestone, and whether anything is needed from the seller side.';action='<button class="primary" type="button" onclick="v265OpenListingUpdate(\''+encodeURIComponent(r.id)+'\')">Open listing update</button>'}
+        const rel=r.partner?'<span class="v265-pill partner">Current partner</span>':'<span class="v265-pill convert">Relationship opportunity</span>';
+        const own=r.owner==='Nyny'?'<span class="v265-pill nyny">RM owner: Nyny</span>':'<span class="v265-pill">RM owner: Amanda</span>';
+        const lp=r.lpUpdate?'<div class="v265-lpdone">Buyer side updated by '+esc(meta(r.lpUpdate.notes,'LP')||'LP')+' · '+esc(r.lpUpdate.act_date)+'</div>':'';
+        return '<div class="v265-row"><div><div class="v265-name">'+esc(r.name)+'</div><div class="v265-file">'+esc(file)+(r.closeDate?' · close '+esc(r.closeDate):'')+'</div><div class="v265-badges">'+rel+own+(r.lp?'<span class="v265-pill">LP: '+esc(r.lp)+'</span>':'')+'</div></div><div class="v265-status">'+statusCopy+lp+'</div><div class="v265-actions">'+action+(!r.partner?'<button type="button" onclick="v265AddListingProspect(\''+encodeURIComponent(r.id)+'\')">Add to meeting push</button>':'')+'</div></div>'
+      }).join('');
+    }catch(e){console.warn('v265 Tuesday listing',e);if(sum)sum.textContent='Could not load';host.innerHTML='<div class="v265-empty">Could not load Tuesday listing-agent work. Refresh once and try again.</div>'}
+  }
+  window.v265RefreshListingUpdates=()=>load(true);
+  window.v265OpenRequired=function(encId){const r=cache.get(decodeURIComponent(encId||''));if(!r)return;try{if(typeof v176OpenTransaction==='function')v176OpenTransaction(r.callType,r.name,'Listing',r.id)}catch(e){console.warn(e)}};
+  window.v265OpenListingUpdate=function(encId){const r=cache.get(decodeURIComponent(encId||''));if(!r)return;current=r;const m=document.getElementById('v265ListingModal');if(!m)return;m.classList.add('open');m.setAttribute('aria-hidden','false');document.getElementById('v265ModalTitle').textContent=r.name;document.getElementById('v265ModalFile').textContent=[r.client,r.property,r.closeDate?'Close '+r.closeDate:''].filter(Boolean).join(' · ');document.getElementById('v265Opportunity').value=r.partner?'Current partner':'No opportunity yet';const mm=norm(r.milestone);document.getElementById('v265UpdateKind').value=mm.includes('appraisal')?(mm.includes('received')||mm.includes('review')?'Appraisal received / reviewed':'Appraisal ordered / scheduled'):(mm.includes('underwrit')||mm.includes('condition')?'Underwriting / conditions':(r.stage==='Clear to Close'||mm.includes('clear to close')||mm==='ctc'?'CTC / closing':'On track'));document.getElementById('v265Outcome').value='Reached';document.getElementById('v265Notes').value='';document.getElementById('v265Followup').value='';document.getElementById('v265Err').style.display='none'};
+  window.v265CloseListingUpdate=function(){current=null;const m=document.getElementById('v265ListingModal');if(m){m.classList.remove('open');m.setAttribute('aria-hidden','true')}};
+  window.v265SaveListingUpdate=async function(){if(!current)return;const out=document.getElementById('v265Outcome').value,kind=document.getElementById('v265UpdateKind').value,opp=document.getElementById('v265Opportunity').value,note=(document.getElementById('v265Notes').value||'').trim(),fu=document.getElementById('v265Followup').value||null,err=document.getElementById('v265Err'),btn=document.getElementById('v265SaveBtn');if(note.split(/\s+/).filter(Boolean).length<3){err.textContent='Add a short note with what you communicated or learned.';err.style.display='block';return}btn.disabled=true;btn.textContent='Saving…';try{let notes='[TUESDAY_LISTING][TXN_ID:'+current.id+'][TXN_ROLE:Listing][TXN_CLIENT:'+String(current.client||'').replace(/\]/g,'')+'][TXN_PROPERTY:'+String(current.property||'').replace(/\]/g,'')+'][UPDATE_KIND:'+kind+'][RELATIONSHIP_OPP:'+opp+'] '+note;if(typeof appendRmMeta==='function')notes=appendRmMeta(notes,current.owner||'Amanda','Current Relationship');await sbFetch('amanda_activities',{method:'POST',prefer:'return=minimal',body:JSON.stringify({agent_name:current.name,act_type:'Listing Agent Update',act_date:todayS(),outcome:out,notes,follow_up_date:fu})});if(typeof toast==='function')toast('Listing-agent update saved ✓','success',3000);v265CloseListingUpdate();await load(true);try{if(typeof v23LoadAmandaSnapshot==='function')v23LoadAmandaSnapshot(true)}catch(e){}}catch(e){console.warn(e);err.textContent='Could not save. Try again.';err.style.display='block'}finally{btn.disabled=false;btn.textContent='Save listing update'}};
+  window.v265AddListingProspect=function(encId){const r=cache.get(decodeURIComponent(encId||''));if(!r)return;try{if(typeof switchTab==='function')switchTab('newagents');setTimeout(()=>{if(typeof toggleAddForm==='function')toggleAddForm(true);setTimeout(()=>{const n=document.getElementById('np-name'),p=document.getElementById('np-phone'),e=document.getElementById('np-email'),notes=document.getElementById('np-notes');if(n)n.value=r.name;if(p&&!p.value)p.value=r.phone||'';if(e&&!e.value)e.value=r.email||'';if(notes&&!notes.value)notes.value='Warm listing-agent relationship from active transaction'+(r.property?' · '+r.property:'')+'.';},80)},80)}catch(e){console.warn(e)}};
+  // Keep this workflow fresh whenever Amanda Today refreshes or a shared activity lands.
+  const snap=window.v23LoadAmandaSnapshot;if(typeof snap==='function'&&!snap.__v265Tuesday){const w=async function(){const r=await snap.apply(this,arguments);setTimeout(()=>load(false),120);return r};w.__v265Tuesday=true;window.v23LoadAmandaSnapshot=w}
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>{injectCard();setTimeout(()=>load(false),1000)},{once:true});else{injectCard();setTimeout(()=>load(false),500)}
+})();
+</script>
+<style id="rm-v1-aligned-tuesday-css">
+.rm-v1-tue-badge{margin-left:auto;display:inline-flex;align-items:center;justify-content:center;min-width:24px;height:19px;padding:0 6px;border-radius:999px;background:#EFE8F8;color:#65409D;font-size:9px;font-weight:900;line-height:1}
+.tab.active .rm-v1-tue-badge{background:rgba(255,255,255,.18);color:#fff}
+.rm-v1-tuesday-page-head{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;flex-wrap:wrap;margin-bottom:12px;padding:2px 1px}.rm-v1-tuesday-kicker{font-size:9px;font-weight:900;letter-spacing:.6px;color:#704AA2}.rm-v1-tuesday-page-title{font-size:20px;font-weight:900;color:var(--text-1);margin-top:2px}.rm-v1-tuesday-page-sub{font-size:11px;color:var(--text-3);line-height:1.5;margin-top:4px;max-width:780px}.rm-v1-source-pill{font-size:9.5px;font-weight:850;color:#356348;background:#EDF7F0;border:1px solid #CDE1D4;border-radius:999px;padding:6px 9px;white-space:nowrap}
+@media(max-width:760px){.rm-v1-tuesday-page-title{font-size:18px}.rm-v1-tuesday-page-head{margin-bottom:8px}}
+</style>
+<script id="rm-v1-aligned-tuesday-js">
+(function(){
+  let homeMarker=null;
+  function ensureMarker(){
+    const card=document.getElementById('v265TuesdayListingCard');
+    if(!card)return null;
+    if(!homeMarker){homeMarker=document.createComment('RM V1 Tuesday card home');card.parentNode.insertBefore(homeMarker,card)}
+    return card;
+  }
+  function moveCard(){
+    const card=ensureMarker();if(!card)return;
+    const tue=document.getElementById('view-tuesday'),host=document.getElementById('rm-v1-tuesday-host');
+    if(tue&&tue.classList.contains('active')&&host){host.innerHTML='';host.appendChild(card)}
+    else if(homeMarker&&homeMarker.parentNode&&card.parentNode!==homeMarker.parentNode){homeMarker.parentNode.insertBefore(card,homeMarker.nextSibling)}
+  }
+  function updateBadge(){
+    const b=document.getElementById('rmV1TuesdayBadge'),s=document.getElementById('v265Summary');if(!b)return;
+    const m=String(s&&s.textContent||'').match(/(\d+)\s+due/i);b.textContent=m?m[1]:'—';
+    b.title=m?(m[1]+' Tuesday listing-agent update'+(m[1]==='1'?'':'s')+' due'):'Tuesday updates';
+  }
+  const base=window.switchTab;
+  if(typeof base==='function'&&!base.__alignedV1){
+    const wrapped=function(name){const r=base.apply(this,arguments);setTimeout(function(){moveCard();updateBadge();if(name==='tuesday'&&typeof window.v265RefreshListingUpdates==='function')window.v265RefreshListingUpdates()},0);return r};
+    wrapped.__alignedV1=true;window.switchTab=wrapped;
+  }
+  function boot(){
+    ensureMarker();moveCard();updateBadge();
+    const s=document.getElementById('v265Summary');if(s)new MutationObserver(updateBadge).observe(s,{childList:true,subtree:true,characterData:true});
+    const list=document.getElementById('v265ListingList');if(list)new MutationObserver(updateBadge).observe(list,{childList:true,subtree:true});
+  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',function(){setTimeout(boot,250)});else setTimeout(boot,250);setInterval(function(){ensureMarker();updateBadge()},1500);
+})();
+</script>
+<script id="rm-v1-tuesday-action-hotfix-js">
+(function(){
+  function txCards(){return Array.from(document.querySelectorAll('#v175TransactionModal .v176-agent-card'));}
+  function setTuesdayListingScope(r){
+    const modal=document.getElementById('v175TransactionModal');if(!modal)return;
+    modal.dataset.rmV1TuesdayScope='listing';
+    const cards=txCards();if(cards[0])cards[0].style.display='none';if(cards[1])cards[1].style.display='block';
+    const listingName=(document.getElementById('v175TxListingAgent')?.value||'').trim();
+    modal.dataset.v231OpenSides=JSON.stringify([{role:'Listing',name:listingName}]);
+    const title=document.getElementById('v175TransactionTitle');
+    if(title)title.textContent=(r&&r.callType==='CTC Call')?'CTC · Listing Agent Update':'New Contract · Listing Agent Call';
+    const rule=document.getElementById('v175TransactionRule');
+    if(rule)rule.innerHTML=(r&&r.callType==='CTC Call')
+      ?'<b>RM owns the listing-agent CTC update.</b> Give the listing agent the relevant closing-readiness update, capture feedback, and create the next relationship move. LP owns the buyer/client side.'
+      :'<b>RM listing-agent lane.</b> Complete the listing-agent transaction call, capture feedback, and create the next relationship move. Buyer/client servicing stays with the LP after the initial contract congratulations workflow.';
+    const head=modal.querySelector('.v175-head p');if(head)head.textContent='Listing-agent transaction work: status, outcome, feedback, follow-up, and relationship opportunity.';
+    const scriptBtn=modal.querySelector('button[onclick="v245OpenTxnScriptFromWorkbench()"]');if(scriptBtn)scriptBtn.textContent='Open listing-agent script';
+    const complete=document.getElementById('v176SaveCompleteBtn');if(complete)complete.textContent='Complete listing-agent call';
+    const progress=document.getElementById('v176SaveProgressBtn');if(progress)progress.textContent='Save listing progress';
+    try{document.getElementById('v175TxListingOutcome')?.focus()}catch(e){}
+  }
+  function resetTransactionScope(){
+    const modal=document.getElementById('v175TransactionModal');if(!modal)return;
+    if(modal.dataset.rmV1TuesdayScope!=='listing')return;
+    delete modal.dataset.rmV1TuesdayScope;
+    const cards=txCards();cards.forEach(c=>c.style.display='block');
+    const head=modal.querySelector('.v175-head p');if(head)head.textContent='Everything stays here: buyer, property, both agents, outcomes, feedback, text follow-up, and the team WhatsApp update.';
+    const scriptBtn=modal.querySelector('button[onclick="v245OpenTxnScriptFromWorkbench()"]');if(scriptBtn)scriptBtn.textContent='Open buyer + listing agent script';
+    const complete=document.getElementById('v176SaveCompleteBtn');if(complete)complete.textContent='Complete Required Calls';
+    const progress=document.getElementById('v176SaveProgressBtn');if(progress)progress.textContent='Save Progress';
+  }
+
+  // Generic transaction opens keep the normal workbench. Tuesday listing-agent required calls narrow it to RM's side only.
+  const baseOpen=window.v176OpenTransaction;
+  if(typeof baseOpen==='function'&&!baseOpen.__rmV1ScopeReset){
+    const wrapped=function(){resetTransactionScope();return baseOpen.apply(this,arguments)};
+    wrapped.__rmV1ScopeReset=true;window.v176OpenTransaction=wrapped;
+  }
+
+  // Tuesday always uses the generic listing-agent update workflow. New Contract / CTC workbenches remain available in their own transaction-call queues.
+  window.v265OpenRequired=function(encId){
+    if(typeof window.v265OpenListingUpdate==='function')window.v265OpenListingUpdate(encId);
+  };
+
+  // Fix "Add to meeting push": the real tab is `pipeline` (not the retired `newagents` tab).
+  // Navigate, open the existing safe prospect form, prefill it, and make the action visible on desktop/mobile.
+  window.v265AddListingProspect=function(encId){
+    const id=decodeURIComponent(encId||'');
+    let name='',phone='',email='',property='';
+    try{
+      const b=typeof window.wp48TxnBundle==='function'?(window.wp48TxnBundle(id,'','Listing')||{}):{};
+      name=b.listing||'';phone=b.listingPhone||'';email=b.listingEmail||'';property=b.property||'';
+      const btn=Array.from(document.querySelectorAll('#v265Rows button')).find(bn=>String(bn.getAttribute('onclick')||'').includes(encodeURIComponent(id))&&/v265AddListingProspect/.test(String(bn.getAttribute('onclick')||'')));
+      const row=btn&&btn.closest('.v265-row');
+      if(!name&&row){const el=row.querySelector('.v265-name');name=String(el&&el.textContent||'').trim()}
+      if(!property&&row){const el=row.querySelector('.v265-file');property=String(el&&el.textContent||'').trim()}
+    }catch(e){console.warn('Meeting-push prefill lookup',e)}
+    try{
+      if(typeof window.switchTab==='function')window.switchTab('pipeline');
+      setTimeout(function(){
+        if(typeof window.toggleAddForm==='function')window.toggleAddForm(true);else if(typeof toggleAddForm==='function')toggleAddForm(true);
+        setTimeout(function(){
+          const n=document.getElementById('np-name'),p=document.getElementById('np-phone'),e=document.getElementById('np-email'),notes=document.getElementById('np-notes');
+          if(n)n.value=name;if(p)p.value=phone||'';if(e)e.value=email||'';
+          if(notes)notes.value='Warm listing-agent relationship from active transaction'+(property?' · '+property:'')+'.';
+          const form=document.getElementById('addProspectForm');if(form)try{form.scrollIntoView({behavior:'smooth',block:'start'})}catch(_){ }
+          if(typeof window.toast==='function')window.toast((name||'Listing agent')+' is ready to add to New Meeting Push.','success',3000);
+        },100);
+      },80);
+    }catch(e){console.warn('Add to meeting push failed',e);try{window.toast&&window.toast('Could not open New Meeting Push. Refresh once and try again.','error',4000)}catch(_){}}
   };
 })();
 </script>
