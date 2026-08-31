@@ -4,7 +4,7 @@
 <html lang="en">
 <head>
 <meta content="aligned-v1-rm" name="version"/>
-<meta content="Aligned Version 1 baseline. Preserves v266 behavior; adds dedicated Tuesday Updates navigation and makes Core Team the sole Tuesday active-file upload source. Reads smart Core Team Tuesday snapshot fields including transaction LP and buyer/listing email/phone; no loan numbers." name="build-notes"/>
+<meta content="Aligned Version 1 baseline. Preserves v266 behavior; adds dedicated Tuesday Updates navigation and makes Core Team the sole Tuesday active-file upload source. Reads the Core Team weekly Tuesday snapshot as the single transaction source, including persistent contact corrections and FSBO/no-listing-agent exceptions; no loan numbers." name="build-notes"/>
 <meta content="no-cache, no-store, must-revalidate" http-equiv="Cache-Control">
 <meta content="no-cache" http-equiv="Pragma">
 <meta content="0" http-equiv="Expires"/>
@@ -1219,7 +1219,7 @@ nav a,aside a,[class*="nav"] a,[class*="sidebar"] a{
 <div class="header">
 <div class="brand-wrap">
 <span class="brand-chip">RM TRACKER</span>
-<span class="brand-sub">Daniel Sa Team · Version 1</span>
+
 </div>
 <div class="header-right">
 <span class="week-chip" id="weekPill"></span>
@@ -1662,7 +1662,7 @@ nav a,aside a,[class*="nav"] a,[class*="sidebar"] a{
 <div class="view" id="view-tuesday">
 <div class="rm-v1-tuesday-page-head">
 <div><div class="rm-v1-tuesday-kicker">TUESDAY UPDATES</div><div class="rm-v1-tuesday-page-title">Listing-agent updates</div><div class="rm-v1-tuesday-page-sub">All valid listing-agent updates from the weekly Core Team active-file upload — regardless of tier or relationship ownership.</div></div>
-<div class="rm-v1-source-pill" id="rmV1TuesdaySource">Core Team shared source</div>
+<div class="rm-v1-source-pill" id="rmV1TuesdaySource">Core Team weekly upload</div>
 </div>
 <div id="rm-v1-tuesday-host"><div class="card" style="padding:18px;color:var(--text-3);font-size:12px">Loading Tuesday listing-agent work…</div></div>
 </div>
@@ -20343,7 +20343,7 @@ window.rmxBoot=boot;const baseSwitch=window.switchTab;window.switchTab=function(
         arr.sort((a,b)=>String(b.created_at||b.act_date).localeCompare(String(a.created_at||a.act_date)));const t=arr[0];
         if(String(t.act_date)<cutoff(75))return;
         const isSnap=t.act_type==='Transaction Snapshot';
-        let name=String(isSnap?(meta(t.notes,'TXN_LISTING_AGENT')||''):t.agent_name||'').trim();const nameOv=rmOv((ovMap[id]&&ovMap[id].notes)||'','LISTING_AGENT_OVERRIDE');if(nameOv.has)name=nameOv.value==='__NONE__'?'':nameOv.value;if(!name)return;
+        let name=String(isSnap?(meta(t.notes,'TXN_LISTING_AGENT')||''):t.agent_name||'').trim();const ovNotes=(ovMap[id]&&ovMap[id].notes)||'',listingNa=meta(ovNotes,'LISTING_AGENT_NA')==='Y',nameOv=rmOv(ovNotes,'LISTING_AGENT_OVERRIDE');if(listingNa)name='';else if(nameOv.has)name=nameOv.value==='__NONE__'?'':nameOv.value;if(!name)return;
         const client=meta(t.notes,'TXN_CLIENT'),property=meta(t.notes,'TXN_PROPERTY'),closeDate=meta(t.notes,'TXN_CLOSE_DATE'),milestone=meta(t.notes,'TXN_MILESTONE');
         if(closeDate&&closeDate<cutoff(2))return;
         const triggerRows=acts.filter(a=>(a.act_type==='New Contract'||a.act_type==='Clear to Close')&&/\[TXN_TRIGGER\]/i.test(String(a.notes||''))&&txnId(a)===id&&norm(role(a))==='listing').sort((a,b)=>String(b.act_date).localeCompare(String(a.act_date)));
@@ -20388,7 +20388,7 @@ window.rmxBoot=boot;const baseSwitch=window.switchTab;window.switchTab=function(
 <style id="rm-v1-aligned-tuesday-css">
 .rm-v1-tue-badge{margin-left:auto;display:inline-flex;align-items:center;justify-content:center;min-width:24px;height:19px;padding:0 6px;border-radius:999px;background:#EFE8F8;color:#65409D;font-size:9px;font-weight:900;line-height:1}
 .tab.active .rm-v1-tue-badge{background:rgba(255,255,255,.18);color:#fff}
-.rm-v1-tuesday-page-head{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;flex-wrap:wrap;margin-bottom:12px;padding:2px 1px}.rm-v1-tuesday-kicker{font-size:9px;font-weight:900;letter-spacing:.6px;color:#704AA2}.rm-v1-tuesday-page-title{font-size:20px;font-weight:900;color:var(--text-1);margin-top:2px}.rm-v1-tuesday-page-sub{font-size:11px;color:var(--text-3);line-height:1.5;margin-top:4px;max-width:780px}.rm-v1-source-pill{font-size:9.5px;font-weight:850;color:#356348;background:#EDF7F0;border:1px solid #CDE1D4;border-radius:999px;padding:6px 9px;white-space:nowrap}
+.rm-v1-tuesday-page-head{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;flex-wrap:wrap;margin-bottom:12px;padding:2px 1px}.rm-v1-tuesday-kicker{font-size:9px;font-weight:900;letter-spacing:.6px;color:#704AA2}.rm-v1-tuesday-page-title{font-size:20px;font-weight:900;color:var(--text-1);margin-top:2px}.rm-v1-tuesday-page-sub{font-size:11px;color:var(--text-3);line-height:1.5;margin-top:4px;max-width:780px}.rm-v1-source-pill{font-size:9.5px;font-weight:850;color:#4F3C73;background:#F5F1FA;border:1px solid #DED3EB;border-radius:999px;padding:6px 9px;white-space:nowrap}
 @media(max-width:760px){.rm-v1-tuesday-page-title{font-size:18px}.rm-v1-tuesday-page-head{margin-bottom:8px}}
 </style>
 <script id="rm-v1-aligned-tuesday-js">
