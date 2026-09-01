@@ -18977,7 +18977,7 @@ window.rmxBoot=boot;const baseSwitch=window.switchTab;window.switchTab=function(
         const isSnap=t.act_type==='Transaction Snapshot';
         let name=String(isSnap?(meta(t.notes,'TXN_LISTING_AGENT')||''):t.agent_name||'').trim();
         const ovNotes=(ovMap[id]&&ovMap[id].notes)||'',
-              listingNa=meta(ovNotes,'LISTING_AGENT_NA')==='Y',
+              listingNa=meta(ovNotes,'LISTING_AGENT_NA')==='Y'||meta(t.notes,'TXN_LISTING_FSBO')==='Y',
               nameOv=rmOv(ovNotes,'LISTING_AGENT_OVERRIDE');
         if(listingNa)name='';
         else if(nameOv.has)name=nameOv.value==='__NONE__'?'':nameOv.value;
@@ -19002,17 +19002,19 @@ window.rmxBoot=boot;const baseSwitch=window.switchTab;window.switchTab=function(
         const p=pm[key(name)]||null,a=am[key(name)]||{};
         const partner=!!(p&&p.retained===true&&p.do_not_contact!==true&&norm(p.relationship_status||'active')!=='inactive');
         const relationshipOwner=String(a.rm||'').trim();
-        let item={id,name,client,property,closeDate,milestone,milestoneGroup:mg,stage:(reqTrig?reqTrig.act_type:'Active Transaction'),callType,triggerDate:(reqTrig?reqTrig.act_date:t.act_date),reqDone,weeklyDone:!!weekly,lpUpdate,partner,owner:'Amanda',relationshipOwner,lp:meta(t.notes,'TXN_LP')||a.lp||'',phone:meta(t.notes,'TXN_LISTING_PHONE'),email:meta(t.notes,'TXN_LISTING_EMAIL'),contactIssue:!name,fsbo:listingNa};
+        let item={id,name,client,property,closeDate,milestone,milestoneGroup:mg,stage:(reqTrig?reqTrig.act_type:'Active Transaction'),callType,triggerDate:(reqTrig?reqTrig.act_date:t.act_date),reqDone,weeklyDone:!!weekly,lpUpdate,partner,owner:'Amanda',relationshipOwner,lp:meta(t.notes,'TXN_LP')||a.lp||'',phone:meta(t.notes,'TXN_LISTING_PHONE'),email:meta(t.notes,'TXN_LISTING_EMAIL'),contactIssue:!name&&!listingNa,fsbo:listingNa};
         item=rmApplyOverride(item,ovMap[id]);
-        item.contactIssue=!String(item.name||'').trim();
+        item.fsbo=!!item.fsbo||meta(t.notes,'TXN_LISTING_FSBO')==='Y';item.contactIssue=!String(item.name||'').trim()&&!item.fsbo;
         cache.set(id,item);rows.push(item);
       });
       rows.sort((a,b)=>(Number(a.weeklyDone)-Number(b.weeklyDone))||(Number(a.reqDone)-Number(b.reqDone))||String(a.closeDate||a.triggerDate).localeCompare(String(b.closeDate||b.triggerDate)));
-      const due=rows.filter(r=>!r.weeklyDone).length,
-            done=rows.length-due,
-            contactIssues=rows.filter(r=>r.contactIssue&&!r.weeklyDone).length;
+      const due=rows.filter(r=>!r.weeklyDone&&!r.fsbo).length,
+            done=rows.filter(r=>r.weeklyDone).length,
+            contactIssues=rows.filter(r=>r.contactIssue&&!r.weeklyDone).length,
+            fsboCount=rows.filter(r=>r.fsbo).length,
+            callableOpen=rows.filter(r=>!r.weeklyDone&&!r.contactIssue&&!r.fsbo).length;
       if(sum)sum.textContent=latestBatch
-        ?(rows.length+' active files · '+due+' Tuesday items open · '+done+' handled'+(contactIssues?' · '+contactIssues+' listing-contact issue'+(contactIssues===1?'':'s'):'')+' · Encompass '+latestBatch.slice(4,6)+'/'+latestBatch.slice(6,8))
+        ?(rows.length+' active files · '+callableOpen+' listing-agent updates due · '+done+' handled'+(contactIssues?' · '+contactIssues+' contact issue'+(contactIssues===1?'':'s'):'')+(fsboCount?' · '+fsboCount+' FSBO / no listing agent':'')+' · Encompass '+latestBatch.slice(4,6)+'/'+latestBatch.slice(6,8))
         :'No weekly Core Team upload yet';
       const show=rows.filter(r=>!r.weeklyDone);
       if(!latestBatch){host.innerHTML='<div class="v265-empty"><strong>No current Encompass active-file snapshot found.</strong><br>Upload this week’s Encompass Active Files in Core Team → Weekly Data Hub. Manual CTC/New Contract entries do not replace the shared upload.</div>';return}if(!show.length){host.innerHTML='<div class="v265-empty"><strong>Listing-agent updates complete.</strong><br>No additional listing-agent updates are due from this week’s shared snapshot.</div>';return}
@@ -19025,7 +19027,7 @@ window.rmxBoot=boot;const baseSwitch=window.switchTab;window.switchTab=function(
               ?'<strong>Listing side:</strong> FSBO / no listing agent confirmed.'
               :'<strong>Contact issue:</strong> this active Encompass file has no listing-agent name in the shared snapshot. Fix the contact instead of letting the file disappear.';
             action=r.fsbo
-              ?'<span class="v265-pill">No listing-agent call</span>'
+              ?'<span class="v265-pill">FSBO · no listing-agent call</span>'
               :'<button class="primary" type="button" onclick="v265FixListingContact(\''+encodeURIComponent(r.id)+'\')">Fix listing contact</button>';
           }else{
             const g=r.milestoneGroup||'File status';
