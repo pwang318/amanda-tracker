@@ -1177,6 +1177,11 @@ nav a,aside a,[class*="nav"] a,[class*="sidebar"] a{
 #breadDueList .v258-ft-row{margin:0 9px;border-radius:0;border-left:0;border-right:0}
 #breadDueList .v258-tier{display:inline-block;font-size:8.5px;font-weight:850;padding:2px 5px;border-radius:999px;background:#EFF4F1;color:#42604C;margin-left:4px}
 </style>
+
+<style id="rm-tuesday-permanent-home-v12-css">
+.rm-v1-tuesday-nav{display:flex!important}
+#view-tuesday #rm-v1-tuesday-host{display:block!important;min-height:80px}
+</style>
 </head>
 <body>
 <input accept="image/*" id="v95ProfilePhotoInput" onchange="v95HandlePhotoUpload(event)" style="display:none" type="file"/>
@@ -19007,35 +19012,80 @@ window.rmxBoot=boot;const baseSwitch=window.switchTab;window.switchTab=function(
 </style>
 <script id="rm-v1-aligned-tuesday-js">
 (function(){
-  let homeMarker=null;
-  function ensureMarker(){
-    const card=document.getElementById('v265TuesdayListingCard');
-    if(!card)return null;
-    if(!homeMarker){homeMarker=document.createComment('RM V1 Tuesday card home');card.parentNode.insertBefore(homeMarker,card)}
-    return card;
+'use strict';
+
+function host(){return document.getElementById('rm-v1-tuesday-host')}
+function card(){return document.getElementById('v265TuesdayListingCard')}
+
+function parkTuesdayCard(){
+  const h=host(),c=card();
+  if(!h||!c)return false;
+  if(c.parentNode!==h){
+    h.innerHTML='';
+    h.appendChild(c);
   }
-  function moveCard(){
-    const card=ensureMarker();if(!card)return;
-    const tue=document.getElementById('view-tuesday'),host=document.getElementById('rm-v1-tuesday-host');
-    if(tue&&tue.classList.contains('active')&&host){host.innerHTML='';host.appendChild(card)}
-    else if(homeMarker&&homeMarker.parentNode&&card.parentNode!==homeMarker.parentNode){homeMarker.parentNode.insertBefore(card,homeMarker.nextSibling)}
+  c.style.display='block';
+  return true;
+}
+function updateBadge(){
+  const b=document.getElementById('rmV1TuesdayBadge'),s=document.getElementById('v265Summary');
+  if(!b)return;
+  const m=String(s&&s.textContent||'').match(/(\d+)\s+due/i);
+  b.textContent=m?m[1]:'—';
+  b.title=m?(m[1]+' Tuesday listing-agent update'+(m[1]==='1'?'':'s')+' due'):'Tuesday updates';
+}
+async function ensureTuesday(){
+  /* v265 refresh creates the card if it does not exist. Its permanent home is this tab. */
+  if(!card()&&typeof window.v265RefreshListingUpdates==='function'){
+    try{await window.v265RefreshListingUpdates()}catch(e){console.warn('Tuesday refresh',e)}
   }
-  function updateBadge(){
-    const b=document.getElementById('rmV1TuesdayBadge'),s=document.getElementById('v265Summary');if(!b)return;
-    const m=String(s&&s.textContent||'').match(/(\d+)\s+due/i);b.textContent=m?m[1]:'—';
-    b.title=m?(m[1]+' Tuesday listing-agent update'+(m[1]==='1'?'':'s')+' due'):'Tuesday updates';
-  }
-  const base=window.switchTab;
-  if(typeof base==='function'&&!base.__alignedV1){
-    const wrapped=function(name){const r=base.apply(this,arguments);setTimeout(function(){moveCard();updateBadge();if(name==='tuesday'&&typeof window.v265RefreshListingUpdates==='function')window.v265RefreshListingUpdates()},0);return r};
-    wrapped.__alignedV1=true;window.switchTab=wrapped;
-  }
-  function boot(){
-    ensureMarker();moveCard();updateBadge();
-    const s=document.getElementById('v265Summary');if(s)new MutationObserver(updateBadge).observe(s,{childList:true,subtree:true,characterData:true});
-    const list=document.getElementById('v265ListingList');if(list)new MutationObserver(updateBadge).observe(list,{childList:true,subtree:true});
-  }
-  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',function(){setTimeout(boot,250)});else setTimeout(boot,250);setTimeout(function(){ensureMarker();updateBadge()},1200);
+  parkTuesdayCard();
+  updateBadge();
+}
+
+/* Keep the navigation permanently available. */
+const nav=document.querySelector('.rm-v1-tuesday-nav');
+if(nav)nav.style.display='flex';
+
+/* Wrap the data refresh itself so every successful refresh returns the card to its permanent host. */
+const refresh=window.v265RefreshListingUpdates;
+if(typeof refresh==='function'&&!refresh.__permanentTuesdayHome){
+  const w=async function(){
+    const r=await refresh.apply(this,arguments);
+    parkTuesdayCard();updateBadge();
+    return r;
+  };
+  w.__permanentTuesdayHome=true;
+  window.v265RefreshListingUpdates=w;
+}
+
+/* Navigation no longer moves the card back to Today. */
+const base=window.switchTab;
+if(typeof base==='function'&&!base.__permanentTuesdayHome){
+  const w=function(name){
+    const r=base.apply(this,arguments);
+    if(name==='tuesday'){
+      setTimeout(()=>ensureTuesday(),0);
+    }else{
+      /* Keep the Tuesday card parked in its own hidden view while Amanda works elsewhere. */
+      setTimeout(()=>{parkTuesdayCard();updateBadge()},0);
+    }
+    return r;
+  };
+  w.__permanentTuesdayHome=true;
+  window.switchTab=w;
+}
+
+window.rmEnsureTuesdayUpdates=ensureTuesday;
+
+async function boot(){
+  await ensureTuesday();
+}
+if(document.readyState==='loading'){
+  document.addEventListener('DOMContentLoaded',()=>setTimeout(boot,350),{once:true});
+}else{
+  setTimeout(boot,200);
+}
 })();
 </script>
 <script id="rm-v1-tuesday-action-hotfix-js">
