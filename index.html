@@ -2015,7 +2015,7 @@ nav a,aside a,[class*="nav"] a,[class*="sidebar"] a{
 <div style="padding:9px 10px;border-radius:8px;background:#F4F1FA;border:1px solid #D8D1EE;font-size:10.5px;color:var(--text-2)"><strong style="color:var(--brand-dark)">2 · Update the partner record</strong><br/>Use Notes to document growth opportunity, satisfaction, competitor risk and recovery plan.</div>
 <div style="padding:9px 10px;border-radius:8px;background:#F4F1FA;border:1px solid #D8D1EE;font-size:10.5px;color:var(--text-2)"><strong style="color:var(--brand-dark)">3 · Work what surfaces</strong><br/>Red/Yellow health signals route into the correct RM owner's daily Workflow.</div>
 </div>
-<div style="margin-top:10px;padding:9px 11px;border-radius:8px;background:#F7FBF8;border:1px solid #B8D8C7;font-size:10.5px;color:#245B43;line-height:1.45"><strong>Shared-data rule:</strong> Power BI population/tier data, RM activity, LP call activity, Velocify lead recency and portfolio notes are reconciled here. A voicemail/no-answer does not count as a meaningful relationship touch. Removed/DNC agents are excluded from Managed Active Partners.</div>
+<div style="margin-top:10px;padding:9px 11px;border-radius:8px;background:#F7FBF8;border:1px solid #B8D8C7;font-size:10.5px;color:#245B43;line-height:1.45"><strong>Shared-data rule:</strong> Power BI population/tier data, RM activity, LP call activity, Velocify lead recency and portfolio notes are reconciled here. A voicemail/no-answer does not count as a meaningful relationship touch. Removed/DNC agents are excluded from Managed Active Agents.</div>
 </div>
 <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin:0 0 12px">
 <div class="period-toggle" style="margin:0">
@@ -9866,8 +9866,8 @@ async function loadPortfolioReview(){
         +'<div style="font-size:10px;font-weight:800;color:var(--text-3);text-transform:uppercase;letter-spacing:.45px;margin-top:13px;margin-bottom:6px">Cleaned RM operating population</div>'
         +'<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">'
           +pfStatTile("Current synced profiles",powerBiActiveAgents,null)
-          +pfStatTile("RM Active Partners",rmActivePartners.length,null)
-          +pfStatTile("Managed Active Partners",totalActive,null)
+          +pfStatTile("RM Active Agents",rmActivePartners.length,null)
+          +pfStatTile("Managed Active Agents",totalActive,null)
         +'</div>'
         +'<div style="font-size:10.5px;color:var(--text-3);margin-top:8px"><strong>Why these can differ:</strong> the exact Power BI row count includes every A/B/C row in the export. Managed Active removes historical/inactive/DNC records and keeps strategic/Channel treatment separate. That cleanup will never change the displayed Power BI source totals.</div>'
       +'</div>'
@@ -10057,7 +10057,7 @@ function openPortfolioList(key){
     items=pfDrillData.lowSatisfaction.map(r=>({name:r.name,detail:tierLabel(r.tier)+" · rated "+r.satisfaction+"/5"}));
   }else if(key.indexOf("tier:")===0){
     const t=key.split(":")[1];
-    title.textContent=t==="all"?"All Active Partners":t+"-Tier Active Partners";
+    title.textContent=t==="all"?"All Active Agents":t+"-Tier Active Agents";
     sub.textContent=t==="all"?"":"Filtered to "+t+" tier.";
     items=pfDrillData.rows.filter(r=>t==="all"||(t==="None"?!r.tier:r.tier===t)).map(r=>({name:r.name,detail:(r.tier||"No tier")+" · "+r.health+" · "+(r.daysAny===null?"no touch logged":r.daysAny+"d since last touch")}));
   }else if(key.indexOf("health:")===0){
@@ -19976,9 +19976,9 @@ if(document.readyState==='loading'){
 'use strict';
 
 const VERIFIED={
-  importedAt:'2026-08-31T23:59:59',
-  active:109,
-  levels:{Channel:2,A:16,B:18,C:111}
+  importedAt:'2026-09-01T12:00:00',
+  active:138,
+  levels:{Channel:2,A:17,B:15,C:106}
 };
 const COLORS={green:'#2E8B57',yellow:'#C78A16',red:'#C54B43'};
 const n=v=>Number(v||0)||0;
@@ -20003,9 +20003,9 @@ function localSnapshot(){
     const s=window.CT_POWERBI_SNAPSHOT||JSON.parse(localStorage.getItem('ct_powerbi_snapshot_v1')||'null');
     if(!s)return null;
     const when=Date.parse(s.imported_at||'');
-    // Only trust browser Power BI if it is newer than the verified 8/31 baseline
-    // AND explicitly contains the official 90-day active_partner_rows field.
-    if(Number.isFinite(when)&&when>Date.parse(VERIFIED.importedAt)&&n(s.active_partner_rows)>0){
+    // Only trust browser Power BI if it is newer than the verified 9/1 baseline
+    // AND explicitly uses the current Power BI active-agent population definition.
+    if(Number.isFinite(when)&&when>Date.parse(VERIFIED.importedAt)&&s.active_partner_definition==='POWER_BI_LEVEL_POPULATION'&&n(s.active_partner_rows)>0){
       const l=s.levels||{};
       return{
         active:n(s.active_partner_rows),
@@ -20045,7 +20045,7 @@ async function authoritativePowerBi(){
     active:VERIFIED.active,
     levels:Object.assign({},VERIFIED.levels),
     importedAt:'Verified 8/31 Power BI',
-    source:'verified 8/31 Power BI baseline'
+    source:'verified 9/1 Power BI baseline'
   };
 }
 
@@ -20099,10 +20099,10 @@ async function paintOfficial(){
     '<div class="rm-weighted-total rm-core-'+overall+'" style="color:'+c+'">'+weighted.toFixed(1)+' / 100<small>'+overall.toUpperCase()+'</small></div></div>'+
     '<div class="rm-weighted-grid">'+
       metric('Tier Growth','50%',ts.total,50,ts.pct,pb.levels.Channel+' Channel · '+pb.levels.A+' A · '+pb.levels.B+' B vs '+target.label,tierState)+
-      metric('Agent-to-Lead','30%',ratioEarn,30,ratioPct,'Last completed month: '+priorActual+' leads ÷ '+pb.active+' Active Partners = '+ratio.toFixed(2)+' · target 1.15+ · current month pace '+currentPace.toFixed(2),ratioState)+
-      metric('Active Partner Count','20%',countEarn,20,countPct,pb.active+' / 200 · Active Partner = lead or closing within 90 days',countState)+
+      metric('Agent-to-Lead','30%',ratioEarn,30,ratioPct,'Last completed month: '+priorActual+' leads ÷ '+pb.active+' Active Agents = '+ratio.toFixed(2)+' · target 1.15+ · current month pace '+currentPace.toFixed(2),ratioState)+
+      metric('Active Partner Count','20%',countEarn,20,countPct,pb.active+' / 200 · Active Agent = current Power BI population',countState)+
     '</div>'+
-    '<div class="rm-weighted-note"><strong>Important:</strong> Agent-to-Lead is scored from the last completed calendar month so a new month does not reset performance to zero. Current-month pace is shown for coaching only. Tier Growth uses the full latest Power BI tier population; Active Partner Count uses the separate 90-day lead/close definition.</div>';
+    '<div class="rm-weighted-note"><strong>Important:</strong> Agent-to-Lead is scored from the last completed calendar month so a new month does not reset performance to zero. Current-month pace is shown for coaching only. Tier Growth uses the full latest Power BI tier population; Active Agent Count uses the current Power BI active population.</div>';
 }
 
 /* Final render wrapper: old page can render first, but this authoritative scorecard paints LAST. */
@@ -21061,6 +21061,15 @@ document.getElementById('rmListingContactFixModal')?.addEventListener('click',fu
 document.addEventListener('keydown',function(e){
   if(e.key==='Escape'&&document.getElementById('rmListingContactFixModal')?.classList.contains('open'))rmCloseListingContactFix();
 });
+})();
+</script>
+
+
+<!-- RM POWER BI ACTIVE POPULATION AUTHORITY v138 -->
+<script id="rm-powerbi-active-population-v138-js">
+(function(){
+'use strict';
+window.rmVerifiedPowerBiBaselineV138={active:138,levels:{Channel:2,A:17,B:15,C:106},source:'verified 9/1 Power BI baseline'};
 })();
 </script>
 
