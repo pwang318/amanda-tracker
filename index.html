@@ -18927,7 +18927,7 @@ window.rmxBoot=boot;const baseSwitch=window.switchTab;window.switchTab=function(
     if(document.getElementById('v265TuesdayListingCard'))return;
     const anchor=document.getElementById('wp30TxnIntakeDetails')||document.getElementById('rmLpCoordCard');if(!anchor)return;
     const c=document.createElement('div');c.id='v265TuesdayListingCard';
-    c.innerHTML='<div class="v265-head"><div><div class="v265-kicker">RM TRANSACTION RELATIONSHIP WORK</div><div class="v265-title">Tuesday listing-agent updates</div><div class="v265-sub">Work every valid listing agent tied to an under-contract file in this week’s Core Team snapshot. Preapproval-only files do not create listing-agent Tuesday calls. Tier and relationship ownership do not remove a contracted file from RM servicing.</div></div><span class="v265-summary" id="v265Summary">Loading…</span></div><div id="v265ListingList" class="v265-list"><div class="v265-empty">Loading active listing-agent files…</div></div>';
+    c.innerHTML='<div class="v265-head"><div><div class="v265-kicker">RM TRANSACTION RELATIONSHIP WORK</div><div class="v265-title">Tuesday listing-agent updates</div><div class="v265-sub">Work every valid listing agent tied to an under-contract file in this week’s Core Team snapshot. Tuesday Update is a separate required weekly touch — New Contract and CTC calls do not complete it. Preapproval-only files do not create Tuesday calls.</div></div><span class="v265-summary" id="v265Summary">Loading…</span></div><div id="v265ListingList" class="v265-list"><div class="v265-empty">Loading active listing-agent files…</div></div>';
     if(anchor.id==='wp30TxnIntakeDetails')anchor.insertAdjacentElement('afterend',c);else anchor.insertAdjacentElement('beforebegin',c);
   }
   // Current operating model: LP2 owns buyer + buyer-agent active-contract execution. RM keeps listing-agent transaction communication only.
@@ -18970,13 +18970,15 @@ window.rmxBoot=boot;const baseSwitch=window.switchTab;window.switchTab=function(
         const callType=reqTrig?(reqTrig.act_type==='Clear to Close'?'CTC Call':'Under Contract Call'):'';
         const related=acts.filter(a=>txnId(a)===id&&(norm(role(a))==='listing'||a.act_type==='Listing Agent Update'));
         const reqDone=!reqTrig||related.some(a=>a.act_type===callType&&status(a.notes)==='COMPLETE'&&String(a.act_date)>=String(reqTrig.act_date));
-        const weekly=related.find(a=>a.act_type==='Listing Agent Update'&&String(a.act_date)>=cycleStart);
-        const transactionTouchThisWeek=related.find(a=>(a.act_type==='Under Contract Call'||a.act_type==='CTC Call')&&status(a.notes)==='COMPLETE'&&String(a.act_date)>=cycleStart);
+        // Tuesday Updates are their own required weekly listing-agent touch.
+        // A New Contract call or CTC call does NOT satisfy the Tuesday update.
+        // Only an actual Listing Agent Update logged on/after this Tuesday closes the Tuesday task.
+        const weekly=related.find(a=>a.act_type==='Listing Agent Update'&&String(a.act_date)>=tue);
         const lpUpdate=acts.find(a=>a.act_type==='LP Tuesday File Update'&&txnId(a)===id&&String(a.act_date)>=tue);
         const p=pm[key(name)]||null,a=am[key(name)]||{};
         const partner=!!(p&&p.retained===true&&p.do_not_contact!==true&&norm(p.relationship_status||'active')!=='inactive');
         const relationshipOwner=String(a.rm||'').trim();
-        let item={id,name,client,property,closeDate,milestone,milestoneGroup:mg,stage:(reqTrig?reqTrig.act_type:'Active Transaction'),callType,triggerDate:(reqTrig?reqTrig.act_date:t.act_date),reqDone,weeklyDone:!!(weekly||transactionTouchThisWeek),lpUpdate,partner,owner:'Amanda',relationshipOwner,lp:meta(t.notes,'TXN_LP')||a.lp||'',phone:meta(t.notes,'TXN_LISTING_PHONE'),email:meta(t.notes,'TXN_LISTING_EMAIL')};item=rmApplyOverride(item,ovMap[id]);if(!item.name)return;cache.set(id,item);rows.push(item);
+        let item={id,name,client,property,closeDate,milestone,milestoneGroup:mg,stage:(reqTrig?reqTrig.act_type:'Active Transaction'),callType,triggerDate:(reqTrig?reqTrig.act_date:t.act_date),reqDone,weeklyDone:!!weekly,lpUpdate,partner,owner:'Amanda',relationshipOwner,lp:meta(t.notes,'TXN_LP')||a.lp||'',phone:meta(t.notes,'TXN_LISTING_PHONE'),email:meta(t.notes,'TXN_LISTING_EMAIL')};item=rmApplyOverride(item,ovMap[id]);if(!item.name)return;cache.set(id,item);rows.push(item);
       });
       rows.sort((a,b)=>(Number(a.weeklyDone)-Number(b.weeklyDone))||(Number(a.reqDone)-Number(b.reqDone))||String(a.closeDate||a.triggerDate).localeCompare(String(b.closeDate||b.triggerDate)));
       const due=rows.filter(r=>!r.weeklyDone).length,done=rows.length-due;
