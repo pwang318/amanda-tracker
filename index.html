@@ -5616,44 +5616,52 @@ async function showWinsDetail(kind){
 }
 
 function renderSnapshotStats(acts, period){
-  const labels={daily:"Today",wtd:"This week",mtd:"This month",ytd:"Since Apr 2026"};
-  const now=new Date();
-  const roleStart=new Date(2026,3,1);
-  const months=Math.max(1,(now.getFullYear()-roleStart.getFullYear())*12+(now.getMonth()-roleStart.getMonth())+1);
-  const mult=period==="ytd"?months:1;
-  const newMeetings=(acts||[]).filter(a=>a.act_type==="New Realtor Meeting").length;
-  const existingMeetings=(acts||[]).filter(a=>isExistingMeeting(a)).length;
-  const totalMeetings=newMeetings+existingMeetings;
-  const meaningful=(acts||[]).filter(a=>{
+  const labels={daily:"Today",wtd:"This week",mtd:"This month",ytd:"Year to date"};
+  const rows=acts||[];
+
+  // TODAY AT A GLANCE = execution Amanda can immediately understand.
+  // This is intentionally NOT the official 50/30/20 RM scorecard; that still lives under My Scorecard.
+  const newAgentCalls=rows.filter(a=>a.act_type==="Cold Calls").length;
+  const talkTos=typeof cntTalkTo==="function"?cntTalkTo(rows):rows.filter(a=>{
+    const t=String(a.act_type||'').trim();
     const o=String(a.outcome||'').toLowerCase();
     if(/no answer|voicemail|attempted|no response/.test(o))return false;
-    return TALKTO_TYPES.indexOf((a.act_type||'').trim())>=0||isExistingMeeting(a);
+    return typeof TALKTO_TYPES!=="undefined"&&TALKTO_TYPES.indexOf(t)>=0;
   }).length;
-  const targets=period==="mtd"||period==="ytd"?{
-    newMeetings:RM_TEAM_GOALS.amandaNew*mult,
-    existingMeetings:RM_TEAM_GOALS.amandaExisting*mult,
-    totalMeetings:RM_TEAM_GOALS.amandaTotal*mult
-  }:null;
-  const statCard=(num,goal,label,filterType,sub)=>{
-    let color='var(--brand)',badge='Tracking',badgeBg='var(--brand-light)',badgeColor='var(--brand)';
-    if(goal){const pct=Math.round(num/Math.max(1,goal)*100);if(pct>=100){color='#2E8B57';badge='On pace';badgeBg='#F4FBF6';badgeColor='#27633B'}else if(pct>=80){color='#C78A16';badge='Watch';badgeBg='#FFF9EA';badgeColor='#7A5A09'}else{color='#C54B43';badge='Needs action';badgeBg='#FFF4F2';badgeColor='#9A332C'}}
-    const clickFn=filterType?'onclick="snapshotDrillDown(\''+filterType+'\')" style="cursor:pointer"':'';
-    return '<div '+clickFn+' style="text-align:center;padding:12px 7px;background:var(--surface-2);border:1px solid var(--border-light);border-radius:var(--radius);min-width:0">'+
-      '<div style="font-size:25px;font-weight:700;color:'+color+';line-height:1">'+num+'</div>'+
-      (goal?'<div style="font-size:10px;color:var(--text-3);margin-top:2px">/ '+goal+'</div>':'<div style="font-size:10px;color:var(--text-3);margin-top:2px">'+(sub||'supporting metric')+'</div>')+
-      '<div style="font-size:9px;font-weight:700;margin-top:6px;padding:2px 6px;border-radius:20px;background:'+badgeBg+';color:'+badgeColor+'">'+badge+'</div>'+
-      '<div style="font-size:10px;color:var(--text-2);margin-top:5px;font-weight:600;line-height:1.25">'+label+'</div></div>';
+  const buddyAsks=rows.filter(a=>a.act_type==="Realtor Buddy Referral Ask").length;
+  const meetingsBooked=rows.filter(a=>String(a.outcome||'').trim()==="Meeting Scheduled").length;
+  const meetingsHeld=rows.filter(a=>a.act_type==="New Realtor Meeting"||isExistingMeeting(a)).length;
+
+  const statCard=(num,label,filterType,sub)=>{
+    const clickFn=filterType?' onclick="snapshotDrillDown(\''+filterType+'\')" style="cursor:pointer"':'';
+    return '<div'+clickFn+' class="rm-glance-execution-card" style="padding:12px 12px;background:#fff;border:1px solid #E4DDF0;border-radius:11px;min-width:0;text-align:left">'
+      +'<div style="font-size:23px;font-weight:800;color:#5C4290;line-height:1">'+num+'</div>'
+      +'<div style="font-size:11px;font-weight:750;color:#2E2738;margin-top:7px;line-height:1.25">'+label+'</div>'
+      +'<div style="font-size:9.5px;color:#81778A;margin-top:3px">'+sub+'</div>'
+      +'</div>';
   };
+
   const el=document.getElementById('snapshotStats');
   if(el){
-    const goalNew=targets?targets.newMeetings:null,goalExisting=targets?targets.existingMeetings:null,goalTotal=targets?targets.totalMeetings:null;
-    el.style.gridTemplateColumns='repeat(4,minmax(0,1fr))';
-    el.innerHTML=statCard(newMeetings,goalNew,'New Realtor Meetings','New Realtor Meeting')+
-      statCard(existingMeetings,goalExisting,'Existing Partner Meetings','__existingmeeting__')+
-      statCard(totalMeetings,goalTotal,'Total Partner Meetings',null)+
-      statCard(meaningful,null,'Meaningful Partner Conversations','__talkto__','quality tracked');
+    el.style.gridTemplateColumns='repeat(5,minmax(0,1fr))';
+    el.style.gap='9px';
+    el.innerHTML=
+      statCard(newAgentCalls,'New Agent Calls','Cold Calls','Prospecting outreach logged')+
+      statCard(talkTos,"Talk-To’s",'__talkto__','Meaningful live conversations')+
+      statCard(buddyAsks,'Buddy Referral Asks','Realtor Buddy Referral Ask','Introductions requested')+
+      statCard(meetingsBooked,'Meetings Booked',null,'Scheduled from outreach')+
+      statCard(meetingsHeld,'Meetings Held',null,'New + existing partner meetings');
   }
-  const dayEl=document.getElementById('snapshotDayLabel');if(dayEl)dayEl.textContent=labels[period]||'Today';
+
+  const dayEl=document.getElementById('snapshotDayLabel');
+  if(dayEl)dayEl.textContent=labels[period]||'Today';
+
+  // Make the purpose of this card explicit without changing any other workflow or scorecard.
+  const card=document.getElementById('snapshotScorecardCard');
+  if(card){
+    const eyebrow=card.querySelector(':scope > div:first-child');
+    if(eyebrow)eyebrow.textContent='TODAY AT A GLANCE · EXECUTION';
+  }
 }
 function showPeriod(p){
   currentPeriod=p;
