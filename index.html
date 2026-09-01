@@ -20843,5 +20843,226 @@ window.v265FixListingContact=function(encId){
 })();
 </script>
 
+
+<!-- IN-TRACKER LISTING CONTACT FIX v15 -->
+<style id="rm-listing-contact-fix-v15-css">
+#rmListingContactFixModal{
+  position:fixed;inset:0;z-index:999999;display:none;
+  align-items:center;justify-content:center;padding:18px;
+  background:rgba(29,21,40,.48);
+  font-family:Calibri,"Calibri Light",Arial,sans-serif!important;
+}
+#rmListingContactFixModal.open{display:flex}
+#rmListingContactFixModal .rm-lcf-card{
+  width:min(620px,96vw);max-height:88vh;overflow:auto;background:#fff;
+  border:1px solid #d9cfea;border-radius:14px;box-shadow:0 24px 70px rgba(24,14,38,.24);
+  padding:18px;
+}
+#rmListingContactFixModal .rm-lcf-head{
+  display:flex;justify-content:space-between;gap:12px;align-items:flex-start;margin-bottom:12px
+}
+#rmListingContactFixModal h3{margin:0;color:#24163b;font-size:18px}
+#rmListingContactFixModal .rm-lcf-sub{font-size:12px;line-height:1.45;color:#6d6179;margin-top:4px}
+#rmListingContactFixModal .rm-lcf-file{
+  background:#f8f5fb;border:1px solid #e4dcee;border-radius:9px;
+  padding:9px 10px;margin:10px 0 12px;font-size:11.5px;color:#4e4260
+}
+#rmListingContactFixModal .rm-lcf-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+#rmListingContactFixModal .rm-lcf-field{display:flex;flex-direction:column;gap:5px}
+#rmListingContactFixModal label{font-size:10px;font-weight:700;color:#4b3a64}
+#rmListingContactFixModal input[type="text"],
+#rmListingContactFixModal input[type="email"]{
+  width:100%;box-sizing:border-box;border:1px solid #d8cfe5;border-radius:8px;
+  padding:9px 10px;font-size:13px;font-family:Calibri,"Calibri Light",Arial,sans-serif!important;
+}
+#rmListingContactFixModal .rm-lcf-check{
+  margin-top:12px;padding:10px;border:1px solid #eadfd0;border-radius:9px;background:#fffaf2;
+  display:flex;gap:8px;align-items:flex-start;font-size:11.5px;color:#695431
+}
+#rmListingContactFixModal .rm-lcf-error{
+  display:none;margin-top:10px;padding:8px 10px;border-radius:8px;
+  background:#fff0ee;border:1px solid #efc7c0;color:#a14338;font-size:11px
+}
+#rmListingContactFixModal .rm-lcf-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:14px}
+#rmListingContactFixModal button{
+  font-family:Calibri,"Calibri Light",Arial,sans-serif!important;
+  border:1px solid #d5c9e6;border-radius:8px;padding:8px 11px;background:#fff;color:#4b376d;
+  font-weight:700;cursor:pointer
+}
+#rmListingContactFixModal button.primary{background:#6b3fb0;color:#fff;border-color:#6b3fb0}
+#rmListingContactFixModal button:disabled{opacity:.55;cursor:not-allowed}
+@media(max-width:650px){#rmListingContactFixModal .rm-lcf-grid{grid-template-columns:1fr}}
+</style>
+
+<div id="rmListingContactFixModal" aria-hidden="true">
+  <div class="rm-lcf-card">
+    <div class="rm-lcf-head">
+      <div>
+        <h3>Fix listing contact</h3>
+        <div class="rm-lcf-sub">Correct the listing side for this transaction. This update stays attached to this file and refreshes Tuesday Updates immediately.</div>
+      </div>
+      <button type="button" onclick="rmCloseListingContactFix()">×</button>
+    </div>
+
+    <div class="rm-lcf-file" id="rmLcfFile">Active transaction</div>
+
+    <div class="rm-lcf-grid">
+      <div class="rm-lcf-field">
+        <label>Listing agent name</label>
+        <input id="rmLcfName" type="text" placeholder="Listing agent name">
+      </div>
+      <div class="rm-lcf-field">
+        <label>Phone</label>
+        <input id="rmLcfPhone" type="text" placeholder="Phone number">
+      </div>
+      <div class="rm-lcf-field" style="grid-column:1/-1">
+        <label>Email</label>
+        <input id="rmLcfEmail" type="email" placeholder="Email address">
+      </div>
+    </div>
+
+    <label class="rm-lcf-check">
+      <input id="rmLcfFsbo" type="checkbox" onchange="rmListingContactFsboToggle()">
+      <span><b>FSBO / no listing agent</b><br>Use this only when there truly is no represented listing agent on the transaction.</span>
+    </label>
+
+    <div class="rm-lcf-error" id="rmLcfError"></div>
+
+    <div class="rm-lcf-actions">
+      <button type="button" onclick="rmCloseListingContactFix()">Cancel</button>
+      <button class="primary" id="rmLcfSave" type="button" onclick="rmSaveListingContactFix()">Save + refresh Tuesday Updates</button>
+    </div>
+  </div>
+</div>
+
+<script id="rm-listing-contact-fix-v15-js">
+(function(){
+'use strict';
+let fixing=null;
+const val=id=>(document.getElementById(id)?.value||'').trim();
+const safe=s=>String(s||'').replace(/\]/g,'').trim();
+
+function findTxn(id){
+  try{
+    // v265 cache is closure-scoped, so use the visible row/file info when necessary.
+    const rows=[...document.querySelectorAll('#v265ListingList .v265-row')];
+    const btn=rows.map(r=>r.querySelector('[onclick*="v265FixListingContact"]')).find(b=>{
+      const o=b?.getAttribute('onclick')||'';
+      return o.includes(encodeURIComponent(id));
+    });
+    const row=btn?.closest('.v265-row');
+    return {
+      id,
+      name:(row?.querySelector('.v265-name')?.textContent||'').trim(),
+      file:(row?.querySelector('.v265-file')?.textContent||'').trim()
+    };
+  }catch(e){return{id}}
+}
+
+window.rmListingContactFsboToggle=function(){
+  const fs=!!document.getElementById('rmLcfFsbo')?.checked;
+  ['rmLcfName','rmLcfPhone','rmLcfEmail'].forEach(id=>{
+    const e=document.getElementById(id);if(e)e.disabled=fs;
+  });
+};
+
+window.rmCloseListingContactFix=function(){
+  fixing=null;
+  const m=document.getElementById('rmListingContactFixModal');
+  if(m){m.classList.remove('open');m.setAttribute('aria-hidden','true')}
+};
+
+window.v265FixListingContact=function(encId){
+  const id=decodeURIComponent(encId||'');
+  fixing=findTxn(id);
+  const m=document.getElementById('rmListingContactFixModal');if(!m)return;
+  document.getElementById('rmLcfName').value='';
+  document.getElementById('rmLcfPhone').value='';
+  document.getElementById('rmLcfEmail').value='';
+  document.getElementById('rmLcfFsbo').checked=false;
+  rmListingContactFsboToggle();
+  document.getElementById('rmLcfFile').textContent=(fixing.file||'Active transaction');
+  const er=document.getElementById('rmLcfError');er.style.display='none';er.textContent='';
+  m.classList.add('open');m.setAttribute('aria-hidden','false');
+  setTimeout(()=>document.getElementById('rmLcfName')?.focus(),30);
+};
+
+window.rmSaveListingContactFix=async function(){
+  if(!fixing||!fixing.id)return;
+  const name=val('rmLcfName'),phone=val('rmLcfPhone'),email=val('rmLcfEmail');
+  const fsbo=!!document.getElementById('rmLcfFsbo')?.checked;
+  const err=document.getElementById('rmLcfError'),btn=document.getElementById('rmLcfSave');
+
+  if(!fsbo&&!name){
+    err.textContent='Add the listing agent name, or mark the file FSBO / no listing agent.';
+    err.style.display='block';return;
+  }
+  if(!fsbo&&!phone&&!email){
+    err.textContent='Add at least a phone number or email so Amanda has a usable contact.';
+    err.style.display='block';return;
+  }
+  err.style.display='none';err.textContent='';
+  btn.disabled=true;btn.textContent='Saving…';
+
+  try{
+    let notes='[TXN_CONTACT_OVERRIDE][TXN_ID:'+safe(fixing.id)+']';
+    if(fsbo){
+      notes+='[LISTING_AGENT_NA:Y][LISTING_AGENT_OVERRIDE:__NONE__][LISTING_PHONE_OVERRIDE:__NONE__][LISTING_EMAIL_OVERRIDE:__NONE__] FSBO / no listing agent confirmed by Amanda.';
+    }else{
+      notes+='[LISTING_AGENT_NA:N][LISTING_AGENT_OVERRIDE:'+safe(name)+']';
+      notes+=phone?'[LISTING_PHONE_OVERRIDE:'+safe(phone)+']':'';
+      notes+=email?'[LISTING_EMAIL_OVERRIDE:'+safe(email)+']':'';
+      notes+=' Listing contact corrected by Amanda.';
+    }
+
+    try{
+      if(typeof appendRmMeta==='function')notes=appendRmMeta(notes,'Amanda','Transaction Contact Correction');
+    }catch(e){}
+
+    await sbFetch('amanda_activities',{
+      method:'POST',
+      prefer:'return=minimal',
+      body:JSON.stringify({
+        agent_name:fsbo?'Active transaction':name,
+        act_type:'Transaction Contact Override',
+        act_date:(typeof todayS==='function'?todayS():new Date().toISOString().slice(0,10)),
+        outcome:'Updated',
+        notes,
+        follow_up_date:null
+      })
+    });
+
+    rmCloseListingContactFix();
+
+    // Clear relevant local caches if present, then force the shared Tuesday reader to rebuild.
+    try{if(typeof _wp18Cache!=='undefined'){_wp18Cache=null;_wp18CacheAt=0}}catch(e){}
+    try{
+      if(typeof window.v265RefreshListingUpdates==='function'){
+        await window.v265RefreshListingUpdates(true);
+      }
+    }catch(e){console.warn('Tuesday refresh after contact fix',e)}
+    try{
+      if(typeof window.v23LoadAmandaSnapshot==='function')await window.v23LoadAmandaSnapshot(true);
+    }catch(e){}
+
+    try{toast(fsbo?'FSBO / no listing agent saved ✓':'Listing contact updated ✓','success',3500)}catch(e){}
+  }catch(e){
+    console.warn('listing contact fix',e);
+    err.textContent='Could not save the listing contact. Please try again.';
+    err.style.display='block';
+  }finally{
+    btn.disabled=false;btn.textContent='Save + refresh Tuesday Updates';
+  }
+};
+
+document.getElementById('rmListingContactFixModal')?.addEventListener('click',function(e){
+  if(e.target===this)rmCloseListingContactFix();
+});
+document.addEventListener('keydown',function(e){
+  if(e.key==='Escape'&&document.getElementById('rmListingContactFixModal')?.classList.contains('open'))rmCloseListingContactFix();
+});
+})();
+</script>
+
 </body>
 </html>
