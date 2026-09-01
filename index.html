@@ -20362,5 +20362,220 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 })();
 </script>
 
+
+<!-- TWO-SIDED MANUAL TRANSACTION ENTRY v10 -->
+<style id="rm-two-sided-manual-txn-v10-css">
+#rmManualCtcModal,#rmManualNewContractModal{font-family:Calibri,"Calibri Light",Arial,sans-serif!important}
+.rm-v10-agent-group{border:1px solid #DDD3E8;border-radius:10px;padding:10px;background:#FBF9FD}
+.rm-v10-agent-group h4{margin:0 0 8px;font-size:11px;color:#4E3670}
+.rm-v10-two{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+@media(max-width:720px){.rm-v10-two{grid-template-columns:1fr}}
+</style>
+<script id="rm-two-sided-manual-txn-v10-js">
+(function(){
+'use strict';
+const val=id=>(document.getElementById(id)?.value||'').trim();
+const token=s=>String(s||'').replace(/\]/g,'').trim();
+const td=()=>{try{return typeof today==='function'?today():new Date().toISOString().slice(0,10)}catch(e){return new Date().toISOString().slice(0,10)}};
+
+function wipe(id){const x=document.getElementById(id);if(x)x.remove()}
+
+function modalHtml(kind){
+  const isCtc=kind==='Ctc',label=isCtc?'CTC':'New Contract';
+  return '<div class="rm-manual-ctc-card">'+
+    '<div class="rm-manual-ctc-head"><div><h3>Add a '+label+' call</h3>'+
+    '<p>Use this only if the shared Encompass upload did not create the file. Amanda works <b>both Buyer Agent + Listing Agent</b> at '+label+'.</p></div>'+
+    '<button class="rm-manual-ctc-close" onclick="rmManual'+kind+'Close()" type="button">×</button></div>'+
+    '<div class="rm-manual-ctc-grid">'+
+      '<div class="rm-manual-ctc-field"><label>Buyer / Client</label><input id="rmManual'+kind+'Client" placeholder="Client name"></div>'+
+      '<div class="rm-manual-ctc-field"><label>Property</label><input id="rmManual'+kind+'Property" placeholder="Property address"></div>'+
+    '</div>'+
+    '<div class="rm-v10-two" style="margin-top:10px">'+
+      '<div class="rm-v10-agent-group"><h4>Buyer Agent</h4>'+
+        '<div class="rm-manual-ctc-grid">'+
+          '<div class="rm-manual-ctc-field"><label>Buyer Agent Name</label><input id="rmManual'+kind+'BuyerAgent" placeholder="Buyer agent name"></div>'+
+          '<div class="rm-manual-ctc-field"><label>Buyer Agent Phone</label><input id="rmManual'+kind+'BuyerPhone" placeholder="Phone number"></div>'+
+        '</div>'+
+      '</div>'+
+      '<div class="rm-v10-agent-group"><h4>Listing Agent</h4>'+
+        '<div class="rm-manual-ctc-grid">'+
+          '<div class="rm-manual-ctc-field"><label>Listing Agent Name</label><input id="rmManual'+kind+'ListingAgent" placeholder="Listing agent name"></div>'+
+          '<div class="rm-manual-ctc-field"><label>Listing Agent Phone</label><input id="rmManual'+kind+'ListingPhone" placeholder="Phone number"></div>'+
+        '</div>'+
+      '</div>'+
+    '</div>'+
+    '<div class="rm-manual-ctc-note"><b>What happens next:</b> one shared transaction is created and the '+label+' Workbench opens with both agents prefilled. Amanda logs both agent outcomes there. The WhatsApp recap includes both sides automatically.</div>'+
+    '<div class="rm-manual-ctc-error" id="rmManual'+kind+'Error"></div>'+
+    '<div class="rm-manual-ctc-actions"><button onclick="rmManual'+kind+'Close()" type="button">Cancel</button>'+
+    '<button class="primary" id="rmManual'+kind+'Save" onclick="rmManual'+kind+'Save()" type="button">Add '+label+' + open workbench</button></div>'+
+  '</div>';
+}
+
+function ensure(kind){
+  const id='rmManual'+kind+'Modal'; if(document.getElementById(id))return;
+  const m=document.createElement('div');m.id=id;m.className='rm-manual-ctc-modal';m.innerHTML=modalHtml(kind);
+  m.addEventListener('click',e=>{if(e.target===m)window['rmManual'+kind+'Close']()});
+  document.body.appendChild(m);
+}
+
+function open(kind,prefill){
+  wipe('rmManual'+kind+'Modal'); ensure(kind);
+  const p=prefill||{};
+  const map={
+    Client:p.client||'',
+    Property:p.property||'',
+    BuyerAgent:p.buyerAgent||p.buyer||p.buyer_agent||'',
+    BuyerPhone:p.buyerPhone||p.buyer_phone||'',
+    ListingAgent:p.listingAgent||p.listing||p.agent||p.listing_agent||'',
+    ListingPhone:p.listingPhone||p.phone||p.listing_phone||''
+  };
+  Object.keys(map).forEach(k=>{const e=document.getElementById('rmManual'+kind+k);if(e)e.value=map[k]});
+  const er=document.getElementById('rmManual'+kind+'Error');if(er){er.textContent='';er.style.display='none'}
+  document.getElementById('rmManual'+kind+'Modal').classList.add('open');
+  setTimeout(()=>document.getElementById('rmManual'+kind+'BuyerAgent')?.focus(),30);
+}
+function close(kind){document.getElementById('rmManual'+kind+'Modal')?.classList.remove('open')}
+function fail(kind,msg){const e=document.getElementById('rmManual'+kind+'Error');if(e){e.textContent=msg;e.style.display='block'}}
+
+async function save(kind){
+  const isCtc=kind==='Ctc',label=isCtc?'CTC':'New Contract',trigger=isCtc?'Clear to Close':'New Contract',callType=isCtc?'CTC Call':'Under Contract Call';
+  const client=val('rmManual'+kind+'Client'),property=val('rmManual'+kind+'Property'),
+        ba=val('rmManual'+kind+'BuyerAgent'),bp=val('rmManual'+kind+'BuyerPhone'),
+        la=val('rmManual'+kind+'ListingAgent'),lp=val('rmManual'+kind+'ListingPhone'),
+        btn=document.getElementById('rmManual'+kind+'Save');
+  if(!client&&!property)return fail(kind,'Add the buyer/client name or property so the transaction can be identified.');
+  if(!ba&&!la)return fail(kind,'Add the buyer agent and/or listing agent. Both should be entered when available.');
+  const er=document.getElementById('rmManual'+kind+'Error');if(er){er.textContent='';er.style.display='none'}
+  if(btn){btn.disabled=true;btn.textContent='Adding…'}
+  try{
+    const ref=[client,property].filter(Boolean).join(' · ');
+    const txnId=typeof wp33MakeTxnId==='function'
+      ? wp33MakeTxnId(trigger,ref,ba,la,td())
+      : (trigger+'-'+ref+'-'+ba+'-'+la).toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
+
+    const common='[TXN_TRIGGER][TXN_STATUS:PENDING][TXN_ID:'+token(txnId)+']'+
+      '[TXN_CLIENT:'+token(client)+'][TXN_PROPERTY:'+token(property)+']'+
+      '[TXN_BUYER_AGENT:'+token(ba)+']'+(bp?'[TXN_BUYER_PHONE:'+token(bp)+']':'')+
+      '[TXN_LISTING_AGENT:'+token(la)+']'+(lp?'[TXN_LISTING_PHONE:'+token(lp)+']':'')+
+      '[TXN_SOURCE:RM Manual '+label+' Task] Manual exception; shared Encompass upload remains source of truth.';
+
+    const since=new Date();since.setDate(since.getDate()-45);
+    const recent=await sbFetch('amanda_activities?act_type=eq.'+encodeURIComponent(trigger).replace(/%20/g,'%20')+
+      '&act_date=gte.'+since.toISOString().slice(0,10)+'&select=id,agent_name,notes&limit=1500').catch(()=>[]);
+    const exists=(role,name)=>(recent||[]).some(r=>{
+      try{
+        const rid=typeof wp33TxnId==='function'?wp33TxnId(r.notes):'';
+        const rr=typeof wp30TxnRole==='function'?wp30TxnRole(r.notes):'';
+        return rid===txnId && String(rr||'').toLowerCase()===role.toLowerCase();
+      }catch(e){return false}
+    });
+
+    const posts=[];
+    if(ba&&!exists('Buyer',ba)){
+      let notes=common+'[TXN_ROLE:Buyer]';
+      try{if(typeof appendRmMeta==='function')notes=appendRmMeta(notes,'Amanda','Current Relationship')}catch(e){}
+      posts.push(sbFetch('amanda_activities',{method:'POST',prefer:'return=minimal',body:JSON.stringify({
+        agent_name:ba,act_type:trigger,act_date:td(),outcome:'Pending',notes,follow_up_date:null
+      })}));
+    }
+    if(la&&!exists('Listing',la)){
+      let notes=common+'[TXN_ROLE:Listing]';
+      try{if(typeof appendRmMeta==='function')notes=appendRmMeta(notes,'Amanda','Current Relationship')}catch(e){}
+      posts.push(sbFetch('amanda_activities',{method:'POST',prefer:'return=minimal',body:JSON.stringify({
+        agent_name:la,act_type:trigger,act_date:td(),outcome:'Pending',notes,follow_up_date:null
+      })}));
+    }
+    if(posts.length)await Promise.all(posts);
+
+    /* Also write one transaction container so both agents travel together in future views. */
+    try{
+      const snapNotes='[TXN_SNAPSHOT][TXN_BATCH:MANUAL-'+td()+'][TXN_ID:'+token(txnId)+']'+
+        '[TXN_CLIENT:'+token(client)+'][TXN_PROPERTY:'+token(property)+']'+
+        '[TXN_BUYER_AGENT:'+token(ba)+']'+(bp?'[TXN_BUYER_PHONE:'+token(bp)+']':'')+
+        '[TXN_LISTING_AGENT:'+token(la)+']'+(lp?'[TXN_LISTING_PHONE:'+token(lp)+']':'')+
+        '[TXN_MILESTONE:'+trigger+'][TXN_MILESTONE_GROUP:'+(isCtc?'Closing':'Under Contract')+'][TXN_SOURCE:RM Manual Entry] Manual transaction container.';
+      await sbFetch('amanda_activities',{method:'POST',prefer:'return=minimal',body:JSON.stringify({
+        agent_name:la||ba||client,act_type:'Transaction Snapshot',act_date:td(),outcome:'Active',notes:snapNotes,follow_up_date:null
+      })});
+    }catch(e){console.warn('manual transaction container',e)}
+
+    try{_wp18Cache=null;_wp18CacheAt=0}catch(e){}
+    try{if(typeof v23LoadAmandaSnapshot==='function')await v23LoadAmandaSnapshot(true)}catch(e){}
+    try{if(typeof window.v231RefreshTransactionWork==='function')await window.v231RefreshTransactionWork(true)}catch(e){}
+    try{window.v231RenderTransactionWork&&window.v231RenderTransactionWork()}catch(e){}
+
+    close(kind);
+    if(typeof window.v176OpenTransaction==='function')window.v176OpenTransaction(callType,ba||la,ba?'Buyer':'Listing',txnId);
+    setTimeout(()=>{
+      const set=(id,v)=>{const e=document.getElementById(id);if(e)e.value=v||''};
+      set('v175TxBuyerName',client);set('v175TxProperty',property);
+      set('v175TxBuyerAgent',ba);set('v175TxBuyerPhone',bp);
+      set('v175TxListingAgent',la);set('v175TxListingPhone',lp);
+      try{window.v176UpdateWhatsApp&&window.v176UpdateWhatsApp()}catch(e){}
+    },40);
+    try{toast(label+' added — both-agent workbench opened ✓','success',3500)}catch(e){}
+  }catch(e){
+    console.warn('manual '+label,e);fail(kind,'Could not add the '+label+'. Refresh once and try again.');
+  }finally{
+    if(btn){btn.disabled=false;btn.textContent='Add '+label+' + open workbench'}
+  }
+}
+
+/* FINAL manual functions override all older listing-only definitions. */
+window.rmManualCtcOpen=p=>open('Ctc',p);
+window.rmManualCtcClose=()=>close('Ctc');
+window.rmManualCtcSave=()=>save('Ctc');
+window.rmManualNewContractOpen=p=>open('NewContract',p);
+window.rmManualNewContractClose=()=>close('NewContract');
+window.rmManualNewContractSave=()=>save('NewContract');
+
+/* FINAL WhatsApp authority: both agent sides. */
+window.v176BuildWhatsApp=function(){
+  const type=document.getElementById('v175TransactionModal')?.dataset.activityType||'CTC Call';
+  const isCtc=type==='CTC Call',lines=[isCtc?'CLEAR TO CLOSE!':'NEW CONTRACT!'];
+  const client=val('v175TxBuyerName'),property=val('v175TxProperty');
+  if(client)lines.push('Client: '+client);if(property)lines.push('Property: '+property);
+
+  function side(prefix,label){
+    const name=val('v175Tx'+prefix+'Agent'),phone=val('v175Tx'+prefix+'Phone'),
+          out=val('v175Tx'+prefix+'Outcome'),fb=val('v175Tx'+prefix+'Feedback'),
+          sent=!!document.getElementById('v175Tx'+prefix+'TextSent')?.checked;
+    lines.push('');
+    lines.push(label+': '+(name||'—')+(phone?' | '+phone:''));
+    let contact='Not worked yet';
+    if(out==='Left voicemail')contact=sent?'Left voicemail + follow-up text sent':'Left voicemail — follow-up text still required';
+    else if(out==='No answer')contact=sent?'No answer + follow-up text sent':'No answer — follow-up text still required';
+    else if(out==='Connected')contact='Talked';
+    else if(out==='Meeting scheduled')contact='Talked — meeting scheduled';
+    else if(out==='Requires follow-up')contact='Talked — follow-up needed';
+    else if(out==='Issue / escalation')contact='Talked — needs attention';
+    else if(out)contact=out;
+    lines.push('Contact: '+contact);
+    lines.push('Feedback: '+(fb||'—'));
+  }
+  side('Buyer','Buyer Agent');
+  side('Listing','Listing Agent');
+  const follow=val('v175TxFollowup'),note=val('v175TxFileNote');
+  if(follow){lines.push('');lines.push('Next Follow-Up: '+follow)}
+  if(note){lines.push('');lines.push('Note: '+note)}
+  return lines.join('\n');
+};
+
+/* Make direct CTC/New Contract activity shortcuts open the two-sided workbench. */
+const oldPrefill=window.prefillActivityLog;
+if(typeof oldPrefill==='function'&&!oldPrefill.__twoSideV10){
+  const w=function(agent,type){
+    if(type==='CTC Call')return window.v176OpenTransaction&&window.v176OpenTransaction('CTC Call',agent||'','Buyer','');
+    if(type==='Under Contract Call')return window.v176OpenTransaction&&window.v176OpenTransaction('Under Contract Call',agent||'','Buyer','');
+    return oldPrefill.apply(this,arguments);
+  };w.__twoSideV10=true;window.prefillActivityLog=w;
+}
+
+/* Recreate old modals immediately so Amanda cannot get the stale listing-only one. */
+wipe('rmManualCtcModal');wipe('rmManualNewContractModal');
+ensure('Ctc');ensure('NewContract');
+})();
+</script>
+
 </body>
 </html>
