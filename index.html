@@ -2981,7 +2981,7 @@ function countGoalActivity(data,type){
 }
 const CTC_TYPE="CTC Call";
 // All activity types that count toward the Agent Talk-to goal
-const TALKTO_TYPES=["Agent Talk-to","Active Agent Talk-to","Active Agent Check-in","Reconnect Outreach","CTC Call","Under Contract Call","Birthday Outreach","Holiday Outreach","Agent Appreciation","Market Update","Market Update Call","Sent Market Report","Sent Referral","Co-Marketing Discussion","New Agent Follow-up","Closed Deal Thank You"];
+const TALKTO_TYPES=["Agent Talk-to","Active Agent Talk-to","Active Agent Check-in","Reconnect Outreach","CTC Call","Under Contract Call","Birthday Outreach","Holiday Outreach","Agent Appreciation","Market Update","Market Update Call","Sent Market Report","Sent Referral","Co-Marketing Discussion","New Agent Follow-up","Closed Deal Thank You","Loan Client Contact","Listing Agent Update","Buyer Agent Update","Transaction Update"];
 // Activity types that require a minimum 10-word note
 const NOTES_REQUIRED_TYPES=["Agent Talk-to","Reconnect Outreach","Birthday Outreach","Break Breads","Partner Meeting","Strategic Partner Meeting","Channel Meeting","Team / Office Presentation","Retention Meeting","New Lead Received","Pre-Approval Issued","New Contract","Clear to Close","Service Recovery","Partner Feedback"];
 // Cold Calls: a note is always required, but no word-count minimum — just needs to say
@@ -8874,7 +8874,7 @@ function renderNetworkFeed(data){
     return'<div class="feed-item"><div class="feed-top"><span class="feed-agent">'+properCase(a.agent_name)+lpLabel+'</span><div class="feed-right"><span class="feed-date">'+fmtDate(a.displayDate)+'</span>'+( isRm?'<button class="btn-sm" onclick="openEditModal('+a.id+')" style="font-size:10px;padding:3px 8px">Edit</button><button class="btn-sm danger" onclick="openConfirm('+a.id+',\''+a.agent_name.replace(/'/g,"\\'") +'\',\''+a.displayType.replace(/'/g,"\\'") +'\')">Delete</button>':'')+'</div></div><span class="feed-badge '+badgeClass+'">'+badgeText+'</span>'+
     (a.outcome?'<div class="feed-outcome">'+escHtml(a.outcome)+'</div>':"")+
     ((isRm?a.follow_up_date:null)?'<div class="feed-fu">Follow-up: '+fmtDate(isRm?a.follow_up_date:null)+'</div>':"")+
-    ((isRm?a.notes:a.note)?'<div class="feed-notes">"'+escHtml(isRm?stripRmMeta(a.notes):a.note)+'"</div>':"")+
+    ((isRm?a.notes:a.note)?'<div class="feed-notes">"'+escHtml(typeof v301CleanVisibleActivityNote==='function'?v301CleanVisibleActivityNote(isRm?a.notes:a.note):(isRm?stripRmMeta(a.notes):a.note))+'"</div>':"")+
     '</div>'
   }).join("");
 }
@@ -8916,7 +8916,7 @@ function renderFeed(data){
       +(!isLP?(function(){const meta=extractRmMeta(a._note||""),own=getAgentOwnership(agentName),rms=(meta.rmAttendees||[meta.owner||"Amanda"]).join(" + "),lps=(meta.lpAttendees||[]).join(", "),shared=(meta.rmAttendees||[]).length>1||((meta.rmAttendees||[meta.owner]).length&&own.rm&&!(meta.rmAttendees||[meta.owner]).includes(own.rm));return '<div style="font-size:10.5px;color:var(--text-3);margin-top:4px"><strong>RM(s):</strong> '+escHtml(rms)+' &nbsp;·&nbsp; <strong>Current owner:</strong> '+escHtml(own.rm||"Unassigned")+(lps?' &nbsp;·&nbsp; <strong>LP:</strong> '+escHtml(lps):'')+(meta.nextStepOwner?' &nbsp;·&nbsp; <strong>Next:</strong> '+escHtml(meta.nextStepOwner):'')+(shared?' &nbsp;·&nbsp; <span style="font-weight:700;color:var(--brand)">Shared coverage</span>':'')+'</div>';})():"")
       +(a._outcome?'<div class="feed-outcome">'+escHtml(a._outcome)+'</div>':"")
       +(a.follow_up_date?'<div class="feed-fu">Follow-up: '+fmtDate(a.follow_up_date)+'</div>':"")
-      +(a._note?'<div class="feed-notes">"'+escHtml(isLP?a._note:stripRmMeta(a._note))+'"</div>':"")
+      +(a._note?'<div class="feed-notes">"'+escHtml(typeof v301CleanVisibleActivityNote==='function'?v301CleanVisibleActivityNote(a._note):(isLP?a._note:stripRmMeta(a._note)))+'"</div>':"")
       +(a.edited_at?'<div class="feed-edited">Last edited: '+fmtDateTime(a.edited_at)+'</div>':"")
       +'</div>';
   }).join("");
@@ -21070,6 +21070,133 @@ document.addEventListener('keydown',function(e){
 (function(){
 'use strict';
 window.rmVerifiedPowerBiBaselineV138={active:138,levels:{Channel:2,A:17,B:15,C:106},source:'verified 9/1 Power BI baseline'};
+})();
+</script>
+
+
+<!-- RM ACTIVITY COUNT + CLEAN DISPLAY FIX v301 -->
+<style id="rm-v301-activity-clean-css">
+.feed-notes{white-space:pre-wrap!important;overflow-wrap:anywhere!important}
+</style>
+<script id="rm-v301-activity-clean-js">
+(function(){
+'use strict';
+
+const V301_TRANSACTION_EXECUTION_TYPES=new Set([
+  'Loan Client Contact','Listing Agent Update','Buyer Agent Update','Transaction Update',
+  'CTC Call','Under Contract Call','New Contract','Clear to Close'
+]);
+
+function v301CleanVisibleActivityNote(raw){
+  let s=String(raw||'');
+  try{if(typeof stripRmMeta==='function')s=stripRmMeta(s)}catch(e){}
+  // Remove any orphaned zero-width owner metadata left by legacy builds.
+  s=s.replace(/[\u200B-\u200F\u202A-\u202E\u2060-\u206F\uFEFF]/g,'');
+  // Hide system-only transaction tags from human-facing activity history.
+  s=s.replace(/\s*\[(?:TXN_[A-Z_]+|TUESDAY_EXECUTOR|RELATIONSHIP_OWNER|UPDATE_KIND|RELATIONSHIP_OPP|RM_OWNER|RM_ATTENDEES|LP_ATTENDEES|NEXT_STEP_OWNER)(?::[^\]]*)?\]/gi,'');
+  s=s.replace(/[ \t]{2,}/g,' ').replace(/\n{3,}/g,'\n\n').trim();
+  return s;
+}
+window.v301CleanVisibleActivityNote=v301CleanVisibleActivityNote;
+
+// Transaction agent touches count as RM execution just like Under Contract / CTC calls.
+try{
+  if(Array.isArray(window.TALKTO_TYPES)){
+    ['Loan Client Contact','Listing Agent Update','Buyer Agent Update','Transaction Update'].forEach(t=>{
+      if(window.TALKTO_TYPES.indexOf(t)<0)window.TALKTO_TYPES.push(t);
+    });
+  }
+}catch(e){}
+
+// cntTalkTo is used across Amanda's own snapshot/scorecard.
+const priorCnt=window.cntTalkTo;
+window.cntTalkTo=function(acts){
+  return (acts||[]).filter(a=>{
+    const t=String(a&&a.act_type||'').trim();
+    if(V301_TRANSACTION_EXECUTION_TYPES.has(t))return true;
+    try{return Array.isArray(window.TALKTO_TYPES)&&window.TALKTO_TYPES.indexOf(t)>=0}catch(e){return typeof priorCnt==='function'&&priorCnt([a])>0}
+  }).length;
+};
+try{cntTalkTo=window.cntTalkTo}catch(e){}
+
+// Director/Amanda management view has a separate talkCount function; replace it with the same rule.
+window.v301TalkCount=function(rows){
+  return (rows||[]).filter(a=>{
+    const t=String(a&&a.act_type||'').trim();
+    if(V301_TRANSACTION_EXECUTION_TYPES.has(t))return true;
+    return new Set([
+      'Agent Talk-to','Active Agent Talk-to','Active Agent Check-in','Reconnect Outreach',
+      'CTC Call','Under Contract Call','Birthday Outreach','Holiday Outreach','Agent Appreciation',
+      'Market Update','Market Update Call','Sent Market Report','Sent Referral','Co-Marketing Discussion',
+      'New Agent Follow-up','Closed Deal Thank You','Partner Meeting','Break Breads','Retention Meeting'
+    ]).has(t);
+  }).length;
+};
+
+// Replace visible activity-feed renderer so hidden RM/transaction metadata can never leak as glyph blocks.
+const priorRenderFeed=window.renderFeed;
+window.renderFeed=function(data){
+  if(!data||!data.length){const f=document.getElementById('feedList');if(f)f.innerHTML='<div class="no-data">No activity found.</div>';return;}
+  const host=document.getElementById('feedList');if(!host){if(typeof priorRenderFeed==='function')return priorRenderFeed(data);return;}
+  host.innerHTML=data.map(a=>{
+    const isLP=a._source==='lp',agentName=a._agent||'',safeAgent=agentName.replace(/'/g,"\\'"),safeType=(a._type||'').replace(/'/g,"\\'");
+    const note=v301CleanVisibleActivityNote(a._note||'');
+    let metaLine='';
+    if(!isLP){
+      try{
+        const meta=typeof extractRmMeta==='function'?extractRmMeta(a._note||''):null,own=typeof getAgentOwnership==='function'?getAgentOwnership(agentName):{rm:'Unassigned'},rms=(meta&&meta.rmAttendees&&meta.rmAttendees.length?meta.rmAttendees:[meta&&meta.owner||'Amanda']).join(' + '),lps=(meta&&meta.lpAttendees||[]).join(', ');
+        metaLine='<div style="font-size:10.5px;color:var(--text-3);margin-top:4px"><strong>RM(s):</strong> '+escHtml(rms)+' &nbsp;·&nbsp; <strong>Current owner:</strong> '+escHtml(own.rm||'Unassigned')+(lps?' &nbsp;·&nbsp; <strong>LP:</strong> '+escHtml(lps):'')+'</div>';
+      }catch(e){}
+    }
+    return '<div class="feed-item">'
+      +'<div class="feed-top"><span class="feed-agent">'+escHtml(agentName)+'</span><div class="feed-right"><span class="feed-date">'+fmtDate(a._date)+'</span>'
+      +(isLP?'<span style="font-size:10px;padding:2px 8px;background:#E8EAF6;color:#3949AB;border-radius:20px;font-weight:600">LP: '+escHtml(a._lp||'LP')+'</span>':'<button class="btn-sm" onclick="openEditModal('+a.id+')" style="font-size:10px;padding:3px 8px">Edit</button><button class="btn-sm danger" onclick="openConfirm('+a.id+',\''+safeAgent+'\',\''+safeType+'\')">Delete</button>')+'</div></div>'
+      +'<span class="feed-badge '+(isLP?'lp':a._type===CTC_TYPE?'ctc':'rm')+'">'+badgeEmoji(a._type)+'</span>'
+      +metaLine
+      +(a._outcome?'<div class="feed-outcome">'+escHtml(a._outcome)+'</div>':'')
+      +(a.follow_up_date?'<div class="feed-fu">Follow-up: '+fmtDate(a.follow_up_date)+'</div>':'')
+      +(note?'<div class="feed-notes">"'+escHtml(note)+'"</div>':'')
+      +(a.edited_at?'<div class="feed-edited">Last edited: '+fmtDateTime(a.edited_at)+'</div>':'')
+      +'</div>';
+  }).join('');
+};
+try{renderFeed=window.renderFeed}catch(e){}
+
+// Clean the edit modal too so Amanda never edits encoded metadata by accident.
+const priorOpenEdit=window.openEditModal;
+if(typeof priorOpenEdit==='function'){
+  window.openEditModal=function(id){
+    const r=priorOpenEdit.apply(this,arguments);
+    const ta=document.getElementById('editNotes');if(ta)ta.value=v301CleanVisibleActivityNote(ta.value);
+    return r;
+  };
+  try{openEditModal=window.openEditModal}catch(e){}
+}
+
+// Force execution cards to refresh after any Amanda activity POST/PATCH settles in this browser.
+const priorSb=window.sbFetch;
+if(typeof priorSb==='function'&&!priorSb.__v301ActivityRefresh){
+  const wrapped=function(path,opts){
+    const result=priorSb.apply(this,arguments);
+    try{
+      const p=String(path||''),method=String(opts&&opts.method||'GET').toUpperCase();
+      if(p.indexOf('amanda_activities')>=0&&['POST','PATCH','DELETE'].includes(method)){
+        Promise.resolve(result).then(()=>setTimeout(()=>{
+          try{if(typeof window.v23LoadAmandaSnapshot==='function')window.v23LoadAmandaSnapshot(true)}catch(e){}
+          try{if(window.R){window.R.cache=null;window.R.ts=0}}catch(e){}
+        },120)).catch(()=>{});
+      }
+    }catch(e){}
+    return result;
+  };
+  wrapped.__v301ActivityRefresh=true;
+  window.sbFetch=wrapped;
+  try{sbFetch=wrapped}catch(e){}
+}
+
+// One-time visible cleanup pass for any already-rendered note text.
+function scrubDom(){document.querySelectorAll('.feed-notes').forEach(el=>{const t=v301CleanVisibleActivityNote(el.textContent.replace(/^"|"$/g,''));el.textContent=t?'"'+t+'"':''})}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(scrubDom,200),{once:true});else setTimeout(scrubDom,200);
 })();
 </script>
 
