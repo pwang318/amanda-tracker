@@ -18952,8 +18952,22 @@ window.rmxBoot=boot;const baseSwitch=window.switchTab;window.switchTab=function(
       const acts=rs[0]||[],profiles=rs[1]||[],assign=rs[2]||[],ovs=rs[3]||[],ovMap={};ovs.forEach(o=>{const id=meta(o.notes,'TXN_ID');if(id&&!ovMap[id])ovMap[id]=o});
       const pm={};profiles.forEach(p=>pm[key(p.agent_name)]=p);const am={};assign.forEach(a=>am[key(a.agent_name)]=a);
       const snapshots=acts.filter(a=>a.act_type==='Transaction Snapshot'&&/\[TXN_SNAPSHOT\]/i.test(String(a.notes||'')));
-      const latestBatch=snapshots.reduce((m,a)=>{const b=meta(a.notes,'TXN_BATCH');return b>m?b:m},'');
-      const activeSnap=latestBatch?snapshots.filter(a=>meta(a.notes,'TXN_BATCH')===latestBatch):[];
+      // IMPORTANT: weekly Encompass upload is the authoritative Tuesday population.
+      // Manual RM transaction snapshots are exception records and must NEVER replace the uploaded batch.
+      const weeklySnapshots=snapshots.filter(a=>{
+        const b=meta(a.notes,'TXN_BATCH'),src=meta(a.notes,'TXN_SOURCE');
+        return /^\d{14}$/.test(String(b||'')) || /Encompass Excel/i.test(String(src||''));
+      });
+      const weeklyGroups={};
+      weeklySnapshots.forEach(a=>{
+        const b=meta(a.notes,'TXN_BATCH')||'';
+        (weeklyGroups[b]||(weeklyGroups[b]=[])).push(a);
+      });
+      const latestGroup=Object.entries(weeklyGroups)
+        .map(([batch,rows])=>({batch,rows,stamp:Math.max(...rows.map(r=>Date.parse(r.created_at||r.act_date||0)||0))}))
+        .sort((a,b)=>b.stamp-a.stamp)[0]||null;
+      const latestBatch=latestGroup?latestGroup.batch:'';
+      const activeSnap=latestGroup?latestGroup.rows:[];
       const trig=activeSnap;
       const groups=new Map();
       trig.forEach(r=>{const id=txnId(r)||[key(r.agent_name),meta(r.notes,'TXN_CLIENT'),meta(r.notes,'TXN_PROPERTY')].join('|');if(!groups.has(id))groups.set(id,[]);groups.get(id).push(r)});
@@ -18984,7 +18998,7 @@ window.rmxBoot=boot;const baseSwitch=window.switchTab;window.switchTab=function(
       const due=rows.filter(r=>!r.weeklyDone).length,done=rows.length-due;
       if(sum)sum.textContent=latestBatch?(due+' due · '+done+' handled · week of '+tue+' · Encompass snapshot '+latestBatch.slice(4,6)+'/'+latestBatch.slice(6,8)):'No weekly Core Team upload yet';
       const show=rows.filter(r=>!r.weeklyDone);
-      if(!latestBatch){host.innerHTML='<div class="v265-empty"><strong>No Tuesday active-file upload yet.</strong><br>Upload this week’s Encompass active-file report in Core Team → Tuesday Updates.</div>';return}if(!show.length){host.innerHTML='<div class="v265-empty"><strong>Listing-agent updates complete.</strong><br>No additional listing-agent updates are due from this week’s shared snapshot.</div>';return}
+      if(!latestBatch){host.innerHTML='<div class="v265-empty"><strong>No current Encompass active-file snapshot found.</strong><br>Upload this week’s Encompass Active Files in Core Team → Weekly Data Hub. Manual CTC/New Contract entries do not replace the shared upload.</div>';return}if(!show.length){host.innerHTML='<div class="v265-empty"><strong>Listing-agent updates complete.</strong><br>No additional listing-agent updates are due from this week’s shared snapshot.</div>';return}
       host.innerHTML=show.map(r=>{
         const file=[r.client,r.property].filter(Boolean).join(' · ')||'Active file';
         let action='',statusCopy='';
@@ -19175,9 +19189,21 @@ if(document.readyState==='loading'){
     try{
       const cut=new Date(Date.now()-75*DAY).toISOString().slice(0,10);
       const rows=await sbFetch('amanda_activities?act_type=eq.Transaction%20Snapshot&act_date=gte.'+cut+'&select=act_date,created_at,notes&order=created_at.desc&limit=6000').catch(()=>[]);
-      const batches={};(rows||[]).forEach(r=>{const b=meta(r.notes,'TXN_BATCH')||String(r.act_date||'');(batches[b]||(batches[b]=[])).push(r)});
-      const latest=Object.values(batches).sort((a,b)=>String((b[0]||{}).created_at||'').localeCompare(String((a[0]||{}).created_at||'')))[0]||[];
-      contractBuyers.clear();latest.forEach(r=>{if(!underContract(r.notes))return;const n=meta(r.notes,'TXN_BUYER_AGENT');if(n)contractBuyers.add(norm(n))});
+      const groups={};(rows||[]).forEach(r=>{
+        const b=meta(r.notes,'TXN_BATCH')||String(r.act_date||'');
+        (groups[b]||(groups[b]=[])).push(r);
+      });
+      const all=Object.entries(groups).map(([batch,rs])=>({
+        batch,rows:rs,
+        stamp:Math.max(...rs.map(r=>Date.parse(r.created_at||r.act_date||0)||0)),
+        manual:/^MANUAL-/i.test(batch)
+      })).sort((a,b)=>b.stamp-a.stamp);
+      const weekly=all.filter(g=>!g.manual&&(/^\d{14}$/.test(g.batch)||g.rows.some(r=>/Encompass Excel/i.test(meta(r.notes,'TXN_SOURCE')))));
+      const currentWeekly=weekly[0]||null;
+      const recentManual=all.filter(g=>g.manual);
+      contractBuyers.clear();
+      const sourceRows=[...(currentWeekly?currentWeekly.rows:[]),...recentManual.flatMap(g=>g.rows)];
+      sourceRows.forEach(r=>{if(!underContract(r.notes))return;const n=meta(r.notes,'TXN_BUYER_AGENT');if(n)contractBuyers.add(norm(n))});
       contractLoadedAt=Date.now();
     }catch(e){console.warn('active contract buyer load',e)}
     return contractBuyers;
@@ -20742,6 +20768,25 @@ window.v176BuildWhatsApp=function(){
   if(f){lines.push('');lines.push('Next Follow-Up: '+f)}
   if(note){lines.push('');lines.push('Note: '+note)}
   return lines.join('\n');
+};
+})();
+</script>
+
+
+<!-- AUTHORITATIVE ENCOMPASS BATCH GUARD v13 -->
+<script id="rm-authoritative-encompass-v13-js">
+(function(){
+'use strict';
+window.rmIsWeeklyEncompassSnapshotV13=function(row){
+  const notes=String(row&&row.notes||'');
+  const get=k=>{const m=notes.match(new RegExp('\\['+k+':([^\\]]*)\\]','i'));return m?m[1].trim():''};
+  const b=get('TXN_BATCH'),s=get('TXN_SOURCE');
+  return /^\d{14}$/.test(b)||/Encompass Excel/i.test(s);
+};
+window.rmIsManualTxnSnapshotV13=function(row){
+  const notes=String(row&&row.notes||'');
+  const m=notes.match(/\[TXN_BATCH:([^\]]*)\]/i);
+  return !!(m&&/^MANUAL-/i.test(m[1]||''));
 };
 })();
 </script>
