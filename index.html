@@ -19016,19 +19016,18 @@ window.rmxBoot=boot;const baseSwitch=window.switchTab;window.switchTab=function(
       if(sum)sum.textContent=latestBatch
         ?(rows.length+' active files · '+callableOpen+' listing-agent updates due · '+done+' handled'+(contactIssues?' · '+contactIssues+' contact issue'+(contactIssues===1?'':'s'):'')+(fsboCount?' · '+fsboCount+' FSBO / no listing agent':'')+' · Encompass '+latestBatch.slice(4,6)+'/'+latestBatch.slice(6,8))
         :'No weekly Core Team upload yet';
-      const show=rows.filter(r=>!r.weeklyDone);
-      if(!latestBatch){host.innerHTML='<div class="v265-empty"><strong>No current Encompass active-file snapshot found.</strong><br>Upload this week’s Encompass Active Files in Core Team → Weekly Data Hub. Manual CTC/New Contract entries do not replace the shared upload.</div>';return}if(!show.length){host.innerHTML='<div class="v265-empty"><strong>Listing-agent updates complete.</strong><br>No additional listing-agent updates are due from this week’s shared snapshot.</div>';return}
+      const show=rows.filter(r=>!r.weeklyDone&&!r.fsbo);
+      if(!latestBatch){host.innerHTML='<div class="v265-empty"><strong>No current Encompass active-file snapshot found.</strong><br>Upload this week’s Encompass Active Files in Core Team → Weekly Data Hub. Manual CTC/New Contract entries do not replace the shared upload.</div>';return}if(!show.length){host.innerHTML='<div class="v265-empty"><strong>Listing-agent updates complete.</strong><br>No additional listing-agent updates are due. Confirmed FSBO / no-listing-agent files are excluded automatically.</div>';return}
       host.innerHTML=show.map(r=>{
         const file=[r.client,r.property].filter(Boolean).join(' · ')||'Active file';
         let action='',statusCopy='';
         {
-          if(r.contactIssue){
-            statusCopy=r.fsbo
-              ?'<strong>Listing side:</strong> FSBO / no listing agent confirmed.'
-              :'<strong>Contact issue:</strong> this active Encompass file has no listing-agent name in the shared snapshot. Fix the contact instead of letting the file disappear.';
-            action=r.fsbo
-              ?'<span class="v265-pill">FSBO · no listing-agent call</span>'
-              :'<button class="primary" type="button" onclick="v265FixListingContact(\''+encodeURIComponent(r.id)+'\')">Fix listing contact</button>';
+          if(r.fsbo){
+            statusCopy='<strong>Listing side:</strong> FSBO / no listing agent confirmed. No Tuesday listing-agent call required.';
+            action='<span class="v265-pill">FSBO · excluded from calls</span>';
+          }else if(r.contactIssue){
+            statusCopy='<strong>Contact issue:</strong> this active Encompass file has no listing-agent name in the shared snapshot. Fix the contact instead of letting the file disappear.';
+            action='<button class="primary" type="button" onclick="v265FixListingContact(\''+encodeURIComponent(r.id)+'\')">Fix listing contact</button>';
           }else{
             const g=r.milestoneGroup||'File status';
             statusCopy=g==='Appraisal'?'<strong>Suggested update:</strong> '+esc(r.milestone||'Appraisal status')+'. Share status only; never share appraisal value before buyer-side communication is handled.':g==='Underwriting'?'<strong>Suggested update:</strong> underwriting / condition status, whether the file remains on track, and whether anything is needed from the seller side.':g==='Closing'?'<strong>Suggested update:</strong> closing readiness ('+esc(r.milestone||'closing milestone')+') and whether anything is needed from the seller side.':g==='Processing'?'<strong>Suggested update:</strong> processing status, the next milestone, and whether anything is needed from the seller side.':'<strong>Suggested update:</strong> file status, next meaningful milestone, and whether anything is needed from the seller side.';
@@ -19037,7 +19036,7 @@ window.rmxBoot=boot;const baseSwitch=window.switchTab;window.switchTab=function(
         }
         const rel=r.partner?'<span class="v265-pill partner">Current partner</span>':'<span class="v265-pill convert">Relationship opportunity</span>';
         const lp=r.lpUpdate?'<div class="v265-lpdone">Buyer side updated by '+esc(meta(r.lpUpdate.notes,'LP')||'LP')+' · '+esc(r.lpUpdate.act_date)+'</div>':'';
-        return '<div class="v265-row"><div><div class="v265-name">'+esc(r.name||'Listing agent missing')+'</div><div class="v265-file">'+esc(file)+(r.closeDate?' · close '+esc(r.closeDate):'')+'</div><div class="v265-badges">'+rel+(r.lp?'<span class="v265-pill">LP: '+esc(r.lp)+'</span>':'')+'</div></div><div class="v265-status">'+statusCopy+lp+'</div><div class="v265-actions">'+action+(!r.partner?'<button type="button" onclick="v265AddListingProspect(\''+encodeURIComponent(r.id)+'\')">Add to meeting push</button>':'')+'</div></div>'
+        return '<div class="v265-row"><div><div class="v265-name">'+esc(r.name||'Listing agent missing')+'</div><div class="v265-file">'+esc(file)+(r.closeDate?' · close '+esc(r.closeDate):'')+'</div><div class="v265-badges">'+rel+(r.lp?'<span class="v265-pill">LP: '+esc(r.lp)+'</span>':'')+'</div></div><div class="v265-status">'+statusCopy+lp+'</div><div class="v265-actions">'+action+(!r.partner&&!r.fsbo?'<button type="button" onclick="v265AddListingProspect(\''+encodeURIComponent(r.id)+'\')">Add to meeting push</button>':'')+'</div></div>'
       }).join('');
     }catch(e){console.warn('v265 Tuesday listing',e);if(sum)sum.textContent='Could not load';host.innerHTML='<div class="v265-empty">Could not load Tuesday listing-agent work. Refresh once and try again.</div>'}
   }
@@ -21197,6 +21196,60 @@ if(typeof priorSb==='function'&&!priorSb.__v301ActivityRefresh){
 // One-time visible cleanup pass for any already-rendered note text.
 function scrubDom(){document.querySelectorAll('.feed-notes').forEach(el=>{const t=v301CleanVisibleActivityNote(el.textContent.replace(/^"|"$/g,''));el.textContent=t?'"'+t+'"':''})}
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(scrubDom,200),{once:true});else setTimeout(scrubDom,200);
+})();
+</script>
+
+
+<!-- SHARED MACK TUESDAY CALL PLAN v300 RM -->
+
+<!-- RM TUESDAY SOURCE SPLIT v310 -->
+<style id="rm-v310-css">
+#rmV310Tuesday{margin:12px 0;border:1px solid #DDD5E8;border-radius:12px;background:#fff;overflow:hidden}
+.rm-v310-head{padding:12px 14px;background:#FAF8FC;border-bottom:1px solid #E8E1EF;display:flex;justify-content:space-between;gap:10px;align-items:flex-start;flex-wrap:wrap}.rm-v310-head b{display:block;font-size:15px;color:#3E2F5C}.rm-v310-head span{font-size:10px;color:#6B6175;line-height:1.45}.rm-v310-pill{font-size:9.5px;font-weight:800;border:1px solid #D9CFE6;border-radius:999px;padding:6px 9px;color:#654D8B;background:#fff}
+.rm-v310-body{padding:12px}.rm-v310-stat{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.rm-v310-stat div{padding:9px;border-radius:8px;background:#F8F6FA;text-align:center}.rm-v310-stat b{display:block;font-size:18px;color:#7656A3}.rm-v310-stat small{font-size:8.5px;color:#776D80}.rm-v310-list{margin-top:10px;max-height:330px;overflow:auto}.rm-v310-row{display:grid;grid-template-columns:1.25fr .9fr .8fr;gap:8px;padding:8px 0;border-top:1px solid #EFEAF3;font-size:9.5px;color:#6B6175}.rm-v310-row strong{color:#3E2F5C}.rm-v310-done{color:#287A54;font-weight:800}
+</style>
+<script id="rm-v310-js">
+(function(){
+'use strict';
+const SNAP='Tuesday Call Plan Snapshot';
+const meta=(notes,k)=>{const m=String(notes||'').match(new RegExp('\\['+k+':([^\\]]*)\\]','i'));return m?m[1].trim():''};
+const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+async function load(){
+  let host=document.getElementById('rmV310Tuesday');if(!host){const anchor=document.getElementById('rmPermanentTuesdayHome')||document.getElementById('v113SmartHost')||document.querySelector('.view.active');if(!anchor)return;host=document.createElement('section');host.id='rmV310Tuesday';anchor.prepend(host)}
+  try{
+    const cut=new Date();cut.setDate(cut.getDate()-21);const since=cut.toISOString().slice(0,10);
+    const acts=await sbFetch('amanda_activities?act_date=gte.'+since+'&select=id,agent_name,act_type,act_date,outcome,notes,follow_up_date,created_at&order=created_at.desc&limit=5000').catch(()=>[]);
+    const snaps=(acts||[]).filter(a=>a.act_type===SNAP&&/\[TUE_SPLIT_V310\]/i.test(String(a.notes||''))),headers=snaps.filter(a=>meta(a.notes,'TUE_PLAN_LANE')==='RM_HEADER').sort((a,b)=>Date.parse(b.created_at||0)-Date.parse(a.created_at||0)),batch=headers[0]?meta(headers[0].notes,'TUE_PLAN_BATCH'):'',rows=snaps.filter(a=>meta(a.notes,'TUE_PLAN_LANE')==='RM_LISTING'&&meta(a.notes,'TUE_PLAN_BATCH')===batch),logs=(acts||[]).filter(a=>a.act_type==='Listing Agent Update'&&!/\[TXN_TRIGGER\]/i.test(String(a.notes||'')));
+    const done=r=>logs.some(a=>String(a.agent_name||'').trim().toLowerCase()===String(meta(r.notes,'TUE_CONTACT_NAME')||'').trim().toLowerCase()&&String(a.act_date||'')>=String(meta(r.notes,'TUE_PLAN_DATE')||'')),actionable=rows.filter(r=>!['FSBO','Missing'].includes(meta(r.notes,'TUE_CONTACT_ROLE'))),complete=actionable.filter(done),issues=rows.length-actionable.length,planDate=rows[0]?meta(rows[0].notes,'TUE_PLAN_DATE'):'';
+    const rowHtml=rows.length?rows.map(function(r){
+      const contact=meta(r.notes,'TUE_CONTACT_NAME');
+      const client=meta(r.notes,'TXN_CLIENT');
+      const phone=meta(r.notes,'TUE_PHONE')||'No phone';
+      const email=meta(r.notes,'TUE_EMAIL')||'No email';
+      const role=meta(r.notes,'TUE_CONTACT_ROLE');
+      const isDone=done(r);
+      return '<div class="rm-v310-row">'
+        +'<div><strong>'+esc(contact)+'</strong><br>'+esc(client)+'</div>'
+        +'<div>'+esc(phone)+'<br>'+esc(email)+'</div>'
+        +'<div class="'+(isDone?'rm-v310-done':'')+'">'+(isDone?'Completed ✓':esc(role))+'</div>'
+        +'</div>';
+    }).join(''):'<div style="padding:12px;color:#776D80;font-size:10px">No RM Tuesday plan loaded yet. Upload RM TUESDAY CALLS.xlsx in the LP Weekly Data Hub.</div>';
+    host.innerHTML='<div class="rm-v310-head">'
+      +'<div><b>Amanda Tuesday Listing-Agent Calls</b><span>Source: RM TUESDAY CALLS.xlsx → RM LISTING AGENT CALLS only. LP active-contract calls come from the separate LP2 workbook and never appear here.</span></div>'
+      +'<div class="rm-v310-pill">'+esc(planDate||'No RM plan loaded')+'</div>'
+      +'</div>'
+      +'<div class="rm-v310-body">'
+      +'<div class="rm-v310-stat">'
+      +'<div><b>'+actionable.length+'</b><small>Actionable listing calls</small></div>'
+      +'<div><b>'+complete.length+'</b><small>Completed</small></div>'
+      +'<div><b>'+issues+'</b><small>FSBO / contact issues</small></div>'
+      +'</div>'
+      +'<div class="rm-v310-list">'+rowHtml+'</div>'
+      +'</div>';
+  }catch(e){console.warn(e);host.innerHTML='<div class="rm-v310-head"><div><b>Amanda Tuesday Listing-Agent Calls</b><span>Could not load the shared RM Tuesday plan.</span></div></div>'}
+}
+window.rmV310Load=load;
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(load,180),{once:true});else setTimeout(load,180);
 })();
 </script>
 
