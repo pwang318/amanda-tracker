@@ -18974,13 +18974,23 @@ window.rmxBoot=boot;const baseSwitch=window.switchTab;window.switchTab=function(
       const rows=[];cache=new Map();
       groups.forEach((arr,id)=>{
         arr.sort((a,b)=>String(b.created_at||b.act_date).localeCompare(String(a.created_at||a.act_date)));const t=arr[0];
-        if(String(t.act_date)<cutoff(75))return;
         const isSnap=t.act_type==='Transaction Snapshot';
-        let name=String(isSnap?(meta(t.notes,'TXN_LISTING_AGENT')||''):t.agent_name||'').trim();const ovNotes=(ovMap[id]&&ovMap[id].notes)||'',listingNa=meta(ovNotes,'LISTING_AGENT_NA')==='Y',nameOv=rmOv(ovNotes,'LISTING_AGENT_OVERRIDE');if(listingNa)name='';else if(nameOv.has)name=nameOv.value==='__NONE__'?'':nameOv.value;if(!name)return;
-        const client=meta(t.notes,'TXN_CLIENT'),property=meta(t.notes,'TXN_PROPERTY'),closeDate=meta(t.notes,'TXN_CLOSE_DATE'),milestone=meta(t.notes,'TXN_MILESTONE'),mg=milestoneGroup(t.notes,milestone);
-        if(closeDate&&closeDate<cutoff(2))return;
+        let name=String(isSnap?(meta(t.notes,'TXN_LISTING_AGENT')||''):t.agent_name||'').trim();
+        const ovNotes=(ovMap[id]&&ovMap[id].notes)||'',
+              listingNa=meta(ovNotes,'LISTING_AGENT_NA')==='Y',
+              nameOv=rmOv(ovNotes,'LISTING_AGENT_OVERRIDE');
+        if(listingNa)name='';
+        else if(nameOv.has)name=nameOv.value==='__NONE__'?'':nameOv.value;
+        const client=meta(t.notes,'TXN_CLIENT'),
+              property=meta(t.notes,'TXN_PROPERTY'),
+              closeDate=meta(t.notes,'TXN_CLOSE_DATE'),
+              milestone=meta(t.notes,'TXN_MILESTONE'),
+              mg=milestoneGroup(t.notes,milestone);
+        // The newest LP/Core Team Encompass ACTIVE FILE upload is authoritative.
+        // Do not re-filter those rows through a second RM milestone parser or a guessed close-date rule.
+        // If the file is in the newest active-file upload, it belongs in Amanda's Tuesday population.
         const triggerRows=acts.filter(a=>(a.act_type==='New Contract'||a.act_type==='Clear to Close')&&/\[TXN_TRIGGER\]/i.test(String(a.notes||''))&&txnId(a)===id&&norm(role(a))==='listing').sort((a,b)=>String(b.act_date).localeCompare(String(a.act_date)));
-        const reqTrig=triggerRows[0]||null;if(!rmIsUnderContractMilestone(milestone,mg,!!reqTrig))return;
+        const reqTrig=triggerRows[0]||null;
         const callType=reqTrig?(reqTrig.act_type==='Clear to Close'?'CTC Call':'Under Contract Call'):'';
         const related=acts.filter(a=>txnId(a)===id&&(norm(role(a))==='listing'||a.act_type==='Listing Agent Update'));
         const reqDone=!reqTrig||related.some(a=>a.act_type===callType&&status(a.notes)==='COMPLETE'&&String(a.act_date)>=String(reqTrig.act_date));
@@ -18992,20 +19002,40 @@ window.rmxBoot=boot;const baseSwitch=window.switchTab;window.switchTab=function(
         const p=pm[key(name)]||null,a=am[key(name)]||{};
         const partner=!!(p&&p.retained===true&&p.do_not_contact!==true&&norm(p.relationship_status||'active')!=='inactive');
         const relationshipOwner=String(a.rm||'').trim();
-        let item={id,name,client,property,closeDate,milestone,milestoneGroup:mg,stage:(reqTrig?reqTrig.act_type:'Active Transaction'),callType,triggerDate:(reqTrig?reqTrig.act_date:t.act_date),reqDone,weeklyDone:!!weekly,lpUpdate,partner,owner:'Amanda',relationshipOwner,lp:meta(t.notes,'TXN_LP')||a.lp||'',phone:meta(t.notes,'TXN_LISTING_PHONE'),email:meta(t.notes,'TXN_LISTING_EMAIL')};item=rmApplyOverride(item,ovMap[id]);if(!item.name)return;cache.set(id,item);rows.push(item);
+        let item={id,name,client,property,closeDate,milestone,milestoneGroup:mg,stage:(reqTrig?reqTrig.act_type:'Active Transaction'),callType,triggerDate:(reqTrig?reqTrig.act_date:t.act_date),reqDone,weeklyDone:!!weekly,lpUpdate,partner,owner:'Amanda',relationshipOwner,lp:meta(t.notes,'TXN_LP')||a.lp||'',phone:meta(t.notes,'TXN_LISTING_PHONE'),email:meta(t.notes,'TXN_LISTING_EMAIL'),contactIssue:!name,fsbo:listingNa};
+        item=rmApplyOverride(item,ovMap[id]);
+        item.contactIssue=!String(item.name||'').trim();
+        cache.set(id,item);rows.push(item);
       });
       rows.sort((a,b)=>(Number(a.weeklyDone)-Number(b.weeklyDone))||(Number(a.reqDone)-Number(b.reqDone))||String(a.closeDate||a.triggerDate).localeCompare(String(b.closeDate||b.triggerDate)));
-      const due=rows.filter(r=>!r.weeklyDone).length,done=rows.length-due;
-      if(sum)sum.textContent=latestBatch?(due+' due · '+done+' handled · week of '+tue+' · Encompass snapshot '+latestBatch.slice(4,6)+'/'+latestBatch.slice(6,8)):'No weekly Core Team upload yet';
+      const due=rows.filter(r=>!r.weeklyDone).length,
+            done=rows.length-due,
+            contactIssues=rows.filter(r=>r.contactIssue&&!r.weeklyDone).length;
+      if(sum)sum.textContent=latestBatch
+        ?(rows.length+' active files · '+due+' Tuesday items open · '+done+' handled'+(contactIssues?' · '+contactIssues+' listing-contact issue'+(contactIssues===1?'':'s'):'')+' · Encompass '+latestBatch.slice(4,6)+'/'+latestBatch.slice(6,8))
+        :'No weekly Core Team upload yet';
       const show=rows.filter(r=>!r.weeklyDone);
       if(!latestBatch){host.innerHTML='<div class="v265-empty"><strong>No current Encompass active-file snapshot found.</strong><br>Upload this week’s Encompass Active Files in Core Team → Weekly Data Hub. Manual CTC/New Contract entries do not replace the shared upload.</div>';return}if(!show.length){host.innerHTML='<div class="v265-empty"><strong>Listing-agent updates complete.</strong><br>No additional listing-agent updates are due from this week’s shared snapshot.</div>';return}
       host.innerHTML=show.map(r=>{
         const file=[r.client,r.property].filter(Boolean).join(' · ')||'Active file';
         let action='',statusCopy='';
-        {const g=r.milestoneGroup||'File status';statusCopy=g==='Appraisal'?'<strong>Suggested update:</strong> '+esc(r.milestone||'Appraisal status')+'. Share status only; never share appraisal value before buyer-side communication is handled.':g==='Underwriting'?'<strong>Suggested update:</strong> underwriting / condition status, whether the file remains on track, and whether anything is needed from the seller side.':g==='Closing'?'<strong>Suggested update:</strong> closing readiness ('+esc(r.milestone||'closing milestone')+') and whether anything is needed from the seller side.':g==='Processing'?'<strong>Suggested update:</strong> processing status, the next milestone, and whether anything is needed from the seller side.':'<strong>Suggested update:</strong> file status, next meaningful milestone, and whether anything is needed from the seller side.';action='<button class="primary" type="button" onclick="v265OpenListingUpdate(\''+encodeURIComponent(r.id)+'\')">Open listing update</button>'}
+        {
+          if(r.contactIssue){
+            statusCopy=r.fsbo
+              ?'<strong>Listing side:</strong> FSBO / no listing agent confirmed.'
+              :'<strong>Contact issue:</strong> this active Encompass file has no listing-agent name in the shared snapshot. Fix the contact instead of letting the file disappear.';
+            action=r.fsbo
+              ?'<span class="v265-pill">No listing-agent call</span>'
+              :'<button class="primary" type="button" onclick="v265FixListingContact(\''+encodeURIComponent(r.id)+'\')">Fix listing contact</button>';
+          }else{
+            const g=r.milestoneGroup||'File status';
+            statusCopy=g==='Appraisal'?'<strong>Suggested update:</strong> '+esc(r.milestone||'Appraisal status')+'. Share status only; never share appraisal value before buyer-side communication is handled.':g==='Underwriting'?'<strong>Suggested update:</strong> underwriting / condition status, whether the file remains on track, and whether anything is needed from the seller side.':g==='Closing'?'<strong>Suggested update:</strong> closing readiness ('+esc(r.milestone||'closing milestone')+') and whether anything is needed from the seller side.':g==='Processing'?'<strong>Suggested update:</strong> processing status, the next milestone, and whether anything is needed from the seller side.':'<strong>Suggested update:</strong> file status, next meaningful milestone, and whether anything is needed from the seller side.';
+            action='<button class="primary" type="button" onclick="v265OpenListingUpdate(\''+encodeURIComponent(r.id)+'\')">Open listing update</button>';
+          }
+        }
         const rel=r.partner?'<span class="v265-pill partner">Current partner</span>':'<span class="v265-pill convert">Relationship opportunity</span>';
         const lp=r.lpUpdate?'<div class="v265-lpdone">Buyer side updated by '+esc(meta(r.lpUpdate.notes,'LP')||'LP')+' · '+esc(r.lpUpdate.act_date)+'</div>':'';
-        return '<div class="v265-row"><div><div class="v265-name">'+esc(r.name)+'</div><div class="v265-file">'+esc(file)+(r.closeDate?' · close '+esc(r.closeDate):'')+'</div><div class="v265-badges">'+rel+(r.lp?'<span class="v265-pill">LP: '+esc(r.lp)+'</span>':'')+'</div></div><div class="v265-status">'+statusCopy+lp+'</div><div class="v265-actions">'+action+(!r.partner?'<button type="button" onclick="v265AddListingProspect(\''+encodeURIComponent(r.id)+'\')">Add to meeting push</button>':'')+'</div></div>'
+        return '<div class="v265-row"><div><div class="v265-name">'+esc(r.name||'Listing agent missing')+'</div><div class="v265-file">'+esc(file)+(r.closeDate?' · close '+esc(r.closeDate):'')+'</div><div class="v265-badges">'+rel+(r.lp?'<span class="v265-pill">LP: '+esc(r.lp)+'</span>':'')+'</div></div><div class="v265-status">'+statusCopy+lp+'</div><div class="v265-actions">'+action+(!r.partner?'<button type="button" onclick="v265AddListingProspect(\''+encodeURIComponent(r.id)+'\')">Add to meeting push</button>':'')+'</div></div>'
       }).join('');
     }catch(e){console.warn('v265 Tuesday listing',e);if(sum)sum.textContent='Could not load';host.innerHTML='<div class="v265-empty">Could not load Tuesday listing-agent work. Refresh once and try again.</div>'}
   }
@@ -20787,6 +20817,26 @@ window.rmIsManualTxnSnapshotV13=function(row){
   const notes=String(row&&row.notes||'');
   const m=notes.match(/\[TXN_BATCH:([^\]]*)\]/i);
   return !!(m&&/^MANUAL-/i.test(m[1]||''));
+};
+})();
+</script>
+
+
+<!-- RM TUESDAY ACTIVE-FILE PARITY v14 -->
+<script id="rm-tuesday-active-file-parity-v14-js">
+(function(){
+'use strict';
+window.v265FixListingContact=function(encId){
+  const id=decodeURIComponent(encId||'');
+  try{
+    if(typeof window.lpV1OpenContactManager==='function'){
+      window.lpV1OpenContactManager();
+      return;
+    }
+  }catch(e){}
+  try{toast('Listing agent is missing from the shared Encompass snapshot. Correct it in Core Team → Weekly Data Hub → Review / Edit Contacts, then refresh Tuesday Updates.','error',7000)}catch(e){
+    alert('Listing agent is missing from the shared Encompass snapshot. Correct it in Core Team → Weekly Data Hub → Review / Edit Contacts, then refresh Tuesday Updates.');
+  }
 };
 })();
 </script>
