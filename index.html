@@ -20577,5 +20577,122 @@ ensure('Ctc');ensure('NewContract');
 })();
 </script>
 
+
+<!-- TWO-SIDED TRANSACTION WORKBENCH AUTHORITY v11 -->
+<style id="rm-two-sided-workbench-v11-css">
+#v175TransactionModal .v176-agent-grid{
+  display:grid!important;
+  grid-template-columns:1fr 1fr!important;
+  gap:10px!important;
+}
+#v175TransactionModal .v176-agent-card{
+  display:block!important;
+  visibility:visible!important;
+  opacity:1!important;
+}
+#v175TransactionModal .v176-agent-card:first-child,
+#v175TransactionModal .v176-agent-card:last-child{
+  display:block!important;
+}
+@media(max-width:760px){
+  #v175TransactionModal .v176-agent-grid{grid-template-columns:1fr!important}
+}
+</style>
+<script id="rm-two-sided-workbench-v11-js">
+(function(){
+'use strict';
+function ensureBothVisible(){
+  const modal=document.getElementById('v175TransactionModal');if(!modal)return;
+  const grid=modal.querySelector('.v176-agent-grid');if(grid){
+    grid.style.display='grid';
+    grid.style.gridTemplateColumns='1fr 1fr';
+  }
+  const cards=modal.querySelectorAll('.v176-agent-card');
+  cards.forEach(c=>{c.style.display='block';c.style.visibility='visible';c.style.opacity='1'});
+}
+function setVal(id,v){const e=document.getElementById(id);if(e)e.value=v||''}
+function getMeta(notes,key){
+  const m=String(notes||'').match(new RegExp('\\['+key+':([^\\]]*)\\]','i'));return m?m[1].trim():'';
+}
+async function hydrateFromTxn(txnId){
+  if(!txnId)return;
+  try{
+    const rows=await sbFetch('amanda_activities?act_type=eq.Transaction%20Snapshot&select=notes,created_at&order=created_at.desc&limit=1200').catch(()=>[]);
+    const row=(rows||[]).find(r=>getMeta(r.notes,'TXN_ID')===txnId);
+    if(!row)return;
+    setVal('v175TxBuyerName',getMeta(row.notes,'TXN_CLIENT'));
+    setVal('v175TxProperty',getMeta(row.notes,'TXN_PROPERTY'));
+    setVal('v175TxBuyerAgent',getMeta(row.notes,'TXN_BUYER_AGENT'));
+    setVal('v175TxBuyerPhone',getMeta(row.notes,'TXN_BUYER_PHONE'));
+    setVal('v175TxListingAgent',getMeta(row.notes,'TXN_LISTING_AGENT'));
+    setVal('v175TxListingPhone',getMeta(row.notes,'TXN_LISTING_PHONE'));
+    ensureBothVisible();
+    try{window.v176UpdateWhatsApp&&window.v176UpdateWhatsApp()}catch(e){}
+  }catch(e){console.warn('hydrate txn v11',e)}
+}
+
+/* Wrap the actual workbench opener LAST, after all earlier listing-only wrappers. */
+const prior=window.v176OpenTransaction;
+window.v176OpenTransaction=function(type,agentName,role,txnId){
+  const r=typeof prior==='function'?prior.apply(this,arguments):undefined;
+  setTimeout(async()=>{
+    const modal=document.getElementById('v175TransactionModal');
+    if(!modal)return;
+    modal.dataset.activityType=type||'CTC Call';
+    modal.dataset.txnId=txnId||'';
+    ensureBothVisible();
+
+    const isCtc=String(type||'').toLowerCase().includes('ctc');
+    const title=document.getElementById('v175TransactionTitle');
+    const rule=document.getElementById('v175TransactionRule');
+    if(title)title.textContent=isCtc?'CTC Call Workbench':'New Contract Call Workbench';
+    if(rule)rule.innerHTML=isCtc
+      ?'<b>CTC = mandatory.</b> Amanda calls both Buyer Agent + Listing Agent. Capture both outcomes and feedback. LP2 still owns buyer/client communication. No answer/voicemail requires the follow-up text.'
+      :'<b>New Contract = mandatory.</b> Amanda calls both Buyer Agent + Listing Agent. After this milestone, LP2 owns buyer + buyer-agent Tuesday updates while Amanda continues listing-agent communication through funding.';
+
+    if(txnId)await hydrateFromTxn(txnId);
+
+    /* If one side was passed directly, keep it but DO NOT hide the other side. */
+    if(role==='Buyer'&&agentName&&!document.getElementById('v175TxBuyerAgent')?.value)setVal('v175TxBuyerAgent',agentName);
+    if(role==='Listing'&&agentName&&!document.getElementById('v175TxListingAgent')?.value)setVal('v175TxListingAgent',agentName);
+
+    ensureBothVisible();
+    try{window.v176UpdateWhatsApp&&window.v176UpdateWhatsApp()}catch(e){}
+  },60);
+  return r;
+};
+window.v176OpenTransaction.__twoSideWorkbenchV11=true;
+
+/* Prevent old role toggle helpers from hiding one side. */
+window.v176SetTransactionScope=function(){ensureBothVisible();return true};
+window.v176ApplyRoleScope=function(){ensureBothVisible();return true};
+
+/* Final WhatsApp renderer based on BOTH visible cards. */
+window.v176BuildWhatsApp=function(){
+  const val=id=>(document.getElementById(id)?.value||'').trim();
+  const type=document.getElementById('v175TransactionModal')?.dataset.activityType||'CTC Call';
+  const isCtc=String(type).toLowerCase().includes('ctc');
+  const lines=[isCtc?'CLEAR TO CLOSE!':'NEW CONTRACT!'];
+  const client=val('v175TxBuyerName'),property=val('v175TxProperty');
+  if(client)lines.push('Client: '+client);
+  if(property)lines.push('Property: '+property);
+  function block(prefix,label){
+    const name=val('v175Tx'+prefix+'Agent'),phone=val('v175Tx'+prefix+'Phone'),
+          out=val('v175Tx'+prefix+'Outcome'),fb=val('v175Tx'+prefix+'Feedback');
+    lines.push('');
+    lines.push(label+': '+(name||'—')+(phone?' | '+phone:''));
+    lines.push('Contact: '+(out||'Not worked yet'));
+    lines.push('Feedback: '+(fb||'—'));
+  }
+  block('Buyer','Buyer Agent');
+  block('Listing','Listing Agent');
+  const f=val('v175TxFollowup'),note=val('v175TxFileNote');
+  if(f){lines.push('');lines.push('Next Follow-Up: '+f)}
+  if(note){lines.push('');lines.push('Note: '+note)}
+  return lines.join('\n');
+};
+})();
+</script>
+
 </body>
 </html>
