@@ -1,4 +1,4 @@
- 
+
 <!DOCTYPE html>
 
 <html lang="en">
@@ -4612,6 +4612,7 @@ async function rmRefreshAfterMutation(reason){
     add(loadManagement);add(loadWeeklyWorkPlans,true);add(v23LoadAmandaSnapshot,true);
     add(loadOnboarding);add(loadQuiet);add(loadDropoffWarning);add(loadContactDataQuality);add(loadZeroProduction);add(loadRmNurtureQueue);add(loadRmNurtureToday);
     await Promise.allSettled(jobs);
+    try{if(typeof window.rmRenderNewAgentCallList==="function")await window.rmRenderNewAgentCallList();}catch(e){console.warn("New Agent call-list refresh failed",e);}
     try{if(typeof v21LoadDailyPlan==="function")await v21LoadDailyPlan(true);}catch(e){console.warn("Daily plan refresh failed",e);}
   };
   _rmLiveRefreshPromise=(async()=>{
@@ -5622,6 +5623,8 @@ function renderSnapshotStats(acts, period){
   // TODAY AT A GLANCE = execution Amanda can immediately understand.
   // This is intentionally NOT the official 50/30/20 RM scorecard; that still lives under My Scorecard.
   const newAgentCalls=rows.filter(a=>a.act_type==="Cold Calls").length;
+  const coldCallDisplay=period==="daily"?(newAgentCalls+" / 25"):String(newAgentCalls);
+  const coldCallSub=period==="daily"?(Math.max(0,25-newAgentCalls)+" remaining today · 25 cold calls/day"):"25 cold calls/day · prospecting outreach logged";
   const talkTos=typeof cntTalkTo==="function"?cntTalkTo(rows):rows.filter(a=>{
     const t=String(a.act_type||'').trim();
     const o=String(a.outcome||'').toLowerCase();
@@ -5646,7 +5649,7 @@ function renderSnapshotStats(acts, period){
     el.style.gridTemplateColumns='repeat(5,minmax(0,1fr))';
     el.style.gap='9px';
     el.innerHTML=
-      statCard(newAgentCalls,'New Agent Calls','Cold Calls','Prospecting outreach logged')+
+      statCard(coldCallDisplay,'Cold Calls','Cold Calls',coldCallSub)+
       statCard(talkTos,"Talk-To’s",'__talkto__','Meaningful live conversations')+
       statCard(buddyAsks,'Buddy Referral Asks','Realtor Buddy Referral Ask','Introductions requested')+
       statCard(meetingsBooked,'Meetings Booked',null,'Scheduled from outreach')+
@@ -15790,7 +15793,7 @@ window.rmAuditVisibleButtons=function(){
     let g=document.getElementById('v191Goals');if(!g){g=document.createElement('div');g.id='v191Goals';host.parentNode.insertBefore(g,host)}
     const left=Math.max(0,target-mt),pct=Math.min(100,Math.round(mt/Math.max(1,target)*100));
     g.innerHTML='<div class="v191-goal v191-goal-meetings" onclick="v191Drill(\'meet\')"><b>RM Team new Realtor meetings · MTD</b><strong>'+mt+' / '+target+'</strong><small>'+left+' remaining this month · '+pct+'% to goal · click for data</small></div>'+
-      '<div class="v191-goal v191-goal-rule"><b>Prospecting rule</b><strong>Best opportunities first</strong><small>No daily dial or Talk-to quota. Work warm, productive and opportunity-rich prospects before broad coverage.</small></div>';
+      '<div class="v191-goal v191-goal-rule"><b>Cold call goal</b><strong>25 / day · 3 at a time</strong><small>Work the smartest 3 prospects first. As each outreach is logged, that person clears from Today and the next eligible prospect moves up.</small></div>';
     let dr=document.getElementById('v191Drill');if(!dr){dr=document.createElement('div');dr.id='v191Drill';g.after(dr)}
   }
   window.v191Drill=function(kind){
@@ -15829,7 +15832,7 @@ window.rmAuditVisibleButtons=function(){
       seen.add(k);const sig=prospectSignal(pr,p,lastProspectAct[k],s.d);pr.__smartScore=sig.score;pr.__smartWhy=sig.why;pr.__smartMove=sig.move;pr.__smartQualified=sig.qualified;pr.__closes=sig.closes;pr.__leads=sig.leads;pr.__tier=sig.tier;all.push(pr);
     });
     all.sort((a,b)=>(b.__smartScore-a.__smartScore)||String(a.follow_up_date||'9999-12-31').localeCompare(String(b.follow_up_date||'9999-12-31'))||String(a.agent_name||'').localeCompare(String(b.agent_name||'')));
-    const qualified=all.filter(x=>x.__smartQualified),rows=qualified.slice(0,5),lower=Math.max(0,all.length-qualified.length);
+    const qualified=all.filter(x=>x.__smartQualified),rows=qualified.slice(0,3),lower=Math.max(0,all.length-qualified.length);
     const chips=(pr)=>{const x=[];if(pr.__tier)x.push(pr.__tier+' fit');if(pr.__closes)x.push(pr.__closes+' closes');if(pr.__leads)x.push(pr.__leads+' leads');if(pr.follow_up_date&&String(pr.follow_up_date)<=s.d)x.push('follow-up due');return x.slice(0,4).map(z=>'<span class="v191-smart-chip">'+E(z)+'</span>').join('')};
     h.innerHTML='<div class="v191-card v191-smart-prospect-card"><div class="v191-head"><div><b>SMART NEW MEETING OPPORTUNITIES</b><small>Only prospects with a real reason to spend outreach time now rise here. Any prospect explicitly assigned to Nyny stays off Amanda’s call page. Promised follow-up, warm/referral signal, business opportunity, prior positive engagement or meaningful production fit drive priority.</small><div class="v191-playbookbar"><button class="v191-btn" onclick="v191Playbook(\'book\')">Booking script</button><button class="v191-btn" onclick="v191Playbook(\'first\')">First meeting playbook</button></div></div><button class="v191-btn" onclick="v196ManualRefresh()">Refresh</button></div>'+
       '<div class="v191-smart-summary"><span><b>'+qualified.length+'</b> qualified now</span><span><b>'+lower+'</b> lower-confidence / wait</span><span><b>'+currentActivePartnerKeys.size+'</b> current partners excluded from prospecting</span></div>'+
@@ -19966,9 +19969,12 @@ window.rmxBoot=boot;const baseSwitch=window.switchTab;window.switchTab=function(
    (rc||[]).forEach(r=>{const k=K(r.agent_name);if(k)reconnect.add(k)});
    (acts||[]).forEach(a=>{const k=K(a.agent_name);if(!k)return;const t=N(a.act_type);if(!/(cold calls?|new realtor outreach|new agent prospect|new agent follow-up|new realtor meeting)/.test(t))return;const stamp=String(a.act_date||a.created_at||'');if(!latestWork[k]||stamp>latestWork[k].stamp)latestWork[k]={stamp,type:a.act_type||'outreach',outcome:a.outcome||''}});
    const td=typeof today==='function'?today():new Date().toISOString().slice(0,10),best=new Map();
+   const todayColdCallRows=(acts||[]).filter(a=>String(a.act_date||a.created_at||'').slice(0,10)===td&&/^(cold calls?|new realtor outreach|new agent prospect|new agent outreach)$/i.test(String(a.act_type||'').trim()));
+   const workedToday=new Set(todayColdCallRows.map(a=>K(a.agent_name)).filter(Boolean));
+   window.RM_NEW_AGENT_TODAY_COUNT=todayColdCallRows.length;
    (pr||[]).forEach(p=>{
      if(p.status!=='Requires follow-up')return;
-     const key=K(p.agent_name);if(!key||own[key]==='Nyny'||partners.has(key)||reconnect.has(key))return;
+     const key=K(p.agent_name);if(!key||workedToday.has(key)||own[key]==='Nyny'||partners.has(key)||reconnect.has(key))return;
      const units=tagNum(p.notes,'PROSPECT_TOTAL_UNITS'),buyer=tagNum(p.notes,'PROSPECT_BUYER_UNITS'),rank=tagNum(p.notes,'PROSPECT_RANK'),due=p.follow_up_date&&String(p.follow_up_date)<=td;
      const worked=latestWork[key]||null;
      const score=(due?10000:0)+units*120+buyer*25+(p.phone?50:0)+(rank?Math.max(0,2500-rank):0)+(worked?Math.min(350,Math.max(0,60-((Date.now()-Date.parse(worked.stamp||0))/86400000))*5):0);
@@ -19996,8 +20002,8 @@ window.rmxBoot=boot;const baseSwitch=window.switchTab;window.switchTab=function(
 (function(){
  const E=s=>{try{return escHtml(String(s??''))}catch(e){return String(s??'')}};
  function host(){let h=document.getElementById('rmSnapshotProspecting');if(h)return h;const step=document.getElementById('v113StepMeetings')||document.querySelector('#view-week [id*="StepMeet"]');const body=step&&step.querySelector('.v113-step-body');if(!body)return null;h=document.createElement('div');h.id='rmSnapshotProspecting';body.appendChild(h);return h}
- window.rmRenderSnapshotProspecting=function(rows){const h=host();if(!h)return;rows=Array.isArray(rows)?rows:(window.RM_NEW_AGENT_QUEUE||[]);const top=rows.slice(0,3),count=rows.length;let html='<div class="rm-sp-head"><div><b>New Agent Calls</b><br><span>Keep prospecting visible without turning Today into a giant call sheet.</span></div><button onclick="switchTab(\'pipeline\');setTimeout(()=>document.getElementById(\'rmNewAgentCallList\')?.scrollIntoView({behavior:\'smooth\',block:\'start\'}),80)">Open full list · '+count+'</button></div>';
- if(!top.length){html+='<div style="padding:10px 11px;font-size:9.5px;color:#7C7184">No prospecting calls are ready. Upload a prospect list or review New Agents.</div>'}else{html+='<div class="rm-sp-grid">'+top.map((r,i)=>{const p=r.p||{},s=encodeURIComponent(p.agent_name||''),why=r.due?'Follow-up due':(r.units?r.units+' market sales'+(r.buyer?' · '+r.buyer+' buyer sides':''):'Active prospect');return '<div class="rm-sp-item"><div class="rm-sp-name">'+(i+1)+'. '+E(p.agent_name||'')+'</div><div class="rm-sp-why">'+E(why)+'</div><div class="rm-sp-actions"><button class="primary" onclick="rmNewProspectStart(\''+s+'\')">Log outreach</button><button onclick="openPipelineContact(\''+s+'\')">Profile</button></div></div>'}).join('')+'</div><div class="rm-sp-foot"><span>Top 3 only. The complete ranked list stays under New Agents.</span><button onclick="switchTab(\'pipeline\');setTimeout(()=>document.getElementById(\'rmProspectImportManager\')?.scrollIntoView({behavior:\'smooth\',block:\'start\'}),80)" style="border:0;background:none;color:#60418A;font-weight:850;cursor:pointer">Upload / check duplicates</button></div>'}
+ window.rmRenderSnapshotProspecting=function(rows){const h=host();if(!h)return;rows=Array.isArray(rows)?rows:(window.RM_NEW_AGENT_QUEUE||[]);const top=rows.slice(0,3),count=rows.length,done=Number(window.RM_NEW_AGENT_TODAY_COUNT||0),left=Math.max(0,25-done);let html='<div class="rm-sp-head"><div><b>Cold Calls · '+done+' / 25 today</b><br><span>Only the smartest 3 show at once · '+left+' remaining today.</span></div><button onclick="switchTab(\'pipeline\');setTimeout(()=>document.getElementById(\'rmNewAgentCallList\')?.scrollIntoView({behavior:\'smooth\',block:\'start\'}),80)">Open full list · '+count+'</button></div>';
+ if(!top.length){html+='<div style="padding:10px 11px;font-size:9.5px;color:#7C7184">No prospecting calls are ready. Upload a prospect list or review New Agents.</div>'}else{html+='<div class="rm-sp-grid">'+top.map((r,i)=>{const p=r.p||{},s=encodeURIComponent(p.agent_name||''),why=r.due?'Follow-up due':(r.units?r.units+' market sales'+(r.buyer?' · '+r.buyer+' buyer sides':''):'Active prospect');return '<div class="rm-sp-item"><div class="rm-sp-name">'+(i+1)+'. '+E(p.agent_name||'')+'</div><div class="rm-sp-why">'+E(why)+'</div><div class="rm-sp-actions"><button class="primary" onclick="rmNewProspectStart(\''+s+'\')">Log outreach</button><button onclick="openPipelineContact(\''+s+'\')">Profile</button></div></div>'}).join('')+'</div><div class="rm-sp-foot"><span>3 at a time. Log one and the next eligible prospect moves up automatically. Daily goal: 25 cold calls.</span><button onclick="switchTab(\'pipeline\');setTimeout(()=>document.getElementById(\'rmProspectImportManager\')?.scrollIntoView({behavior:\'smooth\',block:\'start\'}),80)" style="border:0;background:none;color:#60418A;font-weight:850;cursor:pointer">Upload / check duplicates</button></div>'}
  h.innerHTML=html
  };
  async function load(){try{if(typeof window.rmRenderNewAgentCallList==='function')await window.rmRenderNewAgentCallList();else window.rmRenderSnapshotProspecting([])}catch(e){console.warn('snapshot prospecting',e)}}
