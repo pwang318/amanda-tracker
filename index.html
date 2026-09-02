@@ -19046,25 +19046,32 @@ window.rmxBoot=boot;const baseSwitch=window.switchTab;window.switchTab=function(
     const tue=recentTuesday(),cycleStart=currentMonday();
     try{
       const rs=await Promise.all([
-        sbFetch('amanda_activities?act_date=gte.'+cutoff(120)+'&act_type=in.(New Contract,Clear to Close,Under Contract Call,CTC Call,Listing Agent Update,LP Tuesday File Update,Transaction Snapshot)&select=id,agent_name,act_type,act_date,outcome,notes,follow_up_date,created_at&order=act_date.desc&limit=6000').catch(()=>[]),
+        sbFetch('amanda_activities?act_date=gte.'+cutoff(120)+'&act_type=in.(New Contract,Clear to Close,Under Contract Call,CTC Call,Listing Agent Update,LP Tuesday File Update,Transaction Snapshot,Tuesday Call Plan Snapshot)&select=id,agent_name,act_type,act_date,outcome,notes,follow_up_date,created_at&order=act_date.desc&limit=6000').catch(()=>[]),
         sbFetch('agent_profiles?select=agent_name,display_name,tier,powerbi_level,retained,relationship_status,do_not_contact&limit=5000').catch(()=>[]),
         sbFetch('agent_assignments?select=agent_name,rm,lp&limit=5000').catch(()=>[]),
         sbFetch('amanda_activities?act_type=eq.Transaction%20Contact%20Override&select=id,act_date,notes,created_at&order=created_at.desc&limit=5000').catch(()=>[])
       ]);
       const acts=rs[0]||[],profiles=rs[1]||[],assign=rs[2]||[],ovs=rs[3]||[],ovMap={};ovs.forEach(o=>{const id=meta(o.notes,'TXN_ID');if(id&&!ovMap[id])ovMap[id]=o});
       const pm={};profiles.forEach(p=>pm[key(p.agent_name)]=p);const am={};assign.forEach(a=>am[key(a.agent_name)]=a);
+      const sharedPlans=acts.filter(a=>a.act_type==='Tuesday Call Plan Snapshot'&&/\[TUE_SPLIT_V310\]/i.test(String(a.notes||'')));
+      const rmHeaders=sharedPlans.filter(a=>meta(a.notes,'TUE_PLAN_LANE')==='RM_HEADER').sort((a,b)=>(Date.parse(b.created_at||b.act_date||0)||0)-(Date.parse(a.created_at||a.act_date||0)||0));
+      const sharedBatch=rmHeaders[0]?meta(rmHeaders[0].notes,'TUE_PLAN_BATCH'):'';
+      const rmSharedPlan=sharedBatch?sharedPlans.filter(a=>meta(a.notes,'TUE_PLAN_LANE')==='RM_LISTING'&&meta(a.notes,'TUE_PLAN_BATCH')===sharedBatch):[];
       const snapshots=acts.filter(a=>a.act_type==='Transaction Snapshot'&&/\[TXN_SNAPSHOT\]/i.test(String(a.notes||'')));
-      const latestBatch=snapshots.reduce((m,a)=>{const b=meta(a.notes,'TXN_BATCH');return b>m?b:m},'');
-      const activeSnap=latestBatch?snapshots.filter(a=>meta(a.notes,'TXN_BATCH')===latestBatch):[];
+      const oldBatch=snapshots.reduce((m,a)=>{const b=meta(a.notes,'TXN_BATCH');return b>m?b:m},'');
+      const useSharedPlan=rmSharedPlan.length>0,latestBatch=useSharedPlan?sharedBatch:oldBatch;
+      const activeSnap=useSharedPlan?rmSharedPlan:(oldBatch?snapshots.filter(a=>meta(a.notes,'TXN_BATCH')===oldBatch):[]);
       const trig=activeSnap;
       const groups=new Map();
-      trig.forEach(r=>{const id=txnId(r)||[key(r.agent_name),meta(r.notes,'TXN_CLIENT'),meta(r.notes,'TXN_PROPERTY')].join('|');if(!groups.has(id))groups.set(id,[]);groups.get(id).push(r)});
+      trig.forEach(r=>{const id=meta(r.notes,'TUE_PLAN_KEY')||txnId(r)||[key(r.agent_name),meta(r.notes,'TXN_CLIENT'),meta(r.notes,'TXN_PROPERTY')].join('|');if(!groups.has(id))groups.set(id,[]);groups.get(id).push(r)});
       const rows=[];cache=new Map();
+      const builderContacts=new Set(['erika wehner','michelle erickson','jordan holibaugh','deron bender','katie summers','katie sumer','troy borden','lindsey pinna','lindsay pinna','robin blake','aimee whitlatch','colin burnheimer','angie bronkowski','angie bronowski','dan manley','mark boyd'].map(key));
       groups.forEach((arr,id)=>{
         arr.sort((a,b)=>String(b.created_at||b.act_date).localeCompare(String(a.created_at||a.act_date)));const t=arr[0];
         if(String(t.act_date)<cutoff(75))return;
-        const isSnap=t.act_type==='Transaction Snapshot';
-        let name=String(isSnap?(meta(t.notes,'TXN_LISTING_AGENT')||''):t.agent_name||'').trim();const ovNotes=(ovMap[id]&&ovMap[id].notes)||'',listingNa=meta(ovNotes,'LISTING_AGENT_NA')==='Y',nameOv=rmOv(ovNotes,'LISTING_AGENT_OVERRIDE');if(listingNa)name='';else if(nameOv.has)name=nameOv.value==='__NONE__'?'':nameOv.value;if(!name)return;
+        const isPlan=meta(t.notes,'TUE_PLAN_LANE')==='RM_LISTING',isSnap=t.act_type==='Transaction Snapshot';
+        let name=String(isPlan?(meta(t.notes,'TUE_CONTACT_NAME')||''):(isSnap?(meta(t.notes,'TXN_LISTING_AGENT')||''):t.agent_name||'')).trim();const ovNotes=(ovMap[id]&&ovMap[id].notes)||'',listingNa=meta(ovNotes,'LISTING_AGENT_NA')==='Y',nameOv=rmOv(ovNotes,'LISTING_AGENT_OVERRIDE');if(listingNa)name='';else if(nameOv.has)name=nameOv.value==='__NONE__'?'':nameOv.value;if(!name)return;
+        const contactRole=meta(t.notes,'TUE_CONTACT_ROLE'),builderName=meta(t.notes,'TUE_BUILDER_NAME');if(isPlan&&(contactRole==='FSBO'||contactRole==='Missing'||contactRole==='NEW_BUILD'||builderName||builderContacts.has(key(name))))return;
         const client=meta(t.notes,'TXN_CLIENT'),property=meta(t.notes,'TXN_PROPERTY'),closeDate=meta(t.notes,'TXN_CLOSE_DATE'),milestone=meta(t.notes,'TXN_MILESTONE'),mg=milestoneGroup(t.notes,milestone);
         const isCtcMilestone=/\bctc\b|clear\s+to\s+close|clear[- ]to[- ]close/i.test(String(milestone||'')+' '+String(mg||''));
         if(isCtcMilestone)return;
@@ -19072,7 +19079,7 @@ window.rmxBoot=boot;const baseSwitch=window.switchTab;window.switchTab=function(
         // Tuesday Updates is the go-to-contract / new-contract lane. CTC is a
         // separate transaction queue and must not replace these weekly rows.
         const triggerRows=acts.filter(a=>a.act_type==='New Contract'&&/\[TXN_TRIGGER\]/i.test(String(a.notes||''))&&txnId(a)===id&&norm(role(a))==='listing').sort((a,b)=>String(b.act_date).localeCompare(String(a.act_date)));
-        const reqTrig=triggerRows[0]||null;if(!rmIsUnderContractMilestone(milestone,mg,!!reqTrig))return;
+        const reqTrig=triggerRows[0]||null;if(!isPlan&&!rmIsUnderContractMilestone(milestone,mg,!!reqTrig))return;
         const callType=reqTrig?(reqTrig.act_type==='Clear to Close'?'CTC Call':'Under Contract Call'):'Under Contract Call';
         const related=acts.filter(a=>txnId(a)===id&&(norm(role(a))==='listing'||a.act_type==='Listing Agent Update'));
         const reqDone=!reqTrig||related.some(a=>a.act_type===callType&&status(a.notes)==='COMPLETE'&&String(a.act_date)>=String(reqTrig.act_date));
@@ -19085,7 +19092,7 @@ window.rmxBoot=boot;const baseSwitch=window.switchTab;window.switchTab=function(
         const p=pm[key(name)]||null,a=am[key(name)]||{};
         const partner=!!(p&&p.retained===true&&p.do_not_contact!==true&&norm(p.relationship_status||'active')!=='inactive');
         const relationshipOwner=String(a.rm||'').trim();
-        let item={id,name,client,property,closeDate,milestone,milestoneGroup:mg,stage:(reqTrig?reqTrig.act_type:'Active Transaction'),callType,triggerDate:(reqTrig?reqTrig.act_date:t.act_date),reqDone,weeklyDone:!!(weekly||transactionTouchThisWeek),lpUpdate,partner,owner:'Amanda',relationshipOwner,lp:meta(t.notes,'TXN_LP')||a.lp||'',phone:meta(t.notes,'TXN_LISTING_PHONE'),email:meta(t.notes,'TXN_LISTING_EMAIL')};item=rmApplyOverride(item,ovMap[id]);if(!item.name)return;cache.set(id,item);rows.push(item);
+        let item={id,name,client,property,closeDate,milestone,milestoneGroup:mg,stage:(reqTrig?reqTrig.act_type:'Active Transaction'),callType,triggerDate:(reqTrig?reqTrig.act_date:t.act_date),reqDone,weeklyDone:!!(weekly||transactionTouchThisWeek),lpUpdate,partner,owner:'Amanda',relationshipOwner,lp:meta(t.notes,'LP_OWNER')||meta(t.notes,'TXN_LP')||a.lp||'',phone:meta(t.notes,'TUE_PHONE')||meta(t.notes,'TXN_LISTING_PHONE'),email:meta(t.notes,'TUE_EMAIL')||meta(t.notes,'TXN_LISTING_EMAIL')};item=rmApplyOverride(item,ovMap[id]);if(!item.name)return;cache.set(id,item);rows.push(item);
       });
       rows.sort((a,b)=>(Number(a.weeklyDone)-Number(b.weeklyDone))||(Number(a.reqDone)-Number(b.reqDone))||String(a.closeDate||a.triggerDate).localeCompare(String(b.closeDate||b.triggerDate)));
       const due=rows.filter(r=>!r.weeklyDone).length,done=rows.length-due;
