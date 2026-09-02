@@ -1350,7 +1350,7 @@ nav a,aside a,[class*="nav"] a,[class*="sidebar"] a{
 </section>
 <section style="border:1px solid #D8E3DA;border-radius:10px;background:#fff;padding:10px 11px;min-width:0">
 <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:6px;flex-wrap:wrap">
-<div><div style="font-size:11px;font-weight:800;color:#365A40">Face Time · schedule next</div><div style="font-size:9.8px;color:var(--text-4)">Active partners only. Same urgency, last visit and booking the assigned LP sees. Prospects and 4-week conversions never appear here.</div></div>
+<div><div style="font-size:11px;font-weight:800;color:#365A40">Face Time · schedule next</div><div style="font-size:9.8px;color:var(--text-4)">Amanda-owned C/developing relationships only. Nyny-owned Channel, A and B accounts stay in Director coverage.</div></div>
 <span class="card-sub" id="breadSub"></span>
 </div>
 <div id="v101FaceTimeScheduled" style="margin-bottom:8px"></div>
@@ -2931,6 +2931,14 @@ function appendRmMeta(notes,owner,focus,attendees,rmAttendees,lpAttendees,nextSt
 }
 function getActivityOwner(a){return extractRmMeta(a&&a.notes).owner||"Amanda";}
 function getMeetingFocus(a){return extractRmMeta(a&&a.notes).focus||"";}
+function feedReadableNote(type,notes){
+  let n=stripRmMeta(String(notes||''));
+  if(String(type||'')==='Transaction Contact Override'){
+    const cleaned=n.replace(/\[[A-Z0-9_ ]+:[^\]]*\]/gi,'').replace(/\s+/g,' ').trim();
+    return cleaned||'Transaction contact information updated.';
+  }
+  return n.replace(/\[[A-Z0-9_ ]+:[^\]]*\]/gi,'').replace(/\s+/g,' ').trim();
+}
 
 function getRmAttendees(a){return extractRmMeta(a&&a.notes).rmAttendees||[getActivityOwner(a)];}
 
@@ -8915,7 +8923,7 @@ function renderFeed(data){
     const safeAgent=agentName.replace(/'/g,"\\'");
     const safeType=(a._type||"").replace(/'/g,"\\'");
     return'<div class="feed-item">'
-      +'<div class="feed-top"><span class="feed-agent">'+escHtml(agentName)+'</span>'
+      +'<div class="feed-top"><span class="feed-agent">'+(typeof properCase==='function'?properCase(agentName):escHtml(agentName))+'</span>'
       +'<div class="feed-right"><span class="feed-date">'+fmtDate(a._date)+'</span>'
       +(isLP
         ?'<span style="font-size:10px;padding:2px 8px;background:#E8EAF6;color:#3949AB;border-radius:20px;font-weight:600">LP: '+escHtml(a._lp||"LP")+'</span>'
@@ -8923,10 +8931,10 @@ function renderFeed(data){
       )
       +'</div></div>'
       +'<span class="feed-badge '+(isLP?"lp":a._type===CTC_TYPE?"ctc":"rm")+'">'+badgeEmoji(a._type)+'</span>'
-      +(!isLP?(function(){const meta=extractRmMeta(a._note||""),own=getAgentOwnership(agentName),rms=(meta.rmAttendees||[meta.owner||"Amanda"]).join(" + "),lps=(meta.lpAttendees||[]).join(", "),shared=(meta.rmAttendees||[]).length>1||((meta.rmAttendees||[meta.owner]).length&&own.rm&&!(meta.rmAttendees||[meta.owner]).includes(own.rm));return '<div style="font-size:10.5px;color:var(--text-3);margin-top:4px"><strong>RM(s):</strong> '+escHtml(rms)+' &nbsp;·&nbsp; <strong>Current owner:</strong> '+escHtml(own.rm||"Unassigned")+(lps?' &nbsp;·&nbsp; <strong>LP:</strong> '+escHtml(lps):'')+(meta.nextStepOwner?' &nbsp;·&nbsp; <strong>Next:</strong> '+escHtml(meta.nextStepOwner):'')+(shared?' &nbsp;·&nbsp; <span style="font-weight:700;color:var(--brand)">Shared coverage</span>':'')+'</div>';})():"")
+      +(!isLP?(function(){const meta=extractRmMeta(a._note||""),own=getAgentOwnership(agentName),rms=(meta.rmAttendees||[meta.owner||"Amanda"]).join(" + "),lps=(meta.lpAttendees||[]).join(", "),current=own.rm||meta.owner||"Unassigned",shared=(meta.rmAttendees||[]).length>1||((meta.rmAttendees||[meta.owner]).length&&own.rm&&!(meta.rmAttendees||[meta.owner]).includes(own.rm));return '<div style="font-size:10.5px;color:var(--text-3);margin-top:4px"><strong>RM(s):</strong> '+escHtml(rms)+' &nbsp;·&nbsp; <strong>Current owner:</strong> '+escHtml(current)+(lps?' &nbsp;·&nbsp; <strong>LP:</strong> '+escHtml(lps):'')+(meta.nextStepOwner?' &nbsp;·&nbsp; <strong>Next:</strong> '+escHtml(meta.nextStepOwner):'')+(shared?' &nbsp;·&nbsp; <span style="font-weight:700;color:var(--brand)">Shared coverage</span>':'')+'</div>';})():"")
       +(a._outcome?'<div class="feed-outcome">'+escHtml(a._outcome)+'</div>':"")
       +(a.follow_up_date?'<div class="feed-fu">Follow-up: '+fmtDate(a.follow_up_date)+'</div>':"")
-      +(a._note?'<div class="feed-notes">"'+escHtml(isLP?a._note:stripRmMeta(a._note))+'"</div>':"")
+      +(a._note?'<div class="feed-notes">"'+escHtml(isLP?a._note:feedReadableNote(a._type,a._note))+'"</div>':"")
       +(a.edited_at?'<div class="feed-edited">Last edited: '+fmtDateTime(a.edited_at)+'</div>':"")
       +'</div>';
   }).join("");
@@ -15930,7 +15938,11 @@ window.rmAuditVisibleButtons=function(){
     const rows=[];(s.profiles||[]).forEach(p=>{
       const k=N(p.agent_name),o=om[k]||{};if(!k||!current(p)||p.retained!==true||p.do_not_contact===true||String(p.relationship_status||'active').toLowerCase()==='inactive'||o.removed)return;
       if(String(p.relationship_type||'realtor').toLowerCase()==='strategic_partner'||String(p.lp_outreach_status||'active').toLowerCase()==='nurture')return;
-      const tier=normTier(p),ld=lastVisit[k]||null,days=ld?Math.max(0,Math.round((now-new Date(ld+'T12:00:00'))/86400000)):null,target=TG[tier]||60;
+      const tier=normTier(p);
+      // Ownership firewall: this is Amanda's production queue. Nyny-owned
+      // Channel/A/B accounts belong in Director coverage and must never appear here.
+      if(String(o.rm||'').trim().toLowerCase()!=='amanda'||['Channel','A','B'].includes(tier))return;
+      const ld=lastVisit[k]||null,days=ld?Math.max(0,Math.round((now-new Date(ld+'T12:00:00'))/86400000)):null,target=TG[tier]||60;
       const leadDate=p.latest_lead_date?String(p.latest_lead_date).slice(0,10):null,daysLead=leadDate?Math.max(0,Math.floor((now-new Date(leadDate+'T12:00:00'))/86400000)):null;
       const r={name:p.agent_name,p,o,tier,lp:o.lp||'Unassigned',rm:o.rm||'Unassigned',days,lastDate:ld,by:lastBy[k]||'',target,status:st(tier,days),daysLead,scheduled:scheduled[k]||null};r.priorityScore=score(r);r.priorityWhy=why(r);rows.push(r);
     });
@@ -15943,7 +15955,7 @@ window.rmAuditVisibleButtons=function(){
       list.forEach((r,i)=>{const c=contact(r.p,null),safe=encodeURIComponent(r.name),due=r.scheduled?('Booked '+r.scheduled.event_date+(r.scheduled.event_time?' · '+String(r.scheduled.event_time).slice(0,5):'')):(r.days===null?'Book first visit':(r.days>=r.target?'Overdue by '+(r.days-r.target)+'d':'Due in '+(r.target-r.days)+'d'));html+='<div class="v191-row v258-ft-row"><div class="v191-rank">'+(i+1)+'</div><div><div class="v191-name">'+E(typeof displayName==='function'?displayName(r.name):r.name)+' <span class="v258-tier">'+E(r.tier)+'</span></div><div class="v191-meta"><b>Why now:</b> '+E(r.priorityWhy)+'<br><b>Face Time:</b> '+E(r.lastDate?(r.days+'d since last visit'):'no prior visit')+' · '+E(due)+'</div></div><div class="v191-contact"><b>LP:</b> '+E(r.lp)+'<br><b>RM owner:</b> '+E(r.rm||'Unassigned')+'<br><b>Phone:</b> '+E(c.phone||'Missing')+'</div><div class="v191-actions"><button onclick="v107OpenFTEncoded(\''+safe+'\',\''+encodeURIComponent(r.lp||'')+'\',\''+encodeURIComponent(r.scheduled?String(r.scheduled.id||''):'')+'\')">'+(r.scheduled?'Open booking':'Schedule Face Time')+'</button><button onclick="v107LogVisitEncoded(\''+safe+'\')">Log visit</button></div></div>'});
       html+='</div>';
     });
-    if(sub)sub.textContent=focus+' weekly focus spots · exact same active-partner population, cadence and priority score as LP Face Time';
+    if(sub)sub.textContent=focus+' weekly focus spots · Amanda-owned C/developing relationships only';
     h.innerHTML=html||'<div class="v191-empty">No shared Face Time priorities are available right now.</div>';
     window.V107_SHARED_FT_ROWS=rows;
   }
@@ -19009,7 +19021,7 @@ window.rmxBoot=boot;const baseSwitch=window.switchTab;window.switchTab=function(
     if(document.getElementById('v265TuesdayListingCard'))return;
     const anchor=document.getElementById('wp30TxnIntakeDetails')||document.getElementById('rmLpCoordCard');if(!anchor)return;
     const c=document.createElement('div');c.id='v265TuesdayListingCard';
-    c.innerHTML='<div class="v265-head"><div><div class="v265-kicker">RM TRANSACTION RELATIONSHIP WORK</div><div class="v265-title">Tuesday listing-agent updates</div><div class="v265-sub">Work every valid listing agent tied to an under-contract file in this week’s Core Team snapshot. Preapproval-only files do not create listing-agent Tuesday calls. Tier and relationship ownership do not remove a contracted file from RM servicing.</div></div><span class="v265-summary" id="v265Summary">Loading…</span></div><div id="v265ListingList" class="v265-list"><div class="v265-empty">Loading active listing-agent files…</div></div>';
+    c.innerHTML='<div class="v265-head"><div><div class="v265-kicker">RM TRANSACTION RELATIONSHIP WORK</div><div class="v265-title">Tuesday listing-agent + go-to-contract updates</div><div class="v265-sub">Work the listing-agent side of every new go-to-contract file in this week’s Core Team snapshot. Preapproval-only files do not create Tuesday calls. Clear-to-close calls stay in the separate CTC transaction queue so a newly created CTC task cannot replace the weekly go-to-contract work.</div></div><span class="v265-summary" id="v265Summary">Loading…</span></div><div id="v265ListingList" class="v265-list"><div class="v265-empty">Loading active listing-agent files…</div></div>';
     if(anchor.id==='wp30TxnIntakeDetails')anchor.insertAdjacentElement('afterend',c);else anchor.insertAdjacentElement('beforebegin',c);
   }
   // Current operating model: LP2 owns buyer + buyer-agent active-contract execution. RM keeps listing-agent transaction communication only.
@@ -19046,14 +19058,21 @@ window.rmxBoot=boot;const baseSwitch=window.switchTab;window.switchTab=function(
         const isSnap=t.act_type==='Transaction Snapshot';
         let name=String(isSnap?(meta(t.notes,'TXN_LISTING_AGENT')||''):t.agent_name||'').trim();const ovNotes=(ovMap[id]&&ovMap[id].notes)||'',listingNa=meta(ovNotes,'LISTING_AGENT_NA')==='Y',nameOv=rmOv(ovNotes,'LISTING_AGENT_OVERRIDE');if(listingNa)name='';else if(nameOv.has)name=nameOv.value==='__NONE__'?'':nameOv.value;if(!name)return;
         const client=meta(t.notes,'TXN_CLIENT'),property=meta(t.notes,'TXN_PROPERTY'),closeDate=meta(t.notes,'TXN_CLOSE_DATE'),milestone=meta(t.notes,'TXN_MILESTONE'),mg=milestoneGroup(t.notes,milestone);
+        const isCtcMilestone=/\bctc\b|clear\s+to\s+close|clear[- ]to[- ]close/i.test(String(milestone||'')+' '+String(mg||''));
+        if(isCtcMilestone)return;
         if(closeDate&&closeDate<cutoff(2))return;
-        const triggerRows=acts.filter(a=>(a.act_type==='New Contract'||a.act_type==='Clear to Close')&&/\[TXN_TRIGGER\]/i.test(String(a.notes||''))&&txnId(a)===id&&norm(role(a))==='listing').sort((a,b)=>String(b.act_date).localeCompare(String(a.act_date)));
+        // Tuesday Updates is the go-to-contract / new-contract lane. CTC is a
+        // separate transaction queue and must not replace these weekly rows.
+        const triggerRows=acts.filter(a=>a.act_type==='New Contract'&&/\[TXN_TRIGGER\]/i.test(String(a.notes||''))&&txnId(a)===id&&norm(role(a))==='listing').sort((a,b)=>String(b.act_date).localeCompare(String(a.act_date)));
         const reqTrig=triggerRows[0]||null;if(!rmIsUnderContractMilestone(milestone,mg,!!reqTrig))return;
-        const callType=reqTrig?(reqTrig.act_type==='Clear to Close'?'CTC Call':'Under Contract Call'):'';
+        const callType=reqTrig?(reqTrig.act_type==='Clear to Close'?'CTC Call':'Under Contract Call'):'Under Contract Call';
         const related=acts.filter(a=>txnId(a)===id&&(norm(role(a))==='listing'||a.act_type==='Listing Agent Update'));
         const reqDone=!reqTrig||related.some(a=>a.act_type===callType&&status(a.notes)==='COMPLETE'&&String(a.act_date)>=String(reqTrig.act_date));
         const weekly=related.find(a=>a.act_type==='Listing Agent Update'&&String(a.act_date)>=cycleStart);
-        const transactionTouchThisWeek=related.find(a=>(a.act_type==='Under Contract Call'||a.act_type==='CTC Call')&&status(a.notes)==='COMPLETE'&&String(a.act_date)>=cycleStart);
+        // A CTC call is not a Tuesday go-to-contract update. Only a completed
+        // Under Contract call or the dedicated listing update can satisfy this
+        // weekly lane.
+        const transactionTouchThisWeek=related.find(a=>a.act_type==='Under Contract Call'&&status(a.notes)==='COMPLETE'&&String(a.act_date)>=cycleStart);
         const lpUpdate=acts.find(a=>a.act_type==='LP Tuesday File Update'&&txnId(a)===id&&String(a.act_date)>=tue);
         const p=pm[key(name)]||null,a=am[key(name)]||{};
         const partner=!!(p&&p.retained===true&&p.do_not_contact!==true&&norm(p.relationship_status||'active')!=='inactive');
@@ -19071,7 +19090,7 @@ window.rmxBoot=boot;const baseSwitch=window.switchTab;window.switchTab=function(
         {const g=r.milestoneGroup||'File status';statusCopy=g==='Appraisal'?'<strong>Suggested update:</strong> '+esc(r.milestone||'Appraisal status')+'. Share status only; never share appraisal value before buyer-side communication is handled.':g==='Underwriting'?'<strong>Suggested update:</strong> underwriting / condition status, whether the file remains on track, and whether anything is needed from the seller side.':g==='Closing'?'<strong>Suggested update:</strong> closing readiness ('+esc(r.milestone||'closing milestone')+') and whether anything is needed from the seller side.':g==='Processing'?'<strong>Suggested update:</strong> processing status, the next milestone, and whether anything is needed from the seller side.':'<strong>Suggested update:</strong> file status, next meaningful milestone, and whether anything is needed from the seller side.';action='<button class="primary" type="button" onclick="v265OpenListingUpdate(\''+encodeURIComponent(r.id)+'\')">Open listing update</button>'}
         const rel=r.partner?'<span class="v265-pill partner">Current partner</span>':'<span class="v265-pill convert">Relationship opportunity</span>';
         const lp=r.lpUpdate?'<div class="v265-lpdone">Buyer side updated by '+esc(meta(r.lpUpdate.notes,'LP')||'LP')+' · '+esc(r.lpUpdate.act_date)+'</div>':'';
-        return '<div class="v265-row"><div><div class="v265-name">'+esc(r.name)+'</div><div class="v265-file">'+esc(file)+(r.closeDate?' · close '+esc(r.closeDate):'')+'</div><div class="v265-badges">'+rel+(r.lp?'<span class="v265-pill">LP: '+esc(r.lp)+'</span>':'')+'</div></div><div class="v265-status">'+statusCopy+lp+'</div><div class="v265-actions">'+action+(!r.partner?'<button type="button" onclick="v265AddListingProspect(\''+encodeURIComponent(r.id)+'\')">Add to meeting push</button>':'')+'</div></div>'
+        return '<div class="v265-row"><div><div class="v265-name">'+(typeof properCase==='function'?properCase(r.name):esc(r.name))+'</div><div class="v265-file">'+esc(file)+(r.closeDate?' · close '+esc(r.closeDate):'')+'</div><div class="v265-badges">'+rel+(r.lp?'<span class="v265-pill">LP: '+esc(r.lp)+'</span>':'')+'</div></div><div class="v265-status">'+statusCopy+lp+'</div><div class="v265-actions">'+action+(!r.partner?'<button type="button" onclick="v265AddListingProspect(\''+encodeURIComponent(r.id)+'\')">Add to meeting push</button>':'')+'</div></div>'
       }).join('');
     }catch(e){console.warn('v265 Tuesday listing',e);if(sum)sum.textContent='Could not load';host.innerHTML='<div class="v265-empty">Could not load Tuesday listing-agent work. Refresh once and try again.</div>'}
   }
@@ -19224,6 +19243,10 @@ window.rmxBoot=boot;const baseSwitch=window.switchTab;window.switchTab=function(
   const priorAllowed=window.v155AmandaRelationshipAllowed;
   window.v155AmandaRelationshipAllowed=function(name,profile,tierHint,ownerRows){
     if(!name||!profile||profile.do_not_contact===true||String(profile.relationship_status||'active').toLowerCase()==='inactive')return false;
+    // Nyny owns the production relationship book. Amanda's Face Time queue
+    // must never surface Channel, A, or B accounts, even if a stale assignment
+    // row or old cached ownership record says otherwise.
+    if(['channel','a','b'].includes(norm(tierHint||profile.tier||profile.powerbi_level)))return false;
     try{if(typeof rmIsStrategicPartner==='function'&&rmIsStrategicPartner(name,profile))return false}catch(e){}
     if(window.rmIsActiveContractBuyerAgent(name))return false;
     const rows=Array.isArray(ownerRows)?ownerRows:[];
@@ -19316,13 +19339,13 @@ window.rmxBoot=boot;const baseSwitch=window.switchTab;window.switchTab=function(
     if(r.competitorRisk)return {group:'HOT',method:'CALL',why:'Competitor / relationship risk is flagged and there is no active buyer contract.',move:'Use a real relationship reset: uncover what is not working, solve the issue, set a dated next move, then ask what opportunity we can help with now.'};
     if(r.activePrequals>0){
       const action=r.review&&/buyer action|agent action|lp action|escalation|action needed/i.test(String(r.review.result||'')+' '+String(r.review.notes||''));
-      return action?{group:'ACTIVE',method:'CALL',why:r.activePrequals+' active prequal'+(r.activePrequals===1?'':'s')+' + an action-needed buyer review.',move:'Use the buyer-specific action first → agree on owner + next date → then transition to offer strategy and ask what else is coming.'}:{group:'ACTIVE',method:'REVIEW',why:r.activePrequals+' active prequal'+(r.activePrequals===1?'':'s')+' but no active contract.',move:'Review the buyer status first. If there is a real borrower/agent action, call. If not, send a personalized offer-strategy touch instead of creating a pointless call.'};
+      return action?{group:'ACTIVE',method:'CALL',why:r.activePrequals+' active prequal'+(r.activePrequals===1?'':'s')+' + an action-needed buyer review.',move:'Use the buyer-specific action first → agree on owner + next date → then transition to offer strategy and ask what else is coming.'}:{group:'ACTIVE',method:'CALL',why:r.activePrequals+' active prequal'+(r.activePrequals===1?'':'s')+' needs a live status check.',move:'Call to confirm the buyer status, identify the next borrower/agent action, agree on owner + next date, then ask what else is coming.'};
     }
     if(r.returnedFromLP)return {group:'ACTIVE',method:'CALL',why:'Back from the LP2 lane: this buyer-agent relationship was on an active contract in the prior weekly snapshot and is not now.',move:'Close the loop on the recent transaction → ask what is next → uncover the next buyer, showing, offer, referral or meeting.'};
     if(r.latestLeadDays!==null&&r.latestLeadDays<=30)return {group:'ACTIVE',method:'CALL',why:'Recent referral '+r.latestLeadDays+'d ago with no active contract now.',move:'Reconnect around the referred buyer/outcome → offer strategy → ask what else is moving in the next 1–2 weeks.'};
     const history=r.leads12>0||r.closes>0;
     if(history&&(r.tier==='CHANNEL'||r.tier==='A'||r.tier==='B'||r.highPotential))return {group:'RELATIONSHIP',method:'CALL',why:(r.tier||'Partner')+' relationship with real prior business and no current contract trigger.',move:'Use a specific business reason to reconnect. Learn current buyers/showings, identify one support need, and leave with a dated next opportunity or meeting.'};
-    return {group:'COVERAGE',method:'TOUCH',why:history?'Active relationship without a current high-intent trigger.':'No lead history or current buyer signal strong enough to spend call time on yet.',move:'Do not burn prime call time. Use a personalized offer-strategy text/email and ask who may be writing this week; call when they reply or a stronger signal appears.'};
+    return {group:'COVERAGE',method:'CALL',why:history?'Active relationship that still needs a live relationship touch.':'Amanda-assigned relationship that still needs an introductory call.',move:'Call every assigned relationship, use a specific offer-strategy reason, ask who may be writing this week, and leave with a dated next move.'};
   }
   function priority(r){
     if(r.followupOverdueDays>0)return 0-Math.min(.8,r.followupOverdueDays/100);
@@ -19370,6 +19393,9 @@ window.rmxBoot=boot;const baseSwitch=window.switchTab;window.switchTab=function(
     const amandaTrackedKeys=new Set();
     Object.values(latestProfiles).forEach(p=>{
       const k=norm(p.agent_name);if(!amandaOwner(k))return; // HARD OWNERSHIP FIREWALL: Amanda calls Amanda-assigned relationships only.
+      // Hard production-book firewall: all Channel/A/B relationships stay in
+      // Nyny's lane and cannot enter Amanda's Face Time queue.
+      if(['CHANNEL','A','B'].includes(String(p.tier||p.powerbi_level||'').toUpperCase()))return;
       if(p.do_not_contact===true||String(p.relationship_status||'active').toLowerCase()==='inactive'||isStrategic(p))return;if(hasExactPb&&!pbBy[k])return;
       amandaTrackedKeys.add(k);
       if(contractNow.has(k))return;
@@ -19389,7 +19415,10 @@ window.rmxBoot=boot;const baseSwitch=window.switchTab;window.switchTab=function(
       const c=classify(r);Object.assign(r,c);r.cadenceDays=cadenceFor(r);r.zeroLead=r.leads12===0;r.waiting=!!r.futureFollowup||(r.lastAttempt&&sameDay(r.lastAttempt,todayStr)&&(!r.lastMeaningful||dt(r.lastAttempt)>dt(r.lastMeaningful)));
       const cadenceDue=r.lastMeaningfulDays===null||r.lastMeaningfulDays>=r.cadenceDays;
       const liveTrigger=r.group==='HOT'||r.group==='ACTIVE';
-      r.due=!r.waiting&&(r.followupOverdueDays>0||r.followupDueToday||liveTrigger||(r.group==='RELATIONSHIP'&&cadenceDue));
+      // Every Amanda-assigned, no-contract relationship stays in the call queue
+      // until a completed call is logged. Attempts and future follow-up dates
+      // may change priority, but they never hide the work.
+      r.due=true;
       r.coreStatus=coreStatus(r);r.priority=priority(r);rows.push(r);
     });
     const amandaContractCount=Array.from(contractNow).filter(k=>amandaOwner(k)).length;
@@ -19400,18 +19429,18 @@ window.rmxBoot=boot;const baseSwitch=window.switchTab;window.switchTab=function(
   function rowHtml(r,i){
     const badges=[pill(r.group,'business'),pill(r.method==='CALL'?'CALL NOW':r.method==='REVIEW'?'REVIEW FIRST':'COVERAGE TOUCH','business'),pill((r.tier||'—')+' tier','owner')];if(r.owner)badges.push(pill('Relationship owner: '+r.owner,'owner'));if(r.activePipeline)badges.push(pill(r.activePipeline+' active pipeline','business'));if(r.activePrequals)badges.push(pill(r.activePrequals+' active prequal'+(r.activePrequals===1?'':'s'),'business'));if(r.leads12===0)badges.push(pill('0 leads · lower call priority','zero'));else badges.push(pill(r.leads12+' lead'+(r.leads12===1?'':'s')+' · 12mo','business'));if(r.followupOverdueDays||r.followupDueToday)badges.push(pill('Follow-up due','due'));if(r.competitorRisk)badges.push(pill('Risk','risk'));
     const live=r.lastMeaningfulDays===null?'No meaningful touch recorded':(r.lastMeaningfulDays===0?'Meaningful touch today':r.lastMeaningfulDays+'d since meaningful touch'),attempt=r.lastAttemptDays===null?'No RM attempt recorded':(r.lastAttemptDays===0?'Attempted today':r.lastAttemptDays+'d since last RM attempt'),enc=encodeURIComponent(r.name),action=r.method==='CALL'?'Start call':r.method==='REVIEW'?'Review / log':'Open / log touch';
-    return '<div class="v267-row core-'+r.coreStatus+'"><div class="v267-rank">'+(i+1)+'</div><div><div class="v267-name">'+esc(r.name)+'</div><div class="v267-why"><strong>Why now:</strong> '+esc(r.why)+'</div><div class="v267-move"><strong>Move the needle:</strong> '+esc(r.move)+'</div><div class="v267-badges">'+badges.join('')+'</div><div class="v267-meta"><span>'+esc(live)+'</span><span>'+esc(attempt)+'</span><span>Cadence '+r.cadenceDays+'d</span></div></div><div class="v267-actions"><button class="primary" onclick="rmV267Open(this.dataset.n,\''+r.method+'\')" data-n="'+enc+'">'+action+'</button><button onclick="rmV267Update(this.dataset.n)" data-n="'+enc+'">Profile</button></div></div>';
+    return '<div class="v267-row core-'+r.coreStatus+'"><div class="v267-rank">'+(i+1)+'</div><div><div class="v267-name">'+(typeof properCase==='function'?properCase(r.name):esc(r.name))+'</div><div class="v267-why"><strong>Why now:</strong> '+esc(r.why)+'</div><div class="v267-move"><strong>Move the needle:</strong> '+esc(r.move)+'</div><div class="v267-badges">'+badges.join('')+'</div><div class="v267-meta"><span>'+esc(live)+'</span><span>'+esc(attempt)+'</span><span>Cadence '+r.cadenceDays+'d</span></div></div><div class="v267-actions"><button class="primary" onclick="rmV267Open(this.dataset.n,\''+r.method+'\')" data-n="'+enc+'">'+action+'</button><button onclick="rmV267Update(this.dataset.n)" data-n="'+enc+'">Profile</button></div></div>';
   }
   function render(state){
     const host=queueHost();if(!host)return false;
-    const active=(state.rows||[]).filter(r=>!r.waiting&&r.due),call=active.filter(r=>r.method==='CALL').sort((a,b)=>a.priority-b.priority||a.name.localeCompare(b.name)),review=active.filter(r=>r.method==='REVIEW').sort((a,b)=>a.priority-b.priority||b.activePrequals-a.activePrequals||a.name.localeCompare(b.name)),coverage=(state.rows||[]).filter(r=>r.group==='COVERAGE'),waiting=(state.rows||[]).filter(r=>r.waiting);
-    const calls=call.slice(0,8),reviews=review.slice(0,4),zeroCoverage=coverage.filter(r=>r.zeroLead).length,sourceDate=state.latestPowerBi?safeDate(state.latestPowerBi):'not synced',txDate=state.currentBatchDate?safeDate(state.currentBatchDate):'not loaded';
-    let html='<div id="v267BuyerAgentQueue"><div class="v267-rule"><div><b>Smart-call rule: Amanda works only relationships assigned to Amanda, ranked by ability to create movement.</b><span>Amanda-assigned current Power BI relationship + no active buyer contract gets evaluated, but it does <strong>not</strong> automatically become a call. The queue follows the playbook: fresh referral / active pipeline first, active prequals next, relationship opportunities after that, coverage last.</span></div><details><summary>How the ranking works</summary><div class="v267-rule-list"><div><strong>1 · HOT:</strong> promised follow-up, referral in 7 days, active pipeline, or real relationship risk → call first.</div><div><strong>2 · ACTIVE:</strong> active prequal or recent referral → review the buyer first; call when there is a specific action.</div><div><strong>3 · RELATIONSHIP:</strong> proven prior business + overdue relationship touch → call with a business reason and leave with a next move.</div><div><strong>4 · COVERAGE:</strong> no current trigger → personalized offer-strategy text/email first. Zero-lead names do not crowd the call list.</div><div><strong>Routing:</strong> Amanda-assigned + active contract = LP2 transaction lane. Amanda-assigned + no active contract = Amanda relationship lane. Nyny-assigned relationships stay off Amanda’s call page.</div></div></details></div>';
+    const active=(state.rows||[]).filter(r=>r.due),call=active.filter(r=>r.method==='CALL').sort((a,b)=>a.priority-b.priority||a.name.localeCompare(b.name)),review=active.filter(r=>r.method==='REVIEW').sort((a,b)=>a.priority-b.priority||b.activePrequals-a.activePrequals||a.name.localeCompare(b.name)),coverage=(state.rows||[]).filter(r=>r.group==='COVERAGE'&&!r.due),waiting=(state.rows||[]).filter(r=>r.waiting);
+    const calls=call,reviews=review.slice(0,4),zeroCoverage=coverage.filter(r=>r.zeroLead).length,sourceDate=state.latestPowerBi?safeDate(state.latestPowerBi):'not synced',txDate=state.currentBatchDate?safeDate(state.currentBatchDate):'not loaded';
+    let html='<div id="v267BuyerAgentQueue"><div class="v267-rule"><div><b>Smart-call rule: Amanda works only relationships assigned to Amanda.</b><span>Every Amanda-assigned relationship without an active contract stays visible until a completed call is logged. The queue ranks urgent business first, but attempts or future follow-up dates never remove the call.</span></div><details><summary>How the ranking works</summary><div class="v267-rule-list"><div><strong>1 · HOT:</strong> promised follow-up, fresh referral, active pipeline, or relationship risk → call first.</div><div><strong>2 · ACTIVE:</strong> active prequal or recent referral → call to confirm status and the next action.</div><div><strong>3 · RELATIONSHIP:</strong> prior business or a developing relationship → call with a specific business reason.</div><div><strong>4 · COVERAGE:</strong> lower-intent relationships still receive a call; they simply rank after live business.</div><div><strong>Routing:</strong> Amanda-assigned + active contract = LP2 transaction lane. Amanda-assigned + no active contract = Amanda relationship lane. Nyny-assigned relationships stay off Amanda’s call page.</div></div></details></div>';
     html+='<div class="v267-summary"><div class="v267-stat"><strong>'+state.tracked+'</strong><span>Current active partners checked</span><div class="v267-source">Power BI · '+sourceDate+'</div></div><div class="v267-stat"><strong>'+state.activeContracts+'</strong><span>With LP2 now</span><div class="v267-source">Active contracts · '+txDate+'</div></div><div class="v267-stat"><strong>'+call.length+'</strong><span>True call priorities</span><div class="v267-source">HOT + actionable ACTIVE + relationship</div></div><div class="v267-stat"><strong>'+coverage.length+'</strong><span>Coverage later</span><div class="v267-source">'+zeroCoverage+' with 0 leads · kept out of prime calls</div></div></div>';
-    html+='<div class="v267-section"><div class="v267-section-head"><div><b>CALL FIRST · highest intent</b><span>Work top to bottom. These have a concrete reason to spend live call time now.</span></div><div class="v267-count '+(calls.some(r=>r.coreStatus==='red')?'red':calls.length?'yellow':'green')+'">'+call.length+' due</div></div><div class="v267-list">'+(calls.length?calls.map(rowHtml).join(''):'<div class="v267-empty"><strong>No high-intent buyer-agent call is due right now.</strong><br>The tracker is intentionally refusing to fill the space with random zero-lead names.</div>')+'</div>'+(call.length>8?'<div class="v267-foot">Showing the top 8 of '+call.length+' real call priorities. Completing/logging one lets the next qualified relationship rise.</div>':'')+'</div>';
+    html+='<div class="v267-section"><div class="v267-section-head"><div><b>CALL QUEUE · every relationship needs a call</b><span>Work top to bottom. Urgent business is first, but every Amanda-assigned relationship remains here until the call is completed.</span></div><div class="v267-count '+(calls.some(r=>r.coreStatus==='red')?'red':calls.length?'yellow':'green')+'">'+call.length+' due</div></div><div class="v267-list">'+(calls.length?calls.map(rowHtml).join(''):'<div class="v267-empty"><strong>No Amanda-assigned relationships are available.</strong><br>Active-contract relationships are shown in the LP2 transaction lane.</div>')+'</div></div>';
     if(reviews.length)html+='<div class="v267-section"><div class="v267-section-head"><div><b>NEXT BEST MOVES · review before dialing</b><span>Active prequals are valuable, but the playbook says not to manufacture a pointless call. Review first; call when there is a real buyer/agent action.</span></div><div class="v267-count yellow">'+review.length+' to review</div></div><div class="v267-list">'+reviews.map(rowHtml).join('')+'</div></div>';
     html+='<details class="v267-coverage"><summary>Coverage / lower-intent relationships · '+coverage.length+' tracked'+(zeroCoverage?' · '+zeroCoverage+' with 0 leads':'')+'</summary><div>These relationships are still tracked, but they do not compete with live business for call time. Use a personalized offer-strategy text/email, ask who may write this week, and let a reply, referral, buyer action, follow-up promise or stronger business signal move them into the call queue.</div></details>';
-    if(waiting.length)html+='<div class="v267-foot">'+waiting.length+' relationship'+(waiting.length===1?' is':'s are')+' intentionally held because Amanda already attempted them today or a future follow-up date is scheduled.</div>';
+    if(waiting.length)html+='<div class="v267-foot">'+waiting.length+' relationship'+(waiting.length===1?' has':'s have')+' a prior attempt or future follow-up date, but remain visible until a completed call is logged.</div>';
     html+='</div>';host.innerHTML=html;return true;
   }
   function relabel(){const step=document.getElementById('v113StepSmart');if(!step)return;const rail=step.querySelector('.v113-step-rail'),num=rail&&rail.querySelector('.v113-num'),title=rail&&rail.querySelector('b'),desc=rail&&rail.querySelector('small'),bodyTitle=step.querySelector('.v113-body-title span:first-child'),note=step.querySelector('.v113-body-note');if(num)num.textContent='Step 6';if(title)title.textContent='Buyer Agent Smart Calls';if(desc)desc.textContent='Amanda-assigned, no-contract relationships only.';if(bodyTitle)bodyTitle.textContent='Who should Amanda call next?';if(note)note.textContent='Highest intent first'}
@@ -20315,3 +20344,20 @@ if(document.readyState==='loading'){
 
 </body>
 </html>
+<style id="rm-consistent-font-and-case">
+/* Final readability pass: one predictable font across every RM surface. */
+html,body,button,input,select,textarea{font-family:Calibri,"Calibri Light",Arial,sans-serif!important}
+body{font-size:11pt!important;letter-spacing:0!important}
+</style>
+<script id="rm-new-build-option">
+(function(){
+  function addNewBuild(){
+    const s=document.getElementById('v265UpdateKind');
+    if(!s||s.querySelector('option[value="New Build"]'))return;
+    const o=document.createElement('option');o.value='New Build';o.textContent='New build / builder-side status';
+    const needs=s.querySelector('option[value="Needs attention"]');needs?s.insertBefore(o,needs):s.appendChild(o);
+  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',addNewBuild,{once:true});else addNewBuild();
+  setTimeout(addNewBuild,400);
+})();
+</script>
