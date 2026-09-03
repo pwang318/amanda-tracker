@@ -8978,6 +8978,7 @@ function openEditModal(id){
   editingActivityType=a.act_type;
   editingActivityMeta=extractRmMeta(a.notes);
   document.getElementById("editModalAgent").textContent=a.agent_name+" — "+a.act_type;
+  if(typeof window.rmApplyOutcomeOptions==="function")window.rmApplyOutcomeOptions(a.act_type,a.outcome||"");
   document.getElementById("editNotes").value=stripRmMeta(a.notes||"");
   document.getElementById("editOutcome").value=a.outcome||"";
   document.getElementById("editFollowupDate").value=a.follow_up_date||"";const er=editingActivityMeta.rmAttendees||[editingActivityMeta.owner||"Amanda"];document.getElementById("editRmAmanda").checked=er.includes("Amanda");document.getElementById("editRmNyny").checked=er.includes("Nyny");document.getElementById("editLpAttendee").value=(editingActivityMeta.lpAttendees&&editingActivityMeta.lpAttendees[0])||"";document.getElementById("editNextStepOwner").value=editingActivityMeta.nextStepOwner||"";
@@ -17137,6 +17138,7 @@ function renderMyDay(c,d){
    const meta=extractRmMeta(a.notes);window.editingActivityMeta=meta;
    const set=(id,v)=>{const el=document.getElementById(id);if(el)el.value=v};
    const agentEl=document.getElementById('editModalAgent');if(agentEl)agentEl.textContent=(a.agent_name||'')+' — '+(a.act_type||'');
+   if(typeof window.rmApplyOutcomeOptions==='function')window.rmApplyOutcomeOptions(a.act_type,a.outcome||'');
    set('editNotes',typeof stripRmMeta==='function'?stripRmMeta(a.notes||''):(a.notes||''));
    set('editOutcome',a.outcome||'');set('editFollowupDate',a.follow_up_date||'');
    const er=meta.rmAttendees||[meta.owner||'Amanda'];
@@ -17952,6 +17954,29 @@ window.rmxBoot=boot;const baseSwitch=window.switchTab;window.switchTab=function(
   const norm=s=>String(s||'').trim().toLowerCase();
   const key=s=>{try{return typeof wp18Key==='function'?wp18Key(s):norm(s)}catch(e){return norm(s)}};
   const td=()=>{try{return typeof today==='function'?today():new Date().toISOString().slice(0,10)}catch(e){return new Date().toISOString().slice(0,10)}};
+  // BUGFIX: this used to permanently bolt 5 transaction-only outcomes onto the shared
+  // #editOutcome select ONE TIME at page load, regardless of what kind of activity was being
+  // edited — so a Break Breads or Partner Meeting edit showed "Left voicemail"/"No answer"
+  // options that make no sense for a meeting, alongside the real meeting-relevant choices.
+  // It also caused a visible duplicate: "Meeting scheduled" (lowercase, added here) never
+  // matched the existing "Meeting Scheduled" (from the static markup) because the de-dupe
+  // check was case-sensitive. Replaced with a function that rebuilds the option list fresh
+  // each time the modal opens, tailored to the activity type actually being edited — meetings
+  // get a real "Meeting held" option, transaction calls get the connect/no-connect set, and
+  // the current value is always preserved even if it doesn't fit the type's usual list.
+  window.rmBuildOutcomeOptions=function(type,currentValue){
+    const isMeeting=(typeof isExistingMeetingType==='function'&&isExistingMeetingType(type))||type==='New Realtor Meeting';
+    let list;
+    if(isTxnType(type))list=['Connected','Left voicemail','No answer','Meeting Scheduled','Requires follow-up','Issue / escalation','Remove / No Further Contact'];
+    else if(isMeeting)list=['Meeting held','Positive','Meeting Scheduled','Requires follow-up','Needs manager attention','Remove / No Further Contact'];
+    else list=['Positive','Meeting Scheduled','Requires follow-up','Needs manager attention','Remove / No Further Contact'];
+    const cur=String(currentValue||'').trim();
+    if(cur&&!list.some(v=>v.toLowerCase()===cur.toLowerCase()))list.push(cur);
+    const seen=new Set();
+    const opts=list.filter(v=>{const k=v.toLowerCase();if(seen.has(k))return false;seen.add(k);return true});
+    return '<option value="">Select outcome...</option>'+opts.map(v=>'<option'+(v.toLowerCase()===cur.toLowerCase()?' selected':'')+'>'+v.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')+'</option>').join('');
+  };
+  window.rmApplyOutcomeOptions=function(type,currentValue){const sel=document.getElementById('editOutcome');if(sel)sel.innerHTML=window.rmBuildOutcomeOptions(type,currentValue)};
   const val=id=>(document.getElementById(id)?.value||'').trim();
   const chk=id=>!!document.getElementById(id)?.checked;
   const isTxnType=t=>t==='CTC Call'||t==='Under Contract Call';
@@ -17978,13 +18003,9 @@ window.rmxBoot=boot;const baseSwitch=window.switchTab;window.switchTab=function(
     return terminalConnected(out);
   };
 
-  // Add missing transaction outcomes to the generic edit modal BEFORE it is opened.
-  const editOutcome=document.getElementById('editOutcome');
-  if(editOutcome){
-    ['Connected','Meeting scheduled','Left voicemail','No answer','Issue / escalation'].forEach(v=>{
-      if(!Array.from(editOutcome.options).some(o=>o.value===v||o.text===v)){const o=document.createElement('option');o.value=v;o.text=v;editOutcome.appendChild(o)}
-    });
-  }
+  // The permanent one-time option injection that used to live here has been replaced by
+  // window.rmApplyOutcomeOptions(type, currentValue), called fresh from openEditModal below
+  // (and from the Director "Edit" flow) every time the modal opens.
 
   const priorOpenEdit=window.openEditModal;
   if(typeof priorOpenEdit==='function'&&!priorOpenEdit.__v234Txn){
