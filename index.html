@@ -2991,7 +2991,7 @@ function countGoalActivity(data,type){
 }
 const CTC_TYPE="CTC Call";
 // All activity types that count toward the Agent Talk-to goal
-const TALKTO_TYPES=["Agent Talk-to","Agent Partner conversation","Partner conversation","Talk-to (text/call)","Active Agent Talk-to","Active Agent Check-in","Reconnect Outreach","CTC Call","Under Contract Call","Birthday Outreach","Holiday Outreach","Agent Appreciation","Market Update","Market Update Call","Sent Market Report","Sent Referral","Co-Marketing Discussion","New Agent Follow-up","Closed Deal Thank You"];
+const TALKTO_TYPES=["Agent Talk-to","Agent Partner conversation","Partner conversation","Talk-to (text/call)","Active Agent Talk-to","Active Agent Check-in","Reconnect Outreach","CTC Call","Under Contract Call","Birthday Outreach","Holiday Outreach","Agent Appreciation","Market Update","Market Update Call","Sent Market Report","Sent Referral","Co-Marketing Discussion","New Agent Follow-up","Closed Deal Thank You","Cold Calls","Cold Call","New Realtor Outreach","New Agent Prospect","New Agent Outreach","Listing Agent Update","Recruiting Conversation"];
 // Activity types that require a minimum 10-word note
 const NOTES_REQUIRED_TYPES=["Agent Talk-to","Reconnect Outreach","Birthday Outreach","Break Breads","Partner Meeting","Strategic Partner Meeting","Channel Meeting","Team / Office Presentation","Retention Meeting","New Lead Received","Pre-Approval Issued","New Contract","Clear to Close","Service Recovery","Partner Feedback"];
 // Cold Calls: a note is always required, but no word-count minimum — just needs to say
@@ -5880,38 +5880,6 @@ function jumpToFeedType(actType){
 }
 
 
-async function showActivityDetailModal(actType,period){
-  const modal=document.getElementById("coldCallWinsModal");
-  const listEl=document.getElementById("coldCallWinsList");
-  const titleEl=document.getElementById("winsModalTitle");
-  const subEl=document.getElementById("winsModalSub");
-  const labelMap={daily:"today",week:"this week",mtd:"month to date",ytd:"year to date"};
-  if(!modal||!listEl)return;
-  modal.classList.add("open");
-  if(titleEl)titleEl.textContent=actType+" — "+(labelMap[period]||period);
-  if(subEl)subEl.textContent="The exact activity records behind this number. Click an agent name to view their history.";
-  listEl.innerHTML='<div class="no-data">Loading...</div>';
-  try{
-    let rows=((mgmtPeriodData&&mgmtPeriodData[period])||[]).filter(a=>a.act_type===actType);
-    if(!rows.length&&mgmtPeriodBounds&&mgmtPeriodBounds[period]){
-      const b=mgmtPeriodBounds[period];
-      rows=await sbFetch("amanda_activities?select=id,agent_name,act_type,act_date,outcome,notes&act_type=eq."+encodeURIComponent(actType)+"&act_date=gte."+b.start+"&act_date=lte."+b.end+"&order=act_date.desc&limit=2000").catch(()=>[]);
-    }
-    rows=(rows||[]).slice().sort((a,b)=>(b.act_date||"").localeCompare(a.act_date||""));
-    if(!rows.length){listEl.innerHTML='<div class="no-data">No '+actType.toLowerCase()+' records in this period.</div>';return;}
-    listEl.innerHTML='<div style="font-size:11px;color:var(--text-3);margin-bottom:6px">'+rows.length+' record'+(rows.length!==1?'s':'')+'</div>'
-      +rows.map(r=>{
-        const safe=(r.agent_name||"").replace(/'/g,"\\'");
-        const detail=[r.outcome||"",stripRmMeta(r.notes||"").trim()].filter(Boolean).join(" · ");
-        return'<div style="padding:10px 0;border-bottom:1px solid var(--border-light)">'
-          +'<div style="display:flex;justify-content:space-between;gap:12px;align-items:flex-start">'
-          +'<button onclick="closeColdCallWinsModal();switchTab(\'history\');document.getElementById(\'historySearch\').value=\''+safe+'\';setTimeout(()=>doSearchHistory(\''+safe+'\'),150)" style="background:none;border:none;padding:0;font-family:inherit;font-size:13px;font-weight:700;color:var(--brand);cursor:pointer;text-align:left">'+properCase(r.agent_name)+'</button>'
-          +'<span style="font-size:11px;color:var(--text-3);white-space:nowrap">'+fmtDate(r.act_date)+'</span></div>'
-          +(detail?'<div style="font-size:11px;color:var(--text-2);margin-top:3px;line-height:1.4">'+detail.substring(0,220)+'</div>':'')
-          +'</div>';
-      }).join("");
-  }catch(e){listEl.innerHTML='<div class="no-data">Could not load — '+e.message+'</div>';}
-}
 
 function renderCtcRow(count,label){
   return'<div class="ctc-divider" onclick="jumpToFeedType(\'CTC Call\')" style="cursor:pointer"><span class="ctc-label">CTC calls'+( label?" — "+label:"")+'</span><div><div class="ctc-count">'+count+'</div><div class="ctc-note">tracked, no target</div></div></div>';
@@ -9181,11 +9149,8 @@ async function doSearchHistory(name){
   }
 }
 
-let mgmtPeriodData={week:[],mtd:[],ytd:[]},currentMgmtPeriod="week";
-let mgmtPeriodBounds={};
 let mgmtUniqueAgentsCache={daily:[],week:[],mtd:[],ytd:[]};
 let mgmtReconnectContactedCache=[];
-let mgmtLookupData={allColdCallsAndMeetings:[],rcAllAgents:[],aTierAgents:[],closesAll:[]};
 
 async function loadMgmtAccountability(){
   try{
@@ -10131,270 +10096,6 @@ function openPortfolioList(key){
 }
 function closePortfolioListModal(){const el=document.getElementById("portfolioListModal");if(el)el.classList.remove("open");}
 
-function showMgmtPeriod(p){
-  currentMgmtPeriod=p;
-  ["daily","week","mtd","ytd"].forEach(id=>{
-    document.getElementById("mgbtn-"+id)?.classList.toggle("active",p===id);
-  });
-  const hasData=mgmtPeriodData&&(mgmtPeriodData[p]||[]).length>0;
-  if(!hasData){
-    loadManagement();
-    return;
-  }
-  renderMgmtPeriod();
-  renderMgmtTable(mgmtPeriodData[p]||[]);
-  renderMgmtPeriodDetail(p);
-  document.getElementById("view-daniel")?.scrollIntoView({behavior:"smooth",block:"start"});
-}
-
-// ── Look back to a specific past day or week — reuses the daily/week render pipeline with
-// custom bounds, so every card (goals, funnel, connect rate, trends) works exactly like normal. ──
-async function viewCustomMgmtPeriod(mode){
-  const dateInput=document.getElementById("mgmtLookbackDate");
-  const dateVal=dateInput?dateInput.value:"";
-  if(!dateVal){toast("Pick a date first.","error");return;}
-  const activeLabel=document.getElementById("mgmtLookbackActive");
-  ["daily","week","mtd","ytd"].forEach(id=>document.getElementById("mgbtn-"+id)?.classList.remove("active"));
-  try{
-    if(mode==="day"){
-      const acts=await sbFetch("amanda_activities?select=*&act_date=eq."+dateVal+"&order=act_date.desc");
-      mgmtPeriodData.daily=acts;
-      mgmtPeriodBounds.daily={start:dateVal,end:dateVal,label:fmtDate(dateVal)};
-      currentMgmtPeriod="daily";
-      if(activeLabel)activeLabel.innerHTML="Viewing "+fmtDate(dateVal)+' — <a href="#" onclick="loadManagement();return false;" style="color:var(--brand-dark);text-decoration:underline">back to live data</a>';
-    }else{
-      const d=new Date(dateVal+"T12:00:00");
-      const dow=d.getDay();
-      const diffToMon=dow===0?-6:1-dow;
-      const wkStart=new Date(d);wkStart.setDate(d.getDate()+diffToMon);
-      const wkEnd=new Date(wkStart);wkEnd.setDate(wkStart.getDate()+6);
-      const wkStartStr=localDateStr(wkStart),wkEndStr=localDateStr(wkEnd);
-      const acts=await sbFetch("amanda_activities?select=*&act_date=gte."+wkStartStr+"&act_date=lte."+wkEndStr+"&order=act_date.desc");
-      mgmtPeriodData.week=acts;
-      mgmtPeriodBounds.week={start:wkStartStr,end:wkEndStr,label:"Week of "+fmtDate(wkStartStr)};
-      currentMgmtPeriod="week";
-      if(activeLabel)activeLabel.innerHTML="Viewing week of "+fmtDate(wkStartStr)+' — <a href="#" onclick="loadManagement();return false;" style="color:var(--brand-dark);text-decoration:underline">back to live data</a>';
-    }
-    renderMgmtPeriod();
-    renderMgmtTable(mgmtPeriodData[currentMgmtPeriod]);
-    renderMgmtPeriodDetail(currentMgmtPeriod);
-  }catch(e){
-    toast("Couldn't load that period: "+e.message,"error");
-  }
-}
-
-// ── Period-aware Funnel / Connect Rates / Reconnect Pace / Production Signal ──
-function renderMgmtPeriodDetail(period){
-  const acts=mgmtPeriodData[period]||[];
-  const bounds=mgmtPeriodBounds[period]||{start:"",end:"",label:"Month to date"};
-  const lookup=mgmtLookupData||{allColdCallsAndMeetings:[],rcAllAgents:[],aTierAgents:[],closesAll:[]};
-  const normalize=s=>(s||"").toLowerCase().trim();
-
-  // ── ACQUISITION FUNNEL: Cold Calls → Scheduled → Held → Retained, scoped to the selected period ──
-  try{
-    const coldCallsInPeriod=(lookup.allColdCallsAndMeetings||[]).filter(a=>a.act_type==="Cold Calls"&&a.act_date>=bounds.start&&a.act_date<=bounds.end);
-    const totalDials=coldCallsInPeriod.length;
-    // Agents who got a "Meeting Scheduled" outcome on a cold call within the period
-    const scheduledNames=new Set(coldCallsInPeriod.filter(a=>a.outcome==="Meeting Scheduled").map(a=>normalize(a.agent_name)).filter(Boolean));
-    // Of those, who has a New Realtor Meeting logged at any point since role start (a meeting can land after the period closes)
-    const meetingsHeldAll=(lookup.allColdCallsAndMeetings||[]).filter(a=>a.act_type==="New Realtor Meeting");
-    const heldFromScheduled=meetingsHeldAll.filter(a=>scheduledNames.has(normalize(a.agent_name)));
-    const heldNames=new Set(heldFromScheduled.map(a=>normalize(a.agent_name)).filter(Boolean));
-    // Of those held, who is NOT currently on the reconnect list (still retained)
-    const churnedNames=new Set((lookup.rcAllAgents||[]).map(a=>normalize(a.agent_name)).filter(Boolean));
-    const retainedCount=[...heldNames].filter(n=>!churnedNames.has(n)).length;
-    const stages=[
-      {label:"Cold Calls",count:totalDials,pct:100},
-      {label:"Meeting Scheduled",count:scheduledNames.size,pct:totalDials?Math.round(scheduledNames.size/totalDials*100):0},
-      {label:"Meeting Held",count:heldNames.size,pct:totalDials?Math.round(heldNames.size/totalDials*100):0},
-      {label:"Still Retained",count:retainedCount,pct:totalDials?Math.round(retainedCount/totalDials*100):0}
-    ];
-    let funnelHtml='<div style="font-size:11px;color:var(--text-3);margin-bottom:10px">'+bounds.label+' — meeting-held/retained counts include conversions that land after the window closes</div>';
-    funnelHtml+='<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px">';
-    stages.forEach((s,i)=>{
-      const barColor=i===0?"#8899AA":i===1?"#5B8DB8":i===2?"#16A34A":"#4E3D8A";
-      funnelHtml+='<div style="flex:1;min-width:110px;text-align:center;background:var(--surface-2);border-radius:8px;padding:12px 8px">'
-        +'<div style="font-size:22px;font-weight:700;color:'+barColor+'">'+s.count+'</div>'
-        +'<div style="font-size:10px;color:var(--text-3);margin-top:2px;text-transform:uppercase;letter-spacing:.3px">'+s.label+'</div>'
-        +(i>0?'<div style="font-size:10px;color:var(--text-3);margin-top:2px">'+s.pct+'% of dials</div>':'')
-        +'</div>';
-      if(i<stages.length-1)funnelHtml+='<div style="display:flex;align-items:center;color:var(--text-3);font-size:16px">&rarr;</div>';
-    });
-    funnelHtml+='</div>';
-    funnelHtml+='<div style="font-size:11px;color:var(--text-3)">"Still Retained" = agents from a cold call in this window that became a meeting that became an active partner still sending business.</div>';
-    const funnelEl=document.getElementById("danielFunnel");
-    if(funnelEl)funnelEl.innerHTML=funnelHtml;
-    const funnelSub=document.getElementById("danielFunnelSub");
-    if(funnelSub)funnelSub.textContent="Cold Calls → Meeting Scheduled → Meeting Held → Still Retained, "+bounds.label.toLowerCase();
-  }catch(e){console.error("Funnel error:",e);const el=document.getElementById("danielFunnel");if(el)el.innerHTML='<div class="no-data">Unable to load.</div>';}
-
-  // ── COLD CALL CONNECT RATE: % of dials in the period that reach a live conversation ──
-  try{
-    const coldCallsP=acts.filter(a=>a.act_type==="Cold Calls");
-    const CONNECT_OUTCOMES=["Positive","Meeting Scheduled","Talked — Positive"];
-    const connects=coldCallsP.filter(a=>CONNECT_OUTCOMES.indexOf(a.outcome)>=0);
-    const connectPct=coldCallsP.length?Math.round((connects.length/coldCallsP.length)*100):0;
-    const noOutcomeLogged=coldCallsP.filter(a=>!a.outcome).length;
-    const crColor=connectPct>=25?"var(--success)":connectPct>=10?"var(--warning)":"var(--danger)";
-    const crEl=document.getElementById("danielConnectRate");
-    if(crEl)crEl.innerHTML=
-      '<div style="display:flex;gap:24px;flex-wrap:wrap;margin-bottom:8px">'
-      +'<div><div style="font-size:24px;font-weight:700;color:'+crColor+'">'+connectPct+'%</div><div style="font-size:11px;color:var(--text-3)">connect rate</div></div>'
-      +'<div><div style="font-size:24px;font-weight:700;color:var(--text-1)">'+connects.length+'</div><div style="font-size:11px;color:var(--text-3)">live conversations, '+bounds.label.toLowerCase()+'</div></div>'
-      +'<div><div style="font-size:24px;font-weight:700;color:var(--text-1)">'+coldCallsP.length+'</div><div style="font-size:11px;color:var(--text-3)">total dials, '+bounds.label.toLowerCase()+'</div></div>'
-      +'</div>'
-      +(noOutcomeLogged>0?'<div style="font-size:11px;color:var(--warning);margin-bottom:4px">'+noOutcomeLogged+' call'+(noOutcomeLogged!==1?"s":"")+' logged with no outcome — these are counted as dials but not connections.</div>':'')
-      +'<div style="font-size:11px;color:var(--text-3)">Counts calls logged as Positive or Meeting Scheduled as live connections. A low rate is normal — most dials won\'t connect. Under 10% usually means a list-quality issue.</div>';
-    const crSub=document.getElementById("danielConnectRateSub");
-    if(crSub)crSub.textContent=bounds.label+" — % of attempts that reached a real conversation";
-  }catch(e){console.error("Connect rate error:",e);const el=document.getElementById("danielConnectRate");if(el)el.innerHTML='<div class="no-data">Unable to load.</div>';}
-
-  // ── TALK-TO CONNECT RATE: quality lens, doesn't change the daily goal ──
-  try{
-    const talkTosP=acts.filter(a=>TALKTO_TYPES.indexOf(a.act_type)>=0);
-    const CONNECT_OUTCOMES_TT=["Positive","Meeting Scheduled","Talked — Positive"];
-    const connectsTt=talkTosP.filter(a=>CONNECT_OUTCOMES_TT.indexOf(a.outcome)>=0);
-    const noOutcomeTt=talkTosP.filter(a=>!a.outcome).length;
-    const connectPctTt=talkTosP.length?Math.round((connectsTt.length/talkTosP.length)*100):0;
-    const crColorTt=connectPctTt>=50?"var(--success)":connectPctTt>=25?"var(--warning)":"var(--danger)";
-    const ttEl=document.getElementById("danielTalkToConnectRate");
-    if(ttEl)ttEl.innerHTML=
-      '<div style="display:flex;gap:24px;flex-wrap:wrap;margin-bottom:8px">'
-      +'<div><div style="font-size:24px;font-weight:700;color:'+crColorTt+'">'+connectPctTt+'%</div><div style="font-size:11px;color:var(--text-3)">connect rate</div></div>'
-      +'<div><div style="font-size:24px;font-weight:700;color:var(--text-1)">'+connectsTt.length+'</div><div style="font-size:11px;color:var(--text-3)">real conversations, '+bounds.label.toLowerCase()+'</div></div>'
-      +'<div><div style="font-size:24px;font-weight:700;color:var(--text-1)">'+talkTosP.length+'</div><div style="font-size:11px;color:var(--text-3)">total attempted, '+bounds.label.toLowerCase()+'</div></div>'
-      +'</div>'
-      +(noOutcomeTt>0?'<div style="font-size:11px;color:var(--warning);margin-bottom:4px">'+noOutcomeTt+' touch'+(noOutcomeTt!==1?"es":"")+' logged with no outcome — counted as attempts but not connections.</div>':'')
-      +'<div style="font-size:11px;color:var(--text-3)">Counts Positive outcomes only as real conversations. Every attempted touch still counts toward the daily goal — this is purely a quality signal.</div>';
-  }catch(e){console.error("Talk-to connect rate error:",e);const el=document.getElementById("danielTalkToConnectRate");if(el)el.innerHTML='<div class="no-data">Unable to load.</div>';}
-
-  // ── RECONNECT PACE: list size, contacted within the period ──
-  // "Contacted" now counts BOTH the explicit "Mark contacted" button on the Reconnect tab AND
-  // any regular activity logged for that agent during the period — otherwise this only reflects
-  // people run through one specific button, while real outreach logged through Quick Log or the
-  // main form (which is how most of her activity actually happens) never counted at all.
-  (async()=>{
-    try{
-      const rcEl=document.getElementById("danielReconnectProgress");
-      if(!rcEl)return;
-      const allRc=await sbFetch(RC_TABLE+"?select=agent_name,status,contacted_at&limit=1000").catch(()=>[]);
-      const totalOnList=(allRc||[]).filter(a=>a.status!=="removed").length;
-      const loggedNamesInPeriod=new Set(acts.map(a=>normalize(a.agent_name)).filter(Boolean));
-      const contactedInPeriod=(allRc||[]).filter(a=>{
-        const markedContacted=a.contacted_at&&a.contacted_at.slice(0,10)>=bounds.start&&a.contacted_at.slice(0,10)<=bounds.end;
-        const loggedDirectly=loggedNamesInPeriod.has(normalize(a.agent_name));
-        return markedContacted||loggedDirectly;
-      }).length;
-      const dailyGoal=5;
-      const periodWorkdays=period==="daily"?1:period==="week"?5:period==="mtd"?22:Math.min(12,Math.max(1,new Date().getMonth()-2))*22;
-      const periodGoal=dailyGoal*periodWorkdays;
-      const pct=periodGoal?Math.min(Math.round((contactedInPeriod/periodGoal)*100),100):0;
-      const pctColor=pct>=80?"var(--success)":pct>=40?"var(--warning)":"var(--danger)";
-      rcEl.innerHTML='<div style="display:flex;gap:24px;flex-wrap:wrap;margin-bottom:8px">'
-        +'<div><div style="font-size:24px;font-weight:700;color:var(--text-1)">'+totalOnList+'</div><div style="font-size:11px;color:var(--text-3)">total on list</div></div>'
-        +'<div><div style="font-size:24px;font-weight:700;color:'+pctColor+'">'+contactedInPeriod+'</div><div style="font-size:11px;color:var(--text-3)">contacted, '+bounds.label.toLowerCase()+'</div></div>'
-        +'<div><div style="font-size:24px;font-weight:700;color:'+pctColor+'">'+pct+'%</div><div style="font-size:11px;color:var(--text-3)">of pace for this period</div></div>'
-        +'</div>'
-        +'<div style="font-size:11px;color:var(--text-3)">Goal is 5 per day. At that pace, the full list cycles through in about '+(totalOnList?Math.ceil(totalOnList/dailyGoal)+' working days':'—')+'.</div>';
-      const rcSub=document.getElementById("danielReconnectSub");
-      if(rcSub)rcSub.textContent="how the list is moving, "+bounds.label.toLowerCase();
-    }catch(e){console.error("Reconnect progress error:",e);const el=document.getElementById("danielReconnectProgress");if(el)el.innerHTML='<div class="no-data">Unable to load.</div>';}
-  })();
-
-  // ── PRODUCTION SIGNAL: agents touched in the period vs agents who closed — checked against
-  // EVER closing, not closing within this exact same window. A close can land weeks after the
-  // touch that led to it, so requiring both in the same 7-day window made this structurally
-  // impossible to read as anything but ~0% for any single week.
-  try{
-    const touchedNames=new Set(acts.map(a=>normalize(a.agent_name)).filter(Boolean));
-    const closedNames=new Set((lookup.closesAll||[]).map(cl=>normalize(cl.agent_name)).filter(Boolean));
-    const closedInPeriod=(lookup.closesAll||[]).filter(cl=>cl.call_date&&cl.call_date>=bounds.start&&cl.call_date<=bounds.end);
-    const closedNotTouched=closedInPeriod.filter(cl=>!touchedNames.has(normalize(cl.agent_name))).length;
-    const touchedCount=touchedNames.size;
-    const closedAmongTouched=[...touchedNames].filter(n=>closedNames.has(n)).length;
-    const pct=touchedCount?Math.round((closedAmongTouched/touchedCount)*100):0;
-    const pctColor=pct>=20?"var(--success)":pct>=10?"var(--warning)":"var(--danger)";
-    const psEl=document.getElementById("danielProductionSignal");
-    if(psEl)psEl.innerHTML=
-      '<div style="display:flex;gap:24px;flex-wrap:wrap;margin-bottom:8px">'
-      +'<div><div style="font-size:24px;font-weight:700;color:var(--text-1)">'+touchedCount+'</div><div style="font-size:11px;color:var(--text-3)">agents touched, '+bounds.label.toLowerCase()+'</div></div>'
-      +'<div><div style="font-size:24px;font-weight:700;color:'+pctColor+'">'+closedAmongTouched+'</div><div style="font-size:11px;color:var(--text-3)">of those have ever closed</div></div>'
-      +'<div><div style="font-size:24px;font-weight:700;color:'+pctColor+'">'+pct+'%</div><div style="font-size:11px;color:var(--text-3)">touch-to-close rate</div></div>'
-      +'</div>'
-      +(closedNotTouched>0?'<div style="font-size:11px;color:var(--warning)">'+closedNotTouched+' agent'+(closedNotTouched!==1?"s":"")+' closed in this window with no RM touch logged — flagging for visibility, could be a referral or outside deal.</div>':'<div style="font-size:11px;color:var(--text-3)">Every agent who closed in this window also had an RM touch logged.</div>');
-    const psSub=document.getElementById("danielProductionSub");
-    if(psSub)psSub.textContent="agents touched "+bounds.label.toLowerCase()+" vs whether they've ever closed";
-  }catch(e){console.error("Production signal error:",e);const el=document.getElementById("danielProductionSignal");if(el)el.innerHTML='<div class="no-data">Unable to load.</div>';}
-}
-
-function renderMgmtPeriod(){
-  const danielGoals=document.getElementById("danielGoals");if(!danielGoals)return;
-  const data=mgmtPeriodData[currentMgmtPeriod]||[];
-  const labelMap={daily:"Today",week:"This week",mtd:"Month to date",ytd:"Year to date"};
-  const label=(mgmtPeriodBounds[currentMgmtPeriod]&&mgmtPeriodBounds[currentMgmtPeriod].label)||labelMap[currentMgmtPeriod]||"Month to date";
-  const isWeek=currentMgmtPeriod==="week",isYTD=currentMgmtPeriod==="ytd",isDaily=currentMgmtPeriod==="daily";
-  const _roleStart=new Date(2026,3,1),_now=new Date();const monthsSinceStart=Math.max(1,(_now.getFullYear()-_roleStart.getFullYear())*12+(_now.getMonth()-_roleStart.getMonth())+1);
-  const goalTarget=g=>isDaily?Math.ceil(g.weekly/5):isWeek?g.weekly:isYTD?g.monthly*monthsSinceStart:g.monthly;
-  if(!data.length){danielGoals.innerHTML='<div class="no-data">No activity logged yet for this period.</div>';return;}
-  let html='<div style="font-size:11px;color:#bbb;margin-bottom:14px">'+label+' — '+data.length+' total activities</div>';
-  GOALS.forEach(g=>{
-    const target=goalTarget(g),count=countGoalActivity(data,g.type);
-    html+=renderGoalBar(g.label,count,target,target?(count/target)*100:0,g.type);
-  });
-  html+=renderCtcRow(data.filter(a=>a.act_type===CTC_TYPE).length,label.toLowerCase());
-  danielGoals.innerHTML=html;
-  if(isWeek)renderDanielCoverage();
-}
-
-async function renderDanielCoverage(){
-  try{
-    const cov=await loadQuietCoverage();
-    const pctColor=cov.pct>=100?"#1F6B45":cov.pct>=60?"#9A6A12":"#9B3B3B";
-    const notCovered=cov.names.filter(n=>!n.covered);
-    const covered=cov.names.filter(n=>n.covered);
-
-    let covHtml='<div class="gr" style="border-top:1px solid #f0f0f5;padding-top:14px;margin-top:14px">'
-      +'<div class="gr-lr"><span class="gr-n">At Risk — Coverage</span>'
-      +'<span><span class="gr-c" style="color:'+pctColor+'">'+cov.pct+'%</span></span></div>'
-      +'<div class="g-track"><div class="g-fill" style="width:'+cov.pct+'%;background:'+pctColor+'"></div></div>'
-      +'<div style="font-size:10px;color:#bbb;margin-top:4px;margin-bottom:12px">'+cov.covered+' of '+cov.total+' going-quiet agents touched this week</div>';
-
-    covHtml+='<div style="max-height:340px;overflow-y:auto;border:1px solid #f0f0f5;border-radius:8px;padding:0 12px">';
-
-    if(notCovered.length){
-      covHtml+='<div style="font-size:11px;font-weight:600;color:#9B3B3B;margin:10px 0 8px;position:sticky;top:0;background:#fff;padding-top:2px">Still needs attention ('+notCovered.length+') — A-tier first</div>';
-      covHtml+=notCovered.map(n=>{
-        const tierBadge=n.tier?'<span style="font-size:9px;font-weight:700;padding:1px 6px;border-radius:10px;background:'+(n.tier==="Channel"?"#1E3A8A;color:#fff":n.tier==="A"?"#DCFCE7;color:#16A34A":n.tier==="B"?"#EEEBF8;color:#9585C0":"#FFF3E0;color:#B85B00")+'">'+n.tier+'</span>':'';
-        return'<div style="display:flex;align-items:center;justify-content:space-between;padding:7px 0;border-bottom:0.5px solid #f5f5f8">'
-        +'<span style="font-size:13px;font-weight:500;color:#1a1a2e;display:flex;align-items:center;gap:6px">'+n.name+tierBadge+'</span>'
-        +'<div style="display:flex;gap:6px;align-items:center">'
-        +'<span style="font-size:10px;color:#9585C0;font-weight:500">'+n.days+'d silent</span>'
-        +'<button onclick="document.getElementById(\'agentInput\').value=\''+n.name.replace(/'/g,"\\'")+'\';switchTab(\'log\')" style="font-size:10px;padding:3px 9px;background:#9585C0;color:#fff;border:none;border-radius:6px;cursor:pointer;font-family:inherit">Log outreach</button>'
-        +'</div></div>';
-      }).join("");
-    }
-
-    if(covered.length){
-      covHtml+='<div style="font-size:11px;font-weight:600;color:#16A34A;margin-top:12px;margin-bottom:6px;position:sticky;top:0;background:#fff;padding-top:2px">Touched this week ('+covered.length+')</div>';
-      covHtml+=covered.map(n=>'<div style="display:flex;align-items:center;justify-content:space-between;padding:5px 0;border-bottom:0.5px solid #f5f5f8">'
-        +'<span style="font-size:12px;color:#555">'+n.name+'</span>'
-        +'<span style="font-size:10px;color:#16A34A;font-weight:500">✓ Covered</span>'
-        +'</div>'
-      ).join("");
-    }
-
-    covHtml+='</div>'; // close scroll box
-    covHtml+='</div>';
-    const dg=document.getElementById("danielGoals");if(dg)dg.innerHTML+=covHtml;
-  }catch(e){console.error(e);}
-}
-
-function renderMgmtTable(acts){
-  const danielBody=document.getElementById("danielBody");if(!danielBody)return;
-  danielBody.innerHTML=acts.length
-    ?acts.map(a=>'<tr><td>'+escHtml(a.agent_name)+'</td><td>'+badgeEmoji(a.act_type)+'</td><td>'+escHtml(a.outcome||"—")+'</td><td>'+fmtDate(a.act_date)+'</td><td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+escHtml(a.notes||"—")+'</td></tr>').join("")
-    :'<tr><td colspan="5" style="text-align:center;padding:20px;color:#bbb">No activity in this period</td></tr>';
-}
 
 let allProspects=[],editingProspectId=null,prospectActivities={};
 async function loadPipeline(){
@@ -19347,7 +19048,7 @@ window.rmxBoot=boot;const baseSwitch=window.switchTab;window.switchTab=function(
 .v267-rule{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:start;border:1px solid #D9E6ED;background:#F8FBFD;border-radius:10px;padding:10px 11px}
 .v267-rule b{display:block;font-size:11px;color:#17324D;margin-bottom:3px}.v267-rule span{display:block;font-size:10px;color:#5D7180;line-height:1.48}
 .v267-rule details{font-size:9.5px;color:#536B79}.v267-rule summary{cursor:pointer;font-weight:850;color:#0B789E;white-space:nowrap}.v267-rule-list{margin:7px 0 0;padding:8px 9px;background:#fff;border:1px solid #DCE7ED;border-radius:8px;line-height:1.55;color:#536B79;min-width:270px}
-.v267-summary{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px}.v267-stat{border:1px solid #DCE7ED;background:#fff;border-radius:9px;padding:8px 9px;min-width:0}.v267-stat strong{display:block;font-size:17px;line-height:1;color:#17324D}.v267-stat span{display:block;font-size:8.8px;font-weight:850;text-transform:uppercase;letter-spacing:.4px;color:#6B7E8A;margin-top:4px}.v267-source{font-size:8.7px;color:#81919C;margin-top:2px;line-height:1.3}
+.v267-summary{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px}.v267-stat{appearance:none;font-family:inherit;text-align:left;cursor:pointer;border:1px solid #DCE7ED;background:#fff;border-radius:9px;padding:8px 9px;min-width:0;transition:.15s ease}.v267-stat:hover{border-color:#7FAFC3;box-shadow:0 5px 14px rgba(22,83,107,.09);transform:translateY(-1px)}.v267-stat:focus-visible{outline:3px solid rgba(11,120,158,.22);outline-offset:2px}.v267-stat strong{display:block;font-size:17px;line-height:1;color:#17324D}.v267-stat span{display:block;font-size:8.8px;font-weight:850;text-transform:uppercase;letter-spacing:.4px;color:#6B7E8A;margin-top:4px}.v267-source{font-size:8.7px;color:#81919C;margin-top:2px;line-height:1.3}.v267-stat .v267-open{margin-top:5px;color:#0B789E;font-weight:800}
 .v267-section{border:1px solid #DCE7ED;background:#fff;border-radius:11px;overflow:hidden}.v267-section-head{display:flex;justify-content:space-between;gap:10px;align-items:flex-start;padding:10px 11px;border-bottom:1px solid #E5EDF2}.v267-section-head b{display:block;font-size:11px;color:#17324D}.v267-section-head span{display:block;font-size:9.5px;color:#6B7E8A;line-height:1.4;margin-top:2px}.v267-count{font-size:9px;font-weight:900;border-radius:999px;padding:4px 7px;white-space:nowrap}
 .v267-list{display:grid}.v267-row{padding:10px 11px;display:grid;grid-template-columns:34px minmax(0,1fr) auto;gap:9px;align-items:center;border-top:1px solid #E9EFF3}.v267-row:first-child{border-top:0}.v267-rank{width:31px;height:31px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:900}.v267-name{font-size:12.2px;font-weight:900;color:#17324D;line-height:1.2}.v267-why{font-size:10px;color:#536B79;line-height:1.42;margin-top:2px}.v267-move{font-size:9.8px;color:#425A6A;line-height:1.42;margin-top:5px;padding:6px 8px;background:rgba(255,255,255,.72);border-radius:7px;border:1px solid rgba(120,145,160,.18)}.v267-move strong{color:#17324D}.v267-badges{display:flex;gap:4px;flex-wrap:wrap;margin-top:6px}.v267-pill{font-size:8.4px;font-weight:850;border-radius:999px;padding:2px 6px;background:#F3F6F8;color:#536B79;border:1px solid #DCE5EA}.v267-pill.owner{background:#F3EFFA;color:#5A4281;border-color:#DED4ED}.v267-pill.business{background:#EEF4FB;color:#355A7A;border-color:#D4E1EE}.v267-pill.zero{background:#F7F7F7;color:#777;border-color:#E2E2E2}.v267-pill.due{background:#FFF3E9;color:#85531E;border-color:#EED5B5}.v267-pill.risk{background:#FFF0EE;color:#8A4338;border-color:#E8C7C1}.v267-meta{font-size:8.9px;color:#778893;margin-top:5px;display:flex;gap:8px;flex-wrap:wrap}.v267-actions{display:flex;gap:5px;align-items:center;justify-content:flex-end;flex-wrap:wrap}.v267-actions button{font:800 9.5px/1.1 Arial,Helvetica,sans-serif;padding:7px 9px;border-radius:7px;border:1px solid #BFD0DA;background:#fff;color:#24506A;cursor:pointer;white-space:nowrap}.v267-actions button.primary{background:#17324D;color:#fff;border-color:#17324D}
 .v267-row.core-green{background:#F4FBF6}.v267-row.core-yellow{background:#FFF9EA}.v267-row.core-red{background:#FFF4F2}.v267-row.core-green .v267-rank{background:#E8F5EC;color:#27633B}.v267-row.core-yellow .v267-rank{background:#FFF2C9;color:#7A5A09}.v267-row.core-red .v267-rank{background:#FFE2DD;color:#9A332C}.v267-count.green{background:#F0F8F2;color:#27633B;border:1px solid #B8DCC2}.v267-count.yellow{background:#FFF8E5;color:#7A5A09;border:1px solid #E8D39A}.v267-count.red{background:#FFF1EF;color:#9A332C;border:1px solid #E6B6AF}
@@ -19487,8 +19188,8 @@ window.rmxBoot=boot;const baseSwitch=window.switchTab;window.switchTab=function(
       r.due=!!(cadenceDue||newReferralAfterTouch||r.followupDueToday||r.followupOverdueDays>0);
       r.coreStatus=coreStatus(r);r.priority=priority(r);rows.push(r);
     });
-    const amandaContractCount=Array.from(contractNow).filter(k=>amandaOwner(k)).length;
-    return{rows,currentBatch:currentGroup.batch||'',currentBatchDate:currentGroup.stamp?new Date(currentGroup.stamp):null,activeContracts:amandaContractCount,latestPowerBi:latestSeen,tracked:amandaTrackedKeys.size};
+    const activeContractRows=Array.from(contractNow).filter(k=>amandaOwner(k)).map(k=>{const p=latestProfiles[k]||{};return{name:p.agent_name||k,tier:String(p.tier||p.powerbi_level||'—').toUpperCase(),owner:'Amanda'}}).sort((a,b)=>a.name.localeCompare(b.name));
+    return{rows,currentBatch:currentGroup.batch||'',currentBatchDate:currentGroup.stamp?new Date(currentGroup.stamp):null,activeContracts:activeContractRows.length,activeContractRows,latestPowerBi:latestSeen,tracked:amandaTrackedKeys.size};
   }
 
   function pill(txt,cls){return '<span class="v267-pill '+(cls||'')+'">'+esc(txt)+'</span>'}
@@ -19502,7 +19203,7 @@ window.rmxBoot=boot;const baseSwitch=window.switchTab;window.switchTab=function(
     const active=(state.rows||[]).filter(r=>r.due),call=active.filter(r=>r.method==='CALL').sort((a,b)=>a.priority-b.priority||a.name.localeCompare(b.name)),review=active.filter(r=>r.method==='REVIEW').sort((a,b)=>a.priority-b.priority||b.activePrequals-a.activePrequals||a.name.localeCompare(b.name)),coverage=(state.rows||[]).filter(r=>!r.due).sort((a,b)=>(a.lastMeaningfulDays??999)-(b.lastMeaningfulDays??999)||a.name.localeCompare(b.name)),waiting=(state.rows||[]).filter(r=>r.waiting);
     const calls=call,reviews=review.slice(0,4),zeroCoverage=coverage.filter(r=>r.zeroLead).length,sourceDate=state.latestPowerBi?safeDate(state.latestPowerBi):'not synced',txDate=state.currentBatchDate?safeDate(state.currentBatchDate):'not loaded';
     let html='<div id="v267BuyerAgentQueue"><div class="v267-rule"><div><b>Smart-call rule: Amanda works every current C relationship assigned to Amanda that does not have an active contract.</b><span>Everyone stays visible on this screen. A completed meaningful conversation moves the relationship to Recently covered until its cadence is due again; a voicemail or no-answer attempt does not complete the call.</span></div><details><summary>How the ranking works</summary><div class="v267-rule-list"><div><strong>1 · DUE TODAY:</strong> promised follow-up, new referral after the last conversation, or relationship cadence reached.</div><div><strong>2 · HOT:</strong> fresh business, active pipeline, or relationship risk ranks first within today’s calls.</div><div><strong>3 · ACTIVE:</strong> active prequal or recent referral → confirm status and the next action.</div><div><strong>4 · RECENTLY COVERED:</strong> a meaningful call is complete and the next cadence date has not arrived; the relationship remains visible and can still be opened.</div><div><strong>Routing:</strong> Amanda-owned C relationship + no active contract = this screen. Active contract = LP2 lane. Nyny-owned, Channel, A and B relationships stay off Amanda’s call page.</div></div></details></div>';
-    html+='<div class="v267-summary"><div class="v267-stat"><strong>'+state.tracked+'</strong><span>Amanda-owned C relationships</span><div class="v267-source">Current Power BI · '+sourceDate+'</div></div><div class="v267-stat"><strong>'+state.activeContracts+'</strong><span>With LP2 now</span><div class="v267-source">Active contracts · '+txDate+'</div></div><div class="v267-stat"><strong>'+call.length+'</strong><span>Calls due today</span><div class="v267-source">Cadence, follow-up or new business</div></div><div class="v267-stat"><strong>'+coverage.length+'</strong><span>Recently covered</span><div class="v267-source">Completed call · not due yet</div></div></div>';
+    html+='<div class="v267-summary"><button type="button" class="v267-stat" data-v267-detail="owned"><strong>'+state.tracked+'</strong><span>Amanda-owned C relationships</span><div class="v267-source">Current Power BI · '+sourceDate+'</div><div class="v267-open">View relationships →</div></button><button type="button" class="v267-stat" data-v267-detail="lp2"><strong>'+state.activeContracts+'</strong><span>With LP2 now</span><div class="v267-source">Active contracts · '+txDate+'</div><div class="v267-open">View relationships →</div></button><button type="button" class="v267-stat" data-v267-detail="due"><strong>'+call.length+'</strong><span>Calls due today</span><div class="v267-source">Cadence, follow-up or new business</div><div class="v267-open">View relationships →</div></button><button type="button" class="v267-stat" data-v267-detail="covered"><strong>'+coverage.length+'</strong><span>Recently covered</span><div class="v267-source">Completed call · not due yet</div><div class="v267-open">View relationships →</div></button></div>';
     html+='<div class="v267-section"><div class="v267-section-head"><div><b>TODAY\'S CALL LIST</b><span>Work top to bottom. A completed meaningful conversation clears the person until the next cadence; voicemail or no answer stays due.</span></div><div class="v267-count '+(calls.some(r=>r.coreStatus==='red')?'red':calls.length?'yellow':'green')+'">'+call.length+' due today</div></div><div class="v267-list">'+(calls.length?calls.map(rowHtml).join(''):'<div class="v267-empty"><strong>Today\'s relationship calls are complete.</strong><br>All Amanda-owned no-contract relationships remain available under Recently covered.</div>')+'</div></div>';
     if(reviews.length)html+='<div class="v267-section"><div class="v267-section-head"><div><b>NEXT BEST MOVES · review before dialing</b><span>Active prequals are valuable, but the playbook says not to manufacture a pointless call. Review first; call when there is a real buyer/agent action.</span></div><div class="v267-count yellow">'+review.length+' to review</div></div><div class="v267-list">'+reviews.map(rowHtml).join('')+'</div></div>';
     html+='<details class="v267-coverage"><summary>Recently covered / not due yet · '+coverage.length+' relationship'+(coverage.length===1?'':'s')+'</summary><div style="margin-bottom:8px">Amanda completed a meaningful conversation and the relationship is still inside its cadence. These names remain visible and callable, but they do not count as due today.</div>'+(coverage.length?'<div class="v267-list">'+coverage.map(rowHtml).join('')+'</div>':'')+'</details>';
@@ -20363,6 +20064,133 @@ body{font-size:16px!important;letter-spacing:0!important}
  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>{refresh();setTimeout(refresh,1200);setTimeout(refresh,3200)},{once:true});else{refresh();setTimeout(refresh,1200);setTimeout(refresh,3200)}
  document.addEventListener('click',async e=>{const b=e.target.closest&&e.target.closest('.rm-call-stat[data-call-detail]');if(!b)return;e.preventDefault();try{lastTodayActs=await sbFetch('amanda_activities?act_date=eq.'+day()+'&select=agent_name,act_type,act_date,outcome,notes&limit=3000')}catch(err){lastTodayActs=[]}showCallDetail(b.dataset.callDetail,b.querySelector('.k')?.textContent||'Activity')});
  window.rmCleanRefresh=refresh;
+})();
+</script>
+<style id="rm-scorecard-audit-v5-css">
+#view-scorecard .v254-alignment{display:none}
+#rmFinalWeightedScore{border:0!important;background:transparent!important;padding:0!important;box-shadow:none!important}
+#rmFinalWeightedScore .rm-weighted-head{background:linear-gradient(135deg,#F8F3FC 0%,#FDFBFE 100%);border:1px solid #DED2EB;border-radius:16px;padding:18px 19px;margin-bottom:11px;cursor:pointer}
+#rmFinalWeightedScore .rm-weighted-title{font-size:18px!important;line-height:1.25;color:#2F213A}
+#rmFinalWeightedScore .rm-weighted-kicker{font-size:9px!important;letter-spacing:.09em;color:#73539B}
+#rmFinalWeightedScore .rm-weighted-kicker:after{content:""!important}
+#rmFinalWeightedScore .rm-v4-source{font-size:10px;line-height:1.45;color:#71647A}
+#rmFinalWeightedScore .rm-weighted-total{font-size:30px!important;min-width:120px}
+#rmFinalWeightedScore .rm-weighted-grid{gap:10px}
+#rmFinalWeightedScore .rm-weighted-metric{position:relative;cursor:pointer;border-radius:14px!important;padding:15px!important;min-height:128px;transition:transform .15s ease,box-shadow .15s ease,border-color .15s ease}
+#rmFinalWeightedScore .rm-weighted-metric:hover,#rmFinalWeightedScore .rm-weighted-head:hover{transform:translateY(-1px);box-shadow:0 8px 22px rgba(65,40,92,.09);border-color:#BDA9D2!important}
+#rmFinalWeightedScore .rm-weighted-metric:focus-visible,#rmFinalWeightedScore .rm-weighted-head:focus-visible{outline:3px solid rgba(111,74,161,.25);outline-offset:2px}
+#rmFinalWeightedScore .rm-weighted-metric:after{content:"View calculation and records  →";display:block;margin-top:9px;font-size:9px;font-weight:650;color:#644191}
+#rmFinalWeightedScore .rm-weighted-note{margin-top:10px;border:0!important;background:#FAF8FC!important;color:#71647A!important;border-radius:10px;padding:9px 11px!important;font-size:9.5px!important}
+#rmScoreAuditPanel{display:none;margin-top:12px;border:1px solid #D8CBE6;border-radius:15px;background:#fff;overflow:hidden}
+#rmScoreAuditPanel.open{display:block}
+.rm-audit-head{display:flex;justify-content:space-between;gap:14px;align-items:flex-start;padding:15px 17px;background:#F8F4FB;border-bottom:1px solid #E5DDED}
+.rm-audit-head h3{margin:0;font-size:16px;color:#33213F}.rm-audit-head p{margin:4px 0 0;font-size:10.5px;color:#74677D;line-height:1.45}
+.rm-audit-close{border:1px solid #D9CDE7;background:#fff;color:#5E3989;border-radius:9px;padding:7px 10px;cursor:pointer;font:inherit;font-size:10px;font-weight:650}
+.rm-audit-body{padding:14px 16px}.rm-audit-calc{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;margin-bottom:13px}
+.rm-audit-fact{border:1px solid #E5DFEA;border-radius:11px;padding:10px 11px;background:#FCFBFD}.rm-audit-fact span{display:block;font-size:8.5px;text-transform:uppercase;letter-spacing:.06em;color:#817589}.rm-audit-fact strong{display:block;margin-top:4px;font-size:13px;color:#342341;line-height:1.4}
+.rm-audit-source{font-size:10px;color:#71647A;margin:0 0 11px;line-height:1.5}.rm-audit-source b{color:#3D2B49}
+.rm-audit-table-wrap{max-height:380px;overflow:auto;border:1px solid #E5DFEA;border-radius:11px}.rm-audit-table{width:100%;border-collapse:collapse;font-size:10px}.rm-audit-table th{position:sticky;top:0;background:#F7F4FA;text-align:left;padding:8px 10px;color:#5E5067;font-weight:650;border-bottom:1px solid #DED6E6}.rm-audit-table td{padding:8px 10px;border-bottom:1px solid #EEEAF1;color:#51445A;vertical-align:top}.rm-audit-table tr:last-child td{border-bottom:0}.rm-audit-empty{padding:18px;color:#75697D;font-size:10.5px}
+#rmScoreSupport{margin-top:13px;border:1px solid #E2DAE9;border-radius:13px;overflow:hidden;background:#fff}#rmScoreSupport>summary{list-style:none;cursor:pointer;padding:13px 15px;background:#FBFAFC;font-size:11px;font-weight:650;color:#4D3B58}#rmScoreSupport>summary::-webkit-details-marker{display:none}#rmScoreSupport>summary:after{content:"+";float:right;color:#7958A0}#rmScoreSupport[open]>summary:after{content:"−"}.rm-score-support-body{padding:13px;border-top:1px solid #E8E2EC}
+#amandaTierScorecardInline{display:none!important}
+@media(max-width:760px){.rm-audit-calc{grid-template-columns:1fr}#rmFinalWeightedScore .rm-weighted-head{padding:14px}.rm-audit-head{flex-direction:column}}
+</style>
+<script id="rm-scorecard-audit-v5-js">
+(function(){
+'use strict';
+const E=v=>String(v==null?'':v).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+const N=v=>Number(v||0)||0;
+const VERIFIED={active:109,levels:{Channel:2,A:16,B:18,C:111},stamp:'Verified Aug 31, 2026 baseline'};
+function monthStart(){const d=new Date();return new Date(d.getFullYear(),d.getMonth(),1).toISOString().slice(0,10)}
+function milestone(){const m=new Date().getMonth()+1;if(m<=9)return{label:'Sep 30 target',Channel:2,A:14,B:21};if(m===10)return{label:'Oct 31 target',Channel:2,A:16,B:24};if(m===11)return{label:'Nov 30 target',Channel:3,A:18,B:27};return{label:'Dec 31 goal',Channel:4,A:20,B:30}}
+function tierScore(c,t){const p=(a,b,w)=>b?Math.min(w,N(a)/b*w):0;const ch=p(c.Channel,t.Channel,15),a=p(c.A,t.A,15),b=p(c.B,t.B,20);return{ch,a,b,total:ch+a+b}}
+async function sourceData(){
+ const [profiles,leads]=await Promise.all([
+  sbFetch('agent_profiles?select=agent_name,powerbi_last_seen_at,powerbi_level,retained,closes_past_year,total_leads_past_year&limit=5000').catch(()=>[]),
+  sbFetch('velocify_leads?date_added=gte.'+monthStart()+'&select=referral_partner_name,date_added&limit=5000').catch(()=>[])
+ ]);
+ let latest=0;(profiles||[]).forEach(p=>{const x=Date.parse(p&&p.powerbi_last_seen_at||'');if(Number.isFinite(x)&&x>latest)latest=x});
+ const rows=latest?(profiles||[]).filter(p=>{const x=Date.parse(p&&p.powerbi_last_seen_at||'');return Number.isFinite(x)&&Math.abs(x-latest)<120000}):[];
+ const counts={Channel:0,A:0,B:0,C:0};rows.forEach(p=>{const lv=String(p.powerbi_level||'').trim();if(Object.prototype.hasOwnProperty.call(counts,lv))counts[lv]++;if(N(p.closes_past_year)>=10)counts.Channel++});
+ const current=rows.length?{active:rows.filter(p=>p.retained===true).length,levels:counts,stamp:new Date(latest).toLocaleString(),fallback:false}:{active:VERIFIED.active,levels:VERIFIED.levels,stamp:VERIFIED.stamp,fallback:true};
+ const t=milestone(),ts=tierScore(current.levels,t),now=new Date(),projected=Math.round(((leads||[]).length/Math.max(1,now.getDate()))*new Date(now.getFullYear(),now.getMonth()+1,0).getDate());
+ const ratio=current.active?projected/current.active:0,ratioEarn=Math.min(30,ratio/1.15*30),countEarn=Math.min(20,current.active/200*20);
+ return{rows,leads:leads||[],current,target:t,tier:ts,projected,ratio,ratioEarn,countEarn,total:ts.total+ratioEarn+countEarn};
+}
+function table(headers,rows){return '<div class="rm-audit-table-wrap">'+(rows.length?'<table class="rm-audit-table"><thead><tr>'+headers.map(h=>'<th>'+E(h)+'</th>').join('')+'</tr></thead><tbody>'+rows.map(r=>'<tr>'+r.map(x=>'<td>'+E(x)+'</td>').join('')+'</tr>').join('')+'</tbody></table>':'<div class="rm-audit-empty">No source records are available in the current shared snapshot.</div>')+'</div>'}
+function facts(items){return '<div class="rm-audit-calc">'+items.map(x=>'<div class="rm-audit-fact"><span>'+E(x[0])+'</span><strong>'+E(x[1])+'</strong></div>').join('')+'</div>'}
+async function openAudit(kind){
+ const panel=document.getElementById('rmScoreAuditPanel'),title=document.getElementById('rmScoreAuditTitle'),sub=document.getElementById('rmScoreAuditSub'),body=document.getElementById('rmScoreAuditBody');if(!panel||!title||!sub||!body)return;
+ panel.classList.add('open');title.textContent='Loading source data…';sub.textContent='';body.innerHTML='<div class="rm-audit-empty">Reading the current Power BI and Velocify inputs…</div>';panel.scrollIntoView({behavior:'smooth',block:'nearest'});
+ try{const d=await sourceData(),c=d.current.levels,stamp=d.current.stamp;
+  if(kind==='tier'){
+   title.textContent='Tier Growth · '+d.tier.total.toFixed(1)+' / 50';sub.textContent='Net Channel, A and B counts from the latest Power BI population.';
+   const scored=d.rows.filter(p=>['A','B'].includes(String(p.powerbi_level||'').trim())||N(p.closes_past_year)>=10).sort((a,b)=>String(a.agent_name).localeCompare(String(b.agent_name)));
+   body.innerHTML=facts([['Formula','Channel up to 15 pts + A up to 15 pts + B up to 20 pts'],['Current inputs',c.Channel+' Channel · '+c.A+' A · '+c.B+' B'],['Current milestone',d.target.Channel+' Channel · '+d.target.A+' A · '+d.target.B+' B']])+'<p class="rm-audit-source"><b>Points:</b> '+d.tier.ch.toFixed(1)+' Channel + '+d.tier.a.toFixed(1)+' A + '+d.tier.b.toFixed(1)+' B. <b>Source:</b> '+E(stamp)+'. Channel is based on 10+ closings; A and B use the current Power BI level.</p>'+table(['Agent','Power BI level','Closings','Score group'],scored.map(p=>[p.agent_name||'Name not recorded',p.powerbi_level||'—',N(p.closes_past_year),N(p.closes_past_year)>=10?'Channel':p.powerbi_level||'—']));
+  }else if(kind==='ratio'){
+   title.textContent='Agent-to-Lead · '+d.ratioEarn.toFixed(1)+' / 30';sub.textContent='Projected monthly Velocify leads divided by current active partners.';
+   body.innerHTML=facts([['Month-to-date leads',String(d.leads.length)],['Projected month total',String(d.projected)],['Calculation',d.projected+' ÷ '+d.current.active+' = '+d.ratio.toFixed(2)]])+'<p class="rm-audit-source"><b>Formula:</b> projected ratio ÷ 1.15 target × 30 points, capped at 30. <b>Sources:</b> Velocify leads added this month and '+E(stamp)+' Power BI active-partner count.</p>'+table(['Referral partner','Date added'],d.leads.slice().sort((a,b)=>String(b.date_added).localeCompare(String(a.date_added))).map(x=>[x.referral_partner_name||'Partner not recorded',String(x.date_added||'—').slice(0,10)]));
+  }else if(kind==='active'){
+   title.textContent='Active Partner Count · '+d.countEarn.toFixed(1)+' / 20';sub.textContent='Partners marked active in the latest shared Power BI snapshot.';
+   const active=d.rows.filter(p=>p.retained===true).sort((a,b)=>String(a.agent_name).localeCompare(String(b.agent_name)));
+   body.innerHTML=facts([['Current active partners',String(d.current.active)],['Target','200 active partners'],['Calculation',d.current.active+' ÷ 200 × 20 = '+d.countEarn.toFixed(1)]])+'<p class="rm-audit-source"><b>Source:</b> '+E(stamp)+'. The active flag comes from the shared Power BI import and is kept separate from the full tier population.</p>'+table(['Agent','Power BI level','12-mo leads','12-mo closings'],active.map(p=>[p.agent_name||'Name not recorded',p.powerbi_level||'—',N(p.total_leads_past_year),N(p.closes_past_year)]));
+  }else{
+   title.textContent='Overall RM score · '+d.total.toFixed(1)+' / 100';sub.textContent='The sum of the three weighted outcome scores.';
+   body.innerHTML=facts([['Tier Growth',d.tier.total.toFixed(1)+' / 50'],['Agent-to-Lead',d.ratioEarn.toFixed(1)+' / 30'],['Active Partner Count',d.countEarn.toFixed(1)+' / 20']])+'<p class="rm-audit-source"><b>Overall formula:</b> '+d.tier.total.toFixed(1)+' + '+d.ratioEarn.toFixed(1)+' + '+d.countEarn.toFixed(1)+' = <b>'+d.total.toFixed(1)+' / 100</b>. Open any individual score card for its records.</p>';
+  }
+ }catch(e){title.textContent='Score source unavailable';sub.textContent='';body.innerHTML='<div class="rm-audit-empty">The shared data could not be loaded. Try Refresh and open this score again.</div>'}
+}
+function enhance(){
+ const body=document.getElementById('amandaRmScorecardBody'),host=document.getElementById('rmFinalWeightedScore');if(!body||!host)return;
+ let panel=document.getElementById('rmScoreAuditPanel');if(!panel){panel=document.createElement('section');panel.id='rmScoreAuditPanel';panel.innerHTML='<div class="rm-audit-head"><div><h3 id="rmScoreAuditTitle">Score details</h3><p id="rmScoreAuditSub"></p></div><button type="button" class="rm-audit-close">Close</button></div><div class="rm-audit-body" id="rmScoreAuditBody"></div>';host.insertAdjacentElement('afterend',panel);panel.querySelector('.rm-audit-close').onclick=()=>panel.classList.remove('open')}
+ const head=host.querySelector('.rm-weighted-head');if(head){head.tabIndex=0;head.setAttribute('role','button');head.setAttribute('aria-label','View overall score calculation');head.onclick=()=>openAudit('overall');head.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();openAudit('overall')}}}
+ [...host.querySelectorAll('.rm-weighted-metric')].forEach(card=>{const label=String(card.querySelector('.weight')?.textContent||'').toLowerCase(),kind=label.includes('tier')?'tier':label.includes('agent-to-lead')?'ratio':'active';card.tabIndex=0;card.setAttribute('role','button');card.setAttribute('aria-label','View '+label+' calculation and records');card.onclick=e=>{e.stopPropagation();openAudit(kind)};card.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();openAudit(kind)}}});
+ let details=document.getElementById('rmScoreSupport');if(!details){details=document.createElement('details');details.id='rmScoreSupport';details.innerHTML='<summary>Supporting activity · context only, not included in the weighted score</summary><div class="rm-score-support-body"></div>';body.appendChild(details)}
+ const support=details.querySelector('.rm-score-support-body');[...body.children].filter(x=>x!==host&&x!==panel&&x!==details).forEach(x=>support.appendChild(x));
+}
+window.rmOpenScoreAudit=openAudit;
+const prev=window.renderAmandaRmScorecard;if(typeof prev==='function'&&!prev.__rmAuditV5){const wrapped=async function(){const r=await prev.apply(this,arguments);enhance();return r};wrapped.__rmAuditV5=true;window.renderAmandaRmScorecard=wrapped}
+const oldShow=window.showAmandaScorecard;if(typeof oldShow==='function'&&!oldShow.__rmAuditV5){const wrapped=function(){const r=oldShow.apply(this,arguments);setTimeout(enhance,250);return r};wrapped.__rmAuditV5=true;window.showAmandaScorecard=wrapped}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(enhance,1500),{once:true});else setTimeout(enhance,700);
+})();
+</script>
+<style id="rm-scorecard-activity-v6-css">
+#rmScoreActivity{margin-top:13px;border:1px solid #DED5E7;border-radius:15px;background:#FBFAFC;padding:14px}
+.rm-score-act-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;margin-bottom:10px}.rm-score-act-head h3{margin:0;font-size:14px;color:#352441}.rm-score-act-head p{margin:3px 0 0;font-size:10px;color:#766A7E}.rm-score-act-periods{display:flex;gap:5px}.rm-score-act-periods button{border:1px solid #D9CDE6;background:#fff;color:#63428C;border-radius:999px;padding:6px 9px;font:inherit;font-size:9px;font-weight:650;cursor:pointer}.rm-score-act-periods button.active{background:#67439A;color:#fff;border-color:#67439A}
+.rm-score-act-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}.rm-score-act-card{appearance:none;text-align:left;border:1px solid #E1DAE8;background:#fff;border-radius:12px;padding:11px 12px;cursor:pointer;color:#3E3047;font-family:inherit;min-height:105px}.rm-score-act-card:hover{border-color:#BBA8D1;box-shadow:0 5px 15px rgba(62,39,87,.07)}.rm-score-act-card .k{display:block;font-size:9.5px;font-weight:650;color:#5B4D64}.rm-score-act-card .v{display:block;font-size:21px;font-weight:700;color:#3E2469;margin:6px 0 2px}.rm-score-act-card .s{display:block;font-size:8.8px;line-height:1.4;color:#7B6F83}.rm-score-act-card .o{display:block;font-size:8.7px;font-weight:650;color:#6A4396;margin-top:7px}
+#rmScoreActivityDetail{display:none;position:fixed;z-index:26000;left:50%;top:50%;transform:translate(-50%,-50%);width:min(980px,calc(100vw - 34px));max-height:82vh;overflow:auto;background:#fff;border:1px solid #CFC0DF;border-radius:14px;padding:17px;box-shadow:0 0 0 9999px rgba(31,20,43,.48),0 18px 46px rgba(32,19,48,.28)}#rmScoreActivityDetail.open{display:block}.rm-score-detail-head{display:flex;justify-content:space-between;gap:12px;align-items:center;position:sticky;top:-17px;background:#fff;padding:4px 0 10px}.rm-score-detail-head h4{margin:0;font-size:14px}.rm-score-detail-row{display:grid;grid-template-columns:minmax(140px,1fr) minmax(120px,.8fr) minmax(130px,1fr) minmax(210px,2fr);gap:9px;padding:8px 3px;border-top:1px solid #ECE7F0;font-size:10px;line-height:1.4}.rm-score-detail-row span{color:#6E6276}
+@media(max-width:900px){.rm-score-act-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:620px){.rm-score-act-grid{grid-template-columns:1fr}.rm-score-act-head{flex-direction:column}.rm-score-detail-row{grid-template-columns:1fr}}
+</style>
+<script id="rm-scorecard-activity-v6-js">
+(function(){
+'use strict';
+const E=v=>String(v==null?'':v).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+const callTypes=/^(cold calls?|new realtor outreach|new agent prospect|new agent outreach|agent talk-to|agent partner conversation|partner conversation|talk-to \(text\/call\)|active agent talk-to|active agent check-in|reconnect outreach|ctc call|under contract call|listing agent update|market update call|new agent follow-up|recruiting conversation)$/i;
+const talkTypes=(typeof TALKTO_TYPES!=='undefined'&&Array.isArray(TALKTO_TYPES)&&TALKTO_TYPES.length)?TALKTO_TYPES:['Agent Talk-to','Agent Partner conversation','Partner conversation','Talk-to (text/call)','Active Agent Talk-to','Active Agent Check-in','Reconnect Outreach','CTC Call','Under Contract Call','Listing Agent Update','Birthday Outreach','Holiday Outreach','Agent Appreciation','Market Update','Market Update Call','Sent Market Report','Sent Referral','Co-Marketing Discussion','New Agent Follow-up','Closed Deal Thank You','Recruiting Conversation','Cold Calls','Cold Call','New Realtor Outreach','New Agent Prospect','New Agent Outreach'];
+const evidence=a=>String((a&&a.outcome||'')+' '+(a&&a.notes||'')).toLowerCase(),call=a=>callTypes.test(String(a&&a.act_type||'').trim()),no=a=>call(a)&&/voicemail|left vm|no answer|attempted|no response|left message|could not reach|didn.t connect/.test(evidence(a)),text=a=>/\btext sent\b|sent (?:a )?text|follow[- ]?up text|lm\s*(?:and|\+)\s*text|voicemail\s*(?:and|\+)\s*text|\[text_sent\]/.test(evidence(a));
+function live(a){if(talkTypes.indexOf(String(a&&a.act_type||'').trim())<0)return false;const o=String(a&&a.outcome||'').trim().toLowerCase();return !!o&&!/left voicemail|left vm|no answer|attempted|no response|remove \/ no further contact|not interested|do not contact/.test(o)}
+// One definition everywhere in the RM Tracker: Talk-To means a saved two-way connection.
+window.cntTalkTo=function(acts){return(acts||[]).filter(live).length};
+function iso(d){return d.toISOString().slice(0,10)}function range(period){const now=new Date(),end=iso(now);if(period==='today')return{start:end,end,label:'Today'};if(period==='mtd')return{start:iso(new Date(now.getFullYear(),now.getMonth(),1)),end,label:'Month to date'};const d=new Date(now);d.setDate(now.getDate()-((now.getDay()+6)%7));return{start:iso(d),end,label:'Week to date'}}
+let period='wtd',acts=[];
+function rows(kind){return acts.filter(a=>kind==='attempts'?call(a):kind==='live'?live(a):kind==='no'?no(a):kind==='texts'?text(a):kind==='newmeet'?a.act_type==='New Realtor Meeting':kind==='existing'?['Partner Meeting','Strategic Partner Meeting','Channel Meeting','Retention Meeting','Break Breads'].includes(a.act_type):kind==='cold'?a.act_type==='Cold Calls':a.act_type==='Realtor Buddy Referral Ask')}
+function card(kind,label,value,sub){return '<button type="button" class="rm-score-act-card" data-rm-score-act="'+kind+'"><span class="k">'+label+'</span><span class="v">'+value+'</span><span class="s">'+sub+'</span><span class="o">View activity →</span></button>'}
+async function render(p){period=p||period;const r=range(period),host=document.getElementById('rmScoreActivity');if(!host)return;host.querySelectorAll('[data-period]').forEach(b=>b.classList.toggle('active',b.dataset.period===period));const grid=host.querySelector('.rm-score-act-grid');grid.innerHTML='<div class="rm-audit-empty">Loading activity…</div>';try{acts=await sbFetch('amanda_activities?act_date=gte.'+r.start+'&act_date=lte.'+r.end+'&select=agent_name,act_type,act_date,outcome,notes&limit=5000')}catch(e){acts=[]}const goal=period==='wtd'?35:null,lv=rows('live').length;grid.innerHTML=card('attempts','Call attempts',rows('attempts').length,'All logged calls, including voicemail and no answer.')+card('live','Live conversations',lv+(goal?' / '+goal:''),'Actual two-way connections.')+card('no','No connection',rows('no').length,'Voicemail, no answer or attempted calls.')+card('texts','Text follow-ups',rows('texts').length,'Only texts explicitly logged as sent.')+card('newmeet','New partner meetings',rows('newmeet').length,'Meetings held in this period.')+card('existing','Existing partner meetings',rows('existing').length,'Relationship meetings held.')+card('cold','New Realtor calls',rows('cold').length,'Prospecting attempts.')+card('buddy','Buddy referral asks',rows('buddy').length,'Introductions requested.');host.querySelector('.rm-score-act-head p').textContent=r.label+' · activity is shown separately from the weighted outcome score.'}
+function detail(kind,label){const d=document.getElementById('rmScoreActivityDetail'),list=rows(kind);d.querySelector('h4').textContent=label+' · '+list.length;d.querySelector('.rm-score-detail-body').innerHTML=list.length?list.map(a=>'<div class="rm-score-detail-row"><b>'+E(a.agent_name||'Name not recorded')+'</b><span>'+E(a.act_type||'Activity')+'</span><span>'+E(a.outcome||'Outcome not recorded')+'</span><span>'+E(String(a.notes||'').replace(/\[[^\]]+\]/g,'').trim()||'No notes recorded')+'</span></div>').join(''):'<div class="rm-audit-empty">No matching records in this period.</div>';d.classList.add('open')}
+function ensure(){const support=document.getElementById('rmScoreSupport'),panel=document.getElementById('rmScoreAuditPanel'),host=document.getElementById('rmFinalWeightedScore');if(!host)return;let box=document.getElementById('rmScoreActivity');if(!box){box=document.createElement('section');box.id='rmScoreActivity';box.innerHTML='<div class="rm-score-act-head"><div><h3>Amanda activity</h3><p>Activity is shown separately from the weighted outcome score.</p></div><div class="rm-score-act-periods"><button type="button" data-period="today">Today</button><button type="button" data-period="wtd" class="active">WTD</button><button type="button" data-period="mtd">MTD</button></div></div><div class="rm-score-act-grid"></div>';(support||panel||host).insertAdjacentElement('beforebegin',box);box.querySelectorAll('[data-period]').forEach(b=>b.onclick=()=>render(b.dataset.period));box.addEventListener('click',e=>{const c=e.target.closest('[data-rm-score-act]');if(c)detail(c.dataset.rmScoreAct,c.querySelector('.k').textContent)});const d=document.createElement('section');d.id='rmScoreActivityDetail';d.innerHTML='<div class="rm-score-detail-head"><h4>Activity</h4><button type="button" class="rm-audit-close">Close</button></div><div class="rm-score-detail-body"></div>';document.body.appendChild(d);d.querySelector('button').onclick=()=>d.classList.remove('open');render('wtd')}}
+const prev=window.renderAmandaRmScorecard;if(typeof prev==='function'&&!prev.__rmActivityV6){const w=async function(){const r=await prev.apply(this,arguments);ensure();return r};w.__rmActivityV6=true;window.renderAmandaRmScorecard=w}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(ensure,1700),{once:true});else setTimeout(ensure,800);
+})();
+</script>
+<style id="rm-goto-summary-detail-v7-css">
+#rmGoToSummaryDetail{display:none;position:fixed;z-index:27000;left:50%;top:50%;transform:translate(-50%,-50%);width:min(900px,calc(100vw - 34px));max-height:82vh;overflow:auto;background:#fff;border:1px solid #BCD0D9;border-radius:14px;padding:17px;box-shadow:0 0 0 9999px rgba(18,42,53,.48),0 18px 46px rgba(18,42,53,.25)}#rmGoToSummaryDetail.open{display:block}.rm-goto-detail-head{display:flex;justify-content:space-between;align-items:center;gap:12px;position:sticky;top:-17px;background:#fff;padding:4px 0 10px;z-index:1}.rm-goto-detail-head h3{margin:0;font-size:15px;color:#17324D}.rm-goto-detail-row{display:grid;grid-template-columns:minmax(170px,1.2fr) 80px minmax(220px,2fr);gap:10px;padding:9px 4px;border-top:1px solid #E6EEF2;font-size:10px;line-height:1.4}.rm-goto-detail-row b{color:#17324D}.rm-goto-detail-row span{color:#667B88}.rm-goto-detail-empty{padding:18px 2px;color:#667B88;font-size:10.5px}@media(max-width:620px){.rm-goto-detail-row{grid-template-columns:1fr}}
+</style>
+<script id="rm-goto-summary-detail-v7-js">
+(function(){
+'use strict';
+const E=v=>String(v==null?'':v).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+function ensure(){let d=document.getElementById('rmGoToSummaryDetail');if(d)return d;d=document.createElement('section');d.id='rmGoToSummaryDetail';d.innerHTML='<div class="rm-goto-detail-head"><h3>Go-To relationships</h3><button type="button" class="rm-audit-close">Close</button></div><div class="rm-goto-detail-body"></div>';document.body.appendChild(d);d.querySelector('button').onclick=()=>d.classList.remove('open');return d}
+function open(kind){const s=window._rmV267BuyerAgentState||{},all=s.rows||[],lists={owned:all.concat(s.activeContractRows||[]),lp2:s.activeContractRows||[],due:all.filter(r=>r.due&&r.method==='CALL').sort((a,b)=>(a.priority||0)-(b.priority||0)),covered:all.filter(r=>!r.due).sort((a,b)=>(a.lastMeaningfulDays??999)-(b.lastMeaningfulDays??999))},titles={owned:'Amanda-owned C relationships',lp2:'Relationships with LP2 now',due:'Calls due today',covered:'Recently covered'};const rows=lists[kind]||[],d=ensure();d.querySelector('h3').textContent=(titles[kind]||'Go-To relationships')+' · '+rows.length;d.querySelector('.rm-goto-detail-body').innerHTML=rows.length?rows.map(r=>'<div class="rm-goto-detail-row"><b>'+E(r.name||'Name not recorded')+'</b><span>'+E((r.tier||'—')+' tier')+'</span><span>'+E(kind==='lp2'?'Active buyer contract · LP2 transaction lane':kind==='covered'?(r.lastMeaningfulDays==null?'Meaningful conversation recorded':'Last meaningful conversation '+r.lastMeaningfulDays+' day'+(r.lastMeaningfulDays===1?'':'s')+' ago'):(r.why||'Amanda-owned relationship'))+'</span></div>').join(''):'<div class="rm-goto-detail-empty">No relationships are currently in this group.</div>';d.classList.add('open')}
+document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('[data-v267-detail]');if(!b)return;e.preventDefault();open(b.dataset.v267Detail)});
 })();
 </script>
 </body>
