@@ -2986,7 +2986,7 @@ function countGoalActivity(data,type){
 }
 const CTC_TYPE="CTC Call";
 // All activity types that count toward the Agent Talk-to goal
-const TALKTO_TYPES=["Agent Talk-to","Active Agent Talk-to","Active Agent Check-in","Reconnect Outreach","CTC Call","Under Contract Call","Birthday Outreach","Holiday Outreach","Agent Appreciation","Market Update","Market Update Call","Sent Market Report","Sent Referral","Co-Marketing Discussion","New Agent Follow-up","Closed Deal Thank You"];
+const TALKTO_TYPES=["Agent Talk-to","Agent Partner conversation","Partner conversation","Talk-to (text/call)","Active Agent Talk-to","Active Agent Check-in","Reconnect Outreach","CTC Call","Under Contract Call","Birthday Outreach","Holiday Outreach","Agent Appreciation","Market Update","Market Update Call","Sent Market Report","Sent Referral","Co-Marketing Discussion","New Agent Follow-up","Closed Deal Thank You"];
 // Activity types that require a minimum 10-word note
 const NOTES_REQUIRED_TYPES=["Agent Talk-to","Reconnect Outreach","Birthday Outreach","Break Breads","Partner Meeting","Strategic Partner Meeting","Channel Meeting","Team / Office Presentation","Retention Meeting","New Lead Received","Pre-Approval Issued","New Contract","Clear to Close","Service Recovery","Partner Feedback"];
 // Cold Calls: a note is always required, but no word-count minimum — just needs to say
@@ -4906,7 +4906,7 @@ async function loadZeroProduction(){
     });
 
     const TIER_RANK={A:0,B:1,C:2};
-    const allZero=(rows||[]).sort((a,b)=>{
+    const allZero=(rows||[]).filter(a=>typeof rmIsRealAgentName!=="function"||rmIsRealAgentName(a&&a.agent_name)).sort((a,b)=>{
       const leadDiff=(b.total_leads_past_year||0)-(a.total_leads_past_year||0);
       if(leadDiff!==0)return leadDiff;
       return(TIER_RANK[a.tier]??3)-(TIER_RANK[b.tier]??3);
@@ -4954,6 +4954,12 @@ async function loadZeroProduction(){
 // close away" (predictive — hasn't crossed yet). Pulls from agent_profiles, which gets its real
 // close/lead numbers from the Contacts Bulk Import — keep that current for this to stay accurate.
 let growthContainerVersion=0;
+// System cleanup/audit records live in the same shared table but are not people.
+// Keep them out of every roster-derived RM surface even if they carry old production values.
+function rmIsRealAgentName(name){
+  const s=String(name||"").trim();
+  return !!s&&!/^__.*__$/.test(s)&&!/^roster_delete(?:_|$)/i.test(s)&&!["nan","nat"].includes(s.toLowerCase());
+}
 async function loadAgentGrowth(){
   const el=document.getElementById("growthMovementPanel");
   if(!el)return;
@@ -4961,7 +4967,7 @@ async function loadAgentGrowth(){
   try{
     const rows=await sbFetch("agent_profiles?select=agent_name,tier,do_not_contact,closes_past_year&do_not_contact=neq.true&limit=2000").catch(()=>[]);
     const cToB_ready=[],cToB_close=[],bToA_ready=[],bToA_close=[];
-    (rows||[]).forEach(a=>{
+    (rows||[]).filter(a=>rmIsRealAgentName(a&&a.agent_name)).forEach(a=>{
       const closes=a.closes_past_year||0;
       const row={name:a.agent_name,closes};
       if(a.tier==="C"){
@@ -5052,7 +5058,7 @@ async function loadContactDataQuality(){
       return;
     }
     const TIER_RANK={A:0,B:1,C:2};
-    const gaps=(rows||[]).map(a=>{
+    const gaps=(rows||[]).filter(a=>typeof rmIsRealAgentName!=="function"||rmIsRealAgentName(a&&a.agent_name)).map(a=>{
       const missing=[];
       if(!a.phone)missing.push("phone");
       if(!a.email)missing.push("email");
@@ -5126,7 +5132,7 @@ async function loadQuiet(){
     // smart prioritization of limited time.
     const TIER_TOUCH_THRESHOLD={Channel:14,A:14,B:30,C:60};
     const TIER_URGENT_THRESHOLD={Channel:21,A:21,B:45,C:90};
-    const rows=allAgents.filter(a=>a.do_not_contact!==true&&a.relationship_status!=="inactive"&&!removedQuietKeys.has((a.agent_name||"").trim().toLowerCase())).map(a=>{
+    const rows=allAgents.filter(a=>(typeof rmIsRealAgentName!=="function"||rmIsRealAgentName(a&&a.agent_name))&&a.do_not_contact!==true&&a.relationship_status!=="inactive"&&!removedQuietKeys.has((a.agent_name||"").trim().toLowerCase())).map(a=>{
       const name=(a.agent_name||"").trim();if(!name)return null;
       const lookupKey=name.toLowerCase();
       const lastRM=lastSeenRM[lookupKey];
@@ -10548,6 +10554,13 @@ async function findAgentProfileByName(name){
   if(rows===null)throw new Error("Couldn't check existing contacts — try again.");
   return{matches:rows,exact:rows.length===1?rows[0]:null,ambiguous:rows.length>1};
 }
+function preferredAgentProfile(rows,name){
+  const wanted=ownerKey(name),raw=String(name||'').trim();
+  return (rows||[]).slice().sort((a,b)=>{
+    const score=p=>{let s=0;if(String(p.agent_name||'').trim()===raw)s+=100;if(ownerKey(p.agent_name)===wanted)s+=50;if(String(p.relationship_status||'active').toLowerCase()!=='inactive')s+=20;if(String(p.display_name||'')!==HIDDEN_PROFILE_MARKER)s+=20;if(p.powerbi_last_seen_at)s+=10;['phone','email','brokerage','address'].forEach(k=>{if(p[k])s++});return s};
+    return score(b)-score(a)||String(b.powerbi_last_seen_at||'').localeCompare(String(a.powerbi_last_seen_at||''));
+  })[0]||null;
+}
 function openAddAgentModal(){
   document.getElementById("addAgentName").value="";
   document.getElementById("addAgentPhone").value="";
@@ -10743,12 +10756,10 @@ async function openContactModal(name,phone,email,brokerage,birthday){
   {
     try{
       const{matches:profiles,exact,ambiguous}=await findAgentProfileByName(name);
-      if(ambiguous){
-        toast("Heads up: "+profiles.length+" contacts already match this name (case/spacing). Saving is disabled until that's cleaned up — see Management View \u2192 Clean up duplicate agents.","error",6000);
-      }
-      const p=exact||(profiles&&profiles[0]);
+      const p=exact||preferredAgentProfile(profiles,name);
+      if(ambiguous&&p)toast("Found "+profiles.length+" matching profiles. Editing the current active record for "+resolvedDisplayName(p.agent_name)+"; no history will be deleted.","success",5000);
       if(p){
-        editingContactOriginalName=ambiguous?null:p.agent_name;
+        editingContactOriginalName=p.agent_name;
         phone=p.phone||phone||"";email=p.email||email||"";birthday=p.birthday||birthday||"";
         var contactHomeAddress=p.address||"";
         var contactOrg=p.brokerage||brokerage||"";
@@ -10839,11 +10850,9 @@ async function saveContactModal(){
     // agent_profiles has no id column — agent_name IS the key. Re-check right before writing
     // (not just at modal-open time) so stale state from a long-open modal can't cause a write
     // against a name that's since changed underneath it.
-    const{matches,exact,ambiguous}=await findAgentProfileByName(editingContactName);
-    if(ambiguous){
-      toast(matches.length+" contacts already match this name — not saved. Clean up the duplicate records first, then try again.","error",6000);
-      return;
-    }
+    const lookupName=editingContactOriginalName||editingContactName;
+    const exactRows=await sbFetch("agent_profiles?agent_name=eq."+encodeURIComponent(lookupName)+"&limit=2").catch(()=>[]);
+    const exact=(exactRows||[])[0]||null;
     if(exact){
       // Existing row — PATCH by its exact stored name. Do NOT include agent_name in the
       // payload: this modal never edits the name field, so there's nothing to rename, and
@@ -13499,7 +13508,7 @@ if(_v120ProtectHtml)window.v119ProtectHtml=function(){
 // RM reads the latest shared Supabase snapshot and never seeds, repairs, or imports Power BI itself.
 function v124PowerBiLevel(v){const x=String(v||"").trim().toUpperCase();return ["A","B","C"].includes(x)?x:"";}
 function v124LatestPowerBiSnapshot(profiles){
-  const all=Array.isArray(profiles)?profiles:[];let latestMs=0,stamp=null;
+  const all=(Array.isArray(profiles)?profiles:[]).filter(p=>typeof rmIsRealAgentName!=="function"||rmIsRealAgentName(p&&p.agent_name));let latestMs=0,stamp=null;
   all.forEach(p=>{if(!p||!p.powerbi_last_seen_at)return;const ms=Date.parse(p.powerbi_last_seen_at);if(Number.isFinite(ms)&&ms>latestMs){latestMs=ms;stamp=p.powerbi_last_seen_at;}});
   if(!latestMs)return{stamp:null,rows:[],counts:{A:0,B:0,C:0,total:0}};
   const byKey=new Map();all.forEach(p=>{const ms=Date.parse(p&&p.powerbi_last_seen_at||"");const lvl=v124PowerBiLevel(p&&p.powerbi_level);if(!lvl||!Number.isFinite(ms)||Math.abs(ms-latestMs)>=120000)return;const k=typeof agentMatchKey==="function"?agentMatchKey(p.agent_name):String(p.agent_name||"").trim().toLowerCase();if(k&&!byKey.has(k))byKey.set(k,p);});
@@ -16462,6 +16471,8 @@ window.rmAuditVisibleButtons=function(){
  const key=s=>String(s||'').trim().toLowerCase().replace(/\s+/g,' ');
  function todayS(){try{return typeof today==='function'?today():new Date().toISOString().slice(0,10)}catch(e){return new Date().toISOString().slice(0,10)}}
  function tier(c,l){c=Number(c||0);l=Number(l||0);return c>=10?'Channel':c>=4?'A':c>=2?'B':(c>=1||l>=1)?'C':null}
+ function powerBiLevel(p){const x=String(p&&p.powerbi_level||'').trim().toUpperCase();return ['A','B','C'].includes(x)?x:null}
+ function applyGrowthTier(p){const lv=powerBiLevel(p);p._scoreLevel=lv;p._growthChannel=Number(p&&p.closes_past_year||0)>=10;p._tier=p._growthChannel?'Channel':(lv||tier(p.closes_past_year,p.total_leads_past_year));return p}
  function milestone(){const n=new Date(todayS()+'T12:00:00');return R.targets.find(t=>n<=new Date(t.date+'T23:59:59'))||R.targets[R.targets.length-1]}
  function ownerOf(a){try{const m=typeof extractRmMeta==='function'?extractRmMeta(a.notes||''):null;return m&&m.owner?m.owner:'Amanda'}catch(e){return 'Amanda'}}
  function isAmanda(a){
@@ -16526,6 +16537,7 @@ window.rmAuditVisibleButtons=function(){
     'Birthday Outreach','Holiday Outreach','Agent Appreciation',
     'Market Update','Market Update Call','Sent Market Report','Sent Referral',
     'Co-Marketing Discussion','New Agent Follow-up','Closed Deal Thank You',
+    'Agent Partner conversation','Partner conversation','Talk-to (text/call)',
     'Partner Meeting','Break Breads','Retention Meeting'
   ]);
   return (rows||[]).filter(a=>TYPES.has(String(a&&a.act_type||'').trim())).length;
@@ -16616,7 +16628,7 @@ window.rmAuditVisibleButtons=function(){
     });
 
     Object.values(by).forEach(p=>{
-      p._tier=tier(p.closes_past_year,p.total_leads_past_year);
+      applyGrowthTier(p);
       p._assign=amap[key(p.agent_name)]||{};
     });
 
@@ -16628,7 +16640,7 @@ window.rmAuditVisibleButtons=function(){
       if(k==='addie ashworth'){copy.relationship_type='strategic_partner';copy.strategic_partner_category='Stager';}
       if(!allBy[k]||new Date(copy.powerbi_last_seen_at||0)>new Date(allBy[k].powerbi_last_seen_at||0))allBy[k]=copy;
     });
-    Object.values(allBy).forEach(p=>{p._tier=tier(p.closes_past_year,p.total_leads_past_year);p._assign=amap[key(p.agent_name)]||{};});
+    Object.values(allBy).forEach(p=>{applyGrowthTier(p);p._assign=amap[key(p.agent_name)]||{};});
 
     const prodRows=prod.map(p=>{
       const copy=Object.assign({},p);
@@ -16637,7 +16649,7 @@ window.rmAuditVisibleButtons=function(){
         copy.relationship_type='strategic_partner';
         copy.strategic_partner_category='Stager';
       }
-      copy._tier=tier(copy.closes_past_year,copy.total_leads_past_year);
+      applyGrowthTier(copy);
       copy._assign=amap[k]||{};
       return copy;
     });
@@ -16815,7 +16827,7 @@ window.rmAuditVisibleButtons=function(){
   });
 }
  function title(c,h,p){c.innerHTML='<div class="rmx-title"><h1>'+h+'</h1><p>'+p+'</p></div>'}
- function counts(d){const x={Channel:0,A:0,B:0,C:0};d.prod.forEach(p=>{if(x[p._tier]!=null)x[p._tier]++});return x}
+ function counts(d){const x={Channel:0,A:0,B:0,C:0};d.prod.forEach(p=>{if(p._growthChannel)x.Channel++;const lv=p._scoreLevel||powerBiLevel(p);if(lv&&x[lv]!=null)x[lv]++});return x}
  function meetings(d){return d.acts.filter(a=>a.act_type==='New Realtor Meeting').length}
 
  function rmxTalkTypes(){return new Set(['Agent Talk-to','Active Agent Talk-to','Active Agent Check-in','Reconnect Outreach','CTC Call','Under Contract Call','Birthday Outreach','Holiday Outreach','Agent Appreciation','Market Update','Market Update Call','Sent Market Report','Sent Referral','Co-Marketing Discussion','New Agent Follow-up','Closed Deal Thank You','Partner Meeting','Break Breads','Retention Meeting'])}
@@ -19081,7 +19093,11 @@ window.rmxBoot=boot;const baseSwitch=window.switchTab;window.switchTab=function(
         const triggerRows=acts.filter(a=>a.act_type==='New Contract'&&/\[TXN_TRIGGER\]/i.test(String(a.notes||''))&&txnId(a)===id&&norm(role(a))==='listing').sort((a,b)=>String(b.act_date).localeCompare(String(a.act_date)));
         const reqTrig=triggerRows[0]||null;if(!isPlan&&!rmIsUnderContractMilestone(milestone,mg,!!reqTrig))return;
         const callType=reqTrig?(reqTrig.act_type==='Clear to Close'?'CTC Call':'Under Contract Call'):'Under Contract Call';
-        const related=acts.filter(a=>txnId(a)===id&&(norm(role(a))==='listing'||a.act_type==='Listing Agent Update'));
+        const related=acts.filter(a=>{
+          if(!(norm(role(a))==='listing'||a.act_type==='Listing Agent Update'))return false;
+          if(txnId(a)===id)return true;
+          return key(a.agent_name)===key(name)&&client&&key(meta(a.notes,'TXN_CLIENT'))===key(client);
+        });
         const reqDone=!reqTrig||related.some(a=>a.act_type===callType&&status(a.notes)==='COMPLETE'&&String(a.act_date)>=String(reqTrig.act_date));
         const weekly=related.find(a=>a.act_type==='Listing Agent Update'&&String(a.act_date)>=cycleStart);
         // A CTC call is not a Tuesday go-to-contract update. Only a completed
@@ -19092,7 +19108,8 @@ window.rmxBoot=boot;const baseSwitch=window.switchTab;window.switchTab=function(
         const p=pm[key(name)]||null,a=am[key(name)]||{};
         const partner=!!(p&&p.retained===true&&p.do_not_contact!==true&&norm(p.relationship_status||'active')!=='inactive');
         const relationshipOwner=String(a.rm||'').trim();
-        let item={id,name,client,property,closeDate,milestone,milestoneGroup:mg,stage:(reqTrig?reqTrig.act_type:'Active Transaction'),callType,triggerDate:(reqTrig?reqTrig.act_date:t.act_date),reqDone,weeklyDone:!!(weekly||transactionTouchThisWeek),lpUpdate,partner,owner:'Amanda',relationshipOwner,lp:meta(t.notes,'LP_OWNER')||meta(t.notes,'TXN_LP')||a.lp||'',phone:meta(t.notes,'TUE_PHONE')||meta(t.notes,'TXN_LISTING_PHONE'),email:meta(t.notes,'TUE_EMAIL')||meta(t.notes,'TXN_LISTING_EMAIL')};item=rmApplyOverride(item,ovMap[id]);if(!item.name)return;cache.set(id,item);rows.push(item);
+        const priorUpdate=related.filter(a=>a.act_type==='Listing Agent Update').sort((a,b)=>String(b.created_at||b.act_date||'').localeCompare(String(a.created_at||a.act_date||'')))[0]||null;
+        let item={id,name,client,property,closeDate,milestone,milestoneGroup:mg,stage:(reqTrig?reqTrig.act_type:'Active Transaction'),callType,triggerDate:(reqTrig?reqTrig.act_date:t.act_date),reqDone,weeklyDone:!!(weekly||transactionTouchThisWeek),priorUpdate,lpUpdate,partner,owner:'Amanda',relationshipOwner,lp:meta(t.notes,'LP_OWNER')||meta(t.notes,'TXN_LP')||a.lp||'',phone:meta(t.notes,'TUE_PHONE')||meta(t.notes,'TXN_LISTING_PHONE'),email:meta(t.notes,'TUE_EMAIL')||meta(t.notes,'TXN_LISTING_EMAIL')};item=rmApplyOverride(item,ovMap[id]);if(!item.name)return;cache.set(id,item);rows.push(item);
       });
       rows.sort((a,b)=>(Number(a.weeklyDone)-Number(b.weeklyDone))||(Number(a.reqDone)-Number(b.reqDone))||String(a.closeDate||a.triggerDate).localeCompare(String(b.closeDate||b.triggerDate)));
       const due=rows.filter(r=>!r.weeklyDone).length,done=rows.length-due;
@@ -19111,7 +19128,7 @@ window.rmxBoot=boot;const baseSwitch=window.switchTab;window.switchTab=function(
   }
   window.v265RefreshListingUpdates=()=>load(true);
   window.v265OpenRequired=function(encId){const r=cache.get(decodeURIComponent(encId||''));if(!r)return;try{if(typeof v176OpenTransaction==='function')v176OpenTransaction(r.callType,r.name,'Listing',r.id)}catch(e){console.warn(e)}};
-  window.v265OpenListingUpdate=function(encId){const r=cache.get(decodeURIComponent(encId||''));if(!r)return;current=r;const m=document.getElementById('v265ListingModal');if(!m)return;m.classList.add('open');m.setAttribute('aria-hidden','false');document.getElementById('v265ModalTitle').textContent=r.name;document.getElementById('v265ModalFile').textContent=[r.client,r.property,r.closeDate?'Close '+r.closeDate:''].filter(Boolean).join(' · ');document.getElementById('v265Opportunity').value=r.partner?'Current partner':'No opportunity yet';const mm=norm(r.milestone),gg=r.milestoneGroup||'File status';document.getElementById('v265UpdateKind').value=gg==='Appraisal'?(mm.includes('received')||mm.includes('review')?'Appraisal received / reviewed':'Appraisal ordered / scheduled'):(gg==='Underwriting'?'Underwriting / conditions':(gg==='Closing'?'CTC / closing':'On track'));document.getElementById('v265Outcome').value='Reached';document.getElementById('v265Notes').value='';document.getElementById('v265Followup').value='';document.getElementById('v265Err').style.display='none'};
+  window.v265OpenListingUpdate=function(encId){const r=cache.get(decodeURIComponent(encId||''));if(!r)return;current=r;const m=document.getElementById('v265ListingModal');if(!m)return;m.classList.add('open');m.setAttribute('aria-hidden','false');document.getElementById('v265ModalTitle').textContent=r.name;document.getElementById('v265ModalFile').textContent=[r.client,r.property,r.closeDate?'Close '+r.closeDate:''].filter(Boolean).join(' · ');document.getElementById('v265Opportunity').value=r.partner?'Current partner':'No opportunity yet';const mm=norm(r.milestone),gg=r.milestoneGroup||'File status';document.getElementById('v265UpdateKind').value=gg==='Appraisal'?(mm.includes('received')||mm.includes('review')?'Appraisal received / reviewed':'Appraisal ordered / scheduled'):(gg==='Underwriting'?'Underwriting / conditions':(gg==='Closing'?'CTC / closing':'On track'));document.getElementById('v265Outcome').value='Reached';const prior=(r.priorUpdate&&String(r.priorUpdate.notes||'').replace(/\[[^\]]+\]/g,' ').replace(/\s+/g,' ').trim())||'';document.getElementById('v265Notes').value=prior;document.getElementById('v265Followup').value=(r.priorUpdate&&r.priorUpdate.follow_up_date)||'';document.getElementById('v265Err').style.display='none'};
   window.v265CloseListingUpdate=function(){current=null;const m=document.getElementById('v265ListingModal');if(m){m.classList.remove('open');m.setAttribute('aria-hidden','true')}};
   window.v265SaveListingUpdate=async function(){if(!current)return;const out=document.getElementById('v265Outcome').value,kind=document.getElementById('v265UpdateKind').value,opp=document.getElementById('v265Opportunity').value,note=(document.getElementById('v265Notes').value||'').trim(),fu=document.getElementById('v265Followup').value||null,err=document.getElementById('v265Err'),btn=document.getElementById('v265SaveBtn');if(note.split(/\s+/).filter(Boolean).length<3){err.textContent='Add a short note with what you communicated or learned.';err.style.display='block';return}btn.disabled=true;btn.textContent='Saving…';try{let notes='[TUESDAY_LISTING][TXN_ID:'+current.id+'][TXN_ROLE:Listing][TXN_CLIENT:'+String(current.client||'').replace(/\]/g,'')+'][TXN_PROPERTY:'+String(current.property||'').replace(/\]/g,'')+'][UPDATE_KIND:'+kind+'][RELATIONSHIP_OPP:'+opp+'] '+note;notes+='[TUESDAY_EXECUTOR:Amanda]'+(current.relationshipOwner?'[RELATIONSHIP_OWNER:'+String(current.relationshipOwner).replace(/\]/g,'')+']':'');if(typeof appendRmMeta==='function')notes=appendRmMeta(notes,'Amanda','Transaction Listing Update');await sbFetch('amanda_activities',{method:'POST',prefer:'return=minimal',body:JSON.stringify({agent_name:current.name,act_type:'Listing Agent Update',act_date:todayS(),outcome:out,notes,follow_up_date:fu})});if(typeof toast==='function')toast('Listing-agent update saved ✓','success',3000);v265CloseListingUpdate();await load(true);try{if(typeof v23LoadAmandaSnapshot==='function')v23LoadAmandaSnapshot(true)}catch(e){}}catch(e){console.warn(e);err.textContent='Could not save. Try again.';err.style.display='block'}finally{btn.disabled=false;btn.textContent='Save listing update'}};
   window.v265AddListingProspect=function(encId){const r=cache.get(decodeURIComponent(encId||''));if(!r)return;try{if(typeof switchTab==='function')switchTab('newagents');setTimeout(()=>{if(typeof toggleAddForm==='function')toggleAddForm(true);setTimeout(()=>{const n=document.getElementById('np-name'),p=document.getElementById('np-phone'),e=document.getElementById('np-email'),notes=document.getElementById('np-notes');if(n)n.value=r.name;if(p&&!p.value)p.value=r.phone||'';if(e&&!e.value)e.value=r.email||'';if(notes&&!notes.value)notes.value='Warm listing-agent relationship from active transaction'+(r.property?' · '+r.property:'')+'.';},80)},80)}catch(e){console.warn(e)}};
