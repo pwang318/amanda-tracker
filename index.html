@@ -1576,6 +1576,7 @@ Every New Realtor Meeting starts a four-week conversion plan with one intentiona
 <strong>What matters:</strong> 30 partner meetings/month: 10 new + 20 existing, and Tier Growth measured by the net Channel / A / B population toward the year-end targets.
     </div>
 <div id="amandaRmScorecardBody"><div class="no-data">Loading scorecard…</div></div>
+<div id="rmScorecardHistorySection"></div>
 </div>
 </div>
 <div class="view" id="view-log">
@@ -2257,7 +2258,7 @@ Every New Realtor Meeting starts a four-week conversion plan with one intentiona
 <textarea id="contactGrowthOpp" placeholder="Click one or more options above, then add any useful detail..." rows="2"></textarea>
 </div>
 <div class="field" style="margin-bottom:12px"><label>Growth Opportunity Follow-up Deadline</label><input id="contactGrowthOppDeadline" type="date"/></div>
-<div class="field" style="margin-bottom:12px"><label>Last Meaningful Conversation</label><input id="contactLastMeaningfulContact" type="date"/></div>
+<div class="field" style="margin-bottom:12px"><label>Last Meaningful Conversation</label><div style="display:flex;gap:7px;align-items:center"><input id="contactLastMeaningfulContact" type="date" style="flex:1"/><button type="button" class="btn-sm" onclick="document.getElementById('contactLastMeaningfulContact').value=(typeof today==='function'?today():new Date().toISOString().slice(0,10))" title="Set to today">Today</button></div><div id="rmCoachingGapHint" style="display:none;margin-top:6px;font-size:10.5px;color:#7A5600;background:#FFF8E8;border:1px solid #E7C98A;border-radius:7px;padding:7px 9px;line-height:1.4">This is the field the "Missing Portfolio Next Steps" coaching count checks. A next step here only clears that count if this date is also set to today — a growth opportunity note alone isn't enough.</div></div>
 <div class="field" style="margin-bottom:12px"><label>Next Meeting Date</label><input id="contactNextMeetingDate" type="date"/></div>
 <div class="field" style="margin-bottom:14px">
 <label>Partner Goals <span style="font-weight:400;color:var(--text-4)">— Ask: “What are you focused on growing right now?”</span></label>
@@ -2949,7 +2950,8 @@ function getRmAttendees(a){return extractRmMeta(a&&a.notes).rmAttendees||[getAct
 
 function getNextStepOwner(a){return extractRmMeta(a&&a.notes).nextStepOwner||"";}
 function activityCreditsPerson(a,name){return getRmAttendees(a).includes(name);}
-function syncActivityParticipants(){const a=!!document.getElementById("activityRmAmanda")?.checked,n=!!document.getElementById("activityRmNyny")?.checked;if(!a&&!n){document.getElementById("activityRmAmanda").checked=true;return syncActivityParticipants();}const owner=document.getElementById("activityOwner");if(owner)owner.value=(!a&&n)?"Nyny":"Amanda";try{localStorage.setItem("rm_activity_owner",owner?.value||"Amanda");}catch(e){}const hint=document.getElementById("ownerRoleHint");if(hint)hint.innerHTML=(a&&n?"<strong>Joint RM activity:</strong> Amanda + Nyny both receive individual attendance credit. The RM Team counts the meeting once.":"<strong>RM involved:</strong> "+(n?"Nyny":"Amanda")+". Attendance never changes Relationship Owner.");}
+function defaultRmSelf(){return(typeof directorMode==="function"&&directorMode())?"Nyny":"Amanda";}
+function syncActivityParticipants(){const a=!!document.getElementById("activityRmAmanda")?.checked,n=!!document.getElementById("activityRmNyny")?.checked;if(!a&&!n){const self=defaultRmSelf();document.getElementById(self==="Nyny"?"activityRmNyny":"activityRmAmanda").checked=true;return syncActivityParticipants();}const owner=document.getElementById("activityOwner");if(owner)owner.value=(!a&&n)?"Nyny":"Amanda";try{localStorage.setItem("rm_activity_owner",owner?.value||"Amanda");}catch(e){}const hint=document.getElementById("ownerRoleHint");if(hint)hint.innerHTML=(a&&n?"<strong>Joint RM activity:</strong> Amanda + Nyny both receive individual attendance credit. The RM Team counts the meeting once.":"<strong>RM involved:</strong> "+(n?"Nyny":"Amanda")+". Attendance never changes Relationship Owner.");}
 
 function updateActivityRelationshipOwnerHint(name){const el=document.getElementById("activityRelationshipOwnerHint");if(!el)return;const target=String(name||document.getElementById("agentInput")?.value||"").trim();if(!target){el.textContent="Relationship Owner stays separate from attendance.";return;}const own=getAgentOwnership(target);el.innerHTML="<strong>Current Relationship Owner:</strong> "+escHtml(own.rm||"Unassigned")+" · Logging this activity will not change ownership.";}
 function isExistingMeeting(a){return !!a&&EXISTING_MEETING_TYPES.indexOf(a.act_type)>=0;}
@@ -6670,7 +6672,7 @@ async function logActivity(){
     document.getElementById("activityOutcome").value="";
     document.getElementById("followupDate").value="";
     document.getElementById("activityNotes").value="";
-    if(document.getElementById("activityRmAmanda"))document.getElementById("activityRmAmanda").checked=true;if(document.getElementById("activityRmNyny"))document.getElementById("activityRmNyny").checked=false;if(document.getElementById("activityLpAttendee"))document.getElementById("activityLpAttendee").value="";if(document.getElementById("activityNextStepOwner"))document.getElementById("activityNextStepOwner").value="";syncActivityParticipants();updateActivityRelationshipOwnerHint("");
+    if(document.getElementById("activityRmAmanda"))document.getElementById("activityRmAmanda").checked=(defaultRmSelf()==="Amanda");if(document.getElementById("activityRmNyny"))document.getElementById("activityRmNyny").checked=(defaultRmSelf()==="Nyny");if(document.getElementById("activityLpAttendee"))document.getElementById("activityLpAttendee").value="";if(document.getElementById("activityNextStepOwner"))document.getElementById("activityNextStepOwner").value="";syncActivityParticipants();updateActivityRelationshipOwnerHint("");
     if(document.getElementById("referredByInput"))document.getElementById("referredByInput").value="";
     document.getElementById("followupRow").classList.remove("show");
     document.getElementById("doubleDialWarn").style.display="none";
@@ -6705,7 +6707,7 @@ async function logActivity(){
       document.getElementById("activityDate").value=today();
       document.getElementById("activityOutcome").value="";
       document.getElementById("activityNotes").value="";
-      if(document.getElementById("activityRmAmanda"))document.getElementById("activityRmAmanda").checked=true;if(document.getElementById("activityRmNyny"))document.getElementById("activityRmNyny").checked=false;if(document.getElementById("activityLpAttendee"))document.getElementById("activityLpAttendee").value="";if(document.getElementById("activityNextStepOwner"))document.getElementById("activityNextStepOwner").value="";syncActivityParticipants();updateActivityRelationshipOwnerHint("");
+      if(document.getElementById("activityRmAmanda"))document.getElementById("activityRmAmanda").checked=(defaultRmSelf()==="Amanda");if(document.getElementById("activityRmNyny"))document.getElementById("activityRmNyny").checked=(defaultRmSelf()==="Nyny");if(document.getElementById("activityLpAttendee"))document.getElementById("activityLpAttendee").value="";if(document.getElementById("activityNextStepOwner"))document.getElementById("activityNextStepOwner").value="";syncActivityParticipants();updateActivityRelationshipOwnerHint("");
       toast("No connection — saved offline, will sync automatically ✓","success",4000);
     }else if(msg.includes("permission")||msg.includes("policy")||msg.includes("RLS")){
       showLogErrorBanner("Write permission denied – check RLS policy on amanda_activities table");
@@ -10892,6 +10894,7 @@ function openPortfolioNotes(nameOrEl){
   openContactsEdit(name);
   const titleEl=document.getElementById("contactModalTitle");
   if(titleEl)titleEl.textContent="Portfolio & Relationship Notes";
+  const hint=document.getElementById("rmCoachingGapHint");if(hint)hint.style.display="block";
   const details=document.getElementById("partnerPlaybookDetails");
   if(details){
     details.open=true;
@@ -10906,6 +10909,7 @@ function openContactsEdit(nameOrEl){
   const name=typeof nameOrEl==="string"?nameOrEl:(nameOrEl&&nameOrEl.dataset?nameOrEl.dataset.name:String(nameOrEl));
   const titleEl=document.getElementById("contactModalTitle");
   if(titleEl)titleEl.textContent="Edit contact info";
+  const gapHint=document.getElementById("rmCoachingGapHint");if(gapHint)gapHint.style.display="none";
   const playbookDetails=document.getElementById("partnerPlaybookDetails");
   if(playbookDetails)playbookDetails.open=false;
   const scrollBody0=document.getElementById("contactModalScrollBody");
@@ -13409,7 +13413,29 @@ setTimeout(function(){v124MountAudit();v122RenderAudit();},1200);
       const parsed=row&&pbParse(row.source_app,row.imported_at);
       if(parsed){V129_META=parsed;V129_META_AT=Date.now();return parsed;}
     }catch(e){console.warn('v129 shared Power BI summary',e);}
-    // Current approved 8/19 file fallback only. A later stamped profile set wins through the import log.
+    // BUGFIX: this used to fall back to a hardcoded 8/19 snapshot (V129_FALLBACK) whenever the
+    // import log lookup found no matching row — which, in practice, was EVERY time, since
+    // nothing in this file ever writes a 'core-team-tracker;raw=...;A=...' row into
+    // powerbi_import_log. That meant this card was silently frozen on 8/19 numbers
+    // indefinitely, while the Portfolio tab's own first-paint (v124LatestPowerBiSnapshot, which
+    // reads the live agent_profiles table directly) showed the real current numbers for a
+    // moment before this stale fallback overwrote them a beat later — the exact "flashes to
+    // different, wrong numbers" symptom. Falling back to that same live computation here
+    // instead of a frozen constant keeps this card in agreement with the rest of the tracker,
+    // and keeps it CURRENT even when the import log isn't populated. `raw` (upload row count)
+    // genuinely isn't knowable from agent_profiles alone, so it's left null rather than
+    // invented — callers must handle a null raw count explicitly instead of assuming a number.
+    try{
+      const profiles=await sbFetch('agent_profiles?select=agent_name,powerbi_last_seen_at,powerbi_level&limit=5000').catch(()=>[]);
+      const snap=typeof v124LatestPowerBiSnapshot==='function'?v124LatestPowerBiSnapshot(profiles):null;
+      if(snap&&snap.stamp&&snap.counts&&snap.counts.total){
+        const live={imported_at:snap.stamp,raw:null,A:snap.counts.A,B:snap.counts.B,C:snap.counts.C,total:snap.counts.total,live:true};
+        V129_META=live;V129_META_AT=Date.now();return live;
+      }
+    }catch(e){console.warn('v129 live Power BI fallback',e);}
+    // Only reached if BOTH the import log AND a live agent_profiles read fail outright
+    // (e.g. no network). Last resort so the card shows something rather than breaking, but
+    // this is now genuinely a last resort, not the normal path.
     V129_META=Object.assign({},V129_FALLBACK);V129_META_AT=Date.now();return V129_META;
   }
   window.v129PowerBiMeta=v129PowerBiMeta;
@@ -13455,7 +13481,7 @@ setTimeout(function(){v124MountAudit();v122RenderAudit();},1200);
     if(tiles[1])tiles[1].querySelector('strong').textContent=meta.A;
     if(tiles[2])tiles[2].querySelector('strong').textContent=meta.B;
     if(tiles[3])tiles[3].querySelector('strong').textContent=meta.C;
-    if(tiles[0]){const sm=tiles[0].querySelector('small');if(sm)sm.textContent='Shared import audit · '+meta.raw+' uploaded rows';}
+    if(tiles[0]){const sm=tiles[0].querySelector('small');if(sm)sm.textContent=meta.raw!=null?'Shared import audit · '+meta.raw+' uploaded rows':'Shared import audit · live from current profiles';}
     try{
       const S=window.V92_STATE||{};const profiles=S.profiles||[],assignments=S.assignments||[],owners={};assignments.forEach(r=>owners[ownerKey(r.agent_name)]=r);
       const snap=typeof v124LatestPowerBiSnapshot==='function'?v124LatestPowerBiSnapshot(profiles):{rows:profiles};
@@ -13479,7 +13505,7 @@ setTimeout(function(){v124MountAudit();v122RenderAudit();},1200);
     const meta=await v129PowerBiMeta(false),stats=document.querySelectorAll('#v122AuditBody .v122-audit-stat strong');
     if(stats[0])stats[0].textContent=meta.total;
     if(stats[1])stats[1].textContent=meta.A+' / '+meta.B+' / '+meta.C;
-    const note=document.querySelector('#v122AuditBody .v122-note');if(note)note.innerHTML='<strong>Single source:</strong> Core Team / LP shared Power BI import · A '+meta.A+' · B '+meta.B+' · C '+meta.C+' · A/B/C total '+meta.total+' · '+meta.raw+' raw uploaded rows. RM is read-only for Power BI.';
+    const note=document.querySelector('#v122AuditBody .v122-note');if(note)note.innerHTML='<strong>Single source:</strong> Core Team / LP shared Power BI import · A '+meta.A+' · B '+meta.B+' · C '+meta.C+' · A/B/C total '+meta.total+' · '+(meta.raw!=null?meta.raw+' raw uploaded rows':'computed live from current profiles')+'. RM is read-only for Power BI.';
   }
 
   // Strategic partners: classify the known affiliate roster even if a tag was never seeded, and seed it safely now that the migration exists.
@@ -19355,12 +19381,34 @@ window.rmxBoot=boot;const baseSwitch=window.switchTab;window.switchTab=function(
       '</div><div class="rm-weighted-note"><strong>Color rule:</strong> Green = current/on pace · Yellow = correctable watch · Red = needs action. Meetings, calls and other cards below are supporting execution metrics; they do not replace or add extra points to the 50/30/20 weighted score.</div>';
   }
   let running=false,last=0;
-  async function refresh(force){if(running)return;if(!force&&Date.now()-last<30000&&document.getElementById('rmFinalWeightedScore'))return;running=true;try{render(await data());last=Date.now()}catch(e){console.warn('weighted RM scorecard',e)}finally{running=false}}
+  async function refresh(force){if(running)return;if(!force&&Date.now()-last<30000&&document.getElementById('rmFinalWeightedScore'))return;running=true;try{
+    // Shared race guard (see the v2/v4 layers further down the file that also paint this same
+    // #rmFinalWeightedScore element): only the most recently started render is allowed to
+    // actually write the DOM. This is the original of four separate systems that ended up
+    // painting this box over time; without this guard, a slower fetch from THIS one could
+    // silently overwrite a newer, correct number from a later layer, or vice versa.
+    window._rmScoreGen=(window._rmScoreGen||0)+1;const myScoreGen=window._rmScoreGen;
+    const d=await data();
+    if(myScoreGen===window._rmScoreGen)render(d);
+    last=Date.now()
+  }catch(e){console.warn('weighted RM scorecard',e)}finally{running=false}}
   const base=window.renderAmandaRmScorecard;
   if(typeof base==='function'&&!base.__rmFinalWeighted){const w=async function(){const r=await base.apply(this,arguments);await refresh(true);return r};w.__rmFinalWeighted=true;window.renderAmandaRmScorecard=w}
+  // BUGFIX: showAmandaScorecard already calls renderAmandaRmScorecard() directly, which (via
+  // the wrap just above) already calls refresh(true). This used to ALSO fire a second,
+  // independent refresh() 80ms later — a fourth uncoordinated fetch racing the v2/v4/v5 layers
+  // further down this file for the same box. That stacking (80ms here + 120ms in v2 + 100ms in
+  // v4, all hitting the network independently) is what was still causing the visible flash to
+  // different numbers even after the other two were fixed. The guard in refresh() above now
+  // protects correctness either way, so this wrap just marks showAmandaScorecard as aware —
+  // no extra render.
   const baseShow=window.showAmandaScorecard;
-  if(typeof baseShow==='function'&&!baseShow.__rmFinalWeighted){const w=function(){const r=baseShow.apply(this,arguments);setTimeout(()=>refresh(true),80);return r};w.__rmFinalWeighted=true;window.showAmandaScorecard=w}
-  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(()=>refresh(true),900),{once:true});else setTimeout(()=>refresh(true),500);
+  if(typeof baseShow==='function'&&!baseShow.__rmFinalWeighted){const w=function(){return baseShow.apply(this,arguments)};w.__rmFinalWeighted=true;window.showAmandaScorecard=w}
+  // The independent on-load refresh() calls here were redundant too: the on-load trigger
+  // further down the file (v4's) calls renderAmandaRmScorecard(), which — once all four
+  // layers have wrapped it during page load — already cascades through every layer including
+  // this one. One on-load trigger reaches the whole chain; four separate timers never needed
+  // to exist.
 })();
 </script>
 
@@ -19778,8 +19826,15 @@ async function alignedData(){
 }
 async function paint(){
   const host=document.getElementById('rmFinalWeightedScore');if(!host)return;
+  // Same shared race guard used by paintOfficial (v4) below: this function and paintOfficial
+  // both independently paint the SAME #rmFinalWeightedScore element with their own separate
+  // data fetches. Sharing one counter means whichever one is genuinely most recent wins,
+  // instead of whichever one's network fetch happens to resolve last.
+  window._rmScoreGen=(window._rmScoreGen||0)+1;const myScoreGen=window._rmScoreGen;
   try{
     const d=await alignedData(),overall=statePct(d.weighted),cc=COLORS[overall];
+    if(myScoreGen!==window._rmScoreGen)return;
+    if(!document.body.contains(host))return;
     const tierState=d.tierPct>=100?'green':d.tierPct>=85?'yellow':'red';
     const ratioState=d.ratio>=1.15?'green':d.ratio>=0.90?'yellow':'red';
     const countState=d.activeCount>=200?'green':d.activeCount>=170?'yellow':'red';
@@ -19793,15 +19848,28 @@ async function paint(){
   }catch(e){console.warn('aligned RM scorecard',e)}
 }
 window.rmRefreshAlignedWeightedScore=paint;
+// Exposes the same computation paint() uses, without touching the DOM — the monthly
+// scorecard-history feature reuses this instead of writing its own separate calculation, so
+// the archived numbers can never drift from what's actually displayed as the official score.
+window.rmComputeOfficialScorecard=alignedData;
 const r0=window.renderAmandaRmScorecard;
 if(typeof r0==='function'&&!r0.__lpAlignedV2){
   const w=async function(){const x=await r0.apply(this,arguments);await paint();return x};w.__lpAlignedV2=true;window.renderAmandaRmScorecard=w;
 }
+// BUGFIX: showAmandaScorecard already calls renderAmandaRmScorecard() directly, which (via the
+// wrap just above) already calls paint(). This used to ALSO fire a second, independent paint()
+// 120ms later, and a third independent paint() again on page load below — three uncoordinated
+// fetches racing against the later v4/v5 layers for the same DOM element. That's the actual
+// cause of the scorecard occasionally flashing to different numbers. The wrap now only marks
+// showAmandaScorecard as v2-aware; the guard in paint() itself protects against any real
+// remaining overlap instead of relying on redundant re-firing.
 const s0=window.showAmandaScorecard;
 if(typeof s0==='function'&&!s0.__lpAlignedV2){
-  const w=function(){const x=s0.apply(this,arguments);setTimeout(paint,120);return x};w.__lpAlignedV2=true;window.showAmandaScorecard=w;
+  const w=function(){return s0.apply(this,arguments)};w.__lpAlignedV2=true;window.showAmandaScorecard=w;
 }
-if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(paint,1200),{once:true});else setTimeout(paint,600);
+// The independent on-load paint() call here was redundant too: v4's own on-load trigger
+// (below, later in the file) calls renderAmandaRmScorecard(), which already cascades through
+// this wrap and calls paint(). One on-load trigger is enough to reach every layer.
 })();
 </script>
 
@@ -20212,6 +20280,128 @@ const E=v=>String(v==null?'':v).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','
 function ensure(){let d=document.getElementById('rmGoToSummaryDetail');if(d)return d;d=document.createElement('section');d.id='rmGoToSummaryDetail';d.innerHTML='<div class="rm-goto-detail-head"><h3>Go-To relationships</h3><button type="button" class="rm-audit-close">Close</button></div><div class="rm-goto-detail-body"></div>';document.body.appendChild(d);d.querySelector('button').onclick=()=>d.classList.remove('open');return d}
 function open(kind){const s=window._rmV267BuyerAgentState||{},all=s.rows||[],lists={owned:all.concat(s.activeContractRows||[]),lp2:s.activeContractRows||[],due:all.filter(r=>r.due&&r.method==='CALL').sort((a,b)=>(a.priority||0)-(b.priority||0)),covered:all.filter(r=>!r.due).sort((a,b)=>(a.lastMeaningfulDays??999)-(b.lastMeaningfulDays??999))},titles={owned:'Amanda-owned C relationships',lp2:'Relationships with LP2 now',due:'Calls due today',covered:'Recently covered'};const rows=lists[kind]||[],d=ensure();d.querySelector('h3').textContent=(titles[kind]||'Go-To relationships')+' · '+rows.length;d.querySelector('.rm-goto-detail-body').innerHTML=rows.length?rows.map(r=>'<div class="rm-goto-detail-row"><b>'+E(r.name||'Name not recorded')+'</b><span>'+E((r.tier||'—')+' tier')+'</span><span>'+E(kind==='lp2'?'Active buyer contract · LP2 transaction lane':kind==='covered'?(r.lastMeaningfulDays==null?'Meaningful conversation recorded':'Last meaningful conversation '+r.lastMeaningfulDays+' day'+(r.lastMeaningfulDays===1?'':'s')+' ago'):(r.why||'Amanda-owned relationship'))+'</span></div>').join(''):'<div class="rm-goto-detail-empty">No relationships are currently in this group.</div>';d.classList.add('open')}
 document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('[data-v267-detail]');if(!b)return;e.preventDefault();open(b.dataset.v267Detail)});
+})();
+</script>
+<script id="rm-log-activity-director-default-js">
+(function(){
+'use strict';
+// BUGFIX: the Log Activity form's "who is this for" checkboxes ship in static HTML with
+// Amanda pre-checked, and reset back to Amanda-checked after every save (see
+// syncActivityParticipants / the two post-save form-reset blocks, now fixed to call
+// defaultRmSelf() instead of hardcoding "Amanda"). But that only covers saves made AFTER
+// this script runs — the very first load of the page still ships with Amanda checked
+// regardless of who is using it. If Nyny is in Director mode and logs an activity through
+// this shared form without noticing/flipping the checkbox, her call gets silently credited
+// to Amanda's scorecard. This corrects the initial state once, on load, for Director
+// sessions only — Amanda's own view is untouched.
+function fixInitialOwner(){
+  if(typeof directorMode!=='function'||!directorMode())return;
+  const a=document.getElementById('activityRmAmanda'),n=document.getElementById('activityRmNyny');
+  if(!a||!n)return;
+  // Only correct the untouched default state (Amanda checked, Nyny unchecked). If the person
+  // has already interacted with the form some other way, leave their choice alone.
+  if(a.checked&&!n.checked){a.checked=false;n.checked=true;if(typeof syncActivityParticipants==='function')syncActivityParticipants();}
+}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(fixInitialOwner,300),{once:true});
+else setTimeout(fixInitialOwner,300);
+})();
+</script>
+<style id="rm-scorecard-history-css">
+#rmScorecardHistorySection{margin-top:14px}
+.rm-hist-card{border:1px solid #E4DDED;border-radius:15px;background:#fff;padding:14px;box-shadow:0 3px 14px rgba(71,49,104,.04)}
+.rm-hist-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:4px}
+.rm-hist-head h3{margin:0;font-size:14px;color:#352447}
+.rm-hist-head p{margin:3px 0 0;font-size:10.5px;color:#766A7E;line-height:1.45;max-width:520px}
+.rm-hist-save{border:1px solid #6B4A9E;background:#6B4A9E;color:#fff;border-radius:9px;padding:8px 13px;font:700 11.5px inherit;cursor:pointer;white-space:nowrap}
+.rm-hist-save:disabled{opacity:.6;cursor:default}
+.rm-hist-list{display:grid;gap:8px;margin-top:11px}
+.rm-history-row{appearance:none;text-align:left;border:1px solid #E7E1EE;background:#FBFAFC;border-radius:11px;padding:10px 12px;cursor:pointer;font-family:inherit;color:#3E3047}
+.rm-history-row:hover{border-color:#C7B7DD}
+.rm-history-top{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.rm-history-top b{font-size:12.5px}
+.rm-history-badge{font-size:8.8px;font-weight:800;border-radius:20px;padding:3px 8px;text-transform:uppercase;letter-spacing:.03em}
+.rm-history-badge.manual{background:#E7F4EA;color:#2E7D45}
+.rm-history-badge.auto{background:#FDF2DC;color:#8A5B10}
+.rm-history-score{font-size:19px;font-weight:800;color:#3E2469;margin-top:4px}
+.rm-history-sub{font-size:10px;color:#6E6276;margin-top:2px}
+.rm-history-detail{font-size:9.5px;color:#8A8092;margin-top:5px;border-top:1px solid #EEE8F3;padding-top:5px}
+</style>
+<script id="rm-scorecard-history-js">
+(function(){
+'use strict';
+function monthKeyOf(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');}
+function monthLabel(key){const parts=String(key||'').split('-').map(Number);if(parts.length<2)return key;return new Date(parts[0],parts[1]-1,1).toLocaleDateString(undefined,{month:'long',year:'numeric'});}
+async function computeSnapshot(){
+  if(typeof window.rmComputeOfficialScorecard!=='function')throw new Error('Scorecard engine not ready yet');
+  const d=await window.rmComputeOfficialScorecard();
+  return{
+    weighted:Number((d.weighted||0).toFixed(2)),tier_earn:Number((d.tierEarn||0).toFixed(2)),tier_pct:Number((d.tierPct||0).toFixed(2)),
+    ratio:Number((d.ratio||0).toFixed(3)),ratio_earn:Number((d.ratioEarn||0).toFixed(2)),active_count:d.activeCount||0,count_earn:Number((d.countEarn||0).toFixed(2)),
+    tier_channel:(d.c&&d.c.Channel)||0,tier_a:(d.c&&d.c.A)||0,tier_b:(d.c&&d.c.B)||0,tier_c:(d.c&&d.c.C)||0,
+    target_label:(d.target&&d.target.label)||'',mtd_leads:d.mtd||0,projected:d.projected||0,source_stamp:d.stamp||''
+  };
+}
+// Saving is an upsert on month_key: a manual save always wins over — and replaces — whatever
+// auto-save is already there for that month, so finalizing a month is a real, deliberate act,
+// never silently overwritten by the background safety net later.
+async function saveMonthSnapshot(key,type){
+  const snap=await computeSnapshot();
+  const payload=Object.assign({month_key:key,saved_at:new Date().toISOString(),save_type:type},snap);
+  await sbFetch('scorecard_history?on_conflict=month_key',{method:'POST',prefer:'resolution=merge-duplicates,return=minimal',body:JSON.stringify(payload)});
+  return payload;
+}
+async function renderPastMonths(){
+  const host=document.getElementById('rmHistList');if(!host)return;
+  host.innerHTML='<div class="no-data">Loading past months…</div>';
+  try{
+    const rows=await sbFetch('scorecard_history?select=*&order=month_key.desc&limit=24').catch(()=>null);
+    if(rows===null){host.innerHTML='<div class="no-data">Could not load past months — the scorecard_history table may not exist yet. See setup notes.</div>';return;}
+    if(!rows.length){host.innerHTML='<div class="no-data">No past months saved yet. The first one saves automatically once a new month starts, or click Save above to finalize this month now.</div>';return;}
+    host.innerHTML=rows.map(function(r){
+      const badge=r.save_type==='manual'?'<span class="rm-history-badge manual">Finalized</span>':'<span class="rm-history-badge auto">Auto-saved</span>';
+      return '<button type="button" class="rm-history-row"><div class="rm-history-top"><b>'+monthLabel(r.month_key)+'</b>'+badge+'</div>'
+        +'<div class="rm-history-score">'+Number(r.weighted||0).toFixed(1)+' / 100</div>'
+        +'<div class="rm-history-sub">Tier '+Number(r.tier_earn||0).toFixed(1)+'/50 · Agent-to-Lead '+Number(r.ratio_earn||0).toFixed(1)+'/30 · Active Partners '+Number(r.count_earn||0).toFixed(1)+'/20</div>'
+        +'<div class="rm-history-detail">'+r.tier_channel+' Channel · '+r.tier_a+' A · '+r.tier_b+' B · '+r.tier_c+' C · '+r.active_count+' active partners · saved '+new Date(r.saved_at).toLocaleDateString()+'</div></button>';
+    }).join('');
+  }catch(e){console.warn('rm scorecard history load',e);host.innerHTML='<div class="no-data">Could not load past months.</div>';}
+}
+function ensureSection(){
+  const host=document.getElementById('rmScorecardHistorySection');if(!host||host.dataset.built==='1')return null;
+  host.dataset.built='1';
+  host.innerHTML='<div class="rm-hist-card"><div class="rm-hist-head"><div><h3>Past months</h3><p>Compare this scorecard against prior months. Last month auto-saves the first time the tracker is opened in a new month; use Save to lock in the current month deliberately at any point.</p></div><button type="button" class="rm-hist-save" id="rmHistSaveBtn">Save / finalize this month</button></div><div class="rm-hist-list" id="rmHistList"><div class="no-data">Loading past months…</div></div></div>';
+  const btn=document.getElementById('rmHistSaveBtn');
+  if(btn)btn.onclick=async function(){
+    btn.disabled=true;const orig=btn.textContent;btn.textContent='Saving…';
+    try{
+      const key=monthKeyOf(new Date());
+      await saveMonthSnapshot(key,'manual');
+      if(typeof toast==='function')toast(monthLabel(key)+' finalized and saved ✓','success',4000);
+      await renderPastMonths();
+    }catch(e){if(typeof toast==='function')toast('Could not save this month: '+e.message,'error',5000);else console.warn(e);}
+    finally{btn.disabled=false;btn.textContent=orig;}
+  };
+  return host;
+}
+async function autoSaveLastMonthIfMissing(){
+  try{
+    const now=new Date(),prevKey=monthKeyOf(new Date(now.getFullYear(),now.getMonth()-1,1));
+    const existing=await sbFetch('scorecard_history?month_key=eq.'+prevKey+'&select=month_key&limit=1').catch(()=>null);
+    if(existing===null)return; // table missing or fetch failed — stay quiet, don't nag with an error toast on every load
+    if(existing.length)return; // already saved, nothing to do
+    await saveMonthSnapshot(prevKey,'auto');
+    if(typeof toast==='function')toast('Auto-saved '+monthLabel(prevKey)+'\u2019s scorecard for month-over-month comparison \u2713','success',5500);
+  }catch(e){console.warn('rm scorecard auto-archive',e);}
+}
+async function boot(){
+  const body=document.getElementById('amandaRmScorecardBody');if(!body)return;
+  const host=ensureSection();
+  await autoSaveLastMonthIfMissing();
+  if(host)await renderPastMonths();
+}
+window.rmRefreshScorecardHistory=async function(){await renderPastMonths();};
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(boot,2200),{once:true});
+else setTimeout(boot,1600);
 })();
 </script>
 </body>
