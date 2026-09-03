@@ -1,4 +1,4 @@
- 
+  
 <!DOCTYPE html>
 
 <html lang="en">
@@ -1431,6 +1431,7 @@ nav a,aside a,[class*="nav"] a,[class*="sidebar"] a{
 <option value="">Select outcome...</option>
 <option value="Positive">Positive</option>
 <option value="Meeting Scheduled">Meeting scheduled</option>
+<option value="Meeting Held">Meeting held</option>
 <option value="No answer">No answer</option>
 <option value="Requires follow-up">Requires follow-up</option>
 <option value="Needs manager attention">Needs manager attention</option>
@@ -1689,6 +1690,7 @@ Every New Realtor Meeting starts a four-week conversion plan with one intentiona
 <option value="">Select outcome...</option>
 <option>Positive</option>
 <option>Meeting Scheduled</option>
+<option>Meeting Held</option>
 <option>No answer</option>
 <option>Left voicemail</option>
 <option>Requires follow-up</option>
@@ -1823,6 +1825,7 @@ Every New Realtor Meeting starts a four-week conversion plan with one intentiona
 <option value="all">All outcomes</option>
 <option value="Positive">Positive</option>
 <option value="Meeting Scheduled">Meeting Scheduled</option>
+<option value="Meeting Held">Meeting Held</option>
 <option value="Requires follow-up">Requires follow-up</option>
 <option value="Remove / No Further Contact">Remove / No Further Contact</option>
 </select>
@@ -1836,7 +1839,7 @@ Every New Realtor Meeting starts a four-week conversion plan with one intentiona
 <div class="modal-box">
 <div class="modal-header"><span class="modal-title">Edit activity</span><button class="modal-close" onclick="closeEditModal()">x</button></div>
 <div class="modal-sub" id="editModalAgent"></div>
-<div class="field" style="margin-bottom:12px"><label>Outcome</label><select id="editOutcome"><option value="">Select outcome...</option><option>Positive</option><option>Meeting Scheduled</option><option>Requires follow-up</option><option>Needs manager attention</option><option>Remove / No Further Contact</option></select></div>
+<div class="field" style="margin-bottom:12px"><label>Outcome</label><select id="editOutcome"><option value="">Select outcome...</option><option>Positive</option><option>Meeting Scheduled</option><option>Meeting Held</option><option>Requires follow-up</option><option>Needs manager attention</option><option>Remove / No Further Contact</option></select></div>
 <div class="field" style="margin-bottom:12px"><label>Follow-up date</label><input id="editFollowupDate" type="date"/></div>
 <div style="display:grid;grid-template-columns:1.2fr 1fr 1fr;gap:8px;margin-bottom:12px">
 <div class="field"><label>RM(s) involved</label><div style="display:flex;gap:12px;padding:8px 9px;background:var(--surface-2);border:1px solid var(--border);border-radius:8px"><label style="font-size:11px"><input id="editRmAmanda" type="checkbox"/> Amanda</label><label style="font-size:11px"><input id="editRmNyny" type="checkbox"/> Nyny</label></div></div>
@@ -2859,8 +2862,12 @@ function isMeaningfulOutcome(outcome,list,actType){
   // Meaningful = confirmed two-way conversation OR a meeting that actually happened.
   // Scheduling a meeting, leaving a VM, no answer, removing an agent, or merely logging
   // an attempt does NOT reset relationship cadence and does NOT count as a live conversation.
-  if(actType&&MEETING_ACT_TYPES.indexOf(actType)>=0)return true;
   const o=(outcome||"").trim().toLowerCase();
+  if(actType&&MEETING_ACT_TYPES.indexOf(actType)>=0){
+    // A future meeting belongs in the scheduled count, never the held-meeting scorecard.
+    // Blank/Positive remain accepted only for older meeting records saved before Meeting Held existed.
+    return !/meeting scheduled|left voicemail|left vm|no answer|remove \/ no further contact|not interested|do not contact/.test(o);
+  }
   if(!o)return false;
   if(/meeting scheduled|left voicemail|left vm|no answer|remove \/ no further contact|not interested|do not contact/.test(o))return false;
   return /positive|connected|meaningful conversation|talked|spoke|needs manager attention|requires follow-up/.test(o);
@@ -2957,7 +2964,13 @@ function updateActivityRelationshipOwnerHint(name){const el=document.getElementB
 function isExistingMeeting(a){return !!a&&EXISTING_MEETING_TYPES.indexOf(a.act_type)>=0;}
 // Scorecard rule: ONLY logged held-meeting activities count. rm_day_blocks reserve capacity only.
 // Break Breads are one existing-partner meeting inside the total partner-meeting count; never add them again on top.
-function isPartnerMeetingActivity(a){return !!a&&(a.act_type==="New Realtor Meeting"||isExistingMeeting(a));}
+function isPartnerMeetingActivity(a){
+  if(!a||!(a.act_type==="New Realtor Meeting"||isExistingMeeting(a)))return false;
+  const o=String(a.outcome||"").trim().toLowerCase();
+  // New records use Meeting Held. Legacy meeting records with blank/Positive outcomes still count,
+  // but anything explicitly scheduled or missed does not.
+  return !/meeting scheduled|left voicemail|left vm|no answer|remove \/ no further contact|not interested|do not contact/.test(o);
+}
 function onActivityOwnerChange(){
   const owner=document.getElementById("activityOwner")?.value||"Amanda";
   try{localStorage.setItem("rm_activity_owner",owner);}catch(e){}
@@ -2988,7 +3001,7 @@ const GOAL_THRESHOLD=0.8; // 80% = passing
 
 function countGoalActivity(data,type){
   if(type==="__talkto__")return cntTalkTo(data);
-  if(type==="__existingmeeting__")return (data||[]).filter(a=>isExistingMeeting(a)).length;
+  if(type==="__existingmeeting__")return (data||[]).filter(a=>isExistingMeeting(a)&&isPartnerMeetingActivity(a)).length;
   return (data||[]).filter(a=>a.act_type===type).length;
 }
 const CTC_TYPE="CTC Call";
@@ -5674,7 +5687,7 @@ function renderSnapshotStats(acts, period){
   }).length;
   const buddyAsks=rows.filter(a=>a.act_type==="Realtor Buddy Referral Ask").length;
   const meetingsBooked=rows.filter(a=>String(a.outcome||'').trim()==="Meeting Scheduled").length;
-  const meetingsHeld=rows.filter(a=>a.act_type==="New Realtor Meeting"||isExistingMeeting(a)).length;
+  const meetingsHeld=rows.filter(isPartnerMeetingActivity).length;
 
   const statCard=(num,label,filterType,sub)=>{
     const clickFn=filterType?' onclick="snapshotDrillDown(\''+filterType+'\')" style="cursor:pointer"':'';
@@ -5810,10 +5823,10 @@ async function renderAmandaRmScorecard(){
   const goals=p==="wtd"
     ?{total:8,teamNew:5,existing:5,cold:125,talk:100,buddy:3}
     :{total:30*factor,teamNew:20*factor,existing:20*factor,cold:500*factor,talk:400*factor,buddy:12*factor};
-  const newM=data.filter(a=>a.act_type==="New Realtor Meeting").length;
+  const newM=data.filter(a=>a.act_type==="New Realtor Meeting"&&isPartnerMeetingActivity(a)).length;
   const teamPeriod=(window._v255RmTeamPeriodData&&window._v255RmTeamPeriodData[p])||data;
-  const rmTeamNew=(teamPeriod||[]).filter(a=>a.act_type==="New Realtor Meeting").length;
-  const existing=data.filter(a=>isExistingMeeting(a)).length;
+  const rmTeamNew=(teamPeriod||[]).filter(a=>a.act_type==="New Realtor Meeting"&&isPartnerMeetingActivity(a)).length;
+  const existing=data.filter(a=>isExistingMeeting(a)&&isPartnerMeetingActivity(a)).length;
   const total=newM+existing;
   const cold=data.filter(a=>a.act_type==="Cold Calls").length;
   const talk=cntTalkTo(data);
@@ -6096,8 +6109,8 @@ async function loadRmTeamScorecard(){
     const acts=await sbFetch("amanda_activities?select=agent_name,act_type,act_date,outcome,notes&act_date=gte."+monthStart+"&order=act_date.desc&limit=3000").catch(()=>[]);
     const mine=owner=>(acts||[]).filter(a=>activityCreditsPerson(a,owner));
     const amanda=mine("Amanda"), nyny=mine("Nyny");
-    const newCount=arr=>arr.filter(a=>a.act_type==="New Realtor Meeting").length;
-    const existingCount=arr=>arr.filter(a=>isExistingMeeting(a)).length;
+    const newCount=arr=>arr.filter(a=>a.act_type==="New Realtor Meeting"&&isPartnerMeetingActivity(a)).length;
+    const existingCount=arr=>arr.filter(a=>isExistingMeeting(a)&&isPartnerMeetingActivity(a)).length;
     const meetingCount=arr=>arr.filter(a=>isPartnerMeetingActivity(a)).length;
     const aNew=newCount(amanda),nNew=newCount(nyny),teamNew=newCount(acts||[]);
     const aExisting=existingCount(amanda),nExisting=existingCount(nyny);
@@ -6166,7 +6179,7 @@ async function loadNynyDirectorManagement(){
     const mine=(acts||[]).filter(a=>activityCreditsPerson(a,"Nyny"));
     const partner=mine.filter(a=>isPartnerMeetingActivity(a));
     const leadership=mine.filter(a=>DIRECTOR_LEADERSHIP_TYPES.indexOf(a.act_type)>=0);
-    const newMtgs=partner.filter(a=>a.act_type==="New Realtor Meeting").length;
+    const newMtgs=partner.filter(a=>a.act_type==="New Realtor Meeting"&&isPartnerMeetingActivity(a)).length;
     const focus={};partner.forEach(a=>{const f=getMeetingFocus(a)||"Unclassified";focus[f]=(focus[f]||0)+1;});
     const leadershipMix={};leadership.forEach(a=>{leadershipMix[a.act_type]=(leadershipMix[a.act_type]||0)+1;});
     const chips=(obj,empty)=>Object.keys(obj).length?Object.entries(obj).sort((a,b)=>b[1]-a[1]).map(([k,v])=>'<span style="background:#fff;border:1px solid var(--border);border-radius:20px;padding:5px 9px">'+escHtml(k)+' · <strong>'+v+'</strong></span>').join(""):'<span style="color:var(--text-4)">'+empty+'</span>';
@@ -6200,7 +6213,7 @@ async function loadAmandaCoachingQueue(){
     const amtd=amandaOnly(mtd),awtd=amandaOnly(wtd),aover=amandaOnly(overdue),arecent=amandaOnly(recent);
     const signals=[];
     const bd=rmBusinessDayCounts(now),wdElapsed=rmWeekdayElapsed(now);
-    const mtdNew=amtd.filter(a=>a.act_type==="New Realtor Meeting").length;
+    const mtdNew=amtd.filter(a=>a.act_type==="New Realtor Meeting"&&isPartnerMeetingActivity(a)).length;
     const mtdTotal=amtd.filter(a=>isPartnerMeetingActivity(a)).length;
     const expectedNew=RM_TEAM_GOALS.amandaNew*(bd.elapsed/Math.max(1,bd.total));
     const expectedTotal=RM_TEAM_GOALS.amandaTotal*(bd.elapsed/Math.max(1,bd.total));
@@ -6274,8 +6287,8 @@ async function loadWeek(){
     const psSub=document.getElementById("personalScorecardSub");
     if(psGrid){
       const amandaMtd=(mtdActs||[]).filter(a=>activityCreditsPerson(a,"Amanda"));
-      const mtdMeetings=amandaMtd.filter(a=>a.act_type==="New Realtor Meeting").length;
-      const mtdExistingMeetings=amandaMtd.filter(a=>isExistingMeeting(a)).length;
+      const mtdMeetings=amandaMtd.filter(a=>a.act_type==="New Realtor Meeting"&&isPartnerMeetingActivity(a)).length;
+      const mtdExistingMeetings=amandaMtd.filter(a=>isExistingMeeting(a)&&isPartnerMeetingActivity(a)).length;
       // A "win" requires an actual meeting held, not just a promising outcome on the call —
       // a Positive or Meeting Scheduled response alone isn't a win until it's actually happened.
       // Checked against ALL meetings ever held (not just this month), so a call made this month
@@ -7052,7 +7065,7 @@ async function generateWeeklySummary(){
     weekActs.forEach(a=>{counts[a.act_type]=(counts[a.act_type]||0)+1;});
     const mtdCounts={};
     mtdActs.forEach(a=>{mtdCounts[a.act_type]=(mtdCounts[a.act_type]||0)+1;});
-    const newMeetings=weekActs.filter(a=>a.act_type==="New Realtor Meeting");
+    const newMeetings=weekActs.filter(a=>a.act_type==="New Realtor Meeting"&&isPartnerMeetingActivity(a));
     const mtdMeetings=mtdCounts["New Realtor Meeting"]||0;
     const mtdPct=Math.round((mtdMeetings/20)*100);
     const aTierNames=new Set(aTierAgents.map(a=>(a.agent_name||"").trim().toLowerCase()));
@@ -7269,7 +7282,7 @@ async function showDailyCheckin(viewDateStr){
     // touch with a real note completes the current week's follow-up.
     const cutoff28=new Date(healthNow);cutoff28.setDate(cutoff28.getDate()-28);
     const cutoff7=new Date(healthNow);cutoff7.setDate(cutoff7.getDate()-7);
-    const recentMeetings=(healthActs||[]).filter(a=>a.act_type==="New Realtor Meeting"&&new Date(a.act_date+"T12:00:00")>=cutoff28&&new Date(a.act_date+"T12:00:00")<=healthNow);
+    const recentMeetings=(healthActs||[]).filter(a=>a.act_type==="New Realtor Meeting"&&isPartnerMeetingActivity(a)&&new Date(a.act_date+"T12:00:00")>=cutoff28&&new Date(a.act_date+"T12:00:00")<=healthNow);
     const firstMeetingByAgent={};
     recentMeetings.forEach(m=>{const k=agentMatchKey(m.agent_name);if(k&&(!firstMeetingByAgent[k]||m.act_date<firstMeetingByAgent[k].act_date))firstMeetingByAgent[k]=m;});
     const touchedLast7=new Set((healthActs||[]).filter(a=>new Date(a.act_date+"T12:00:00")>=cutoff7&&new Date(a.act_date+"T12:00:00")<=healthNow&&TALKTO_TYPES.indexOf(a.act_type)>=0&&countWords(a.notes)>=MIN_NOTE_WORDS).map(a=>agentMatchKey(a.agent_name)));
@@ -9773,8 +9786,8 @@ async function loadPortfolioReview(){
     const growthOppPct=totalActive>0?Math.round(((totalActive-missingGrowthOpp.length)/totalActive)*100):0;
 
     // 6. Monthly RM Team meeting counts vs targets (20 new / 30 existing minimum), scaled to the selected period
-    const newMeetings=periodActs.filter(a=>a.act_type==="New Realtor Meeting").length;
-    const partnerMeetings=periodActs.filter(a=>isExistingMeeting(a)).length;
+    const newMeetings=periodActs.filter(a=>a.act_type==="New Realtor Meeting"&&isPartnerMeetingActivity(a)).length;
+    const partnerMeetings=periodActs.filter(a=>isExistingMeeting(a)&&isPartnerMeetingActivity(a)).length;
     const newMeetingTarget=Math.round(RM_TEAM_GOALS.teamNew*range.meetingTargetMult);
     const partnerMeetingTarget=Math.round((RM_TEAM_GOALS.amandaExisting+RM_TEAM_GOALS.nynyExistingMin)*range.meetingTargetMult);
 
@@ -9815,14 +9828,14 @@ async function loadPortfolioReview(){
     const partnerMeetingsByTier={Channel:0,A:0,B:0,C:0};
     const tierByName={};
     active.forEach(a=>{tierByName[(a.agent_name||"").trim().toLowerCase()]=a.tier;});
-    periodActs.filter(a=>isExistingMeeting(a)).forEach(a=>{
+    periodActs.filter(a=>isExistingMeeting(a)&&isPartnerMeetingActivity(a)).forEach(a=>{
       const t=tierByName[(a.agent_name||"").trim().toLowerCase()];
       if(t&&partnerMeetingsByTier.hasOwnProperty(t))partnerMeetingsByTier[t]++;
     });
 
     // ── Weekly Scorecard extras (playbook Sec. 16) ──
     const meetingsScheduled=periodActs.filter(a=>(a.act_type==="Cold Calls"||a.act_type==="New Realtor Meeting")&&a.outcome==="Meeting Scheduled").length;
-    const newRealtorMeetingActs=periodActs.filter(a=>a.act_type==="New Realtor Meeting");
+    const newRealtorMeetingActs=periodActs.filter(a=>a.act_type==="New Realtor Meeting"&&isPartnerMeetingActivity(a));
     const followUpComplete=newRealtorMeetingActs.filter(a=>!(a.notes||"").startsWith("⏳ INTAKE PENDING ")).length;
     const followUpPct=newRealtorMeetingActs.length>0?Math.round((followUpComplete/newRealtorMeetingActs.length)*100):0;
     // "Converted to active" — agents who had a New Realtor Meeting this period and are now retained
@@ -9858,7 +9871,7 @@ async function loadPortfolioReview(){
     pfDrillData.newRealtorMeetingActs=newRealtorMeetingActs;
     pfDrillData.meetingsScheduledActs=periodActs.filter(a=>(a.act_type==="Cold Calls"||a.act_type==="New Realtor Meeting")&&a.outcome==="Meeting Scheduled");
     pfDrillData.convertedActive=active.filter(a=>metThisPeriod.has((a.agent_name||"").trim().toLowerCase()));
-    pfDrillData.partnerMeetingActsByTier=periodActs.filter(a=>isExistingMeeting(a));
+    pfDrillData.partnerMeetingActsByTier=periodActs.filter(a=>isExistingMeeting(a)&&isPartnerMeetingActivity(a));
     pfDrillData.highPotential=highPotential;
     pfDrillData.proactiveWatch=proactiveWatch;
 
@@ -11674,7 +11687,7 @@ function v109RevealQuickLog(){
 function v109RenderNewMeetingPush(planned,date,monthActs){
   const host=document.getElementById("v109NewMeetingPush");if(!host)return;
   const target=(typeof RM_TEAM_GOALS!=="undefined"&&RM_TEAM_GOALS.teamNew)||20;
-  const teamNew=(monthActs||[]).filter(a=>a&&a.act_type==="New Realtor Meeting"&&!(typeof isInternalTxnTrigger==="function"&&isInternalTxnTrigger(a))).length;
+  const teamNew=(monthActs||[]).filter(a=>a&&a.act_type==="New Realtor Meeting"&&isPartnerMeetingActivity(a)&&!(typeof isInternalTxnTrigger==="function"&&isInternalTxnTrigger(a))).length;
   const remaining=Math.max(0,target-teamNew),days=v109RemainingWeekdays(date),daily=remaining?Math.max(1,Math.ceil(remaining/days)):0;
   const prospects=(planned||[]).filter(t=>t.kind==="prospect").slice(0,5);
   const pct=Math.min(100,Math.round(teamNew/target*100));
@@ -11807,7 +11820,7 @@ function wp34BuildHealthTasks(data,date,owner,excludeKeys){
 }
 function v21BuildTasks(owner,items,data,acts,monthActs,date,freeMinutes){
   const ownerActs=(acts||[]).filter(a=>activityCreditsPerson(a,owner)),partnerToday=ownerActs.filter(a=>isPartnerMeetingActivity(a)).length;
-  const monthOwner=(monthActs||[]).filter(a=>activityCreditsPerson(a,owner)),monthPartner=monthOwner.filter(a=>isPartnerMeetingActivity(a)).length,monthNew=monthOwner.filter(a=>a.act_type==="New Realtor Meeting").length;
+  const monthOwner=(monthActs||[]).filter(a=>activityCreditsPerson(a,owner)),monthPartner=monthOwner.filter(a=>isPartnerMeetingActivity(a)).length,monthNew=monthOwner.filter(a=>a.act_type==="New Realtor Meeting"&&isPartnerMeetingActivity(a)).length;
   let q=v21UniqueItems(items,data,date,owner,freeMinutes),tasks=[];
   const escalationTasks=wp33BuildEscalationTasks(data,owner);escalationTasks.forEach(t=>tasks.push(t));
   const transactionTasks=wp30BuildTransactionTasks(data,date,owner);transactionTasks.forEach(t=>tasks.push(t));
@@ -14955,7 +14968,7 @@ window.rmAuditVisibleButtons=function(){
 </div>
 <div class="v175-field"><label>Outcome</label><select id="v175OutreachOutcome">
 <option value="">Choose outcome...</option>
-<option>Connected</option><option>Meeting held</option><option>Meeting scheduled</option><option>Left voicemail</option><option>No answer</option><option>Follow-up needed</option><option>Not interested</option>
+<option>Connected</option><option value="Meeting Held">Meeting held</option><option value="Meeting Scheduled">Meeting scheduled</option><option>Left voicemail</option><option>No answer</option><option>Follow-up needed</option><option>Not interested</option>
 </select><div style="font-size:10px;color:var(--text-4);margin-top:4px">Quick Log saves this touch with no Portfolio questions. Choose Meaningful Conversation only when you had a real relationship conversation.</div></div>
 <div class="v175-field"><label>Next follow-up</label><input id="v175OutreachFollowup" type="date"/></div>
 <div class="v175-field full"><label>What happened / next move</label><textarea id="v175OutreachNotes" placeholder="What happened? What did you learn? What is the next move?"></textarea></div>
@@ -17967,9 +17980,9 @@ window.rmxBoot=boot;const baseSwitch=window.switchTab;window.switchTab=function(
   window.rmBuildOutcomeOptions=function(type,currentValue){
     const isMeeting=(typeof isExistingMeetingType==='function'&&isExistingMeetingType(type))||type==='New Realtor Meeting';
     let list;
-    if(isTxnType(type))list=['Connected','Left voicemail','No answer','Meeting Scheduled','Requires follow-up','Issue / escalation','Remove / No Further Contact'];
-    else if(isMeeting)list=['Meeting held','Positive','Meeting Scheduled','Requires follow-up','Needs manager attention','Remove / No Further Contact'];
-    else list=['Positive','Meeting Scheduled','Requires follow-up','Needs manager attention','Remove / No Further Contact'];
+    if(isTxnType(type))list=['Connected','Meeting Held','Meeting Scheduled','Left voicemail','No answer','Requires follow-up','Issue / escalation','Remove / No Further Contact'];
+    else if(isMeeting)list=['Meeting Held','Meeting Scheduled','Positive','Requires follow-up','Needs manager attention','Remove / No Further Contact'];
+    else list=['Positive','Meeting Held','Meeting Scheduled','Requires follow-up','Needs manager attention','Remove / No Further Contact'];
     const cur=String(currentValue||'').trim();
     if(cur&&!list.some(v=>v.toLowerCase()===cur.toLowerCase()))list.push(cur);
     const seen=new Set();
