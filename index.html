@@ -18831,7 +18831,14 @@ window.rmxBoot=boot;const baseSwitch=window.switchTab;window.switchTab=function(
         const related=acts.filter(a=>{
           if(!(norm(role(a))==='listing'||a.act_type==='Listing Agent Update'))return false;
           if(txnId(a)===id)return true;
-          return key(a.agent_name)===key(name)&&client&&key(meta(a.notes,'TXN_CLIENT'))===key(client);
+          if(key(a.agent_name)!==key(name))return false;
+          // A prior save is tagged with that week's TXN_CLIENT/TXN_PROPERTY text pulled from
+          // the Encompass snapshot. If a later weekly re-upload has that file's client or
+          // property text formatted even slightly differently, an exact match on BOTH fields
+          // would wrongly leave a genuinely-completed update showing as still due. Matching on
+          // agent name plus EITHER field (not requiring both) is more resilient to that drift.
+          const aClient=meta(a.notes,'TXN_CLIENT'),aProperty=meta(a.notes,'TXN_PROPERTY');
+          return (client&&aClient&&key(aClient)===key(client))||(property&&aProperty&&key(aProperty)===key(property));
         });
         const reqDone=!reqTrig||related.some(a=>a.act_type===callType&&status(a.notes)==='COMPLETE'&&String(a.act_date)>=String(reqTrig.act_date));
         const weekly=related.find(a=>a.act_type==='Listing Agent Update'&&String(a.act_date)>=cycleStart);
