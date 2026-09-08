@@ -1,4 +1,4 @@
-
+ 
 <!DOCTYPE html>
 
 <html lang="en">
@@ -1194,6 +1194,19 @@ nav a,aside a,[class*="nav"] a,[class*="sidebar"] a{
 #view-tuesday .rm-v312-head p{display:none!important}
 #view-scorecard .v254-scorecard-head p:empty{display:none!important}
 </style>
+<style id="v322-director-restore-css">
+.nyny-director-nav{border-top:1px solid var(--border-light);margin-top:2px}
+.nyny-director-nav .nav-num{background:#E8F2EC;color:#315E45}
+body.rm-director-route .nyny-director-nav,body.rm-director-route .nyny-director-nav-label{display:none!important}
+#v322BackToRm{display:none;position:fixed;right:18px;bottom:18px;z-index:10030;border:0;background:#56349b;color:#fff;border-radius:999px;padding:10px 14px;font:700 12px var(--ui-font);box-shadow:0 7px 24px rgba(69,45,119,.28);cursor:pointer}
+body.rm-director-route #v322BackToRm{display:block}
+</style>
+<script id="v322-director-restore-js">
+(function(){
+ function ensureBack(){let b=document.getElementById('v322BackToRm');if(!b){b=document.createElement('button');b.id='v322BackToRm';b.type='button';b.textContent='← RM Tracker';b.onclick=function(){location.hash='';setTimeout(()=>{try{if(typeof window.switchTab==='function')window.switchTab('week')}catch(e){}},40)};document.body.appendChild(b)}}
+ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',ensureBack,{once:true});else ensureBack();
+})();
+</script>
 </head>
 <body>
 <input accept="image/*" id="v95ProfilePhotoInput" onchange="v95HandlePhotoUpload(event)" style="display:none" type="file"/>
@@ -1256,6 +1269,8 @@ nav a,aside a,[class*="nav"] a,[class*="sidebar"] a{
 <div class="tab" data-tab="feed" onclick="switchTab('feed')"><span class="nav-num">08</span><span>Activity Feed</span></div>
 <div class="tab" data-tab="history" onclick="switchTab('history')"><span class="nav-num">09</span><span>Agent History</span></div>
 <div class="tab" data-tab="contacts" onclick="switchTab('contacts')" title="Agent contact details, ownership and portfolio notes"><span class="nav-num">10</span><span>Contacts</span></div>
+<div class="nav-group-label nyny-director-nav-label">DIRECTOR</div>
+<div class="tab nyny-director-nav" onclick="openDirectorMode()" title="Open Nyny's Director View"><span class="nav-num">DIR</span><span>Director View</span></div>
 </div>
 <div id="globalLockBanner" style="display:none"></div>
 <div class="view active" id="view-week">
@@ -5237,8 +5252,8 @@ async function loadRmNurtureToday(){
 }
 
 
-function directorMode(){return false;}
-function openDirectorMode(){if(typeof switchTab==="function")switchTab("week");return false;}
+function directorMode(){try{return location.hash==="#director"||new URLSearchParams(location.search).get("director")==="1"}catch(e){return false;}}
+function openDirectorMode(){try{if(location.hash!=="#director")location.hash="director";else if(typeof window.rmxBoot==="function")window.rmxBoot();return false}catch(e){console.error("Could not open Director View",e);return false;}}
 function openAmandaMode(){
   try{const u=new URL(window.location.href);const base=u.pathname.replace(/(?:index|director)\.html$/i,"");u.pathname=base;u.search="";u.hash="";window.location.href=u.toString();}
   catch(e){window.location.href="./";}
@@ -19838,49 +19853,6 @@ if(typeof oldSwitch==='function'&&!oldSwitch.__displayV6){
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',function(){setTimeout(clean,700)},{once:true});else setTimeout(clean,350);
 })();
 </script>
-<!-- AMANDA-ONLY ROUTE LOCK v7 -->
-<style id="rm-amanda-only-v7-css">
-#v98DirectorReturn,#rmxDirectorReturn,
-.management-nav-tab,.director-nav-label,.tab[data-tab="daniel"],
-#view-daniel,#rmxDirectorApp,#rmxApp,#op3Shell,#zenMgmtShell,#directorShell{
-  display:none!important;
-}
-</style>
-<script id="rm-amanda-only-v7-js">
-(function(){
-'use strict';
-function clearDirectorRoute(){
-  try{
-    const u=new URL(window.location.href);
-    let changed=false;
-    if(u.searchParams.has('director')){u.searchParams.delete('director');changed=true}
-    if(u.hash==='#director'){u.hash='';changed=true}
-    if(changed)history.replaceState(null,'',u.pathname+(u.search||'')+(u.hash||''));
-  }catch(e){}
-}
-clearDirectorRoute();
-
-/* Hard block any legacy/direct attempt to open leadership UI from Amanda's tracker. */
-window.openDirectorMode=function(){if(typeof window.switchTab==='function')window.switchTab('week');return false};
-window.v98ReturnDirector=function(){if(typeof window.switchTab==='function')window.switchTab('week');return false};
-
-const oldSwitch=window.switchTab;
-if(typeof oldSwitch==='function'&&!oldSwitch.__amandaOnlyV7){
-  const wrapped=function(name){
-    if(String(name||'').toLowerCase()==='daniel')name='week';
-    return oldSwitch.call(this,name);
-  };
-  wrapped.__amandaOnlyV7=true;
-  window.switchTab=wrapped;
-}
-window.addEventListener('hashchange',function(){
-  if(location.hash==='#director'){
-    clearDirectorRoute();
-    if(typeof window.switchTab==='function')window.switchTab('week');
-  }
-});
-})();
-</script>
 <!-- TRANSACTION WORK RESTORE v8 — UI MOUNT ONLY; REUSES EXISTING WORKBENCH + DATA LOGIC -->
 <style id="rm-transaction-today-v8-css">
 #v113UrgentHost #wp230TxnHub{
@@ -20591,9 +20563,13 @@ function classRecordKey(a){return meta(a.notes,'TXN_KEY')||meta(a.notes,'CLASS_K
 function rowMatchKey(r){if(!r)return'';const client=norm(meta(r.notes,'TXN_CLIENT')),property=norm(meta(r.notes,'TXN_PROPERTY'));const seed=client+'|'+property;return (client||property)?legacyKey(seed):''}
 function classRecordMatchKey(a){return meta(a.notes,'MATCH_KEY')||''}
 const lpShort=v=>{const s=norm(v);if(s.includes('de la riva')||s==='karen')return'Karen';if(s.includes('mcmahon')||s==='osgood')return'Osgood';if(s.includes('johnston')||s==='jordan')return'Jordan';if(s.includes('saleh')||s==='said')return'Said';if(s.includes('dill')||s==='gavin')return'Gavin';if(s.includes('isaak')||s.includes('caldwell'))return'Isaak';return clean(v,100)};
+/* v322: one RM listing-agent call per real-estate transaction, even when 1st + 2nd mortgages create two loan rows. */
+function rmV322TxnGroupKey(r){if(!r)return'';const client=norm(meta(r.notes,'TXN_CLIENT')),property=norm(meta(r.notes,'TXN_PROPERTY')),close=String(meta(r.notes,'TXN_CLOSE_DATE')||'').slice(0,10),lp=norm(lpShort(meta(r.notes,'LP_OWNER')));if(client&&(property||close))return legacyKey(['rm-txn',client,property,close,lp].join('|'));return rowClassKey(r)||legacyKey(['rm-fallback',client,property,close,lp].join('|'))}
+function rmV322RowScore(r){if(!r)return 0;let n=0;if(usableAgent(meta(r.notes,'TUE_CONTACT_NAME')))n+=12;if(meta(r.notes,'TUE_PHONE'))n+=3;if(meta(r.notes,'TUE_EMAIL'))n+=3;if(meta(r.notes,'TXN_PROPERTY'))n+=2;if(meta(r.notes,'TXN_CLOSE_DATE'))n+=2;if(meta(r.notes,'TXN_MILESTONE'))n+=1;return n}
+function rmV322DedupeRows(rows){const m=new Map();(rows||[]).forEach(r=>{const k=rmV322TxnGroupKey(r);const prev=m.get(k);if(!prev||rmV322RowScore(r)>rmV322RowScore(prev))m.set(k,r)});return Array.from(m.values())}
 let S={rows:[],logs:[],classes:{},w:'',batch:'',current:null};
-async function state(){const w=weekStart(),we=weekEnd(w),[acts,classes]=await Promise.all([sbFetch('amanda_activities?act_date=gte.'+w+'&act_date=lte.'+we+'&select=id,agent_name,act_type,act_date,outcome,notes,follow_up_date,created_at&order=created_at.desc&limit=9000').catch(()=>[]),sbFetch('amanda_activities?act_type=eq.Tuesday%20Contact%20Classification&select=id,agent_name,act_type,act_date,outcome,notes,created_at&order=created_at.desc&limit=5000').catch(()=>[])]),snaps=acts.filter(a=>a.act_type===SNAP&&/\[TUE_SPLIT_V310\]/.test(String(a.notes||''))),heads=snaps.filter(a=>meta(a.notes,'TUE_PLAN_LANE')==='RM_HEADER'&&weekStart(meta(a.notes,'TUE_PLAN_DATE')||a.act_date)===w).sort((a,b)=>Date.parse(b.created_at||0)-Date.parse(a.created_at||0)),batch=heads[0]?meta(heads[0].notes,'TUE_PLAN_BATCH'):'';const rows=snaps.filter(a=>meta(a.notes,'TUE_PLAN_LANE')==='RM_LISTING'&&meta(a.notes,'TUE_PLAN_BATCH')===batch),cm={};classes.forEach(a=>{if(meta(a.notes,'TUE_SIDE')!=='LISTING')return;const v=meta(a.notes,'TUE_CLASS'),k=classRecordKey(a),mk=classRecordMatchKey(a);if(k&&!cm[k])cm[k]=v;if(mk&&!cm[mk])cm[mk]=v});return{w,batch,rows,logs:acts.filter(a=>a.act_type===LOG),classes:cm}}
-function done(r,s){const tx=meta(r.notes,'TXN_KEY'),pk=meta(r.notes,'TUE_PLAN_KEY');return s.logs.some(a=>weekStart(a.act_date)===s.w&&((tx&&meta(a.notes,'TXN_KEY')===tx)||(pk&&meta(a.notes,'TUE_PLAN_KEY')===pk)))}
+async function state(){const w=weekStart(),we=weekEnd(w),[acts,classes]=await Promise.all([sbFetch('amanda_activities?act_date=gte.'+w+'&act_date=lte.'+we+'&select=id,agent_name,act_type,act_date,outcome,notes,follow_up_date,created_at&order=created_at.desc&limit=9000').catch(()=>[]),sbFetch('amanda_activities?act_type=eq.Tuesday%20Contact%20Classification&select=id,agent_name,act_type,act_date,outcome,notes,created_at&order=created_at.desc&limit=5000').catch(()=>[])]),snaps=acts.filter(a=>a.act_type===SNAP&&/\[TUE_SPLIT_V310\]/.test(String(a.notes||''))),heads=snaps.filter(a=>meta(a.notes,'TUE_PLAN_LANE')==='RM_HEADER'&&weekStart(meta(a.notes,'TUE_PLAN_DATE')||a.act_date)===w).sort((a,b)=>Date.parse(b.created_at||0)-Date.parse(a.created_at||0)),batch=heads[0]?meta(heads[0].notes,'TUE_PLAN_BATCH'):'';const rawRows=snaps.filter(a=>meta(a.notes,'TUE_PLAN_LANE')==='RM_LISTING'&&meta(a.notes,'TUE_PLAN_BATCH')===batch),rows=rmV322DedupeRows(rawRows),cm={};classes.forEach(a=>{if(meta(a.notes,'TUE_SIDE')!=='LISTING')return;const v=meta(a.notes,'TUE_CLASS'),k=classRecordKey(a),mk=classRecordMatchKey(a);if(k&&!cm[k])cm[k]=v;if(mk&&!cm[mk])cm[mk]=v});return{w,batch,rows,rawCount:rawRows.length,hiddenDupes:Math.max(0,rawRows.length-rows.length),logs:acts.filter(a=>a.act_type===LOG),classes:cm}}
+function done(r,s){const tx=meta(r.notes,'TXN_KEY'),pk=meta(r.notes,'TUE_PLAN_KEY'),mk=rowMatchKey(r);return s.logs.some(a=>weekStart(a.act_date)===s.w&&((tx&&meta(a.notes,'TXN_KEY')===tx)||(pk&&meta(a.notes,'TUE_PLAN_KEY')===pk)||(mk&&rowMatchKey(a)===mk)))}
 function select(tx,val){const o=[['CALL_REQUIRED','Call required'],['FSBO','FSBO'],['NEW_BUILD','New build / builder'],['NO_LISTING_AGENT','No listing agent'],['CONTACT_ISSUE','Contact issue']];return '<select class="rm-v312-class" data-tx="'+esc(tx)+'" onchange="rmV313ListingClassDirty(this)">'+o.map(x=>'<option value="'+x[0]+'"'+(x[0]===val?' selected':'')+'>'+x[1]+'</option>').join('')+'</select>'}
 function renderCurrent(){
   const host=document.getElementById('rm-v1-tuesday-host');if(!host)return;
