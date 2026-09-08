@@ -1,4 +1,4 @@
- 
+
 <!DOCTYPE html>
 
 <html lang="en">
@@ -1834,7 +1834,7 @@ body.rm-director-route #v322BackToRm{display:block}
 <option value="Cold Calls">New Realtor Outreach</option><option>New Realtor Meeting</option><option>New Agent Follow-up</option><option>Break Breads</option>
 <option>Market Update</option><option>Co-hosted Event</option><option>Realtor Buddy Referral Ask</option><option>Buddy Intro Received</option>
 <option>Agent Partner conversation</option><option>Reconnect Outreach</option>
-<option>CTC Call</option><option>Under Contract Call</option>
+<option>CTC Call</option><option>Under Contract Call</option><option>Listing Agent Update</option>
 <option>Birthday Outreach</option><option>Holiday Outreach</option><option>Agent Appreciation</option>
 </select>
 <select id="feedPeriodFilter" onchange="applyFeedFilters()" style="flex:1;padding:8px 11px;border:0.5px solid var(--border);border-radius:8px;font-size:12px;font-family:inherit;color:var(--text-2);background:var(--surface);">
@@ -8836,30 +8836,53 @@ async function logTierMigration(agentName,fromTier,toTier){
 function isInternalTxnTrigger(a){
   return !!(a && a._source!=="lp" && /\[TXN_TRIGGER\]/i.test(String(a.notes||a._note||"")));
 }
+function rmV324IsSystemFeedActivity(a){
+  const t=String(a&&((a.act_type!==undefined)?a.act_type:a._type)||'').trim();
+  const n=String(a&&((a.notes!==undefined)?a.notes:a._note)||'');
+  if(isInternalTxnTrigger(a))return true;
+  if(/^(?:Tuesday Call Plan Snapshot|Tuesday Contact Classification|Funded Unit Snapshot|Transaction Snapshot|Transaction Contact Override|Data Sync|Power BI Sync|Power BI Agent Snapshot|Portfolio Profile|Tier Migration|LP Tuesday File Update)$/i.test(t))return true;
+  if(/(?:^|\s)(?:snapshot|sync|classification)$/i.test(t))return true;
+  if(/\[(?:FUNDED_KIND|TUE_SPLIT_V310|POWERBI_[A-Z_]*|TXN_BATCH|DATA_SYNC)(?::|\])/i.test(n)&&t!=='Listing Agent Update')return true;
+  return false;
+}
 let allFeedData=[];
 async function loadFeed(){
   const list=document.getElementById("feedList"),status=document.getElementById("feedLoadStatus");
   if(list)list.innerHTML='<div class="no-data">Loading activity...</div>';
   if(status){status.textContent="Loading…";status.style.color="var(--text-3)";}
+  const wk=(window.week&&window.week.start)||((typeof week!=="undefined"&&week&&week.start)?week.start:(typeof localDateStr==='function'?localDateStr(new Date()):new Date().toISOString().slice(0,10)));
   const results=await Promise.allSettled([
-    sbFetch("amanda_activities?select=*&order=act_date.desc&limit=1500"),
-    sbFetch("call_logs?select=agent_name,call_date,outcome,note,lp&order=call_date.desc&limit=1500"),
+    sbFetch("amanda_activities?select=*&order=created_at.desc&limit=5000"),
+    sbFetch("amanda_activities?act_type=eq.Listing%20Agent%20Update&act_date=gte."+encodeURIComponent(wk)+"&select=*&order=created_at.desc&limit=1500"),
+    sbFetch("call_logs?select=agent_name,call_date,outcome,note,lp&order=call_date.desc&limit=2000"),
     sbFetch("agent_assignments?select=agent_name,rm,lp&limit=5000").catch(()=>[])
   ]);
-  const rmActs=results[0].status==="fulfilled"?(results[0].value||[]):[];
-  const lpActs=results[1].status==="fulfilled"?(results[1].value||[]):[];
-  const feedOwnership=results[2]&&results[2].status==="fulfilled"?(results[2].value||[]):[];
+  const general=results[0].status==="fulfilled"?(results[0].value||[]):[];
+  const listing=results[1].status==="fulfilled"?(results[1].value||[]):[];
+  const lpActs=results[2].status==="fulfilled"?(results[2].value||[]):[];
+  const feedOwnership=results[3]&&results[3].status==="fulfilled"?(results[3].value||[]):[];
   (feedOwnership||[]).forEach(cacheOwnershipRow);
-  const rm=(rmActs||[]).map(a=>({...a,_source:'amanda',_date:a.act_date,_type:a.act_type,_note:a.notes,_outcome:a.outcome,_agent:a.agent_name,_lp:null})).filter(a=>!isInternalTxnTrigger(a));
-  const lp=(lpActs||[]).map(c=>({...c,_source:'lp',_date:c.call_date,_type:'LP Call',_note:c.note,_outcome:c.outcome,_agent:c.agent_name,_lp:c.lp}));
-  allFeedData=[...rm,...lp].sort((a,b)=>(b._date||'').localeCompare(a._date||''));
-  if(results.slice(0,2).every(r=>r.status==="rejected")){
+  const byId=new Map();
+  [...general,...listing].forEach((a,i)=>{
+    const k=(a&&a.id!==undefined&&a.id!==null)?'id:'+String(a.id):'row:'+String(a&&a.act_type||'')+'|'+String(a&&a.agent_name||'')+'|'+String(a&&a.act_date||'')+'|'+String(a&&a.created_at||'')+'|'+i;
+    if(!byId.has(k))byId.set(k,a);
+  });
+  const rm=[...byId.values()]
+    .filter(a=>!rmV324IsSystemFeedActivity(a))
+    .map(a=>({...a,_source:'amanda',_date:a.act_date,_ts:a.created_at||a.edited_at||a.act_date,_type:a.act_type,_note:a.notes,_outcome:a.outcome,_agent:a.agent_name,_lp:null}));
+  const lp=(lpActs||[]).map(c=>({...c,_source:'lp',_date:c.call_date,_ts:c.call_date,_type:'LP Call',_note:c.note,_outcome:c.outcome,_agent:c.agent_name,_lp:c.lp}));
+  allFeedData=[...rm,...lp].sort((a,b)=>{
+    const d=String(b._date||'').localeCompare(String(a._date||''));if(d)return d;
+    const bt=Date.parse(b._ts||'')||0,at=Date.parse(a._ts||'')||0;if(bt!==at)return bt-at;
+    return String(b.id||'').localeCompare(String(a.id||''));
+  });
+  if(results[0].status==="rejected"&&results[1].status==="rejected"&&results[2].status==="rejected"){
     if(list)list.innerHTML='<div class="no-data">Activity could not load. <button class="btn-sm" onclick="loadFeed()" style="margin-left:6px">Try again</button></div>';
     if(status){status.textContent="Load failed";status.style.color="var(--danger)";}
     return;
   }
   applyFeedFilters();
-  if(status){const partial=results.slice(0,2).some(r=>r.status==="rejected");status.textContent=(partial?"Partial · ":"")+"Updated "+new Date().toLocaleTimeString("en-US",{hour:"numeric",minute:"2-digit"});status.style.color=partial?"var(--warning)":"var(--text-3)";}
+  if(status){const partial=[results[0],results[1],results[2]].some(r=>r.status==="rejected");status.textContent=(partial?"Partial · ":"")+"Updated "+new Date().toLocaleTimeString("en-US",{hour:"numeric",minute:"2-digit"});status.style.color=partial?"var(--warning)":"var(--text-3)";}
 }
 
 
@@ -20426,8 +20449,8 @@ function v301CleanVisibleActivityNote(raw){
   try{if(typeof stripRmMeta==='function')s=stripRmMeta(s)}catch(e){}
   // Remove any orphaned zero-width owner metadata left by legacy builds.
   s=s.replace(/[\u200B-\u200F\u202A-\u202E\u2060-\u206F\uFEFF]/g,'');
-  // Hide system-only transaction tags from human-facing activity history.
-  s=s.replace(/\s*\[(?:TXN_[A-Z_]+|TUESDAY_EXECUTOR|RELATIONSHIP_OWNER|UPDATE_KIND|RELATIONSHIP_OPP|RM_OWNER|RM_ATTENDEES|LP_ATTENDEES|NEXT_STEP_OWNER)(?::[^\]]*)?\]/gi,'');
+  // Hide system-only metadata from human-facing activity history.
+  s=s.replace(/\s*\[(?:TXN_[A-Z_]+|TUESDAY_EXECUTOR|TUESDAY_LISTING|TUE_[A-Z_]+|FUNDED_[A-Z_]+|POWERBI_[A-Z_]+|RELATIONSHIP_OWNER|UPDATE_KIND|RELATIONSHIP_OPP|RM_OWNER|RM_ATTENDEES|LP_ATTENDEES|NEXT_STEP_OWNER)(?::[^\]]*)?\]/gi,'');
   s=s.replace(/[ \t]{2,}/g,' ').replace(/\n{3,}/g,'\n\n').trim();
   return s;
 }
@@ -20566,7 +20589,8 @@ const lpShort=v=>{const s=norm(v);if(s.includes('de la riva')||s==='karen')retur
 /* v322: one RM listing-agent call per real-estate transaction, even when 1st + 2nd mortgages create two loan rows. */
 function rmV322TxnGroupKey(r){if(!r)return'';const client=norm(meta(r.notes,'TXN_CLIENT')),property=norm(meta(r.notes,'TXN_PROPERTY')),close=String(meta(r.notes,'TXN_CLOSE_DATE')||'').slice(0,10),lp=norm(lpShort(meta(r.notes,'LP_OWNER')));if(client&&(property||close))return legacyKey(['rm-txn',client,property,close,lp].join('|'));return rowClassKey(r)||legacyKey(['rm-fallback',client,property,close,lp].join('|'))}
 function rmV322RowScore(r){if(!r)return 0;let n=0;if(usableAgent(meta(r.notes,'TUE_CONTACT_NAME')))n+=12;if(meta(r.notes,'TUE_PHONE'))n+=3;if(meta(r.notes,'TUE_EMAIL'))n+=3;if(meta(r.notes,'TXN_PROPERTY'))n+=2;if(meta(r.notes,'TXN_CLOSE_DATE'))n+=2;if(meta(r.notes,'TXN_MILESTONE'))n+=1;return n}
-function rmV322DedupeRows(rows){const m=new Map();(rows||[]).forEach(r=>{const k=rmV322TxnGroupKey(r);const prev=m.get(k);if(!prev||rmV322RowScore(r)>rmV322RowScore(prev))m.set(k,r)});return Array.from(m.values())}
+function rmV323PlanOrder(r){if(!r)return Number.MAX_SAFE_INTEGER;if(Number.isFinite(Number(r._v323Order)))return Number(r._v323Order);const tagged=Number(meta(r.notes,'TUE_ORDER'));if(Number.isFinite(tagged)&&tagged>0)return tagged;const created=Date.parse(r.created_at||'');return Number.isFinite(created)&&created>0?created:Number.MAX_SAFE_INTEGER}
+function rmV322DedupeRows(rows){const m=new Map();(rows||[]).forEach(r=>{const k=rmV322TxnGroupKey(r),prev=m.get(k);if(!prev){r._v323Order=rmV323PlanOrder(r);m.set(k,r);return}const firstOrder=Math.min(rmV323PlanOrder(prev),rmV323PlanOrder(r));const best=rmV322RowScore(r)>rmV322RowScore(prev)?r:prev;best._v323Order=firstOrder;m.set(k,best)});return Array.from(m.values()).sort((a,b)=>rmV323PlanOrder(a)-rmV323PlanOrder(b))}
 let S={rows:[],logs:[],classes:{},w:'',batch:'',current:null};
 async function state(){const w=weekStart(),we=weekEnd(w),[acts,classes]=await Promise.all([sbFetch('amanda_activities?act_date=gte.'+w+'&act_date=lte.'+we+'&select=id,agent_name,act_type,act_date,outcome,notes,follow_up_date,created_at&order=created_at.desc&limit=9000').catch(()=>[]),sbFetch('amanda_activities?act_type=eq.Tuesday%20Contact%20Classification&select=id,agent_name,act_type,act_date,outcome,notes,created_at&order=created_at.desc&limit=5000').catch(()=>[])]),snaps=acts.filter(a=>a.act_type===SNAP&&/\[TUE_SPLIT_V310\]/.test(String(a.notes||''))),heads=snaps.filter(a=>meta(a.notes,'TUE_PLAN_LANE')==='RM_HEADER'&&weekStart(meta(a.notes,'TUE_PLAN_DATE')||a.act_date)===w).sort((a,b)=>Date.parse(b.created_at||0)-Date.parse(a.created_at||0)),batch=heads[0]?meta(heads[0].notes,'TUE_PLAN_BATCH'):'';const rawRows=snaps.filter(a=>meta(a.notes,'TUE_PLAN_LANE')==='RM_LISTING'&&meta(a.notes,'TUE_PLAN_BATCH')===batch),rows=rmV322DedupeRows(rawRows),cm={};classes.forEach(a=>{if(meta(a.notes,'TUE_SIDE')!=='LISTING')return;const v=meta(a.notes,'TUE_CLASS'),k=classRecordKey(a),mk=classRecordMatchKey(a);if(k&&!cm[k])cm[k]=v;if(mk&&!cm[mk])cm[mk]=v});return{w,batch,rows,rawCount:rawRows.length,hiddenDupes:Math.max(0,rawRows.length-rows.length),logs:acts.filter(a=>a.act_type===LOG),classes:cm}}
 function done(r,s){const tx=meta(r.notes,'TXN_KEY'),pk=meta(r.notes,'TUE_PLAN_KEY'),mk=rowMatchKey(r);return s.logs.some(a=>weekStart(a.act_date)===s.w&&((tx&&meta(a.notes,'TXN_KEY')===tx)||(pk&&meta(a.notes,'TUE_PLAN_KEY')===pk)||(mk&&rowMatchKey(a)===mk)))}
@@ -20596,7 +20620,7 @@ window.rmV313SaveListingClass=async function(enc,btn){
   try{
     const agent=row?(meta(row.notes,'TUE_CONTACT_NAME')||meta(row.notes,'TXN_CLIENT')):'Tuesday listing classification';
     const rawTx=row&&meta(row.notes,'TXN_KEY'),pk=row&&meta(row.notes,'TUE_PLAN_KEY'),mk=rowMatchKey(row);
-    await sbFetch('amanda_activities',{method:'POST',prefer:'return=minimal',body:JSON.stringify({agent_name:agent||'Tuesday listing classification',act_type:CLASS,act_date:new Date().toISOString().slice(0,10),outcome:'Updated',notes:(rawTx?tag('TXN_KEY',rawTx):'')+tag('CLASS_KEY',saveKey)+(mk?tag('MATCH_KEY',mk):'')+(pk?tag('TUE_PLAN_KEY',pk):'')+tag('TUE_SIDE','LISTING')+tag('TUE_CLASS',value)+' Persistent listing-side classification for this active loan.',follow_up_date:null})});
+    await sbFetch('amanda_activities',{method:'POST',prefer:'return=minimal',body:JSON.stringify({agent_name:agent||'Tuesday listing classification',act_type:CLASS,act_date:(typeof localDateStr==='function'?localDateStr(new Date()):new Date().toISOString().slice(0,10)),outcome:'Updated',notes:(rawTx?tag('TXN_KEY',rawTx):'')+tag('CLASS_KEY',saveKey)+(mk?tag('MATCH_KEY',mk):'')+(pk?tag('TUE_PLAN_KEY',pk):'')+tag('TUE_SIDE','LISTING')+tag('TUE_CLASS',value)+' Persistent listing-side classification for this active loan.',follow_up_date:null})});
     S.classes=S.classes||{};S.classes[saveKey]=value;if(mk)S.classes[mk]=value;renderCurrent();
   }catch(e){console.error('Listing-side Tuesday classification save failed',e);if(btn){btn.disabled=false;btn.textContent='Retry save';btn.title=e&&e.message?e.message:''}alert('Could not save this status: '+((e&&e.message)||'Unknown error')+'. Please retry.')}finally{if(sel)sel.disabled=false}
 };
@@ -20604,7 +20628,7 @@ window.rmV312Classify=function(enc,value,el){if(el){el.value=value;window.rmV313
 function modal(){if(document.getElementById('rmV312Modal'))return;const m=document.createElement('div');m.id='rmV312Modal';m.innerHTML='<div class="rm-v312-modal"><div class="rm-v312-modal-head"><div><h3>Tuesday listing-agent update</h3><div id="rmV312Meta" class="rm-v312-file"></div></div><button class="rm-v312-close" onclick="rmV312Close()">×</button></div><div class="rm-v312-fields"><div class="rm-v312-field"><label>Contact outcome</label><select id="rmV312Outcome"><option value="Reached / talked">Reached / talked</option><option value="Left voicemail + text sent">Left voicemail + text sent</option><option value="No answer + text sent">No answer + text sent</option><option value="Follow-up needed">Follow-up needed</option></select></div><div class="rm-v312-field"><label>Useful update</label><select id="rmV312Update"><option>File remains on track</option><option>Processing status</option><option>Underwriting / conditions</option><option>Appraisal status</option><option>CTC / closing status</option></select></div><div class="rm-v312-field"><label>Next follow-up</label><input id="rmV312Follow" type="date"></div><div class="rm-v312-field full"><label>What did you communicate / learn?</label><textarea id="rmV312Notes" placeholder="Short file-level update, response, and any next step."></textarea></div></div><div id="rmV312Err" class="rm-v312-error"></div><div class="rm-v312-actions2"><button class="rm-v312-class" onclick="rmV312Close()">Cancel</button><button id="rmV312Save" class="rm-v312-call" onclick="rmV312Save()">Save listing update</button></div></div>';document.body.appendChild(m)}
 window.rmV312Open=function(enc){const tx=decodeURIComponent(enc||''),r=S.rows.find(x=>rowClassKey(x)===tx);if(!r)return;S.current=r;modal();document.getElementById('rmV312Meta').textContent=[meta(r.notes,'TUE_CONTACT_NAME'),meta(r.notes,'TXN_CLIENT'),meta(r.notes,'TXN_PROPERTY'),meta(r.notes,'TXN_CLOSE_DATE')?'Close '+meta(r.notes,'TXN_CLOSE_DATE'):''].filter(Boolean).join(' · ');document.getElementById('rmV312Notes').value='';document.getElementById('rmV312Follow').value='';document.getElementById('rmV312Err').style.display='none';document.getElementById('rmV312Modal').classList.add('open')};
 window.rmV312Close=()=>{document.getElementById('rmV312Modal')?.classList.remove('open');S.current=null};
-window.rmV312Save=async function(){const r=S.current;if(!r)return;const notes=clean(document.getElementById('rmV312Notes').value,900),out=document.getElementById('rmV312Outcome').value,kind=document.getElementById('rmV312Update').value,fu=document.getElementById('rmV312Follow').value||null,err=document.getElementById('rmV312Err'),btn=document.getElementById('rmV312Save');if(notes.split(/\s+/).filter(Boolean).length<3){err.textContent='Add a short note with what you communicated or learned.';err.style.display='block';return}btn.disabled=true;btn.textContent='Saving…';try{let n='[TUESDAY_LISTING]'+tag('TXN_KEY',meta(r.notes,'TXN_KEY'))+tag('TUE_PLAN_KEY',meta(r.notes,'TUE_PLAN_KEY'))+tag('TUE_PLAN_DATE',S.w)+tag('TXN_CLIENT',meta(r.notes,'TXN_CLIENT'))+tag('TXN_PROPERTY',meta(r.notes,'TXN_PROPERTY'))+tag('UPDATE_KIND',kind)+' '+notes;const person=rmCoveragePerson();n+=tag('RM_OWNER',person)+tag('RM_ATTENDEES',person);try{if(typeof appendRmMeta==='function')n=appendRmMeta(n,person,'Tuesday Listing Update','',[person],[],'')}catch(e){}await sbFetch('amanda_activities',{method:'POST',prefer:'return=minimal',body:JSON.stringify({agent_name:meta(r.notes,'TUE_CONTACT_NAME')||meta(r.notes,'TXN_CLIENT'),act_type:LOG,act_date:new Date().toISOString().slice(0,10),outcome:out,notes:n,follow_up_date:fu})});rmV312Close();await render()}catch(e){console.error(e);err.textContent='Could not save. Please retry.';err.style.display='block'}finally{btn.disabled=false;btn.textContent='Save listing update'}};
+window.rmV312Save=async function(){const r=S.current;if(!r)return;const notes=clean(document.getElementById('rmV312Notes').value,900),out=document.getElementById('rmV312Outcome').value,kind=document.getElementById('rmV312Update').value,fu=document.getElementById('rmV312Follow').value||null,err=document.getElementById('rmV312Err'),btn=document.getElementById('rmV312Save');if(notes.split(/\s+/).filter(Boolean).length<3){err.textContent='Add a short note with what you communicated or learned.';err.style.display='block';return}btn.disabled=true;btn.textContent='Saving…';try{let n='[TUESDAY_LISTING]'+tag('TXN_KEY',meta(r.notes,'TXN_KEY'))+tag('TUE_PLAN_KEY',meta(r.notes,'TUE_PLAN_KEY'))+tag('TUE_PLAN_DATE',S.w)+tag('TXN_CLIENT',meta(r.notes,'TXN_CLIENT'))+tag('TXN_PROPERTY',meta(r.notes,'TXN_PROPERTY'))+tag('UPDATE_KIND',kind)+' '+notes;const person=rmCoveragePerson();n+=tag('RM_OWNER',person)+tag('RM_ATTENDEES',person);try{if(typeof appendRmMeta==='function')n=appendRmMeta(n,person,'Tuesday Listing Update','',[person],[],'')}catch(e){}const workDate=typeof localDateStr==='function'?localDateStr(new Date()):new Date().toISOString().slice(0,10);await sbFetch('amanda_activities',{method:'POST',prefer:'return=minimal',body:JSON.stringify({agent_name:meta(r.notes,'TUE_CONTACT_NAME')||meta(r.notes,'TXN_CLIENT'),act_type:LOG,act_date:workDate,outcome:out,notes:n,follow_up_date:fu})});rmV312Close();await render();try{if(typeof loadFeed==='function')await loadFeed()}catch(e){} }catch(e){console.error(e);err.textContent='Could not save. Please retry.';err.style.display='block'}finally{btn.disabled=false;btn.textContent='Save listing update'}};
 
 
 window.rmV318ExportCalls=async function(){
@@ -20634,3 +20658,5 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 })();
 </script></body>
 </html>
+
+<!-- v323: preserve Mack RM Excel row order on initial load and after save/log refresh. TUE_ORDER is authoritative; older batches fall back to created_at ascending. -->
