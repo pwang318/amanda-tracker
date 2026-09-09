@@ -1,4 +1,4 @@
-
+ 
 <!-- v342: navigation visibility fix — Today command center no longer remains forced visible when Log Activity, Tuesday Updates, Portfolio, or another tab is selected. -->
 <!-- v335: 4-week conversion completion now performs a guaranteed post-save Supabase refetch so Nyny coverage touches close immediately instead of remaining visually overdue because of an in-flight stale render. -->
 <!-- v334: visible meeting relationship selector adds Builder/Developer, Title/Escrow, Insurance, and Other Strategic Partner lanes. All strategic lanes create/update individual contact profiles, route to Nyny, preserve company/category, and bypass Realtor-only onboarding/conversion workflows. -->
@@ -11,19 +11,20 @@
 <!-- v338: conversion completion reconciliation + Director log shortcut + portfolio refresh alignment. -->
 <!-- v339: clean board-only Snapshot with focused work pages and Aptos/Calibri typography. -->
 <!DOCTYPE html>
+<!-- v366: Amanda metric authority fix — every Amanda performance surface now excludes internal TXN_TRIGGER/system rows using isAmandaDailyActivity before counting. -->
 <!-- v328: Agent History Edit fallback + Power BI shared import receipt alignment. -->
 <!-- v327: overdue 4-week conversion touches close correctly when completed late; Tuesday cleared/no-call rows move to bottom without changing Mack order for active rows. -->
 
 <html lang="en">
 <head>
-<meta content="rm-amanda-production-clean-v356-20260909" name="version"/>
+<meta content="rm-amanda-production-clean-v365-20260909" name="version"/>
 <meta content="v315 always-visible status-save RM build: listing-agent Tuesday queue reads shared current-week Core Team plan; current-week completion only; persistent per-loan listing classifications; saved no-call classifications immediately recalculate the queue and display Cleared; current-contract buyer agents excluded from Amanda no-contract relationship work." name="build-notes"/>
 <meta content="no-cache, no-store, must-revalidate" http-equiv="Cache-Control"/>
 <meta content="no-cache" http-equiv="Pragma"/>
 <meta content="0" http-equiv="Expires"/>
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-<title>RM Tracker · Amanda Production Clean v356</title>
+<title>RM Tracker · Amanda Production Clean v365</title>
 <style id="rm356-prepaint-guard">
 html:not(.rm356-ready) body{opacity:0!important}
 html.rm356-ready body{opacity:1;transition:opacity .08s ease}
@@ -663,7 +664,6 @@ html,body,button,input,select,textarea{font-family:var(--rm-native-font)!importa
 #view-week .btn-sm:hover{background:#F2EBFC!important;border-color:#BFAADC!important;color:#4B2D83!important}
 #view-week .field input,#view-week .field select,#view-week .field textarea,#view-week input,#view-week select,#view-week textarea{font-size:13px!important;color:#2D2440!important}
 #view-week .field label{font-size:10.5px!important;color:#5D5170!important;font-weight:750!important}
-#view-week #dailyQuoteCard{background:linear-gradient(135deg,#51338B 0%,#896BC0 100%)!important;border-radius:16px!important;box-shadow:0 6px 18px rgba(72,47,116,.10)!important}
 #view-week #snapshotScorecardCard{border-radius:18px!important}
 #view-week #rmLpCoordCard{background:linear-gradient(180deg,#FCFAFF,#F9F5FE)!important;border-color:#D8CDEF!important;border-left:4px solid #835FBC!important}
 #view-week #rmLpCoordCard>div:first-child>div>div:first-child{color:#5B3898!important}
@@ -684,7 +684,6 @@ html,body,button,input,select,textarea{font-family:var(--rm-native-font)!importa
 /* v112 — faithful Amanda mockup layout. Logic is preserved; this only reorganizes Today. */
 #view-week{background:linear-gradient(180deg,#FBF8FF 0,#FFF 36%,#FBFAFE 100%)!important;font-family:var(--ui-font)!important;color:#241C35!important;padding-top:14px!important}
 #view-week #startHereOuterCard,#view-week #v104DailyOrderStrip,#view-week #v104QuickLogLabel,#view-week #quickLogCard{display:none!important}
-#view-week #dailyQuoteCard{display:block!important;margin:0 0 12px!important}
 #view-week #snapshotScorecardCard{display:block!important;margin:0 0 12px!important;padding:14px 16px!important;border:1px solid #DCCEF0!important;background:#fff!important;box-shadow:0 4px 16px rgba(89,54,133,.055)!important}
 #view-week #snapshotScorecardCard .period-toggle{gap:5px!important}
 #view-week #snapshotScorecardCard .ptoggle{padding:6px 10px!important;font-size:10.5px!important}
@@ -1183,6 +1182,43 @@ body.rm-director-route #v322BackToRm{display:block}
 .rmx-retention-strip{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:9px;margin:0 0 12px}.rmx-retention-strip>div{border:1px solid var(--rmx-line);background:#fff;border-radius:11px;padding:10px}.rmx-retention-strip b{display:block;font-size:20px}.rmx-retention-strip span{display:block;font-size:9.5px;color:var(--rmx-muted);font-weight:750;margin-top:2px}.rmx-retention-strip small{grid-column:1/-1;color:var(--rmx-muted);font-size:9.5px}
 @media(max-width:1250px){.rmx-needle-grid{grid-template-columns:repeat(3,1fr)}}@media(max-width:850px){.rmx-needle-head{flex-direction:column}.rmx-pb-fresh{text-align:left}.rmx-needle-grid,.rmx-retention-strip{grid-template-columns:repeat(2,1fr)}}
 </style>
+
+
+<!-- v364: exact visual-artifact cleanup merged from Claude-fixed build -->
+<style id="rm360-today-artifact-cleanup">
+/* v360 — remove stray legacy decorative/tap artifacts from Amanda Today only. */
+body[data-rm-tab="week"] #view-week .v95-amanda-greeting::before,
+body[data-rm-tab="week"] #view-week .v95-amanda-greeting::after,
+body[data-rm-tab="week"] #rm350Workboard .rm358-next::before,
+body[data-rm-tab="week"] #rm350Workboard .rm358-next::after,
+body[data-rm-tab="week"] #rm350Workboard .rm358-next-copy::before,
+body[data-rm-tab="week"] #rm350Workboard .rm358-next-copy::after,
+body[data-rm-tab="week"] #rm350Workboard .rm358-next-tag::before,
+body[data-rm-tab="week"] #rm350Workboard .rm358-next-tag::after {
+  content:none!important;
+  display:none!important;
+  background:none!important;
+  box-shadow:none!important;
+}
+body[data-rm-tab="week"] #rm350Workboard,
+body[data-rm-tab="week"] #rm350Workboard *,
+body[data-rm-tab="week"] #rm350Lane,
+body[data-rm-tab="week"] #rm350Lane * {
+  -webkit-tap-highlight-color:transparent!important;
+}
+body[data-rm-tab="week"] #rm350Workboard button:focus,
+body[data-rm-tab="week"] #rm350Workboard button:active,
+body[data-rm-tab="week"] #rm350Lane button:focus,
+body[data-rm-tab="week"] #rm350Lane button:active {
+  outline:none!important;
+}
+/* The metric tiles already communicate clickability by the whole-card hover state. */
+body[data-rm-tab="week"] #rm350Workboard .rm358-goal-arrow{display:none!important}
+/* Prevent any legacy greeting decoration from painting beneath the modern workboard. */
+body[data-rm-tab="week"] #view-week .v95-amanda-greeting{
+  background:#fff!important;
+}
+</style>
 </head>
 <body>
 <input accept="image/*" id="v95ProfilePhotoInput" onchange="v95HandlePhotoUpload(event)" style="display:none" type="file"/>
@@ -1266,11 +1302,6 @@ body.rm-director-route #v322BackToRm{display:block}
 <button class="v111-activity-btn" onclick="switchTab('log')" type="button">Full activity log</button>
 </div>
 <button class="v95-photo-link v111-photo-link" onclick="v95ChoosePhoto('amanda')" type="button">Change photo</button>
-</div>
-<div id="dailyQuoteCard" style="display:block;padding:14px 18px;border-radius:12px;background:linear-gradient(135deg,#4E3D8A,#7B6BAE);margin-bottom:12px">
-<div style="font-size:11px;font-weight:600;color:rgba(255,255,255,.6);text-transform:uppercase;letter-spacing:.8px;margin-bottom:6px">Today's reminder</div>
-<div id="quoteText" style="font-size:14px;font-weight:500;color:#fff;line-height:1.5;font-style:italic"></div>
-<div id="quoteAuthor" style="font-size:11px;color:rgba(255,255,255,.65);margin-top:6px"></div>
 </div>
 <div class="card" id="snapshotScorecardCard"><div style="font-size:10px;font-weight:850;letter-spacing:.45px;color:var(--brand-dark);text-transform:uppercase;margin-bottom:7px">TODAY AT A GLANCE</div>
 <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
@@ -3123,380 +3154,6 @@ function autoSetFollowUp(){
 
 function localDateStr(d){const y=d.getFullYear(),m=String(d.getMonth()+1).padStart(2,'0'),dd=String(d.getDate()).padStart(2,'0');return y+'-'+m+'-'+dd;}
 
-const QUOTES=[
-  {text:"Women belong in all places where decisions are being made.",author:"Ruth Bader Ginsburg"},
-  {text:"Fight for the things you care about, but do it in a way that will lead others to join you.",author:"Ruth Bader Ginsburg"},
-  {text:"I ask no favor for my sex. All I ask of our brethren is that they take their feet off our necks.",author:"Ruth Bader Ginsburg"},
-  {text:"Real change, enduring change, happens one step at a time.",author:"Ruth Bader Ginsburg"},
-  {text:"When they go low, we go high.",author:"Michelle Obama"},
-  {text:"There is no limit to what we, as women, can accomplish.",author:"Michelle Obama"},
-  {text:"Am I good enough? Yes I am.",author:"Michelle Obama"},
-  {text:"You may not always have a comfortable life, but do not ever underestimate the importance you can have.",author:"Michelle Obama"},
-  {text:"Becoming isn't about arriving somewhere or achieving a certain aim. It is the journey.",author:"Michelle Obama"},
-  {text:"I never dreamed about success. I worked for it.",author:"Estée Lauder"},
-  {text:"Power means happiness. Power means hard work and sacrifice.",author:"Beyoncé"},
-  {text:"Your self-worth is determined by you. You do not have to depend on someone telling you who you are.",author:"Beyoncé"},
-  {text:"I don't like to gamble, but if there's one thing I'm willing to bet on, it's myself.",author:"Beyoncé"},
-  {text:"Think like a queen. A queen is not afraid to fail.",author:"Oprah Winfrey"},
-  {text:"The biggest adventure you can take is to live the life of your dreams.",author:"Oprah Winfrey"},
-  {text:"You get in life what you have the courage to ask for.",author:"Oprah Winfrey"},
-  {text:"Turn your wounds into wisdom.",author:"Oprah Winfrey"},
-  {text:"The more you praise and celebrate your life, the more there is in life to celebrate.",author:"Oprah Winfrey"},
-  {text:"Surround yourself with only people who are going to lift you higher.",author:"Oprah Winfrey"},
-  {text:"I am not going to limit myself just because people won't accept the fact that I can do something else.",author:"Dolly Parton"},
-  {text:"Find out who you are and do it on purpose.",author:"Dolly Parton"},
-  {text:"The way I see it, if you want the rainbow, you gotta put up with the rain.",author:"Dolly Parton"},
-  {text:"Above all, be the heroine of your life, not the victim.",author:"Nora Ephron"},
-  {text:"I raise up my voice so that those without a voice can be heard.",author:"Malala Yousafzai"},
-  {text:"One child, one teacher, one book, one pen can change the world.",author:"Malala Yousafzai"},
-  {text:"The question isn't who is going to let me. It's who is going to stop me.",author:"Ayn Rand"},
-  {text:"She remembered who she was and the game changed.",author:"Lalah Delia"},
-  {text:"You are allowed to be both a masterpiece and a work in progress.",author:"Sophia Bush"},
-  {text:"A woman is like a tea bag. You never know how strong she is until she gets in hot water.",author:"Eleanor Roosevelt"},
-  {text:"No one can make you feel inferior without your consent.",author:"Eleanor Roosevelt"},
-  {text:"Do one thing every day that scares you.",author:"Eleanor Roosevelt"},
-  {text:"The future belongs to those who believe in the beauty of their dreams.",author:"Eleanor Roosevelt"},
-  {text:"Beautiful young people are accidents of nature, but beautiful old people are works of art.",author:"Eleanor Roosevelt"},
-  {text:"You must do the thing you think you cannot do.",author:"Eleanor Roosevelt"},
-  {text:"I have learned over the years that when one's mind is made up, this diminishes fear.",author:"Rosa Parks"},
-  {text:"You must never be fearful about what you are doing when it is right.",author:"Rosa Parks"},
-  {text:"I'm tough, I'm ambitious, and I know exactly what I want.",author:"Madonna"},
-  {text:"I am not afraid of storms, for I am learning how to sail my ship.",author:"Louisa May Alcott"},
-  {text:"The most courageous act is still to think for yourself. Aloud.",author:"Coco Chanel"},
-  {text:"In order to be irreplaceable, one must always be different.",author:"Coco Chanel"},
-  {text:"I always did something I was a little not ready to do. That is how you grow.",author:"Marissa Mayer"},
-  {text:"I never lose. I either win or learn.",author:"Nelson Mandela"},
-  {text:"She made broken look beautiful and strong look invincible.",author:"Ariana Dancu"},
-  {text:"A strong woman looks a challenge dead in the eye and gives it a wink.",author:"Gina Carey"},
-  {text:"Women are the largest untapped reservoir of talent in the world.",author:"Hillary Clinton"},
-  {text:"Take criticism seriously, but not personally.",author:"Hillary Clinton"},
-  {text:"Always aim high, work hard, and care deeply about what you believe in.",author:"Hillary Clinton"},
-  {text:"Don't let anyone tell you that great things can't happen in America.",author:"Hillary Clinton"},
-  {text:"I am a woman with thoughts and questions and I am not going to be quiet just to make you comfortable.",author:"Malala Yousafzai"},
-  {text:"The most common way people give up their power is by thinking they don't have any.",author:"Alice Walker"},
-  {text:"The most important thing is to enjoy your life — to be happy. It's all that matters.",author:"Audrey Hepburn"},
-  {text:"Nothing is impossible. The word itself says I'm possible.",author:"Audrey Hepburn"},
-  {text:"I believe in pink. I believe that laughing is the best calorie burner.",author:"Audrey Hepburn"},
-  {text:"The best protection any woman can have is courage.",author:"Elizabeth Cady Stanton"},
-  {text:"We do not need magic to transform our world. We carry all of the power we need inside ourselves.",author:"J.K. Rowling"},
-  {text:"Rock bottom became the solid foundation on which I rebuilt my life.",author:"J.K. Rowling"},
-  {text:"It is impossible to live without failing at something unless you live so cautiously that you might as well not have lived at all.",author:"J.K. Rowling"},
-  {text:"Well-behaved women seldom make history.",author:"Laurel Thatcher Ulrich"},
-  {text:"I am a woman phenomenally. Phenomenal woman, that's me.",author:"Maya Angelou"},
-  {text:"You may encounter many defeats, but you must not be defeated.",author:"Maya Angelou"},
-  {text:"I've learned that people will forget what you said, people will forget what you did, but people will never forget how you made them feel.",author:"Maya Angelou"},
-  {text:"We may encounter many defeats but we must not be defeated.",author:"Maya Angelou"},
-  {text:"Nothing will work unless you do.",author:"Maya Angelou"},
-  {text:"You alone are enough. You have nothing to prove to anybody.",author:"Maya Angelou"},
-  {text:"My mission in life is not merely to survive, but to thrive.",author:"Maya Angelou"},
-  {text:"I can be changed by what happens to me. But I refuse to be reduced by it.",author:"Maya Angelou"},
-  {text:"A woman who is convinced that she deserves to accept only the best challenges herself.",author:"Maya Angelou"},
-  {text:"Courage is the most important of all the virtues because without courage you can't practice any other virtue consistently.",author:"Maya Angelou"},
-  {text:"We need women at all levels, including the top, to change the dynamic, reshape the conversation.",author:"Sheryl Sandberg"},
-  {text:"In the future, there will be no female leaders. There will just be leaders.",author:"Sheryl Sandberg"},
-  {text:"Done is better than perfect.",author:"Sheryl Sandberg"},
-  {text:"Leadership is not bullying and leadership is not aggression. Leadership is the expectation that you can use your voice for good.",author:"Sheryl Sandberg"},
-  {text:"Opportunity is missed by most people because it is dressed in overalls and looks like work.",author:"Thomas Edison"},
-  {text:"If you want something said, ask a man. If you want something done, ask a woman.",author:"Margaret Thatcher"},
-  {text:"You may have to fight a battle more than once to win it.",author:"Margaret Thatcher"},
-  {text:"What is success? I think it is a mixture of having a flair for the thing that you are doing.",author:"Margaret Thatcher"},
-  {text:"I am extraordinarily patient, provided I get my own way in the end.",author:"Margaret Thatcher"},
-  {text:"To love what you do and feel that it matters — how could anything be more fun?",author:"Katharine Graham"},
-  {text:"Once you know what you want and why you want it, figure out — right down to the last detail — what it's going to take to get it.",author:"Indra Nooyi"},
-  {text:"Whatever you do, do it with all your might.",author:"Indra Nooyi"},
-  {text:"Just because you are CEO, don't think you have landed. You must continually increase your learning.",author:"Indra Nooyi"},
-  {text:"Leadership is hard to define and good leadership even harder. But if you can get people to follow you to the ends of the earth, you are a great leader.",author:"Indra Nooyi"},
-  {text:"If I had to live my life again, I'd make the same mistakes, only sooner.",author:"Tallulah Bankhead"},
-  {text:"I was smart enough to go through any door that opened.",author:"Joan Rivers"},
-  {text:"I succeeded by saying what everyone else is thinking.",author:"Joan Rivers"},
-  {text:"I have not failed. I've just found 10,000 ways that won't work.",author:"Thomas Edison"},
-  {text:"The secret of getting ahead is getting started.",author:"Mark Twain"},
-  {text:"Start where you are. Use what you have. Do what you can.",author:"Arthur Ashe"},
-  {text:"Success is not final, failure is not fatal: it is the courage to continue that counts.",author:"Winston Churchill"},
-  {text:"The woman who follows the crowd will usually go no further than the crowd.",author:"Albert Einstein"},
-  {text:"The woman who walks alone is likely to find herself in places no one has ever been before.",author:"Albert Einstein"},
-  {text:"I am no bird; and no net ensnares me. I am a free human being with an independent will.",author:"Charlotte Brontë"},
-  {text:"Whatever our souls are made of, his and mine are the same.",author:"Emily Brontë"},
-  {text:"She is too fond of books, and it has turned her brain.",author:"Louisa May Alcott"},
-  {text:"I am not afraid of storms, for I am learning how to sail.",author:"Louisa May Alcott"},
-  {text:"She wore her scars as her best attire.",author:"Dodinsky"},
-  {text:"A woman knows by intuition, or instinct, what is best for herself.",author:"Marilyn Monroe"},
-  {text:"Keep smiling, because life is a beautiful thing and there's so much to smile about.",author:"Marilyn Monroe"},
-  {text:"We should all start to live before we get too old.",author:"Marilyn Monroe"},
-  {text:"Imperfection is beauty, madness is genius.",author:"Marilyn Monroe"},
-  {text:"Give a girl the right shoes, and she can conquer the world.",author:"Marilyn Monroe"},
-  {text:"She is a friend of my mind. She gather me, man. The pieces I am, she gather them and give them back to me in all the right order.",author:"Toni Morrison"},
-  {text:"If you have some power, then your job is to empower somebody else.",author:"Toni Morrison"},
-  {text:"You wanna fly, you got to give up the stuff that weighs you down.",author:"Toni Morrison"},
-  {text:"If you have some power, then your job is to empower somebody else.",author:"Toni Morrison"},
-  {text:"Freeing yourself was one thing, claiming ownership of that freed self was another.",author:"Toni Morrison"},
-  {text:"There is no greater agony than bearing an untold story inside you.",author:"Maya Angelou"},
-  {text:"Not everything that is faced can be changed, but nothing can be changed until it is faced.",author:"James Baldwin"},
-  {text:"You can't use up creativity. The more you use, the more you have.",author:"Maya Angelou"},
-  {text:"A woman in harmony with her spirit is like a river flowing. She goes where she will without pretense.",author:"Maya Angelou"},
-  {text:"The most difficult thing is the decision to act. The rest is merely tenacity.",author:"Amelia Earhart"},
-  {text:"The most effective way to do it is to do it.",author:"Amelia Earhart"},
-  {text:"Adventure is worthwhile in itself.",author:"Amelia Earhart"},
-  {text:"Never interrupt someone doing what you said couldn't be done.",author:"Amelia Earhart"},
-  {text:"Courage is the price that life exacts for granting peace.",author:"Amelia Earhart"},
-  {text:"Women must try to do things as men have tried. When they fail, their failure must be but a challenge to others.",author:"Amelia Earhart"},
-  {text:"The most difficult thing is the decision to act, the rest is tenacity.",author:"Amelia Earhart"},
-  {text:"Please know that I am aware of the hazards. I want to do it because I want to do it.",author:"Amelia Earhart"},
-  {text:"Some of us are becoming the men we wanted to marry.",author:"Gloria Steinem"},
-  {text:"A woman without a man is like a fish without a bicycle.",author:"Gloria Steinem"},
-  {text:"The truth will set you free, but first it will piss you off.",author:"Gloria Steinem"},
-  {text:"Without leaps of imagination, or dreaming, we lose the excitement of possibilities.",author:"Gloria Steinem"},
-  {text:"We've begun to raise daughters more like sons, but few have the courage to raise our sons more like our daughters.",author:"Gloria Steinem"},
-  {text:"Hope is a very unruly emotion.",author:"Gloria Steinem"},
-  {text:"A pedestal is as much a prison as any small, confined space.",author:"Gloria Steinem"},
-  {text:"Any woman who chooses to behave like a full human being should be warned that the armies of the status quo will treat her as something of a dirty joke.",author:"Gloria Steinem"},
-  {text:"We can tell our values by looking at our checkbook stubs.",author:"Gloria Steinem"},
-  {text:"Life is not measured by the number of breaths we take, but by the moments that take our breath away.",author:"Maya Angelou"},
-  {text:"The only way to do great work is to love what you do.",author:"Steve Jobs"},
-  {text:"If you look at what you have in life, you'll always have more.",author:"Oprah Winfrey"},
-  {text:"Step out of the history that is holding you back. Step into the new story you are willing to create.",author:"Oprah Winfrey"},
-  {text:"The greatest discovery of all time is that a person can change their future by merely changing their attitude.",author:"Oprah Winfrey"},
-  {text:"Lots of people want to ride with you in the limo, but what you want is someone who will take the bus with you when the limo breaks down.",author:"Oprah Winfrey"},
-  {text:"Be thankful for what you have; you'll end up having more.",author:"Oprah Winfrey"},
-  {text:"Passion is energy. Feel the power that comes from focusing on what excites you.",author:"Oprah Winfrey"},
-  {text:"I know for sure that what we dwell on is who we become.",author:"Oprah Winfrey"},
-  {text:"The whole point of being alive is to evolve into the complete person you were intended to be.",author:"Oprah Winfrey"},
-  {text:"Doing the best at this moment puts you in the best place for the next moment.",author:"Oprah Winfrey"},
-  {text:"You don't become what you want, you become what you believe.",author:"Oprah Winfrey"},
-  {text:"The more you feed your mind with positive thoughts, the more you can attract great things.",author:"Roy T. Bennett"},
-  {text:"You are braver than you believe, stronger than you seem, and smarter than you think.",author:"A.A. Milne"},
-  {text:"Believe you can and you're halfway there.",author:"Theodore Roosevelt"},
-  {text:"It always seems impossible until it's done.",author:"Nelson Mandela"},
-  {text:"Do not go where the path may lead, go instead where there is no path and leave a trail.",author:"Ralph Waldo Emerson"},
-  {text:"In the middle of every difficulty lies opportunity.",author:"Albert Einstein"},
-  {text:"It does not matter how slowly you go as long as you do not stop.",author:"Confucius"},
-  {text:"Our greatest glory is not in never falling, but in rising every time we fall.",author:"Confucius"},
-  {text:"She who is brave is free.",author:"Seneca"},
-  {text:"There is no substitute for hard work.",author:"Thomas Edison"},
-  {text:"Genius is one percent inspiration and ninety-nine percent perspiration.",author:"Thomas Edison"},
-  {text:"I have not failed. I've just found 10,000 ways that won't work.",author:"Thomas Edison"},
-  {text:"The true sign of intelligence is not knowledge but imagination.",author:"Albert Einstein"},
-  {text:"Life is what happens to you while you're busy making other plans.",author:"John Lennon"},
-  {text:"The journey of a thousand miles begins with one step.",author:"Lao Tzu"},
-  {text:"That which does not kill us makes us stronger.",author:"Friedrich Nietzsche"},
-  {text:"You only live once, but if you do it right, once is enough.",author:"Mae West"},
-  {text:"Be so good they can't ignore you.",author:"Steve Martin"},
-  {text:"I attribute my success to this: I never gave or took any excuse.",author:"Florence Nightingale"},
-  {text:"I am not afraid. I was born to do this.",author:"Joan of Arc"},
-  {text:"There is a special place in hell for women who don't help other women.",author:"Madeleine Albright"},
-  {text:"You don't have to be pretty. You don't owe prettiness to anyone.",author:"Erin McKean"},
-  {text:"She was powerful not because she wasn't scared, but because she went on so strongly despite the fear.",author:"Atticus"},
-  {text:"A woman with a voice is by definition a strong woman.",author:"Melinda Gates"},
-  {text:"I am my own muse, the subject I know best.",author:"Frida Kahlo"},
-  {text:"I tried to drown my sorrows, but the bastards learned how to swim.",author:"Frida Kahlo"},
-  {text:"I paint flowers so they will not die.",author:"Frida Kahlo"},
-  {text:"I paint my own reality.",author:"Frida Kahlo"},
-  {text:"At the end of the day, we can endure much more than we think we can.",author:"Frida Kahlo"},
-  {text:"Feet, what do I need you for when I have wings to fly?",author:"Frida Kahlo"},
-  {text:"Take a lover who looks at you like maybe you are magic.",author:"Frida Kahlo"},
-  {text:"The most important thing is not to stop questioning.",author:"Albert Einstein"},
-  {text:"Be a voice, not an echo.",author:"Albert Einstein"},
-  {text:"Don't let yesterday take up too much of today.",author:"Will Rogers"},
-  {text:"It's not whether you get knocked down, it's whether you get up.",author:"Vince Lombardi"},
-  {text:"If you are working on something that you really care about, you don't have to be pushed.",author:"Steve Jobs"},
-  {text:"People who are crazy enough to think they can change the world, are the ones who do.",author:"Rob Siltanen"},
-  {text:"Failure will never overtake me if my determination to succeed is strong enough.",author:"Og Mandino"},
-  {text:"Entrepreneurs are great at dealing with uncertainty and also very good at not going insane.",author:"Joe Gebbia"},
-  {text:"We generate fears while we sit. We overcome them by action.",author:"Dr. Henry Link"},
-  {text:"Whether you think you can or think you can't, you're right.",author:"Henry Ford"},
-  {text:"Security is mostly a superstition. Life is either a daring adventure or nothing.",author:"Helen Keller"},
-  {text:"The only thing worse than being blind is having sight but no vision.",author:"Helen Keller"},
-  {text:"Alone we can do so little; together we can do so much.",author:"Helen Keller"},
-  {text:"Keep your face to the sunshine and you cannot see a shadow.",author:"Helen Keller"},
-  {text:"Character cannot be developed in ease and quiet.",author:"Helen Keller"},
-  {text:"Optimism is the faith that leads to achievement.",author:"Helen Keller"},
-  {text:"Although the world is full of suffering, it is also full of the overcoming of it.",author:"Helen Keller"},
-  {text:"The best and most beautiful things in the world cannot be seen or even touched. They must be felt with the heart.",author:"Helen Keller"},
-  {text:"I am only one, but still I am one. I cannot do everything, but still I can do something.",author:"Helen Keller"},
-  {text:"Science is not a boy's game, it's not a girl's game. It's everyone's game.",author:"Nichelle Nichols"},
-  {text:"I don't run away from a challenge because I am afraid. I run toward it.",author:"Ronda Rousey"},
-  {text:"A champion is defined not by their wins but by how they can recover when they fall.",author:"Serena Williams"},
-  {text:"I don't look back now. You move on and you become a better person.",author:"Serena Williams"},
-  {text:"I really think a champion is defined not by their wins but by how they can recover.",author:"Serena Williams"},
-  {text:"I've had to learn to fight all my life — got to learn to keep smiling.",author:"Serena Williams"},
-  {text:"Luck has nothing to do with it, because I have spent many, many hours, countless hours, on the court.",author:"Venus Williams"},
-  {text:"Start where you are. Use what you have. Do what you can.",author:"Arthur Ashe"},
-  {text:"You have to expect things of yourself before you can do them.",author:"Michael Jordan"},
-  {text:"I've missed more than 9,000 shots in my career. That's why I succeed.",author:"Michael Jordan"},
-  {text:"Talent wins games, but teamwork and intelligence win championships.",author:"Michael Jordan"},
-  {text:"Obstacles are what you see when you take your eyes off the goal.",author:"Vince Lombardi"},
-  {text:"It's not the load that breaks you down, it's the way you carry it.",author:"Lou Holtz"},
-  {text:"Show me someone who has done something worthwhile, and I'll show you someone who has overcome adversity.",author:"Lou Holtz"},
-  {text:"The secret of success is to do the common thing uncommonly well.",author:"John D. Rockefeller Jr."},
-  {text:"I find that the harder I work, the more luck I seem to have.",author:"Thomas Jefferson"},
-  {text:"The successful warrior is the average man, with laser-like focus.",author:"Bruce Lee"},
-  {text:"A goal is not always meant to be reached. It often serves simply as something to aim at.",author:"Bruce Lee"},
-  {text:"The key is not to prioritize what's on your schedule, but to schedule your priorities.",author:"Stephen Covey"},
-  {text:"Trust is the glue of life. It's the most essential ingredient in effective communication.",author:"Stephen Covey"},
-  {text:"Most of us spend too much time on what is urgent and not enough time on what is important.",author:"Stephen Covey"},
-  {text:"Big shots are only little shots who keep shooting.",author:"Christopher Morley"},
-  {text:"Nothing in life is to be feared, it is only to be understood.",author:"Marie Curie"},
-  {text:"Be less curious about people and more curious about ideas.",author:"Marie Curie"},
-  {text:"I was taught that the way of progress was neither swift nor easy.",author:"Marie Curie"},
-  {text:"Life is not easy for any of us. But what of that? We must have perseverance.",author:"Marie Curie"},
-  {text:"You cannot hope to build a better world without improving the individuals.",author:"Marie Curie"},
-  {text:"In science, we must be interested in things, not in persons.",author:"Marie Curie"},
-  {text:"I am among those who think that science has great beauty.",author:"Marie Curie"},
-  {text:"One never notices what has been done; one can only see what remains to be done.",author:"Marie Curie"},
-  {text:"First, have a definite, clear, practical ideal — a goal, an objective.",author:"Aristotle"},
-  {text:"The secret to happiness is freedom and the secret to freedom is courage.",author:"Thucydides"},
-  {text:"Know thyself.",author:"Socrates"},
-  {text:"The only true wisdom is in knowing you know nothing.",author:"Socrates"},
-  {text:"An unexamined life is not worth living.",author:"Socrates"},
-  {text:"Strong minds discuss ideas, average minds discuss events, weak minds discuss people.",author:"Socrates"},
-  {text:"Education is the kindling of a flame, not the filling of a vessel.",author:"Socrates"},
-  {text:"Employ your time in improving yourself by other men's writings so that you shall come easily by what others have labored hard for.",author:"Socrates"},
-  {text:"The secret of change is to focus all of your energy not on fighting the old, but on building the new.",author:"Socrates"},
-  {text:"She was fierce, she was strong, she wasn't simple. She was crazy and sometimes she barely slept. She always had something to say.",author:"R.H. Sin"},
-  {text:"She was a girl who knew how to be happy even when she was sad.",author:"Marilyn Monroe"},
-  {text:"I'm selfish, impatient and a little insecure. I make mistakes. But if you can't handle me at my worst, you sure as hell don't deserve me at my best.",author:"Marilyn Monroe"},
-  {text:"A wise girl kisses but doesn't love, listens but doesn't believe, and leaves before she is left.",author:"Marilyn Monroe"},
-  {text:"Success makes so many people hate you. I wish it wasn't that way. It would be wonderful to enjoy success without seeing envy in the eyes of those around you.",author:"Marilyn Monroe"},
-  {text:"All a girl really wants is for one guy to prove to her that they are not all the same.",author:"Marilyn Monroe"},
-  {text:"Keep your head, heels, and standards high.",author:"Coco Chanel"},
-  {text:"Fashion fades, only style remains the same.",author:"Coco Chanel"},
-  {text:"Elegance is when the inside is as beautiful as the outside.",author:"Coco Chanel"},
-  {text:"Beauty begins the moment you decide to be yourself.",author:"Coco Chanel"},
-  {text:"A girl should be two things: classy and fabulous.",author:"Coco Chanel"},
-  {text:"Don't spend time beating on a wall, hoping to transform it into a door.",author:"Coco Chanel"},
-  {text:"The most beautiful things are not associated with money; they are memories and moments.",author:"Alek Wek"},
-  {text:"You've got to have something to eat and a little love in your life before you can hold still for any damn body's sermon on how to behave.",author:"Billie Holiday"},
-  {text:"No two people on earth are alike, and it's got to be that way in music or it isn't music.",author:"Billie Holiday"},
-  {text:"I never hurt nobody but myself and that's nobody's business but my own.",author:"Billie Holiday"},
-  {text:"Daring to set boundaries is about having the courage to love ourselves, even when we risk disappointing others.",author:"Brené Brown"},
-  {text:"You are imperfect, you are wired for struggle, but you are also worthy of love and belonging.",author:"Brené Brown"},
-  {text:"Owning our story and loving ourselves through that process is the bravest thing that we will ever do.",author:"Brené Brown"},
-  {text:"Vulnerability is not winning or losing; it's having the courage to show up and be seen when we have no control over the outcome.",author:"Brené Brown"},
-  {text:"You can't get to courage without walking through vulnerability.",author:"Brené Brown"},
-  {text:"Connection is why we're here. It is what gives purpose and meaning to our lives.",author:"Brené Brown"},
-  {text:"Authenticity is a collection of choices that we have to make every day.",author:"Brené Brown"},
-  {text:"If you trade your authenticity for safety, you may experience the following: anxiety, depression, eating disorders, addiction, rage, blame.",author:"Brené Brown"},
-  {text:"Perfectionism is not self-improvement. Perfectionism is, at its core, about trying to earn approval and acceptance.",author:"Brené Brown"},
-  {text:"I define joy as a sustained sense of well-being and internal peace — a connection to what matters.",author:"Oprah Winfrey"},
-  {text:"Breathe. Let go. And remind yourself that this very moment is the only one you know you have for sure.",author:"Oprah Winfrey"},
-  {text:"The thing you fear most has no power. Your fear of it is what has the power.",author:"Oprah Winfrey"},
-  {text:"You have to find what sparks a light in you so that you in your own way can illuminate the world.",author:"Oprah Winfrey"},
-  {text:"Challenges are gifts that force us to search for a new center of gravity. Don't fight them. Just find a new way to stand.",author:"Oprah Winfrey"},
-  {text:"Real integrity is doing the right thing, knowing that nobody's going to know whether you did it or not.",author:"Oprah Winfrey"},
-  {text:"I don't think of myself as a poor, deprived ghetto girl who made good. I think of myself as somebody who from an early age knew I was responsible for myself.",author:"Oprah Winfrey"},
-  {text:"Create the highest, grandest vision possible for your life, because you become what you believe.",author:"Oprah Winfrey"},
-  {text:"The greatest discovery of any generation is that a human can alter his life by altering his attitude.",author:"William James"},
-  {text:"We must accept finite disappointment, but never lose infinite hope.",author:"Martin Luther King Jr."},
-  {text:"Faith is taking the first step even when you don't see the whole staircase.",author:"Martin Luther King Jr."},
-  {text:"The time is always right to do what is right.",author:"Martin Luther King Jr."},
-  {text:"Darkness cannot drive out darkness; only light can do that.",author:"Martin Luther King Jr."},
-  {text:"If you can't fly then run, if you can't run then walk, if you can't walk then crawl, but whatever you do you have to keep moving forward.",author:"Martin Luther King Jr."},
-  {text:"She stood in the storm and when the wind did not blow her away, she adjusted her sails.",author:"Elizabeth Edwards"},
-  {text:"If you want to go fast, go alone. If you want to go far, go together.",author:"African Proverb"},
-  {text:"She is clothed in strength and dignity, and she laughs without fear of the future.",author:"Proverbs 31:25"},
-  {text:"The woman who does not require validation from anyone is the most feared individual on the planet.",author:"Mohadesa Najumi"},
-  {text:"There is no limit to what we, as women, can accomplish.",author:"Michelle Obama"},
-  {text:"When you've worked hard, and done well, and walked through that doorway of opportunity, you do not slam it shut behind you.",author:"Michelle Obama"},
-  {text:"Success isn't about how much money you make, it's about the difference you make in people's lives.",author:"Michelle Obama"},
-  {text:"Don't ever make decisions based on fear. Make decisions based on hope and possibility.",author:"Michelle Obama"},
-  {text:"You may not always have a comfortable life. But do not ever underestimate the importance you can have.",author:"Michelle Obama"},
-  {text:"Every day, you have the power to choose our better history.",author:"Michelle Obama"},
-  {text:"Do not bring people in your life who weigh you down. And trust your instincts — good relationships feel good. They feel right.",author:"Michelle Obama"},
-  {text:"Your story is what you have, what you will always have. It is something to own.",author:"Michelle Obama"},
-  {text:"With every word we utter, with every action we take, we know our kids are watching us.",author:"Michelle Obama"},
-  {text:"If you don't get out there and define yourself, you'll be quickly and inaccurately defined by others.",author:"Michelle Obama"},
-  {text:"We learned about honesty and integrity — that the truth matters even when it's not what you want to hear.",author:"Michelle Obama"},
-  {text:"I have learned that as long as I hold fast to my beliefs and values — and follow my own moral compass — the only expectations I need to live up to are my own.",author:"Michelle Obama"},
-  {text:"Whether you come from a council estate or a country estate, your success will be determined by your own confidence and fortitude.",author:"Michelle Obama"},
-  {text:"Instead of letting your hardships and failures discourage or exhaust you, let them inspire you.",author:"Michelle Obama"},
-  {text:"We need to do a better job of putting ourselves higher on our own 'to do' list.",author:"Michelle Obama"},
-  {text:"You should never view your challenges as a disadvantage. Instead, it's important for you to understand that your experience facing and overcoming adversity is actually one of your biggest advantages.",author:"Michelle Obama"},
-  {text:"The art of communication is the language of leadership.",author:"James Humes"},
-  {text:"Leadership is not about being in charge. Leadership is about taking care of those in your charge.",author:"Simon Sinek"},
-  {text:"People don't buy what you do; they buy why you do it.",author:"Simon Sinek"},
-  {text:"Working hard for something we don't care about is called stress. Working hard for something we love is called passion.",author:"Simon Sinek"},
-  {text:"Dream big. Start small. But most of all, start.",author:"Simon Sinek"},
-  {text:"Great leaders don't set out to be a leader. They set out to make a difference.",author:"Lisa Haisha"},
-  {text:"The secret of joy in work is contained in one word — excellence. To know how to do something well is to enjoy it.",author:"Pearl Buck"},
-  {text:"I feel that luck is preparation meeting opportunity.",author:"Oprah Winfrey"},
-  {text:"You can waste your lives drawing lines. Or you can live your life crossing them.",author:"Shonda Rhimes"},
-  {text:"Excellence is the best deterrent to racism or sexism.",author:"Oprah Winfrey"},
-  {text:"I am a human being, not a human doing.",author:"Kurt Vonnegut"},
-  {text:"Whatever you are, be a good one.",author:"Abraham Lincoln"},
-  {text:"Give me six hours to chop down a tree and I will spend the first four sharpening the axe.",author:"Abraham Lincoln"},
-  {text:"The best way to predict your future is to create it.",author:"Abraham Lincoln"},
-  {text:"In the end, it's not the years in your life that count. It's the life in your years.",author:"Abraham Lincoln"},
-  {text:"No matter how you feel, get up, dress up, show up, and never give up.",author:"Regina Brett"},
-  {text:"She conquered her demons and wore her scars like wings.",author:"Atticus"},
-  {text:"A woman who knows her worth doesn't measure herself against another woman but stands strong, calm, and self-assured.",author:"Mary J. Blige"},
-  {text:"Don't let what you cannot do interfere with what you can do.",author:"John Wooden"},
-  {text:"Success comes from knowing that you did your best to become the best that you are capable of becoming.",author:"John Wooden"},
-  {text:"It's the little details that are vital. Little things make big things happen.",author:"John Wooden"},
-  {text:"Never mistake activity for achievement.",author:"John Wooden"},
-  {text:"Be more concerned with your character than your reputation, because your character is what you really are, while your reputation is merely what others think you are.",author:"John Wooden"},
-  {text:"Ability is what you're capable of doing. Motivation determines what you do. Attitude determines how well you do it.",author:"Lou Holtz"},
-  {text:"There is no way to happiness — happiness is the way.",author:"Thích Nhất Hạnh"},
-  {text:"The present moment is the only moment available to us, and it is the door to all moments.",author:"Thích Nhất Hạnh"},
-  {text:"Because of your smile, you make life more beautiful.",author:"Thích Nhất Hạnh"},
-  {text:"You can disagree without being disagreeable.",author:"Ruth Bader Ginsburg"},
-  {text:"So often in life, things you regard as an impediment turn out to be a great, good fortune.",author:"Ruth Bader Ginsburg"},
-  {text:"Success isn't about how much money you make. It's about the difference you make in people's lives.",author:"Michelle Obama"},
-  {text:"Empowered women empower women.",author:"Michelle Obama"},
-  {text:"You may be the first to do many things. Make sure you're not the last.",author:"Kamala Harris"},
-  {text:"A champion is defined not by their wins but by how they recover when they fall.",author:"Serena Williams"},
-  {text:"Waking up this morning, I smile. Twenty-four brand new hours are before me.",author:"Thích Nhất Hạnh"},
-  {text:"Feelings come and go like clouds in a windy sky. Conscious breathing is my anchor.",author:"Thích Nhất Hạnh"},
-  {text:"Why did the real estate agent cross the road? To get to the listing on the other side.",author:"Dad"},
-  {text:"I told my client I had a lot of leads. They said great! I said yeah, they're all pencils.",author:"Dad"},
-  {text:"What do you call a realtor who only sells igloos? A cold caller.",author:"Dad"},
-  {text:"I'm reading a book about anti-gravity. It's impossible to put down.",author:"Dad"},
-  {text:"I told my boss I needed a raise because three companies were after me. He asked which ones. I said gas, electric, and water.",author:"Dad"},
-  {text:"What's a real estate agent's favorite movie? Gone with the Wind.",author:"Dad"},
-  {text:"I asked my dog what two minus two is. He said nothing.",author:"Dad"},
-  {text:"Why did the scarecrow win an award? Because he was outstanding in his field.",author:"Dad"},
-  {text:"What do you call someone who can't stop buying houses? A mortgage-aholic.",author:"Dad"},
-  {text:"I used to hate facial hair but then it grew on me.",author:"Dad"},
-  {text:"Did you hear about the guy who invented Lifesavers? He made a mint.",author:"Dad"},
-  {text:"What do you call a fake noodle? An impasta.",author:"Dad"},
-  {text:"I would tell you a construction joke but I'm still working on it.",author:"Dad"},
-  {text:"What did the ocean say to the beach? Nothing, it just waved.",author:"Dad"},
-  {text:"I called it networking. It was 40 rejections and one voicemail.",author:"Deadpan"},
-  {text:"Cold calling: proof that optimism is a renewable resource.",author:"Deadpan"},
-  {text:"My phone and I have a complicated relationship.",author:"Deadpan"},
-  {text:"Rejection builds character. I have a lot of character today.",author:"Deadpan"},
-  {text:"I don't have a type. I have a target list.",author:"Deadpan"},
-  {text:"Voicemail is just a text message nobody asked for.",author:"Deadpan"},
-  {text:"Confidence is pretending the no didn't just happen.",author:"Deadpan"},
-  {text:"Some people collect stamps. I collect declined callbacks.",author:"Deadpan"},
-  {text:"I'm not avoiding my to-do list, I'm building suspense.",author:"Deadpan"},
-  {text:"The follow-up email: hope, disguised as professionalism.",author:"Deadpan"},
-  {text:"I run on caffeine, spite, and closing ratios.",author:"Deadpan"},
-  {text:"Networking event: free food, forced smiling, occasional business.",author:"Deadpan"},
-  {text:"My CRM knows things about me my therapist doesn't.",author:"Deadpan"},
-  {text:"Cold calls build character. Warm calls build commission.",author:"Deadpan"},
-  {text:"Nothing humbles you like a prospect who mutes you mid-sentence.",author:"Deadpan"},
-  {text:"I've made peace with rejection. We're basically roommates now.",author:"Deadpan"},
-  {text:"Persistence: doing the same thing until it's suddenly a yes.",author:"Deadpan"},
-  {text:"My optimism and my call log do not agree today.",author:"Deadpan"},
-  {text:"I don't chase leads. I politely, relentlessly stalk them.",author:"Deadpan"},
-  {text:"Some days the only thing I close is my laptop.",author:"Deadpan"},
-  {text:"If enthusiasm were a KPI, I'd already be retired.",author:"Deadpan"},
-  {text:"I've heard every rejection tone. There are at least twelve.",author:"Deadpan"},
-  {text:"The goal isn't to avoid no. It's to out-dial it.",author:"Deadpan"},
-  {text:"Small talk before the pitch: the appetizer nobody orders twice.",author:"Deadpan"},
-  {text:"I don't take it personally. I take it as data.",author:"Deadpan"},
-];
-
-(function renderQuote(){
-  const qt=document.getElementById("quoteText");
-  const qa=document.getElementById("quoteAuthor");
-  if(!qt)return;
-  const dayIndex=Math.floor(Date.now()/86400000)%QUOTES.length;
-  const q=QUOTES[dayIndex];
-  qt.textContent="\u201C"+q.text+"\u201D";
-  qa.textContent=q.author?"— "+q.author:"";
-})();
-
 function weekRange(){
   const now=new Date(),day=now.getDay();
   const mon=new Date(now);
@@ -4303,12 +3960,12 @@ async function loadStartHere(){
     const normalize=s=>(s||"").toLowerCase().trim();
     // Snapshot "Amanda — Start Here" is Amanda's execution lane. Shared portfolio/risk queues stay
     // visible, but Nyny's activity must not inflate Amanda's personal pace or clear her follow-ups.
-    const amandaDayActs=(dayActs||[]).filter(a=>activityCreditsPerson(a,"Amanda"));
-    const amandaColdCalls60=(coldCalls60||[]).filter(a=>activityCreditsPerson(a,"Amanda"));
-    const amandaTalkTos60=(talkTos60||[]).filter(a=>activityCreditsPerson(a,"Amanda"));
-    const amandaFuToday=(fuToday||[]).filter(a=>activityCreditsPerson(a,"Amanda"));
-    const amandaMtdMeetings=(mtdMeetings||[]).filter(a=>activityCreditsPerson(a,"Amanda"));
-    const amandaFuOverdue=(fuOverdue||[]).filter(a=>activityCreditsPerson(a,"Amanda"));
+    const amandaDayActs=(dayActs||[]).filter(isAmandaDailyActivity);
+    const amandaColdCalls60=(coldCalls60||[]).filter(isAmandaDailyActivity);
+    const amandaTalkTos60=(talkTos60||[]).filter(isAmandaDailyActivity);
+    const amandaFuToday=(fuToday||[]).filter(isAmandaDailyActivity);
+    const amandaMtdMeetings=(mtdMeetings||[]).filter(isAmandaDailyActivity);
+    const amandaFuOverdue=(fuOverdue||[]).filter(isAmandaDailyActivity);
     const talkToToday=cntTalkTo(amandaDayActs);
     const coldCallsToday=amandaDayActs.filter(a=>a.act_type==="Cold Calls").length;
     const talkToGoal=0,coldCallGoal=0; // retired volume quotas; retained variables only for backward-compatible diagnostics
@@ -6186,7 +5843,7 @@ async function loadAmandaCoachingQueue(){
       sbFetch("amanda_activities?select=agent_name,act_type,act_date,outcome,notes&act_date=gte."+localDateStr(seven)+"&limit=2000").catch(()=>[]),
       sbFetch("lp_flags?resolved=eq.false&select=agent_name,assigned_to,created_at&order=created_at.asc&limit=100").catch(()=>[])
     ]);
-    const amandaOnly=arr=>(arr||[]).filter(a=>activityCreditsPerson(a,"Amanda"));
+    const amandaOnly=arr=>(arr||[]).filter(isAmandaDailyActivity);
     const amtd=amandaOnly(mtd),awtd=amandaOnly(wtd),aover=amandaOnly(overdue),arecent=amandaOnly(recent);
     const signals=[];
     const bd=rmBusinessDayCounts(now),wdElapsed=rmWeekdayElapsed(now);
@@ -6251,7 +5908,7 @@ async function loadWeek(){
       sbFetch("amanda_activities?select=agent_name&act_type=eq.New Realtor Meeting&limit=2000").catch(()=>[])
     ]);
     weekActs=weekActsLoaded||[];
-    const amandaOnly=arr=>(arr||[]).filter(a=>activityCreditsPerson(a,"Amanda"));
+    const amandaOnly=arr=>(arr||[]).filter(isAmandaDailyActivity);
     periodData={daily:amandaOnly(dailyActs),wtd:amandaOnly(weekActs),mtd:amandaOnly(mtdActs),ytd:amandaOnly(ytdActs)};
     // v255: keep the un-split RM Team activity too. Amanda's scorecard stays personal except
     // for the shared New Realtor Meeting finish line Daniel reviews as one RM Team number.
@@ -6263,7 +5920,7 @@ async function loadWeek(){
     const psGrid=document.getElementById("personalScorecardGrid");
     const psSub=document.getElementById("personalScorecardSub");
     if(psGrid){
-      const amandaMtd=(mtdActs||[]).filter(a=>activityCreditsPerson(a,"Amanda"));
+      const amandaMtd=(mtdActs||[]).filter(isAmandaDailyActivity);
       const mtdMeetings=amandaMtd.filter(a=>a.act_type==="New Realtor Meeting").length;
       const mtdExistingMeetings=amandaMtd.filter(a=>isExistingMeeting(a)).length;
       // A "win" requires an actual meeting held, not just a promising outcome on the call —
@@ -6288,7 +5945,7 @@ async function loadWeek(){
     const wlEl=document.getElementById("snapshotWeekLabel");
     if(wlEl) wlEl.textContent=week.label;
     let html="";
-    const amandaWeek=(weekActs||[]).filter(a=>activityCreditsPerson(a,"Amanda"));
+    const amandaWeek=(weekActs||[]).filter(isAmandaDailyActivity);
     GOALS.forEach(g=>{
       const count=countGoalActivity(amandaWeek,g.type);
       html+=renderGoalBar(g.label,count,g.weekly,(count/g.weekly)*100,g.type);
@@ -13583,7 +13240,7 @@ async function v328SharedPowerBiTruth(profiles){
 }
 function v124DailyGoalTile(label,value,target,sub){const met=target!==null&&target!==undefined?value>=target:false,pct=target?Math.min(100,Math.round(value/target*100)):0;return '<div style="border:1px solid '+(met?'#CFE4D7':'var(--border-light)')+';background:'+(met?'#F7FCF8':'#fff')+';border-radius:10px;padding:10px 11px"><div style="display:flex;justify-content:space-between;gap:8px;align-items:baseline"><strong style="font-size:20px;color:'+(met?'#315B40':'var(--text-1)')+'">'+value+(target!==null&&target!==undefined?'<span style="font-size:11px;font-weight:600;color:var(--text-3)"> / '+target+'</span>':'')+'</strong>'+(met?'<span style="font-size:9px;font-weight:800;color:#315B40">HIT ✓</span>':'')+'</div><div style="font-size:10.5px;font-weight:750;color:var(--text-2);margin-top:2px">'+escHtml(label)+'</div>'+(target?'<div style="height:4px;background:#ECE8F1;border-radius:99px;overflow:hidden;margin-top:7px"><i style="display:block;height:100%;width:'+pct+'%;background:'+(met?'#6E9779':'#8060B3')+'"></i></div>':'')+(sub?'<div style="font-size:9.5px;color:var(--text-4);margin-top:5px">'+escHtml(sub)+'</div>':'')+'</div>';}
 function v124RenderAmandaDailyGoals(acts){
-  const host=document.getElementById("amandaDailyGoalGrid");if(!host)return;const a=(acts||[]).filter(x=>typeof activityCreditsPerson==="function"?activityCreditsPerson(x,"Amanda"):true);
+  const host=document.getElementById("amandaDailyGoalGrid");if(!host)return;const a=(acts||[]).filter(x=>typeof isAmandaDailyActivity==="function"?isAmandaDailyActivity(x):(typeof activityCreditsPerson==="function"?activityCreditsPerson(x,"Amanda"):true));
   const c=t=>a.filter(x=>x.act_type===t).length;const uniqueBooked=new Set(a.filter(x=>String(x.outcome||"")==="Meeting Scheduled").map(x=>String(x.agent_name||"").trim().toLowerCase()).filter(Boolean)).size;
   const talk=typeof cntTalkTo==="function"?cntTalkTo(a):a.filter(x=>["Agent Talk-to","Reconnect Outreach","CTC Call","Under Contract Call","Birthday Outreach","New Agent Follow-up"].includes(x.act_type)).length;
   const items=[
@@ -20031,7 +19688,7 @@ body[data-rm-tab="week"] #view-week.active{display:block!important;max-width:non
 .rm358-pace{position:relative;margin:0 0 27px;border:1px solid #DED4F1;border-radius:20px;padding:17px;background:linear-gradient(112deg,#F7F1FF 0%,#FBF9FF 52%,#FFF 100%);box-shadow:0 10px 30px rgba(80,54,132,.07);overflow:hidden}
 .rm358-pace:before{content:"";position:absolute;inset:0 auto 0 0;width:5px;background:linear-gradient(180deg,#6B45B6,#E969AC)}
 .rm358-pace-head{display:flex;justify-content:space-between;align-items:center;gap:16px;margin-bottom:13px;padding-left:3px}.rm358-pace-copy{min-width:0}.rm358-pace-eyebrow{font-size:9.5px;font-weight:800;letter-spacing:.105em;text-transform:uppercase;color:#7654B0}.rm358-pace-title{font-size:17px;font-weight:750;color:#17164B;letter-spacing:-.018em;margin-top:2px}.rm358-pace-meta{font-size:9.7px;color:#8A819B;margin-top:2px}.rm358-goal-pill{flex:0 0 auto;display:inline-flex;align-items:center;min-height:29px;padding:0 11px;border:1px solid #DDD3EF;border-radius:999px;background:rgba(255,255,255,.78);font-size:10px;font-weight:700;color:#6A50A0;white-space:nowrap}.rm358-goal-pill.hit{background:#EDF8F1;border-color:#CAE6D3;color:#277447}
-.rm358-goals{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px}.rm358-goal{appearance:none;border:1px solid #E5DEF1;background:rgba(255,255,255,.88);border-radius:13px;padding:11px 11px 10px;text-align:left;cursor:pointer;min-width:0;transition:transform .13s ease,border-color .13s ease,box-shadow .13s ease}.rm358-goal:hover{transform:translateY(-1px);border-color:#CDBDE7;box-shadow:0 6px 16px rgba(78,55,128,.07)}.rm358-goal-top{display:flex;justify-content:space-between;align-items:flex-start;gap:5px}.rm358-goal-val{font-size:19px;font-weight:780;color:#26205D;letter-spacing:-.025em;line-height:1}.rm358-goal-arrow{font-size:13px;color:#9D8BC1;line-height:1}.rm358-goal-label{display:block;font-size:9.8px;font-weight:720;color:#4F4969;line-height:1.22;margin-top:7px;white-space:normal}.rm358-goal-sub{display:block;font-size:8.7px;color:#938A9F;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.rm358-track{height:3px;background:#EEE9F5;border-radius:99px;overflow:hidden;margin-top:8px}.rm358-track i{display:block;height:100%;border-radius:99px;background:linear-gradient(90deg,#7555B5,#D86AA6);width:0;transition:width .2s ease}.rm358-goal.done{border-color:#D2E9DA;background:#FBFFFC}.rm358-goal.done .rm358-goal-val{color:#267447}.rm358-goal.done .rm358-track i{background:#54A372}
+.rm358-goals{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px}.rm358-goal{appearance:none;border:1px solid #E5DEF1;background:rgba(255,255,255,.88);border-radius:13px;padding:11px 11px 10px;text-align:left;cursor:pointer;min-width:0;transition:transform .13s ease,border-color .13s ease,box-shadow .13s ease}.rm358-goal:hover{transform:translateY(-1px);border-color:#CDBDE7;box-shadow:0 6px 16px rgba(78,55,128,.07)}.rm358-goal-top{display:flex;justify-content:space-between;align-items:flex-start;gap:5px}.rm358-goal-val{font-size:19px;font-weight:780;color:#26205D;letter-spacing:-.025em;line-height:1}.rm358-goal-arrow{font-size:13px;color:#9D8BC1;line-height:1}.rm358-goal-label{display:block;font-size:9.8px;font-weight:720;color:#4F4969;line-height:1.22;margin-top:7px;white-space:normal}.rm358-goal-sub{display:block;font-size:8.7px;color:#938A9F;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.rm358-goal.done{border-color:#D2E9DA;background:#FBFFFC}.rm358-goal.done .rm358-goal-val{color:#267447}
 .rm358-next{display:flex;align-items:center;gap:10px;margin-top:12px;padding:9px 10px 9px 11px;border:1px solid #E4DCEF;border-radius:12px;background:rgba(255,255,255,.72)}.rm358-next-tag{flex:0 0 auto;font-size:8.7px;font-weight:850;letter-spacing:.09em;color:#754FB0;background:#EFE8FA;border-radius:999px;padding:5px 7px}.rm358-next-copy{min-width:0;flex:1;font-size:10.5px;color:#5E5770;line-height:1.35}.rm358-next-copy strong{color:#28204F}.rm358-next-btn{flex:0 0 auto;border:0;border-radius:9px;background:#6845A5;color:#fff;font-size:9.8px;font-weight:700;padding:8px 11px;cursor:pointer;box-shadow:0 3px 9px rgba(93,61,151,.16)}.rm358-next-btn:hover{background:#58358F}
 .rm350-card.rm358-next-card{border-color:#BDA8DF;box-shadow:0 10px 28px rgba(90,61,150,.11)}.rm350-card.rm358-next-card:after{content:"DO NEXT";position:absolute;right:13px;top:10px;font-size:7.7px;font-weight:850;letter-spacing:.07em;color:#6845A5;background:#F0E8FC;border:1px solid #DED0F2;border-radius:999px;padding:4px 6px}.rm350-card.rm358-next-card .rm350-chevron{visibility:hidden}
 @media(max-width:1180px){.rm358-goals{grid-template-columns:repeat(3,minmax(0,1fr))}}
@@ -20098,16 +19755,16 @@ function metric(kind,label,sub){return '<div class="rm350-kpi" data-kind="'+kind
 function glance(kind,label){return '<button type="button" class="rm350-glance-row" onclick="v350OpenLane(\''+kind+'\')"><span class="rm350-dot '+kind+'"></span><span class="rm350-glance-label">'+label+'</span><span class="rm350-glance-status" id="rm350Glance-'+kind+'">'+status(kind)+'</span><span class="rm350-glance-arrow">›</span></button>'}
 
 let rm358Daily={cold:0,talk:0,newHeld:0,bread:0,buddy:0,booked:0,loaded:false,updated:''};
-function rm358GoalTile(kind,label,goal,sub){const hasGoal=Number(goal)>0;return '<button type="button" class="rm358-goal" id="rm358Goal-'+kind+'" onclick="rm358GoalAction(\''+kind+'\')"><span class="rm358-goal-top"><span class="rm358-goal-val" id="rm358Val-'+kind+'">'+(hasGoal?'0 / '+goal:'0')+'</span><span class="rm358-goal-arrow">↗</span></span><span class="rm358-goal-label">'+label+'</span><span class="rm358-goal-sub" id="rm358Sub-'+kind+'">'+sub+'</span>'+(hasGoal?'<span class="rm358-track"><i id="rm358Bar-'+kind+'"></i></span>':'')+'</button>'}
+function rm358GoalTile(kind,label,goal,sub){const hasGoal=Number(goal)>0;return '<button type="button" class="rm358-goal" id="rm358Goal-'+kind+'" onclick="rm358GoalAction(\''+kind+'\')"><span class="rm358-goal-top"><span class="rm358-goal-val" id="rm358Val-'+kind+'">'+(hasGoal?'0 / '+goal:'0')+'</span><span class="rm358-goal-arrow">↗</span></span><span class="rm358-goal-label">'+label+'</span><span class="rm358-goal-sub" id="rm358Sub-'+kind+'">'+sub+'</span></button>'}
 function rm358BannerHTML(){return '<section class="rm358-pace" id="rm358Pace"><div class="rm358-pace-head"><div class="rm358-pace-copy"><div class="rm358-pace-eyebrow">Today’s snapshot</div><div class="rm358-pace-title">Amanda’s Daily Pace</div><div class="rm358-pace-meta" id="rm358Updated">Loading today’s activity…</div></div><span class="rm358-goal-pill" id="rm358GoalPill">Loading goals…</span></div><div class="rm358-goals">'+rm358GoalTile('cold','Cold Calls',25,'25 daily')+rm358GoalTile('talk','Talk-To’s',20,'meaningful conversations')+rm358GoalTile('newHeld','New Mtg Held',1,'new Realtor meeting')+rm358GoalTile('bread','Break Bread',1,'relationship meeting')+rm358GoalTile('buddy','Buddy Ask',1,'referral ask')+rm358GoalTile('booked','Meetings Booked',0,'scheduled today')+'</div><div class="rm358-next"><span class="rm358-next-tag">NEXT MOVE</span><span class="rm358-next-copy" id="rm358NextCopy"><strong>Checking today’s work…</strong></span><button class="rm358-next-btn" id="rm358NextBtn" type="button">Open</button></div></section>'}
-function rm358SetGoal(kind,value,goal,sub){const v=$('rm358Val-'+kind),g=$('rm358Goal-'+kind),bar=$('rm358Bar-'+kind),sm=$('rm358Sub-'+kind);if(v)v.textContent=goal?value+' / '+goal:String(value);if(sm&&sub)sm.textContent=sub;if(bar&&goal)bar.style.width=Math.min(100,Math.round(value/goal*100))+'%';if(g)g.classList.toggle('done',!!goal&&value>=goal)}
+function rm358SetGoal(kind,value,goal,sub){const v=$('rm358Val-'+kind),g=$('rm358Goal-'+kind),sm=$('rm358Sub-'+kind);if(v)v.textContent=goal?value+' / '+goal:String(value);if(sm&&sub)sm.textContent=sub;if(g)g.classList.toggle('done',!!goal&&value>=goal)}
 function rm358OpenLog(type){try{if(typeof prefillActivityLog==='function'){prefillActivityLog('',type);return}window.v350Go&&window.v350Go('log')}catch(e){try{window.v350Go&&window.v350Go('log')}catch(_){}}}
-window.rm358GoalAction=function(kind){try{if(kind==='cold')return window.v350OpenLane('cold');if(kind==='talk')return rm358OpenLog('Agent Talk-to');if(kind==='newHeld'||kind==='booked')return window.v350OpenLane('schedule');if(kind==='bread')return window.v350OpenLane('facetime');if(kind==='buddy')return window.v350Go('portfolio')}catch(e){console.warn('daily pace action',e)}};
+window.rm358GoalAction=function(kind){try{if(kind==='cold')return window.v350OpenLane('cold');if(kind==='talk')return rm358OpenLog('Agent Talk-to');if(kind==='newHeld'||kind==='booked')return window.v350OpenLane('schedule');if(kind==='bread')return window.v350OpenLane('facetime');if(kind==='buddy')return rm358OpenLog('Realtor Buddy Referral Ask')}catch(e){console.warn('daily pace action',e)}};
 function rm358Priority(){const d=rm358Daily,tx=firstNum(txt($('rm350Status-calls'))),tue=firstNum(txt($('rm350Status-tuesday'))),hand=firstNum(txt($('rm350Status-handoffs'))),convText=txt($('rm350Status-conversion')),conv=firstNum(convText),isTue=new Date().getDay()===2;if(tx>0)return{kind:'calls',html:'<strong>'+tx+' transaction call'+(tx===1?' is':'s are')+' waiting.</strong> Clear mandatory file work before moving into prospecting.'};if(isTue&&tue>0)return{kind:'tuesday',html:'<strong>'+tue+' Tuesday update'+(tue===1?' is':'s are')+' open.</strong> Work Mack’s list and close the loop.'};if(hand>0)return{kind:'handoffs',html:'<strong>'+hand+' LP handoff'+(hand===1?' needs':'s need')+' action.</strong> Resolve the internal handoff before it ages.'};if(/overdue/i.test(convText)&&conv>0)return{kind:'conversion',html:'<strong>'+conv+' 4-week follow-up'+(conv===1?' is':'s are')+' overdue.</strong> Protect the new relationship before adding more names.'};if(d.cold<25)return{kind:'cold',html:'<strong>'+(25-d.cold)+' cold call'+(25-d.cold===1?' remains':'s remain')+'.</strong> Keep moving through the best new-Realtor opportunities.'};if(d.talk<20)return{kind:'smart',html:'<strong>'+(20-d.talk)+' meaningful conversation'+(20-d.talk===1?' remains':'s remain')+'.</strong> Work the highest-intent relationship opportunities next.'};if(d.newHeld<1)return{kind:'schedule',html:'<strong>No new Realtor meeting held yet today.</strong> Check today’s schedule and protect the meeting target.'};if(d.bread<1)return{kind:'facetime',html:'<strong>Break Bread goal is still open.</strong> Use the relationship meeting pipeline to schedule the right partner.'};if(d.buddy<1)return{kind:'reconnect',html:'<strong>Buddy ask is still open.</strong> Use a strong current relationship to ask for an introduction.'};return{kind:'growth',html:'<strong>Daily execution goals are covered.</strong> Use the remaining time on your strongest C → B relationship opportunities.'}}
 function rm358RenderNext(){const n=rm358Priority(),copy=$('rm358NextCopy'),btn=$('rm358NextBtn');if(copy)copy.innerHTML=n.html;if(btn){btn.onclick=()=>{if(n.kind==='reconnect')window.v350Go('portfolio');else window.v350OpenLane(n.kind)};}document.querySelectorAll('.rm350-card.rm358-next-card').forEach(x=>x.classList.remove('rm358-next-card'));document.querySelector('.rm350-card[data-kind="'+n.kind+'"]')?.classList.add('rm358-next-card')}
 function rm358RenderDaily(){const d=rm358Daily;rm358SetGoal('cold',d.cold,25,(Math.max(0,25-d.cold))+' remaining today');rm358SetGoal('talk',d.talk,20,(Math.max(0,20-d.talk))+' meaningful conversations left');rm358SetGoal('newHeld',d.newHeld,1,d.newHeld?'goal hit':'1 held meeting target');rm358SetGoal('bread',d.bread,1,d.bread?'goal hit':'1 relationship meeting target');rm358SetGoal('buddy',d.buddy,1,d.buddy?'goal hit':'1 referral ask target');rm358SetGoal('booked',d.booked,0,d.booked===1?'meeting scheduled today':'meetings scheduled today');const hit=[d.cold>=25,d.talk>=20,d.newHeld>=1,d.bread>=1,d.buddy>=1].filter(Boolean).length,p=$('rm358GoalPill');if(p){p.textContent=hit+' of 5 daily goals hit';p.classList.toggle('hit',hit===5)}const u=$('rm358Updated');if(u)u.textContent=d.updated?'Updated '+d.updated+' · click any number to work it':'Today’s activity';rm358RenderNext()}
 let rm358Loading=null,rm358LoadedAt=0;
-async function rm358LoadTodayBanner(force){if(isDirector()||!$('rm358Pace'))return false;if(rm358Loading)return rm358Loading;if(!force&&rm358Daily.loaded&&Date.now()-rm358LoadedAt<12000){rm358RenderDaily();return true}rm358Loading=(async()=>{try{const date=typeof today==='function'?today():new Date().toISOString().slice(0,10);const rows=await sbFetch('amanda_activities?select=agent_name,act_type,act_date,outcome,notes,follow_up_date&act_date=eq.'+date+'&limit=2000').catch(()=>[]);const a=(Array.isArray(rows)?rows:[]).filter(x=>{try{return typeof activityCreditsPerson==='function'?activityCreditsPerson(x,'Amanda'):true}catch(e){return true}});const talk=typeof cntTalkTo==='function'?cntTalkTo(a):a.filter(x=>{const o=String(x.outcome||'').toLowerCase();return !/no answer|voicemail|attempted|no response/.test(o)&&typeof TALKTO_TYPES!=='undefined'&&TALKTO_TYPES.indexOf(x.act_type)>=0}).length;rm358Daily={cold:a.filter(x=>x.act_type==='Cold Calls').length,talk:talk,newHeld:a.filter(x=>x.act_type==='New Realtor Meeting').length,bread:a.filter(x=>x.act_type==='Break Breads').length,buddy:a.filter(x=>x.act_type==='Realtor Buddy Referral Ask').length,booked:a.filter(x=>String(x.outcome||'').trim()==='Meeting Scheduled').length,loaded:true,updated:new Date().toLocaleTimeString([],{hour:'numeric',minute:'2-digit'})};rm358LoadedAt=Date.now();rm358RenderDaily();return true}catch(e){console.warn('daily pace banner',e);const u=$('rm358Updated');if(u)u.textContent='Could not refresh today’s numbers';return false}finally{rm358Loading=null}})();return rm358Loading}
+async function rm358LoadTodayBanner(force){if(isDirector()||!$('rm358Pace'))return false;if(rm358Loading)return rm358Loading;if(!force&&rm358Daily.loaded&&Date.now()-rm358LoadedAt<12000){rm358RenderDaily();return true}rm358Loading=(async()=>{try{const date=typeof today==='function'?today():new Date().toISOString().slice(0,10);const rows=await sbFetch('amanda_activities?select=agent_name,act_type,act_date,outcome,notes,follow_up_date&act_date=eq.'+date+'&limit=2000').catch(()=>[]);const a=(Array.isArray(rows)?rows:[]).filter(x=>{try{return typeof isAmandaDailyActivity==='function'?isAmandaDailyActivity(x):(typeof activityCreditsPerson==='function'?activityCreditsPerson(x,'Amanda'):true)}catch(e){return true}});const talk=typeof cntTalkTo==='function'?cntTalkTo(a):a.filter(x=>{const o=String(x.outcome||'').toLowerCase();return !/no answer|voicemail|attempted|no response/.test(o)&&typeof TALKTO_TYPES!=='undefined'&&TALKTO_TYPES.indexOf(x.act_type)>=0}).length;rm358Daily={cold:a.filter(x=>x.act_type==='Cold Calls').length,talk:talk,newHeld:a.filter(x=>x.act_type==='New Realtor Meeting').length,bread:a.filter(x=>x.act_type==='Break Breads').length,buddy:a.filter(x=>x.act_type==='Realtor Buddy Referral Ask').length,booked:a.filter(x=>String(x.outcome||'').trim()==='Meeting Scheduled').length,loaded:true,updated:new Date().toLocaleTimeString([],{hour:'numeric',minute:'2-digit'})};rm358LoadedAt=Date.now();rm358RenderDaily();return true}catch(e){console.warn('daily pace banner',e);const u=$('rm358Updated');if(u)u.textContent='Could not refresh today’s numbers';return false}finally{rm358Loading=null}})();return rm358Loading}
 window.rm358RefreshToday=()=>rm358LoadTodayBanner(true);
 
 function boardHTML(){let date='Today';try{date=new Date().toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric',year:'numeric'})}catch(e){}
@@ -20378,5 +20035,257 @@ window.addEventListener('hashchange',apply);if(document.readyState==='loading')d
 })();
 </script>
 
+<!-- v364: exact Claude purple-dot DOM cleanup -->
+<script id="rm361-purple-dot-hard-kill-js">
+(function(){
+  'use strict';
+  function purpleish(rgb){
+    var m=String(rgb||'').match(/rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)/i);
+    if(!m)return false;
+    var r=+m[1],g=+m[2],b=+m[3];
+    return b>=90 && r>=70 && r<=210 && g<=155 && (r-g)>=18 && (b-g)>=10;
+  }
+  function isRound(cs,w,h){
+    var br=parseFloat(cs.borderTopLeftRadius)||0;
+    return Math.abs(w-h)<=16 && (br>=Math.min(w,h)*.38 || String(cs.borderRadius||'').indexOf('50%')>=0);
+  }
+  function protectedEl(el){
+    if(!el||!el.matches)return true;
+    return el.matches('#rm352HeaderProfile,#rm352HeaderProfile *,#rm359DirectorOS,#rm359DirectorOS *,img,svg,svg *,canvas,.rm350-icon,.rm350-icon *,.contact-avatar,.v95-avatar,.rm359-dir-avatar,.rm358-goal-pill,.rm358-next-tag');
+  }
+  function removeDot(){
+    try{
+      if(document.body.classList.contains('rm-director-route'))return;
+      var root=document.getElementById('rm350Workboard');
+      if(!root)return;
+      var nodes=[].slice.call(document.body.querySelectorAll('div,span,i,b'));
+      nodes.forEach(function(el){
+        if(protectedEl(el))return;
+        var r=el.getBoundingClientRect();
+        if(r.width<38||r.width>115||r.height<38||r.height>115)return;
+        var cs=getComputedStyle(el);
+        if(!isRound(cs,r.width,r.height))return;
+        var txt=String(el.textContent||'').trim();
+        if(txt.length>1)return;
+        if(el.querySelector('img,svg,canvas,input,button'))return;
+        var bg=cs.backgroundColor||'';
+        var pos=cs.position||'';
+        var op=parseFloat(cs.opacity||'1');
+        var zi=parseInt(cs.zIndex||'0',10)||0;
+        var suspicious=purpleish(bg) && (pos==='fixed'||pos==='absolute'||zi>50||op<.96);
+        if(!suspicious)return;
+        // Never remove real app structure; only anonymous overlay-like circles.
+        if(root.contains(el) || pos==='fixed' || zi>50){
+          el.style.setProperty('display','none','important');
+          el.style.setProperty('opacity','0','important');
+          el.setAttribute('data-rm361-removed-purple-dot','1');
+        }
+      });
+    }catch(e){}
+  }
+  function sweep(){removeDot();setTimeout(removeDot,40);setTimeout(removeDot,140);setTimeout(removeDot,360);}
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',sweep,{once:true});else sweep();
+  document.addEventListener('pointerdown',function(){setTimeout(removeDot,0);setTimeout(removeDot,80);},true);
+  document.addEventListener('click',function(){setTimeout(removeDot,0);setTimeout(removeDot,90);setTimeout(removeDot,260);},true);
+  window.rm361RemovePurpleDot=removeDot;
+})();
+</script>
+
+
+
+<!-- v365: clean Today visual authority. No decorative pseudo-elements, no legacy overlay effects. -->
+<style id="rm365-clean-today-authority">
+/* The modern board is the only visible Today surface. Old greeting stays available for photo source but never paints. */
+#view-week > .v95-amanda-greeting,
+#view-week > #snapshotScorecardCard,
+#view-week > #v181CalendarUrgent{
+  display:none!important;
+}
+#view-week .v95-avatar-fallback{display:none!important}
+
+/* Remove every decorative pseudo-element from the modern workboard. Real content only. */
+#rm350Workboard *,#rm350Workboard{ -webkit-tap-highlight-color:transparent!important; }
+#rm350Workboard *::before,#rm350Workboard *::after{
+  content:none!important;
+  display:none!important;
+  background:none!important;
+  box-shadow:none!important;
+}
+#rm350Workboard{
+  background:#fff!important;
+}
+#rm350Workboard .rm350-group-head{
+  border-bottom:1px solid #E4DFEE!important;
+  padding-bottom:9px!important;
+  margin-bottom:13px!important;
+}
+#rm350Workboard .rm350-group-tag{
+  margin-left:auto!important;
+}
+#rm350Workboard .rm358-pace{
+  border:1px solid #DED5EF!important;
+  border-left:5px solid #7048B5!important;
+  background:#FAF8FE!important;
+  box-shadow:0 9px 28px rgba(72,47,116,.055)!important;
+  overflow:hidden!important;
+}
+#rm350Workboard .rm358-goal{
+  background:#fff!important;
+  border:1px solid #E5DFEF!important;
+  box-shadow:none!important;
+  transform:none!important;
+}
+#rm350Workboard .rm358-goal:hover{
+  border-color:#CFC1E6!important;
+  background:#FDFCFF!important;
+  transform:none!important;
+}
+#rm350Workboard .rm358-goal:focus,
+#rm350Workboard .rm358-goal:active,
+#rm350Workboard .rm350-card:focus,
+#rm350Workboard .rm350-card:active{
+  outline:none!important;
+  box-shadow:0 0 0 2px rgba(111,72,181,.12)!important;
+}
+#rm350Workboard .rm358-next{
+  background:#fff!important;
+  border:1px solid #E7E0F0!important;
+  box-shadow:none!important;
+}
+#rm350Workboard .rm350-card{
+  background:#fff!important;
+  box-shadow:0 7px 20px rgba(54,41,91,.045)!important;
+  transform:none!important;
+}
+#rm350Workboard .rm350-card:hover{
+  transform:none!important;
+  box-shadow:0 9px 24px rgba(54,41,91,.07)!important;
+}
+#rm350Workboard .rm350-card.rm358-next-card{
+  border-color:#AD96D7!important;
+  box-shadow:0 0 0 2px rgba(111,72,181,.08),0 9px 24px rgba(54,41,91,.06)!important;
+}
+#rm350Workboard .rm350-card.rm358-next-card .rm350-card-title::after{display:none!important}
+
+/* No animations or effects on Today; keeps the board calm and prevents visual leftovers. */
+#rm350Workboard *,#rm350Lane *{
+  animation:none!important;
+}
+
+@media(max-width:900px){
+  #rm350Workboard .rm358-goals{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+}
+@media(max-width:560px){
+  #rm350Workboard .rm358-goals{grid-template-columns:1fr!important}
+  #rm350Workboard .rm350-title{font-size:29px!important}
+}
+</style>
+
+<!-- v365: Claude artifact fix placed LAST so no later stylesheet can turn it back on. -->
+<style id="rm365-claude-artifact-final-authority">
+body[data-rm-tab="week"] #view-week .v95-avatar-fallback{display:none!important}
+body[data-rm-tab="week"] #rm350Workboard,
+body[data-rm-tab="week"] #rm350Workboard *{
+  -webkit-tap-highlight-color:rgba(0,0,0,0)!important;
+}
+body[data-rm-tab="week"] #rm350Workboard [class*="ripple"],
+body[data-rm-tab="week"] #rm350Workboard [class*="tap-indicator"],
+body[data-rm-tab="week"] #rm350Workboard [class*="click-indicator"],
+body[data-rm-tab="week"] #rm350Workboard [class*="pointer-indicator"],
+body[data-rm-tab="week"] #rm350Workboard [class*="cursor-highlight"],
+body[data-rm-tab="week"] #rm350Workboard [class*="click-highlight"]{
+  display:none!important;opacity:0!important;visibility:hidden!important;
+}
+body[data-rm-tab="week"] #rm350Workboard button:active,
+body[data-rm-tab="week"] #rm350Workboard button:focus,
+body[data-rm-tab="week"] #rm350Workboard .rm350-card:active,
+body[data-rm-tab="week"] #rm350Workboard .rm350-card:focus{
+  outline:none!important;
+  -webkit-tap-highlight-color:transparent!important;
+}
+</style>
+<script id="rm365-final-cleanup">
+(function(){
+  function cleanToday(){
+    try{
+      var view=document.getElementById('view-week');
+      if(!view)return;
+      var greet=view.querySelector(':scope > .v95-amanda-greeting');
+      if(greet){greet.style.setProperty('display','none','important');greet.setAttribute('aria-hidden','true');}
+      view.querySelectorAll('.v95-avatar-fallback').forEach(function(el){el.style.setProperty('display','none','important');});
+    }catch(e){}
+  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',cleanToday,{once:true});else cleanToday();
+  window.addEventListener('hashchange',cleanToday);
+})();
+console.log('RM Tracker v367 · Daily Pace progress artifact removed at source');
+</script>
+
+
+<!-- v368: make every Today work box one authoritative full-card click target -->
+<style id="rm368-full-card-click-css">
+body[data-rm-tab="week"] #rm350Workboard .rm350-card,
+body[data-rm-tab="week"] #rm350Workboard .rm358-goal,
+body[data-rm-tab="week"] #rm350Workboard .rm358-next{
+  cursor:pointer!important;
+}
+/* Nothing decorative inside a card can steal the click from the card itself. */
+body[data-rm-tab="week"] #rm350Workboard .rm350-card > *,
+body[data-rm-tab="week"] #rm350Workboard .rm350-card > * *,
+body[data-rm-tab="week"] #rm350Workboard .rm358-goal > *,
+body[data-rm-tab="week"] #rm350Workboard .rm358-goal > * *{
+  pointer-events:none!important;
+}
+body[data-rm-tab="week"] #rm350Workboard .rm350-card:hover,
+body[data-rm-tab="week"] #rm350Workboard .rm358-goal:hover,
+body[data-rm-tab="week"] #rm350Workboard .rm358-next:hover{
+  border-color:#C7B9E3!important;
+  box-shadow:0 9px 24px rgba(86,63,143,.09)!important;
+}
+body[data-rm-tab="week"] #rm350Workboard .rm350-card:focus-visible,
+body[data-rm-tab="week"] #rm350Workboard .rm358-goal:focus-visible,
+body[data-rm-tab="week"] #rm350Workboard .rm358-next:focus-visible{
+  outline:3px solid rgba(105,72,169,.22)!important;
+  outline-offset:2px!important;
+}
+</style>
+<script id="rm368-full-card-click-js">
+(function(){
+  'use strict';
+  function wireNextMove(){
+    var row=document.querySelector('#rm350Workboard .rm358-next');
+    if(!row||row.dataset.rm368Wired==='1')return;
+    row.dataset.rm368Wired='1';
+    row.setAttribute('role','button');
+    row.setAttribute('tabindex','0');
+    row.setAttribute('aria-label','Open the next recommended task');
+    function openNext(e){
+      /* The purple Open button already owns its own click. */
+      if(e&&e.target&&e.target.closest&&e.target.closest('.rm358-next-btn'))return;
+      var btn=row.querySelector('.rm358-next-btn');
+      if(btn)btn.click();
+    }
+    row.addEventListener('click',openNext);
+    row.addEventListener('keydown',function(e){
+      if(e.key==='Enter'||e.key===' '){e.preventDefault();openNext(e);}
+    });
+  }
+  function wire(){wireNextMove();}
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',function(){setTimeout(wire,0)},{once:true});
+  else setTimeout(wire,0);
+  /* Today is mounted dynamically once; these are finite follow-up passes, not polling. */
+  setTimeout(wire,180);
+  setTimeout(wire,650);
+  var prior=window.v350RefreshBoard;
+  if(typeof prior==='function'&&!prior.__rm368){
+    var wrapped=function(){var r=prior.apply(this,arguments);setTimeout(wire,0);return r;};
+    wrapped.__rm368=true;window.v350RefreshBoard=wrapped;window.v341RefreshBoard=wrapped;
+  }
+})();
+console.log('RM Tracker v368 · full Today cards clickable');
+</script>
+
 </body>
 </html>
+
+<!-- v363: legacy daily rotating quote card/list removed; current Today visual design preserved. -->
