@@ -1,4 +1,6 @@
  
+<!-- v334: visible meeting relationship selector adds Builder/Developer, Title/Escrow, Insurance, and Other Strategic Partner lanes. All strategic lanes create/update individual contact profiles, route to Nyny, preserve company/category, and bypass Realtor-only onboarding/conversion workflows. -->
+<!-- v333: visible meeting-lane selector makes Realtor vs Builder/Developer vs Strategic Partner explicit in Log Activity; builder company can be captured at log time and routed into the strategic contact profile. -->
 <!-- v332: first-meeting prompts follow relationship type rather than logger; Nyny coverage gets Realtor checklist; builder/strategic meetings auto-route to strategic workflow and skip personal Realtor onboarding fields. -->
 <!-- v326: outcomes-first Director audit. Adds live Power BI source reconciliation, growth/retention trend cards, health-snapshot recovery tracking, and clearer outcome visibility while preserving the v325 Amanda Face Time firewall. -->
 <!-- v325: Amanda Face Time ownership firewall. RM Step 4 now excludes Director-owned and all Channel/A/B relationships; only Amanda-owned C relationships can be scheduled here. -->
@@ -1627,7 +1629,7 @@ body.rm-director-route #v322BackToRm{display:block}
 </div>
 <div class="card">
 <div id="logNormalFields">
-<div class="card-title">Log an activity</div>
+<div class="card-title" style="display:flex;align-items:center;gap:8px">Log an activity <span style="font-size:9px;font-weight:800;padding:3px 7px;border-radius:999px;background:#EEE9F8;color:#5D4893">v334</span></div>
 <div class="offline-queue-badge" style="display:none;align-items:center;gap:6px;background:#EEEBF8;color:#4E3D8A;border-radius:8px;padding:8px 12px;margin-bottom:10px;font-size:12px;font-weight:600"></div>
 <div class="dedup-warn" id="dedupWarn"></div>
 <div class="dedup-warn" id="doubleDialWarn" style="background:var(--warning-bg);color:#4E3D8A"></div>
@@ -1715,6 +1717,22 @@ body.rm-director-route #v322BackToRm{display:block}
 </optgroup>
 </select>
 </div>
+</div>
+<div id="v333MeetingLane" style="display:none;margin:0 0 12px;padding:11px 12px;border:1px solid #D9D3EE;border-radius:9px;background:#FBFAFE">
+  <div style="font-size:10px;font-weight:800;color:#5D4893;text-transform:uppercase;letter-spacing:.45px;margin-bottom:7px">Who are you meeting?</div>
+  <div style="display:flex;gap:7px;flex-wrap:wrap">
+    <button type="button" class="btn-sm" id="v333LaneRealtor" onclick="v334SetMeetingLane('realtor')">Realtor / agent</button>
+    <button type="button" class="btn-sm" id="v333LaneBuilder" onclick="v334SetMeetingLane('builder')">Builder / developer rep</button>
+    <button type="button" class="btn-sm" id="v334LaneTitle" onclick="v334SetMeetingLane('title')">Title / escrow rep</button>
+    <button type="button" class="btn-sm" id="v334LaneInsurance" onclick="v334SetMeetingLane('insurance')">Insurance rep</button>
+    <button type="button" class="btn-sm" id="v333LaneStrategic" onclick="v334SetMeetingLane('strategic')">Other strategic partner</button>
+  </div>
+  <div id="v333MeetingLaneHint" style="font-size:10.5px;color:var(--text-3);margin-top:7px;line-height:1.4"></div>
+  <div id="v333BuilderCompanyWrap" style="display:none;margin-top:9px">
+    <label id="v334CompanyLabel" style="display:block;font-size:10px;font-weight:700;color:var(--text-3);text-transform:uppercase;letter-spacing:.35px;margin-bottom:4px">Company / organization</label>
+    <input id="v333BuilderCompany" placeholder="Company / organization" type="text" style="width:100%;box-sizing:border-box;border:1px solid var(--border);border-radius:8px;padding:8px 10px;font-family:inherit;font-size:12px;background:#fff"/>
+    <input id="v334StrategicCategory" type="hidden" value=""/>
+  </div>
 </div>
 <div class="form-row" id="referredByRow" style="display:none">
 <div class="field" style="flex:1">
@@ -6638,6 +6656,8 @@ async function logActivity(){
   if(!rmAttendees.length){toast("Select at least one RM involved.","error");return;}
   const activityOwner=rmAttendees.length===1?rmAttendees[0]:(document.getElementById("activityOwner")?.value||rmAttendees[0]);
   const meetingFocus=document.getElementById("meetingFocus")?.value||"";
+  const meetingCompany=(document.getElementById("v333BuilderCompany")?.value||"").trim();
+  const meetingCategory=(document.getElementById("v334StrategicCategory")?.value||"").trim();
   const lpAttendee=(document.getElementById("activityLpAttendee")?.value||"").trim();
   const nextStepOwner=(document.getElementById("activityNextStepOwner")?.value||"").trim();
   if((outcome==="Requires follow-up"||outcome==="Meeting Scheduled")&&!nextStepOwner){toast("Choose who owns the next step before saving.","error");return;}
@@ -6695,7 +6715,7 @@ async function logActivity(){
     // and keep it out of Realtor prospecting/onboarding. Home address, birthday and Realtor conversion
     // requirements intentionally do not apply to this relationship type.
     if(isStrategicPartnerMeeting&&typeof rmSmartEnsureStrategicProfile==="function"){
-      try{await rmSmartEnsureStrategicProfile(agentName,{category:meetingFocus==="Builder / Developer"?"Builder / Developer":"Other",meetingDate:(outcome==="Meeting Scheduled"?followupDate:date),held:outcome!=="Meeting Scheduled",lp:lpAttendee});}
+      try{await rmSmartEnsureStrategicProfile(agentName,{category:meetingCategory||(meetingFocus==="Builder / Developer"?"Builder / Developer":"Other"),brokerage:meetingCompany,meetingDate:(outcome==="Meeting Scheduled"?followupDate:date),held:outcome!=="Meeting Scheduled",lp:lpAttendee});}
       catch(e){console.warn("v332 strategic profile bridge",e);toast("Meeting saved, but the strategic relationship profile still needs attention.","warning",4500);}
     }
 
@@ -21171,6 +21191,7 @@ window.rmSmartEnsureStrategicProfile=async function(name,opts){
   const rows=await sbFetch('agent_profiles?agent_name=ilike.'+encodeURIComponent(name)+'&select=*&limit=8').catch(()=>[]);
   let p=(rows||[]).find(r=>key(r.agent_name)===key(name))||null;
   const payload={relationship_status:'active',relationship_type:'strategic_partner',strategic_partner_category:opts.category||((p&&p.strategic_partner_category)||'Other')};
+  if(String(opts.brokerage||'').trim())payload.brokerage=String(opts.brokerage).trim();
   if(opts.held)payload.last_meaningful_contact_date=String(opts.meetingDate||'').slice(0,10)||((typeof today==='function')?today():new Date().toISOString().slice(0,10));
   else if(opts.meetingDate)payload.next_meeting_date=String(opts.meetingDate).slice(0,10);
   if(p)await sbProfileWrite('agent_profiles?agent_name=eq.'+encodeURIComponent(p.agent_name),'PATCH',payload);
@@ -21199,6 +21220,89 @@ function wire(){
   ensureGuide();paint();hidePersonalFieldsForStrategic('contact');hidePersonalFieldsForStrategic('add');
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',wire,{once:true});else wire();setTimeout(wire,500);
+})();
+</script>
+<script id="v334-visible-strategic-lanes">
+(function(){
+'use strict';
+function t(){return document.getElementById('activityType')}
+function f(){return document.getElementById('meetingFocus')}
+function lane(){return document.getElementById('v333MeetingLane')}
+function companyWrap(){return document.getElementById('v333BuilderCompanyWrap')}
+function company(){return document.getElementById('v333BuilderCompany')}
+function catEl(){return document.getElementById('v334StrategicCategory')}
+function hint(){return document.getElementById('v333MeetingLaneHint')}
+function label(){return document.getElementById('v334CompanyLabel')}
+function meetingType(v){return ['New Realtor Meeting','Partner Meeting','Strategic Partner Meeting','Channel Meeting','Team / Office Presentation','Retention Meeting','Break Breads'].includes(String(v||''))}
+const LANES={
+  realtor:{button:'v333LaneRealtor',type:'New Realtor Meeting',focus:'Standard',category:'',label:'Company / brokerage (optional)',placeholder:'e.g. Keller Williams',hint:'<strong>Realtor / agent first meeting.</strong> Uses the New Realtor Meeting checklist and 4-week conversion workflow.'},
+  builder:{button:'v333LaneBuilder',type:'Strategic Partner Meeting',focus:'Builder / Developer',category:'Builder / Developer',label:'Builder / company',placeholder:'e.g. Rockford Homes',hint:'<strong>Builder / developer relationship.</strong> Saves the person as an individual strategic contact, routes to Nyny, and skips Realtor-only onboarding + conversion.'},
+  title:{button:'v334LaneTitle',type:'Strategic Partner Meeting',focus:'Strategic / Team Lead',category:'Title / Escrow',label:'Title / escrow company',placeholder:'e.g. Northwest Title',hint:'<strong>Title / escrow relationship.</strong> Saves the individual contact under their company, routes to Nyny, and keeps them out of Amanda’s Realtor queues.'},
+  insurance:{button:'v334LaneInsurance',type:'Strategic Partner Meeting',focus:'Strategic / Team Lead',category:'Insurance',label:'Insurance company / agency',placeholder:'e.g. State Farm or agency name',hint:'<strong>Insurance relationship.</strong> Saves the individual contact under their agency/company, routes to Nyny, and skips Realtor-only onboarding.'},
+  strategic:{button:'v333LaneStrategic',type:'Strategic Partner Meeting',focus:'Strategic / Team Lead',category:'Other',label:'Company / organization',placeholder:'Company / organization',hint:'<strong>Strategic partner relationship.</strong> Director-owned and excluded from Amanda’s Realtor prospecting, conversion and routine Realtor follow-up workflows.'}
+};
+function setActive(which){
+  Object.keys(LANES).forEach(k=>{const b=document.getElementById(LANES[k].button);if(!b)return;const on=k===which;b.style.background=on?'var(--brand)':'#fff';b.style.color=on?'#fff':'var(--text-2)';b.style.borderColor=on?'var(--brand)':'var(--border)';});
+}
+function paintLane(which){
+  const cfg=LANES[which]||LANES.strategic;setActive(which);
+  if(catEl())catEl().value=cfg.category;
+  if(companyWrap())companyWrap().style.display=which==='realtor'?'none':'block';
+  if(label())label().textContent=cfg.label;
+  if(company())company().placeholder=cfg.placeholder;
+  if(hint())hint().innerHTML=cfg.hint;
+}
+window.v334SetMeetingLane=function(which){
+  const cfg=LANES[which]||LANES.strategic,te=t(),fe=f();if(!te)return;
+  te.value=cfg.type;if(fe)fe.value=cfg.focus;paintLane(which);
+  te.dispatchEvent(new Event('change',{bubbles:true}));
+  try{toggleMeetingFocusField();toggleIntakeBlock()}catch(e){}
+};
+// Backward compatibility for any cached onclick references from v333.
+window.v333SetMeetingLane=window.v334SetMeetingLane;
+function laneFromCategory(category){
+  const c=String(category||'').toLowerCase();
+  if(/builder|developer/.test(c))return'builder';
+  if(/title|escrow|settlement/.test(c))return'title';
+  if(/insurance|insur/.test(c))return'insurance';
+  return'strategic';
+}
+function sync(){
+  const te=t(),fe=f(),box=lane();if(!te||!box)return;
+  const show=meetingType(te.value);box.style.display=show?'block':'none';if(!show)return;
+  if(te.value==='New Realtor Meeting'){paintLane('realtor');return;}
+  if(te.value==='Strategic Partner Meeting'){
+    const saved=String(catEl()?.value||'');
+    if(saved){paintLane(laneFromCategory(saved));return;}
+    if(fe&&fe.value==='Builder / Developer'){paintLane('builder');return;}
+    paintLane('strategic');return;
+  }
+  setActive('realtor');if(catEl())catEl().value='';if(companyWrap())companyWrap().style.display='none';if(hint())hint().textContent='Existing partner meeting. Relationship ownership stays separate from activity credit.';
+}
+async function hydrateRelationship(){
+  const name=String(document.getElementById('agentInput')?.value||'').trim();if(name.length<2)return;
+  try{
+    const rows=await sbFetch('agent_profiles?agent_name=ilike.'+encodeURIComponent(name)+'&select=agent_name,relationship_type,strategic_partner_category,brokerage,company,team&limit=8').catch(()=>[]);
+    const p=(rows||[]).find(x=>String(x.agent_name||'').trim().toLowerCase()===name.toLowerCase())||(rows||[])[0];if(!p)return;
+    const org=String(p.brokerage||p.company||p.team||'').trim();if(company()&&!company().value.trim()&&org)company().value=org;
+    const strategic=String(p.relationship_type||'').toLowerCase()==='strategic_partner'||(typeof v76IsStrategicPartner==='function'&&v76IsStrategicPartner(name,p));
+    if(!strategic)return;
+    let category=String(p.strategic_partner_category||'').trim();
+    if(!category&&typeof v93AffiliateCompanyCategory==='function')category=v93AffiliateCompanyCategory(org)||'';
+    const which=laneFromCategory(category);
+    if(t()&&t().value==='New Realtor Meeting'){t().value='Strategic Partner Meeting';t().dispatchEvent(new Event('change',{bubbles:true}));}
+    if(f())f().value=which==='builder'?'Builder / Developer':'Strategic / Team Lead';
+    paintLane(which);try{toast(name+' is a '+(category||'strategic partner')+' relationship · routed to the Director lane.','success',3200)}catch(e){}
+  }catch(e){console.warn('v334 relationship hydrate',e)}
+}
+function wire(){
+  const te=t(),fe=f(),a=document.getElementById('agentInput');
+  if(te&&!te.dataset.v334){te.dataset.v334='1';te.addEventListener('change',()=>setTimeout(sync,0))}
+  if(fe&&!fe.dataset.v334){fe.dataset.v334='1';fe.addEventListener('change',()=>setTimeout(sync,0))}
+  if(a&&!a.dataset.v334){a.dataset.v334='1';let timer=null;a.addEventListener('input',function(){clearTimeout(timer);timer=setTimeout(hydrateRelationship,450)});a.addEventListener('blur',hydrateRelationship)}
+  sync();
+}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',wire,{once:true});else wire();setTimeout(wire,250);
 })();
 </script>
 
