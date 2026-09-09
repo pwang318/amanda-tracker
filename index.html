@@ -1,7 +1,9 @@
  
 <!-- v326: outcomes-first Director audit. Adds live Power BI source reconciliation, growth/retention trend cards, health-snapshot recovery tracking, and clearer outcome visibility while preserving the v325 Amanda Face Time firewall. -->
 <!-- v325: Amanda Face Time ownership firewall. RM Step 4 now excludes Director-owned and all Channel/A/B relationships; only Amanda-owned C relationships can be scheduled here. -->
+<!-- v329: Contact/Profile bridge — activity-only agents can be found from Contacts search and Agent History; history Edit clarified as Edit activity. -->
 <!DOCTYPE html>
+<!-- v328: Agent History Edit fallback + Power BI shared import receipt alignment. -->
 <!-- v327: overdue 4-week conversion touches close correctly when completed late; Tuesday cleared/no-call rows move to bottom without changing Mack order for active rows. -->
 
 <html lang="en">
@@ -2006,7 +2008,7 @@ body.rm-director-route #v322BackToRm{display:block}
 <details class="v261-prospect-more" id="npMoreDetails">
 <summary>More details / change call-list status</summary>
 <div class="form-row" style="margin-top:10px">
-<div class="field"><label>Status</label><select id="np-status"><option value="Requires follow-up">Active prospect</option><option value="Excluded">Not a prospect / exclude from call list</option><option value="DNC">Do Not Contact</option><option value="NFM">Already with NFM Team</option></select></div>
+<div class="field"><label>Status</label><select id="np-status"><option value="Requires follow-up">Active prospect</option><option value="Meeting Scheduled">Meeting scheduled</option><option value="Converted" disabled>Meeting held / converted (system)</option><option value="Excluded">Not a prospect / exclude from call list</option><option value="DNC">Do Not Contact</option><option value="NFM">Already with NFM Team</option></select></div>
 <div class="field"><label>Follow-up date</label><input id="np-followup" type="date"/></div>
 </div>
 <div class="form-row one"><div class="field"><label>Notes</label><textarea id="np-notes" placeholder="Optional context, prior touch, or next step..."></textarea></div></div>
@@ -2023,6 +2025,8 @@ body.rm-director-route #v322BackToRm{display:block}
 <select id="pipelineFilter" onchange="filterPipeline()" style="padding:7px 11px;border:0.5px solid var(--border);border-radius:8px;font-size:12px;font-family:inherit;color:var(--text-2);background:var(--surface);">
 <option value="all">All statuses</option>
 <option value="Requires follow-up">Requires Follow-up</option>
+<option value="Meeting Scheduled">Meeting Scheduled</option>
+<option value="Converted">Meeting Held / Converted</option>
 <option value="Excluded">Not a prospect</option>
 <option value="DNC">Do Not Contact</option>
 <option value="NFM">Already w/ NFM</option>
@@ -2116,6 +2120,7 @@ body.rm-director-route #v322BackToRm{display:block}
 <select id="contactsFilter" onchange="filterContacts()" style="padding:8px 11px;border:0.5px solid var(--border);border-radius:8px;font-size:12px;font-family:inherit;color:var(--text-2);background:var(--surface);">
 <option value="all">Current agents</option>
 <option value="inactive">Inactive / removed</option>
+<option value="missing-profile">Needs contact profile</option>
 <option value="tier-Channel">Channel</option>
 <option value="tier-A">A-tier</option>
 <option value="tier-B">B-tier</option>
@@ -2213,6 +2218,7 @@ body.rm-director-route #v322BackToRm{display:block}
 <div class="modal-header" style="flex-shrink:0;padding:24px 26px 6px;margin-bottom:0"><span class="modal-title" id="contactModalTitle">Edit contact info</span><button class="modal-close" onclick="closeContactModal()">×</button></div>
 <div id="contactModalScrollBody" style="overflow-y:auto;flex:1;padding:10px 26px 24px">
 <div class="modal-sub" id="contactModalName"></div>
+<div id="rmLifecycleProfileBanner" style="display:none;margin:0 0 12px;padding:10px 12px;border-radius:9px;font-size:11px;line-height:1.45"></div>
 <div class="field" style="margin-bottom:12px">
 <label>Correct display name <span style="font-weight:400;color:var(--text-4)">(safe spelling/capitalization correction — does not rename the database record)</span></label>
 <input id="contactDisplayName" placeholder="e.g. Jordan Holibaugh" type="text"/>
@@ -3896,8 +3902,13 @@ async function completeIntakeChecklist(){
     return;
   }
   const btn=document.getElementById("logBtn");
-  btn.disabled=true;btn.textContent="Saving...";
+  btn.disabled=true;btn.textContent="Checking profile...";
   try{
+    if(typeof rmSmartRequireMeetingProfile==="function"){
+      const ready=await rmSmartRequireMeetingProfile(openIntake.agent_name);
+      if(!ready){btn.disabled=false;btn.textContent="Mark checklist complete & continue";return;}
+    }
+    btn.textContent="Saving...";
     const finalNotes=openIntake.freeNotes?COMPLETE_TAG+"\n\n"+openIntake.freeNotes:COMPLETE_TAG;
     await sbFetch("amanda_activities?id=eq."+openIntake.id,{method:"PATCH",prefer:"return=minimal",body:JSON.stringify({notes:finalNotes,edited_at:new Date().toISOString()})});
     toast("Checklist complete! 🎉 You're unlocked — keep going.","success");
@@ -6644,7 +6655,7 @@ async function logActivity(){
   // meetings are counted to the team goal without freezing Amanda's tracker behind her checklist.
   const isNewRealtorMeeting=activityType==="New Realtor Meeting"&&activityOwner==="Amanda";
   const intakeStates=isNewRealtorMeeting?getIntakeStates():null;
-  const intakeComplete=isNewRealtorMeeting?allIntakeDone(intakeStates):true;
+  let intakeComplete=isNewRealtorMeeting?allIntakeDone(intakeStates):true;
   
   // Lock the Save button BEFORE the async duplicate check so a fast double-tap cannot start
   // two parallel saves before the button is disabled.
@@ -6676,6 +6687,13 @@ async function logActivity(){
     await clearOldFollowups(agentName,insertedRow&&insertedRow.id);
     await completeActiveFlagAfterActivity(agentName);
 
+    // v330 lifecycle bridge: any scheduled meeting gets a lightweight contact/profile and a real
+    // next-meeting date. This does NOT make the person an active retained partner or assign a tier.
+    if(outcome==="Meeting Scheduled"&&typeof rmSmartPromoteScheduledProspect==="function"){
+      try{await rmSmartPromoteScheduledProspect(agentName,{meetingDate:followupDate,source:"Log Activity",activityType:activityType,activityOwner:activityOwner,lp:lpAttendee});}
+      catch(e){console.warn("v330 scheduled-meeting profile bridge",e);toast("Activity saved, but the contact profile still needs attention.","warning",4500);}
+    }
+
     // v263 lifecycle transition: once the FIRST REALTOR MEETING is actually held/logged, this
     // person is no longer an open cold prospect. Convert every matching prospect record so the
     // Smart New Meeting Opportunities / Talk-To / Face Time queues all agree on the same stage. The separate
@@ -6687,6 +6705,22 @@ async function logActivity(){
           await sbFetch("outreach_prospects?id=eq."+encodeURIComponent(pr.id),{method:"PATCH",prefer:"return=minimal",body:JSON.stringify({status:"Converted",follow_up_date:null})}).catch(()=>{});
         }
       }catch(e){console.warn("Could not convert prospect lifecycle after New Realtor Meeting:",e);}
+      if(typeof rmSmartPromoteHeldMeeting==="function"){
+        try{await rmSmartPromoteHeldMeeting(agentName,{meetingDate:date,activityOwner:activityOwner,lp:lpAttendee});}
+        catch(e){console.warn("v330 held-meeting profile bridge",e);toast("Meeting saved. Contact/profile completion still needs attention.","warning",5000);}
+      }
+      // A checked "contact info confirmed" box is not enough. If the first-meeting checklist would
+      // otherwise close, verify that phone + email + mailing address actually exist in the stored
+      // relationship profile. If not, keep the meeting saved but put the checklist back into PENDING.
+      if(intakeComplete&&typeof rmSmartRequireMeetingProfile==="function"){
+        const profileReady=await rmSmartRequireMeetingProfile(agentName);
+        if(!profileReady){
+          intakeComplete=false;
+          if(intakeStates)intakeStates.intakeContactConfirm=false;
+          finalNotes=buildPendingNotes(intakeStates,notes);
+          if(insertedRow&&insertedRow.id)await sbFetch("amanda_activities?id=eq."+encodeURIComponent(insertedRow.id),{method:"PATCH",prefer:"return=minimal",body:JSON.stringify({notes:finalNotes,edited_at:new Date().toISOString()})}).catch(()=>{});
+        }
+      }
     }
     
     document.getElementById("agentInput").value="";
@@ -7740,16 +7774,19 @@ async function ccSave(){
     const isDNC = outcome === "Remove / No Further Contact";
     try{
       [existingProspect,existingAgent]=await Promise.all([
-        sbFetch("outreach_prospects?agent_name=ilike."+encodeURIComponent(name)+"&select=id&limit=1"),
+        sbFetch("outreach_prospects?agent_name=ilike."+encodeURIComponent(name)+"&select=id,status,agent_name&limit=5"),
         sbFetch("agent_profiles?agent_name=ilike."+encodeURIComponent(name)+"&select=agent_name&limit=1")
       ]);
-      const nextProspectFollow=(outcome==="Left voicemail"||outcome==="No answer")?ccNextBusinessDate(2):(outcome==="Requires follow-up"?ccNextBusinessDate(3):null);
+      const nextProspectFollow=(outcome==="Left voicemail"||outcome==="No answer")?ccNextBusinessDate(2):(outcome==="Requires follow-up"?ccNextBusinessDate(3):(outcome==="Meeting Scheduled"?scheduledDate:null));
+      const lifecycleStatus=isDNC?"DNC":(outcome==="Meeting Scheduled"?"Meeting Scheduled":"Requires follow-up");
       if(!existingProspect.length&&!existingAgent.length){
-        await sbFetch("outreach_prospects",{method:"POST",prefer:"return=minimal",body:JSON.stringify({agent_name:name,phone,status:isDNC?"DNC":"Requires follow-up",follow_up_date:nextProspectFollow,notes:"Added via cold call log"})});
-      }else if(existingProspect.length&&isDNC){
-        await sbFetch("outreach_prospects?id=eq."+existingProspect[0].id,{method:"PATCH",prefer:"return=minimal",body:JSON.stringify({status:"DNC"})});
-      }else if(existingProspect.length&&nextProspectFollow){
-        await sbFetch("outreach_prospects?id=eq."+existingProspect[0].id,{method:"PATCH",prefer:"return=minimal",body:JSON.stringify({status:"Requires follow-up",follow_up_date:nextProspectFollow})});
+        await sbFetch("outreach_prospects",{method:"POST",prefer:"return=minimal",body:JSON.stringify({agent_name:name,phone,status:lifecycleStatus,follow_up_date:nextProspectFollow,notes:"Added via cold call log"})});
+      }else if(existingProspect.length){
+        const exactProspect=(existingProspect||[]).find(r=>ownerKey(r.agent_name)===ownerKey(name))||existingProspect[0];
+        await sbFetch("outreach_prospects?id=eq."+exactProspect.id,{method:"PATCH",prefer:"return=minimal",body:JSON.stringify({status:lifecycleStatus,follow_up_date:isDNC?null:nextProspectFollow})});
+      }
+      if(outcome==="Meeting Scheduled"&&typeof rmSmartPromoteScheduledProspect==="function"){
+        await rmSmartPromoteScheduledProspect(name,{phone:phone,meetingDate:scheduledDate,source:"Quick cold call"});
       }
     }catch(syncErr){
       pipelineSyncOk=false;
@@ -8999,15 +9036,31 @@ async function saveNoteFix(id,editId,actType){
   }
 }
 
-function openEditModal(id){
-  const a=allFeedData.find(x=>x.id===id);if(!a)return;
-  editingActivityId=id;
-  editingActivityType=a.act_type;
-  editingActivityMeta=extractRmMeta(a.notes);
-  document.getElementById("editModalAgent").textContent=a.agent_name+" — "+a.act_type;
-  document.getElementById("editNotes").value=stripRmMeta(a.notes||"");
-  document.getElementById("editOutcome").value=a.outcome||"";
-  document.getElementById("editFollowupDate").value=a.follow_up_date||"";const er=editingActivityMeta.rmAttendees||[editingActivityMeta.owner||"Amanda"];document.getElementById("editRmAmanda").checked=er.includes("Amanda");document.getElementById("editRmNyny").checked=er.includes("Nyny");document.getElementById("editLpAttendee").value=(editingActivityMeta.lpAttendees&&editingActivityMeta.lpAttendees[0])||"";document.getElementById("editNextStepOwner").value=editingActivityMeta.nextStepOwner||"";
+async function openEditModal(id){
+  // v328: Agent History is loaded independently from Activity Feed, so an activity can be
+  // visible in History without existing in allFeedData. Fall back to the shared row by id.
+  let a=(allFeedData||[]).find(x=>String(x.id)===String(id));
+  if(!a){
+    try{
+      const rows=await sbFetch("amanda_activities?id=eq."+encodeURIComponent(id)+"&select=*&limit=1").catch(()=>[]);
+      a=rows&&rows[0]?rows[0]:null;
+      if(a){a._source="amanda";a._agent=a.agent_name;a._type=a.act_type;a._date=a.act_date;a._outcome=a.outcome;a._note=a.notes;}
+    }catch(e){console.warn("History edit lookup failed",e);}
+  }
+  if(!a){toast("Could not load that activity to edit. Refresh Agent History and try again.","error",4500);return;}
+  editingActivityId=a.id!=null?a.id:id;
+  editingActivityType=a.act_type||a._type||"";
+  const rawNotes=a.notes!=null?a.notes:(a._note||"");
+  editingActivityMeta=extractRmMeta(rawNotes);
+  document.getElementById("editModalAgent").textContent=(a.agent_name||a._agent||"")+" — "+editingActivityType;
+  document.getElementById("editNotes").value=stripRmMeta(rawNotes||"");
+  document.getElementById("editOutcome").value=a.outcome||a._outcome||"";
+  document.getElementById("editFollowupDate").value=a.follow_up_date||"";
+  const er=editingActivityMeta.rmAttendees||[editingActivityMeta.owner||"Amanda"];
+  document.getElementById("editRmAmanda").checked=er.includes("Amanda");
+  document.getElementById("editRmNyny").checked=er.includes("Nyny");
+  document.getElementById("editLpAttendee").value=(editingActivityMeta.lpAttendees&&editingActivityMeta.lpAttendees[0])||"";
+  document.getElementById("editNextStepOwner").value=editingActivityMeta.nextStepOwner||"";
   document.getElementById("editModal").classList.add("open");
 }
 function closeEditModal(){document.getElementById("editModal").classList.remove("open");editingActivityId=null;editingActivityType=null;editingActivityMeta=null;}
@@ -9167,7 +9220,7 @@ async function doSearchHistory(name){
         +'<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px">'
         +'<div><div style="font-size:16px;font-weight:500;color:#4E3D8A">'+properCase(p.agent_name)+'</div>'
         +(function(){const o=getAgentOwnership(p.agent_name);return '<div style="font-size:10.5px;color:var(--text-3);margin-top:2px">RM: <strong>'+escHtml(o.rm||"Unassigned")+'</strong> · LP: <strong>'+escHtml((o.lp&&o.lp!=="Unassigned")?o.lp:"Unassigned")+'</strong></div>';})()+'</div>'
-        +'<button onclick="openContactModal(\''+p.agent_name.replace(/'/g,"\\'")+'\''+')" style="padding:4px 12px;background:#fff;color:var(--brand-dark);border:1px solid var(--border);border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit">Edit contact</button>'
+        +'<button onclick="openContactModal(\''+p.agent_name.replace(/'/g,"\\'")+'\''+')" style="padding:4px 12px;background:#fff;color:var(--brand-dark);border:1px solid var(--border);border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit">Contact / relationship</button>'
         +'</div>'
         +(p.personal_notes||referralCreditForProfile>0?'<div style="background:#fff;border:1px solid #D9D3EE;border-radius:8px;padding:10px 12px;margin-bottom:10px">'
           +(referralCreditForProfile>0?'<div style="font-size:12.5px;color:var(--text-1);margin-bottom:'+(p.personal_notes?"6px":"0")+'">🌾 Has sent <strong>'+referralCreditForProfile+'</strong> buddy referral'+(referralCreditForProfile!==1?"s":"")+' — worth a thank you.</div>':'')
@@ -9180,6 +9233,18 @@ async function doSearchHistory(name){
         touchInfo+
         '</div></div>';
     }
+    if(!profiles.length&&(activities.length||callLogs.length)){
+      const inferredName=(activities[0]&&activities[0].agent_name)||(callLogs[0]&&callLogs[0].agent_name)||name;
+      const safeInferred=encodeURIComponent(String(inferredName||''));
+      const own=getAgentOwnership(inferredName);
+      html+='<div style="background:#FFF9E8;border:1px solid #E7CC82;border-radius:10px;padding:14px 16px;margin-bottom:14px">'+
+        '<div style="display:flex;justify-content:space-between;gap:12px;align-items:flex-start;flex-wrap:wrap">'+
+          '<div><div style="font-size:16px;font-weight:700;color:#4E3D8A">'+escHtml(properCase(inferredName))+'</div>'+
+          '<div style="font-size:11px;color:#765A19;margin-top:4px"><strong>Activity exists, but there is no contact profile yet.</strong> That is why this person appears in Agent History but not the normal Current agents list.</div>'+
+          '<div style="font-size:10.5px;color:var(--text-3);margin-top:5px">RM: <strong>'+escHtml(own.rm||"Unassigned")+'</strong> · Saving the contact form will create the missing profile without deleting this history.</div></div>'+
+          '<button class="btn-sm" onclick="openContactModal(decodeURIComponent(\''+safeInferred+'\'))" style="background:var(--brand);color:#fff;border-color:var(--brand);padding:7px 11px">Create / edit contact</button>'+
+        '</div></div>';
+    }
     const items=[
       ...activities.map(a=>({id:a.id,date:a.act_date,source:"RM",agent:a.agent_name,type:a.act_type,outcome:a.outcome,notes:a.notes,fu:a.follow_up_date,meta:extractRmMeta(a.notes)})),
       ...callLogs.map(c=>({id:c.id,date:c.call_date,source:"LP",agent:c.agent_name,type:"LP Call",outcome:c.outcome,notes:c.note,lp:c.lp}))
@@ -9189,7 +9254,7 @@ async function doSearchHistory(name){
       html+='<div style="font-size:11px;color:#bbb;margin-bottom:10px">'+items.length+' contact records</div>';
       html+=items.map(item=>{
         const isCtc=item.type===CTC_TYPE,isLp=item.source==="LP";
-        return'<div class="feed-item"><div class="feed-top"><span class="feed-agent">'+( isLp?escHtml(item.lp||"LP")+" → "+escHtml(item.agent):escHtml(item.agent))+'</span><div class="feed-right"><span class="feed-date">'+fmtDate(item.date)+'</span>'+( isLp?'':'<button class="btn-sm" onclick="openEditModal('+item.id+')" style="font-size:10px;padding:3px 8px">Edit</button><button class="btn-sm danger" onclick="openConfirm('+item.id+',\''+item.agent.replace(/'/g,"\\'") +'\',\''+item.type.replace(/'/g,"\\'") +'\')">Delete</button>')+'</div></div><span class="feed-badge '+( isLp?"lp":isCtc?"ctc":"rm")+'">'+badgeEmoji(item.type)+'</span>'+
+        return'<div class="feed-item"><div class="feed-top"><span class="feed-agent">'+( isLp?escHtml(item.lp||"LP")+" → "+escHtml(item.agent):escHtml(item.agent))+'</span><div class="feed-right"><span class="feed-date">'+fmtDate(item.date)+'</span>'+( isLp?'':'<button class="btn-sm" onclick="openEditModal('+item.id+')" style="font-size:10px;padding:3px 8px">Edit activity</button><button class="btn-sm danger" onclick="openConfirm('+item.id+',\''+item.agent.replace(/'/g,"\\'") +'\',\''+item.type.replace(/'/g,"\\'") +'\')">Delete</button>')+'</div></div><span class="feed-badge '+( isLp?"lp":isCtc?"ctc":"rm")+'">'+badgeEmoji(item.type)+'</span>'+
         (!isLp?(function(){const own=getAgentOwnership(item.agent),m=item.meta||extractRmMeta(item.notes||""),rms=(m.rmAttendees||[m.owner||"Amanda"]).join(" + "),lps=(m.lpAttendees||[]).join(", "),shared=(m.rmAttendees||[]).length>1||((m.rmAttendees||[m.owner]).length&&own.rm&&!(m.rmAttendees||[m.owner]).includes(own.rm));return '<div style="font-size:10.5px;color:var(--text-3);margin-top:4px"><strong>RM(s):</strong> '+escHtml(rms)+' &nbsp;·&nbsp; <strong>Current owner:</strong> '+escHtml(own.rm||"Unassigned")+(lps?' &nbsp;·&nbsp; <strong>LP:</strong> '+escHtml(lps):'')+(m.nextStepOwner?' &nbsp;·&nbsp; <strong>Next:</strong> '+escHtml(m.nextStepOwner):'')+(shared?' &nbsp;·&nbsp; <span style="font-weight:700;color:var(--brand)">Shared coverage</span>':'')+'</div>';})():"")+
         (item.outcome?'<div class="feed-outcome">'+escHtml(item.outcome)+'</div>':"")+
         (item.fu?'<div class="feed-fu">Follow-up: '+fmtDate(item.fu)+'</div>':"")+
@@ -10486,8 +10551,8 @@ function renderProspects(list){
   document.getElementById("prospectList").innerHTML=list.map(p=>{
     const isDNC=p.status==="DNC",isNFM=p.status==="NFM",isExcluded=p.status==="Excluded";
     const fuOvr=p.follow_up_date&&p.follow_up_date<todayStr;
-    const bClass={"Requires follow-up":"followup","Excluded":"nfm","DNC":"dnc","NFM":"nfm"}[p.status]||"followup";
-    const bLabel={"Requires follow-up":"Requires Follow-up","Excluded":"Not a prospect","DNC":"Do Not Contact","NFM":"Already w/ NFM"}[p.status]||p.status;
+    const bClass={"Requires follow-up":"followup","Meeting Scheduled":"followup","Converted":"nfm","Excluded":"nfm","DNC":"dnc","NFM":"nfm"}[p.status]||"followup";
+    const bLabel={"Requires follow-up":"Requires Follow-up","Meeting Scheduled":"Meeting Scheduled","Converted":"Meeting Held / Converted","Excluded":"Not a prospect","DNC":"Do Not Contact","NFM":"Already w/ NFM"}[p.status]||p.status;
     const sn=(p.agent_name||"").replace(/'/g,"\\'");
     const sp=(p.phone||"").replace(/'/g,"\\'");
     const se=(p.email||"").replace(/'/g,"\\'");
@@ -10504,7 +10569,7 @@ function renderProspects(list){
     html+='<div class="pc-contact" style="justify-content:space-between;align-items:center">';
     html+='<div style="display:flex;gap:14px;flex-wrap:wrap">'+(p.phone?'<span>'+phoneCallLink(p.agent_name,p.phone)+'</span>':'<span style="color:#ccc">No phone</span>')+(p.email?' <span>✉️ '+escHtml(p.email)+'</span>':'')+'</div>';
     html+='<button class="btn-sm" style="font-size:10px;padding:3px 8px;flex-shrink:0" onclick="openPipelineContact('+p.id+')">Edit contact</button></div>';
-    if(p.follow_up_date&&!isDNC&&!isNFM&&!isExcluded)html+='<div class="pc-fudate '+(fuOvr?"overdue":"")+'">Follow-up: '+(fuOvr?"OVERDUE — ":"")+fmtDate(p.follow_up_date)+'</div>';
+    if(p.follow_up_date&&!isDNC&&!isNFM&&!isExcluded){const dateLabel=p.status==='Meeting Scheduled'?'Meeting':'Follow-up';html+='<div class="pc-fudate '+(fuOvr?"overdue":"")+'">'+dateLabel+': '+(fuOvr?(p.status==='Meeting Scheduled'?"DATE PASSED — ":"OVERDUE — "):"")+fmtDate(p.follow_up_date)+'</div>';}
     if(p.notes)html+='<div class="pc-notes">'+escHtml(p.notes)+'</div>';
     html+=actHtml;
     html+='<div class="pc-actions"><button class="btn-sm" onclick="editProspect('+p.id+')">Edit</button>';
@@ -10546,9 +10611,11 @@ async function saveProspect(){
   if(!name){toast("Please enter a name.","error");return;}
   const btn=document.getElementById("saveProspectBtn");if(btn){if(btn.disabled)return;btn.disabled=true;btn.textContent="Saving...";}
   const payload={agent_name:name,brokerage:document.getElementById("np-brokerage").value.trim()||null,phone:document.getElementById("np-phone").value.trim()||null,email:document.getElementById("np-email").value.trim()||null,status:document.getElementById("np-status").value,follow_up_date:document.getElementById("np-followup").value||null,notes:document.getElementById("np-notes").value.trim()||null};
+  if(payload.status==="Meeting Scheduled"&&!payload.follow_up_date){toast("Add the meeting date before saving a scheduled prospect.","error");if(btn){btn.disabled=false;btn.textContent=editingProspectId?"Save prospect changes":"Add to Smart New Meeting Opportunities";}return;}
   try{
     if(editingProspectId){await sbFetch("outreach_prospects?id=eq."+editingProspectId,{method:"PATCH",prefer:"return=minimal",body:JSON.stringify(payload)});toast("Prospect updated","success");}
     else{await sbFetch("outreach_prospects",{method:"POST",prefer:"return=minimal",body:JSON.stringify(payload)});toast("Prospect added","success");}
+    if(payload.status==="Meeting Scheduled"&&typeof rmSmartPromoteScheduledProspect==="function")await rmSmartPromoteScheduledProspect(name,{phone:payload.phone,email:payload.email,brokerage:payload.brokerage,meetingDate:payload.follow_up_date,activityType:"Cold Calls",activityOwner:"Amanda",source:"Prospect editor"});
     if(/^(Excluded|NFM|DNC)$/i.test(payload.status)){
       if(typeof rmProspectTombstone==="function")rmProspectTombstone(name,payload.status);
     }else if(typeof rmProspectUntombstone==="function"){
@@ -10823,6 +10890,7 @@ async function openContactModal(name,phone,email,brokerage,birthday){
   if(document.getElementById("contactLpOutreachStatus")&&!document.getElementById("contactLpOutreachStatus").value)document.getElementById("contactLpOutreachStatus").value="active";
   v76ContactRelationshipTypeChanged();
   toggleContactNurtureFields();
+  if(typeof rmSmartPaintContactLifecycleBanner==="function")rmSmartPaintContactLifecycleBanner(name).catch(()=>{});
   document.getElementById("contactModal").classList.add("open");
 }
 function closeContactModal(){document.getElementById("contactModal").classList.remove("open");const d=document.getElementById("partnerPlaybookDetails");if(d)d.open=false;const t=document.getElementById("contactModalTitle");if(t)t.textContent="Edit contact info";editingContactName=null;editingContactOriginalName=null;}
@@ -10899,6 +10967,7 @@ async function saveContactModal(){
     }
     const ownershipOk=await saveAgentOwnership(savedAgentName);
     if(typeof v77ApplyStrategicPartnerRouting==="function")await v77ApplyStrategicPartnerRouting(savedAgentName,payload).catch(()=>{});
+    if(typeof rmSmartAfterContactSave==="function")await rmSmartAfterContactSave(savedAgentName,payload).catch(()=>{});
     toast(ownershipOk?"Contact + ownership updated":"Contact updated — ownership setup still needed",ownershipOk?"success":"error",ownershipOk?3200:5500);closeContactModal();if(window._contactSaveCallback){window._contactSaveCallback();window._contactSaveCallback=null;}
     if(typeof rmRefreshAfterMutation==="function")rmRefreshAfterMutation("contact / LP outreach status updated");
     if(typeof loadRmNurtureQueue==="function")loadRmNurtureQueue();
@@ -10963,6 +11032,7 @@ async function saveAgentOwnership(name){
 }
 
 let allContacts=[];
+let activityOnlyContacts=[];
 
 // ── Bulk contact import — the tiered cadence, prioritization, and retention filtering throughout
 // the app all depend on tier/retained/contact fields being populated. Doing that one agent at a
@@ -10974,14 +11044,39 @@ async function loadContacts(){
   if(!el)return;
   el.innerHTML='<div class="no-data">Loading...</div>';
   try{
-    const[profiles,agentList,ownershipRows]=await Promise.all([
-      sbFetch("agent_profiles?select=*&order=agent_name.asc&limit=500"),
-      sbFetch("agent_profiles?select=agent_name&order=agent_name.asc&limit=500"),
-      sbFetch("agent_assignments?select=*&limit=5000").catch(()=>[])
+    const[profiles,agentList,ownershipRows,activityRows,prospectRows,lpCallRows]=await Promise.all([
+      sbFetch("agent_profiles?select=*&order=agent_name.asc&limit=5000"),
+      sbFetch("agent_profiles?select=agent_name&order=agent_name.asc&limit=5000"),
+      sbFetch("agent_assignments?select=*&limit=5000").catch(()=>[]),
+      sbFetch("amanda_activities?select=agent_name&order=created_at.desc&limit=5000").catch(()=>[]),
+      sbFetch("outreach_prospects?select=id,agent_name,phone,email,brokerage,status&limit=5000").catch(()=>[]),
+      sbFetch("call_logs?select=agent_name&order=call_date.desc&limit=5000").catch(()=>[])
     ]);
     agentOwnershipByKey={};(ownershipRows||[]).forEach(cacheOwnershipRow);
     allContacts=(profiles||[]).filter(p=>p.display_name!==HIDDEN_PROFILE_MARKER).map(p=>danielApplyTier(p));
-    allAgentNames=(allContacts||[]).map(a=>a.agent_name);
+    const v330ProspectByKey={};(prospectRows||[]).forEach(pr=>{const k=agentMatchKey(pr.agent_name);if(!k)return;const cur=v330ProspectByKey[k];if(!cur||String(pr.follow_up_date||'')>String(cur.follow_up_date||''))v330ProspectByKey[k]=pr;});
+    allContacts.forEach(c=>{const pr=v330ProspectByKey[agentMatchKey(c.agent_name)];if(pr){c._prospectStatus=pr.status||'';c._prospectFollowUp=pr.follow_up_date||'';if(!c.phone&&pr.phone)c.phone=pr.phone;if(!c.email&&pr.email)c.email=pr.email;if(!c.brokerage&&pr.brokerage)c.brokerage=pr.brokerage;}});
+
+    // v329: Activity history can exist before an agent_profiles row exists (cold outreach is the
+    // common case). Keep Current agents clean, but retain lightweight placeholders so searching
+    // Contacts for someone like Asia Speights does not incorrectly say "No contacts found."
+    const profileKeys=new Set((allContacts||[]).map(p=>agentMatchKey(p.agent_name)).filter(Boolean));
+    const placeholderMap=new Map();
+    const rememberActivityOnly=(row,source)=>{
+      const name=String(row&&row.agent_name||'').trim(),k=agentMatchKey(name);
+      if(!name||!k||profileKeys.has(k))return;
+      const prev=placeholderMap.get(k)||{agent_name:name,_activityOnly:true,_contactSource:source||'Activity history',relationship_status:'prospect'};
+      if(row.phone&&!prev.phone)prev.phone=row.phone;
+      if(row.email&&!prev.email)prev.email=row.email;
+      if(row.brokerage&&!prev.brokerage)prev.brokerage=row.brokerage;
+      if(source==='Prospect')prev._contactSource='Prospect / activity history';
+      placeholderMap.set(k,prev);
+    };
+    (activityRows||[]).forEach(r=>rememberActivityOnly(r,'Activity history'));
+    (lpCallRows||[]).forEach(r=>rememberActivityOnly(r,'LP / activity history'));
+    (prospectRows||[]).forEach(r=>rememberActivityOnly(r,'Prospect'));
+    activityOnlyContacts=Array.from(placeholderMap.values()).sort((a,b)=>String(a.agent_name).localeCompare(String(b.agent_name)));
+    allAgentNames=Array.from(new Set([...(allContacts||[]).map(a=>a.agent_name),...activityOnlyContacts.map(a=>a.agent_name)]));
     renderContactsDupeBanner(allContacts);
     filterContacts();
   }catch(e){el.innerHTML='<div class="no-data">Unable to load contacts.</div>';}
@@ -11105,15 +11200,19 @@ function renderDupeCleanupList(){
 
 
 function filterContacts(){
-  const q=(document.getElementById("contactsSearch")?.value||"").toLowerCase();
+  const q=(document.getElementById("contactsSearch")?.value||"").toLowerCase().trim();
   const f=document.getElementById("contactsFilter")?.value||"all";
-  // Contacts defaults to the CURRENT relationship roster. "Remove from active" is non-destructive:
-  // it sets relationship_status=inactive so history/production remain intact. The separate
-  // "Delete bad/duplicate" action applies HIDDEN_PROFILE_MARKER, which is omitted from Contacts
-  // and name-cleanup but intentionally leaves a tombstone row so imports cannot recreate it.
-  let list=allContacts;
-  if(f==="inactive") list=list.filter(c=>c.relationship_status==="inactive");
-  else list=list.filter(c=>c.relationship_status!=="inactive");
+  // Contacts defaults to the CURRENT relationship roster. Activity-only/prospect names do not
+  // clutter that list, but they become searchable and have a dedicated Needs contact profile filter.
+  let list=f==="missing-profile"?[...(activityOnlyContacts||[])]:[...(allContacts||[])];
+  if(f!=="missing-profile"){
+    if(f==="inactive") list=list.filter(c=>c.relationship_status==="inactive");
+    else list=list.filter(c=>c.relationship_status!=="inactive");
+    // Search is allowed to bridge into activity-only people even though Current agents normally hides them.
+    if(q&&f==="all")list=list.concat((activityOnlyContacts||[]).filter(c=>{
+      return (c.agent_name||"").toLowerCase().includes(q)||(c.phone||"").includes(q)||(c.email||"").toLowerCase().includes(q);
+    }));
+  }
   if(q)list=list.filter(c=>(c.agent_name||"").toLowerCase().includes(q)||(c.phone||"").includes(q)||(c.email||"").toLowerCase().includes(q)||(c.birthday||"").toLowerCase().includes(q));
   if(f==="tier-Channel")list=list.filter(c=>c.tier==="Channel");
   else if(f==="tier-A")list=list.filter(c=>c.tier==="A");
@@ -11173,13 +11272,32 @@ function renderContacts(list){
   if(!list.length){el.innerHTML='<div class="no-data">No contacts found.</div>';return;}
   el.innerHTML=list.map(c=>{
     const shownName=(c.display_name&&c.display_name.trim())?c.display_name.trim():resolvedDisplayName(c.agent_name);
+    if(c._activityOnly){
+      const initials=(shownName||"?").split(" ").map(w=>w[0]).slice(0,2).join("").toUpperCase();
+      const safeName=encodeURIComponent(String(c.agent_name||''));
+      const safePhone=encodeURIComponent(String(c.phone||''));
+      const safeEmail=encodeURIComponent(String(c.email||''));
+      const safeBrokerage=encodeURIComponent(String(c.brokerage||''));
+      const o=getAgentOwnership(c.agent_name);
+      return '<div class="contact-row" style="border-color:#E7CC82;background:#FFFCF3">'+
+        '<div class="contact-avatar">'+initials+'</div>'+
+        '<div class="contact-info">'+
+          '<div class="contact-name" style="display:flex;align-items:center;gap:7px">'+escHtml(shownName)+' <span style="font-size:9px;font-weight:800;padding:3px 7px;border-radius:999px;background:#FFF2D6;color:#8A5A00">NEEDS CONTACT PROFILE</span></div>'+
+          '<div style="font-size:10.5px;color:var(--text-3);margin-top:3px"><strong style="color:var(--brand)">RM:</strong> '+escHtml(o.rm||"Unassigned")+' &nbsp;·&nbsp; '+escHtml(c._contactSource||"Activity history")+'</div>'+
+          (c.brokerage?'<div style="font-size:10.5px;color:var(--text-3);margin-top:2px">'+escHtml(c.brokerage)+'</div>':'')+
+          '<div class="contact-meta">'+(c.phone?'<span>'+escHtml(c.phone)+'</span>':'<span style="color:#A56A00">No saved phone</span>')+(c.email?'<span>'+escHtml(c.email)+'</span>':'')+'</div>'+
+        '</div>'+
+        '<div style="display:flex;gap:5px;align-items:center;flex-shrink:0;flex-wrap:wrap;justify-content:flex-end">'+
+          '<button class="btn-sm" onclick="openContactModal(decodeURIComponent(\''+safeName+'\'),decodeURIComponent(\''+safePhone+'\'),decodeURIComponent(\''+safeEmail+'\'),decodeURIComponent(\''+safeBrokerage+'\'))" style="background:var(--brand);color:#fff;border-color:var(--brand)">Create contact</button>'+
+        '</div></div>';
+    }
     const initials=(shownName||"?").split(" ").map(w=>w[0]).slice(0,2).join("").toUpperCase();
     const hasBday=c.birthday?true:false;
     const sn=(c.agent_name||"").replace(/"/g,"&quot;");
     return'<div class="contact-row">'+
       '<div class="contact-avatar">'+initials+'</div>'+
       '<div class="contact-info">'+
-        '<div class="contact-name" style="display:flex;align-items:center;gap:7px">'+escHtml(shownName)+tierBadge(c.tier)+'</div>'+
+        '<div class="contact-name" style="display:flex;align-items:center;gap:7px;flex-wrap:wrap">'+escHtml(shownName)+tierBadge(c.tier)+(typeof rmSmartContactStageBadge==='function'?rmSmartContactStageBadge(c):'')+'</div>'+
         (function(){const o=getAgentOwnership(c.agent_name);return '<div style="font-size:10.5px;color:var(--text-3);margin-top:2px"><strong style="color:var(--brand)">RM:</strong> '+escHtml(o.rm||"Unassigned")+' &nbsp;·&nbsp; <strong style="color:var(--text-2)">LP:</strong> '+escHtml((o.lp&&o.lp!=="Unassigned")?o.lp:"Unassigned")+'</div>';})()+
         (c.brokerage?'<div style="font-size:10.5px;color:var(--text-3);margin-top:2px">'+escHtml(c.brokerage)+'</div>':'')+
         '<div class="contact-meta">'+
@@ -11247,6 +11365,7 @@ function openContactsEdit(nameOrEl){
   if(document.getElementById("contactSatisfaction"))document.getElementById("contactSatisfaction").value=c.satisfaction_rating||"";
   if(document.getElementById("contactCompetitorRisk"))document.getElementById("contactCompetitorRisk").checked=!!(c.competitor_risk_flag);
   if(document.getElementById("contactHighPotential"))document.getElementById("contactHighPotential").checked=!!(c.high_potential_flag);
+  if(typeof rmSmartPaintContactLifecycleBanner==="function")rmSmartPaintContactLifecycleBanner(name,c).catch(()=>{});
   document.getElementById("contactModal").classList.add("open");
   window._contactSaveCallback=function(){loadContacts();};
 }
@@ -13470,6 +13589,27 @@ function v124LatestPowerBiSnapshot(profiles){
   const byKey=new Map();all.forEach(p=>{const ms=Date.parse(p&&p.powerbi_last_seen_at||"");const lvl=v124PowerBiLevel(p&&p.powerbi_level);if(!lvl||!Number.isFinite(ms)||Math.abs(ms-latestMs)>=120000)return;const k=typeof agentMatchKey==="function"?agentMatchKey(p.agent_name):String(p.agent_name||"").trim().toLowerCase();if(k&&!byKey.has(k))byKey.set(k,p);});
   const rows=Array.from(byKey.values()),counts={A:0,B:0,C:0,total:0};rows.forEach(p=>{const l=v124PowerBiLevel(p.powerbi_level);if(l){counts[l]++;counts.total++;}});return{stamp,rows,counts};
 }
+// v328: LP already writes the exact uploaded Power BI totals into powerbi_import_log.source_app.
+// Use that shared import receipt for the headline audit numbers so RM cannot remain on an older
+// profile snapshot while LP is already showing the newly uploaded file. agent_profiles is still
+// used for the actual roster/contact details once its row sync catches up.
+function v328ParsePowerBiReceipt(sourceApp,importedAt){
+  const s=String(sourceApp||"");if(!s.startsWith("core-team-tracker"))return null;
+  const out={imported_at:importedAt||null,raw_rows:0,levels:{Channel:0,A:0,B:0,C:0,Blank:0,Other:0}};
+  s.split(";").slice(1).forEach(part=>{const i=part.indexOf("=");if(i<1)return;const k=part.slice(0,i),v=Number(part.slice(i+1))||0;if(k==="raw")out.raw_rows=v;else if(k==="Channel")out.levels.Channel=v;else if(k==="A")out.levels.A=v;else if(k==="B")out.levels.B=v;else if(k==="C")out.levels.C=v;else if(k==="blank")out.levels.Blank=v;else if(k==="other")out.levels.Other=v;});
+  out.active_rows=Number(out.levels.A||0)+Number(out.levels.B||0)+Number(out.levels.C||0);
+  return out.raw_rows||out.active_rows?out:null;
+}
+async function v328SharedPowerBiTruth(profiles){
+  const snap=v124LatestPowerBiSnapshot(profiles||[]);let receipt=null;
+  try{
+    const logs=await sbFetch("powerbi_import_log?select=imported_at,source_app,rows_processed,errors&source_app=like.core-team-tracker%25&order=imported_at.desc&limit=1").catch(()=>[]);
+    const r=logs&&logs[0];if(r)receipt=v328ParsePowerBiReceipt(r.source_app,r.imported_at);
+    if(receipt&&r)receipt.errors=Number(r.errors||0);
+  }catch(e){console.warn("Shared Power BI receipt lookup failed",e);}
+  const receiptMs=Date.parse(receipt&&receipt.imported_at||"")||0,snapMs=Date.parse(snap&&snap.stamp||"")||0;
+  return{snap,receipt,useReceipt:!!receipt&&receiptMs>=snapMs,profileBehind:!!receipt&&receiptMs>snapMs+1000};
+}
 function v124DailyGoalTile(label,value,target,sub){const met=target!==null&&target!==undefined?value>=target:false,pct=target?Math.min(100,Math.round(value/target*100)):0;return '<div style="border:1px solid '+(met?'#CFE4D7':'var(--border-light)')+';background:'+(met?'#F7FCF8':'#fff')+';border-radius:10px;padding:10px 11px"><div style="display:flex;justify-content:space-between;gap:8px;align-items:baseline"><strong style="font-size:20px;color:'+(met?'#315B40':'var(--text-1)')+'">'+value+(target!==null&&target!==undefined?'<span style="font-size:11px;font-weight:600;color:var(--text-3)"> / '+target+'</span>':'')+'</strong>'+(met?'<span style="font-size:9px;font-weight:800;color:#315B40">HIT ✓</span>':'')+'</div><div style="font-size:10.5px;font-weight:750;color:var(--text-2);margin-top:2px">'+escHtml(label)+'</div>'+(target?'<div style="height:4px;background:#ECE8F1;border-radius:99px;overflow:hidden;margin-top:7px"><i style="display:block;height:100%;width:'+pct+'%;background:'+(met?'#6E9779':'#8060B3')+'"></i></div>':'')+(sub?'<div style="font-size:9.5px;color:var(--text-4);margin-top:5px">'+escHtml(sub)+'</div>':'')+'</div>';}
 function v124RenderAmandaDailyGoals(acts){
   const host=document.getElementById("amandaDailyGoalGrid");if(!host)return;const a=(acts||[]).filter(x=>typeof activityCreditsPerson==="function"?activityCreditsPerson(x,"Amanda"):true);
@@ -13491,10 +13631,44 @@ function v124MountAudit(){
   first.insertAdjacentElement("afterend",card);
 }
 async function v122RenderAudit(){
-  const host=document.getElementById("v122AuditBody");if(!host)return;try{const [profiles,owners]=await Promise.all([sbFetch("agent_profiles?select=*&limit=5000").catch(()=>[]),sbFetch("agent_assignments?select=agent_name,rm,lp&limit=5000").catch(()=>[])]);const snap=v124LatestPowerBiSnapshot(profiles),ownerMap={};(owners||[]).forEach(o=>ownerMap[agentMatchKey(o.agent_name)]=o);if(!snap.stamp){host.innerHTML='<div style="padding:12px;border:1px solid #E7C98A;background:#FFF8E8;border-radius:8px;color:#7A5600;font-size:11.5px"><strong>No shared Power BI snapshot is stamped yet.</strong> Upload the current file in the Core Team / LP Tracker, then click Refresh shared data here.</div>';return;}const keys=new Set(snap.rows.map(p=>agentMatchKey(p.agent_name))),stale=(profiles||[]).filter(p=>!keys.has(agentMatchKey(p.agent_name))&&String(p.relationship_type||"").toLowerCase()!=="strategic_partner"&&p.display_name!==HIDDEN_PROFILE_MARKER),managed=snap.rows.filter(p=>p.do_not_contact!==true&&String(p.relationship_status||"active").toLowerCase()!=="inactive"&&String(p.relationship_type||"realtor").toLowerCase()!=="strategic_partner"),needs=managed.filter(p=>!String(p.phone||"").trim()||!String(p.email||"").trim()),ownershipGaps=managed.filter(p=>!String((ownerMap[agentMatchKey(p.agent_name)]||{}).rm||"").trim());host.innerHTML='<div class="v122-audit-stats"><div class="v122-audit-stat"><strong>'+snap.counts.total+'</strong><span>Power BI roster</span></div><div class="v122-audit-stat"><strong>'+snap.counts.A+' / '+snap.counts.B+' / '+snap.counts.C+'</strong><span>A / B / C source levels</span></div><div class="v122-audit-stat"><strong>'+needs.length+'</strong><span>Current contacts missing phone/email</span></div><div class="v122-audit-stat"><strong>'+stale.length+'</strong><span>Historical profiles excluded</span></div></div>'+(needs.length?'<div style="font-size:10.8px;color:#765815;background:#FFF9E8;border:1px solid #F0DCA5;border-radius:8px;padding:9px 10px"><strong>'+needs.length+' current relationship'+(needs.length!==1?'s':'')+' still need phone/email.</strong> If the value exists in Power BI, run the next upload in Core Team / LP Tracker; otherwise update the verified contact here.</div>':'<div style="padding:10px;border:1px solid #CFE4D7;background:#FBFFFD;border-radius:8px;color:#315B40;font-size:11px"><strong>Current phone/email audit is clean.</strong></div>')+'<div class="v122-note"><strong>Single source:</strong> latest shared Power BI sync '+fmtDate(String(snap.stamp).slice(0,10))+' · A '+snap.counts.A+' · B '+snap.counts.B+' · C '+snap.counts.C+' · Total '+snap.counts.total+'. RM cannot upload or repair Power BI. '+(ownershipGaps.length?'<strong>'+ownershipGaps.length+' current relationship(s) still need an RM owner.</strong>':'Ownership coverage is assigned for the current managed rows.')+'</div>';
-  }catch(e){console.warn("v124 audit failed",e);host.innerHTML='<div class="no-data">Could not refresh the shared data audit right now.</div>';}
+  const host=document.getElementById("v122AuditBody");if(!host)return;
+  try{
+    const [profiles,owners]=await Promise.all([
+      sbFetch("agent_profiles?select=*&limit=5000").catch(()=>[]),
+      sbFetch("agent_assignments?select=agent_name,rm,lp&limit=5000").catch(()=>[])
+    ]);
+    const truth=await v328SharedPowerBiTruth(profiles),snap=truth.snap,receipt=truth.receipt,ownerMap={};
+    (owners||[]).forEach(o=>ownerMap[agentMatchKey(o.agent_name)]=o);
+    if(!snap.stamp&&!receipt){host.innerHTML='<div style="padding:12px;border:1px solid #E7C98A;background:#FFF8E8;border-radius:8px;color:#7A5600;font-size:11.5px"><strong>No shared Power BI upload is available yet.</strong> Upload the current file in Core Team / LP Tracker, then click Refresh shared data here.</div>';return;}
+    const counts=truth.useReceipt?{A:Number(receipt.levels.A||0),B:Number(receipt.levels.B||0),C:Number(receipt.levels.C||0),total:Number(receipt.active_rows||0)}:snap.counts;
+    const stamp=truth.useReceipt?receipt.imported_at:snap.stamp;
+    const raw=truth.useReceipt?Number(receipt.raw_rows||0):snap.counts.total;
+    const keys=new Set((snap.rows||[]).map(p=>agentMatchKey(p.agent_name)));
+    const stale=(profiles||[]).filter(p=>!keys.has(agentMatchKey(p.agent_name))&&String(p.relationship_type||"").toLowerCase()!=="strategic_partner"&&p.display_name!==HIDDEN_PROFILE_MARKER);
+    const managed=(snap.rows||[]).filter(p=>p.do_not_contact!==true&&String(p.relationship_status||"active").toLowerCase()!=="inactive"&&String(p.relationship_type||"realtor").toLowerCase()!=="strategic_partner");
+    const needs=managed.filter(p=>!String(p.phone||"").trim()||!String(p.email||"").trim());
+    const ownershipGaps=managed.filter(p=>!String((ownerMap[agentMatchKey(p.agent_name)]||{}).rm||"").trim());
+    const syncBanner=truth.profileBehind?'<div style="font-size:10.8px;color:#765815;background:#FFF9E8;border:1px solid #F0DCA5;border-radius:8px;padding:9px 10px"><strong>Newest LP Power BI upload received.</strong> Headline counts below are already using that upload. Individual agent/contact details are still finishing their shared profile sync; click Refresh shared data again in a moment if needed.</div>':'';
+    const contactTile=truth.profileBehind?'…':needs.length;
+    const historicalTile=truth.profileBehind?'…':stale.length;
+    host.innerHTML='<div class="v122-audit-stats"><div class="v122-audit-stat"><strong>'+counts.total+'</strong><span>Power BI Active Agents</span></div><div class="v122-audit-stat"><strong>'+counts.A+' / '+counts.B+' / '+counts.C+'</strong><span>A / B / C source levels</span></div><div class="v122-audit-stat"><strong>'+contactTile+'</strong><span>Current contacts missing phone/email</span></div><div class="v122-audit-stat"><strong>'+historicalTile+'</strong><span>Historical profiles excluded</span></div></div>'+syncBanner+(!truth.profileBehind?(needs.length?'<div style="font-size:10.8px;color:#765815;background:#FFF9E8;border:1px solid #F0DCA5;border-radius:8px;padding:9px 10px"><strong>'+needs.length+' current relationship'+(needs.length!==1?'s':'')+' still need phone/email.</strong> If the value exists in Power BI, run the next upload in Core Team / LP Tracker; otherwise update the verified contact here.</div>':'<div style="padding:10px;border:1px solid #CFE4D7;background:#FBFFFD;border-radius:8px;color:#315B40;font-size:11px"><strong>Current phone/email audit is clean.</strong></div>'):'')+'<div class="v122-note"><strong>Single source:</strong> latest LP/Core Team Power BI upload '+(stamp?new Date(stamp).toLocaleString('en-US',{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}):'—')+' · A '+counts.A+' · B '+counts.B+' · C '+counts.C+' · Active '+counts.total+' · '+raw+' raw uploaded rows. '+(truth.profileBehind?'Profile detail sync is catching up to this upload.':(ownershipGaps.length?'<strong>'+ownershipGaps.length+' current relationship(s) still need an RM owner.</strong>':'Ownership coverage is assigned for the current managed rows.'))+'</div>';
+  }catch(e){console.warn("v328 audit failed",e);host.innerHTML='<div class="no-data">Could not refresh the shared data audit right now.</div>';}
 }
-async function v124RefreshSharedData(){try{if(typeof _wp18Cache!=="undefined"){_wp18Cache=null;_wp18CacheAt=0;}await Promise.allSettled([typeof loadContacts==="function"?loadContacts():Promise.resolve(),typeof loadPortfolioReview==="function"?loadPortfolioReview():Promise.resolve(),typeof loadManagement==="function"?loadManagement():Promise.resolve(),typeof v106LoadTierGrowth==="function"?v106LoadTierGrowth(true):Promise.resolve()]);await v122RenderAudit();toast("Shared LP/Core Team data refreshed ✓","success",2800);}catch(e){console.warn(e);toast("Could not refresh shared data.","error",3500);}}
+async function v124RefreshSharedData(){
+  try{
+    if(typeof _wp18Cache!=="undefined"){_wp18Cache=null;_wp18CacheAt=0;}
+    await v122RenderAudit();
+    await Promise.allSettled([
+      typeof loadContacts==="function"?loadContacts():Promise.resolve(),
+      typeof loadPortfolioReview==="function"?loadPortfolioReview():Promise.resolve(),
+      typeof loadManagement==="function"?loadManagement():Promise.resolve(),
+      typeof v106LoadTierGrowth==="function"?v106LoadTierGrowth(true):Promise.resolve(),
+      typeof v91RefreshDirectorOS==="function"?Promise.resolve(v91RefreshDirectorOS()):Promise.resolve()
+    ]);
+    await v122RenderAudit();
+    toast("Latest LP/Core Team Power BI upload loaded ✓","success",2800);
+  }catch(e){console.warn(e);toast("Could not refresh shared data.","error",3500);}
+}
 // Compatibility guards: any old/hidden calls are intentionally blocked in RM.
 
 
@@ -18723,12 +18897,13 @@ window.rmxBoot=boot;const baseSwitch=window.switchTab;window.switchTab=function(
         const prs=await sbFetch('outreach_prospects?agent_name=ilike.'+encodeURIComponent(name)+'&select=id,agent_name&limit=5').catch(()=>[]);
         const exact=(prs||[]).find(r=>String(r.agent_name||'').trim().toLowerCase()===name.toLowerCase())||(prs||[])[0];
         if(exact){
-          const payload=outcome==='Remove / No Further Contact'?{status:'DNC',follow_up_date:null}:{status:'Requires follow-up',follow_up_date:(outcome==='Meeting Scheduled'?null:(follow||null))};
+          const payload=outcome==='Remove / No Further Contact'?{status:'DNC',follow_up_date:null}:{status:(outcome==='Meeting Scheduled'?'Meeting Scheduled':'Requires follow-up'),follow_up_date:follow||null};
           await sbFetch('outreach_prospects?id=eq.'+encodeURIComponent(exact.id),{method:'PATCH',prefer:'return=minimal',body:JSON.stringify(payload)}).catch(()=>{});
-        }else if(phone){
-          await sbFetch('outreach_prospects',{method:'POST',prefer:'return=minimal',body:JSON.stringify({agent_name:name,phone,status:outcome==='Remove / No Further Contact'?'DNC':'Requires follow-up',follow_up_date:follow||null,notes:'Added via Smart New Meeting Opportunities call'})}).catch(()=>{});
+        }else if(phone||outcome==='Meeting Scheduled'){
+          await sbFetch('outreach_prospects',{method:'POST',prefer:'return=minimal',body:JSON.stringify({agent_name:name,phone:phone||null,status:outcome==='Remove / No Further Contact'?'DNC':(outcome==='Meeting Scheduled'?'Meeting Scheduled':'Requires follow-up'),follow_up_date:follow||null,notes:'Added via Smart New Meeting Opportunities call'})}).catch(()=>{});
         }
-      }catch(e){console.warn('v238 prospect pipeline sync',e)}
+        if(outcome==='Meeting Scheduled'&&typeof rmSmartPromoteScheduledProspect==='function')await rmSmartPromoteScheduledProspect(name,{phone:phone,meetingDate:follow,source:'Smart New Meeting Opportunities'});
+      }catch(e){console.warn('v238 prospect pipeline/profile sync',e);try{toast('Call saved. Contact/profile sync still needs attention.','warning',4200)}catch(_){} }
       if(typeof v175Close==='function')v175Close('v175OutreachModal');
       try{if(typeof toast==='function')toast(outcome==='Meeting Scheduled'?'Meeting booked with '+name+' ✓':'New Realtor outreach saved ✓','success',3000)}catch(e){}
       setTimeout(()=>{try{if(typeof rmRefreshAfterMutation==='function')rmRefreshAfterMutation('new Realtor prospect call saved');else if(typeof v23LoadAmandaSnapshot==='function')v23LoadAmandaSnapshot(true)}catch(e){}},40);
@@ -20737,6 +20912,167 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
   window.addEventListener('focus',refreshDirector);document.addEventListener('visibilitychange',function(){if(!document.hidden)refreshDirector()});
 })();
 </script>
+
+<style id="v330-smart-lifecycle-css">
+.rm-life-chip{display:inline-flex;align-items:center;border-radius:999px;padding:3px 7px;font-size:8.5px;font-weight:850;letter-spacing:.02em;background:#F0EBF7;color:#5B438A;border:1px solid #D9CFE8;white-space:nowrap}
+.rm-life-chip.scheduled{background:#FFF7E7;color:#7A5A16;border-color:#E7CF94}.rm-life-chip.newrel{background:#EDF7F0;color:#315B40;border-color:#CFE4D7}.rm-life-chip.incomplete{background:#FFF1EE;color:#A14A3F;border-color:#EBC6BF}
+</style>
+<script id="v330-smart-lifecycle-js">
+(function(){
+'use strict';
+const K=s=>String(s||'').trim().toLowerCase().replace(/\s+/g,' ');
+const dateOnly=s=>String(s||'').slice(0,10);
+const todayIso=()=>typeof today==='function'?today():new Date().toISOString().slice(0,10);
+function nonblank(v){return !!String(v||'').trim()}
+function coreMissing(p){const m=[];if(!nonblank(p&&p.phone))m.push('phone');if(!nonblank(p&&p.email))m.push('email');if(!nonblank(p&&p.address))m.push('mailing address');return m}
+function enrichMissing(p){const m=[];if(!nonblank(p&&p.birthday))m.push('birthday');return m}
+async function profile(name){const rows=await sbFetch('agent_profiles?agent_name=ilike.'+encodeURIComponent(name)+'&select=*&limit=5').catch(()=>[]);const exact=(rows||[]).filter(r=>K(r.agent_name)===K(name));return{rows,exact:exact.length===1?exact[0]:(rows.length===1?rows[0]:null),ambiguous:exact.length>1||rows.length>1&&!exact.length}}
+async function prospect(name){const rows=await sbFetch('outreach_prospects?agent_name=ilike.'+encodeURIComponent(name)+'&select=*&limit=20').catch(()=>[]);return (rows||[]).find(r=>K(r.agent_name)===K(name))||(rows||[])[0]||null}
+async function assignments(name){const rows=await sbFetch('agent_assignments?agent_name=ilike.'+encodeURIComponent(name)+'&select=*&limit=20').catch(()=>[]);return (rows||[]).filter(r=>K(r.agent_name)===K(name))}
+function strategic(name,p){try{return typeof wp18StrategicNynyMatch==='function'&&wp18StrategicNynyMatch(name,p||{})}catch(e){return false}}
+function directorTier(p){try{const t=typeof danielTierFromProduction==='function'?danielTierFromProduction(p||{}):String((p&&p.tier)||'');return ['Channel','A','B'].includes(t)}catch(e){return false}}
+async function ensureOwnership(name,p,preferredRm,lp){
+  const rows=await assignments(name),existing=rows.find(r=>String(r.lp||'')==='__REMOVED__')||rows[0]||null;
+  if(existing&&String(existing.lp||'')==='__REMOVED__')return{ok:false,blocked:true,reason:'removed'};
+  let rm=existing&&existing.rm?existing.rm:'';
+  if(strategic(name,p)||directorTier(p))rm='Nyny';
+  else if(!rm)rm=preferredRm||'Amanda';
+  // Never overwrite an intentional Director owner with Amanda.
+  if(String(rm).toLowerCase()==='nyny')rm='Nyny';
+  const payload={agent_name:(existing&&existing.agent_name)||name,lp:(existing&&existing.lp&&existing.lp!=='__REMOVED__'?existing.lp:(lp||'Unassigned')),rm:rm||'Amanda',priority:!!(existing&&existing.priority),added:existing&&existing.added!==undefined?!!existing.added:true,level:(existing&&existing.level)||'C'};
+  await sbFetch('agent_assignments?on_conflict=agent_name',{method:'POST',prefer:'resolution=merge-duplicates,return=minimal',body:JSON.stringify(payload)});
+  try{if(typeof cacheOwnershipRow==='function')cacheOwnershipRow(payload)}catch(e){}
+  return{ok:true,rm:payload.rm,lp:payload.lp};
+}
+async function ensureProfile(name,opts){
+  opts=opts||{}; name=String(name||'').trim(); if(!name)return{ok:false,reason:'missing name'};
+  const pr=await prospect(name); const hit=await profile(name);
+  if(hit.ambiguous){try{toast('Multiple contact records match '+name+'. Clean up the duplicate names before lifecycle automation can update this person.','error',6000)}catch(e){};return{ok:false,ambiguous:true}}
+  let p=hit.exact;
+  if(p&&(p.do_not_contact===true||String(p.relationship_status||'active').toLowerCase()==='inactive'))return{ok:false,blocked:true,profile:p,reason:'inactive/DNC'};
+  const phone=nonblank(opts.phone)?String(opts.phone).trim():(p&&p.phone)||(pr&&pr.phone)||null;
+  const email=nonblank(opts.email)?String(opts.email).trim():(p&&p.email)||(pr&&pr.email)||null;
+  const brokerage=nonblank(opts.brokerage)?String(opts.brokerage).trim():(p&&p.brokerage)||(pr&&pr.brokerage)||null;
+  const payload={relationship_status:'active',relationship_type:(p&&p.relationship_type)||'realtor'};
+  if(phone&&!nonblank(p&&p.phone))payload.phone=phone;
+  if(email&&!nonblank(p&&p.email))payload.email=email;
+  if(brokerage&&!nonblank(p&&p.brokerage))payload.brokerage=brokerage;
+  if(opts.stage==='scheduled'&&opts.meetingDate)payload.next_meeting_date=dateOnly(opts.meetingDate);
+  if(opts.stage==='held'){
+    payload.last_meaningful_contact_date=dateOnly(opts.meetingDate||todayIso());
+    if(p&&p.next_meeting_date&&dateOnly(p.next_meeting_date)<=dateOnly(opts.meetingDate||todayIso()))payload.next_meeting_date=null;
+  }
+  if(p){
+    await sbProfileWrite('agent_profiles?agent_name=eq.'+encodeURIComponent(p.agent_name),'PATCH',payload);
+  }else{
+    payload.agent_name=name;
+    // Deliberately DO NOT set tier or retained here. A booked/held prospect is a relationship record,
+    // not an active production partner until the shared Power BI/production rules say so.
+    await sbProfileWrite('agent_profiles','POST',payload);
+  }
+  const fresh=(await profile(name)).exact||Object.assign({},p||{},payload,{agent_name:(p&&p.agent_name)||name});
+  const own=await ensureOwnership((fresh&&fresh.agent_name)||name,fresh,opts.activityOwner||'Amanda',opts.lp||'');
+  return{ok:!own.blocked,profile:fresh,ownership:own,prospect:pr,created:!p};
+}
+window.rmSmartPromoteScheduledProspect=async function(name,opts){
+  opts=opts||{}; if(!opts.meetingDate)return{ok:false,reason:'missing meeting date'};
+  const res=await ensureProfile(name,Object.assign({},opts,{stage:'scheduled'}));
+  if(!res.ok)return res;
+  try{
+    const prs=await sbFetch('outreach_prospects?agent_name=ilike.'+encodeURIComponent(name)+'&select=id,agent_name,status&limit=20').catch(()=>[]);
+    const exact=(prs||[]).find(r=>K(r.agent_name)===K(name));
+    if(exact)await sbFetch('outreach_prospects?id=eq.'+encodeURIComponent(exact.id),{method:'PATCH',prefer:'return=minimal',body:JSON.stringify({status:'Meeting Scheduled',follow_up_date:dateOnly(opts.meetingDate)})});
+    else if(String(opts.activityType||'')==='Cold Calls')await sbFetch('outreach_prospects',{method:'POST',prefer:'return=minimal',body:JSON.stringify({agent_name:name,phone:(res.profile&&res.profile.phone)||opts.phone||null,email:(res.profile&&res.profile.email)||opts.email||null,brokerage:opts.brokerage||null,status:'Meeting Scheduled',follow_up_date:dateOnly(opts.meetingDate),notes:'Created automatically when meeting was scheduled'})}).catch(()=>{});
+  }catch(e){console.warn('v330 scheduled prospect stage',e)}
+  return res;
+};
+window.rmSmartPromoteHeldMeeting=async function(name,opts){
+  opts=opts||{}; const res=await ensureProfile(name,Object.assign({},opts,{stage:'held'}));
+  if(!res.ok)return res;
+  try{
+    const prs=await sbFetch('outreach_prospects?agent_name=ilike.'+encodeURIComponent(name)+'&select=id,agent_name,status&limit=20').catch(()=>[]);
+    for(const pr of (prs||[]).filter(r=>K(r.agent_name)===K(name)))await sbFetch('outreach_prospects?id=eq.'+encodeURIComponent(pr.id),{method:'PATCH',prefer:'return=minimal',body:JSON.stringify({status:'Converted',follow_up_date:null})}).catch(()=>{});
+  }catch(e){console.warn('v330 held prospect stage',e)}
+  return res;
+};
+window.rmSmartRequireMeetingProfile=async function(name){
+  const res=await ensureProfile(name,{stage:'held',meetingDate:todayIso(),activityOwner:'Amanda'});
+  if(!res.ok){
+    try{toast(res.blocked?'This contact is inactive / Do Not Contact. Review the relationship before completing onboarding.':'Contact profile could not be verified.','error',5500)}catch(e){}
+    return false;
+  }
+  const p=(await profile(name)).exact||res.profile||{};const missing=coreMissing(p);
+  if(missing.length){
+    try{toast('Finish '+name+"'s contact profile before closing the first-meeting checklist: "+missing.join(', ')+'.','error',6500)}catch(e){}
+    try{window._contactSaveCallback=function(){try{loadContacts()}catch(e){}};await openContactModal((p&&p.agent_name)||name,(p&&p.phone)||'',(p&&p.email)||'',(p&&p.brokerage)||'',(p&&p.birthday)||'');const title=document.getElementById('contactModalTitle');if(title)title.textContent='Complete New Relationship Profile';}catch(e){}
+    return false;
+  }
+  return true;
+};
+window.rmSmartAfterContactSave=async function(name,payload){
+  // Contact saves never promote someone to retained/tier. They only complete identity/relationship data.
+  const p=(await profile(name)).exact||Object.assign({agent_name:name},payload||{});
+  await ensureOwnership(name,p,'Amanda','').catch(()=>{});
+  if(typeof openIntake!=='undefined'&&openIntake&&K(openIntake.agent_name)===K(name)&&!coreMissing(p).length){
+    try{openIntake.states=openIntake.states||{};openIntake.states.intakeContactConfirm=true;if(typeof setIntakeStates==='function')setIntakeStates(openIntake.states);if(typeof updateIntakeProgress==='function')updateIntakeProgress();}catch(e){}
+  }
+  return true;
+};
+window.rmSmartContactStageBadge=function(c){
+  c=c||{};const s=String(c._prospectStatus||'');const missing=coreMissing(c);
+  if(s==='Meeting Scheduled'||(c.next_meeting_date&&String(c.retained)!=='true'&&c.retained!==true))return '<span class="rm-life-chip scheduled">MEETING SCHEDULED</span>'+(missing.length?'<span class="rm-life-chip incomplete">PROFILE '+missing.length+' MISSING</span>':'');
+  if(s==='Converted'&&c.retained!==true)return '<span class="rm-life-chip newrel">NEW RELATIONSHIP</span>'+(missing.length?'<span class="rm-life-chip incomplete">PROFILE '+missing.length+' MISSING</span>':'');
+  if(!c.tier&&c.retained!==true&&c.last_meaningful_contact_date)return '<span class="rm-life-chip newrel">NEW RELATIONSHIP</span>'+(missing.length?'<span class="rm-life-chip incomplete">PROFILE '+missing.length+' MISSING</span>':'');
+  return '';
+};
+window.rmSmartPaintContactLifecycleBanner=async function(name,p0){
+  const el=document.getElementById('rmLifecycleProfileBanner');if(!el)return;
+  let p=p0&&p0.agent_name?p0:null,pr=null;
+  try{if(!p)p=(await profile(name)).exact;pr=await prospect(name)}catch(e){}
+  if(!p){el.style.display='block';el.style.background='#FFF8E8';el.style.border='1px solid #E7C98A';el.style.color='#765815';el.innerHTML='<strong>Prospect record only.</strong> This person has activity but no relationship profile yet. A scheduled meeting will create the profile automatically; you can also save it here now.';return}
+  const missing=coreMissing(p),extra=enrichMissing(p),status=String(pr&&pr.status||'');
+  if(status==='Meeting Scheduled'){
+    el.style.display='block';el.style.background='#FFF8E8';el.style.border='1px solid #E7C98A';el.style.color='#765815';el.innerHTML='<strong>Meeting scheduled'+(p.next_meeting_date?' · '+p.next_meeting_date:'')+'.</strong> Lightweight profile is active. Before the first-meeting checklist closes, confirm phone, email and mailing address.'+(missing.length?' <strong>Missing now: '+missing.join(', ')+'.</strong>':'');return
+  }
+  if(status==='Converted'&&p.retained!==true){
+    el.style.display='block';el.style.background='#EDF7F0';el.style.border='1px solid #CFE4D7';el.style.color='#315B40';el.innerHTML='<strong>New relationship / 4-week conversion stage.</strong> This is a real contact, but it will not enter normal active-partner cadence until production/Power BI qualifies it.'+(missing.length?' <strong>Profile still needs: '+missing.join(', ')+'.</strong>':'')+(extra.length?' Optional enrichment: '+extra.join(', ')+'.':'');return
+  }
+  if(missing.length){el.style.display='block';el.style.background='#FFF1EE';el.style.border='1px solid #EBC6BF';el.style.color='#8A4037';el.innerHTML='<strong>Contact profile incomplete.</strong> Missing '+missing.join(', ')+'.';return}
+  el.style.display='none';el.innerHTML='';
+};
+window.rmSmartReconcileLifecycle=async function(){
+  if(window.__rmSmartLifecycleReconciling)return;window.__rmSmartLifecycleReconciling=true;
+  try{
+    const d=new Date();d.setDate(d.getDate()-120);const start=d.toISOString().slice(0,10);
+    const [acts,pros]=await Promise.all([
+      sbFetch('amanda_activities?act_date=gte.'+start+'&select=agent_name,act_type,act_date,outcome,follow_up_date,created_at&order=act_date.desc&limit=1500').catch(()=>[]),
+      sbFetch('outreach_prospects?select=*&limit=5000').catch(()=>[])
+    ]);
+    const byPr={};(pros||[]).forEach(pr=>{const k=K(pr.agent_name);if(k&&!byPr[k])byPr[k]=pr});
+    const candidates=new Map();
+    (acts||[]).forEach(a=>{
+      const k=K(a.agent_name);if(!k)return;
+      if(a.act_type==='New Realtor Meeting'){
+        const cur=candidates.get(k);if(!cur||cur.stage!=='held')candidates.set(k,{name:a.agent_name,stage:'held',date:a.act_date});
+      }else if(a.outcome==='Meeting Scheduled'&&a.follow_up_date&&!candidates.has(k))candidates.set(k,{name:a.agent_name,stage:'scheduled',date:a.follow_up_date});
+    });
+    let changed=0;
+    for(const c of candidates.values()){
+      const pr=byPr[K(c.name)]||{};
+      const hit=await profile(c.name);if(hit.ambiguous)continue;
+      const needsProfile=!hit.exact;
+      const wrongStage=pr&&((c.stage==='scheduled'&&pr.status!=='Meeting Scheduled')||(c.stage==='held'&&pr.status!=='Converted'));
+      if(!needsProfile&&!wrongStage)continue;
+      try{if(c.stage==='held')await window.rmSmartPromoteHeldMeeting(c.name,{meetingDate:c.date,phone:pr.phone,email:pr.email,brokerage:pr.brokerage,activityOwner:'Amanda'});else await window.rmSmartPromoteScheduledProspect(c.name,{meetingDate:c.date,phone:pr.phone,email:pr.email,brokerage:pr.brokerage,activityType:'Cold Calls',activityOwner:'Amanda'});changed++;}catch(e){console.warn('v330 reconcile '+c.name,e)}
+    }
+    if(changed){try{if(typeof loadContacts==='function')await loadContacts()}catch(e){};try{if(typeof initAutocomplete==='function')await initAutocomplete()}catch(e){};console.log('v330 lifecycle reconciled '+changed+' relationship(s)');}
+  }finally{window.__rmSmartLifecycleReconciling=false}
+};
+function boot(){setTimeout(()=>window.rmSmartReconcileLifecycle().catch(()=>{}),1400)}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
+})();
+</script>
+
 </body>
 </html>
 
