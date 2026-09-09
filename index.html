@@ -1,4 +1,6 @@
  
+<!-- v342: navigation visibility fix — Today command center no longer remains forced visible when Log Activity, Tuesday Updates, Portfolio, or another tab is selected. -->
+<!-- v335: 4-week conversion completion now performs a guaranteed post-save Supabase refetch so Nyny coverage touches close immediately instead of remaining visually overdue because of an in-flight stale render. -->
 <!-- v334: visible meeting relationship selector adds Builder/Developer, Title/Escrow, Insurance, and Other Strategic Partner lanes. All strategic lanes create/update individual contact profiles, route to Nyny, preserve company/category, and bypass Realtor-only onboarding/conversion workflows. -->
 <!-- v333: visible meeting-lane selector makes Realtor vs Builder/Developer vs Strategic Partner explicit in Log Activity; builder company can be captured at log time and routed into the strategic contact profile. -->
 <!-- v332: first-meeting prompts follow relationship type rather than logger; Nyny coverage gets Realtor checklist; builder/strategic meetings auto-route to strategic workflow and skip personal Realtor onboarding fields. -->
@@ -6,6 +8,9 @@
 <!-- v325: Amanda Face Time ownership firewall. RM Step 4 now excludes Director-owned and all Channel/A/B relationships; only Amanda-owned C relationships can be scheduled here. -->
 <!-- v329: Contact/Profile bridge — activity-only agents can be found from Contacts search and Agent History; history Edit clarified as Edit activity. -->
 <!-- v331: Week 1–4 coverage logging selector credits Amanda or Nyny without changing Relationship Owner; Nyny coverage auto-expires after the current week. -->
+<!-- v336: 4-week conversion cards show each agent phone number inline with click-to-call; missing phones are obvious so users do not have to search Contacts. -->
+<!-- v338: conversion completion reconciliation + Director log shortcut + portfolio refresh alignment. -->
+<!-- v339: clean board-only Snapshot with focused work pages and Aptos/Calibri typography. -->
 <!DOCTYPE html>
 <!-- v328: Agent History Edit fallback + Power BI shared import receipt alignment. -->
 <!-- v327: overdue 4-week conversion touches close correctly when completed late; Tuesday cleared/no-call rows move to bottom without changing Mack order for active rows. -->
@@ -791,7 +796,7 @@ html,body,button,input,select,textarea{font-family:var(--rm-native-font)!importa
 .v162-conv-summary strong{font-size:13px;color:#254B31}.v162-conv-summary span{font-size:11px;color:#5C6A60}
 .v162-agent{border:1px solid #DFE4DE;border-radius:12px;background:#fff;margin-bottom:10px;overflow:hidden}
 .v162-agent-head{display:flex;justify-content:space-between;gap:10px;align-items:flex-start;padding:12px 13px;background:#FBFCFA;border-bottom:1px solid #E8ECE7}
-.v162-agent-name{font-size:13.5px;font-weight:800;color:#282132}.v162-agent-meta{font-size:10.5px;color:#716A78;margin-top:3px}
+.v162-agent-name{font-size:13.5px;font-weight:800;color:#282132}.v162-agent-phone{font-size:11px;font-weight:750;color:#4F3A78;margin-top:4px}.v162-agent-phone a{color:#4F3A78;text-decoration:none;border-bottom:1px dotted #9B8AB9}.v162-agent-phone.missing{color:#A7463E;font-weight:700}.v162-agent-meta{font-size:10.5px;color:#716A78;margin-top:3px}
 .v162-weekstrip{display:grid;grid-template-columns:repeat(4,1fr);gap:5px;padding:9px 12px;background:#FAFAF8}
 .v162-weekpill{border:1px solid #E1DED8;border-radius:8px;padding:6px 7px;text-align:center;font-size:9.5px;font-weight:800;color:#776F7C;background:#fff}
 .v162-weekpill.done{background:#EAF5ED;border-color:#BFD9C5;color:#356143}.v162-weekpill.overdue{background:#FFF0ED;border-color:#EDC2BB;color:#A7463E}.v162-weekpill.due{background:#FFF7E7;border-color:#E9D093;color:#7B5A15}.v162-weekpill.future{opacity:.62}
@@ -1287,8 +1292,6 @@ body.rm-director-route #v322BackToRm{display:block}
 <div class="tab" data-tab="feed" onclick="switchTab('feed')"><span class="nav-num">08</span><span>Activity Feed</span></div>
 <div class="tab" data-tab="history" onclick="switchTab('history')"><span class="nav-num">09</span><span>Agent History</span></div>
 <div class="tab" data-tab="contacts" onclick="switchTab('contacts')" title="Agent contact details, ownership and portfolio notes"><span class="nav-num">10</span><span>Contacts</span></div>
-<div class="nav-group-label nyny-director-nav-label">DIRECTOR</div>
-<div class="tab nyny-director-nav" onclick="openDirectorMode()" title="Open Nyny's Director View"><span class="nav-num">DIR</span><span>Director View</span></div>
 </div>
 <div id="globalLockBanner" style="display:none"></div>
 <div class="view active" id="view-week">
@@ -2067,7 +2070,7 @@ body.rm-director-route #v322BackToRm{display:block}
 </div>
 <div style="display:flex;gap:7px;align-items:center;flex-wrap:wrap">
 <button class="btn-sm" onclick="openPartnerHealthHelp()" title="See exactly how Green, Yellow and Red are calculated and what action each level requires">How Partner Health works</button>
-<button class="btn-primary" onclick="loadPortfolioReview()" title="Reload the portfolio from the shared data source">Refresh portfolio</button>
+<button class="btn-primary" onclick="v338RefreshPortfolioAll()" title="Refresh the Power BI source audit, portfolio scorecard and Director relationship data together">Refresh portfolio</button>
 </div>
 </div>
 
@@ -5297,7 +5300,7 @@ async function loadRmNurtureToday(){
 
 
 function directorMode(){try{return location.hash==="#director"||new URLSearchParams(location.search).get("director")==="1"}catch(e){return false;}}
-function openDirectorMode(){try{if(location.hash!=="#director")location.hash="director";else if(typeof window.rmxBoot==="function")window.rmxBoot();return false}catch(e){console.error("Could not open Director View",e);return false;}}
+function openDirectorMode(){try{if(location.hash==="#director")history.replaceState(null,"",location.pathname+location.search);if(typeof window.switchTab==="function")window.switchTab("week");return false}catch(e){return false;}}
 function openAmandaMode(){
   try{const u=new URL(window.location.href);const base=u.pathname.replace(/(?:index|director)\.html$/i,"");u.pathname=base;u.search="";u.hash="";window.location.href=u.toString();}
   catch(e){window.location.href="./";}
@@ -5308,6 +5311,7 @@ function switchTab(name){
   if(name==="newagents")name="pipeline";
   if(name==="tiergrowth")name="growth";
   if(name==="skillset")name="learn";
+  try{document.body.setAttribute("data-rm-tab",name);}catch(e){}
   if(name==="daniel"&&!directorMode()){switchTab("week");return;}
   const target=document.getElementById("view-"+name);
   if(!target){console.warn("Unknown tracker tab:",name);return;}
@@ -5737,8 +5741,6 @@ function showPeriod(p){
   renderSnapshotStats(data,p);
   renderPeriodScorecard();
 }
-
-
 
 
 let amandaScorecardPeriod="mtd";
@@ -7608,7 +7610,6 @@ function copyDailyCheckin(){
 }
 
 
-
 // ── NYNY SNAPSHOT QUICK LOG ───────────────────────────────────────────────────
 function nynyQuickIsLeadership(){
   const t=document.getElementById("nynyQuickType")?.value||"";
@@ -8828,9 +8829,6 @@ async function rcConfirmRemove(id){
 }
 
 
-
-
-
 // Playbook Sec. 14 — Partner Health Score. Mechanical, audit-able version of the playbook's literal
 // Green/Yellow/Red definitions: lead recency + touch-cadence status (reusing the exact same
 // thresholds as the At Risk check, so there's one definition of "on cadence" in the whole app,
@@ -8913,7 +8911,6 @@ async function logTierMigration(agentName,fromTier,toTier){
 }
 
 
-
 function isInternalTxnTrigger(a){
   return !!(a && a._source!=="lp" && /\[TXN_TRIGGER\]/i.test(String(a.notes||a._note||"")));
 }
@@ -8965,8 +8962,6 @@ async function loadFeed(){
   applyFeedFilters();
   if(status){const partial=[results[0],results[1],results[2]].some(r=>r.status==="rejected");status.textContent=(partial?"Partial · ":"")+"Updated "+new Date().toLocaleTimeString("en-US",{hour:"numeric",minute:"2-digit"});status.style.color=partial?"var(--warning)":"var(--text-3)";}
 }
-
-
 
 
 function applyNetworkFilters(){
@@ -9768,7 +9763,7 @@ function danielTierCountScore(counts,target){
   return{channelPts,aPts,bPts,total:channelPts+aPts+bPts,pct:((channelPts+aPts+bPts)/50)*100};
 }
 function danielApplyTier(profile){if(profile)profile.tier=danielTierFromProduction(profile);return profile;}
-function danielTierDefinitionCopy(){return 'Channel: 10+ closings · A: 4–9 · B: 2–3 · C: 1 closing or 1 lead';}
+function danielTierDefinitionCopy(){return 'Channel: 10+ closings · A/B/C: latest Power BI Level · Channel is removed from A';}
 
 // Playbook Sec. 17 — Monthly Portfolio Review
 function tierLabel(tier){return tier?tier+"-tier":"No tier set";}
@@ -9806,10 +9801,11 @@ async function loadPortfolioReview(){
     // population is eligible for current managed-portfolio counts. Historical/manual profiles remain in
     // agent_profiles but do not inflate today's book.
     const v124Snapshot=(typeof v124LatestPowerBiSnapshot==="function")?v124LatestPowerBiSnapshot(allAgents):{stamp:null,rows:[],counts:{A:0,B:0,C:0,total:0}};
-    const latestPowerBiStamp=v124Snapshot.stamp;
+    const v343Meta=(typeof v129PowerBiMeta==="function")?await v129PowerBiMeta(false):null;
+    const latestPowerBiStamp=(v343Meta&&v343Meta.imported_at)||v124Snapshot.stamp;
     const currentPowerBiAgents=v124Snapshot.rows;
-    const pbiLevelSummary=v124Snapshot.counts;
-    const powerBiActiveAgents=currentPowerBiAgents.length;
+    const pbiLevelSummary=v343Meta?{A:Number(v343Meta.A||0),B:Number(v343Meta.B||0),C:Number(v343Meta.C||0),total:Number(v343Meta.total||0)}:v124Snapshot.counts;
+    const powerBiActiveAgents=v343Meta?Number(v343Meta.total||0):currentPowerBiAgents.length;
     const rmActivePartners=currentPowerBiAgents.filter(a=>!!a.retained&&!v76IsStrategicPartner(a.agent_name,a));
     const active=rmActivePartners.filter(a=>a.do_not_contact!==true&&a.relationship_status!=="inactive").map(a=>danielApplyTier(a));
 
@@ -9870,6 +9866,9 @@ async function loadPortfolioReview(){
     const countByTier={Channel:0,A:0,B:0,C:0,None:0};
     active.forEach(a=>{const t=a.tier&&countByTier.hasOwnProperty(a.tier)?a.tier:"None";countByTier[t]++;});
     const totalActive=active.length;
+    // Official score/counts come from the exact Power BI import receipt. Channel is a subset of source Level A, so remove it from A for exclusive tier scoring.
+    const officialCountByTier=v343Meta?{Channel:Number(v343Meta.Channel||0),A:Math.max(0,Number(v343Meta.A||0)-Number(v343Meta.Channel||0)),B:Number(v343Meta.B||0),C:Number(v343Meta.C||0),None:Number(v343Meta.blank||0)+Number(v343Meta.other||0)}:countByTier;
+    const officialTotalActive=v343Meta?Number(v343Meta.total||0):totalActive;
 
     // 2. Playbook Agent-to-Lead Ratio is MONTHLY. Show MTD actual + projected month-end pace so
     // an early-month partial numerator is not falsely presented as a full-month failure.
@@ -9877,8 +9876,8 @@ async function loadPortfolioReview(){
     const dayOfMonth=Math.max(1,now.getDate());
     const daysInMonth=new Date(now.getFullYear(),now.getMonth()+1,0).getDate();
     const projectedMonthLeads=Math.round((leadsMTD/dayOfMonth)*daysInMonth);
-    const ratioMTD=totalActive>0?(leadsMTD/totalActive):0;
-    const projectedRatio=totalActive>0?(projectedMonthLeads/totalActive):0;
+    const ratioMTD=officialTotalActive>0?(leadsMTD/officialTotalActive):0;
+    const projectedRatio=officialTotalActive>0?(projectedMonthLeads/officialTotalActive):0;
     const ratioLabel=projectedRatio>=1.30?"Elite pace":projectedRatio>=1.15?"On-target pace":projectedRatio>=0.90?"Acceptable pace":"Below minimum pace";
     const ratioColor=projectedRatio>=1.15?"var(--success)":projectedRatio>=0.90?"var(--warning)":"var(--danger)";
 
@@ -9907,9 +9906,9 @@ async function loadPortfolioReview(){
     // 7. Final weighted scorecard. Tier Growth is scored on NET COUNTS, not individual migrations.
     // The migrations below remain diagnostic so leadership can see how the growth was created.
     const tierTarget=danielTierMilestone(now);
-    const tierCountScore=danielTierCountScore(countByTier,tierTarget);
+    const tierCountScore=danielTierCountScore(officialCountByTier,tierTarget);
     const ratioScore=Math.min(100,(projectedRatio/1.15)*100);
-    const countScore=Math.min(100,(totalActive/PF_TARGETS.total)*100);
+    const countScore=Math.min(100,(officialTotalActive/PF_TARGETS.total)*100);
     const weighted=Math.round((tierCountScore.total+(ratioScore/100*30)+(countScore/100*20))*10)/10;
     const scoreDataGaps=[];
     if(leadsMTD===0)scoreDataGaps.push("No Velocify leads found month-to-date.");
@@ -9998,9 +9997,9 @@ async function loadPortfolioReview(){
           +pfStatTile("Active Partner Count",(countScore/100*20).toFixed(1)+" / 20",null)
         +'</div>'
         +'<div style="margin-top:12px;padding:10px 12px;border:1px solid #D8D1EE;border-radius:10px;background:#FAF8FD"><div style="font-size:11px;font-weight:850;color:var(--brand-dark);margin-bottom:7px">TIER GROWTH · '+tierTarget.label+'</div><div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">'
-          +pfStatTile("Channel",countByTier.Channel+" / "+tierTarget.Channel+" · "+tierCountScore.channelPts.toFixed(1)+"/15",null)
-          +pfStatTile("A",countByTier.A+" / "+tierTarget.A+" · "+tierCountScore.aPts.toFixed(1)+"/15",null)
-          +pfStatTile("B",countByTier.B+" / "+tierTarget.B+" · "+tierCountScore.bPts.toFixed(1)+"/20",null)
+          +pfStatTile("Channel",officialCountByTier.Channel+" / "+tierTarget.Channel+" · "+tierCountScore.channelPts.toFixed(1)+"/15",null)
+          +pfStatTile("A",officialCountByTier.A+" / "+tierTarget.A+" · "+tierCountScore.aPts.toFixed(1)+"/15",null)
+          +pfStatTile("B",officialCountByTier.B+" / "+tierTarget.B+" · "+tierCountScore.bPts.toFixed(1)+"/20",null)
         +'</div><div style="font-size:10.5px;color:var(--text-3);margin-top:7px">Year-end goal: 4 Channel · 20 A · 30 B.</div></div>'
         +(scoreDataGaps.length?'<div style="text-align:left;background:#FFF7E6;border:1px solid #FFE8A3;border-radius:8px;padding:8px 12px;margin-top:12px;font-size:11px;color:#8A6100;line-height:1.5">⚠️ '+scoreDataGaps.join('<br>⚠️ ')+'</div>':'')
       +'</div>'
@@ -10049,7 +10048,7 @@ async function loadPortfolioReview(){
 
       +'<div class="card">'
         +'<div class="card-title" style="font-size:14px">Active Agent-to-Lead Ratio — Monthly</div>'
-        +'<div style="font-size:12px;color:var(--text-2);margin-bottom:8px">'+leadsMTD+' Velocify leads MTD ÷ '+totalActive+' managed active partners = <strong>'+ratioMTD.toFixed(2)+'</strong></div>'
+        +'<div style="font-size:12px;color:var(--text-2);margin-bottom:8px">'+leadsMTD+' Velocify leads MTD ÷ '+officialTotalActive+' Power BI Active Agents = <strong>'+ratioMTD.toFixed(2)+'</strong></div>'
         +'<div style="font-size:26px;font-weight:800;color:'+ratioColor+'">'+projectedRatio.toFixed(2)+'<span style="font-size:13px;font-weight:600;margin-left:8px">'+ratioLabel+'</span></div>'
         +'<div style="font-size:11px;color:var(--text-3);margin-top:4px">Projected month-end pace: '+projectedMonthLeads+' leads. Min 0.90 · Target 1.15+ · Elite 1.30+</div>'
       +'</div>'
@@ -11009,7 +11008,6 @@ async function saveContactModal(){
 }
 
 
-
 let agentOwnershipByKey={};
 function ownerKey(name){return (name||"").trim().toLowerCase().replace(/\s+/g," ");}
 function cacheOwnershipRow(r){if(!r||!r.agent_name)return;agentOwnershipByKey[ownerKey(r.agent_name)]={agent_name:r.agent_name,lp:(r.lp&&r.lp!=="__REMOVED__"?r.lp:"")||"",rm:r.rm||"",priority:!!r.priority,added:!!r.added,level:r.level||""};}
@@ -11221,14 +11219,6 @@ function renderDupeCleanupList(){
   }
   listEl.innerHTML=html;
 }
-
-
-
-
-
-
-
-
 
 
 function filterContacts(){
@@ -12437,16 +12427,13 @@ async function v23LoadAmandaSnapshot(force){
     if(!existing||/Loading|Unable to build/i.test(existing)){
       host.innerHTML='<div class="no-data" style="color:var(--text-3)">Core priorities are still available above. Relationship priorities are refreshing automatically…</div>';
     }
-    window._v233AmandaRetryCount=(window._v233AmandaRetryCount||0)+1; if(window._v233AmandaRetryCount===1)setTimeout(()=>{try{if(!document.hidden&&!userTyping)v23LoadAmandaSnapshot(true)}catch(_){}},15000);
+    window._v233AmandaRetryCount=(window._v233AmandaRetryCount||0)+1; /* v350: no background retry/redraw; user actions and explicit refreshes drive reloads. */
   }
 }
 function v21Init(){const d=document.getElementById("v21PlanDate");if(d&&!d.value)d.value=today();v21LoadDailyPlan(true);v23LoadAmandaSnapshot(true);}
-// Refresh the correct role workspace whenever its tab is opened.
-try{const _v21SwitchTab=window.switchTab;window.switchTab=function(name){const r=_v21SwitchTab(name);/* RMX stability: Director plan is on-demand. */if(name==="week")setTimeout(()=>v23LoadAmandaSnapshot(true),80);return r;};}catch(e){}
+// v350: removed legacy auto-refresh wrapper on Today navigation. Core loaders + explicit actions are authoritative.
 /* RMX stability: Director/Amanda plans load on demand. */
-// Keep role plans current after saves/refreshes.
-/* RMX stability: removed recursive loadManagement → daily-plan refresh wrapper. */
-try{const _v23LoadStartHere=loadStartHere;loadStartHere=async function(){const r=await _v23LoadStartHere.apply(this,arguments);setTimeout(()=>v23LoadAmandaSnapshot(true),80);return r;};}catch(e){}
+// v350: removed legacy loadStartHere redraw wrapper. Saves/refreshes already invoke the current data loaders.
 
 // v46 — legacy __TEST__ cleanup + AUTO PLAN clarity + current browser title.
 function runRmUiIntegrityCheck(){const requiredViews=["week","log","portfolio","pipeline","reconnect","growth","learn","feed","history","contacts","daniel"];const missingViews=requiredViews.filter(n=>!document.getElementById("view-"+n));const requiredFns=["switchTab","loadFeed","loadHistoryLanding","doSearchHistory","loadPortfolioReview","loadPipeline","loadReconnect","loadContacts","loadAgentGrowth","loadManagement"];const missingFns=requiredFns.filter(n=>typeof window[n]!=="function");if(missingViews.length||missingFns.length)console.error("RM Tracker UI integrity issue",{missingViews,missingFns});else console.log("RM Tracker UI integrity check passed");}
@@ -13705,7 +13692,6 @@ async function v124RefreshSharedData(){
 // Compatibility guards: any old/hidden calls are intentionally blocked in RM.
 
 
-
 setTimeout(function(){v124MountAudit();v122RenderAudit();},1200);
 
 </script>
@@ -13841,13 +13827,13 @@ setTimeout(function(){v124MountAudit();v122RenderAudit();},1200);
 </style>
 <script id="v129ReliabilityPass">
 (function(){
-  const V129_FALLBACK={imported_at:'2026-08-19T19:39:00Z',raw:151,A:13,B:18,C:117,total:148};
+  const V129_FALLBACK={imported_at:'2026-09-09T18:48:00Z',raw:140,Channel:2,A:16,B:19,C:101,blank:4,other:0,total:136,source:'verified 9/9 Power BI file'};
   let V129_META=null,V129_META_AT=0,V129_REPAIRING_OWNERS=false;
   function pbParse(source, importedAt){
     const s=String(source||''); if(!s.startsWith('core-team-tracker'))return null;
-    const out={imported_at:importedAt||'',raw:0,A:0,B:0,C:0,total:0};
-    s.split(';').slice(1).forEach(x=>{const i=x.indexOf('=');if(i<0)return;const k=x.slice(0,i),v=Number(x.slice(i+1))||0;if(k==='raw')out.raw=v;else if(k==='A'||k==='B'||k==='C')out[k]=v;});
-    out.total=out.A+out.B+out.C; return out.total?out:null;
+    const out={imported_at:importedAt||'',raw:0,Channel:0,A:0,B:0,C:0,blank:0,other:0,total:0,source:'shared Core Team Power BI import'};
+    s.split(';').slice(1).forEach(x=>{const i=x.indexOf('=');if(i<0)return;const k=x.slice(0,i),v=Number(x.slice(i+1))||0;if(k==='raw')out.raw=v;else if(k==='Channel')out.Channel=v;else if(k==='A'||k==='B'||k==='C')out[k]=v;else if(k==='blank')out.blank=v;else if(k==='other')out.other=v;});
+    out.total=out.A+out.B+out.C; return (out.raw||out.total)?out:null;
   }
   async function v129PowerBiMeta(force){
     if(!force&&V129_META&&Date.now()-V129_META_AT<45000)return V129_META;
@@ -14291,7 +14277,7 @@ setTimeout(function(){v124MountAudit();v122RenderAudit();},1200);
   };
   // Any successful transaction intake should become visible immediately, including on mobile browsers
   // whose MutationObserver delivery can lag behind the save/refresh promise chain.
-  document.addEventListener('visibilitychange',function(){if(!document.hidden)setTimeout(window.v138RedistributeUrgent,80);});
+  /* v350: removed focus/visibility-triggered redistribution to prevent surprise redraws. */
 })();
 </script>
 <script id="v145-ctob-resilient">
@@ -14938,18 +14924,41 @@ setTimeout(function(){v124MountAudit();v122RenderAudit();},1200);
   const safe=s=>{try{return escHtml(String(s==null?'':s))}catch(e){return String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}};
   function fieldId(name,w,suffix){return 'v162_'+key(name).replace(/[^a-z0-9]/g,'_')+'_w'+w+'_'+suffix}
   function weekWindow(meet,w){const start=plus(meet,(w-1)*7+1),end=plus(meet,w*7);return {start:iso(start),end:iso(end),due:iso(end)}}
-  function isTaskComplete(acts,name,meet,w){
-    const k=key(name),win=weekWindow(meet,w);
-    return (acts||[]).some(a=>{
-      if(key(a.agent_name)!==k)return false;      const ad=String(a.act_date||'');
-      const notes=String(a.notes||'');
-      // v327: the Week N button writes an explicit tag, so that tag is authoritative even when an overdue touch is completed late.
-      if(notes.includes(TAG(w)))return ad>=String(meet||'');
-      // Legacy compatibility: an untagged New Agent Follow-up counts only inside its original weekly window.
-      if(ad<win.start||ad>win.end)return false;
-      return a.act_type==='New Agent Follow-up'&&countWords(notes)>=MIN_NOTE_WORDS;
-    });
+  function taggedWeek(notes){
+    let n=String(notes||'');
+    try{if(typeof stripRmMeta==='function')n=stripRmMeta(n)}catch(e){}
+    n=n.replace(/[–—]/g,'-');
+    let m=n.match(/\[\s*4\s*-?\s*WEEK\s+CONVERSION\s+W(?:EEK\s*)?([1-4])\s*\]/i);
+    if(!m)m=n.match(/\b4\s*-?\s*WEEK\s+CONVERSION\b[^\n\r]*?\bW(?:EEK\s*)?([1-4])\b/i);
+    return m?Number(m[1]):0;
   }
+  // v338: build one authoritative completion state per agent. Explicit Week tags win.
+  // If an older/edited record somehow loses its exact tag, a valid New Agent Follow-up
+  // is applied to the OLDEST still-open week whose start date has passed. This means an
+  // overdue Week 2 completed during Week 3 closes Week 2 instead of incorrectly leaving
+  // the overdue task open forever. One activity can satisfy only one required week.
+  function completionState(acts,name,meet){
+    const k=key(name),done=[false,false,false,false],used=new Set();
+    const rows=(acts||[]).map((a,i)=>({a,i,ad:String((a&&a.act_date)||((a&&a.created_at)||'').slice(0,10)||'')}))
+      .filter(x=>x.a&&key(x.a.agent_name)===k&&x.ad>=String(meet||''))
+      .sort((x,y)=>String(x.ad).localeCompare(String(y.ad))||String(x.a.created_at||'').localeCompare(String(y.a.created_at||'')));
+    // 1) Explicit completion markers are authoritative and tolerant of formatting edits.
+    rows.forEach(x=>{const w=taggedWeek(x.a.notes);if(w>=1&&w<=4){done[w-1]=true;used.add(x.i)}});
+    // 2) Legacy in-window New Agent Follow-ups still count exactly where they happened.
+    rows.forEach(x=>{
+      if(used.has(x.i)||x.a.act_type!=='New Agent Follow-up'||countWords(String(x.a.notes||''))<MIN_NOTE_WORDS)return;
+      for(let w=1;w<=4;w++){const win=weekWindow(meet,w);if(!done[w-1]&&x.ad>=win.start&&x.ad<=win.end){done[w-1]=true;used.add(x.i);break}}
+    });
+    // 3) Late completion reconciliation: apply a valid follow-up to the oldest open week
+    // that had already started by the date of that outreach. This preserves accountability
+    // without making someone repeat a real conversation just because it happened late.
+    rows.forEach(x=>{
+      if(used.has(x.i)||x.a.act_type!=='New Agent Follow-up'||countWords(String(x.a.notes||''))<MIN_NOTE_WORDS)return;
+      for(let w=1;w<=4;w++){const win=weekWindow(meet,w);if(!done[w-1]&&x.ad>=win.start){done[w-1]=true;used.add(x.i);break}}
+    });
+    return done;
+  }
+  function isTaskComplete(acts,name,meet,w){return !!completionState(acts,name,meet)[w-1]}
   function statusFor(meet,w,done){
     if(done)return {cls:'done',txt:'✓ COMPLETE'};
     const due=weekWindow(meet,w).due,t=today();
@@ -15051,7 +15060,12 @@ setTimeout(function(){v124MountAudit();v122RenderAudit();},1200);
       await sbFetch('amanda_activities',{method:'POST',body:JSON.stringify({agent_name:name,act_type:'New Agent Follow-up',act_date:today(),outcome:outcome,notes:tagged,follow_up_date:follow})});
       toast('Week '+w+' follow-up complete · logged for '+actor+' ✓','success');
       try{_wp18Cache=null;_wp18CacheAt=0}catch(e){}
-      await loadOnboarding(true);
+      // v335: a forced conversion refresh must never reuse an in-flight pre-save snapshot.
+      // Wait for any older render to finish, then fetch the conversion data again from Supabase.
+      try{if(v163OnboardingPromise)await v163OnboardingPromise}catch(e){}
+      v163OnboardingAt=0;
+      await window.v163RawLoadOnboarding(true);
+      v163OnboardingAt=Date.now();
       try{await v23LoadAmandaSnapshot(true)}catch(e){}
     }catch(e){toast('Could not save Week '+w+': '+e.message,'error');if(btn){btn.disabled=false;btn.textContent='Complete Week '+w}}
   };
@@ -15077,15 +15091,21 @@ setTimeout(function(){v124MountAudit();v122RenderAudit();},1200);
       let outstanding=0,overdue=0,html='';
       rows.forEach(entry=>{
         const name=entry.name,meet=entry.date,prof=pmap[key(name)]||{};
-        const states=[1,2,3,4].map(w=>{const done=isTaskComplete(acts,name,meet,w),s=statusFor(meet,w,done);if(!done)outstanding++;if(s.cls==='overdue')overdue++;return {w,done,...s}});
-        const next=nextIncomplete(acts,name,meet);
+        const doneState=completionState(acts,name,meet);
+        const states=[1,2,3,4].map(w=>{const done=!!doneState[w-1],s=statusFor(meet,w,done);if(!done)outstanding++;if(s.cls==='overdue')overdue++;return {w,done,...s}});
+        const nextIdx=doneState.findIndex(v=>!v),next=nextIdx<0?0:nextIdx+1;
         const current=next||4;
         const task=WEEK_TASKS[current];
         const win=weekWindow(meet,current);
         const suggestedFollow=current<4?weekWindow(meet,current+1).due:'';
         const allDone=next===0;
+        const phone=String(prof.phone||'').trim();
+        const phoneHref=phone.replace(/[^\d+]/g,'');
+        const phoneHtml=phone
+          ?'<div class="v162-agent-phone">☎ <a href="tel:'+safe(phoneHref)+'">'+safe(phone)+'</a></div>'
+          :'<div class="v162-agent-phone missing">No phone on file · use Update contact info</div>';
         html+='<div class="v162-agent">'
-          +'<div class="v162-agent-head"><div><div class="v162-agent-name">'+safe(typeof properCase==='function'?properCase(name):name)+'</div><div class="v162-agent-meta">New Realtor Meeting: '+safe(fmt(meet))+' · Required 4-week conversion campaign</div></div><div class="v162-agent-meta">'+(allDone?'✓ 4 OF 4 COMPLETE':'Next required: Week '+current)+'</div></div>'
+          +'<div class="v162-agent-head"><div><div class="v162-agent-name">'+safe(typeof properCase==='function'?properCase(name):name)+'</div>'+phoneHtml+'<div class="v162-agent-meta">New Realtor Meeting: '+safe(fmt(meet))+' · Required 4-week conversion campaign</div></div><div class="v162-agent-meta">'+(allDone?'✓ 4 OF 4 COMPLETE':'Next required: Week '+current)+'</div></div>'
           +'<div class="v162-weekstrip">'+states.map(s=>'<div class="v162-weekpill '+s.cls+'">WEEK '+s.w+'<br>'+s.txt+'</div>').join('')+'</div>';
         if(allDone){html+='<div class="v162-task"><div class="v162-task-title">4-WEEK CAMPAIGN COMPLETE</div><div class="v162-task-copy">All four required weekly conversion touches are documented. Continue normal relationship cadence from here.</div></div></div>';return}
         html+='<div class="v162-task"><div class="v162-task-title">WEEK '+current+' REQUIRED TOUCH · '+safe(statusFor(meet,current,false).txt)+'</div><div class="v162-task-copy">'+safe(task)+'</div>'
@@ -15109,7 +15129,7 @@ setTimeout(function(){v124MountAudit();v122RenderAudit();},1200);
         if(sub)sub.textContent='0 active campaigns';
       }else{
         const coverageActor=v331ConversionActor();
-        const coverage='<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:9px 11px;margin:0 0 9px;border:1px solid #D9D1E6;background:#FBF9FE;border-radius:9px;font-size:10.5px;color:#5D5665"><strong style="color:#4F3A78">Logging these follow-ups as</strong><select data-v331-coverage-select onchange="v331SetConversionActor(this.value)" style="border:1px solid #D8D1E3;border-radius:7px;padding:6px 8px;background:#fff;color:#332B3A;font:inherit;font-weight:750"><option value="Amanda"'+(coverageActor==='Amanda'?' selected':'')+'>Amanda</option><option value="Nyny"'+(coverageActor==='Nyny'?' selected':'')+'>Nyny · covering</option></select><span>Credits whoever actually does the outreach. <strong>Relationship Owner does not change.</strong></span></div>';
+        const coverage='<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:9px 11px;margin:0 0 9px;border:1px solid #D9D1E6;background:#FBF9FE;border-radius:9px;font-size:10.5px;color:#5D5665"><strong style="color:#4F3A78">Logging these follow-ups as</strong><select data-v331-coverage-select onchange="v331SetConversionActor(this.value)" style="border:1px solid #D8D1E3;border-radius:7px;padding:6px 8px;background:#fff;color:#332B3A;font:inherit;font-weight:750"><option value="Amanda"'+(coverageActor==='Amanda'?' selected':'')+'>Amanda</option><option value="Nyny"'+(coverageActor==='Nyny'?' selected':'')+'>Nyny · covering</option></select></div>';
         list.innerHTML='<div class="v162-conv-summary"><div><strong>'+rows.length+' active new-agent campaign'+(rows.length===1?'':'s')+'</strong><span> · '+outstanding+' weekly touch'+(outstanding===1?'':'es')+' still required</span></div><span>'+(overdue?overdue+' overdue':'No overdue weeks')+'</span></div>'+coverage+html;
         if(sub)sub.textContent=rows.length+' active · '+outstanding+' required'+(overdue?' · '+overdue+' overdue':'');
       }
@@ -15124,7 +15144,11 @@ setTimeout(function(){v124MountAudit();v122RenderAudit();},1200);
 
   let v163OnboardingPromise=null,v163OnboardingAt=0;
   window.loadOnboarding=function(force){
-    if(v163OnboardingPromise)return v163OnboardingPromise;
+    if(v163OnboardingPromise){
+      // v335: force means fresh data. If an older request is still rendering, wait for it and then refetch.
+      if(force)return v163OnboardingPromise.then(function(){v163OnboardingAt=0;return window.loadOnboarding(true);});
+      return v163OnboardingPromise;
+    }
     if(!force&&Date.now()-v163OnboardingAt<30000)return Promise.resolve();
     v163OnboardingPromise=Promise.resolve(window.v163RawLoadOnboarding(!!force))
       .finally(function(){v163OnboardingAt=Date.now();v163OnboardingPromise=null});
@@ -18210,8 +18234,8 @@ window.rmxBoot=boot;const baseSwitch=window.switchTab;window.switchTab=function(
   // the DOM that render() itself rewrote, creating an endless render -> mutation -> render loop.
   // That caused the transaction worklist to flash/disappear and could remove a button between
   // mouse-down and click. Render only after real data/navigation events instead.
-  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>{setTimeout(render,450);setTimeout(render,1700)},{once:true});else{setTimeout(render,120);setTimeout(render,850)}
-  document.addEventListener('visibilitychange',()=>{if(!document.hidden)setTimeout(render,100)});
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(render,500),{once:true});else setTimeout(render,160);
+  /* v350: no visibility/focus redraw. Transaction worklist refreshes after real data actions and navigation. */
   window.addEventListener('hashchange',()=>setTimeout(render,120));
 
   const priorSnapshot=window.v23LoadAmandaSnapshot;
@@ -19941,9 +19965,9 @@ window.rmxBoot=boot;const baseSwitch=window.switchTab;window.switchTab=function(
 'use strict';
 
 const VERIFIED={
-  importedAt:'2026-09-01T12:00:00',
-  active:138,
-  levels:{Channel:2,A:17,B:15,C:106}
+  importedAt:'2026-09-09T18:48:00Z',
+  active:136,
+  levels:{Channel:2,A:14,B:19,C:101}
 };
 const COLORS={green:'#2E8B57',yellow:'#C78A16',red:'#C54B43'};
 const n=v=>Number(v||0)||0;
@@ -20006,11 +20030,22 @@ async function serverSnapshot(){
   }catch(e){return null}
 }
 async function authoritativePowerBi(){
+  // Exact import receipt is authoritative. It is written by the Core Team / LP Tracker on every Power BI upload.
+  try{
+    const logs=await sbFetch('powerbi_import_log?select=imported_at,source_app,rows_processed,errors&order=imported_at.desc&limit=30').catch(()=>[]);
+    const row=(logs||[]).find(r=>String(r.source_app||'').startsWith('core-team-tracker'));
+    if(row){
+      const vals={raw:0,Channel:0,A:0,B:0,C:0,blank:0};
+      String(row.source_app||'').split(';').slice(1).forEach(part=>{const i=part.indexOf('=');if(i<0)return;const k=part.slice(0,i),v=Number(part.slice(i+1))||0;if(Object.prototype.hasOwnProperty.call(vals,k))vals[k]=v;});
+      const active=vals.A+vals.B+vals.C;
+      if(active>0)return{active,levels:{Channel:vals.Channel,A:Math.max(0,vals.A-vals.Channel),B:vals.B,C:vals.C},sourceLevels:{A:vals.A,B:vals.B,C:vals.C},raw:vals.raw,blank:vals.blank,importedAt:row.imported_at,source:'latest Core Team Power BI import'};
+    }
+  }catch(e){console.warn('Power BI receipt lookup failed',e)}
   return localSnapshot() || await serverSnapshot() || {
     active:VERIFIED.active,
     levels:Object.assign({},VERIFIED.levels),
-    importedAt:'Verified 8/31 Power BI',
-    source:'verified 9/1 Power BI baseline'
+    importedAt:VERIFIED.importedAt,
+    source:'verified 9/9 Power BI file'
   };
 }
 
@@ -20969,13 +21004,6 @@ function boot(){modal();rmApplyCoverage(rmCoveragePerson(),false);render();loadC
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
 })();
 </script>
-<script id="v326-director-focus-refresh">
-(function(){
-  var last=0;async function refreshDirector(){if(Date.now()-last<30000)return;last=Date.now();try{if(document.body.classList.contains('rmx-director-active')&&typeof window.rmxRefreshCache==='function')await window.rmxRefreshCache();}catch(e){console.warn('Director focus refresh',e&&e.message)}}
-  window.addEventListener('focus',refreshDirector);document.addEventListener('visibilitychange',function(){if(!document.hidden)refreshDirector()});
-})();
-</script>
-
 <style id="v330-smart-lifecycle-css">
 .rm-life-chip{display:inline-flex;align-items:center;border-radius:999px;padding:3px 7px;font-size:8.5px;font-weight:850;letter-spacing:.02em;background:#F0EBF7;color:#5B438A;border:1px solid #D9CFE8;white-space:nowrap}
 .rm-life-chip.scheduled{background:#FFF7E7;color:#7A5A16;border-color:#E7CF94}.rm-life-chip.newrel{background:#EDF7F0;color:#315B40;border-color:#CFE4D7}.rm-life-chip.incomplete{background:#FFF1EE;color:#A14A3F;border-color:#EBC6BF}
@@ -21306,7 +21334,217 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 })();
 </script>
 
+<!-- v337: restore Amanda Snapshot task launcher so the day starts from clear clickable work boxes instead of a long scroll. -->
+<!-- v338: final usability layer -->
+<!-- v339: clean command-center Snapshot. Today is board-only; every work lane opens as its own focused work page. -->
+<!-- v340: minimal command center + plain-language cleanup + softer typography. -->
+
+<style id="v352-pretty-ui-css">
+/* v352 · Approved purple CRM visual direction + one typography authority. */
+:root{
+  --sidebar:238px;--header-h:64px;
+  --rm-font:"Aptos","Segoe UI Variable Text","Segoe UI","Helvetica Neue",Arial,sans-serif;
+  --rm-purple:#6847A5;--rm-purple-2:#7857B4;--rm-purple-dark:#56358F;--rm-purple-soft:#F2ECFF;
+  --rm-navy:#15184D;--rm-text:#51537A;--rm-muted:#8082A4;--rm-line:#E7E4F1;
+  --rm-page:#FCFBFF;--rm-card:#FFFFFF;--rm-pink:#F15A9D;
+}
+html,body,button,input,select,textarea,.tabs,.tabs *,
+#view-week,#view-week *,#view-tuesday,#view-tuesday *,#view-scorecard,#view-scorecard *,
+#view-log,#view-log *,#view-portfolio,#view-portfolio *,#view-pipeline,#view-pipeline *,
+#view-reconnect,#view-reconnect *,#view-growth,#view-growth *,#view-learn,#view-learn *,
+#view-feed,#view-feed *,#view-history,#view-history *,#view-contacts,#view-contacts *,
+#view-daniel,#view-daniel *,#view-txnimports,#view-txnimports *,#rmxApp,#rmxApp *{
+  font-family:var(--rm-font)!important;font-optical-sizing:auto;
+}
+body{font-weight:400!important;color:var(--rm-navy)!important;background:var(--rm-page)!important}
+button,input,select,textarea{letter-spacing:0!important}h1,h2,h3,.card-title,.rmx-card h2,.rmx-score-head h2{font-weight:700!important;letter-spacing:-.022em!important}strong,b{font-weight:700!important}
+body:not(.rm-director-route) .tab[data-tab="daniel"],body:not(.rm-director-route) #view-daniel{display:none!important}
+
+/* TOP BAR — close to the approved mockup */
+.header{min-height:var(--header-h)!important;height:var(--header-h)!important;background:linear-gradient(102deg,#57378E 0%,#6846A4 52%,#7A58B4 100%)!important;border:0!important;box-shadow:0 6px 22px rgba(69,43,116,.16)!important;padding:0 24px!important;color:#fff!important;display:flex!important;align-items:center!important}
+.brand-wrap{display:flex!important;align-items:center!important;gap:12px!important;min-width:380px}.brand-wrap:before{content:"✣";display:grid;place-items:center;width:28px;height:28px;color:#FF9BC9;font-size:22px;line-height:1}.brand-chip{background:transparent!important;border:0!important;padding:0!important;color:#fff!important;font-size:17px!important;font-weight:800!important;letter-spacing:.035em!important;white-space:nowrap}
+#rm352BrandTag{font-size:11.5px;color:rgba(255,255,255,.58);padding-left:21px;margin-left:13px;border-left:1px solid rgba(255,255,255,.28);white-space:nowrap;font-weight:400}
+.header-right{margin-left:auto!important;display:flex!important;align-items:center!important;gap:13px!important;color:#fff!important}.header-right>.week-chip,.header-right>.sync{display:none!important}
+#rm352HeaderSearch{width:min(335px,27vw);height:38px;display:flex;align-items:center;gap:9px;padding:0 14px;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.18);border-radius:999px;box-sizing:border-box;margin-right:12px}
+#rm352HeaderSearch svg{width:16px;height:16px;stroke:rgba(255,255,255,.78);flex:0 0 16px}#rm352HeaderSearch input{width:100%;border:0!important;outline:0!important;background:transparent!important;color:#fff!important;font-size:11.5px!important;padding:0!important;box-shadow:none!important}#rm352HeaderSearch input::placeholder{color:rgba(255,255,255,.58)}
+#rm352Bell{border:0;background:transparent;color:#fff;width:34px;height:34px;display:grid;place-items:center;cursor:pointer;position:relative;border-radius:50%}#rm352Bell:hover{background:rgba(255,255,255,.1)}#rm352Bell svg{width:20px;height:20px;stroke:#fff}#rm352Bell:after{content:"";position:absolute;right:4px;top:4px;width:6px;height:6px;border-radius:50%;background:#F461A5;border:2px solid #6F4AAB}
+#rm352HeaderProfile{display:flex;align-items:center;gap:9px;color:#fff;font-size:12px;font-weight:700;padding-left:9px}#rm352HeaderProfile img,#rm352HeaderAvatarFallback{width:34px;height:34px;border-radius:50%;object-fit:cover;border:2px solid rgba(255,255,255,.88);background:#F8EEF7;display:grid;place-items:center;color:#67479C;font-size:12px}
+#rm352HeaderMotto{font-family:Georgia,"Times New Roman",serif!important;font-style:italic;color:rgba(255,255,255,.72);font-size:13px;line-height:1.08;margin-left:6px;white-space:nowrap;transform:rotate(-2deg)}
+
+/* SIDEBAR */
+@media(min-width:1050px){
+ body{padding-left:var(--sidebar)!important}.header{margin-left:calc(var(--sidebar) * -1)!important}.tabs{top:var(--header-h)!important;width:var(--sidebar)!important;height:calc(100vh - var(--header-h))!important;padding:20px 15px 120px!important;background:#fff!important;border-right:1px solid #ECE9F5!important;box-shadow:7px 0 22px rgba(62,48,103,.035)!important;gap:4px!important;overflow-y:auto!important}
+ .nav-group-label{display:none!important}.tabs .tab{position:relative!important;min-height:41px!important;padding:9px 12px!important;border:0!important;border-radius:10px!important;color:#5E5D87!important;font-size:12.3px!important;font-weight:500!important;gap:10px!important;background:transparent!important;box-shadow:none!important}.tabs .tab:hover{background:#F7F3FF!important;color:#59409A!important}.tabs .tab.active{background:linear-gradient(90deg,#EFE8FF 0%,#F7F3FF 100%)!important;color:#5B3AA0!important;font-weight:700!important;box-shadow:none!important}.tabs .tab.active:before{content:"";position:absolute;left:-15px;width:3px;height:25px;border-radius:0 6px 6px 0;background:#7754B9}.nav-num{width:25px!important;height:25px!important;flex:0 0 25px!important;border-radius:7px!important;background:transparent!important;color:#6C68A5!important;font-size:15px!important;font-weight:650!important}.tabs .tab.active .nav-num{background:transparent!important;color:#6746A5!important}.nav-priority-dot,.rm-v1-tue-badge{margin-left:auto!important}.portfolio-priority-tab,.portfolio-priority-tab.active{border:0!important}.nyny-director-nav-label{display:none!important}.nyny-director-nav{margin-top:12px!important;border-top:1px solid #ECE9F5!important;padding-top:14px!important}
+ #rm352SidebarFooter{position:fixed;left:15px;bottom:17px;width:208px;box-sizing:border-box;background:linear-gradient(135deg,#FAF7FF,#F2EBFF);border:1px solid #EEE8FA;border-radius:15px;padding:15px 16px;color:#785BA8;font:italic 12px/1.35 Georgia,"Times New Roman",serif;box-shadow:0 4px 15px rgba(80,54,128,.05)}#rm352SidebarFooter b{font-family:inherit!important;font-weight:400!important;color:#6D4DA1}
+}
+
+/* TODAY WORKBOARD ROUTING */
+body[data-rm-tab="week"] #view-week.active{display:block!important;max-width:none!important;padding:0!important;background:var(--rm-page)!important}body[data-rm-tab="week"] #view-week.rm350-board>*:not(#rm350Workboard):not(#rm350Lane){display:none!important}body[data-rm-tab="week"] #rm350Workboard{display:block!important}body[data-rm-tab="week"] #rm350Lane{display:none!important}body[data-rm-tab="week"].rm350-lane-open #rm350Workboard{display:none!important}body[data-rm-tab="week"].rm350-lane-open #rm350Lane{display:block!important}body:not([data-rm-tab="week"]) #rm350Workboard,body:not([data-rm-tab="week"]) #rm350Lane{display:none!important}
+
+/* APPROVED PRIORITIES LOOK */
+#rm350Workboard{max-width:1480px;margin:0 auto;padding:30px 40px 58px;background:linear-gradient(180deg,#FFFFFF 0%,#FCFBFF 100%);color:var(--rm-navy);min-height:calc(100vh - var(--header-h));box-sizing:border-box}.rm350-hero{display:flex;justify-content:space-between;align-items:flex-start;gap:28px;margin-bottom:26px}.rm350-kicker{font-size:11.5px;font-weight:600;color:#7858B4;margin-bottom:7px}.rm350-kicker span{color:#A18BCB}.rm350-title{font-size:40px;line-height:1.02;font-weight:760!important;letter-spacing:-.045em!important;color:#111649}.rm350-subtitle{font-size:15px;color:#7070A0;line-height:1.4;margin-top:7px}.rm352-heart{color:var(--rm-pink);font-size:20px;vertical-align:-1px;margin-left:4px}.rm350-hero-side{display:flex;flex-direction:column;align-items:flex-end;gap:8px;padding-top:17px}.rm350-date{background:#fff;border:1px solid #DDD6F0;border-radius:999px;padding:10px 18px;font-size:11.5px;font-weight:600;color:#696395;box-shadow:0 3px 10px rgba(78,59,134,.035);white-space:nowrap}.rm352-import-link{border:0;background:transparent;color:#7454AD;font-size:10.5px;font-weight:650;cursor:pointer;padding:4px 2px}.rm352-import-link:hover{text-decoration:underline}
+.rm350-shell{display:block!important}.rm350-main{min-width:0}.rm350-aside,.rm350-principles,.rm350-kpis,.rm350-label{display:none!important}.rm350-group{margin:0 0 29px;background:transparent;border:0;border-radius:0;padding:0;box-shadow:none}.rm350-group-head{display:flex;align-items:center;gap:15px;margin-bottom:14px;min-height:22px}.rm350-group-title{font-size:12.5px;letter-spacing:.045em;color:#5B3EA0;text-transform:uppercase;font-weight:750;white-space:nowrap}.rm350-group-head:after{content:"";height:1px;flex:1;background:#DDD8EB;order:2}.rm350-group-tag{font-family:Georgia,"Times New Roman",serif!important;font-style:italic;font-size:11.5px;color:#8D7DB5;order:3;white-space:nowrap}.rm350-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px 15px}.rm350-card{appearance:none;width:100%;min-height:136px;text-align:left;border:1px solid #E2DDF0;border-radius:15px;background:#fff;padding:16px 17px;color:var(--rm-navy);cursor:pointer;display:flex;flex-direction:column;justify-content:space-between;position:relative;overflow:hidden;box-shadow:0 5px 16px rgba(70,55,110,.04);transition:transform .14s ease,box-shadow .14s ease,border-color .14s ease}.rm350-card:before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--accent,#7255A5)}.rm350-card:hover{transform:translateY(-2px);box-shadow:0 12px 28px rgba(71,53,119,.09);border-color:#D4CBE8}.rm350-card-top{display:flex;gap:14px;align-items:flex-start}.rm350-icon{width:47px;height:47px;flex:0 0 47px;border-radius:14px;background:var(--iconbg,#F1EDFA);display:grid;place-items:center;color:var(--accent,#7255A5)}.rm350-icon svg{width:23px;height:23px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}.rm350-card-copy{min-width:0;flex:1;padding-top:2px}.rm350-card-title{display:block;font-size:15.3px;font-weight:700;line-height:1.25;color:#161A50}.rm350-desc{display:block;font-size:11.4px;color:#71729B;line-height:1.43;margin-top:4px;max-width:285px}.rm350-chevron{width:31px;height:31px;border-radius:50%;background:var(--chevbg,#F5F1FC);color:var(--accent,#7255A5);display:grid;place-items:center;font-size:19px;flex:0 0 31px}.rm350-card-bottom{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:12px}.rm350-status{min-height:25px;display:inline-flex;align-items:center;border-radius:999px;padding:0 10px;background:#F4F1F8;color:#625D75;font-size:9.7px;font-weight:650}.rm350-status .rm350-badge{display:inline-flex;align-items:center;min-height:22px;padding:0 9px;border-radius:999px}.rm350-status .rm350-badge.red{color:#B52D3C;background:#FFE2E5}.rm350-status .rm350-badge.amber{color:#9B6110;background:#FFF0C5}.rm350-status .rm350-badge.green{color:#247B45;background:#DDF5E5}.rm350-open{font-size:10.7px;color:#6A48A7;font-weight:650}
+.rm350-card[data-kind="schedule"]{--accent:#6B45B2;--iconbg:#EFE6FF;--chevbg:#F2EAFF;background:linear-gradient(110deg,#fff 0%,#FCF9FF 100%)}.rm350-card[data-kind="calls"]{--accent:#F36D43;--iconbg:#FFF0E8;--chevbg:#FFF3ED;background:linear-gradient(110deg,#fff 0%,#FFFCFA 100%)}.rm350-card[data-kind="tuesday"]{--accent:#4A82D5;--iconbg:#E9F1FF;--chevbg:#EEF5FF;background:linear-gradient(110deg,#fff 0%,#FBFDFF 100%)}.rm350-card[data-kind="handoffs"]{--accent:#7049B0;--iconbg:#F0E8FF;--chevbg:#F4EEFF;background:linear-gradient(110deg,#fff 0%,#FCFAFF 100%)}.rm350-card[data-kind="cold"]{--accent:#3A9B6E;--iconbg:#E4F6EC;--chevbg:#EAF8F0;background:linear-gradient(110deg,#fff 0%,#FBFFFD 100%)}.rm350-card[data-kind="conversion"]{--accent:#D9872F;--iconbg:#FFF0DC;--chevbg:#FFF4E6;background:linear-gradient(110deg,#fff 0%,#FFFDF9 100%)}.rm350-card[data-kind="smart"]{--accent:#6B45B2;--iconbg:#F0E9FF;--chevbg:#F4EEFF;background:linear-gradient(110deg,#fff 0%,#FCFAFF 100%)}.rm350-card[data-kind="facetime"]{--accent:#D84E91;--iconbg:#FFE7F2;--chevbg:#FFF0F7;background:linear-gradient(110deg,#fff 0%,#FFF9FC 100%)}.rm350-card[data-kind="growth"]{--accent:#3D916C;--iconbg:#E4F5ED;--chevbg:#ECF8F2;background:linear-gradient(110deg,#fff 0%,#FBFFFD 100%)}.rm350-card[data-kind="reconnect"]{--accent:#615D84;--iconbg:#ECECF5;--chevbg:#F1F1F7;background:linear-gradient(110deg,#fff 0%,#FCFCFE 100%)}
+
+/* Focused lanes */
+#rm350Lane{max-width:1260px;margin:0 auto;padding:30px 40px 60px;background:#FCFBFF;min-height:calc(100vh - var(--header-h));box-sizing:border-box}.rm350-lane-head{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:14px;padding:14px 16px;background:#fff;border:1px solid #E3DFF0;border-radius:13px}.rm350-lane-title{font-size:21px;font-weight:700;color:#16194E}.rm350-back{border:1px solid #D8D0EA;background:#fff;color:#6647A1;border-radius:9px;padding:8px 12px;font-size:10.5px;font-weight:650;cursor:pointer}.rm350-lane-body{background:#fff;border:1px solid #E3DFF0;border-radius:14px;padding:18px;overflow:hidden;box-shadow:0 5px 17px rgba(62,47,103,.04)}#rm350Lane .v113-step-rail{display:none!important}#rm350Lane .v113-step{display:block!important;grid-template-columns:1fr!important;border:0!important;box-shadow:none!important;border-radius:0!important;background:#fff!important}#rm350Lane .v113-step-body{padding:0!important;background:#fff!important}
+
+/* Import workspace */
+#view-txnimports{max-width:none!important;padding:0!important;background:#FCFBFF!important;min-height:calc(100vh - var(--header-h))}.rmti-wrap{max-width:1220px;margin:0 auto;padding:34px 40px 60px}.rmti-head{display:flex;align-items:flex-start;justify-content:space-between;gap:20px;margin-bottom:20px}.rmti-eyebrow{font-size:11px;font-weight:650;color:#7555AC;margin-bottom:6px}.rmti-title{font-size:33px;font-weight:760;letter-spacing:-.035em;color:#12164B}.rmti-back{border:1px solid #DAD3EC;background:#fff;color:#6746A3;border-radius:10px;padding:9px 12px;font-size:11px;font-weight:650;cursor:pointer}.rmti-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}.rmti-card{background:#fff;border:1px solid #E5E0F0;border-radius:17px;padding:18px;box-shadow:0 6px 20px rgba(69,52,105,.04)}.rmti-card-top{display:flex;gap:13px;align-items:flex-start}.rmti-icon{width:46px;height:46px;border-radius:13px;display:grid;place-items:center;flex:0 0 46px}.rmti-icon svg{width:23px;height:23px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}.rmti-card.nc .rmti-icon{background:#EAF7EF;color:#338B61}.rmti-card.ctc .rmti-icon{background:#EEE8FF;color:#6949AC}.rmti-card h3{margin:1px 0 3px;font-size:16px;color:#171A50}.rmti-card p{margin:0;color:#78799B;font-size:11.2px;line-height:1.45}.rmti-drop{margin-top:14px;border:1.5px dashed #D7D0E8;border-radius:13px;background:#FCFBFE;padding:18px;text-align:center}.rmti-drop b{display:block;color:#4E4F78;font-size:11.5px}.rmti-drop span{display:block;color:#9996AD;font-size:9.8px;margin-top:3px}.rmti-choose{margin-top:10px;border:0;border-radius:9px;background:#6847A5;color:#fff;padding:8px 12px;font-size:10.5px;font-weight:650;cursor:pointer}.rmti-card.nc .rmti-choose{background:#348B62}.rmti-file{font-size:10px;color:#6C6683;margin-top:8px;min-height:14px}.rmti-preview{margin-top:18px}.rmti-summary{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:9px;margin-bottom:10px}.rmti-stat{border:1px solid #E7E2F0;border-radius:11px;background:#fff;padding:10px}.rmti-stat b{display:block;font-size:18px;color:#252756}.rmti-stat span{display:block;font-size:9px;color:#8A87A0;margin-top:2px}.rmti-table-wrap{overflow:auto;border:1px solid #E7E2F0;border-radius:12px;max-height:360px}.rmti-table{width:100%;border-collapse:collapse;min-width:900px;font-size:10.5px}.rmti-table th{position:sticky;top:0;background:#F8F6FC;color:#686682;padding:9px;text-align:left;font-size:8.8px;text-transform:uppercase;letter-spacing:.04em;border-bottom:1px solid #E8E4EF}.rmti-table td{padding:9px;border-bottom:1px solid #F0EDF4;color:#56566F;vertical-align:top}.rmti-table tr:last-child td{border-bottom:0}.rmti-pill{display:inline-flex;padding:3px 7px;border-radius:999px;font-size:8.7px;font-weight:700;white-space:nowrap}.rmti-pill.ready{background:#E4F5EB;color:#2D7A52}.rmti-pill.skip{background:#F4F1F6;color:#777184}.rmti-pill.exists{background:#FFF0C9;color:#946312}.rmti-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:12px}.rmti-actions button{border:1px solid #D9D2E9;background:#fff;color:#665B79;border-radius:9px;padding:8px 11px;font-size:10.5px;font-weight:650;cursor:pointer}.rmti-actions .primary{background:#6847A5;color:#fff;border-color:#6847A5}.rmti-actions .primary:disabled{opacity:.45;cursor:not-allowed}.rmti-result{font-size:10.5px;color:#6E6982;margin-top:9px;min-height:16px}.rmti-result.ok{color:#2F7B54}.rmti-result.err{color:#B33D49}.rm-txnimport-nav.active{background:linear-gradient(90deg,#EFE8FF,#F7F3FF)!important;color:#5B3AA0!important;font-weight:700!important}
+
+@media(max-width:1180px){#rm352BrandTag,#rm352HeaderMotto{display:none!important}.brand-wrap{min-width:auto}.rm350-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.rmti-grid{grid-template-columns:1fr}}
+@media(max-width:900px){#rm350Workboard,#rm350Lane,.rmti-wrap{padding:24px 20px 50px}.rm350-hero{flex-direction:column;gap:12px}.rm350-hero-side{align-items:flex-start;padding-top:0}.rm350-grid{grid-template-columns:1fr}.rm350-group-tag{display:none}.rm350-title{font-size:34px}.rmti-head{flex-direction:column}.rmti-summary{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:760px){#rm350Workboard,#rm350Lane,.rmti-wrap{padding-left:13px;padding-right:13px}.rm350-title{font-size:30px}#rm352HeaderSearch,#rm352HeaderMotto{display:none!important}.rm350-group-head:after{margin-right:0}}
+</style>
+<script id="v352-pretty-ui-js">
+(function(){
+'use strict';
+const $=id=>document.getElementById(id);
+const txt=el=>String(el&&el.textContent||'').replace(/\s+/g,' ').trim();
+const firstNum=s=>{const m=String(s||'').match(/\d+/);return m?Number(m[0]):0};
+const isDirector=()=>{try{return location.hash==='#director'||document.body.classList.contains('rm-director-route')}catch(e){return false}};
+function rm352Svg(name){const p={calendar:'<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 10h18"/><path d="M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01"/>',phone:'<path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6A19.79 19.79 0 0 1 2.12 4.18 2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.12.9.33 1.78.62 2.63a2 2 0 0 1-.45 2.11L8 9.73a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.85.29 1.73.5 2.63.62A2 2 0 0 1 22 16.92z"/>',check:'<path d="M20 6 9 17l-5-5"/>',handoff:'<path d="M17 3l4 4-4 4M21 7H9M7 21l-4-4 4-4M3 17h12"/>',plus:'<path d="M12 5v14M5 12h14"/>',rotate:'<path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/>',target:'<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/>',people:'<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/>',growth:'<path d="M4 19V9M10 19V5M16 19v-7M22 19V2"/>',refresh:'<path d="M20 11a8.1 8.1 0 0 0-15.5-2M4 4v5h5M4 13a8.1 8.1 0 0 0 15.5 2M20 20v-5h-5"/>'};return '<svg viewBox="0 0 24 24" aria-hidden="true">'+(p[name]||p.target)+'</svg>'}
+const defs={
+ schedule:{icon:rm352Svg('calendar'),title:"Today’s Schedule",desc:'Confirmed meetings + prep for today.',target:'v113StepSchedule'},
+ calls:{icon:rm352Svg('phone'),title:'Transaction Calls',desc:'Keep deals on track with key follow-ups.',target:'v113StepUrgent'},
+ tuesday:{icon:rm352Svg('check'),title:'Tuesday Updates',desc:"Work Mack’s weekly listing-agent update list.",external:'tuesday'},
+ handoffs:{icon:rm352Svg('handoff'),title:'LP Handoffs',desc:'Coordinate with the LP team and close the loop.',target:'v113StepLP'},
+ cold:{icon:rm352Svg('plus'),title:'New Realtor Outreach',desc:'Meet and connect with new Realtors.',target:'v113StepMeetings'},
+ conversion:{icon:rm352Svg('rotate'),title:'4-Week Follow-Ups',desc:'Nurture new relationships with intention.',target:'v161StepConversion'},
+ smart:{icon:rm352Svg('target'),title:'Buyer Agent Smart Calls',desc:'Identify and engage buyer-agent opportunities.',target:'v113StepSmart'},
+ facetime:{icon:rm352Svg('people'),title:'Relationship Meeting Pipeline',desc:'Schedule intentional meetings with relationship opportunities.',target:'v113StepFaceTime'},
+ growth:{icon:rm352Svg('growth'),title:'C → B Growth',desc:'Move strong Consult relationships toward Buy.',target:'v113StepGrowth'},
+ reconnect:{icon:rm352Svg('refresh'),title:'Reconnect / Reactivation',desc:'Re-engage past agents and warm relationships.',external:'reconnect'}
+};
+const groups=[
+ ['Must do','Get these done today',['schedule','calls','tuesday','handoffs']],
+ ['Build new business','Create tomorrow’s opportunities',['cold','conversion','smart']],
+ ['Develop relationships','Deepen relationships. Grow together.',['facetime','growth','reconnect']]
+];
+let moved=null,placeholder=null;
+function badge(main,tone){return tone?'<span class="rm350-badge '+tone+'">'+main+'</span>':main}
+function safeCount(sel){try{return document.querySelectorAll(sel).length}catch(e){return 0}}
+function scheduleCount(){const h=$('v241AmandaScheduleInline');if(!h)return 0;const s=txt(h);if(/nothing added|no .*schedule/i.test(s))return 0;return h.querySelectorAll('button,[data-block-id],.fu-item,.v241-row').length||(/\b\d{1,2}:\d{2}\b/.test(s)?1:0)}
+function status(kind){let main='Review',tone='';
+ try{
+  if(kind==='schedule'){const n=scheduleCount();main=n?n+' scheduled':'Open schedule';tone=n?'green':''}
+  else if(kind==='calls'){const n=safeCount('#wp230OpenCalls .wp231-side button')||safeCount('#wp230OpenCalls .wp231-file');main=n?n+' open':'Clear';tone=n?'amber':'green'}
+  else if(kind==='tuesday'){const n=firstNum(txt($('rmV1TuesdayBadge')));main=n?n+' open':'Clear';tone=n?'amber':'green'}
+  else if(kind==='handoffs'){const h=$('v113LpHost'),n=h?h.querySelectorAll('button').length:0;main=n?n+' action'+(n===1?'':'s'):'Clear';tone=n?'amber':'green'}
+  else if(kind==='cold'){const n=safeCount('#rmStableNewMeetingHost .v109-prospect')||safeCount('#v109NewMeetingPush .v109-prospect');main=n?n+' ready':'Review';tone=n?'':'amber'}
+  else if(kind==='conversion'){const s=txt($('onboardingSub'))+' '+txt(document.querySelector('#onboardingList .v162-conv-summary'));const ov=(s.match(/(\d+)\s+overdue/i)||[])[1],req=(s.match(/(\d+)\s+(?:weekly\s+touch(?:es)?\s+still\s+)?required/i)||[])[1]||(s.match(/(\d+)\s+required/i)||[])[1];if(Number(ov)){main=ov+' overdue';tone='red'}else if(Number(req)){main=req+' remaining';tone='amber'}else{main='Clear';tone='green'}}
+  else if(kind==='smart'){const st=window._rmV267BuyerAgentState;let n=0;if(st&&Array.isArray(st.rows))st.rows.forEach(r=>{if(r&&!r.waiting&&r.due)n++});if(!n)n=safeCount('#v267BuyerAgentQueue .v267-row');main=n?n+' due':'Clear';tone=n?'amber':'green'}
+  else if(kind==='facetime'){const n=firstNum(txt($('breadSub')));main=n?n+' to schedule':'Review';tone=n?'amber':''}
+  else if(kind==='growth'){let n=safeCount('#v113GrowthHost .v112-growth-card,#v113GrowthHost .v133-col-row');if(!n&&window._v106GrowthDiag)n=Number(window._v106GrowthDiag.overflowed||0);main=n?n+' candidate'+(n===1?'':'s'):'Clear';tone=n?'':'green'}
+  else if(kind==='reconnect'){const h=$('rcList');let n=h?h.querySelectorAll('.fu-item,[data-agent],tr').length:0;main=n?n+' to review':'Review';tone=n?'amber':''}
+ }catch(e){main='Review';tone=''}
+ return badge(main,tone)
+}
+function card(kind){const d=defs[kind];return '<button type="button" class="rm350-card" data-kind="'+kind+'" onclick="v350OpenLane(\''+kind+'\')"><div class="rm350-card-top"><span class="rm350-icon">'+d.icon+'</span><span class="rm350-card-copy"><span class="rm350-card-title">'+d.title+'</span><span class="rm350-desc">'+d.desc+'</span></span><span class="rm350-chevron">›</span></div><div class="rm350-card-bottom"><span class="rm350-status" id="rm350Status-'+kind+'">'+status(kind)+'</span><span class="rm350-open">Open →</span></div></button>'}
+function metric(kind,label,sub){return '<div class="rm350-kpi" data-kind="'+kind+'"><div class="rm350-kpi-label">'+label+'</div><div class="rm350-kpi-value" id="rm350Kpi-'+kind+'">'+status(kind)+'</div><div class="rm350-kpi-sub">'+sub+'</div></div>'}
+function glance(kind,label){return '<button type="button" class="rm350-glance-row" onclick="v350OpenLane(\''+kind+'\')"><span class="rm350-dot '+kind+'"></span><span class="rm350-glance-label">'+label+'</span><span class="rm350-glance-status" id="rm350Glance-'+kind+'">'+status(kind)+'</span><span class="rm350-glance-arrow">›</span></button>'}
+function boardHTML(){let date='Today';try{date=new Date().toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric',year:'numeric'})}catch(e){}
+ const work=groups.map(g=>'<section class="rm350-group"><div class="rm350-group-head"><div class="rm350-group-title">'+g[0]+'</div><div class="rm350-group-tag">'+g[1]+'</div></div><div class="rm350-grid">'+g[2].map(card).join('')+'</div></section>').join('');
+ return '<div class="rm350-hero"><div><div class="rm350-kicker">Amanda <span>•</span> Today</div><div class="rm350-title">Today’s Priorities</div><div class="rm350-subtitle">Focus. Follow up. Move forward. <span class="rm352-heart">♡</span></div></div><div class="rm350-hero-side"><div class="rm350-date">▣ &nbsp;'+date+'</div><button type="button" class="rm352-import-link" onclick="rmTxnImportShow()">Import New Contracts / CTCs →</button></div></div><div class="rm350-shell"><main class="rm350-main">'+work+'</main></div>';
+}
+function applyChrome(){
+ try{
+  const bw=document.querySelector('.brand-wrap');if(bw&&!$('rm352BrandTag')){const t=document.createElement('span');t.id='rm352BrandTag';t.textContent='Relationships Move Business';bw.appendChild(t)}
+  const hr=document.querySelector('.header-right');
+  if(hr&&!$('rm352HeaderSearch')){const s=document.createElement('label');s.id='rm352HeaderSearch';s.innerHTML='<svg viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.5-3.5"></path></svg><input id="rm352SearchInput" placeholder="Search agents, contacts, or notes…">';hr.prepend(s);s.querySelector('input').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();rm352Search(e.target.value)}})}
+  if(hr&&!$('rm352Bell')){const b=document.createElement('button');b.id='rm352Bell';b.type='button';b.title='Open activity feed';b.innerHTML='<svg viewBox="0 0 24 24" fill="none"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"></path><path d="M13.7 21a2 2 0 0 1-3.4 0"></path></svg>';b.onclick=()=>window.switchTab&&window.switchTab('feed');hr.appendChild(b)}
+  if(hr&&!$('rm352HeaderProfile')){const p=document.createElement('div');p.id='rm352HeaderProfile';const av=$('v95AmandaAvatar');const src=av&&av.getAttribute('src');p.innerHTML=(src?'<img alt="Amanda" src="'+src+'">':'<span id="rm352HeaderAvatarFallback">A</span>')+'<span>Amanda</span>';hr.appendChild(p);const m=document.createElement('div');m.id='rm352HeaderMotto';m.innerHTML='Make It Happen ♡';hr.appendChild(m)}
+  const iconMap={week:'⌂',log:'✎',tuesday:'▣',scorecard:'▥',portfolio:'♙',pipeline:'♙',reconnect:'↻',growth:'▥',standard:'▭',learn:'◇',feed:'⌁',history:'◷',contacts:'▣'};document.querySelectorAll('.tabs .tab[data-tab]').forEach(tab=>{const n=tab.querySelector('.nav-num'),k=tab.dataset.tab;if(n&&iconMap[k])n.textContent=iconMap[k]});
+  const tue=document.querySelector('.tab[data-tab="tuesday"]');if(tue&&!document.querySelector('.rm-txnimport-nav')){const n=document.createElement('div');n.className='tab rm-txnimport-nav';n.title='Upload daily New Contract or CTC exports without changing Tuesday Updates';n.innerHTML='<span class="nav-num">⇧</span><span>Transaction Imports</span>';n.onclick=()=>rmTxnImportShow();tue.insertAdjacentElement('afterend',n)}
+  if(!$('rm352SidebarFooter')){const f=document.createElement('div');f.id='rm352SidebarFooter';f.innerHTML='<b>Stronger Relationships.</b><br>Brighter Tomorrows. ♡';document.body.appendChild(f)}
+ }catch(e){console.warn('v352 chrome',e)}
+}
+window.rm352Search=function(q){q=String(q||'').trim();if(!q)return;try{window.switchTab('history');setTimeout(()=>{const i=document.getElementById('historySearch');if(i){i.value=q;i.dispatchEvent(new Event('input',{bubbles:true}));i.focus()}},120)}catch(e){}};
+function ensure(){if(isDirector())return false;const view=$('view-week');if(!view)return false;view.classList.add('rm350-board');let board=$('rm350Workboard');if(!board){board=document.createElement('section');board.id='rm350Workboard';board.innerHTML=boardHTML();view.appendChild(board)}let lane=$('rm350Lane');if(!lane){lane=document.createElement('section');lane.id='rm350Lane';lane.innerHTML='<div class="rm350-lane-head"><div class="rm350-lane-title" id="rm350LaneTitle"></div><button type="button" class="rm350-back" onclick="v350ShowBoard()">← Back to Today</button></div><div class="rm350-lane-body" id="rm350LaneBody"></div>';view.appendChild(lane)}return true}
+function restore(){if(moved&&placeholder&&placeholder.parentNode){placeholder.parentNode.insertBefore(moved,placeholder);placeholder.remove()}moved=null;placeholder=null;const body=$('rm350LaneBody');if(body)body.innerHTML='';document.body.classList.remove('rm350-lane-open')}
+function refresh(){if(isDirector())return;Object.keys(defs).forEach(k=>{const s=status(k);const a=$('rm350Status-'+k),b=$('rm350Kpi-'+k),c=$('rm350Glance-'+k);if(a)a.innerHTML=s;if(b)b.innerHTML=s;if(c)c.innerHTML=s})}
+function activateBoard(){if(isDirector()||!ensure())return;restore();document.body.setAttribute('data-rm-tab','week');refresh();try{window.scrollTo(0,0)}catch(e){}}
+function findTarget(id){let target=$(id);if(target)return target;try{if(typeof window.v113BuildTodayLayout==='function')window.v113BuildTodayLayout();if(id==='v161StepConversion'&&typeof window.v163RawLoadOnboarding==='function')window.v163RawLoadOnboarding(true)}catch(e){}return $(id)}
+function rm352DedupLegacy(){try{['v161MeetingRule','v162OutlineBtn'].forEach(id=>{document.querySelectorAll('#v109NewMeetingPush #'+id).forEach(old=>{if(document.querySelector('#rmStableNewMeetingHost #'+id))old.removeAttribute('id')})})}catch(e){}}
+window.v350OpenLane=function(kind){const d=defs[kind];if(!d||isDirector())return;restore();if(d.external){try{window.switchTab(d.external)}catch(e){};return}ensure();const body=$('rm350LaneBody');const title=$('rm350LaneTitle');const target=findTarget(d.target);if(title)title.textContent=d.title;if(!target){if(body)body.innerHTML='<div style="padding:16px;color:#776e7e">This work lane is still loading. Go back to Today and open it again.</div>';document.body.classList.add('rm350-lane-open');return}placeholder=document.createComment('rm350 restore '+d.target);target.parentNode.insertBefore(placeholder,target);body.appendChild(target);moved=target;document.body.classList.add('rm350-lane-open');try{if(kind==='conversion'&&typeof window.v163RawLoadOnboarding==='function'){window.v163RawLoadOnboarding(true);setTimeout(rm352DedupLegacy,90)}if(kind==='smart'&&typeof window.rmV267RefreshSmartCalls==='function')window.rmV267RefreshSmartCalls(true);if(kind==='growth'&&typeof window.v106LoadTierGrowth==='function')window.v106LoadTierGrowth(true)}catch(e){}try{window.scrollTo(0,0)}catch(e){}};
+window.v350ShowBoard=function(){if(isDirector())return;restore();try{window.switchTab('week')}catch(e){};activateBoard()};
+window.v350Go=function(tab){restore();try{window.switchTab(tab)}catch(e){console.error('RM navigation failed',tab,e)}};
+window.v350RefreshBoard=refresh;window.v352Restore=restore;
+/* Compatibility aliases so no old button can break after the cleanup. */
+window.v341OpenLane=window.v350OpenLane;window.v341ShowBoard=window.v350ShowBoard;window.v341RefreshBoard=window.v350RefreshBoard;
+
+/* One Portfolio refresh implementation. No duplicate logger or focus-triggered refresh. */
+window.v338RefreshPortfolioAll=async function(){
+ const btn=Array.from(document.querySelectorAll('#view-portfolio button')).find(b=>/Refresh portfolio/i.test(b.textContent||''));if(btn){btn.disabled=true;btn.textContent='Refreshing…'}
+ try{try{if(typeof V129_META_AT!=='undefined')V129_META_AT=0}catch(e){};try{if(typeof window.v129PowerBiMeta==='function')await window.v129PowerBiMeta(true)}catch(e){};if(typeof _wp18Cache!=='undefined'){try{_wp18Cache=null;_wp18CacheAt=0}catch(e){}};await Promise.allSettled([typeof window.v122RenderAudit==='function'?window.v122RenderAudit():Promise.resolve(),typeof window.loadPortfolioReview==='function'?window.loadPortfolioReview():Promise.resolve(),typeof window.v91RefreshDirectorOS==='function'?Promise.resolve(window.v91RefreshDirectorOS()):Promise.resolve()]);if(typeof window.toast==='function')window.toast('Portfolio refreshed','success',2200)}catch(e){console.warn('Portfolio refresh',e);if(typeof window.toast==='function')window.toast('Portfolio refresh could not fully finish.','error',3000)}finally{if(btn){btn.disabled=false;btn.textContent='Refresh portfolio'}}
+};
+
+/* One final navigation wrapper only for Workboard cleanup/restore. It does not rerender the page and uses no click listener/observer. */
+const prior=window.switchTab;
+if(typeof prior==='function'&&!prior.__rm350){
+ const wrapped=function(name){const normalized=name==='newagents'?'pipeline':name==='tiergrowth'?'growth':name==='skillset'?'learn':name;restore();const r=prior.apply(this,arguments);try{document.body.setAttribute('data-rm-tab',normalized)}catch(e){};if(normalized==='week'&&!isDirector())activateBoard();return r};
+ wrapped.__rm350=true;window.switchTab=wrapped;
+}
+
+window.rmV350Audit=function(){
+ const active=[...document.querySelectorAll('.view.active')].map(x=>x.id);const ids=[...document.querySelectorAll('[id]')].map(x=>x.id);const dup=ids.filter((x,i)=>ids.indexOf(x)!==i);return {version:'v352',activeViews:active,duplicateDomIds:[...new Set(dup)],tab:document.body.getAttribute('data-rm-tab'),laneOpen:document.body.classList.contains('rm350-lane-open'),boardPresent:!!$('rm350Workboard')};
+};
+function boot(){applyChrome();if(isDirector())return;ensure();rm352DedupLegacy();const active=document.querySelector('.tabs .tab.active[data-tab]');const tab=active&&active.dataset.tab||document.body.getAttribute('data-rm-tab')||'week';if(tab==='week')activateBoard();/* finite status-only syncs; no page rerender */setTimeout(refresh,1100);setTimeout(()=>{refresh();rm352DedupLegacy()},3000)}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
+})();
+</script>
+
+<style id="rm-transaction-import-v352-css"></style>
+<script id="rm-transaction-import-v352-js">
+(function(){
+'use strict';
+const $=id=>document.getElementById(id), esc=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+const norm=s=>String(s||'').trim().toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();
+const token=s=>String(s||'').replace(/\]/g,' ').replace(/[\r\n]+/g,' ').replace(/\s+/g,' ').trim();
+const meta=(notes,k)=>{const m=String(notes||'').match(new RegExp('\\[TXN_'+k+':([^\\]]*)\\]','i'));return m?m[1].trim():''};
+const roleOf=notes=>{const m=String(notes||'').match(/\[TXN_ROLE:([^\]]+)\]/i);return m?m[1].trim():'Agent'};
+const idOf=notes=>{const m=String(notes||'').match(/\[TXN_ID:([^\]]+)\]/i);return m?m[1].trim():''};
+const todayS=()=>{try{return typeof today==='function'?today():new Date().toISOString().slice(0,10)}catch(e){return new Date().toISOString().slice(0,10)}};
+let state={kind:null,file:null,rows:[],raw:0,merged:0,importable:0,tasks:0,skipped:0,existing:0};
+function placeholder(v){const s=norm(v).replace(/\s/g,'');return !s||['na','n/a','none','null','unknown','tbd','fsbo','noagent','notapplicable','unrepresented','000','0000'].includes(s)}
+function cleanName(v){const s=token(v);return placeholder(s)?'':s}
+function cleanPhone(v){const s=token(v);if(!s)return'';const d=s.replace(/\D/g,'');if(d.length<7||/^0+$/.test(d)||/^(\d)\1+$/.test(d))return'';return s}
+function cleanEmail(v){const s=token(v).toLowerCase();if(!s||!s.includes('@')||/^(noagent|fsbo)@/i.test(s))return'';return s}
+function pick(o,names){for(const n of names){if(o&&Object.prototype.hasOwnProperty.call(o,n)&&String(o[n]??'').trim()!=='')return o[n]}const es=Object.entries(o||{}),want=names.map(norm);for(const [k,v] of es){const nk=norm(k);if(want.some(w=>nk===w||nk.includes(w)||w.includes(nk))&&String(v??'').trim()!=='')return v}return''}
+function dateText(v){if(!v)return'';if(v instanceof Date&&!isNaN(v)){return v.getFullYear()+'-'+String(v.getMonth()+1).padStart(2,'0')+'-'+String(v.getDate()).padStart(2,'0')}let n=Number(v);if(Number.isFinite(n)&&n>25000&&n<80000){const d=new Date(Date.UTC(1899,11,30)+Math.round(n*86400000));return d.toISOString().slice(0,10)}const s=String(v).trim(),m=s.match(/^(\d{1,2})[\/-](\d{1,2})[\/-](\d{2}|\d{4})$/);if(m){let y=+m[3];if(y<100)y+=2000;return y+'-'+String(+m[1]).padStart(2,'0')+'-'+String(+m[2]).padStart(2,'0')}const d=new Date(s);return isNaN(d)?'':d.toISOString().slice(0,10)}
+function txnKey(r){return norm(r.client)+'|'+norm(r.property)}
+function slug(s){return norm(s).replace(/\s+/g,'-').slice(0,70)}
+function stableId(r){return ('rm-'+slug(r.client)+'-'+slug(r.property)).replace(/-+/g,'-').replace(/^-|-$/g,'').slice(0,155)||('rm-transaction-'+Date.now())}
+function merge(a,b){for(const k of ['client','property','buyerAgent','buyerPhone','buyerEmail','listingAgent','listingPhone','listingEmail','lp','closeDate','triggerDate','milestone'])if(!a[k]&&b[k])a[k]=b[k];return a}
+function parse(raw,kind){const out=new Map(),skips=[];raw.forEach((x,i)=>{const r={row:i+2,client:cleanName(pick(x,['Borrower Name','Borrower','Client Name','Client'])),property:token(pick(x,['Subject Property Address','Property Address','Subject Property','Address'])),buyerAgent:cleanName(pick(x,['Buyers Agent Contact Name','Buyer Agent Contact Name','Buyer Agent','Buyer Agent Name'])),buyerPhone:cleanPhone(pick(x,['Buyers Agent Phone','Buyer Agent Phone','Buyer Phone'])),buyerEmail:cleanEmail(pick(x,['Buyers Agent Email','Buyer Agent Email','Buyer Email'])),listingAgent:cleanName(pick(x,['Sellers Agent Contact Name','Seller Agent Contact Name','Listing Agent Contact Name','Seller Agent','Listing Agent'])),listingPhone:cleanPhone(pick(x,['Sellers Agent Phone','Seller Agent Phone','Listing Agent Phone','Seller Phone','Listing Phone'])),listingEmail:cleanEmail(pick(x,['Sellers Agent Email','Seller Agent Email','Listing Agent Email','Seller Email','Listing Email'])),lp:cleanName(pick(x,['Loan Team Member Name - Loan Partner 2','Loan Partner 2','LP2']))||cleanName(pick(x,['Loan Team Member Name - Loan Partner 1','Loan Partner 1','LP1'])),closeDate:dateText(pick(x,['Est Closing Date','Estimated Closing Date','Closing Date','Scheduled Closing Date','Close Date'])),milestone:token(pick(x,['Last Finished Milestone','Milestone','Current Milestone'])),triggerDate:kind==='ctc'?dateText(pick(x,['Milestone Date - CTC','CTC Date','Clear to Close Date'])):dateText(pick(x,['GFE Application Date','Contract Date','New Contract Date']))};
+  if(!r.client&&!r.property){skips.push({...r,reason:'Missing client and property'});return}if(!r.buyerAgent&&!r.listingAgent){skips.push({...r,reason:'No callable buyer or listing agent'});return}const k=txnKey(r);if(out.has(k))merge(out.get(k),r);else out.set(k,r)});return {rows:[...out.values()],skips}}
+async function fallbackXlsx(ab){const u=new Uint8Array(ab),dv=new DataView(ab),td=new TextDecoder('utf-8'),u16=o=>dv.getUint16(o,true),u32=o=>dv.getUint32(o,true),sig=(o,n)=>o>=0&&o+4<=u.length&&u32(o)===n;let e=-1;for(let i=u.length-22;i>=Math.max(0,u.length-66000);i--){if(sig(i,0x06054b50)){e=i;break}}if(e<0)throw new Error('This Excel file could not be opened.');const count=u16(e+10),cd=u32(e+16),files={};let pos=cd;for(let i=0;i<count&&pos+46<=u.length;i++){if(!sig(pos,0x02014b50))break;const method=u16(pos+10),csize=u32(pos+20),fnl=u16(pos+28),exl=u16(pos+30),col=u16(pos+32),lho=u32(pos+42),name=td.decode(u.slice(pos+46,pos+46+fnl));files[name]={method,csize,lho};pos+=46+fnl+exl+col}async function bytes(name){const f=files[name];if(!f)return null;const o=f.lho,fnl=u16(o+26),exl=u16(o+28),start=o+30+fnl+exl,raw=u.slice(start,start+f.csize);if(f.method===0)return raw;if(f.method===8&&typeof DecompressionStream!=='undefined'){const ds=new DecompressionStream('deflate-raw'),stream=new Blob([raw]).stream().pipeThrough(ds);return new Uint8Array(await new Response(stream).arrayBuffer())}throw new Error('Excel compression is not supported in this browser.')}async function txt(name){const b=await bytes(name);return b?td.decode(b):''}const parser=new DOMParser(),ss=[],sx=await txt('xl/sharedStrings.xml');if(sx){const d=parser.parseFromString(sx,'application/xml');d.querySelectorAll('si').forEach(si=>ss.push([...si.querySelectorAll('t')].map(t=>t.textContent||'').join('')))}let sheet='xl/worksheets/sheet1.xml';const wx=await txt('xl/workbook.xml'),rx=await txt('xl/_rels/workbook.xml.rels');if(wx&&rx){const w=parser.parseFromString(wx,'application/xml'),r=parser.parseFromString(rx,'application/xml'),fst=w.querySelector('sheet');if(fst){const rid=fst.getAttribute('r:id')||fst.getAttributeNS('http://schemas.openxmlformats.org/officeDocument/2006/relationships','id'),rel=[...r.querySelectorAll('Relationship')].find(x=>x.getAttribute('Id')===rid);if(rel){let t=rel.getAttribute('Target')||'';t=t.replace(/^\//,'');sheet=t.startsWith('xl/')?t:'xl/'+t.replace(/^\.\//,'')}}}const xml=await txt(sheet);if(!xml)throw new Error('No readable worksheet was found.');const d=parser.parseFromString(xml,'application/xml'),rows=[];function ci(ref){const m=String(ref||'').match(/^([A-Z]+)/i);if(!m)return 0;let n=0;for(const ch of m[1].toUpperCase())n=n*26+(ch.charCodeAt(0)-64);return n-1}d.querySelectorAll('sheetData > row').forEach(row=>{const a=[];row.querySelectorAll('c').forEach(c=>{const x=ci(c.getAttribute('r')),t=c.getAttribute('t')||'',v=c.querySelector('v')?.textContent??'',inline=c.querySelector('is t')?.textContent??'';a[x]=t==='s'?ss[Number(v)]??'':t==='inlineStr'?inline:v});rows.push(a)});const head=rows[0]||[],out=[];for(let i=1;i<rows.length;i++){const o={};let any=false;head.forEach((h,j)=>{if(!String(h||'').trim())return;const v=rows[i][j]??'';o[String(h).trim()]=v;if(String(v).trim())any=true});if(any)out.push(o)}return out}
+async function readFile(file){const ab=await file.arrayBuffer();if(window.XLSX){const w=XLSX.read(ab,{type:'array',cellDates:true}),sn=w.SheetNames.includes('Table')?'Table':w.SheetNames[0];return XLSX.utils.sheet_to_json(w.Sheets[sn],{defval:''})}return fallbackXlsx(ab)}
+function rmtiTimeout(p,ms){return Promise.race([Promise.resolve(p),new Promise(res=>setTimeout(()=>res([]),ms||2800))])}async function existingMap(){const since=new Date();since.setDate(since.getDate()-240);const d=since.toISOString().slice(0,10);const [nc,ctc]=await Promise.all([rmtiTimeout(sbFetch('amanda_activities?act_type=eq.New%20Contract&act_date=gte.'+d+'&select=id,agent_name,act_type,act_date,notes&limit=5000').catch(()=>[]),2800),rmtiTimeout(sbFetch('amanda_activities?act_type=eq.Clear%20to%20Close&act_date=gte.'+d+'&select=id,agent_name,act_type,act_date,notes&limit=5000').catch(()=>[]),2800)]);const all=[...(nc||[]),...(ctc||[])],byTxn=new Map(),byTrigger=new Set();all.forEach(a=>{const c=meta(a.notes,'CLIENT'),p=meta(a.notes,'PROPERTY'),k=norm(c)+'|'+norm(p),tid=idOf(a.notes),role=norm(roleOf(a.notes));if(k!=='|'&&tid&&!byTxn.has(k))byTxn.set(k,tid);byTrigger.add([a.act_type,k,role].join('|'))});return {byTxn,byTrigger}}
+function icon(name){const p=name==='upload'?'<path d="M12 16V4M7 9l5-5 5 5"/><path d="M5 20h14"/>':'<path d="M20 13c0 5-3.5 8-8 8s-8-3-8-8V5l8-3 8 3v8z"/><path d="m9 12 2 2 4-4"/>';return '<svg viewBox="0 0 24 24" fill="none">'+p+'</svg>'}
+function page(){return '<div class="rmti-wrap"><div class="rmti-head"><div><div class="rmti-eyebrow">Amanda · Transaction Work</div><div class="rmti-title">Transaction Imports</div></div><button class="rmti-back" onclick="switchTab(\'week\')">← Back to Today</button></div><div class="rmti-grid">'+card('new','New Contracts','Use the New Contract Excel export. The importer reads buyer/listing agent contacts, client, property, LP and closing date.','nc')+card('ctc','Clear to Close','Use the CTC Excel export. Duplicate loan rows for the same buyer + property are merged before import.','ctc')+'</div><div class="rmti-preview" id="rmtiPreview"><div style="font-size:11px;color:#8B88A1;padding:8px 1px">Choose one of the two files above to preview it. Nothing imports until you review and click Import.</div></div></div>'}
+function card(kind,title,copy,cls){return '<section class="rmti-card '+cls+'"><div class="rmti-card-top"><div class="rmti-icon">'+icon('upload')+'</div><div><h3>'+title+'</h3><p>'+copy+'</p></div></div><div class="rmti-drop" data-kind="'+kind+'"><b>Choose '+title+' Excel</b><span>.xlsx or .xls · preview before saving</span><button class="rmti-choose" type="button" onclick="rmTxnPick(\''+kind+'\')">Choose file</button><input id="rmtiFile-'+kind+'" type="file" accept=".xlsx,.xls" style="display:none"><div class="rmti-file" id="rmtiFileName-'+kind+'"></div></div></section>'}
+function ensure(){let v=$('view-txnimports');if(!v){v=document.createElement('div');v.className='view';v.id='view-txnimports';document.querySelector('#view-week')?.insertAdjacentElement('afterend',v)}if(!v.dataset.built){v.dataset.built='1';v.innerHTML=page();['new','ctc'].forEach(k=>{const i=$('rmtiFile-'+k);if(i)i.addEventListener('change',e=>handle(e,k))})}return v}
+window.rmTxnImportShow=function(){try{if(window.v352Restore)window.v352Restore()}catch(e){};ensure();document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));$('view-txnimports').classList.add('active');document.body.setAttribute('data-rm-tab','txnimports');document.querySelectorAll('.tabs .tab').forEach(t=>t.classList.remove('active'));document.querySelector('.rm-txnimport-nav')?.classList.add('active');try{window.scrollTo(0,0)}catch(e){}}
+window.rmTxnPick=k=>$('rmtiFile-'+k)?.click();
+async function handle(e,k){const f=e.target.files&&e.target.files[0];if(!f)return;state={kind:k,file:f,rows:[],raw:0,merged:0,importable:0,tasks:0,skipped:0,existing:0};$('rmtiFileName-'+k).textContent=f.name;const h=$('rmtiPreview');h.innerHTML='<div style="padding:12px;color:#77738D">Reading '+esc(f.name)+'…</div>';try{const raw=await readFile(f);state.raw=raw.length;const p=parse(raw,k);state.rows=p.rows.map(r=>({...r,status:'ready',reason:''}));state.skips=p.skips;state.merged=state.rows.length;const ex=await existingMap(),trigger=k==='ctc'?'Clear to Close':'New Contract';state.rows.forEach(r=>{const key=txnKey(r),roles=[r.buyerAgent?'buyer':'',r.listingAgent?'listing':''].filter(Boolean);const done=roles.filter(role=>ex.byTrigger.has([trigger,key,role].join('|'))).length;r.existingRoles=done;r.txnId=ex.byTxn.get(key)||stableId(r);if(done===roles.length){r.status='exists';r.reason='Already imported / already in tracker';state.existing++}else{r.status='ready';state.importable++;state.tasks+=roles.length-done}});render()}catch(err){h.innerHTML='<div class="rmti-result err"><b>Could not read this file.</b> '+esc(err.message||err)+'</div>'}finally{e.target.value=''}}
+function render(){const h=$('rmtiPreview');if(!h)return;const k=state.kind,title=k==='ctc'?'CTC':'New Contract',rows=[...state.rows,...(state.skips||[]).map(x=>({...x,status:'skip'}))];const stat=(n,l)=>'<div class="rmti-stat"><b>'+n+'</b><span>'+l+'</span></div>';h.innerHTML='<div class="rmti-summary">'+stat(state.raw,'rows in file')+stat(state.merged,'unique transactions')+stat(state.importable,'ready to import')+stat(state.tasks,'agent call tasks')+'</div><div class="rmti-table-wrap"><table class="rmti-table"><thead><tr><th>Status</th><th>Client</th><th>Property</th><th>Buyer Agent</th><th>Listing Agent</th><th>LP</th><th>Trigger</th><th>Close</th></tr></thead><tbody>'+rows.map(r=>'<tr><td><span class="rmti-pill '+(r.status==='ready'?'ready':r.status==='exists'?'exists':'skip')+'">'+(r.status==='ready'?'READY':r.status==='exists'?'ALREADY THERE':'SKIP')+'</span>'+(r.reason?'<br><span style="font-size:8.6px;color:#8D899F">'+esc(r.reason)+'</span>':'')+'</td><td><b>'+esc(r.client||'—')+'</b></td><td>'+esc(r.property||'—')+'</td><td>'+esc(r.buyerAgent||'—')+'</td><td>'+esc(r.listingAgent||'—')+'</td><td>'+esc(r.lp||'—')+'</td><td>'+esc(r.triggerDate||'—')+'</td><td>'+esc(r.closeDate||'—')+'</td></tr>').join('')+'</tbody></table></div><div class="rmti-actions"><button type="button" onclick="rmTxnClearPreview()">Clear preview</button><button class="primary" id="rmtiImportBtn" type="button" '+(state.importable?'':'disabled')+' onclick="rmTxnDoImport()">Import '+state.importable+' '+title+' transaction'+(state.importable===1?'':'s')+'</button></div><div class="rmti-result" id="rmtiResult">'+(state.existing?state.existing+' transaction'+(state.existing===1?' is':'s are')+' already in the tracker and will not duplicate.':'')+'</div>'}
+window.rmTxnClearPreview=function(){state={kind:null,file:null,rows:[],raw:0,merged:0,importable:0,tasks:0,skipped:0,existing:0};const h=$('rmtiPreview');if(h)h.innerHTML='<div style="font-size:11px;color:#8B88A1;padding:8px 1px">Choose one of the two files above to preview it.</div>';['new','ctc'].forEach(k=>{const f=$('rmtiFileName-'+k);if(f)f.textContent=''})}
+window.rmTxnDoImport=async function(){const ready=state.rows.filter(r=>r.status==='ready'),btn=$('rmtiImportBtn'),res=$('rmtiResult');if(!ready.length)return;if(btn){btn.disabled=true;btn.textContent='Importing…'}if(res){res.className='rmti-result';res.textContent='Saving milestone tasks…'}const trigger=state.kind==='ctc'?'Clear to Close':'New Contract',label=state.kind==='ctc'?'CTC':'New Contract',batch='RM-'+(state.kind==='ctc'?'CTC':'CONTRACT')+'-'+new Date().toISOString().replace(/[-:.TZ]/g,'').slice(0,14);let created=0,dupes=0,failed=0;try{const ex=await existingMap();for(const r of ready){const key=txnKey(r),tid=ex.byTxn.get(key)||r.txnId||stableId(r),roles=[['Buyer',r.buyerAgent,r.buyerPhone,r.buyerEmail],['Listing',r.listingAgent,r.listingPhone,r.listingEmail]].filter(x=>x[1]);for(const [role,name,phone,email] of roles){const dk=[trigger,key,norm(role)].join('|');if(ex.byTrigger.has(dk)){dupes++;continue}let notes='[TXN_TRIGGER][TXN_STATUS:PENDING][TXN_ROLE:'+role+'][TXN_ID:'+token(tid)+'][TXN_CLIENT:'+token(r.client)+'][TXN_PROPERTY:'+token(r.property)+'][TXN_REF:'+token([r.client,r.property].filter(Boolean).join(' · '))+']'+(r.buyerAgent?'[TXN_BUYER_AGENT:'+token(r.buyerAgent)+']':'')+(r.buyerPhone?'[TXN_BUYER_PHONE:'+token(r.buyerPhone)+']':'')+(r.buyerEmail?'[TXN_BUYER_EMAIL:'+token(r.buyerEmail)+']':'')+(r.listingAgent?'[TXN_LISTING_AGENT:'+token(r.listingAgent)+']':'')+(r.listingPhone?'[TXN_LISTING_PHONE:'+token(r.listingPhone)+']':'')+(r.listingEmail?'[TXN_LISTING_EMAIL:'+token(r.listingEmail)+']':'')+(r.lp?'[TXN_LP:'+token(r.lp)+']':'')+(r.closeDate?'[TXN_CLOSE_DATE:'+r.closeDate+']':'')+(r.milestone?'[TXN_MILESTONE:'+token(r.milestone)+']':'')+'[TXN_IMPORT_BATCH:'+batch+'][TXN_SOURCE:RM Excel Import · '+label+'] Daily RM milestone import. NOT a Tuesday Encompass snapshot.';try{if(typeof appendRmMeta==='function')notes=appendRmMeta(notes,'Amanda','Current Relationship')}catch(e){}try{await sbFetch('amanda_activities',{method:'POST',prefer:'return=minimal',body:JSON.stringify({agent_name:name,act_type:trigger,act_date:r.triggerDate||todayS(),outcome:'Pending',notes,follow_up_date:null})});created++;ex.byTrigger.add(dk);if(!ex.byTxn.has(key))ex.byTxn.set(key,tid)}catch(e){failed++;console.warn('transaction import row',e)}}}try{if(typeof _wp18Cache!=='undefined'){_wp18Cache=null;_wp18CacheAt=0}}catch(e){}try{if(typeof v23LoadAmandaSnapshot==='function')await v23LoadAmandaSnapshot(true)}catch(e){}try{if(typeof window.v231RefreshTransactionWork==='function')await window.v231RefreshTransactionWork(true)}catch(e){}try{window.v350RefreshBoard&&window.v350RefreshBoard()}catch(e){}state.rows.forEach(r=>{if(r.status==='ready')r.status='exists'});state.importable=0;state.tasks=0;if(res){res.className='rmti-result '+(failed?'err':'ok');res.textContent=created+' call task'+(created===1?'':'s')+' created'+(dupes?' · '+dupes+' already existed':'')+(failed?' · '+failed+' failed':'')+'. Tuesday Updates were not changed.'}try{toast(created+' '+label+' call task'+(created===1?'':'s')+' added ✓','success',4200)}catch(e){}render();const rr=$('rmtiResult');if(rr){rr.className='rmti-result '+(failed?'err':'ok');rr.textContent=created+' call task'+(created===1?'':'s')+' created'+(dupes?' · '+dupes+' already existed':'')+(failed?' · '+failed+' failed':'')+'. Tuesday Updates were not changed.'}}finally{if(btn){btn.disabled=!state.importable;btn.textContent='Import '+state.importable+' '+label+' transaction'+(state.importable===1?'':'s')}}}
+function boot(){ensure();const nav=document.querySelector('.rm-txnimport-nav');if(nav&&!nav.dataset.wired){nav.dataset.wired='1'} }
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(boot,80),{once:true});else setTimeout(boot,80);
+})();
+</script>
+
+
+<script id="rm353-amanda-director-guard">
+(function(){
+  function clean(){
+    document.querySelectorAll('.nyny-director-nav,.nyny-director-nav-label,.tab[data-tab="daniel"]').forEach(function(el){el.remove();});
+    if(location.hash==='#director'){try{history.replaceState(null,'',location.pathname+location.search);}catch(e){};try{window.switchTab&&window.switchTab('week');}catch(e){}}
+  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',clean,{once:true});else clean();
+})();
+</script>
 </body>
 </html>
-
-<!-- v323: preserve Mack RM Excel row order on initial load and after save/log refresh. TUE_ORDER is authoritative; older batches fall back to created_at ascending. -->
