@@ -2,6 +2,7 @@
 <!-- v326: outcomes-first Director audit. Adds live Power BI source reconciliation, growth/retention trend cards, health-snapshot recovery tracking, and clearer outcome visibility while preserving the v325 Amanda Face Time firewall. -->
 <!-- v325: Amanda Face Time ownership firewall. RM Step 4 now excludes Director-owned and all Channel/A/B relationships; only Amanda-owned C relationships can be scheduled here. -->
 <!DOCTYPE html>
+<!-- v327: overdue 4-week conversion touches close correctly when completed late; Tuesday cleared/no-call rows move to bottom without changing Mack order for active rows. -->
 
 <html lang="en">
 <head>
@@ -14733,12 +14734,12 @@ setTimeout(function(){v124MountAudit();v122RenderAudit();},1200);
   function isTaskComplete(acts,name,meet,w){
     const k=key(name),win=weekWindow(meet,w);
     return (acts||[]).some(a=>{
-      if(key(a.agent_name)!==k)return false;
-      const ad=String(a.act_date||'');
-      if(ad<win.start||ad>win.end)return false;
+      if(key(a.agent_name)!==k)return false;      const ad=String(a.act_date||'');
       const notes=String(a.notes||'');
-      if(notes.includes(TAG(w)))return true;
-      // Legacy compatibility: only a specific New Agent Follow-up counts, not a random Talk-to.
+      // v327: the Week N button writes an explicit tag, so that tag is authoritative even when an overdue touch is completed late.
+      if(notes.includes(TAG(w)))return ad>=String(meet||'');
+      // Legacy compatibility: an untagged New Agent Follow-up counts only inside its original weekly window.
+      if(ad<win.start||ad>win.end)return false;
       return a.act_type==='New Agent Follow-up'&&countWords(notes)>=MIN_NOTE_WORDS;
     });
   }
@@ -16811,7 +16812,11 @@ window.rmAuditVisibleButtons=function(){
      const start=new Date(meet+'T12:00:00');start.setDate(start.getDate()+(w-1)*7+1);
      const end=new Date(meet+'T12:00:00');end.setDate(end.getDate()+w*7);
      const tag='[4-WEEK CONVERSION W'+w+']';
-     return (d.recent||[]).some(a=>key(a.agent_name)===key(name)&&a.act_type==='New Agent Follow-up'&&String(a.notes||'').includes(tag)&&new Date(a.act_date+'T12:00:00')>=start&&new Date(a.act_date+'T12:00:00')<=new Date(end.getTime()+DAY));
+     return (d.recent||[]).some(a=>{
+       if(key(a.agent_name)!==key(name)||a.act_type!=='New Agent Follow-up'||!String(a.notes||'').includes(tag))return false;
+       // v327: an explicitly tagged Week N completion can close an overdue week even when logged after its original due date.
+       return String(a.act_date||'')>=String(meet||'');
+     });
    }
    const campaigns=[];let outstanding=0,overdue=0;
    Object.values(first).forEach(x=>{
@@ -20660,7 +20665,14 @@ function select(tx,val){const o=[['CALL_REQUIRED','Call required'],['FSBO','FSBO
 function renderCurrent(){
   const host=document.getElementById('rm-v1-tuesday-host');if(!host)return;
   let due=0,complete=0,cleared=0,issues=0;
-  const rows=S.rows.map(r=>{
+  // v327: active work keeps Mack's source order; cleared/no-call rows are grouped at the bottom immediately after save.
+  const displayRows=S.rows.slice().sort((a,b)=>{
+    const aName=meta(a.notes,'TUE_CONTACT_NAME'),aExplicit=S.classes[rowClassKey(a)]||S.classes[rowMatchKey(a)]||'',aCls=aExplicit||meta(a.notes,'AUTO_CLASS')||(!usableAgent(aName)?'CONTACT_ISSUE':'CALL_REQUIRED');
+    const bName=meta(b.notes,'TUE_CONTACT_NAME'),bExplicit=S.classes[rowClassKey(b)]||S.classes[rowMatchKey(b)]||'',bCls=bExplicit||meta(b.notes,'AUTO_CLASS')||(!usableAgent(bName)?'CONTACT_ISSUE':'CALL_REQUIRED');
+    const ac=noCall(aCls)?1:0,bc=noCall(bCls)?1:0;
+    return ac-bc || rmV323PlanOrder(a)-rmV323PlanOrder(b);
+  });
+  const rows=displayRows.map(r=>{
     const tx=rowClassKey(r),name=meta(r.notes,'TUE_CONTACT_NAME'),auto=meta(r.notes,'AUTO_CLASS'),explicit=S.classes[tx]||S.classes[rowMatchKey(r)]||'',cls=explicit||auto||(!usableAgent(name)?'CONTACT_ISSUE':'CALL_REQUIRED'),finished=done(r,S),nc=noCall(cls),issue=cls==='CONTACT_ISSUE'||(cls==='CALL_REQUIRED'&&!usableAgent(name));
     let status;if(nc){cleared++;status='Cleared ✓ · '+classLabel(cls)}else if(issue){issues++;status='Needs review'}else if(finished){complete++;status='Completed this week ✓'}else{due++;status='Due Tuesday'};
     const client=meta(r.notes,'TXN_CLIENT'),property=meta(r.notes,'TXN_PROPERTY'),close=meta(r.notes,'TXN_CLOSE_DATE'),mile=meta(r.notes,'TXN_MILESTONE'),lp=lpShort(meta(r.notes,'LP_OWNER')),ph=meta(r.notes,'TUE_PHONE'),em=meta(r.notes,'TUE_EMAIL'),rowClass=nc?'cleared':issue?'issue':'',stateClass=finished&&!nc&&!issue?'done':nc?'cleared':'';
