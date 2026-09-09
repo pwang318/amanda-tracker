@@ -1,7 +1,9 @@
  
+<!-- v332: first-meeting prompts follow relationship type rather than logger; Nyny coverage gets Realtor checklist; builder/strategic meetings auto-route to strategic workflow and skip personal Realtor onboarding fields. -->
 <!-- v326: outcomes-first Director audit. Adds live Power BI source reconciliation, growth/retention trend cards, health-snapshot recovery tracking, and clearer outcome visibility while preserving the v325 Amanda Face Time firewall. -->
 <!-- v325: Amanda Face Time ownership firewall. RM Step 4 now excludes Director-owned and all Channel/A/B relationships; only Amanda-owned C relationships can be scheduled here. -->
 <!-- v329: Contact/Profile bridge — activity-only agents can be found from Contacts search and Agent History; history Edit clarified as Edit activity. -->
+<!-- v331: Week 1–4 coverage logging selector credits Amanda or Nyny without changing Relationship Owner; Nyny coverage auto-expires after the current week. -->
 <!DOCTYPE html>
 <!-- v328: Agent History Edit fallback + Power BI shared import receipt alignment. -->
 <!-- v327: overdue 4-week conversion touches close correctly when completed late; Tuesday cleared/no-call rows move to bottom without changing Mack order for active rows. -->
@@ -1651,6 +1653,7 @@ body.rm-director-route #v322BackToRm{display:block}
 <option value="Channel">Channel</option>
 <option value="Retention / At-Risk">Retention / at-risk</option>
 <option value="Strategic / Team Lead">Strategic / team lead</option>
+<option value="Builder / Developer">Builder / developer</option>
 <option value="Warm Intro / Referral">Warm intro / referral</option>
 </select>
 </div>
@@ -3811,7 +3814,7 @@ function toggleIntakeBlock(){
   const type=document.getElementById("activityType").value;
   const block=document.getElementById("intakeBlock");
   const owner=document.getElementById("activityOwner")?.value||"Amanda";
-  if(openIntake||(type==="New Realtor Meeting"&&owner==="Amanda")){
+  if(openIntake||type==="New Realtor Meeting"){
     block.classList.add("show");
   }else{
     block.classList.remove("show");
@@ -3857,7 +3860,7 @@ async function checkOpenIntake(){
     const pendingRow=rows.find(r=>r.notes&&r.notes.startsWith(PENDING_PREFIX));
     if(pendingRow){
       const parsed=parseIntakeNotes(pendingRow.notes);
-      openIntake={id:pendingRow.id,agent_name:pendingRow.agent_name,act_date:pendingRow.act_date,outcome:pendingRow.outcome,follow_up_date:pendingRow.follow_up_date,freeNotes:parsed?parsed.freeNotes:"",states:parsed?parsed.states:{}};
+      openIntake={id:pendingRow.id,agent_name:pendingRow.agent_name,act_date:pendingRow.act_date,outcome:pendingRow.outcome,follow_up_date:pendingRow.follow_up_date,freeNotes:parsed?parsed.freeNotes:"",states:parsed?parsed.states:{},activityOwner:(typeof getActivityOwner==="function"?getActivityOwner(pendingRow):"Amanda"),meetingFocus:(typeof getMeetingFocus==="function"?getMeetingFocus(pendingRow):"Standard")};
     }else{
       openIntake=null;
     }
@@ -3905,7 +3908,7 @@ async function completeIntakeChecklist(){
   btn.disabled=true;btn.textContent="Checking profile...";
   try{
     if(typeof rmSmartRequireMeetingProfile==="function"){
-      const ready=await rmSmartRequireMeetingProfile(openIntake.agent_name);
+      const ready=await rmSmartRequireMeetingProfile(openIntake.agent_name,{activityOwner:openIntake.activityOwner||"Amanda"});
       if(!ready){btn.disabled=false;btn.textContent="Mark checklist complete & continue";return;}
     }
     btn.textContent="Saving...";
@@ -5078,7 +5081,7 @@ async function loadContactDataQuality(){
     // and treats an unset retained status as its own gap worth flagging too.
     let rows;
     try{
-      rows=await sbFetch("agent_profiles?select=agent_name,tier,retained,do_not_contact,email,phone,address,birthday&do_not_contact=neq.true&limit=2000");
+      rows=await sbFetch("agent_profiles?select=agent_name,tier,retained,do_not_contact,email,phone,address,birthday,relationship_type,strategic_partner_category&do_not_contact=neq.true&limit=2000");
     }catch(fetchErr){
       // Surface this instead of silently hiding — a failed query looks identical to "nothing's
       // missing" if we just swallow it, which is actively misleading.
@@ -5090,12 +5093,12 @@ async function loadContactDataQuality(){
     }
     const TIER_RANK={A:0,B:1,C:2};
     const gaps=(rows||[]).map(a=>{
-      const missing=[];
+      const missing=[];const strategic=String(a.relationship_type||"").toLowerCase()==="strategic_partner";
       if(!a.phone)missing.push("phone");
       if(!a.email)missing.push("email");
-      if(!a.address)missing.push("address");
-      if(!a.birthday)missing.push("birthday");
-      if(a.retained===null||a.retained===undefined)missing.push("retained status");
+      if(!strategic&&!a.address)missing.push("address");
+      if(!strategic&&!a.birthday)missing.push("birthday");
+      if(!strategic&&(a.retained===null||a.retained===undefined))missing.push("retained status");
       if(!missing.length)return null;
       return{agent_name:a.agent_name,tier:a.tier||null,missing};
     }).filter(Boolean).sort((a,b)=>{
@@ -6651,9 +6654,10 @@ async function logActivity(){
   else if(contactMethod!=="Call")notes=methodEmoji;
   notes=appendRmMeta(notes,activityOwner,meetingFocus,"",rmAttendees,lpAttendee?[lpAttendee]:[],nextStepOwner);
 
-  // New Realtor Meeting: ALWAYS save same-day for Amanda's direct RM execution. Nyny's strategic
-  // meetings are counted to the team goal without freezing Amanda's tracker behind her checklist.
-  const isNewRealtorMeeting=activityType==="New Realtor Meeting"&&activityOwner==="Amanda";
+  // New Realtor Meeting workflow follows the RELATIONSHIP TYPE, not who happened to cover/log it.
+  // Amanda or Nyny can hold a true Realtor first meeting; strategic/builder meetings use their own lane.
+  const isStrategicPartnerMeeting=activityType==="Strategic Partner Meeting"||meetingFocus==="Builder / Developer";
+  const isNewRealtorMeeting=activityType==="New Realtor Meeting"&&!isStrategicPartnerMeeting;
   const intakeStates=isNewRealtorMeeting?getIntakeStates():null;
   let intakeComplete=isNewRealtorMeeting?allIntakeDone(intakeStates):true;
   
@@ -6687,9 +6691,17 @@ async function logActivity(){
     await clearOldFollowups(agentName,insertedRow&&insertedRow.id);
     await completeActiveFlagAfterActivity(agentName);
 
-    // v330 lifecycle bridge: any scheduled meeting gets a lightweight contact/profile and a real
+    // v332 strategic/builder lane: create or update a strategic relationship profile, route it to Nyny,
+    // and keep it out of Realtor prospecting/onboarding. Home address, birthday and Realtor conversion
+    // requirements intentionally do not apply to this relationship type.
+    if(isStrategicPartnerMeeting&&typeof rmSmartEnsureStrategicProfile==="function"){
+      try{await rmSmartEnsureStrategicProfile(agentName,{category:meetingFocus==="Builder / Developer"?"Builder / Developer":"Other",meetingDate:(outcome==="Meeting Scheduled"?followupDate:date),held:outcome!=="Meeting Scheduled",lp:lpAttendee});}
+      catch(e){console.warn("v332 strategic profile bridge",e);toast("Meeting saved, but the strategic relationship profile still needs attention.","warning",4500);}
+    }
+
+    // v330 lifecycle bridge: any scheduled REALTOR meeting gets a lightweight contact/profile and a real
     // next-meeting date. This does NOT make the person an active retained partner or assign a tier.
-    if(outcome==="Meeting Scheduled"&&typeof rmSmartPromoteScheduledProspect==="function"){
+    if(outcome==="Meeting Scheduled"&&!isStrategicPartnerMeeting&&typeof rmSmartPromoteScheduledProspect==="function"){
       try{await rmSmartPromoteScheduledProspect(agentName,{meetingDate:followupDate,source:"Log Activity",activityType:activityType,activityOwner:activityOwner,lp:lpAttendee});}
       catch(e){console.warn("v330 scheduled-meeting profile bridge",e);toast("Activity saved, but the contact profile still needs attention.","warning",4500);}
     }
@@ -6713,7 +6725,7 @@ async function logActivity(){
       // otherwise close, verify that phone + email + mailing address actually exist in the stored
       // relationship profile. If not, keep the meeting saved but put the checklist back into PENDING.
       if(intakeComplete&&typeof rmSmartRequireMeetingProfile==="function"){
-        const profileReady=await rmSmartRequireMeetingProfile(agentName);
+        const profileReady=await rmSmartRequireMeetingProfile(agentName,{activityOwner:activityOwner});
         if(!profileReady){
           intakeComplete=false;
           if(intakeStates)intakeStates.intakeContactConfirm=false;
@@ -11303,7 +11315,7 @@ function renderContacts(list){
         '<div class="contact-meta">'+
           (c.phone?'<span>'+phoneCallLink(c.agent_name,c.phone)+'</span>':'<span style="color:#ffb3b3">No phone</span>')+
           (c.email?'<span>'+escHtml(c.email)+'</span>':'')+
-          (c.birthday?'<span class="contact-bday">'+formatBirthdayDisplay(c.birthday)+'</span>':'<span style="color:#ffb3b3">No birthday</span>')+
+          (String(c.relationship_type||'').toLowerCase()==='strategic_partner'?'':(c.birthday?'<span class="contact-bday">'+formatBirthdayDisplay(c.birthday)+'</span>':'<span style="color:#ffb3b3">No birthday</span>'))+
         '</div>'+
       '</div>'+
       '<div style="display:flex;gap:5px;align-items:center;flex-shrink:0;flex-wrap:wrap;justify-content:flex-end">'+
@@ -11517,8 +11529,9 @@ function wpWeek(){
   return{start:wpDateStr(mon),end:wpDateStr(fri),index:idx,mon};
 }
 function wpMissing(p){
-  if(!p)return["phone","email","address","birthday"];
-  const m=[];if(!p.phone)m.push("phone");if(!p.email)m.push("email");if(!p.address)m.push("address");if(!p.birthday)m.push("birthday");return m;
+  if(!p)return["phone","email"];
+  const strategic=String(p.relationship_type||"").toLowerCase()==="strategic_partner";
+  const m=[];if(!p.phone)m.push("phone");if(!p.email)m.push("email");if(!strategic&&!p.address)m.push("address");if(!strategic&&!p.birthday)m.push("birthday");return m;
 }
 function wpTierRank(t){return t==="Channel"?0:t==="A"?1:t==="B"?2:t==="C"?3:4;}
 function wpOpenLog(name,owner,type){
@@ -14978,6 +14991,26 @@ setTimeout(function(){v124MountAudit();v122RenderAudit();},1200);
     finally{if(btn){btn.disabled=false;btn.textContent='Save info'}}
   };
 
+  // v331 — coverage logging: the person doing the Week 1–4 outreach gets activity credit,
+  // while Relationship Owner remains separate. Nyny coverage automatically expires after the current week.
+  function v331CoverageWeekKey(){
+    const d=new Date();d.setHours(12,0,0,0);const day=d.getDay(),diff=day===0?-6:1-day;d.setDate(d.getDate()+diff);
+    return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+  }
+  function v331ConversionActor(){
+    try{
+      const raw=JSON.parse(localStorage.getItem('rm_conversion_coverage_actor')||'null');
+      if(raw&&raw.week===v331CoverageWeekKey()&&(raw.actor==='Amanda'||raw.actor==='Nyny'))return raw.actor;
+    }catch(e){}
+    return 'Amanda';
+  }
+  window.v331SetConversionActor=function(actor){
+    actor=actor==='Nyny'?'Nyny':'Amanda';
+    try{localStorage.setItem('rm_conversion_coverage_actor',JSON.stringify({actor:actor,week:v331CoverageWeekKey()}));}catch(e){}
+    document.querySelectorAll('[data-v331-coverage-select]').forEach(s=>{s.value=actor;});
+    toast('4-week follow-ups will log for '+actor+' this week. Relationship ownership will not change.','success',3200);
+  };
+
   window.v162CompleteWeek=async function(name,meet,w){
     const outcome=(document.getElementById(fieldId(name,w,'outcome'))||{}).value||'';
     const notes=String((document.getElementById(fieldId(name,w,'notes'))||{}).value||'').trim();
@@ -14987,9 +15020,16 @@ setTimeout(function(){v124MountAudit();v122RenderAudit();},1200);
     if(countWords(notes)<10){toast('Add at least 10 words so the follow-up is actually documented.','error');return}
     if(btn){btn.disabled=true;btn.textContent='Saving Week '+w+'…'}
     try{
-      const tagged=TAG(w)+' '+notes;
+      const actor=v331ConversionActor();
+      let tagged=TAG(w)+' '+notes;
+      // Credit the actual RM doing the outreach. Keep the existing Relationship Owner as next-step owner.
+      if(typeof appendRmMeta==='function'){
+        let relOwner='Amanda';
+        try{const own=typeof getAgentOwnership==='function'?getAgentOwnership(name):null;if(own&&own.rm)relOwner=own.rm;}catch(e){}
+        tagged=appendRmMeta(tagged,actor,'','',[actor],[],relOwner||'Amanda');
+      }
       await sbFetch('amanda_activities',{method:'POST',body:JSON.stringify({agent_name:name,act_type:'New Agent Follow-up',act_date:today(),outcome:outcome,notes:tagged,follow_up_date:follow})});
-      toast('Week '+w+' follow-up complete ✓','success');
+      toast('Week '+w+' follow-up complete · logged for '+actor+' ✓','success');
       try{_wp18Cache=null;_wp18CacheAt=0}catch(e){}
       await loadOnboarding(true);
       try{await v23LoadAmandaSnapshot(true)}catch(e){}
@@ -15048,7 +15088,9 @@ setTimeout(function(){v124MountAudit();v122RenderAudit();},1200);
         list.innerHTML='<div class="v162-empty"><strong>No active 4-week conversion campaigns yet.</strong><br>The next New Realtor Meeting logged will automatically start Week 1.</div>';
         if(sub)sub.textContent='0 active campaigns';
       }else{
-        list.innerHTML='<div class="v162-conv-summary"><div><strong>'+rows.length+' active new-agent campaign'+(rows.length===1?'':'s')+'</strong><span> · '+outstanding+' weekly touch'+(outstanding===1?'':'es')+' still required</span></div><span>'+(overdue?overdue+' overdue':'No overdue weeks')+'</span></div>'+html;
+        const coverageActor=v331ConversionActor();
+        const coverage='<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:9px 11px;margin:0 0 9px;border:1px solid #D9D1E6;background:#FBF9FE;border-radius:9px;font-size:10.5px;color:#5D5665"><strong style="color:#4F3A78">Logging these follow-ups as</strong><select data-v331-coverage-select onchange="v331SetConversionActor(this.value)" style="border:1px solid #D8D1E3;border-radius:7px;padding:6px 8px;background:#fff;color:#332B3A;font:inherit;font-weight:750"><option value="Amanda"'+(coverageActor==='Amanda'?' selected':'')+'>Amanda</option><option value="Nyny"'+(coverageActor==='Nyny'?' selected':'')+'>Nyny · covering</option></select><span>Credits whoever actually does the outreach. <strong>Relationship Owner does not change.</strong></span></div>';
+        list.innerHTML='<div class="v162-conv-summary"><div><strong>'+rows.length+' active new-agent campaign'+(rows.length===1?'':'s')+'</strong><span> · '+outstanding+' weekly touch'+(outstanding===1?'':'es')+' still required</span></div><span>'+(overdue?overdue+' overdue':'No overdue weeks')+'</span></div>'+coverage+html;
         if(sub)sub.textContent=rows.length+' active · '+outstanding+' required'+(overdue?' · '+overdue+' overdue':'');
       }
     }catch(e){
@@ -19051,8 +19093,8 @@ window.rmxBoot=boot;const baseSwitch=window.switchTab;window.switchTab=function(
 (function(){
   function checklistBlock(){return document.getElementById('intakeBlock')}
   function selectedMeeting(){
-    const type=document.getElementById('activityType'),owner=document.getElementById('activityOwner');
-    return !!(type&&type.value==='New Realtor Meeting'&&(!owner||owner.value==='Amanda'));
+    const type=document.getElementById('activityType');
+    return !!(type&&type.value==='New Realtor Meeting');
   }
   function syncChecklist(){
     const block=checklistBlock();if(!block)return;
@@ -19063,13 +19105,14 @@ window.rmxBoot=boot;const baseSwitch=window.switchTab;window.switchTab=function(
     const block=checklistBlock();if(!block)return;
     let wrap=document.getElementById('v257PendingChecklistActions');
     if(!wrap){wrap=document.createElement('div');wrap.id='v257PendingChecklistActions';wrap.style.cssText='display:none;gap:8px;justify-content:flex-end;margin-top:12px;padding-top:10px;border-top:1px solid #E8DFC8';wrap.innerHTML='<button type="button" class="btn-primary" onclick="completeIntakeChecklist()">Save completed checklist</button>';block.appendChild(wrap)}
-    wrap.style.display=window.openIntake?'flex':'none';
+    wrap.style.display=(typeof openIntake!=='undefined'&&openIntake)?'flex':'none';
   }
   function resumePending(){
     try{switchTab('log')}catch(e){}
-    const type=document.getElementById('activityType'),owner=document.getElementById('activityOwner'),name=document.getElementById('activityAgent');
-    if(type)type.value='New Realtor Meeting';if(owner)owner.value='Amanda';if(name&&window.openIntake)name.value=window.openIntake.agent_name||name.value;
-    try{if(window.openIntake)setIntakeStates(window.openIntake.states||{})}catch(e){}
+    const type=document.getElementById('activityType'),owner=document.getElementById('activityOwner'),name=document.getElementById('agentInput');
+    const oi=(typeof openIntake!=='undefined'?openIntake:null),who=(oi&&oi.activityOwner)||'Amanda';
+    if(type)type.value='New Realtor Meeting';if(owner)owner.value=who;if(document.getElementById('activityRmAmanda'))document.getElementById('activityRmAmanda').checked=(who==='Amanda');if(document.getElementById('activityRmNyny'))document.getElementById('activityRmNyny').checked=(who==='Nyny');if(name&&oi)name.value=oi.agent_name||name.value;try{syncActivityParticipants()}catch(e){}
+    try{if(oi)setIntakeStates(oi.states||{})}catch(e){}
     syncChecklist();ensurePendingActions();setTimeout(()=>checklistBlock()?.scrollIntoView({behavior:'smooth',block:'start'}),40);
   }
   window.toggleIntakeBlock=syncChecklist;
@@ -19079,7 +19122,7 @@ window.rmxBoot=boot;const baseSwitch=window.switchTab;window.switchTab=function(
   window.applyLockState=function(){
     const banner=document.getElementById('globalLockBanner'),locked=document.getElementById('logLockedCard'),normal=document.getElementById('logNormalFields'),btn=document.getElementById('logBtn');
     if(locked)locked.style.display='none';if(normal)normal.style.display='block';if(btn){btn.textContent='Log activity';btn.onclick=logActivity;btn.disabled=false}
-    if(window.openIntake){if(banner){banner.style.display='flex';banner.innerHTML='<span><strong>New Realtor Meeting checklist still open:</strong> '+properCase(window.openIntake.agent_name||'')+'</span><button class="lock-resume-btn" type="button" onclick="v234ResumeIntakeChecklist()">Finish checklist</button>'}}
+    const oi=(typeof openIntake!=='undefined'?openIntake:null);if(oi){if(banner){banner.style.display='flex';banner.innerHTML='<span><strong>New Realtor Meeting checklist still open:</strong> '+properCase(oi.agent_name||'')+'</span><button class="lock-resume-btn" type="button" onclick="v234ResumeIntakeChecklist()">Finish checklist</button>'}}
     else if(banner)banner.style.display='none';
     syncChecklist();ensurePendingActions();
   };
@@ -20924,8 +20967,8 @@ const K=s=>String(s||'').trim().toLowerCase().replace(/\s+/g,' ');
 const dateOnly=s=>String(s||'').slice(0,10);
 const todayIso=()=>typeof today==='function'?today():new Date().toISOString().slice(0,10);
 function nonblank(v){return !!String(v||'').trim()}
-function coreMissing(p){const m=[];if(!nonblank(p&&p.phone))m.push('phone');if(!nonblank(p&&p.email))m.push('email');if(!nonblank(p&&p.address))m.push('mailing address');return m}
-function enrichMissing(p){const m=[];if(!nonblank(p&&p.birthday))m.push('birthday');return m}
+function coreMissing(p){const m=[];const strategic=String(p&&p.relationship_type||'').toLowerCase()==='strategic_partner';if(!nonblank(p&&p.phone))m.push('phone');if(!nonblank(p&&p.email))m.push('email');if(!strategic&&!nonblank(p&&p.address))m.push('mailing address');return m}
+function enrichMissing(p){const m=[];const strategic=String(p&&p.relationship_type||'').toLowerCase()==='strategic_partner';if(!strategic&&!nonblank(p&&p.birthday))m.push('birthday');return m}
 async function profile(name){const rows=await sbFetch('agent_profiles?agent_name=ilike.'+encodeURIComponent(name)+'&select=*&limit=5').catch(()=>[]);const exact=(rows||[]).filter(r=>K(r.agent_name)===K(name));return{rows,exact:exact.length===1?exact[0]:(rows.length===1?rows[0]:null),ambiguous:exact.length>1||rows.length>1&&!exact.length}}
 async function prospect(name){const rows=await sbFetch('outreach_prospects?agent_name=ilike.'+encodeURIComponent(name)+'&select=*&limit=20').catch(()=>[]);return (rows||[]).find(r=>K(r.agent_name)===K(name))||(rows||[])[0]||null}
 async function assignments(name){const rows=await sbFetch('agent_assignments?agent_name=ilike.'+encodeURIComponent(name)+'&select=*&limit=20').catch(()=>[]);return (rows||[]).filter(r=>K(r.agent_name)===K(name))}
@@ -20953,7 +20996,8 @@ async function ensureProfile(name,opts){
   const phone=nonblank(opts.phone)?String(opts.phone).trim():(p&&p.phone)||(pr&&pr.phone)||null;
   const email=nonblank(opts.email)?String(opts.email).trim():(p&&p.email)||(pr&&pr.email)||null;
   const brokerage=nonblank(opts.brokerage)?String(opts.brokerage).trim():(p&&p.brokerage)||(pr&&pr.brokerage)||null;
-  const payload={relationship_status:'active',relationship_type:(p&&p.relationship_type)||'realtor'};
+  const payload={relationship_status:'active',relationship_type:opts.relationshipType||(p&&p.relationship_type)||'realtor'};
+  if(opts.strategicCategory)payload.strategic_partner_category=opts.strategicCategory;
   if(phone&&!nonblank(p&&p.phone))payload.phone=phone;
   if(email&&!nonblank(p&&p.email))payload.email=email;
   if(brokerage&&!nonblank(p&&p.brokerage))payload.brokerage=brokerage;
@@ -20995,8 +21039,9 @@ window.rmSmartPromoteHeldMeeting=async function(name,opts){
   }catch(e){console.warn('v330 held prospect stage',e)}
   return res;
 };
-window.rmSmartRequireMeetingProfile=async function(name){
-  const res=await ensureProfile(name,{stage:'held',meetingDate:todayIso(),activityOwner:'Amanda'});
+window.rmSmartRequireMeetingProfile=async function(name,opts){
+  opts=opts||{};const who=opts.activityOwner||((typeof openIntake!=='undefined'&&openIntake&&openIntake.activityOwner)||'Amanda');
+  const res=await ensureProfile(name,{stage:'held',meetingDate:todayIso(),activityOwner:who});
   if(!res.ok){
     try{toast(res.blocked?'This contact is inactive / Do Not Contact. Review the relationship before completing onboarding.':'Contact profile could not be verified.','error',5500)}catch(e){}
     return false;
@@ -21019,10 +21064,12 @@ window.rmSmartAfterContactSave=async function(name,payload){
   return true;
 };
 window.rmSmartContactStageBadge=function(c){
-  c=c||{};const s=String(c._prospectStatus||'');const missing=coreMissing(c);
-  if(s==='Meeting Scheduled'||(c.next_meeting_date&&String(c.retained)!=='true'&&c.retained!==true))return '<span class="rm-life-chip scheduled">MEETING SCHEDULED</span>'+(missing.length?'<span class="rm-life-chip incomplete">PROFILE '+missing.length+' MISSING</span>':'');
-  if(s==='Converted'&&c.retained!==true)return '<span class="rm-life-chip newrel">NEW RELATIONSHIP</span>'+(missing.length?'<span class="rm-life-chip incomplete">PROFILE '+missing.length+' MISSING</span>':'');
-  if(!c.tier&&c.retained!==true&&c.last_meaningful_contact_date)return '<span class="rm-life-chip newrel">NEW RELATIONSHIP</span>'+(missing.length?'<span class="rm-life-chip incomplete">PROFILE '+missing.length+' MISSING</span>':'');
+  c=c||{};const s=String(c._prospectStatus||'');const missing=coreMissing(c);const strategic=String(c.relationship_type||'').toLowerCase()==='strategic_partner';
+  const missingChip=missing.length?'<span class="rm-life-chip incomplete">MISSING: '+missing.map(x=>String(x).toUpperCase()).join(' + ')+'</span>':'';
+  if(strategic){const cat=String(c.strategic_partner_category||'Strategic Partner').toUpperCase();return '<span class="rm-life-chip newrel">STRATEGIC · '+cat+'</span>'+missingChip;}
+  if(s==='Meeting Scheduled'||(c.next_meeting_date&&String(c.retained)!=='true'&&c.retained!==true))return '<span class="rm-life-chip scheduled">MEETING SCHEDULED</span>'+missingChip;
+  if(s==='Converted'&&c.retained!==true)return '<span class="rm-life-chip newrel">NEW RELATIONSHIP</span>'+missingChip;
+  if(!c.tier&&c.retained!==true&&c.last_meaningful_contact_date)return '<span class="rm-life-chip newrel">NEW RELATIONSHIP</span>'+missingChip;
   return '';
 };
 window.rmSmartPaintContactLifecycleBanner=async function(name,p0){
@@ -21070,6 +21117,88 @@ window.rmSmartReconcileLifecycle=async function(){
 };
 function boot(){setTimeout(()=>window.rmSmartReconcileLifecycle().catch(()=>{}),1400)}
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
+})();
+</script>
+
+
+<script id="v332-smart-meeting-routing">
+(function(){
+'use strict';
+const key=s=>String(s||'').trim().toLowerCase().replace(/\s+/g,' ');
+function typeEl(){return document.getElementById('activityType')}
+function focusEl(){return document.getElementById('meetingFocus')}
+function intake(){return document.getElementById('intakeBlock')}
+function isStrategicType(){return typeEl()&&typeEl().value==='Strategic Partner Meeting'}
+function ensureGuide(){
+  let g=document.getElementById('v332StrategicMeetingGuide');if(g)return g;
+  const block=intake();if(!block||!block.parentNode)return null;
+  g=document.createElement('div');g.id='v332StrategicMeetingGuide';g.style.cssText='display:none;margin:10px 0 4px;padding:12px 14px;border:1px solid #C9BFE2;border-left:4px solid #6A4DA0;border-radius:9px;background:#FCFAFF;color:#3F3650;font-size:11.5px;line-height:1.55';
+  g.innerHTML='<div style="font-weight:850;color:#523C7B;margin-bottom:5px">Strategic / Builder Meeting · Capture the essentials</div><div>1. Confirm company / role and best business phone + email.</div><div>2. What are they focused on right now — communities, volume, traffic, buyer needs or growth?</div><div>3. Where can our lending team create value or collaborate?</div><div>4. Capture one concrete opportunity / next move and who owns it.</div><div style="margin-top:7px;color:#6B6472"><strong>Not Realtor onboarding:</strong> no home mailing address, birthday, Realtor conversion checklist or 4-week Realtor campaign is required.</div>';
+  block.parentNode.insertBefore(g,block.nextSibling);return g;
+}
+function paint(){
+  const g=ensureGuide(),t=typeEl(),f=focusEl();if(!g||!t)return;
+  const strategic=t.value==='Strategic Partner Meeting';g.style.display=strategic?'block':'none';
+  if(strategic&&f&&(!f.value||f.value==='Standard'))f.value='Strategic / Team Lead';
+  if(typeof window.toggleIntakeBlock==='function')try{window.toggleIntakeBlock()}catch(e){}
+}
+function builderFocus(){
+  const t=typeEl(),f=focusEl();if(!t||!f)return;
+  if(f.value==='Builder / Developer'&&t.value==='New Realtor Meeting'){
+    t.value='Strategic Partner Meeting';
+    t.dispatchEvent(new Event('change',{bubbles:true}));
+    try{toast('Builder / developer detected · routing this as a Strategic Partner Meeting, not a New Realtor Meeting.','success',4200)}catch(e){}
+  }
+  paint();
+}
+let timer=null;
+async function smartAgent(name){
+  name=String(name||'').trim();if(name.length<2)return;
+  try{
+    const rows=await sbFetch('agent_profiles?agent_name=ilike.'+encodeURIComponent(name)+'&select=agent_name,relationship_type,strategic_partner_category,brokerage,company,team&limit=8').catch(()=>[]);
+    const p=(rows||[]).find(r=>key(r.agent_name)===key(name));if(!p)return;
+    const strategic=String(p.relationship_type||'').toLowerCase()==='strategic_partner'||(typeof v76IsStrategicPartner==='function'&&v76IsStrategicPartner(name,p));
+    if(!strategic)return;
+    const t=typeEl(),f=focusEl();if(!t)return;
+    if(t.value==='New Realtor Meeting'){t.value='Strategic Partner Meeting';t.dispatchEvent(new Event('change',{bubbles:true}));}
+    if(f){const cat=String(p.strategic_partner_category||'');f.value=/builder|developer/i.test(cat)?'Builder / Developer':'Strategic / Team Lead';}
+    paint();
+    try{toast(name+' is already a strategic relationship · Realtor onboarding is skipped.','success',3500)}catch(e){}
+  }catch(e){console.warn('v332 strategic auto-route',e)}
+}
+window.rmSmartEnsureStrategicProfile=async function(name,opts){
+  opts=opts||{};name=String(name||'').trim();if(!name)return{ok:false};
+  const rows=await sbFetch('agent_profiles?agent_name=ilike.'+encodeURIComponent(name)+'&select=*&limit=8').catch(()=>[]);
+  let p=(rows||[]).find(r=>key(r.agent_name)===key(name))||null;
+  const payload={relationship_status:'active',relationship_type:'strategic_partner',strategic_partner_category:opts.category||((p&&p.strategic_partner_category)||'Other')};
+  if(opts.held)payload.last_meaningful_contact_date=String(opts.meetingDate||'').slice(0,10)||((typeof today==='function')?today():new Date().toISOString().slice(0,10));
+  else if(opts.meetingDate)payload.next_meeting_date=String(opts.meetingDate).slice(0,10);
+  if(p)await sbProfileWrite('agent_profiles?agent_name=eq.'+encodeURIComponent(p.agent_name),'PATCH',payload);
+  else{payload.agent_name=name;await sbProfileWrite('agent_profiles','POST',payload);p=payload;}
+  const assigns=await sbFetch('agent_assignments?agent_name=ilike.'+encodeURIComponent(name)+'&select=*&limit=20').catch(()=>[]);
+  const existing=(assigns||[]).find(r=>key(r.agent_name)===key(name)&&String(r.lp||'')!=='__REMOVED__')||null;
+  const own={agent_name:(existing&&existing.agent_name)||name,rm:'Nyny',lp:'Unassigned',priority:!!(existing&&existing.priority),added:existing&&existing.added!==undefined?!!existing.added:true,level:(existing&&existing.level)||''};
+  await sbFetch('agent_assignments?on_conflict=agent_name',{method:'POST',prefer:'resolution=merge-duplicates,return=minimal',body:JSON.stringify(own)}).catch(()=>{});
+  try{if(typeof cacheOwnershipRow==='function')cacheOwnershipRow(own)}catch(e){}
+  const prospects=await sbFetch('outreach_prospects?agent_name=ilike.'+encodeURIComponent(name)+'&select=id,agent_name,status&limit=20').catch(()=>[]);
+  for(const pr of (prospects||[]).filter(r=>key(r.agent_name)===key(name))){await sbFetch('outreach_prospects?id=eq.'+encodeURIComponent(pr.id),{method:'PATCH',prefer:'return=minimal',body:JSON.stringify({status:'Excluded',follow_up_date:null})}).catch(()=>{});}
+  return{ok:true,profile:p||payload};
+};
+function hidePersonalFieldsForStrategic(prefix){
+  const type=document.getElementById(prefix==='contact'?'contactRelationshipType':'addAgentRelationshipType');if(!type)return;const strategic=type.value==='strategic_partner';
+  const ids=prefix==='contact'?['contactStreet','contactBirthday']:['addAgentStreet','addAgentBirthday'];
+  ids.forEach(id=>{const el=document.getElementById(id);const field=el&&el.closest('.field');if(field)field.style.display=strategic?'none':''});
+}
+const oldContact=window.v76ContactRelationshipTypeChanged;if(typeof oldContact==='function'&&!oldContact.__v332){window.v76ContactRelationshipTypeChanged=function(){const r=oldContact.apply(this,arguments);hidePersonalFieldsForStrategic('contact');return r};window.v76ContactRelationshipTypeChanged.__v332=true;}
+const oldAdd=window.v76AddRelationshipTypeChanged;if(typeof oldAdd==='function'&&!oldAdd.__v332){window.v76AddRelationshipTypeChanged=function(){const r=oldAdd.apply(this,arguments);hidePersonalFieldsForStrategic('add');return r};window.v76AddRelationshipTypeChanged.__v332=true;}
+function wire(){
+  const t=typeEl(),f=focusEl(),a=document.getElementById('agentInput');
+  if(t&&!t.dataset.v332){t.dataset.v332='1';t.addEventListener('change',paint)}
+  if(f&&!f.dataset.v332){f.dataset.v332='1';f.addEventListener('change',builderFocus)}
+  if(a&&!a.dataset.v332){a.dataset.v332='1';a.addEventListener('input',function(){clearTimeout(timer);timer=setTimeout(()=>smartAgent(this.value),350)})}
+  ensureGuide();paint();hidePersonalFieldsForStrategic('contact');hidePersonalFieldsForStrategic('add');
+}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',wire,{once:true});else wire();setTimeout(wire,500);
 })();
 </script>
 
