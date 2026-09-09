@@ -1,4 +1,6 @@
-
+ 
+<!-- v326: outcomes-first Director audit. Adds live Power BI source reconciliation, growth/retention trend cards, health-snapshot recovery tracking, and clearer outcome visibility while preserving the v325 Amanda Face Time firewall. -->
+<!-- v325: Amanda Face Time ownership firewall. RM Step 4 now excludes Director-owned and all Channel/A/B relationships; only Amanda-owned C relationships can be scheduled here. -->
 <!DOCTYPE html>
 
 <html lang="en">
@@ -1207,6 +1209,15 @@ body.rm-director-route #v322BackToRm{display:block}
  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',ensureBack,{once:true});else ensureBack();
 })();
 </script>
+<style id="v326-outcomes-first-css">
+.rmx-needle{background:linear-gradient(180deg,#fff 0%,#fbfafc 100%);border:1px solid #dcd5e8;border-radius:16px;padding:16px;margin:0 0 14px;box-shadow:0 3px 12px rgba(56,40,82,.04)}
+.rmx-needle-head{display:flex;justify-content:space-between;gap:16px;align-items:flex-start;margin-bottom:12px}.rmx-needle-head h2{font-size:17px;margin:2px 0 3px}.rmx-needle-head p{font-size:10.5px;color:var(--rmx-muted);margin:0;max-width:720px;line-height:1.4}
+.rmx-pb-fresh{border:1px solid #cfe3d5;background:#f7fcf8;border-radius:10px;padding:8px 10px;min-width:170px;text-align:right}.rmx-pb-fresh b{display:block;font-size:9px;text-transform:uppercase;color:#3f7050}.rmx-pb-fresh span{display:block;font-size:10px;color:#476153;margin-top:2px}.rmx-pb-fresh.stale{border-color:#e9c99b;background:#fff8ec}.rmx-pb-fresh.stale b,.rmx-pb-fresh.stale span{color:#8a621e}
+.rmx-needle-grid{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:9px}.rmx-needle-card{appearance:none;text-align:left;border:1px solid #e2dee9;background:#fff;border-radius:12px;padding:11px;cursor:pointer;font-family:inherit;color:inherit}.rmx-needle-card:hover{border-color:#c9bce1;background:#fcfaff}.rmx-needle-card span{display:block;font-size:9.5px;font-weight:800;color:#68716c}.rmx-needle-card b{display:block;font-size:20px;line-height:1.05;margin-top:4px}.rmx-needle-card small{display:block;font-size:8.8px;color:#7a827d;margin-top:5px;line-height:1.3}.rmx-needle-card.good b{color:#2f7b50}.rmx-needle-card.warn b{color:#9b6b16}.rmx-needle-card.bad b{color:#b8463f}
+.rmx-needle-verdict{margin-top:10px;border-radius:10px;padding:9px 11px;font-size:10px;line-height:1.4;border:1px solid #e2e5e1;background:#fafbfa}.rmx-needle-verdict.good{border-color:#cfe3d5;background:#f7fcf8;color:#315f42}.rmx-needle-verdict.warn{border-color:#ead9b6;background:#fffaf0;color:#765a21}.rmx-needle-verdict.bad{border-color:#e6c2bd;background:#fff7f6;color:#8c3e38}
+.rmx-retention-strip{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:9px;margin:0 0 12px}.rmx-retention-strip>div{border:1px solid var(--rmx-line);background:#fff;border-radius:11px;padding:10px}.rmx-retention-strip b{display:block;font-size:20px}.rmx-retention-strip span{display:block;font-size:9.5px;color:var(--rmx-muted);font-weight:750;margin-top:2px}.rmx-retention-strip small{grid-column:1/-1;color:var(--rmx-muted);font-size:9.5px}
+@media(max-width:1250px){.rmx-needle-grid{grid-template-columns:repeat(3,1fr)}}@media(max-width:850px){.rmx-needle-head{flex-direction:column}.rmx-pb-fresh{text-align:left}.rmx-needle-grid,.rmx-retention-strip{grid-template-columns:repeat(2,1fr)}}
+</style>
 </head>
 <body>
 <input accept="image/*" id="v95ProfilePhotoInput" onchange="v95HandlePhotoUpload(event)" style="display:none" type="file"/>
@@ -15890,7 +15901,15 @@ window.rmAuditVisibleButtons=function(){
     const rows=[];(s.profiles||[]).forEach(p=>{
       const k=N(p.agent_name),o=om[k]||{};if(!k||!current(p)||p.retained!==true||p.do_not_contact===true||String(p.relationship_status||'active').toLowerCase()==='inactive'||o.removed)return;
       if(String(p.relationship_type||'realtor').toLowerCase()==='strategic_partner'||String(p.lp_outreach_status||'active').toLowerCase()==='nurture')return;
-      const tier=normTier(p),ld=lastVisit[k]||null,days=ld?Math.max(0,Math.round((now-new Date(ld+'T12:00:00'))/86400000)):null,target=TG[tier]||60;
+      const tier=normTier(p);
+      // AMANDA FACE TIME FIREWALL: Step 4 is Amanda's execution queue, not the LP/Director queue.
+      // Director-owned relationships and every Channel/A/B account stay with Nyny even if stale
+      // assignment/profile data would otherwise make them rank as a Face Time priority.
+      if(typeof rmIsDirectorOwned==='function'&&rmIsDirectorOwned(p.agent_name,p.brokerage,p.team,p.company))return;
+      if(typeof rmIsStrategicPartner==='function'&&rmIsStrategicPartner(p.agent_name,p))return;
+      if(['Channel','A','B'].includes(tier))return;
+      if(String(o.rm||'').trim().toLowerCase()!=='amanda')return;
+      const ld=lastVisit[k]||null,days=ld?Math.max(0,Math.round((now-new Date(ld+'T12:00:00'))/86400000)):null,target=TG[tier]||60;
       const leadDate=p.latest_lead_date?String(p.latest_lead_date).slice(0,10):null,daysLead=leadDate?Math.max(0,Math.floor((now-new Date(leadDate+'T12:00:00'))/86400000)):null;
       const r={name:p.agent_name,p,o,tier,lp:o.lp||'Unassigned',rm:o.rm||'Unassigned',days,lastDate:ld,by:lastBy[k]||'',target,status:st(tier,days),daysLead,scheduled:scheduled[k]||null};r.priorityScore=score(r);r.priorityWhy=why(r);rows.push(r);
     });
@@ -15898,13 +15917,13 @@ window.rmAuditVisibleButtons=function(){
     const lps=['Gavin','Karen','Osgood','Jordan','Said','Isaak'];
     let html='',focus=0;lps.forEach(lp=>{
       const list=rows.filter(r=>r.lp===lp).slice(0,3);focus+=list.length;
-      html+='<div class="v258-ft-lp"><div class="v258-ft-lp-head"><b>'+E(lp)+'</b><span>same top 3 shown in LP Face Time</span></div>';
+      html+='<div class="v258-ft-lp"><div class="v258-ft-lp-head"><b>'+E(lp)+'</b><span>Amanda-owned C relationships only</span></div>';
       if(!list.length)html+='<div class="v191-empty">No current active assigned partners.</div>';
       list.forEach((r,i)=>{const c=contact(r.p,null),safe=encodeURIComponent(r.name),due=r.scheduled?('Booked '+r.scheduled.event_date+(r.scheduled.event_time?' · '+String(r.scheduled.event_time).slice(0,5):'')):(r.days===null?'Book first visit':(r.days>=r.target?'Overdue by '+(r.days-r.target)+'d':'Due in '+(r.target-r.days)+'d'));html+='<div class="v191-row v258-ft-row"><div class="v191-rank">'+(i+1)+'</div><div><div class="v191-name">'+E(typeof displayName==='function'?displayName(r.name):r.name)+' <span class="v258-tier">'+E(r.tier)+'</span></div><div class="v191-meta"><b>Why now:</b> '+E(r.priorityWhy)+'<br><b>Face Time:</b> '+E(r.lastDate?(r.days+'d since last visit'):'no prior visit')+' · '+E(due)+'</div></div><div class="v191-contact"><b>LP:</b> '+E(r.lp)+'<br><b>RM owner:</b> '+E(r.rm||'Unassigned')+'<br><b>Phone:</b> '+E(c.phone||'Missing')+'</div><div class="v191-actions"><button onclick="v107OpenFTEncoded(\''+safe+'\',\''+encodeURIComponent(r.lp||'')+'\',\''+encodeURIComponent(r.scheduled?String(r.scheduled.id||''):'')+'\')">'+(r.scheduled?'Open booking':'Schedule Face Time')+'</button><button onclick="v107LogVisitEncoded(\''+safe+'\')">Log visit</button></div></div>'});
       html+='</div>';
     });
-    if(sub)sub.textContent=focus+' weekly focus spots · exact same active-partner population, cadence and priority score as LP Face Time';
-    h.innerHTML=html||'<div class="v191-empty">No shared Face Time priorities are available right now.</div>';
+    if(sub)sub.textContent=focus+' weekly focus spots · Amanda-owned C relationships only · Director A/B/Channel accounts excluded';
+    h.innerHTML=html||'<div class="v191-empty">No Amanda-owned C Face Time priorities are due right now.</div>';
     window.V107_SHARED_FT_ROWS=rows;
   }
 
@@ -16501,7 +16520,7 @@ window.rmAuditVisibleButtons=function(){
 
     // OPTIONAL MANAGEMENT DATA SECOND.
     // These may fail independently without corrupting the core metrics.
-    const [dueRaw,flags,legacy,insights,prospects,faceTimes,migrations,liveLeadRows,receivedLeadRows,lpRecent]=await Promise.all([
+    const [dueRaw,flags,legacy,insights,prospects,faceTimes,migrations,liveLeadRows,receivedLeadRows,lpRecent,healthSnapshots,powerBiImportLog]=await Promise.all([
       safeFetch('amanda_activities?select=id,agent_name,act_type,act_date,outcome,notes,follow_up_date,created_at&follow_up_date=lte.'+todayS()+'&follow_up_date=not.is.null&order=follow_up_date.asc&limit=1200',12000),
       safeFetch('lp_flags?resolved=eq.false&select=*&order=created_at.desc&limit=200',10000),
       safeFetch('call_logs?flag_rm=eq.true&select=id,agent_name,lp,call_date,note,outcome,rm_note,rm_note_at&order=call_date.desc&limit=100',10000),
@@ -16511,7 +16530,9 @@ window.rmAuditVisibleButtons=function(){
       safeFetch('tier_migrations?select=agent_name,from_tier,to_tier,migration_date&migration_date=gte.'+mstart()+'&order=migration_date.desc&limit=1000',10000),
       safeFetch('velocify_leads?select=referral_partner_name,date_added&date_added=gte.'+since180+'&order=date_added.desc&limit=5000',10000),
       safeFetch('received_leads?select=agent_name,logged_date&logged_date=gte.'+since180+'&order=logged_date.desc&limit=5000',10000),
-      safeFetch('call_logs?select=agent_name,call_date,outcome,lp,note&call_date=gte.'+since180+'&order=call_date.desc&limit=5000',10000)
+      safeFetch('call_logs?select=agent_name,call_date,outcome,lp,note&call_date=gte.'+since180+'&order=call_date.desc&limit=5000',10000),
+      safeFetch('health_snapshots?snapshot_date=gte.'+mstart()+'&select=agent_name,tier,health_score,snapshot_date&order=snapshot_date.asc&limit=5000',10000),
+      safeFetch('powerbi_import_log?select=imported_at,source_app,rows_processed,matched,created,updated,errors,tier_changes,became_active,became_inactive&order=imported_at.desc&limit=5',10000)
     ]);
 
     const amap=ownerMap(assignRows);
@@ -16534,12 +16555,20 @@ window.rmAuditVisibleButtons=function(){
         p.do_not_contact!==true;
     });
 
-    // Use the freshest Power BI snapshot when available. If snapshot timestamps
-    // are absent, use the active roster rather than rendering a zero tier count.
-    let prod=roster;
-    if(latest){
-      const snap=roster.filter(p=>p.powerbi_last_seen_at&&Math.abs(new Date(p.powerbi_last_seen_at)-new Date(latest))<120000);
-      if(snap.length)prod=snap;
+    // Use the exact latest shared Power BI population when available. The source definition is
+    // a current stamped row with a valid Power BI Level (A/B/C). This prevents blank/manual/history
+    // rows from inflating the growth scorecard and makes Director match the LP upload source.
+    const sharedPb=(typeof v124LatestPowerBiSnapshot==='function')
+      ?v124LatestPowerBiSnapshot(currentProfiles)
+      :{stamp:latest,rows:[],counts:{A:0,B:0,C:0,total:0}};
+    const rosterKeys=new Set(roster.map(p=>key(p.agent_name)).filter(Boolean));
+    let prod=(sharedPb.rows||[]).filter(p=>rosterKeys.has(key(p.agent_name)));
+    if(!prod.length){
+      prod=roster;
+      if(latest){
+        const snap=roster.filter(p=>p.powerbi_last_seen_at&&Math.abs(new Date(p.powerbi_last_seen_at)-new Date(latest))<120000);
+        if(snap.length)prod=snap;
+      }
     }
 
     const by={};
@@ -16614,6 +16643,9 @@ window.rmAuditVisibleButtons=function(){
       faceTimes:faceTimes||[],
       migrations:migrations||[],
       lpRecent:lpRecent||[],
+      healthSnapshots:healthSnapshots||[],
+      powerBiImportLog:powerBiImportLog||[],
+      powerBi:{stamp:sharedPb.stamp||latest||null,sourceCount:Number(sharedPb.counts&&sharedPb.counts.total||0),sourceLevels:Object.assign({A:0,B:0,C:0},sharedPb.counts||{}),managedCount:prod.length},
       leadMap:(typeof buildLatestLeadMap==='function'?buildLatestLeadMap([...(liveLeadRows||[]),...(receivedLeadRows||[])]):{})
     };
 
@@ -16874,6 +16906,34 @@ window.rmAuditVisibleButtons=function(){
  function relationshipRow(d,r,mode){const p=r.p||r,name=p.agent_name||'',tier=p._tier||'—',owner=r.owner||ownerName(d,p),lt=r.lt||latestTouch(d,p),days=r.days!=null?r.days:daysSince(lt),reason=(r.reasons||[]).join(' · ')||'Buyer Agent Smart Calls';return '<tr><td><div class="rmx-name">'+esc(fmtName(name))+'</div><div class="rmx-muted">'+esc(p.brokerage||p.team||p.company||'')+'</div></td><td><span class="rmx-pill">'+esc(tier)+'</span></td><td>'+esc(owner)+'</td><td>'+(lt?esc(lt)+'<div class="rmx-muted">Touch: '+(days===0?'today':days+' days ago')+'</div>':'—')+(r.leadDate?'<div class="rmx-muted green">Lead: '+esc(r.leadDate)+' · '+(r.daysLead===0?'today':r.daysLead+'d ago')+'</div>':'')+'</td><td>'+esc(reason)+'</td><td>'+nextMoveCell(name,p.next_growth_opportunity,d,p)+'</td><td>'+actionBtns(name,mode)+'</td></tr>'}
  function showCount(n){return Number(n||0).toLocaleString()}
  function migrationCounts(d){const s=mstart(),m=(d.migrations||[]).filter(x=>String(x.migration_date||'')>=s);return {all:m.length,cToB:m.filter(x=>x.from_tier==='C'&&x.to_tier==='B').length,bToA:m.filter(x=>x.from_tier==='B'&&x.to_tier==='A').length,aToChannel:m.filter(x=>x.from_tier==='A'&&x.to_tier==='Channel').length}}
+ function rmxHealthTrend(d){
+   const rank={Green:0,Yellow:1,Red:2},by=new Map();
+   (d.healthSnapshots||[]).forEach(r=>{const k=key(r.agent_name),h=String(r.health_score||'');if(!k||rank[h]===undefined)return;const dt=String(r.snapshot_date||'');let x=by.get(k);if(!x){x={first:r,last:r};by.set(k,x)}else{if(dt<String(x.first.snapshot_date||''))x.first=r;if(dt>=String(x.last.snapshot_date||''))x.last=r}});
+   let recovered=0,worsened=0,improved=0;let latestDate='';
+   by.forEach(x=>{const a=rank[String(x.first.health_score||'')],b=rank[String(x.last.health_score||'')];if(b<a)improved++;if(a>0&&b===0)recovered++;if(b>a)worsened++;const dte=String(x.last.snapshot_date||'');if(dte>latestDate)latestDate=dte;});
+   return{tracked:by.size,recovered,worsened,improved,latestDate};
+ }
+ function rmxGrowthCoverage(d){const rows=(d.prod||[]).filter(p=>['Channel','A','B'].includes(p._tier));const done=rows.filter(p=>String(p.next_growth_opportunity||'').trim()).length;return{eligible:rows.length,done,pct:rows.length?Math.round(done/rows.length*100):100,gaps:Math.max(0,rows.length-done)} }
+ function rmxNeedleHtml(d){
+   const pb=d.powerBi||{},x=counts(d),t=danielTierMilestone(new Date()),mig=migrationCounts(d),ht=rmxHealthTrend(d),gc=rmxGrowthCoverage(d),rr=risks(d),high=rr.filter(r=>r.score>=80).length;
+   const moved=mig.cToB+mig.bToA+mig.aToChannel,onPace=x.Channel>=t.Channel&&x.A>=t.A&&x.B>=t.B;
+   const stamp=pb.stamp?new Date(pb.stamp):null,age=stamp&&!isNaN(stamp)?Math.floor((Date.now()-stamp.getTime())/86400000):null,stale=age!==null&&age>7;
+   const syncLabel=stamp&&!isNaN(stamp)?stamp.toLocaleString(undefined,{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}):'No shared sync found';
+   const sourceCount=Number(pb.sourceCount||0),managed=Number(pb.managedCount||d.prod.length||0);
+   const verdict=stale?'Power BI is '+age+' days old — upload/refresh before using this view for decisions.'
+     :(!onPace?'Tier growth is behind the '+t.label+'. Focus the next relationship moves on the exact Channel/A/B gaps below.'
+     :(ht.worsened>ht.recovered?'Tier growth is on pace, but retention trend needs attention: more relationships worsened than recovered this month.'
+     :'The portfolio is moving in the right direction. Keep protecting current partners while advancing the next-tier pipeline.'));
+   return '<section class="rmx-needle rmx-section-block"><div class="rmx-needle-head"><div><div class="rmx-section-label">MOVING THE NEEDLE</div><h2>Growth + retention outcomes</h2><p>Outcomes first. Activity matters only if it helps us grow the book, retain partners, and create more referral preference.</p></div><div class="rmx-pb-fresh '+(stale?'stale':'')+'"><b>Power BI</b><span>'+esc(syncLabel)+'</span></div></div>'
+     +'<div class="rmx-needle-grid">'
+       +'<button class="rmx-needle-card" data-rmx-jump="tier"><span>Active Agents</span><b>'+sourceCount+'</b><small>'+managed+' managed · 200 target</small></button>'
+       +'<button class="rmx-needle-card" data-rmx-jump="tier"><span>Channel / A / B</span><b>'+x.Channel+' / '+x.A+' / '+x.B+'</b><small>'+esc(t.label)+': '+t.Channel+' / '+t.A+' / '+t.B+'</small></button>'
+       +'<button class="rmx-needle-card" data-rmx-jump="tier"><span>Tier Moves · MTD</span><b>'+moved+'</b><small>'+mig.cToB+' C→B · '+mig.bToA+' B→A · '+mig.aToChannel+' A→Channel</small></button>'
+       +'<button class="rmx-needle-card good" data-rmx-jump="risk"><span>Recovered · MTD</span><b>'+ht.recovered+'</b><small>'+(ht.tracked?'At-risk health moved back to Green':'Trend starts after health snapshots are saved')+'</small></button>'
+       +'<button class="rmx-needle-card '+(ht.worsened?'bad':'')+'" data-rmx-jump="risk"><span>New / Worsened Risk</span><b>'+ht.worsened+'</b><small>'+(ht.tracked?high+' currently high-risk':'No month trend history yet')+'</small></button>'
+       +'<button class="rmx-needle-card '+(gc.pct<80?'warn':'good')+'" data-rmx-jump="tier"><span>Growth Plans</span><b>'+gc.pct+'%</b><small>'+gc.done+' / '+gc.eligible+' A/B/Channel have a next move</small></button>'
+     +'</div><div class="rmx-needle-verdict '+(stale?'bad':(!onPace||ht.worsened>ht.recovered?'warn':'good'))+'"><b>Director read:</b> '+esc(verdict)+'</div></section>';
+ }
 
  function rmxNextBusinessDate(){
    const x=new Date(todayS()+'T12:00:00');
@@ -16942,12 +17002,13 @@ window.rmAuditVisibleButtons=function(){
  function rmxCoachSentence(parts){return (parts||[]).filter(Boolean).join(' ')}
 
 function renderSnapshot(c,d){
-  title(c,'Dashboard','Manager command center · daily execution, month-to-date meeting pace, current open work, and relationship health.');
+  title(c,'Dashboard','Outcomes first: portfolio growth + retention, then the execution that is supposed to create those results.');
   const ta=todayAmanda(d),wa=weekAmanda(d),ma=mtdAmanda(d),cold=coldCount(ta),talk=talkCount(ta),newM=ma.filter(a=>a.act_type==='New Realtor Meeting').length,existM=ma.filter(a=>isExistingMeetingType(a.act_type)).length;
   const live=meaningfulCount(ta),tx=rmxTxn(d),pe=rmxPortfolioExecution(d),rr=risks(d),reviews=d.growthReviews||[],high=(d.otherInsights||[]).filter(x=>String(x.priority||'').toLowerCase()==='high');
   const nynyDue=d.due.filter(a=>String((d.assigns[key(a.agent_name)]||{}).rm||'').toLowerCase()==='nyny');
   const needs=high.length+reviews.length+nynyDue.length+d.flags.length;
-  if($('rmxHeadSub'))$('rmxHeadSub').textContent=needs+' items need review · '+rr.filter(x=>x.score>=45).length+' relationships need attention · '+d.flags.length+' LP handoffs';
+  c.innerHTML+=rmxNeedleHtml(d);
+  if($('rmxHeadSub')){const ht=rmxHealthTrend(d),mig=migrationCounts(d),pb=d.powerBi||{};$('rmxHeadSub').textContent=(pb.sourceCount||0)+' active agents · '+(mig.cToB+mig.bToA+mig.aToChannel)+' tier moves MTD · '+ht.recovered+' recovered / '+ht.worsened+' worsened · '+needs+' items need review';}
   c.innerHTML+='<div class="rmx-inline-note"><b>Dashboard scope:</b> <b>Today</b> = calls, Partner conversations and live conversations · <b>MTD</b> = Realtor / partner meetings · <b>Now</b> = open transaction, follow-up and portfolio work. <button class="rmx-link" data-rmx-jump="checkin" style="float:right">Evening Daily Check-In →</button></div>';
   c.innerHTML+='<div class="rmx-kpi-grid">'
     +kpiCard('Cold Calls · Today',cold,25,cold>=25?'good':cold>=15?'warn':'bad','performance','cold')
@@ -17062,7 +17123,7 @@ function renderMyDay(c,d){
   const recentAmanda=(d.recent||[]).filter(isAmanda).slice(0,80),missingNotes=recentAmanda.filter(a=>meaning(a)&&String(typeof stripRmMeta==='function'?stripRmMeta(a.notes||''):a.notes||'').trim().length<8).length,missingNext=pe.missing.length,noToday=ta.length?0:1,reconnectUntouched=(d.prospects||[]).filter(p=>String(p.status||'').toLowerCase()==='active').length;
   const coach=[['Missing Notes on Activities',missingNotes,'Add what happened and why it matters.','red'],['Missing Portfolio Next Steps',missingNext,'Close the relationship-intelligence gap.','amber'],['No Activity Logged Today',noToday,'Execution should be visible in the tracker.','amber'],['Transaction Calls Needing Follow-Up',tx.open.length,'CTC / New Contract calls stay open until complete.',''],['Reconnect Work Available',reconnectUntouched,'Use this when higher-priority work is current.','']];
   const coachFocus=['quality','portfolio','today','transactions','today'];
-  c.innerHTML+='<div class="rmx-two" id="rmxAmandaCoaching"><section class="rmx-card"><h2>Coaching Opportunities</h2><div class="sub">Signals that help you coach quality, not just quantity.</div>'+coach.map((x,i)=>'<button type="button" class="rmx-priority rmx-click-priority '+x[3]+'" data-rmx-jump="performance" data-rmx-focus="'+coachFocus[i]+'"><span class="rank">'+(i+1)+'</span><div class="copy"><b>'+x[0]+'</b><span>'+x[2]+'</span></div><span class="count">'+x[1]+'</span></button>').join('')+'<div class="rmx-person-actions"><button class="rmx-btn primary" onclick="rmxCoachAmandaForAgent(\'\')">Log Coaching</button><button class="rmx-btn" data-rmx-jump="queue">Open Coaching Queue</button></div></section><section class="rmx-card"><h2>Pace vs Goal</h2><div class="sub">A fast coaching read across today, week, and month.</div><div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;text-align:center;margin-top:18px"><div><div class="rmx-donut" style="--pct:'+dayP+';margin:auto"><div><b>'+dayP+'%</b><span>Today</span></div></div><div class="rmx-muted">Calls + Partner conversations</div></div><div><div class="rmx-donut" style="--pct:'+weekP+';margin:auto"><div><b>'+weekP+'%</b><span>This Week</span></div></div><div class="rmx-muted">1outbound call volume / 100 talk-to’s</div></div><div><div class="rmx-donut" style="--pct:'+monthP+';margin:auto"><div><b>'+monthP+'%</b><span>This Month</span></div></div><div class="rmx-muted">10 new / 20 existing meetings</div></div></div></section></div>';
+  c.innerHTML+='<div class="rmx-two" id="rmxAmandaCoaching"><section class="rmx-card"><h2>Coaching Opportunities</h2><div class="sub">Signals that help you coach quality, not just quantity.</div>'+coach.map((x,i)=>'<button type="button" class="rmx-priority rmx-click-priority '+x[3]+'" data-rmx-jump="performance" data-rmx-focus="'+coachFocus[i]+'"><span class="rank">'+(i+1)+'</span><div class="copy"><b>'+x[0]+'</b><span>'+x[2]+'</span></div><span class="count">'+x[1]+'</span></button>').join('')+'<div class="rmx-person-actions"><button class="rmx-btn primary" onclick="rmxCoachAmandaForAgent(\'\')">Log Coaching</button><button class="rmx-btn" data-rmx-jump="queue">Open Coaching Queue</button></div></section><section class="rmx-card"><h2>Pace vs Goal</h2><div class="sub">A fast coaching read across today, week, and month.</div><div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;text-align:center;margin-top:18px"><div><div class="rmx-donut" style="--pct:'+dayP+';margin:auto"><div><b>'+dayP+'%</b><span>Today</span></div></div><div class="rmx-muted">Calls + Partner conversations</div></div><div><div class="rmx-donut" style="--pct:'+weekP+';margin:auto"><div><b>'+weekP+'%</b><span>This Week</span></div></div><div class="rmx-muted">125 outbound calls / 100 partner conversations</div></div><div><div class="rmx-donut" style="--pct:'+monthP+';margin:auto"><div><b>'+monthP+'%</b><span>This Month</span></div></div><div class="rmx-muted">10 new / 20 existing meetings</div></div></div></section></div>';
   const qa=recentAmanda.slice(0,10);
   c.innerHTML+='<section class="rmx-card rmx-quality rmx-section-block" id="rmxAmandaQuality"><h2>Quality of Execution</h2><div class="sub">Recent activity with enough context to coach the work. Use History or Portfolio from Director Queue when you need the relationship detail.</div><div class="rmx-tablewrap"><table class="rmx-table"><thead><tr><th>Activity</th><th>Type</th><th>Date</th><th>Outcome</th><th>Notes Quality</th><th>Follow-Up</th></tr></thead><tbody>'+(qa.length?qa.map(a=>{const note=String(typeof stripRmMeta==='function'?stripRmMeta(a.notes||''):a.notes||'').trim(),quality=note.length>=20?'Complete':note.length?'Thin':'Missing';return '<tr><td><div class="rmx-name">'+esc(fmtName(a.agent_name||''))+'</div></td><td>'+esc(a.act_type||'')+'</td><td>'+esc(a.act_date||'')+'</td><td>'+esc(a.outcome||'')+'</td><td><span class="rmx-pill '+(quality==='Complete'?'green':quality==='Missing'?'red':'amber')+'">'+quality+'</span></td><td>'+esc(a.follow_up_date||'—')+'</td></tr>'}).join(''):'<tr><td colspan="6">No recent Amanda activity.</td></tr>')+'</tbody></table></div></section>';
  } 
@@ -17196,7 +17257,8 @@ function renderMyDay(c,d){
  } 
  function renderPortfolio(c,d){
   title(c,'Portfolio Risk','Lead-aware relationship health. Recent lead activity counts as engagement; missing growth plans are managed separately from retention risk.');
-  const rr=risks(d),high=rr.filter(r=>r.score>=80),rising=rr.filter(r=>r.score>=45&&r.score<80),no14=rr.filter(r=>r.days!=null&&r.days>=14),plan=d.profiles.filter(p=>['Channel','A','B'].includes(p._tier)&&!String(p.next_growth_opportunity||'').trim()),amandaDue=d.due.filter(a=>String((d.assigns[key(a.agent_name)]||{}).rm||'').toLowerCase()==='amanda'),nynyDue=d.due.filter(a=>String((d.assigns[key(a.agent_name)]||{}).rm||'').toLowerCase()==='nyny');
+  const rr=risks(d),high=rr.filter(r=>r.score>=80),rising=rr.filter(r=>r.score>=45&&r.score<80),no14=rr.filter(r=>r.days!=null&&r.days>=14),plan=d.profiles.filter(p=>['Channel','A','B'].includes(p._tier)&&!String(p.next_growth_opportunity||'').trim()),amandaDue=d.due.filter(a=>String((d.assigns[key(a.agent_name)]||{}).rm||'').toLowerCase()==='amanda'),nynyDue=d.due.filter(a=>String((d.assigns[key(a.agent_name)]||{}).rm||'').toLowerCase()==='nyny'),ht=rmxHealthTrend(d);
+  c.innerHTML+='<div class="rmx-retention-strip"><div><b>'+ht.recovered+'</b><span>Recovered MTD</span></div><div><b>'+ht.worsened+'</b><span>Worsened MTD</span></div><div><b>'+high.length+'</b><span>High Risk Now</span></div><div><b>'+rising.length+'</b><span>Rising Risk</span></div><small>Health trend compares the first and latest saved health snapshots this month. It shows direction, not just outreach volume.</small></div>';
   c.innerHTML+='<div class="rmx-subnav"><button onclick="rmxRiskFilterTo(\'all\')">All Risk</button><button onclick="rmxRiskFilterTo(\'high\')">High Risk</button><button onclick="rmxRiskFilterTo(\'rising\')">Rising Risk</button><button onclick="rmxRiskFilterTo(\'amanda\')">Amanda Due</button><button onclick="rmxRiskFilterTo(\'mine\')">My Due</button></div>';
   c.innerHTML+='<div class="rmx-risk-grid">'
     +'<button class="rmx-summary-tile rmx-click-tile" data-risk-filter="high" onclick="rmxRiskFilterTo(\'high\')"><b>'+high.length+'</b><span>High Risk</span><small>Immediate retention attention</small></button>'
@@ -20656,7 +20718,14 @@ const baseSwitch=window.switchTab;if(typeof baseSwitch==='function')window.switc
 function boot(){modal();rmApplyCoverage(rmCoveragePerson(),false);render();loadContractBuyers(true).then(()=>filterSmartDom()).catch(()=>{})}
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
 })();
-</script></body>
+</script>
+<script id="v326-director-focus-refresh">
+(function(){
+  var last=0;async function refreshDirector(){if(Date.now()-last<30000)return;last=Date.now();try{if(document.body.classList.contains('rmx-director-active')&&typeof window.rmxRefreshCache==='function')await window.rmxRefreshCache();}catch(e){console.warn('Director focus refresh',e&&e.message)}}
+  window.addEventListener('focus',refreshDirector);document.addEventListener('visibilitychange',function(){if(!document.hidden)refreshDirector()});
+})();
+</script>
+</body>
 </html>
 
 <!-- v323: preserve Mack RM Excel row order on initial load and after save/log refresh. TUE_ORDER is authoritative; older batches fall back to created_at ascending. -->
