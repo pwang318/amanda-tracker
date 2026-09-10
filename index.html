@@ -1,4 +1,4 @@
- 
+  
 <!-- v342: navigation visibility fix — Today command center no longer remains forced visible when Log Activity, Tuesday Updates, Portfolio, or another tab is selected. -->
 <!-- v335: 4-week conversion completion now performs a guaranteed post-save Supabase refetch so Nyny coverage touches close immediately instead of remaining visually overdue because of an in-flight stale render. -->
 <!-- v334: visible meeting relationship selector adds Builder/Developer, Title/Escrow, Insurance, and Other Strategic Partner lanes. All strategic lanes create/update individual contact profiles, route to Nyny, preserve company/category, and bypass Realtor-only onboarding/conversion workflows. -->
@@ -13435,7 +13435,7 @@ setTimeout(function(){v124MountAudit();v122RenderAudit();},1200);
 </style>
 <script id="v129ReliabilityPass">
 (function(){
-  const V129_FALLBACK={imported_at:'2026-09-09T18:48:00Z',raw:140,Channel:2,A:16,B:19,C:101,blank:4,other:0,total:136,source:'verified 9/9 Power BI file'};
+  const V129_FALLBACK={imported_at:'2026-09-10T15:06:03-04:00',raw:140,Channel:2,A:17,B:20,C:100,blank:3,other:0,total:137,source:'verified 9/10 Power BI file'};
   let V129_META=null,V129_META_AT=0,V129_REPAIRING_OWNERS=false;
   function pbParse(source, importedAt){
     const s=String(source||''); if(!s.startsWith('core-team-tracker'))return null;
@@ -13449,7 +13449,7 @@ setTimeout(function(){v124MountAudit();v122RenderAudit();},1200);
       const logs=await sbFetch('powerbi_import_log?select=imported_at,source_app,rows_processed,errors&order=imported_at.desc&limit=30').catch(()=>[]);
       const row=(logs||[]).find(r=>String(r.source_app||'').startsWith('core-team-tracker'));
       const parsed=row&&pbParse(row.source_app,row.imported_at);
-      if(parsed){V129_META=parsed;V129_META_AT=Date.now();return parsed;}
+      if(parsed&&Date.parse(parsed.imported_at||'')>=Date.parse(V129_FALLBACK.imported_at)){V129_META=parsed;V129_META_AT=Date.now();return parsed;}
     }catch(e){console.warn('v129 shared Power BI summary',e);}
     // Current approved 8/19 file fallback only. A later stamped profile set wins through the import log.
     V129_META=Object.assign({},V129_FALLBACK);V129_META_AT=Date.now();return V129_META;
@@ -18265,9 +18265,9 @@ window.rmAuditVisibleButtons=function(){
 'use strict';
 
 const VERIFIED={
-  importedAt:'2026-09-09T18:48:00Z',
-  active:136,
-  levels:{Channel:2,A:14,B:19,C:101}
+  importedAt:'2026-09-10T15:06:03-04:00',
+  active:137,
+  levels:{Channel:2,A:15,B:20,C:100}
 };
 const COLORS={green:'#2E8B57',yellow:'#C78A16',red:'#C54B43'};
 const n=v=>Number(v||0)||0;
@@ -18298,7 +18298,7 @@ function localSnapshot(){
       const l=s.levels||{};
       return{
         active:n(s.active_partner_rows),
-        levels:{Channel:n(l.Channel),A:n(l.A),B:n(l.B),C:n(l.C)},
+        levels:{Channel:n(l.Channel),A:Math.max(0,n(l.A)-n(l.Channel)),B:n(l.B),C:n(l.C)},
         importedAt:s.imported_at,
         source:'newer Power BI upload'
       };
@@ -18321,8 +18321,9 @@ async function serverSnapshot(){
       if(lv==='A'||lv==='B'||lv==='C')levels[lv]++;
       if(n(p&&p.closes_past_year)>=10)levels.Channel++;
     });
+    levels.A=Math.max(0,levels.A-levels.Channel);
     return{
-      active:cur.filter(p=>p&&p.retained===true).length,
+      active:cur.filter(p=>{const lv=String(p&&p.powerbi_level||'').trim();return lv==='A'||lv==='B'||lv==='C'}).length,
       levels,
       importedAt:new Date(latest).toISOString(),
       source:'newer shared Power BI sync'
@@ -18330,7 +18331,11 @@ async function serverSnapshot(){
   }catch(e){return null}
 }
 async function authoritativePowerBi(){
-  // Exact import receipt is authoritative. It is written by the Core Team / LP Tracker on every Power BI upload.
+  // Newest timestamp wins. An older import receipt must never repaint a newer verified/profile snapshot.
+  const candidates=[{
+    active:VERIFIED.active,levels:Object.assign({},VERIFIED.levels),importedAt:VERIFIED.importedAt,
+    source:'verified 9/10 Power BI file'
+  }];
   try{
     const logs=await sbFetch('powerbi_import_log?select=imported_at,source_app,rows_processed,errors&order=imported_at.desc&limit=30').catch(()=>[]);
     const row=(logs||[]).find(r=>String(r.source_app||'').startsWith('core-team-tracker'));
@@ -18338,15 +18343,12 @@ async function authoritativePowerBi(){
       const vals={raw:0,Channel:0,A:0,B:0,C:0,blank:0};
       String(row.source_app||'').split(';').slice(1).forEach(part=>{const i=part.indexOf('=');if(i<0)return;const k=part.slice(0,i),v=Number(part.slice(i+1))||0;if(Object.prototype.hasOwnProperty.call(vals,k))vals[k]=v;});
       const active=vals.A+vals.B+vals.C;
-      if(active>0)return{active,levels:{Channel:vals.Channel,A:Math.max(0,vals.A-vals.Channel),B:vals.B,C:vals.C},sourceLevels:{A:vals.A,B:vals.B,C:vals.C},raw:vals.raw,blank:vals.blank,importedAt:row.imported_at,source:'latest Core Team Power BI import'};
+      if(active>0)candidates.push({active,levels:{Channel:vals.Channel,A:Math.max(0,vals.A-vals.Channel),B:vals.B,C:vals.C},sourceLevels:{A:vals.A,B:vals.B,C:vals.C},raw:vals.raw,blank:vals.blank,importedAt:row.imported_at,source:'latest Core Team Power BI import'});
     }
   }catch(e){console.warn('Power BI receipt lookup failed',e)}
-  return localSnapshot() || await serverSnapshot() || {
-    active:VERIFIED.active,
-    levels:Object.assign({},VERIFIED.levels),
-    importedAt:VERIFIED.importedAt,
-    source:'verified 9/9 Power BI file'
-  };
+  const local=localSnapshot();if(local)candidates.push(local);
+  const server=await serverSnapshot();if(server)candidates.push(server);
+  return candidates.sort((a,b)=>(Date.parse(b.importedAt||'')||0)-(Date.parse(a.importedAt||'')||0))[0];
 }
 
 /* Replace the OLD inline Tier Growth data function used by the lower scorecard. */
