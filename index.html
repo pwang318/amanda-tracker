@@ -1,4 +1,4 @@
-  
+ 
 <!-- v342: navigation visibility fix — Today command center no longer remains forced visible when Log Activity, Tuesday Updates, Portfolio, or another tab is selected. -->
 <!-- v335: 4-week conversion completion now performs a guaranteed post-save Supabase refetch so Nyny coverage touches close immediately instead of remaining visually overdue because of an in-flight stale render. -->
 <!-- v334: visible meeting relationship selector adds Builder/Developer, Title/Escrow, Insurance, and Other Strategic Partner lanes. All strategic lanes create/update individual contact profiles, route to Nyny, preserve company/category, and bypass Realtor-only onboarding/conversion workflows. -->
@@ -20621,13 +20621,84 @@ let current='focus',installed=false;
 function q(s,r){return (r||document).querySelector(s)}function qa(s,r){return Array.from((r||document).querySelectorAll(s))}
 function setText(sel,value){const el=q(sel);if(el)el.textContent=value}
 function buildNav(){const nav=q('#rm359DirectorOS .rm359-dir-nav');if(!nav)return false;nav.innerHTML='';let group='';Object.entries(ROUTES).forEach(([key,r])=>{if(r.group!==group){group=r.group;const g=document.createElement('span');g.className='rm373-group';g.textContent=group;nav.appendChild(g)}const b=document.createElement('button');b.type='button';b.dataset.rm373Route=key;b.dataset.icon=r.icon;b.textContent=r.label;b.setAttribute('aria-controls',r.section);b.onclick=()=>route(key,true);nav.appendChild(b)});return true}
-function updateQuick(key){const quick=q('#rm359DirectorOS .rm359-quick');if(!quick)return;quick.style.display=key==='focus'?'':'none';if(key==='focus')quick.innerHTML='<button type="button" onclick="rm372Open(\'voice\')">Capture intelligence</button><button type="button" onclick="rm372Open(\'commitment\')">Add commitment</button><button type="button" onclick="rm372Open(\'career\')">Log strategic evidence</button><button type="button" onclick="v98DirectorLog(\'\',\'Nyny\',\'Partner Meeting\')">Log relationship work</button>'}
+function updateQuick(key){const quick=q('#rm359DirectorOS .rm359-quick');if(!quick)return;quick.classList.toggle('rm373-hidden',key!=='focus');quick.style.display=key==='focus'?'':'none';if(key==='focus')quick.innerHTML='<button type="button" onclick="rm372Open(\'voice\')">Capture intelligence</button><button type="button" onclick="rm372Open(\'commitment\')">Add commitment</button><button type="button" onclick="rm372Open(\'career\')">Log strategic evidence</button><button type="button" onclick="v98DirectorLog(\'\',\'Nyny\',\'Partner Meeting\')">Log relationship work</button>'}
 function route(key,persist){const r=ROUTES[key]||ROUTES.focus,main=q('#rm359DirectorOS .rm359-dir-main'),target=document.getElementById(r.section);if(!main||!target)return false;current=key;qa(':scope > .rm359-section',main).forEach(s=>{const on=s===target;s.classList.toggle('rm373-active',on);s.hidden=!on});qa('[data-rm373-route]').forEach(b=>{const on=b.dataset.rm373Route===key;b.classList.toggle('rm373-active',on);b.classList.toggle('rm370-active',false);b.setAttribute('aria-current',on?'page':'false')});setText('.rm359-dir-eyebrow',r.eyebrow);setText('.rm359-dir-title',r.title);setText('.rm359-dir-sub',r.sub);updateQuick(key);if(r.view){const tab=q('#rm372Tabs [data-v="'+r.view+'"]');if(tab)tab.click()}if(persist){try{sessionStorage.setItem('rm373DirectorRoute',key)}catch(e){}}if(innerWidth<861){const b=q('[data-rm373-route="'+key+'"]');if(b)b.scrollIntoView({behavior:'smooth',block:'nearest',inline:'center'});scrollTo({top:0,behavior:'smooth'})}return true}
 function decorate(){const os=document.getElementById('rm359DirectorOS');if(!os)return false;const greet=q('.rm359-dir-greet',os),role=q('.rm359-dir-role',os);if(greet)greet.innerHTML='<span class="rm373-brandmark">Relationship intelligence</span>Nyny · Director Command';if(role)role.textContent='Client Experience · Growth Strategy · Leadership';if(!q('.rm373-skip')){const a=document.createElement('a');a.className='rm373-skip';a.href='#rm373Workspace';a.textContent='Skip to workspace';document.body.appendChild(a)}const main=q('.rm359-dir-main',os);if(main)main.id='rm373Workspace';buildNav();installed=true;let saved='focus';try{saved=sessionStorage.getItem('rm373DirectorRoute')||'focus'}catch(e){}return route(saved,false)}
 function boot(){if(!document.body.classList.contains('rm-director-route'))return;let tries=0;const timer=setInterval(()=>{tries++;if(document.getElementById('rm372IntelligenceOS')&&decorate()){clearInterval(timer)}else if(tries>50)clearInterval(timer)},100)}
 window.rm373Route=route;window.rm359Go=function(id){const aliases={v91NeedsMe:'snapshot',v91RetentionBoard:'protect',v106TierGrowthCenter:'growth'},hit=aliases[id]?[aliases[id],ROUTES[aliases[id]]]:Object.entries(ROUTES).find(([,r])=>r.section===id);if(hit)return route(hit[0],true);const el=document.getElementById(id);if(el)el.scrollIntoView({behavior:'smooth',block:'start'})};
 const priorRefresh=window.rm359DirectorRefresh;if(typeof priorRefresh==='function'&&!priorRefresh.__rm373){const wrapped=async function(){const result=await priorRefresh.apply(this,arguments);setTimeout(()=>route(current,false),320);return result};wrapped.__rm373=true;window.rm359DirectorRefresh=wrapped}
 window.addEventListener('hashchange',()=>setTimeout(boot,260));if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(boot,500),{once:true});else setTimeout(boot,500);
+})();
+</script>
+<!-- v374: Director readability, action visibility and scorecard layout repair. Amanda remains untouched. -->
+<style id="rm-v374-readability-fix-css">
+/* Director typography and contrast */
+body.rm-director-route{--c-text:#142B2D!important;--c-muted:#526766!important}
+body.rm-director-route .rm359-dir-nav .rm373-group{color:#D8BC7D!important;font-size:9px!important;opacity:1!important;margin-top:20px!important}
+body.rm-director-route .rm359-dir-nav button{color:rgba(255,255,255,.88)!important;font-size:12px!important;font-weight:720!important}
+body.rm-director-route .rm359-dir-nav button.rm373-active{color:#fff!important;background:rgba(255,255,255,.14)!important}
+body.rm-director-route .rm359-dir-role{color:rgba(255,255,255,.76)!important;font-size:10.5px!important}
+body.rm-director-route .rm359-dir-sub,body.rm-director-route .rm359-section-sub{color:#526766!important;font-size:13px!important;line-height:1.5!important}
+body.rm-director-route .rm359-last{color:#607270!important;font-size:10.5px!important}
+body.rm-director-route .rm372-stat span{color:#405452!important;font-size:12px!important;font-weight:760!important}
+body.rm-director-route .rm372-stat small{color:#667674!important;font-size:10.5px!important;line-height:1.4!important}
+body.rm-director-route .rm372-row-copy{color:#536361!important;font-size:11.5px!important;line-height:1.5!important}
+body.rm-director-route .rm372-row-copy b{color:#304745!important}
+body.rm-director-route .rm372-command-side p{color:#455F5B!important;font-size:12.5px!important;line-height:1.55!important}
+body.rm-director-route .rm372-mini span,body.rm-director-route .rm372-voice-line{color:#536663!important;font-size:11px!important}
+body.rm-director-route .v91-row-copy{color:#536663!important;font-size:11.5px!important;line-height:1.45!important}
+
+/* Remove Refresh completely and place the only return control safely at the bottom */
+body.rm-director-route .rm359-dir-actions{position:fixed!important;left:14px!important;bottom:14px!important;right:auto!important;width:236px!important;display:block!important;z-index:10002!important}
+body.rm-director-route .rm359-dir-actions .rm359-dir-btn:first-of-type{display:none!important}
+body.rm-director-route .rm359-dir-actions .rm359-dir-btn:last-of-type{display:block!important;width:100%!important;min-height:44px!important;background:#F8F5EE!important;color:#173234!important;border-color:#F8F5EE!important;font-size:11.5px!important;font-weight:780!important;box-shadow:0 8px 22px rgba(0,0,0,.16)!important}
+body.rm-director-route .rm359-dir-topin{padding-bottom:16px!important}
+body.rm-director-route .rm359-dir-nav{padding-bottom:80px!important}
+
+/* Quick actions belong to Today only */
+body.rm-director-route .rm359-quick.rm373-hidden{display:none!important}
+body.rm-director-route .rm359-quick button{color:#173638!important;font-size:11.5px!important;font-weight:740!important}
+
+/* Dark command card: buttons must read as buttons */
+body.rm-director-route .rm372-command-main .rm372-actions button,
+body.rm-director-route .rm372-command-main .rm372-btn{background:#F8F5EE!important;border:1px solid #F8F5EE!important;color:#173638!important;font-weight:790!important;opacity:1!important}
+body.rm-director-route .rm372-command-main .rm372-actions button:hover{background:#fff!important;border-color:#fff!important}
+
+/* Repair the legacy scorecard into an actual dashboard */
+body.rm-director-route #v91DirectorScorecard>.rm359-section-head{display:none!important}
+body.rm-director-route #v91DirectorScorecard>.rm359-panel{padding:20px!important}
+body.rm-director-route #v91DirectorScorecardBody>div:first-child{margin-bottom:16px!important;padding:15px 16px!important;border:1px solid #C8D9D4!important;border-radius:13px!important;background:#EEF5F2!important}
+body.rm-director-route #v91DirectorScorecardBody>div:first-child>div:first-child{color:#235C56!important;font-size:11px!important;letter-spacing:.08em!important}
+body.rm-director-route #v91DirectorScorecardBody>div:first-child>div:nth-child(2){color:#203A3A!important;font-size:13px!important;line-height:1.5!important}
+body.rm-director-route #v91DirectorScorecardBody>div:first-child>div:nth-child(3){color:#5A6C69!important;font-size:10.5px!important;line-height:1.45!important}
+body.rm-director-route #v91DirectorScorecardBody .v91-score-grid{display:grid!important;grid-template-columns:repeat(4,minmax(0,1fr))!important;gap:10px!important;align-items:stretch!important}
+body.rm-director-route #v91DirectorScorecardBody .v91-score-item,
+body.rm-director-route #v91DirectorScorecardBody .v92-portfolio-tile{display:flex!important;flex-direction:column!important;justify-content:center!important;min-width:0!important;min-height:126px!important;box-sizing:border-box!important;margin:0!important;padding:16px!important;border:1px solid #D5E0DC!important;border-radius:14px!important;background:#FFFEFB!important;text-align:left!important}
+body.rm-director-route #v91DirectorScorecardBody .v91-score-item strong,
+body.rm-director-route #v91DirectorScorecardBody .v92-portfolio-tile strong{display:block!important;color:#173638!important;font-size:31px!important;line-height:1!important;margin:0 0 9px!important}
+body.rm-director-route #v91DirectorScorecardBody .v91-score-item span,
+body.rm-director-route #v91DirectorScorecardBody .v92-portfolio-tile span{display:block!important;color:#405653!important;font-size:12px!important;font-weight:760!important;line-height:1.35!important;margin:0!important}
+body.rm-director-route #v91DirectorScorecardBody .v92-portfolio-tile small{color:#667774!important;font-size:10.5px!important;margin-top:5px!important}
+body.rm-director-route #v91DirectorScorecardBody>.v91-row-copy{margin-top:14px!important;padding:12px 14px!important;border-radius:10px!important;background:#F4F6F3!important;color:#445957!important;font-size:11.5px!important}
+
+@media(max-width:1100px) and (min-width:861px){body.rm-director-route #v91DirectorScorecardBody .v91-score-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important}}
+@media(max-width:860px){
+ body.rm-director-route .rm359-dir-actions{position:static!important;width:auto!important;display:block!important}.rm359-dir-actions .rm359-dir-btn:last-of-type{min-width:94px!important;padding:7px 10px!important}
+ body.rm-director-route .rm359-dir-nav{padding-bottom:10px!important}
+ body.rm-director-route .rm359-dir-sub,body.rm-director-route .rm359-section-sub{font-size:12px!important}
+ body.rm-director-route #v91DirectorScorecard>.rm359-panel{padding:12px!important}
+ body.rm-director-route #v91DirectorScorecardBody .v91-score-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+ body.rm-director-route #v91DirectorScorecardBody .v91-score-item,body.rm-director-route #v91DirectorScorecardBody .v92-portfolio-tile{min-height:118px!important;padding:13px!important}
+}
+@media(max-width:390px){body.rm-director-route #v91DirectorScorecardBody .v91-score-grid{grid-template-columns:1fr!important}}
+</style>
+<script id="rm-v374-readability-fix-js">
+(function(){
+'use strict';
+function fixDirectorChrome(){if(!document.body.classList.contains('rm-director-route'))return;const actions=document.querySelector('#rm359DirectorOS .rm359-dir-actions');if(actions){const buttons=actions.querySelectorAll('button');if(buttons[0]&&/refresh/i.test(buttons[0].textContent||''))buttons[0].remove()}const quick=document.querySelector('#rm359DirectorOS .rm359-quick');if(quick){const active=document.querySelector('[data-rm373-route].rm373-active');quick.classList.toggle('rm373-hidden',!active||active.dataset.rm373Route!=='focus')}}
+const original=window.rm373Route;if(typeof original==='function'&&!original.__rm374){const wrapped=function(key,persist){const result=original.apply(this,arguments);setTimeout(fixDirectorChrome,0);return result};wrapped.__rm374=true;window.rm373Route=wrapped;document.querySelectorAll('[data-rm373-route]').forEach(function(b){b.onclick=function(){window.rm373Route(b.dataset.rm373Route,true)}})}
+const refresh=window.rm359DirectorRefresh;if(typeof refresh==='function'&&!refresh.__rm374){const wrappedRefresh=async function(){const result=await refresh.apply(this,arguments);setTimeout(fixDirectorChrome,350);return result};wrappedRefresh.__rm374=true;window.rm359DirectorRefresh=wrappedRefresh}
+window.addEventListener('hashchange',function(){setTimeout(fixDirectorChrome,650)});if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',function(){setTimeout(fixDirectorChrome,850)},{once:true});else setTimeout(fixDirectorChrome,850);
 })();
 </script>
 </body>
