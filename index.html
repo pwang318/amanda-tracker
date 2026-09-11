@@ -19,14 +19,14 @@
 
 <html lang="en">
 <head>
-<meta content="rm-amanda-complete-daniel-scorecard-v384-20260911" name="version"/>
+<meta content="rm-amanda-unified-transaction-files-v387-20260911" name="version"/>
 <meta content="v384: The RM Scorecard now visibly mounts Daniel's full 100-point result (Tier Growth, Agent-to-Lead and Active Partner Count), keeps the shared five-tile Power BI account summary, separates RM Playbook review from Amanda execution, and retains every v381 4-week save/clear hardening change." name="build-notes"/>
 <meta content="no-cache, no-store, must-revalidate" http-equiv="Cache-Control"/>
 <meta content="no-cache" http-equiv="Pragma"/>
 <meta content="0" http-equiv="Expires"/>
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-<title>RM Tracker · Complete Daniel Scorecard v384</title>
+<title>RM Tracker · Unified Transaction Files v386</title>
 <style id="rm356-prepaint-guard">
 html:not(.rm356-ready) body{opacity:0!important}
 html.rm356-ready body{opacity:1;transition:opacity .08s ease}
@@ -9683,7 +9683,7 @@ async function loadPortfolioReview(){
       +'</div>'
 
       +'<div class="card" style="border-left:3px solid var(--brand)">'
-        +'<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap"><div><div class="card-title" style="font-size:14px">Power BI Source + Portfolio Reconciliation</div><div style="font-size:11px;color:var(--text-3);margin-top:3px">The Power BI snapshot below must match the uploaded report exactly. Managed Portfolio is a separate cleaned operating population.</div></div><div style="font-size:10.5px;color:var(--text-3)">Latest Power BI stamp: <strong>'+(latestPowerBiStamp?fmtDate(String(latestPowerBiStamp).slice(0,10)):"No Core Team / LP sync found")+'</strong></div></div>'
+        +'<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap"><div><div class="card-title" style="font-size:14px">Power BI Reconciliation</div><div style="font-size:11px;color:var(--text-3);margin-top:3px">The Power BI snapshot below must match the uploaded report exactly. Managed Portfolio is a separate cleaned operating population.</div></div><div style="font-size:10.5px;color:var(--text-3)">Latest Power BI stamp: <strong>'+(latestPowerBiStamp?fmtDate(String(latestPowerBiStamp).slice(0,10)):"No Core Team / LP sync found")+'</strong></div></div>'
         +'<div style="font-size:10px;font-weight:800;color:var(--brand-dark);text-transform:uppercase;letter-spacing:.45px;margin-top:11px;margin-bottom:6px">Power BI Level Snapshot · exact source counts</div>'
         +'<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px">'
           +pfStatTile("A",pbiLevelSummary?pbiLevelSummary.A:0,"rm376OpenScore('sourceA')")
@@ -16980,7 +16980,22 @@ window.rmAuditVisibleButtons=function(){
     const rem=document.getElementById('v233TxnScriptReminder');if(rem)rem.insertAdjacentElement('afterend',n);else hub.appendChild(n);
   }
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(addRule,700),{once:true});else setTimeout(addRule,250);
-  const priorRender=window.v231RenderTransactionWork;
+  
+function decodeAttr(v){try{return decodeURIComponent(v||'')}catch(e){return v||''}}
+function bindOpenButtons(){
+  if(document.documentElement.dataset.rm387OpenBound==='1')return;
+  document.documentElement.dataset.rm387OpenBound='1';
+  document.addEventListener('click',function(e){
+    const btn=e.target&&e.target.closest?e.target.closest('[data-rm386-open="1"]'):null;
+    if(!btn)return;
+    e.preventDefault();e.stopPropagation();
+    const type=decodeAttr(btn.dataset.type),agent=decodeAttr(btn.dataset.agent),role=decodeAttr(btn.dataset.role),txnId=decodeAttr(btn.dataset.txn);
+    try{window.rm386OpenTransactionFile(type,agent,role,txnId)}catch(err){console.error('Open transaction file failed',err);try{toast('Could not open this transaction file. Refresh once and try again.','error',4000)}catch(_){}}
+  },false);
+}
+bindOpenButtons();
+
+const priorRender=window.v231RenderTransactionWork;
   if(typeof priorRender==='function'&&!priorRender.__v234Rule){
     const wrapped=function(){const r=priorRender.apply(this,arguments);setTimeout(addRule,0);return r};wrapped.__v234Rule=true;window.v231RenderTransactionWork=wrapped;
   }
@@ -21015,7 +21030,725 @@ const oldRefresh=window.v124RefreshSharedData;if(typeof oldRefresh==='function'&
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(syncVisible,1600),{once:true});else setTimeout(syncVisible,900);
 })();
 </script>
+
+
+<!-- v386: transaction calls are one file with buyer-agent + listing-agent calls in one workbench -->
+<style id="rm-v387-unified-transaction-files-css">
+#wp230TxnHub .wp386-file{border:1px solid #E2D9EA;border-radius:12px;background:#fff;overflow:hidden;box-shadow:0 2px 8px rgba(55,38,74,.035)}
+#wp230TxnHub .wp386-file-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding:11px 12px;background:#FCFBFE;border-bottom:1px solid #EEE8F3}
+#wp230TxnHub .wp386-file-title{font-size:12px;font-weight:800;color:#2B2138;display:flex;align-items:center;gap:7px;flex-wrap:wrap}
+#wp230TxnHub .wp386-badge{font-size:8px;font-weight:900;letter-spacing:.32px;border-radius:999px;padding:4px 7px;background:#7A5600;color:#fff}
+#wp230TxnHub .wp386-badge.ctc{background:#65409D}
+#wp230TxnHub .wp386-meta{font-size:9.6px;color:#7D7285;line-height:1.45;margin-top:4px}
+#wp230TxnHub .wp386-file-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+#wp230TxnHub .wp386-status{font-size:9px;font-weight:800;border-radius:999px;padding:4px 8px;white-space:nowrap}
+#wp230TxnHub .wp386-status.open{background:#FFF5DA;color:#7A5600;border:1px solid #E9D39A}
+#wp230TxnHub .wp386-status.partial{background:#EEF2FF;color:#51438C;border:1px solid #D8D9F2}
+#wp230TxnHub .wp386-open{border:0;border-radius:8px;background:#65409D;color:#fff;padding:7px 10px;font:800 9.5px Arial,Helvetica,sans-serif;cursor:pointer;white-space:nowrap}
+#wp230TxnHub .wp386-people{display:grid;grid-template-columns:1fr 1fr}
+#wp230TxnHub .wp386-person{padding:10px 12px;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:center}
+#wp230TxnHub .wp386-person+.wp386-person{border-left:1px solid #EEE8F3}
+#wp230TxnHub .wp386-role{font-size:8.3px;font-weight:900;letter-spacing:.38px;text-transform:uppercase;color:#7C7085}
+#wp230TxnHub .wp386-name{font-size:10.8px;font-weight:800;color:#30263D;margin-top:2px;overflow-wrap:anywhere}
+#wp230TxnHub .wp386-contact{font-size:9px;color:#8A7E92;margin-top:2px;overflow-wrap:anywhere}
+#wp230TxnHub .wp386-callstate{font-size:8.8px;font-weight:850;border-radius:999px;padding:4px 7px;white-space:nowrap}
+#wp230TxnHub .wp386-callstate.todo{background:#FFF7E3;color:#75520A;border:1px solid #E9D5A1}
+#wp230TxnHub .wp386-callstate.done{background:#EDF7F0;color:#2F6847;border:1px solid #CFE4D7}
+#wp230TxnHub .wp386-summary{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-top:9px;padding-top:8px;border-top:1px solid #E9E2F1}
+#wp230TxnHub .wp386-summary b{font-size:10.5px;color:#332744}
+#wp230TxnHub .wp386-summary span{font-size:9.5px;color:#766B80}
+#wp230TxnHub .wp386-list{display:grid;gap:9px;margin-top:8px}
+#v175TransactionModal .v175-head p{max-width:720px}
+#v175TransactionModal .v176-agent-card{position:relative}
+#v175TransactionModal .wp386-agent-done{position:absolute;right:10px;top:9px;font-size:8.5px;font-weight:850;color:#2F6847;background:#EDF7F0;border:1px solid #CFE4D7;border-radius:999px;padding:3px 7px}
+@media(max-width:760px){#wp230TxnHub .wp386-people{grid-template-columns:1fr}#wp230TxnHub .wp386-person+.wp386-person{border-left:0;border-top:1px solid #EEE8F3}.wp386-file-head{flex-direction:column}.wp386-file-actions{justify-content:flex-start!important}}
+</style>
+<script id="rm-v387-unified-transaction-files-js">
+(function(){
+'use strict';
+const esc=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+const norm=s=>String(s||'').trim().toLowerCase();
+const key=s=>{try{return typeof wp18Key==='function'?wp18Key(s):norm(s)}catch(e){return norm(s)}};
+const td=()=>{try{return typeof today==='function'?today():new Date().toISOString().slice(0,10)}catch(e){return new Date().toISOString().slice(0,10)}};
+function data(){try{return typeof _wp18Cache!=='undefined'&&_wp18Cache?_wp18Cache:(window._wp18Cache||{})}catch(e){return window._wp18Cache||{}}}
+function phone(name){try{const p=(window.allContacts||[]).find(x=>key(x.agent_name)===key(name));return p&&p.phone?String(p.phone):''}catch(e){return''}}
+function tasks(d){try{return typeof wp30BuildTransactionTasks==='function'?wp30BuildTransactionTasks(d,td(),'Amanda'):[]}catch(e){return[]}}
+function groups(d,rows){
+  const map=new Map();
+  rows.forEach(t=>{
+    const x=t.txn||{},b=typeof window.wp48TxnBundle==='function'?window.wp48TxnBundle(x.txnId||'',t.name,x.role||'Agent'):{};
+    const k=x.txnId||[x.callType||'',b.client||'',b.property||'',x.triggerDate||''].join('|');
+    if(!map.has(k))map.set(k,{txnId:x.txnId||'',callType:x.callType||'',triggerDate:x.triggerDate||'',bundle:b||{},tasks:[]});
+    const g=map.get(k);g.tasks.push(t);Object.keys(b||{}).forEach(p=>{if(!g.bundle[p]&&b[p])g.bundle[p]=b[p]});
+  });
+  return Array.from(map.values()).sort((a,b)=>(a.callType==='CTC Call'?0:1)-(b.callType==='CTC Call'?0:1)||String(a.bundle.client||a.bundle.property||'').localeCompare(String(b.bundle.client||b.bundle.property||'')));
+}
+function isOpen(g,role,name){return (g.tasks||[]).some(t=>norm((t.txn||{}).role)===norm(role)&&(!name||key(t.name)===key(name)));}
+function person(g,role){
+  const b=g.bundle||{},buyer=role==='Buyer',name=buyer?b.buyer:b.listing,p=buyer?(b.buyerPhone||phone(name)):(b.listingPhone||phone(name)),email=buyer?b.buyerEmail:b.listingEmail,open=isOpen(g,role,name);
+  if(!name)return '';
+  return '<div class="wp386-person"><div><div class="wp386-role">'+role+' agent</div><div class="wp386-name">'+esc(name)+'</div>'+([p,email].filter(Boolean).length?'<div class="wp386-contact">'+esc([p,email].filter(Boolean).join(' · '))+'</div>':'')+'</div><span class="wp386-callstate '+(open?'todo':'done')+'">'+(open?'Needs call':'Done')+'</span></div>';
+}
+function file(g){
+  const b=g.bundle||{},isCtc=g.callType==='CTC Call',title=b.client||b.property||b.ref||'Transaction',total=(b.buyer?1:0)+(b.listing?1:0)||g.tasks.length,open=g.tasks.length,done=Math.max(0,total-open),meta=[];
+  if(b.property&&b.property!==title)meta.push(b.property);if(b.closeDate)meta.push('Est. close '+b.closeDate);
+  const first=g.tasks[0]||{},fx=first.txn||{},agent=first.name||b.buyer||b.listing||'',role=fx.role||((b.buyer&&isOpen(g,'Buyer',b.buyer))?'Buyer':'Listing');
+  const state=done>0&&open>0?'partial':'open',label=open===1?'1 call left':open+' calls left';
+  const enc=v=>encodeURIComponent(String(v||''));
+  return '<div class="wp386-file"><div class="wp386-file-head"><div><div class="wp386-file-title"><span class="wp386-badge '+(isCtc?'ctc':'')+'">'+(isCtc?'CTC':'NEW CONTRACT')+'</span><span>'+esc(title)+'</span></div>'+(meta.length?'<div class="wp386-meta">'+esc(meta.join(' · '))+'</div>':'')+'</div><div class="wp386-file-actions"><span class="wp386-status '+state+'">'+esc(label)+'</span><button class="wp386-open" type="button" data-rm386-open="1" data-type="'+enc(g.callType)+'" data-agent="'+enc(agent)+'" data-role="'+enc(role)+'" data-txn="'+enc(g.txnId)+'">Open file</button></div></div><div class="wp386-people">'+person(g,'Buyer')+person(g,'Listing')+'</div></div>';
+}
+function render(){
+  const host=document.getElementById('wp230OpenCalls');if(!host)return;
+  const d=data(),r=tasks(d),gs=groups(d,r),sig=r.map(t=>[(t.txn||{}).txnId,(t.txn||{}).callType,(t.txn||{}).role,t.name].join('|')).sort().join('||');
+  if(host.dataset.v386Sig===sig)return;host.dataset.v386Sig=sig;
+  host.innerHTML=r.length?'<div class="wp386-summary"><b>'+gs.length+' open transaction'+(gs.length===1?'':'s')+'</b></div><div class="wp386-list">'+gs.map(file).join('')+'</div>':'<div class="wp231-empty">No open New Contract or CTC calls right now.</div>';
+}
+window.rm386OpenTransactionFile=function(type,agent,role,txnId){
+  if(typeof window.v176OpenTransaction==='function')window.v176OpenTransaction(type,agent,role,txnId);
+  setTimeout(()=>{
+    const m=document.getElementById('v175TransactionModal');if(!m)return;
+    const title=document.getElementById('v175TransactionTitle');if(title)title.textContent=(type==='CTC Call'?'CTC':'New Contract')+' File';
+    const p=m.querySelector('.v175-head p');if(p){p.textContent='';p.style.display='none';}
+    const prog=document.getElementById('v176SaveProgressBtn');if(prog)prog.textContent='Save partial file';
+    const complete=document.getElementById('v176SaveCompleteBtn');if(complete)complete.textContent='Complete file';
+    let open=[];try{open=JSON.parse(m.dataset.v231OpenSides||'[]')}catch(e){}
+    ['Buyer','Listing'].forEach(side=>{
+      const card=document.getElementById('v175Tx'+side+'Agent')?.closest('.v176-agent-card');if(!card)return;
+      card.querySelector('.wp386-agent-done')?.remove();
+      const name=(document.getElementById('v175Tx'+side+'Agent')?.value||'').trim();
+      const still=open.some(o=>norm(o.role)===norm(side)&&(!o.name||key(o.name)===key(name)));
+      const outcome=document.getElementById('v175Tx'+side+'Outcome'),feedback=document.getElementById('v175Tx'+side+'Feedback'),phoneEl=document.getElementById('v175Tx'+side+'Phone');
+      if(name&&!still){const b=document.createElement('span');b.className='wp386-agent-done';b.textContent='Already done';card.appendChild(b);if(outcome)outcome.disabled=true;if(feedback)feedback.disabled=true;if(phoneEl)phoneEl.disabled=true;}
+      else {if(outcome)outcome.disabled=false;if(feedback)feedback.disabled=false;if(phoneEl)phoneEl.disabled=false;}
+    });
+  },30);
+};
+const priorRender=window.v231RenderTransactionWork;
+window.v231RenderTransactionWork=function(){try{if(typeof priorRender==='function')priorRender()}catch(e){}render()};
+const priorRefresh=window.v231RefreshTransactionWork;
+window.v231RefreshTransactionWork=async function(force){try{if(typeof priorRefresh==='function')await priorRefresh(force)}catch(e){}setTimeout(render,0);setTimeout(render,180)};
+/* A partial file save should return Amanda to the file list. Reopening the same file then shows that side as done and only the remaining call as required. */
+const priorSave=window.v176SaveTransaction;
+if(typeof priorSave==='function'&&!priorSave.__v386){
+  const w=async function(complete){await priorSave.apply(this,arguments);const e=document.getElementById('v175TxError');if(!complete&&(!e||!e.classList.contains('show'))){try{window.v175Close&&window.v175Close('v175TransactionModal')}catch(_){}setTimeout(render,120)}};
+  w.__v386=true;window.v176SaveTransaction=w;
+}
+function boot(){setTimeout(render,250)}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
+})();
+</script>
+
+<!-- v388: hard-bind transaction file clicks + strip legacy transaction helper copy -->
+<style id="rm-v388-transaction-clean-css">
+#wp230TxnHub #v233TxnScriptReminder,
+#wp230TxnHub .v234-rule,
+#v175TransactionModal #v175TransactionRule,
+#v175TransactionModal .v175-head p{display:none!important}
+#wp230TxnHub .wp386-summary{justify-content:flex-start!important}
+#wp230TxnHub .wp386-summary span{display:none!important}
+</style>
+<script id="rm-v388-transaction-click-clean-js">
+(function(){
+'use strict';
+const norm=s=>String(s||'').trim().toLowerCase();
+const key=s=>{try{return typeof wp18Key==='function'?wp18Key(s):norm(s)}catch(e){return norm(s)}};
+function dec(v){try{return decodeURIComponent(v||'')}catch(e){return v||''}}
+function cleanTxnCopy(){
+  const reminder=document.getElementById('v233TxnScriptReminder');if(reminder)reminder.remove();
+  document.querySelectorAll('#wp230TxnHub .v234-rule').forEach(el=>el.remove());
+  const rule=document.getElementById('v175TransactionRule');if(rule){rule.innerHTML='';rule.style.display='none'}
+  const p=document.querySelector('#v175TransactionModal .v175-head p');if(p){p.textContent='';p.style.display='none'}
+  document.querySelectorAll('#wp230TxnHub .wp386-summary span').forEach(el=>el.remove());
+}
+function paintDoneSides(modal){
+  let open=[];try{open=JSON.parse(modal.dataset.v231OpenSides||'[]')}catch(e){}
+  ['Buyer','Listing'].forEach(side=>{
+    const agent=document.getElementById('v175Tx'+side+'Agent');
+    const card=agent&&agent.closest('.v176-agent-card');if(!card)return;
+    card.querySelectorAll('.wp386-agent-done').forEach(el=>el.remove());
+    const name=(agent.value||'').trim();
+    const still=open.some(o=>norm(o.role)===norm(side)&&(!o.name||key(o.name)===key(name)));
+    const outcome=document.getElementById('v175Tx'+side+'Outcome');
+    const feedback=document.getElementById('v175Tx'+side+'Feedback');
+    const phone=document.getElementById('v175Tx'+side+'Phone');
+    if(name&&!still){
+      const badge=document.createElement('span');badge.className='wp386-agent-done';badge.textContent='Done';card.appendChild(badge);
+      if(outcome)outcome.disabled=true;if(feedback)feedback.disabled=true;if(phone)phone.disabled=true;
+    }else{
+      if(outcome)outcome.disabled=false;if(feedback)feedback.disabled=false;if(phone)phone.disabled=false;
+    }
+  });
+}
+window.rm388OpenTransactionFile=function(type,agent,role,txnId){
+  cleanTxnCopy();
+  try{
+    if(typeof window.v176OpenTransaction==='function')window.v176OpenTransaction(type,agent,role,txnId);
+    else throw new Error('Transaction opener unavailable');
+  }catch(err){
+    console.error('Transaction file open failed',err);
+    try{toast('Could not open this file. Refresh once and try again.','error',4000)}catch(_){}
+    return false;
+  }
+  const finish=()=>{
+    const modal=document.getElementById('v175TransactionModal');if(!modal)return;
+    modal.classList.add('open');
+    const title=document.getElementById('v175TransactionTitle');if(title)title.textContent=(String(type||'').toLowerCase().includes('ctc')?'CTC':'New Contract')+' File';
+    const progress=document.getElementById('v176SaveProgressBtn');if(progress)progress.textContent='Save partial file';
+    const complete=document.getElementById('v176SaveCompleteBtn');if(complete)complete.textContent='Complete file';
+    cleanTxnCopy();paintDoneSides(modal);
+  };
+  setTimeout(finish,0);setTimeout(finish,90);setTimeout(finish,240);
+  return true;
+};
+function bindHost(){
+  const host=document.getElementById('wp230OpenCalls');if(!host||host.dataset.rm388Bound==='1')return;
+  host.dataset.rm388Bound='1';
+  /* Capture-phase binding fires before legacy card/list handlers can swallow the click. */
+  host.addEventListener('click',function(e){
+    const btn=e.target&&e.target.closest?e.target.closest('[data-rm386-open="1"]'):null;if(!btn||!host.contains(btn))return;
+    e.preventDefault();e.stopPropagation();
+    const type=dec(btn.dataset.type),agent=dec(btn.dataset.agent),role=dec(btn.dataset.role),txnId=dec(btn.dataset.txn);
+    window.rm388OpenTransactionFile(type,agent,role,txnId);
+  },true);
+}
+function maintain(){bindHost();cleanTxnCopy()}
+const priorRender=window.v231RenderTransactionWork;
+if(typeof priorRender==='function'&&!priorRender.__v388){
+  const w=function(){const r=priorRender.apply(this,arguments);setTimeout(maintain,0);setTimeout(maintain,120);return r};w.__v388=true;window.v231RenderTransactionWork=w;
+}
+const priorRefresh=window.v231RefreshTransactionWork;
+if(typeof priorRefresh==='function'&&!priorRefresh.__v388){
+  const w=async function(){const r=await priorRefresh.apply(this,arguments);setTimeout(maintain,0);setTimeout(maintain,160);return r};w.__v388=true;window.v231RefreshTransactionWork=w;
+}
+function boot(){maintain();setTimeout(maintain,300);setTimeout(maintain,900)}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
+})();
+</script>
+
+<!-- v391: Amanda Portfolio ownership + recency authority. Default Portfolio shows Amanda-routed relationships only and action cadence uses freshest meaningful touch, not stale lead age. -->
+<script id="rm-v391-amanda-portfolio-authority">
+(function(){
+'use strict';
+const v391BasePortfolioLoader=window.loadPortfolioReview;
+function v391Norm(v){return String(v||'').trim().toLowerCase().replace(/\s+/g,' ')}
+function v391DaysBetween(raw,todayStr){
+  if(!raw)return null;
+  const s=String(raw).slice(0,10),a=new Date(s+'T12:00:00'),b=new Date(String(todayStr||'').slice(0,10)+'T12:00:00');
+  if(isNaN(a)||isNaN(b))return null;
+  return Math.max(0,Math.round((b-a)/86400000));
+}
+function v391PrepareAmandaPortfolio(data,ownerRows,todayStr){
+  const d=data||{}, owners=Array.isArray(ownerRows)?ownerRows:[], by={};
+  owners.forEach(function(o){const k=v391Norm(o&&o.agent_name);if(!k)return;(by[k]||(by[k]=[])).push(o)});
+  const allowed=function(r){
+    if(!r||!r.name)return false;
+    const p=r.agent||{}, tier=String(r.tier||(p.tier||p.powerbi_level)||'').toUpperCase();
+    try{if(typeof rmIsDirectorOwned==='function'&&rmIsDirectorOwned(r.name,p.brokerage,p.team,p.company))return false}catch(e){}
+    try{if(typeof rmIsStrategicPartner==='function'&&rmIsStrategicPartner(r.name,p))return false}catch(e){}
+    if(String(p.relationship_type||'').toLowerCase()==='strategic_partner')return false;
+    // Current RM ownership firewall: Channel/A/B are Director-owned. Amanda's managed book is C / untiered only.
+    if(['CHANNEL','A','B'].includes(tier))return false;
+    const rms=(by[v391Norm(r.name)]||[]).map(x=>v391Norm(x&&x.rm));
+    if(rms.includes('nyny'))return false;
+    if(rms.includes('amanda'))return true;
+    return tier==='C'||tier==='';
+  };
+  const thresholds={CHANNEL:[14,21],A:[14,21],B:[30,45],C:[60,90]};
+  const rows=(Array.isArray(d.rows)?d.rows:[]).filter(allowed).map(function(r){
+    const p=r.agent||{}, tier=String(r.tier||(p.tier||p.powerbi_level)||'C').toUpperCase();
+    const pair=thresholds[tier]||thresholds.C;
+    const profileDays=v391DaysBetween(p.last_meaningful_contact_date,todayStr);
+    const loggedDays=(r.daysAny===null||r.daysAny===undefined||isNaN(Number(r.daysAny)))?null:Math.max(0,Number(r.daysAny));
+    const daysAny=(profileDays===null&&loggedDays===null)?null:Math.min(profileDays===null?Infinity:profileDays,loggedDays===null?Infinity:loggedDays);
+    // Work-list health is action/cadence health. A stale lead may remain a reporting signal, but it must not tell Amanda to call someone again after a fresh conversation.
+    let health='Green';
+    if(!!p.competitor_risk_flag||daysAny===null||daysAny>=pair[1])health='Red';
+    else if(daysAny>=pair[0])health='Yellow';
+    const daysUntilYellow=daysAny===null?null:pair[0]-daysAny;
+    return Object.assign({},r,{sourceHealth:r.health,health,daysAny,daysUntilYellow});
+  });
+  const names=new Set(rows.map(r=>v391Norm(r.name)));
+  const proactiveWatch=rows.filter(r=>r.health==='Green'&&r.daysUntilYellow!==null&&r.daysUntilYellow>=0&&r.daysUntilYellow<=7)
+    .sort((a,b)=>a.daysUntilYellow-b.daysUntilYellow);
+  const meetingRows=(Array.isArray(d.meetingRows)?d.meetingRows:[]).filter(r=>names.has(v391Norm(r&&r.name)));
+  const highPotential=(Array.isArray(d.highPotential)?d.highPotential:[]).filter(r=>names.has(v391Norm((r&&r.agent_name)||(r&&r.name))));
+  const needsAttention=rows.filter(r=>r.health==='Red'||r.health==='Yellow');
+  return Object.assign({},d,{rows,proactiveWatch,meetingRows,highPotential,needsAttention});
+}
+window.v391PrepareAmandaPortfolio=v391PrepareAmandaPortfolio;
+function v391LegacyReportingHtml(){
+  const inner=document.querySelector('#pf390ReportingAdmin .pf390-reporting-inner');
+  if(!inner)return '<div class="no-data">Reporting data unavailable.</div>';
+  const clone=inner.cloneNode(true);
+  clone.querySelector('.pf390-period-row')?.remove();
+  clone.querySelector('.pf390-reporting-heading')?.remove();
+  return clone.innerHTML;
+}
+function v391PatchAmandaLabels(prepared){
+  const title=document.querySelector('#view-portfolio .pf390-title');if(title)title.textContent="Amanda's Portfolio";
+  const tag=document.querySelector('#view-portfolio .pf390-tagline');if(tag)tag.textContent='Amanda-owned relationships only. Know who needs attention and what to do next.';
+  const statNotes=document.querySelectorAll('#portfolioReviewBody .pf390-stat-note');if(statNotes[0])statNotes[0].textContent='Amanda-owned managed relationships';
+  const workTitle=document.querySelector('[data-pf390-panel="work"] .pf390-section-title');if(workTitle)workTitle.textContent="Work Amanda's Portfolio";
+  const workSub=document.querySelector('[data-pf390-panel="work"] .pf390-section-sub');if(workSub)workSub.textContent='Only people actually due for Amanda. A fresh meaningful touch resets the cadence.';
+  const dirSub=document.querySelector('[data-pf390-panel="directory"] .pf390-section-sub');if(dirSub){const count=document.getElementById('pf390DirectoryCount');dirSub.innerHTML=(count?count.outerHTML:(prepared.rows.length+' partners'))+' · Amanda-owned relationships only.'}
+  document.querySelectorAll('#portfolioReviewBody .pf390-simple-row').forEach(function(row){
+    const n=row.querySelector('.name');if(!n)return;
+    if(n.textContent.trim()==='Channel / A missing a next move'){
+      const missing=prepared.rows.filter(r=>!String(r.next_growth_opportunity||'').trim()).length;
+      n.textContent='Partners missing a next move';
+      const v=row.querySelector('.value');if(v)v.textContent=String(missing);
+      const m=row.querySelector('.meta');if(m)m.textContent=missing?'Capture the next move on the next meaningful conversation':'Every relationship has a next move';
+    }
+  });
+}
+window.loadPortfolioReview=async function(){
+  const ownerPromise=(typeof sbFetch==='function'?sbFetch('agent_assignments?select=agent_name,rm,lp&limit=5000').catch(()=>[]):Promise.resolve([]));
+  await v391BasePortfolioLoader.apply(this,arguments);
+  const owners=await ownerPromise;
+  let current={};try{current=(typeof pfDrillData!=='undefined'&&pfDrillData)||{}}catch(e){}
+  const todayStr=(typeof today==='function'?today():new Date().toISOString().slice(0,10));
+  const prepared=v391PrepareAmandaPortfolio(current,owners,todayStr);
+  const reportingWasOpen=!!document.getElementById('pf390ReportingAdmin')?.open;
+  const legacy=v391LegacyReportingHtml();
+  try{pfDrillData=prepared}catch(e){}
+  if(typeof window.v390RenderSimplePortfolio==='function')window.v390RenderSimplePortfolio(legacy,reportingWasOpen);
+  v391PatchAmandaLabels(prepared);
+};
+function v391Boot(){
+  const view=document.getElementById('view-portfolio');
+  if(view&&view.classList.contains('active'))setTimeout(()=>window.loadPortfolioReview(),120);
+}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',v391Boot,{once:true});else v391Boot();
+})();
+</script>
 </body>
 </html>
 
 <!-- v363: legacy daily rotating quote card/list removed; current Today visual design preserved. -->
+
+<!-- v389: transaction save refreshes authoritative transaction cache before repaint; keep partial files visible -->
+<style id="rm-v389-transaction-cleaner-css">
+#wp230TxnHub .wp230-sub,
+#wp230TxnHub .wp230-source{display:none!important}
+</style>
+<script id="rm-v389-transaction-refresh-js">
+(function(){
+'use strict';
+let refreshPromise=null;
+async function refreshTransactions(){
+  if(refreshPromise)return refreshPromise;
+  refreshPromise=(async function(){
+    try{
+      /* v234 clears _wp18Cache after a save. The production Today override no longer refills it,
+         so explicitly reload transactionActs before repainting the transaction lane. */
+      if(typeof window.rmV355RefreshTransactions==='function'){
+        await window.rmV355RefreshTransactions();
+      }else if(typeof window.wp18FetchData==='function'){
+        await window.wp18FetchData(true);
+        if(typeof window.v231RenderTransactionWork==='function')window.v231RenderTransactionWork();
+      }
+      return true;
+    }catch(err){
+      console.warn('v389 transaction refresh failed',err);
+      return false;
+    }finally{
+      refreshPromise=null;
+    }
+  })();
+  return refreshPromise;
+}
+window.rmV389RefreshTransactions=refreshTransactions;
+
+/* Final save wrapper: after either Save partial file or Complete file, reload the real transaction
+   rows before the hub redraws. This prevents a one-sided save from making the whole file vanish. */
+const priorSave=window.v176SaveTransaction;
+if(typeof priorSave==='function'&&!priorSave.__v389TxnRefresh){
+  const wrapped=async function(complete){
+    const result=await priorSave.apply(this,arguments);
+    const err=document.getElementById('v175TxError');
+    const hasError=!!(err&&err.classList&&err.classList.contains('show'));
+    if(!hasError)await refreshTransactions();
+    return result;
+  };
+  wrapped.__v389TxnRefresh=true;
+  window.v176SaveTransaction=wrapped;
+}
+
+/* Opening this build also repairs a lane that was left visually empty by v388 after a save. */
+function boot(){refreshTransactions();}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(boot,120),{once:true});
+else setTimeout(boot,120);
+})();
+</script>
+
+
+<!-- v390: Amanda-first Portfolio workspace — overview, work list, directory; reporting/admin collapsed -->
+<style id="rm-v390-portfolio-css">
+#view-portfolio:before{display:none!important;content:none!important}
+#view-portfolio{--pf390-green:#4f8161;--pf390-yellow:#b07a22;--pf390-red:#b65252}
+#view-portfolio>.pf390-head{border:1px solid #DED7EC!important;border-top:4px solid var(--brand)!important;background:linear-gradient(135deg,#fff 0%,#FBF9FE 100%)!important;padding:20px 22px!important;margin-bottom:10px!important;box-shadow:0 6px 18px rgba(63,47,95,.05)!important}
+.pf390-head-inner{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap}
+.pf390-title{font-size:24px;font-weight:850;color:var(--brand-dark);letter-spacing:-.3px;line-height:1.1}
+.pf390-tagline{font-size:12.5px;color:var(--text-3);margin-top:5px;line-height:1.5}
+.pf390-head-actions{display:flex;gap:7px;align-items:center;flex-wrap:wrap}
+.pf390-nav{display:flex;gap:6px;padding:6px;background:#F2EEF8;border:1px solid #E3DDED;border-radius:11px;margin:0 0 12px;position:sticky;top:0;z-index:3}
+.pf390-nav button{border:0;background:transparent;color:var(--text-3);font-family:inherit;font-size:12px;font-weight:750;padding:9px 13px;border-radius:8px;cursor:pointer;transition:.15s}
+.pf390-nav button:hover{background:#fff;color:var(--brand-dark)}
+.pf390-nav button.active{background:#fff;color:var(--brand);box-shadow:0 2px 8px rgba(63,47,95,.09)}
+.pf390-panel{display:none}
+.pf390-panel.active{display:block}
+.pf390-stat-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:9px;margin-bottom:10px}
+.pf390-stat{background:#fff;border:1px solid #E8E3EF;border-radius:11px;padding:13px 14px;min-height:78px}
+.pf390-stat.clickable{cursor:pointer}.pf390-stat.clickable:hover{border-color:#CFC4E2;box-shadow:0 4px 12px rgba(63,47,95,.05)}
+.pf390-stat-label{font-size:10.5px;color:var(--text-3);font-weight:700;margin-bottom:5px}
+.pf390-stat-value{font-size:23px;line-height:1;font-weight:850;color:var(--text-1)}
+.pf390-stat-note{font-size:10.5px;color:var(--text-4);margin-top:5px;line-height:1.3}
+.pf390-grid-2{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px}
+.pf390-card{background:#fff;border:1px solid #E8E3EF;border-radius:12px;padding:15px 16px}
+.pf390-card-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px}
+.pf390-card-title{font-size:14px;font-weight:800;color:var(--text-1)}
+.pf390-card-sub{font-size:10.5px;color:var(--text-4);margin-top:2px}
+.pf390-health-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.pf390-health{border:1px solid #ECE7F1;border-radius:10px;padding:11px;text-align:center;cursor:pointer;background:#FCFBFD}
+.pf390-health b{display:block;font-size:21px;margin-bottom:2px}.pf390-health span{font-size:10.5px;color:var(--text-3);font-weight:650}
+.pf390-health.green b{color:var(--pf390-green)}.pf390-health.yellow b{color:var(--pf390-yellow)}.pf390-health.red b{color:var(--pf390-red)}
+.pf390-simple-list{display:grid;gap:0}
+.pf390-simple-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:9px 0;border-bottom:1px solid #F0EDF4}
+.pf390-simple-row:last-child{border-bottom:0}
+.pf390-simple-row .left{min-width:0}.pf390-simple-row .name{font-size:12.5px;font-weight:750;color:var(--text-1)}
+.pf390-simple-row .meta{font-size:10.5px;color:var(--text-3);margin-top:2px;line-height:1.35}
+.pf390-simple-row .value{font-size:12px;font-weight:800;color:var(--brand-dark);white-space:nowrap}
+.pf390-action-banner{display:flex;align-items:center;justify-content:space-between;gap:12px;border:1px solid #E5D6B7;background:#FFFDF8;border-radius:11px;padding:11px 13px;margin-bottom:10px}
+.pf390-action-banner strong{font-size:12.5px;color:#765313}.pf390-action-banner span{font-size:10.5px;color:#8B7959;margin-left:5px}
+.pf390-section-head{display:flex;align-items:flex-end;justify-content:space-between;gap:10px;flex-wrap:wrap;margin:2px 0 10px}
+.pf390-section-title{font-size:18px;font-weight:850;color:var(--brand-dark)}
+.pf390-section-sub{font-size:11.5px;color:var(--text-3);margin-top:3px}
+.pf390-work-grid{display:grid;grid-template-columns:1fr;gap:10px}
+.pf390-work-card{background:#fff;border:1px solid #E6E1EC;border-radius:12px;overflow:hidden}
+.pf390-work-head{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:13px 15px;background:#FBFAFD;border-bottom:1px solid #ECE8F1}
+.pf390-work-head strong{font-size:13.5px;color:var(--text-1)}.pf390-work-head small{display:block;color:var(--text-4);font-size:10.5px;margin-top:2px;font-weight:500}
+.pf390-count{min-width:28px;height:28px;border-radius:14px;background:#EFEAF7;color:var(--brand);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:850}
+.pf390-work-body{padding:0 15px}
+.pf390-person-row{display:grid;grid-template-columns:minmax(170px,1.1fr) minmax(180px,1.7fr) auto;align-items:center;gap:12px;padding:11px 0;border-bottom:1px solid #F0EDF4}
+.pf390-person-row:last-child{border-bottom:0}
+.pf390-person-name{display:flex;align-items:flex-start;gap:8px;min-width:0}.pf390-dot{width:8px;height:8px;border-radius:50%;margin-top:5px;flex:0 0 auto;background:#B8B3BE}
+.pf390-dot.red{background:var(--pf390-red)}.pf390-dot.yellow{background:var(--pf390-yellow)}.pf390-dot.green{background:var(--pf390-green)}.pf390-dot.purple{background:var(--brand)}
+.pf390-person-name b{font-size:12.5px;color:var(--text-1)}.pf390-person-name small{display:block;font-size:10.5px;color:var(--text-4);margin-top:2px}
+.pf390-person-next{font-size:11.5px;color:var(--text-2);line-height:1.4;min-width:0}
+.pf390-person-actions{display:flex;gap:6px;justify-content:flex-end}.pf390-person-actions button{white-space:nowrap}
+.pf390-empty{padding:18px 5px;text-align:center;color:var(--text-4);font-size:11.5px}
+.pf390-directory-controls{display:grid;grid-template-columns:minmax(220px,1fr) 150px 150px;gap:8px;margin-bottom:10px}
+.pf390-directory-controls input,.pf390-directory-controls select{padding:9px 11px;border:1px solid #DDD6E7;border-radius:9px;background:#fff;color:var(--text-1);font:inherit;font-size:12px;outline:none}
+.pf390-directory-controls input:focus,.pf390-directory-controls select:focus{border-color:#9C8CC5;box-shadow:0 0 0 2px rgba(126,103,177,.08)}
+.pf390-directory-table{background:#fff;border:1px solid #E6E1EC;border-radius:12px;overflow:hidden}
+.pf390-directory-head,.pf390-directory-row{display:grid;grid-template-columns:minmax(170px,1.2fr) 70px 90px 120px 120px minmax(180px,1.4fr) 116px;gap:10px;align-items:center}
+.pf390-directory-head{padding:9px 12px;background:#F7F4FA;color:var(--text-4);font-size:9.5px;font-weight:800;text-transform:uppercase;letter-spacing:.35px;border-bottom:1px solid #EAE5F0}
+.pf390-directory-row{padding:10px 12px;border-bottom:1px solid #F0EDF4;font-size:11.5px}.pf390-directory-row:last-child{border-bottom:0}.pf390-directory-row[hidden]{display:none!important}
+.pf390-directory-name{font-weight:750;color:var(--text-1);min-width:0}.pf390-directory-name small{display:block;font-size:10px;color:var(--text-4);margin-top:2px;font-weight:500}
+.pf390-badge{display:inline-flex;align-items:center;justify-content:center;border-radius:20px;padding:3px 8px;font-size:10px;font-weight:800;background:#F1EEF5;color:var(--text-2)}
+.pf390-badge.health-red{background:#FDEEEE;color:#A54141}.pf390-badge.health-yellow{background:#FFF6E3;color:#976415}.pf390-badge.health-green{background:#EEF7F0;color:#467356}
+.pf390-dir-actions{display:flex;gap:5px;justify-content:flex-end}
+.pf390-reporting{background:#fff;border:1px solid #E5E0EB;border-radius:12px;margin-top:10px;overflow:hidden}
+.pf390-reporting>summary{list-style:none;cursor:pointer;padding:13px 15px;font-size:12.5px;font-weight:800;color:var(--text-2);display:flex;align-items:center;justify-content:space-between;gap:10px;background:#FAF9FC}
+.pf390-reporting>summary::-webkit-details-marker{display:none}.pf390-reporting>summary:after{content:'Show';font-size:10px;color:var(--brand);background:#EFEAF7;border-radius:20px;padding:4px 8px}.pf390-reporting[open]>summary:after{content:'Hide'}
+.pf390-reporting-copy{font-size:10.5px;color:var(--text-4);font-weight:500;margin-left:6px}
+.pf390-reporting-inner{padding:12px;background:#F9F8FB}.pf390-reporting-inner>.card:first-of-type{margin-top:10px}
+.pf390-period-row{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;padding:9px 10px;background:#fff;border:1px solid #E8E3ED;border-radius:9px;margin-bottom:10px}.pf390-period-row>span{font-size:10.5px;color:var(--text-3);font-weight:700}
+.pf390-reporting-heading{font-size:11px;font-weight:800;color:var(--brand-dark);margin:2px 0 8px}
+@media(max-width:1100px){.pf390-directory-head{display:none}.pf390-directory-row{grid-template-columns:1.2fr .55fr .7fr 1fr 1fr}.pf390-directory-row .pf390-dir-next{grid-column:1/5}.pf390-dir-actions{grid-column:5;grid-row:1/3}.pf390-stat-grid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:780px){.pf390-grid-2{grid-template-columns:1fr}.pf390-person-row{grid-template-columns:1fr}.pf390-person-actions{justify-content:flex-start}.pf390-directory-controls{grid-template-columns:1fr}.pf390-directory-row{grid-template-columns:1fr 70px 90px}.pf390-directory-row .pf390-dir-touch,.pf390-directory-row .pf390-dir-lead{display:none}.pf390-directory-row .pf390-dir-next{grid-column:1/4}.pf390-dir-actions{grid-column:1/4;grid-row:auto;justify-content:flex-start}.pf390-stat-grid{grid-template-columns:1fr 1fr}.pf390-nav{overflow-x:auto;position:static}}
+</style>
+<script id="rm-v390-portfolio-js">
+(function(){
+'use strict';
+const v390BasePortfolioLoader=window.loadPortfolioReview;
+window._pf390PortfolioView=window._pf390PortfolioView||'overview';
+
+function escAttr(v){return String(v==null?'':v).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+function v390InstallPortfolioShell(){
+  const view=document.getElementById('view-portfolio');if(!view)return false;
+  if(view.dataset.v390Shell==='1')return true;
+  view.dataset.v390Shell='1';
+  view.innerHTML=`
+    <div class="card pf390-head">
+      <div class="pf390-head-inner">
+        <div><div class="pf390-title">Portfolio</div><div class="pf390-tagline">Protect relationships. Know who needs attention. Know your next move.</div></div>
+        <div class="pf390-head-actions"><button class="btn-sm" onclick="openPartnerHealthHelp()">How health works</button><button class="btn-primary" onclick="v338RefreshPortfolioAll()">Refresh portfolio</button></div>
+      </div>
+    </div>
+    <div class="pf390-nav" aria-label="Portfolio sections">
+      <button type="button" data-pf390-view="overview" onclick="v390ShowPortfolioView('overview')">Overview</button>
+      <button type="button" data-pf390-view="work" onclick="v390ShowPortfolioView('work')">Work List</button>
+      <button type="button" data-pf390-view="directory" onclick="v390ShowPortfolioView('directory')">All Partners</button>
+    </div>
+    <div id="portfolioReviewBody"><div class="no-data">Loading portfolio...</div></div>`;
+  return true;
+}
+function v390TierRank(t){return t==='Channel'?0:t==='A'?1:t==='B'?2:t==='C'?3:4}
+function v390StatusDetail(r){
+  if(r.health==='Red')return 'Reconnect now · '+(r.daysAny==null?'no meaningful touch logged':r.daysAny+'d since meaningful touch');
+  if(r.health==='Yellow')return 'Reconnect this week · '+(r.daysAny==null?'touch overdue':r.daysAny+'d since meaningful touch');
+  if(r.daysUntilYellow!=null&&r.daysUntilYellow<=7)return 'Reach out before cadence slips · '+Math.max(0,r.daysUntilYellow)+'d remaining';
+  return r.next_growth_opportunity?String(r.next_growth_opportunity):'Maintain relationship cadence';
+}
+function v390NextMove(r){
+  if(r.health==='Red')return 'Protect relationship now';
+  if(r.health==='Yellow')return 'Reconnect this week';
+  if(r.next_growth_opportunity)return String(r.next_growth_opportunity);
+  if(r.daysUntilYellow!=null&&r.daysUntilYellow<=7)return 'Reach out before cadence slips';
+  return 'Maintain relationship';
+}
+function v390Metric(label,value,note,onclick){return '<div class="pf390-stat'+(onclick?' clickable':'')+'"'+(onclick?' onclick="'+onclick+'"':'')+'><div class="pf390-stat-label">'+label+'</div><div class="pf390-stat-value">'+value+'</div><div class="pf390-stat-note">'+note+'</div></div>'}
+function v390SimpleRow(label,value,note){return '<div class="pf390-simple-row"><div class="left"><div class="name">'+label+'</div>'+(note?'<div class="meta">'+note+'</div>':'')+'</div><div class="value">'+value+'</div></div>'}
+function v390PersonRow(r,kind){
+  const encoded=encodeURIComponent(r.name||'');
+  const dot=kind==='growth'?'purple':String(r.health||'').toLowerCase();
+  let detail=v390StatusDetail(r);
+  if(kind==='growth'&&r.next_growth_opportunity)detail=String(r.next_growth_opportunity);
+  return '<div class="pf390-person-row"><div class="pf390-person-name"><span class="pf390-dot '+dot+'"></span><div><b>'+escHtml(properCase(r.name||''))+'</b><small>'+escHtml(tierLabel(r.tier||''))+' · '+escHtml(r.health||'')+'</small></div></div><div class="pf390-person-next">'+escHtml(detail)+'</div><div class="pf390-person-actions"><button class="btn-sm" onclick="v390OpenPartner(\''+encoded+'\',\'call\')">Call</button><button class="btn-sm" onclick="v390OpenPartner(\''+encoded+'\',\'open\')">Open</button></div></div>';
+}
+function v390DirectoryRow(r){
+  const encoded=encodeURIComponent(r.name||'');
+  const tier=String(r.tier||'No Tier'),health=String(r.health||'');
+  const touch=r.daysAny==null?'No touch':r.daysAny===0?'Today':r.daysAny+'d ago';
+  const lead=r.daysSinceLead==null?'No lead':r.daysSinceLead===0?'Today':r.daysSinceLead+'d ago';
+  const search=(String(r.name||'')+' '+tier+' '+health+' '+String(r.next_growth_opportunity||'')).toLowerCase();
+  return '<div class="pf390-directory-row" data-search="'+escAttr(search)+'" data-tier="'+escAttr(tier)+'" data-health="'+escAttr(health)+'"><div class="pf390-directory-name">'+escHtml(properCase(r.name||''))+'<small>'+escHtml(v390NextMove(r))+'</small></div><div><span class="pf390-badge">'+escHtml(tier)+'</span></div><div><span class="pf390-badge health-'+health.toLowerCase()+'">'+escHtml(health)+'</span></div><div class="pf390-dir-touch">'+touch+'</div><div class="pf390-dir-lead">'+lead+'</div><div class="pf390-dir-next">'+escHtml(r.next_growth_opportunity||v390NextMove(r))+'</div><div class="pf390-dir-actions"><button class="btn-sm" onclick="v390OpenPartner(\''+encoded+'\',\'call\')">Call</button><button class="btn-sm" onclick="v390OpenPartner(\''+encoded+'\',\'open\')">Open</button></div></div>';
+}
+window.v390OpenPartner=function(encoded,action){
+  const name=decodeURIComponent(encoded||'');
+  if(action==='call'&&typeof prefillActivityLog==='function'){prefillActivityLog(name,'Agent Talk-to');return}
+  if(typeof openPortfolioNotes==='function'){openPortfolioNotes(name);return}
+  if(typeof openContactsEdit==='function')openContactsEdit(name);
+};
+function v390ShowPortfolioView(which){
+  which=['overview','work','directory'].includes(which)?which:'overview';window._pf390PortfolioView=which;
+  document.querySelectorAll('#portfolioReviewBody .pf390-panel').forEach(el=>el.classList.toggle('active',el.dataset.pf390Panel===which));
+  document.querySelectorAll('#view-portfolio [data-pf390-view]').forEach(btn=>btn.classList.toggle('active',btn.dataset.pf390View===which));
+  if(which==='directory')setTimeout(()=>document.getElementById('pf390DirectorySearch')?.focus(),20);
+}
+window.v390ShowPortfolioView=v390ShowPortfolioView;
+function v390FilterPortfolioDirectory(){
+  const q=String(document.getElementById('pf390DirectorySearch')?.value||'').trim().toLowerCase();
+  const tier=String(document.getElementById('pf390DirectoryTier')?.value||'all');
+  const health=String(document.getElementById('pf390DirectoryHealth')?.value||'all');
+  let shown=0;
+  document.querySelectorAll('#pf390DirectoryRows .pf390-directory-row').forEach(row=>{
+    const okQ=!q||String(row.dataset.search||'').includes(q),okTier=tier==='all'||row.dataset.tier===tier,okHealth=health==='all'||row.dataset.health===health;
+    row.hidden=!(okQ&&okTier&&okHealth);if(!row.hidden)shown++;
+  });
+  const count=document.getElementById('pf390DirectoryCount');if(count)count.textContent=shown+' partner'+(shown===1?'':'s');
+}
+window.v390FilterPortfolioDirectory=v390FilterPortfolioDirectory;
+function v390PeriodControls(){
+  let p='month';try{if(typeof portfolioPeriod!=='undefined')p=portfolioPeriod}catch(e){}
+  const b=(key,label)=>'<button class="ptoggle '+(p===key?'active btn-active':'')+'" id="pfPeriod'+key.charAt(0).toUpperCase()+key.slice(1)+'" onclick="setPortfolioPeriod(\''+key+'\')">'+label+'</button>';
+  return '<div class="pf390-period-row"><span>Reporting period</span><div class="period-toggle">'+b('week','This week')+b('month','This month')+b('quarter','This quarter')+'</div></div>';
+}
+function v390RenderSimplePortfolio(legacyHtml,reportingWasOpen){
+  const body=document.getElementById('portfolioReviewBody');if(!body)return;
+  const d=(typeof pfDrillData!=='undefined'&&pfDrillData)||{};
+  const rows=Array.isArray(d.rows)?d.rows.slice():[];
+  const tierCounts={Channel:0,A:0,B:0,C:0,None:0},healthCounts={Green:0,Yellow:0,Red:0};
+  rows.forEach(r=>{const t=['Channel','A','B','C'].includes(r.tier)?r.tier:'None';tierCounts[t]++;if(healthCounts[r.health]!=null)healthCounts[r.health]++});
+  const total=rows.length;
+  const needsAttention=rows.filter(r=>r.health==='Red'||r.health==='Yellow').sort((a,b)=>(a.health===b.health?0:(a.health==='Red'?-1:1))||(v390TierRank(a.tier)-v390TierRank(b.tier))||((b.daysAny||0)-(a.daysAny||0)));
+  const comingDue=(Array.isArray(d.proactiveWatch)?d.proactiveWatch:rows.filter(r=>r.health==='Green'&&r.daysUntilYellow!=null&&r.daysUntilYellow<=7)).slice().sort((a,b)=>(a.daysUntilYellow??99)-(b.daysUntilYellow??99));
+  const growth=rows.filter(r=>r.next_growth_opportunity).sort((a,b)=>v390TierRank(a.tier)-v390TierRank(b.tier));
+  const meetingRows=Array.isArray(d.meetingRows)?d.meetingRows:[],meetingsDue=meetingRows.filter(r=>!r.compliant);
+  const meetingPct=meetingRows.length?Math.round(((meetingRows.length-meetingsDue.length)/meetingRows.length)*100):0;
+  const missingTopTier=rows.filter(r=>(r.tier==='Channel'||r.tier==='A')&&!r.next_growth_opportunity);
+  const highPotential=Array.isArray(d.highPotential)?d.highPotential:rows.filter(r=>r.high_potential);
+  const workEmpty='<div class="pf390-empty">Nothing here right now.</div>';
+  const legacy=legacyHtml||'<div class="no-data">Reporting data unavailable.</div>';
+  body.innerHTML=`
+    <section class="pf390-panel" data-pf390-panel="overview">
+      ${needsAttention.length?'<div class="pf390-action-banner"><div><strong>'+needsAttention.length+' partner'+(needsAttention.length===1?' needs':'s need')+' attention.</strong><span>Start with the Work List.</span></div><button class="btn-primary" onclick="v390ShowPortfolioView(\'work\')">Open Work List</button></div>':''}
+      <div class="pf390-stat-grid">
+        ${v390Metric('Active Partners',total,'Channel '+tierCounts.Channel+' · A '+tierCounts.A+' · B '+tierCounts.B,"v390ShowPortfolioView('directory')")}
+        ${v390Metric('Needs Attention',needsAttention.length,healthCounts.Red+' red · '+healthCounts.Yellow+' yellow',"v390ShowPortfolioView('work')")}
+        ${v390Metric('Coming Due',comingDue.length,'Reach out before cadence slips',"v390ShowPortfolioView('work')")}
+        ${v390Metric('Growth Opportunities',growth.length,'Documented next moves',"v390ShowPortfolioView('work')")}
+      </div>
+      <div class="pf390-grid-2">
+        <div class="pf390-card"><div class="pf390-card-head"><div><div class="pf390-card-title">Partner Health</div><div class="pf390-card-sub">Click a status to see the names.</div></div><button class="btn-sm" onclick="openPartnerHealthHelp()">How it works</button></div><div class="pf390-health-grid"><div class="pf390-health green" onclick="openPortfolioList('health:Green')"><b>${healthCounts.Green}</b><span>Green</span></div><div class="pf390-health yellow" onclick="openPortfolioList('health:Yellow')"><b>${healthCounts.Yellow}</b><span>Yellow</span></div><div class="pf390-health red" onclick="openPortfolioList('health:Red')"><b>${healthCounts.Red}</b><span>Red</span></div></div></div>
+        <div class="pf390-card"><div class="pf390-card-head"><div><div class="pf390-card-title">Growth &amp; Meetings</div><div class="pf390-card-sub">The few numbers Amanda needs to manage relationships.</div></div></div><div class="pf390-simple-list">${v390SimpleRow('Growth opportunities documented',growth.length+' / '+total,total?Math.round(growth.length/total*100)+'% of portfolio':null)}${v390SimpleRow('Formal meetings due',meetingsDue.length,meetingRows.length?meetingPct+'% currently on cadence':'No cadence population')}${v390SimpleRow('Channel / A missing a next move',missingTopTier.length,missingTopTier.length?'Add a growth opportunity when you next connect':'All covered')}${v390SimpleRow('High-potential partners',highPotential.length,'Keep these relationships visible')}</div></div>
+      </div>
+      <details id="pf390ReportingAdmin" class="pf390-reporting" ${reportingWasOpen?'open':''}><summary><span>Reporting &amp; Admin <span class="pf390-reporting-copy">Scorecard, Power BI audit, diagnostics and leadership detail</span></span></summary><div class="pf390-reporting-inner">${v390PeriodControls()}<div class="pf390-reporting-heading">Power BI Source + Portfolio Reconciliation, scorecard &amp; diagnostics</div>${legacy}</div></details>
+    </section>
+    <section class="pf390-panel" data-pf390-panel="work">
+      <div class="pf390-section-head"><div><div class="pf390-section-title">Work My Portfolio</div><div class="pf390-section-sub">Start here. Work top to bottom, then move on.</div></div><button class="btn-sm" onclick="v390ShowPortfolioView('overview')">Back to Overview</button></div>
+      <div class="pf390-work-grid">
+        <div class="pf390-work-card"><div class="pf390-work-head"><div><strong>Needs Attention</strong><small>Red first, then Yellow.</small></div><span class="pf390-count">${needsAttention.length}</span></div><div class="pf390-work-body">${needsAttention.length?needsAttention.slice(0,25).map(r=>v390PersonRow(r,'attention')).join(''):workEmpty}</div></div>
+        <div class="pf390-work-card"><div class="pf390-work-head"><div><strong>Coming Due</strong><small>Green today, but close to slipping.</small></div><span class="pf390-count">${comingDue.length}</span></div><div class="pf390-work-body">${comingDue.length?comingDue.slice(0,25).map(r=>v390PersonRow(r,'due')).join(''):workEmpty}</div></div>
+        <div class="pf390-work-card"><div class="pf390-work-head"><div><strong>Growth Opportunities</strong><small>Partners with a documented next move.</small></div><span class="pf390-count">${growth.length}</span></div><div class="pf390-work-body">${growth.length?growth.slice(0,25).map(r=>v390PersonRow(r,'growth')).join(''):workEmpty}</div></div>
+      </div>
+    </section>
+    <section class="pf390-panel" data-pf390-panel="directory">
+      <div class="pf390-section-head"><div><div class="pf390-section-title">All Partners</div><div class="pf390-section-sub"><span id="pf390DirectoryCount">${total} partners</span> · Search the full managed book.</div></div><button class="btn-sm" onclick="v390ShowPortfolioView('overview')">Back to Overview</button></div>
+      <div class="pf390-directory-controls"><input id="pf390DirectorySearch" oninput="v390FilterPortfolioDirectory()" placeholder="Search partner or next move..."><select id="pf390DirectoryTier" onchange="v390FilterPortfolioDirectory()"><option value="all">All tiers</option><option>Channel</option><option>A</option><option>B</option><option>C</option><option>No Tier</option></select><select id="pf390DirectoryHealth" onchange="v390FilterPortfolioDirectory()"><option value="all">All health</option><option>Red</option><option>Yellow</option><option>Green</option></select></div>
+      <div class="pf390-directory-table"><div class="pf390-directory-head"><div>Partner</div><div>Tier</div><div>Health</div><div>Last touch</div><div>Last lead</div><div>Next move</div><div></div></div><div id="pf390DirectoryRows">${rows.slice().sort((a,b)=>v390TierRank(a.tier)-v390TierRank(b.tier)||String(a.name||'').localeCompare(String(b.name||''))).map(v390DirectoryRow).join('')||workEmpty}</div></div>
+    </section>`;
+  v390ShowPortfolioView(window._pf390PortfolioView||'overview');
+}
+window.v390RenderSimplePortfolio=v390RenderSimplePortfolio;
+
+async function v390LoadPortfolioReview(){
+  v390InstallPortfolioShell();
+  const reportingWasOpen=!!document.getElementById('pf390ReportingAdmin')?.open;
+  const currentView=window._pf390PortfolioView||'overview';
+  const body=document.getElementById('portfolioReviewBody');
+  if(typeof v390BasePortfolioLoader!=='function'){if(body)body.innerHTML='<div class="no-data">Portfolio loader unavailable.</div>';return}
+  await v390BasePortfolioLoader.apply(this,arguments);
+  const legacyHtml=body?body.innerHTML:'';
+  v390RenderSimplePortfolio(legacyHtml,reportingWasOpen);
+  v390ShowPortfolioView(currentView);
+}
+window.loadPortfolioReview=v390LoadPortfolioReview;
+
+function boot(){
+  if(!v390InstallPortfolioShell())return;
+  const view=document.getElementById('view-portfolio');
+  if(view&&view.classList.contains('active'))setTimeout(()=>v390LoadPortfolioReview(),50);
+  else v390ShowPortfolioView(window._pf390PortfolioView||'overview');
+}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
+})();
+</script>
+
+<!-- v392: Director ownership + recency authority. Director View separates Nyny activity credit from team relationship activity, prevents stale-lead false alarms, and counts act_type/act_date logs correctly. -->
+<style id="rm-v392-director-css">
+.rm392-status{display:inline-flex;align-items:center;gap:5px;padding:4px 8px;border-radius:999px;font-size:10px;font-weight:800;white-space:nowrap}
+.rm392-status.recent{background:#EDF7F0;color:#35644A;border:1px solid #CDE3D4}
+.rm392-status.healthy{background:#F2F5F2;color:#52625A;border:1px solid #DDE4DF}
+.rm392-status.due{background:#FFF8E9;color:#8B672E;border:1px solid #EAD7AE}
+.rm392-status.attention{background:#FFF0EE;color:#9A4E45;border:1px solid #E8C9C4}
+.rm392-touch-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:8px}
+.rm392-touch{background:#F7F8F6;border:1px solid #E2E5E1;border-radius:8px;padding:7px 8px;font-size:10.5px;line-height:1.35;color:#56625C}
+.rm392-touch b{display:block;color:#34453C;font-size:10px;margin-bottom:2px}
+.rm392-book-reason{margin-top:7px;font-size:10.5px;line-height:1.4;color:#68736D}
+.rm392-score-note{margin-top:10px;padding:9px 10px;border-radius:9px;background:#F4F6F3;border:1px solid #E0E5E1;color:#50605A;font-size:10.5px;line-height:1.4}
+</style>
+<script id="rm-v392-director-ownership-recency">
+(function(){
+'use strict';
+function v392Norm(v){return String(v||'').trim().toLowerCase().replace(/\s+/g,' ')}
+function v392Date(raw){if(!raw)return null;const d=new Date(String(raw).slice(0,10)+'T12:00:00');return isNaN(d)?null:d}
+function v392Days(raw,todayStr){const a=v392Date(raw),b=v392Date(todayStr);if(!a||!b)return null;return Math.max(0,Math.floor((b-a)/86400000))}
+function v392ActDate(a){return String((a&&a.act_date)||(a&&a.activity_date)||(a&&a.date)||(a&&a.created_at)||'').slice(0,10)}
+function v392ActType(a){return String((a&&a.act_type)||(a&&a.activity_type)||(a&&a.type)||(a&&a.activity)||'').trim()}
+function v392Credits(a,person){
+  try{if(typeof activityCreditsPerson==='function')return !!activityCreditsPerson(a,person)}catch(e){}
+  const want=v392Norm(person), direct=v392Norm((a&&a.rm_owner)||(a&&a.owner)||(a&&a.performed_by)||(a&&a.logged_by)||(a&&a.rm));
+  if(direct===want)return true;
+  const n=String(a&&a.notes||'').toLowerCase();return want==='nyny'&&(/rm_attendees[^\]]*nyny|rm\(s\):\s*nyny/.test(n));
+}
+function v392Meaningful(a){
+  if(!a)return false;const type=v392ActType(a);if(/trigger|new contract|clear to close/i.test(type))return false;
+  try{if(typeof isMeaningfulOutcome==='function')return !!isMeaningfulOutcome(a.outcome,typeof NOT_MEANINGFUL_RM_OUTCOMES!=='undefined'?NOT_MEANINGFUL_RM_OUTCOMES:[],type)}catch(e){}
+  if(['Partner Meeting','Break Breads','Strategic Partner Meeting','Channel Meeting','Retention Meeting','New Realtor Meeting','Team / Office Presentation'].includes(type))return true;
+  const out=v392Norm(a.outcome);if(!out||/no answer|left voicemail|left vm|voicemail|sent text|meeting scheduled|internal manager note/.test(out))return false;return true;
+}
+function v392Newest(a,b){if(!a)return b||null;if(!b)return a||null;return String(a)>String(b)?a:b}
+function v392OwnerMap(rows){const m={};(rows||[]).forEach(o=>{const k=v392Norm(o&&o.agent_name);if(k)m[k]=o});return m}
+function v392TouchDates(name,acts,profile){
+  const k=v392Norm(name);let director=null,team=null;
+  (acts||[]).forEach(a=>{if(v392Norm(a&&a.agent_name)!==k||!v392Meaningful(a))return;const d=v392ActDate(a);if(!d)return;team=v392Newest(team,d);if(v392Credits(a,'Nyny'))director=v392Newest(director,d)});
+  const profileTeam=profile&&profile.last_meaningful_contact_date?String(profile.last_meaningful_contact_date).slice(0,10):null;
+  team=v392Newest(team,profileTeam);
+  return {director,team};
+}
+function v392ExplicitRisk(p,insights,todayStr){
+  const reasons=[],low=s=>v392Norm(s);const sat=(p&&p.satisfaction_rating!==''&&p&&p.satisfaction_rating!=null)?Number(p.satisfaction_rating):null;
+  if(p&&(p.competitor_risk_flag===true||String(p.competitor_risk_flag).toLowerCase()==='true'))reasons.push('Competitor risk flagged');
+  if(Number.isFinite(sat)&&sat<=2)reasons.push('Low satisfaction ('+sat+'/5)');
+  if(/confirmed|lost recent|another lender|gaining share/.test(low(p&&p.referral_leakage_notes)))reasons.push('Referral leakage documented');
+  if(/service|communication|closing|friction|concern|unhappy/.test(low(p&&p.partner_pain_points)))reasons.push('Service / relationship concern');
+  const ins=(insights||[]).find(i=>v392Norm(i&&i.agent_name)===v392Norm(p&&p.agent_name)&&String(i&&i.status||'open').toLowerCase()!=='resolved'&&/retention|service|competitor|risk/i.test(String(i&&i.insight_type||'')));
+  if(ins)reasons.push(ins.insight_type||'Director risk insight');
+  if(p&&p.next_meeting_date){const md=v392Date(p.next_meeting_date),td=v392Date(todayStr);if(md&&td&&md<td)reasons.push('Strategic meeting is overdue')}
+  return reasons;
+}
+function v392BuildDirectorModel(profiles,assignments,acts,insights,todayStr){
+  const owners=v392OwnerMap(assignments),rows=[];const thresholds={CHANNEL:[14,21],A:[14,21],B:[30,45]};
+  (profiles||[]).forEach(p=>{
+    if(!p||!p.agent_name)return;const tier=String(p.tier||p.powerbi_level||'').toUpperCase();if(!['CHANNEL','A','B'].includes(tier))return;
+    if(p.do_not_contact===true||String(p.relationship_status||'active').toLowerCase()==='inactive')return;
+    const own=v392Norm((owners[v392Norm(p.agent_name)]||{}).rm);if(own!=='nyny')return;
+    if(String(p.relationship_type||'realtor').toLowerCase()==='strategic_partner')return;
+    const t=v392TouchDates(p.agent_name,acts,p),directorDays=v392Days(t.director,todayStr),teamDays=v392Days(t.team,todayStr),pair=thresholds[tier],risks=v392ExplicitRisk(p,insights,todayStr);
+    let status='Healthy',tone='healthy',reason='Relationship is within cadence.';
+    if(risks.length){status='Needs Attention';tone='attention';reason=risks.join(' · ')}
+    else if(teamDays===null||teamDays>=pair[1]){status='Needs Attention';tone='attention';reason=teamDays===null?'No meaningful team touch recorded':teamDays+'d since meaningful team touch'}
+    else if(teamDays<=7){status='Recently Touched';tone='recent';reason=(directorDays!==null&&directorDays<=7)?'You touched this relationship recently.':'Team touched this relationship recently.'}
+    else if(teamDays>=pair[0]){status='Coming Due';tone='due';reason=teamDays+'d since meaningful team touch · cadence is approaching'}
+    rows.push({name:p.agent_name,tier,status,tone,reason,directorLast:t.director,directorDays,teamLast:t.team,teamDays,profile:p,risks});
+  });
+  const order={'Needs Attention':0,'Coming Due':1,'Recently Touched':2,'Healthy':3};rows.sort((a,b)=>order[a.status]-order[b.status]||(b.teamDays||0)-(a.teamDays||0)||String(a.name).localeCompare(String(b.name)));
+  const counts={needs:0,due:0,recent:0,healthy:0};rows.forEach(r=>{if(r.status==='Needs Attention')counts.needs++;else if(r.status==='Coming Due')counts.due++;else if(r.status==='Recently Touched')counts.recent++;else counts.healthy++});
+  return {rows,counts};
+}
+function v392DirectorActivityCounts(acts,todayStr){
+  const td=v392Date(todayStr)||new Date(),ym=td.getFullYear()+'-'+String(td.getMonth()+1).padStart(2,'0');
+  const mine=(acts||[]).filter(a=>v392Credits(a,'Nyny')&&v392ActDate(a).slice(0,7)===ym);
+  const partnerTypes=['New Realtor Meeting','Partner Meeting','Break Breads','Strategic Partner Meeting','Channel Meeting','Retention Meeting','Team / Office Presentation'];
+  const leadershipTypes=['Amanda Coaching / Development','RM Scorecard Review','RM Portfolio Review','RM Process Improvement','Tracker / System Development','RM Training','RM Leadership Escalation Support'];
+  return {
+    partnerMeetings:mine.filter(a=>partnerTypes.includes(v392ActType(a))).length,
+    strategicMeetings:mine.filter(a=>['Strategic Partner Meeting','Channel Meeting','Retention Meeting'].includes(v392ActType(a))).length,
+    leadership:mine.filter(a=>leadershipTypes.includes(v392ActType(a))).length,
+    meaningfulTouches:mine.filter(v392Meaningful).length,
+    all:mine
+  };
+}
+window.v392BuildDirectorModel=v392BuildDirectorModel;
+window.v392DirectorActivityCounts=v392DirectorActivityCounts;
+
+function v392Fmt(last,days){if(!last)return 'None logged';return String(last).slice(0,10)+(days===0?' · today':days!=null?' · '+days+'d ago':'')}
+function v392Safe(s){return String(s||'').replace(/\\/g,'\\\\').replace(/'/g,"\\'")}
+function v392StatusBadge(r){return '<span class="rm392-status '+r.tone+'">'+escHtml(r.status)+'</span>'}
+function v392BookCard(r){const p=r.profile||{},safe=v392Safe(r.name),next=String(p.next_growth_opportunity||'').trim();return '<div class="rm359-book-row"><div class="rm359-book-top"><div class="rm359-book-name">'+escHtml(typeof properCase==='function'?properCase(r.name):r.name)+'</div>'+v392StatusBadge(r)+'</div><div class="rm359-book-meta">'+escHtml(r.tier)+' · '+(next?'<strong>Next move:</strong> '+escHtml(next):'<strong>Next move:</strong> not documented')+'</div><div class="rm392-touch-grid"><div class="rm392-touch"><b>Last Director Touch</b>'+escHtml(v392Fmt(r.directorLast,r.directorDays))+'</div><div class="rm392-touch"><b>Last Team Touch</b>'+escHtml(v392Fmt(r.teamLast,r.teamDays))+'</div></div><div class="rm392-book-reason">'+escHtml(r.reason)+'</div><div class="rm359-book-actions"><button onclick="v98OpenDirectorHistory(\''+safe+'\')">History</button><button class="primary" onclick="v98DirectorLog(\''+safe+'\',\'Nyny\',\'Partner Meeting\')">Log my touch</button><button onclick="wpOpenContact(\''+safe+'\')">Plan</button></div></div>'}
+function v392Metric(n,label,tone){return '<button class="v92-metric-btn '+(tone||'good')+'" type="button" onclick="rm359Go(\'rm359MyBook\')"><span class="n">'+Number(n||0)+'</span><span class="l">'+escHtml(label)+'</span></button>'}
+function v392PatchDirectorView(){
+  const S=window.V92_STATE||{};if(!S.sets)return;const todayStr=(typeof today==='function'?today():new Date().toISOString().slice(0,10));
+  const model=v392BuildDirectorModel(S.profiles||[],S.assignments||[],S.acts||[],S.insights||[],todayStr);window.V392_DIRECTOR_MODEL=model;
+  const incoming=((S.sets.grads||[]).length+(S.sets.openFlags||[]).length+(S.sets.highInsights||[]).filter(i=>!model.rows.some(r=>v392Norm(r.name)===v392Norm(i.agent_name))).length);
+  const gs=document.getElementById('v95DirectorGreetingSub');if(gs)gs.textContent=model.counts.needs+' of your relationships need attention · '+model.counts.recent+' recently touched · '+incoming+' incoming/team item'+(incoming===1?'':'s');
+  const metrics=document.getElementById('v91DirectorMetrics');if(metrics)metrics.innerHTML=v392Metric(model.counts.needs,'Needs Attention',model.counts.needs?'risk':'good')+v392Metric(model.counts.due,'Coming Due',model.counts.due?'warn':'good')+v392Metric(model.counts.recent,'Recently Touched','good')+v392Metric(model.counts.healthy,'Healthy','good')+v392Metric(incoming,'Incoming / Team','good');
+  const pf=document.getElementById('v92PortfolioMetrics');if(pf)pf.innerHTML=v92PortfolioTile('nynyBook',model.rows.length,'My A / B / Channel','Nyny-owned only')+v92PortfolioTile('nynyBook',model.counts.recent,'Recently touched','Team relationship is active')+v92PortfolioTile('nynyBook',model.counts.healthy,'Healthy','Within cadence')+v92PortfolioTile('nynyBook',model.counts.due,'Coming due','Plan the next move')+v92PortfolioTile('nynyBook',model.counts.needs,'Needs attention','True due / risk only')+v92PortfolioTile('grads',(S.sets.grads||[]).length,'Warm handoffs','Transition work');
+  const prio=document.getElementById('v91DirectorPriorityList');if(prio){const q=model.rows.filter(r=>r.status==='Needs Attention'||r.status==='Coming Due');prio.innerHTML=q.length?q.slice(0,12).map(r=>v92Row(r.name,r.reason,r.status,r.status==='Needs Attention'?'risk':'warn')).join(''):'<div class="v91-empty">Your Director-owned book is current. No relationship is genuinely due right now.</div>'}
+  const book=document.getElementById('rm359MyBookList');if(book)book.innerHTML=model.rows.length?model.rows.map(v392BookCard).join(''):'<div class="v91-empty">No Nyny-owned A/B/Channel relationships were found in the current shared roster.</div>';
+  const c=v392DirectorActivityCounts(S.acts||[],todayStr),score=document.getElementById('v91DirectorScorecardBody');if(score){
+    const counts={Channel:(S.sets.channel||[]).length,A:(S.sets.tierA||[]).length,B:(S.sets.tierB||[]).length};let tierHtml='';
+    try{const target=danielTierMilestone(new Date()),pts=danielTierCountScore(counts,target);tierHtml='<div style="margin-bottom:10px;padding:10px 11px;border:1px solid #D8D1EE;border-radius:10px;background:#FAF8FD"><div style="font-size:10px;font-weight:850;color:var(--brand-dark);text-transform:uppercase">Tier Growth · '+escHtml(target.label)+'</div><div style="font-size:12px;color:var(--text-2);margin-top:4px">Channel '+counts.Channel+'/'+target.Channel+' · A '+counts.A+'/'+target.A+' · B '+counts.B+'/'+target.B+' · <strong>'+pts.total.toFixed(1)+'/50 pts</strong></div><div style="font-size:9.5px;color:var(--text-4);margin-top:3px">'+escHtml(danielTierDefinitionCopy())+'</div></div>'}catch(e){}
+    score.innerHTML=tierHtml+'<div class="v91-score-grid"><div class="v91-score-item"><strong>'+c.partnerMeetings+'</strong><span>My partner meetings MTD</span></div><div class="v91-score-item"><strong>'+c.meaningfulTouches+'</strong><span>My meaningful relationship touches MTD</span></div><div class="v91-score-item"><strong>'+c.strategicMeetings+'</strong><span>My strategic / Channel / retention meetings</span></div><div class="v91-score-item"><strong>'+c.leadership+'</strong><span>My Director leadership activities</span></div></div><div class="rm392-score-note"><strong>Credit rule:</strong> only activity that actually credits Nyny counts in these four tiles. Amanda/team touches can keep a relationship healthy, but they do not inflate your Director activity totals.</div>';
+  }
+  try{if(typeof v119ProtectHtml==='function'){const ret=document.getElementById('v91RetentionList');if(ret)ret.innerHTML=v119ProtectHtml()}}catch(e){}
+}
+window.v392PatchDirectorView=v392PatchDirectorView;
+
+// Correct legacy Director helpers that omitted the RM tracker's canonical act_type / act_date fields.
+window.v91ActivityType=function(r){return v392ActType(r)};
+window.v94LatestActivityFor=function(name){const key=typeof ownerKey==='function'?ownerKey(name):v392Norm(name),rows=((window.V92_STATE||{}).acts||[]).filter(a=>(typeof ownerKey==='function'?ownerKey(a.agent_name||a.name||''):v392Norm(a.agent_name||a.name||''))===key&&!/\[TXN_TRIGGER\]/i.test(String(a.notes||'')));rows.sort((a,b)=>v392ActDate(b).localeCompare(v392ActDate(a)));return rows[0]||null};
+
+// Protect view: relationship health uses the freshest meaningful TEAM touch; cards still expose Nyny's own touch separately.
+window.v119RiskModel=function(p,state){
+  const todayStr=(typeof today==='function'?today():new Date().toISOString().slice(0,10)),touch=v392TouchDates(p.agent_name,(state&&state.acts)||[],p),teamDays=v392Days(touch.team,todayStr),directorDays=v392Days(touch.director,todayStr),tier=String(p.tier||'').toUpperCase(),pair=(tier==='CHANNEL'||tier==='A')?[14,21]:tier==='B'?[30,45]:[60,90],explicit=v392ExplicitRisk(p,(state&&state.insights)||[],todayStr);
+  const activeReasons=explicit.slice();if(!activeReasons.length&&(teamDays===null||teamDays>=pair[1]))activeReasons.push(teamDays===null?'No meaningful team touch recorded':teamDays+'d since meaningful team touch');
+  const watchReasons=[];if(!activeReasons.length&&teamDays!==null&&teamDays>=pair[0])watchReasons.push(teamDays+'d since meaningful team touch · cadence approaching');
+  const sat=(p.satisfaction_rating!==''&&p.satisfaction_rating!=null)?Number(p.satisfaction_rating):null,leak=v392Norm(p.referral_leakage_notes);if(!activeReasons.length&&Number.isFinite(sat)&&sat===3)watchReasons.push('Satisfaction is neutral (3/5)');if(!activeReasons.length&&/suspect|sometimes|other lender/.test(leak))watchReasons.push('Possible lender leakage');
+  const recovery=String(p.recovery_plan||'').trim(),active=activeReasons.length>0,watch=!active&&watchReasons.length>0;
+  return {active,watch,reasons:active?activeReasons:watchReasons,last:touch.team,days:teamDays,directorLast:touch.director,directorDays,recovery,status:active?(recovery?'Save plan on file':'Needs attention'):(watch?'Coming due':'Healthy')};
+};
+window.v119ProtectCard=function(p,m){const n=String(p.agent_name||''),safe=typeof v92Js==='function'?v92Js(n):v392Safe(n),tier=String(p.tier||'—'),reason=(m.reasons||[]).join(' · ')||'No active risk signal',lead=p.latest_lead_date?String(p.latest_lead_date).slice(0,10):'None documented',sat=(p.satisfaction_rating!==undefined&&p.satisfaction_rating!==null&&String(p.satisfaction_rating)!=='')?p.satisfaction_rating+'/5':'Not set';return '<div class="v119-risk-card '+(m.active?'active':'watch')+'"><div class="v119-risk-head"><div><div class="v119-risk-name">'+escHtml(properCase(n))+' · '+escHtml(tier)+'</div><div style="font-size:11.5px;color:#68756e;margin-top:3px">'+escHtml(reason)+'</div></div><span class="v119-risk-chip '+(m.active?'active':'watch')+'">'+escHtml(m.status)+'</span></div><div class="v119-risk-grid"><div><b>Last Director Touch:</b> '+escHtml(v392Fmt(m.directorLast,m.directorDays))+'</div><div><b>Last Team Touch:</b> '+escHtml(v392Fmt(m.last,m.days))+'</div><div><b>Latest lead:</b> '+escHtml(lead)+'</div><div><b>Satisfaction:</b> '+escHtml(String(sat))+'</div>'+(m.recovery?'<div style="grid-column:1/-1"><b>Recovery plan:</b> '+escHtml(m.recovery)+'</div>':'')+'</div><div style="margin-top:8px;padding:8px 9px;border-radius:8px;background:#f7faf7;border:1px solid #dfe8e1;font-size:11.5px;line-height:1.4;color:#43574c"><b>Why surfaced:</b> '+escHtml(reason)+'</div><div class="v119-risk-actions"><button onclick="v92OpenHistory(\''+safe+'\')">History</button><button class="primary" onclick="v98DirectorLog(\''+safe+'\',\'Nyny\',\'Retention Meeting\')">Log my touch</button><button onclick="v101OpenFaceTimeModal(\''+safe+'\',\'\',\'\')">Schedule Face Time</button><button class="warn" onclick="wpOpenContact(\''+safe+'\')">'+(m.recovery?'Update save plan':'Create save plan')+'</button></div></div>'};
+
+const v392BaseDirectorLoader=window.v91LoadDirectorOS;
+if(typeof v392BaseDirectorLoader==='function'&&!v392BaseDirectorLoader.__v392){
+  const wrapped=async function(){const r=await v392BaseDirectorLoader.apply(this,arguments);v392PatchDirectorView();return r};wrapped.__v392=true;window.v91LoadDirectorOS=wrapped;
+}
+const v392BaseRefresh=window.v91RefreshDirectorOS;
+window.v91RefreshDirectorOS=function(){let r;try{if(typeof v392BaseRefresh==='function')r=v392BaseRefresh.apply(this,arguments)}catch(e){}setTimeout(v392PatchDirectorView,220);setTimeout(v392PatchDirectorView,700);return r};
+function v392Boot(){setTimeout(v392PatchDirectorView,800);setTimeout(v392PatchDirectorView,1600)}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',v392Boot,{once:true});else v392Boot();
+})();
+</script>
