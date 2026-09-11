@@ -1,5 +1,5 @@
  
-<!-- v383: RM and LP now share the same five-tile Power BI account summary. Retains the full v381 4-week save/clear fix. -->
+<!-- v384: Daniel's complete 100-point scorecard is mounted first, RM Playbook review is separated from Amanda execution, and the five-tile Power BI summary remains shared with LP. Retains the full v381 4-week save/clear fix. -->
 <!-- v381: 4-week New Realtor follow-ups now save idempotently, verify against Supabase before success, refetch only conversion rows so new saves cannot fall behind a 3000-row cap, and completed campaigns clear from the active queue immediately. -->
 <!-- v342: navigation visibility fix — Today command center no longer remains forced visible when Log Activity, Tuesday Updates, Portfolio, or another tab is selected. -->
 <!-- v335: 4-week conversion completion now performs a guaranteed post-save Supabase refetch so Nyny coverage touches close immediately instead of remaining visually overdue because of an in-flight stale render. -->
@@ -19,14 +19,14 @@
 
 <html lang="en">
 <head>
-<meta content="rm-amanda-account-tiles-v383-20260911" name="version"/>
-<meta content="v383: RM and LP use the same five-tile Power BI account summary: 2 Channel, 17 A, 20 B, 99 C, and 136 total active. Channel remains included in A. Retains every v381 4-week save/clear hardening change." name="build-notes"/>
+<meta content="rm-amanda-complete-daniel-scorecard-v384-20260911" name="version"/>
+<meta content="v384: The RM Scorecard now visibly mounts Daniel's full 100-point result (Tier Growth, Agent-to-Lead and Active Partner Count), keeps the shared five-tile Power BI account summary, separates RM Playbook review from Amanda execution, and retains every v381 4-week save/clear hardening change." name="build-notes"/>
 <meta content="no-cache, no-store, must-revalidate" http-equiv="Cache-Control"/>
 <meta content="no-cache" http-equiv="Pragma"/>
 <meta content="0" http-equiv="Expires"/>
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-<title>RM Tracker · Account Tiles v383</title>
+<title>RM Tracker · Complete Daniel Scorecard v384</title>
 <style id="rm356-prepaint-guard">
 html:not(.rm356-ready) body{opacity:0!important}
 html.rm356-ready body{opacity:1;transition:opacity .08s ease}
@@ -1599,13 +1599,28 @@ body[data-rm-tab="week"] #view-week .v95-amanda-greeting{
 <h1>My RM Scorecard</h1>
 
 </div>
+</div>
+
+<div class="rm-weighted-score" id="rmFinalWeightedScore"><div class="no-data">Loading Daniel’s official score…</div></div>
+
+<section class="rm-playbook-review" aria-labelledby="rmPlaybookReviewTitle">
+<div class="rm-playbook-head"><div><div class="rm-playbook-kicker">RM Playbook Review</div><h2 id="rmPlaybookReviewTitle">Portfolio Health &amp; Action</h2></div><span>Supporting review · not additional scorecard points</span></div>
+<div class="rm-playbook-grid">
+<button type="button" onclick="switchTab('portfolio')"><b>Partner Health</b><small>Protect at-risk relationships</small><em>Open Portfolio</em></button>
+<button type="button" onclick="switchTab('growth')"><b>Growth Opportunities</b><small>Advance documented next moves</small><em>Open Agent Growth</em></button>
+<button type="button" onclick="switchTab('portfolio')"><b>Meeting Cadence</b><small>Review partners due for a meeting</small><em>Open Portfolio</em></button>
+<button type="button" onclick="switchTab('feed')"><b>Support &amp; Escalations</b><small>Review items needing attention</small><em>Open Activity Feed</em></button>
+</div>
+</section>
+
+<div class="rm-execution-head">
+<div><div class="rm-execution-kicker">AMANDA’S EXECUTION</div><h2>Amanda’s Execution</h2><p>Activity supports the outcome score above but does not add extra points.</p></div>
 <div class="period-toggle v254-score-period">
 <button class="ptoggle" id="amScore-wtd" onclick="showAmandaScorecard('wtd')">WTD</button>
 <button class="ptoggle active" id="amScore-mtd" onclick="showAmandaScorecard('mtd')">MTD</button>
 <button class="ptoggle" id="amScore-ytd" onclick="showAmandaScorecard('ytd')">YTD</button>
 </div>
 </div>
-
 <div id="amandaRmScorecardBody"><div class="no-data">Loading scorecard…</div></div>
 </div>
 </div>
@@ -5489,7 +5504,7 @@ async function renderAmandaRmScorecard(){
   const scheduled=data.filter(a=>a.outcome==="Meeting Scheduled").length;
   const meaningful=data.filter(a=>isMeaningfulAmandaContact(a)).length;
   const label=p==="wtd"?"Week to date":p==="ytd"?"Year to date":"Month to date";
-  el.innerHTML='<div style="font-size:10px;color:var(--text-4);margin-bottom:9px">'+label+' · RM performance, with New Realtor Meetings shown as the shared RM Team result</div>'
+  el.innerHTML='<div style="font-size:12px;color:var(--text-3);margin-bottom:10px">'+label+' · Amanda activity, with New Realtor Meetings shown as the shared RM Team result</div>'
     +'<div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px">'
     +amandaScoreTile('Partner meetings',total,goals.total,p==="wtd"?'Weekly operating pace':'Daniel 30+ monthly target','feed')
     +amandaScoreTile('New Realtor meetings · RM Team',rmTeamNew,goals.teamNew,p==="wtd"?'RM Team pace · 5/week':'RM Team Goal · 20/month','new')
@@ -5503,8 +5518,7 @@ async function renderAmandaRmScorecard(){
     +amandaSupportTile('Meetings scheduled',scheduled,'conversion signal','feed')
     +amandaSupportTile('Listing-agent transaction calls',ctc+uc,ctc+' CTC · '+uc+' under contract','feed')
     +amandaSupportTile('Meaningful contacts',meaningful,'actual live/meaningful work','feed')
-    +'</div></div>'
-    +'<div id="amandaTierScorecardInline" style="margin-top:11px;padding-top:10px;border-top:1px solid var(--border-light)"><div class="no-data" style="padding:8px 0">Loading tier score…</div></div>';
+    +'</div></div>';
 
   const tierHost=document.getElementById("amandaTierScorecardInline");
   if(tierHost){
@@ -18387,13 +18401,19 @@ window.rmAuditVisibleButtons=function(){
 <!-- VERIFIED SCORECARD DATA GUARD v3 -->
 <!-- FINAL RM SCORECARD AUTHORITY v4 — ONE DATA ENGINE ONLY -->
 <style id="rm-scorecard-authority-v4-css">
-#rmFinalWeightedScore .rm-v4-source{font-size:9.5px;color:#5D7180;margin-top:5px;line-height:1.4}
+#rmFinalWeightedScore{background:#fff;border:1px solid #DED6EA;border-radius:16px;padding:18px;margin-bottom:14px;box-shadow:0 4px 16px rgba(71,49,104,.06)}
+#rmFinalWeightedScore .rm-weighted-head{display:flex;justify-content:space-between;align-items:flex-start;gap:20px}
+#rmFinalWeightedScore .rm-weighted-kicker,.rm-playbook-kicker,.rm-execution-kicker{font-size:12px;font-weight:850;letter-spacing:.05em;color:#6847A5}
+#rmFinalWeightedScore .rm-weighted-title{font-size:18px;font-weight:850;line-height:1.25;color:#1E1532;margin-top:4px}
+#rmFinalWeightedScore .rm-v4-source{font-size:12px;color:#677782;margin-top:5px;line-height:1.4}
+#rmFinalWeightedScore .rm-weighted-total{font-size:30px;font-weight:900;line-height:1;text-align:right;white-space:nowrap}
+#rmFinalWeightedScore .rm-weighted-total small{display:block;font-size:11px;font-weight:850;letter-spacing:.05em;margin-top:6px}
 #rmFinalWeightedScore .rm-account-strip{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:9px;margin:13px 0}
 #rmFinalWeightedScore .rm-account-tile{position:relative;min-height:82px;display:flex;flex-direction:column;justify-content:center;gap:2px;overflow:hidden;background:#F8FBFC;border:1px solid #DCE7ED;border-radius:11px;padding:11px 13px}
 #rmFinalWeightedScore .rm-account-tile:before{content:"";position:absolute;inset:0 0 auto;height:4px;background:#8DA7B5}
-#rmFinalWeightedScore .rm-account-label{font-size:12px;font-weight:800;line-height:1.2;color:#4C6675}
+#rmFinalWeightedScore .rm-account-label{font-size:14px;font-weight:800;line-height:1.2;color:#4C6675}
 #rmFinalWeightedScore .rm-account-value{font-size:27px;font-weight:900;line-height:1;color:#0B2743}
-#rmFinalWeightedScore .rm-account-note{font-size:10.5px;font-weight:700;line-height:1.2;color:#78568E;margin-top:2px}
+#rmFinalWeightedScore .rm-account-note{font-size:12px;font-weight:700;line-height:1.2;color:#78568E;margin-top:2px}
 #rmFinalWeightedScore .rm-account-channel{background:#FBF8FD;border-color:#DDD0E6}
 #rmFinalWeightedScore .rm-account-channel:before{background:#9B6BB3}
 #rmFinalWeightedScore .rm-account-a:before{background:#2E8B57}
@@ -18403,8 +18423,33 @@ window.rmAuditVisibleButtons=function(){
 #rmFinalWeightedScore .rm-account-total:before{background:#26A7C8}
 #rmFinalWeightedScore .rm-account-total .rm-account-label{color:#C8D8E2}
 #rmFinalWeightedScore .rm-account-total .rm-account-value{color:#FFF}
-@media(max-width:900px){#rmFinalWeightedScore .rm-account-strip{grid-template-columns:repeat(3,minmax(0,1fr))}#rmFinalWeightedScore .rm-account-total{grid-column:span 2}}
-@media(max-width:620px){#rmFinalWeightedScore .rm-account-strip{grid-template-columns:repeat(2,minmax(0,1fr))}#rmFinalWeightedScore .rm-account-tile{min-height:76px;padding:10px 11px}#rmFinalWeightedScore .rm-account-total{grid-column:span 2}}
+#rmFinalWeightedScore .rm-weighted-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+#rmFinalWeightedScore .rm-weighted-metric{min-height:122px;border:1px solid;border-radius:12px;padding:13px;display:flex;flex-direction:column}
+#rmFinalWeightedScore .rm-weighted-metric .weight{font-size:14px;font-weight:850;color:#253342}
+#rmFinalWeightedScore .rm-weighted-metric strong{font-size:24px;line-height:1.1;margin:9px 0 5px;color:#18263A}
+#rmFinalWeightedScore .rm-weighted-metric>span{font-size:12px;line-height:1.4;color:#657683;min-height:34px}
+#rmFinalWeightedScore .rm-weighted-track{height:5px;border-radius:999px;background:rgba(34,48,64,.09);overflow:hidden;margin-top:auto}
+#rmFinalWeightedScore .rm-weighted-track i{display:block;height:100%;border-radius:999px}
+#rmFinalWeightedScore .rm-score-roadmap{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-top:11px}
+#rmFinalWeightedScore .rm-score-milestone{border:1px solid #E4DDED;border-radius:10px;background:#FAF9FC;padding:9px 11px}
+#rmFinalWeightedScore .rm-score-milestone.current{border-color:#8C70BE;background:#F5F0FC;box-shadow:inset 0 0 0 1px #8C70BE}
+#rmFinalWeightedScore .rm-score-milestone b{display:block;font-size:13px;color:#3D3154;margin-bottom:3px}
+#rmFinalWeightedScore .rm-score-milestone span{font-size:12px;color:#697783;line-height:1.3}
+.rm-playbook-review{background:#fff;border:1px solid #DED6EA;border-radius:16px;padding:16px 18px;margin-bottom:14px;box-shadow:0 3px 14px rgba(71,49,104,.04)}
+.rm-playbook-head,.rm-execution-head{display:flex;align-items:flex-start;justify-content:space-between;gap:16px}
+.rm-playbook-head h2,.rm-execution-head h2{font-size:18px;line-height:1.2;color:#1E1532;margin:3px 0 0}
+.rm-playbook-head>span,.rm-execution-head p{font-size:12px;line-height:1.4;color:#6C7884;margin:2px 0 0}
+.rm-playbook-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:9px;margin-top:12px}
+.rm-playbook-grid button{font:inherit;text-align:left;cursor:pointer;background:#FAF9FC;border:1px solid #E5DFEC;border-radius:11px;padding:12px;min-height:100px;display:flex;flex-direction:column;transition:.15s ease}
+.rm-playbook-grid button:hover{transform:translateY(-1px);border-color:#9C86C4;box-shadow:0 5px 14px rgba(75,50,112,.08)}
+.rm-playbook-grid b{font-size:14px;color:#2B203E}
+.rm-playbook-grid small{font-size:12px;line-height:1.4;color:#687580;margin-top:5px}
+.rm-playbook-grid em{font-size:12px;font-style:normal;font-weight:800;color:#6847A5;margin-top:auto;padding-top:8px}
+.rm-execution-head{align-items:center;margin:18px 2px 10px}
+.rm-execution-head>div:first-child{max-width:620px}
+@media(max-width:1000px){#rmFinalWeightedScore .rm-account-strip{grid-template-columns:repeat(3,minmax(0,1fr))}#rmFinalWeightedScore .rm-account-total{grid-column:span 2}#rmFinalWeightedScore .rm-score-roadmap,.rm-playbook-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:760px){#rmFinalWeightedScore .rm-weighted-head,.rm-execution-head{flex-direction:column}#rmFinalWeightedScore .rm-weighted-total{text-align:left}#rmFinalWeightedScore .rm-weighted-grid{grid-template-columns:1fr}.rm-playbook-head{flex-direction:column}.rm-playbook-head>span{margin-top:-8px}}
+@media(max-width:620px){#rmFinalWeightedScore{padding:14px}#rmFinalWeightedScore .rm-account-strip{grid-template-columns:repeat(2,minmax(0,1fr))}#rmFinalWeightedScore .rm-account-tile{min-height:76px;padding:10px 11px}#rmFinalWeightedScore .rm-account-total{grid-column:span 2}#rmFinalWeightedScore .rm-score-roadmap,.rm-playbook-grid{grid-template-columns:1fr}.rm-playbook-grid button{min-height:84px}}
 #amandaTierScorecardInline .v257-tier-total small{display:none!important}
 </style>
 <script id="rm-scorecard-authority-v4-js">
@@ -18539,6 +18584,13 @@ async function paintOfficial(){
   const ratioState=ratio>=1.15?'green':ratio>=.90?'yellow':'red';
   const countState=pb.active>=200?'green':pb.active>=170?'yellow':'red';
   const overall=weighted>=85?'green':weighted>=70?'yellow':'red',c=COLORS[overall];
+  const roadmap=[
+    {label:'9/30 Target',Channel:2,A:14,B:21},
+    {label:'10/31 Target',Channel:2,A:16,B:24},
+    {label:'11/30 Target',Channel:3,A:18,B:27},
+    {label:'12/31 Goal',Channel:4,A:20,B:30}
+  ];
+  const milestoneHtml=roadmap.map(m=>'<div class="rm-score-milestone '+(m.label===target.label?'current':'')+'"><b>'+m.label+'</b><span>'+m.Channel+' Channel · '+m.A+' A · '+m.B+' B</span></div>').join('');
 
   host.className='rm-weighted-score';
   host.innerHTML=
@@ -18551,7 +18603,7 @@ async function paintOfficial(){
       metric('Tier Growth','50%',ts.total,50,ts.pct,target.label+': '+target.Channel+' Channel · '+target.A+' A · '+target.B+' B',tierState)+
       metric('Agent-to-Lead','30%',ratioEarn,30,ratioPct,priorActual+' leads ÷ '+pb.active+' partners = '+ratio.toFixed(2)+' · Goal 1.15',ratioState)+
       metric('Active Partner Count','20%',countEarn,20,countPct,pb.active+' of 200 goal',countState)+
-    '</div>';
+    '</div><div class="rm-score-roadmap" aria-label="Daniel’s tier milestones">'+milestoneHtml+'</div>';
 }
 
 /* Final render wrapper: old page can render first, but this authoritative scorecard paints LAST. */
