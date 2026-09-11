@@ -19743,7 +19743,7 @@ function status(kind){let main='Review',tone='';
   if(kind==='schedule'){const n=scheduleCount();main=n?n+' scheduled':'Open schedule';tone=n?'green':''}
   else if(kind==='calls'){const n=safeCount('#wp230OpenCalls .wp231-side button')||safeCount('#wp230OpenCalls .wp231-file');main=n?n+' open':'Clear';tone=n?'amber':'green'}
   else if(kind==='tuesday'){const n=firstNum(txt($('rmV1TuesdayBadge')));main=n?n+' open':'Clear';tone=n?'amber':'green'}
-  else if(kind==='handoffs'){const h=$('v113LpHost'),n=h?h.querySelectorAll('button').length:0;main=n?n+' action'+(n===1?'':'s'):'Clear';tone=n?'amber':'green'}
+  else if(kind==='handoffs'){const h=$('weekFlagged'),n=h?h.querySelectorAll('[id^="flag-card-"]').length:0;main=n?n+' action'+(n===1?'':'s'):'Clear';tone=n?'amber':'green'}
   else if(kind==='cold'){const n=safeCount('#rmStableNewMeetingHost .v109-prospect')||safeCount('#v109NewMeetingPush .v109-prospect');main=n?n+' ready':'Review';tone=n?'':'amber'}
   else if(kind==='conversion'){const s=txt($('onboardingSub'))+' '+txt(document.querySelector('#onboardingList .v162-conv-summary'));const ov=(s.match(/(\d+)\s+overdue/i)||[])[1],req=(s.match(/(\d+)\s+(?:weekly\s+touch(?:es)?\s+still\s+)?required/i)||[])[1]||(s.match(/(\d+)\s+required/i)||[])[1];if(Number(ov)){main=ov+' overdue';tone='red'}else if(Number(req)){main=req+' remaining';tone='amber'}else{main='Clear';tone='green'}}
   else if(kind==='smart'){const st=window._rmV267BuyerAgentState;let n=0;if(st&&Array.isArray(st.rows))st.rows.forEach(r=>{if(r&&!r.waiting&&r.due)n++});if(!n)n=safeCount('#v267BuyerAgentQueue .v267-row');main=n?n+' due':'Clear';tone=n?'amber':'green'}
@@ -20631,6 +20631,45 @@ function boot(){if(!document.body.classList.contains('rm-director-route'))return
 window.rm373Route=route;window.rm359Go=function(id){const aliases={v91NeedsMe:'snapshot',v91RetentionBoard:'protect',v106TierGrowthCenter:'growth'},hit=aliases[id]?[aliases[id],ROUTES[aliases[id]]]:Object.entries(ROUTES).find(([,r])=>r.section===id);if(hit)return route(hit[0],true);const el=document.getElementById(id);if(el)el.scrollIntoView({behavior:'smooth',block:'start'})};
 const priorRefresh=window.rm359DirectorRefresh;if(typeof priorRefresh==='function'&&!priorRefresh.__rm373){const wrapped=async function(){const result=await priorRefresh.apply(this,arguments);setTimeout(()=>route(current,false),320);return result};wrapped.__rm373=true;window.rm359DirectorRefresh=wrapped}
 window.addEventListener('hashchange',()=>setTimeout(boot,260));if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(boot,500),{once:true});else setTimeout(boot,500);
+})();
+</script>
+<style id="rm-v378-handoff-loading-css">
+#weekFlagged .rm378-state{padding:18px 12px;text-align:center;color:#67617b;font-size:12px;line-height:1.5}
+#weekFlagged .rm378-retry{display:inline-flex;align-items:center;justify-content:center;min-height:42px;margin-top:10px;padding:8px 14px;border:1px solid #d5c9e8;border-radius:9px;background:#fff;color:#65439f;font:700 12px Calibri,Arial,sans-serif;cursor:pointer}
+#weekFlagged .rm378-retry:hover{background:#f7f2ff;border-color:#ad96d0}
+</style>
+<script id="rm-v378-handoff-loading-js">
+(function(){
+'use strict';
+let requestId=0;
+function host(){return document.getElementById('weekFlagged')}
+function stillLoading(el){return !!(el&&/Loading LP handoffs/i.test(String(el.textContent||'')))}
+async function loadNow(){
+  const el=host();if(!el)return;
+  const id=++requestId;
+  el.innerHTML='<div class="rm378-state">Loading LP handoffs…</div>';
+  const slow=setTimeout(function(){if(id===requestId&&stillLoading(el))el.innerHTML='<div class="rm378-state">This is taking longer than expected. We’re still checking the shared handoff list.</div>'},6500);
+  try{
+    if(typeof window.loadFlagged!=='function')throw new Error('Handoff loader unavailable');
+    await Promise.race([
+      Promise.resolve(window.loadFlagged()),
+      new Promise(function(_,reject){setTimeout(function(){reject(new Error('Handoff request timed out'))},23000)})
+    ]);
+    clearTimeout(slow);
+    if(id===requestId&&stillLoading(el))el.innerHTML='<div class="rm378-state">No open LP handoffs.</div>';
+  }catch(e){
+    clearTimeout(slow);
+    if(id===requestId)el.innerHTML='<div class="rm378-state">LP handoffs could not connect.<br><button type="button" class="rm378-retry" onclick="rm378ReloadHandoffs()">Try again</button></div>';
+    console.warn('LP handoff lane load failed',e);
+  }
+  try{if(typeof window.v350RefreshBoard==='function')window.v350RefreshBoard()}catch(e){}
+}
+window.rm378ReloadHandoffs=loadNow;
+const prior=window.v350OpenLane;
+if(typeof prior==='function'&&!prior.__rm378){
+  const wrapped=function(kind){const result=prior.apply(this,arguments);if(kind==='handoffs')setTimeout(loadNow,40);return result};
+  wrapped.__rm378=true;window.v350OpenLane=wrapped;window.v341OpenLane=wrapped;
+}
 })();
 </script>
 <!-- v374: Director readability, action visibility and scorecard layout repair. Amanda remains untouched. -->
