@@ -16609,7 +16609,7 @@ window.rmAuditVisibleButtons=function(){
     const type=modal.dataset.activityType||'CTC Call',txnId=modal.dataset.txnId||'';
     const val=id=>(document.getElementById(id)?.value||'').trim(),chk=id=>!!document.getElementById(id)?.checked;
     const err=msg=>{const e=document.getElementById('v175TxError');if(e){e.textContent=msg||'';e.classList.toggle('show',!!msg)}};
-    const sides=['Listing'].map(side=>({role:side,name:val('v175Tx'+side+'Agent'),outcome:val('v175Tx'+side+'Outcome'),feedback:val('v175Tx'+side+'Feedback'),textSent:chk('v175Tx'+side+'TextSent'),phone:val('v175Tx'+side+'Phone')})).filter(s=>s.name);
+    const sides=['Buyer','Listing'].map(side=>({role:side,name:val('v175Tx'+side+'Agent'),outcome:val('v175Tx'+side+'Outcome'),feedback:val('v175Tx'+side+'Feedback'),textSent:chk('v175Tx'+side+'TextSent'),phone:val('v175Tx'+side+'Phone')})).filter(s=>s.name);
     if(!val('v175TxBuyerName')&&!val('v175TxProperty'))return err('Buyer/client name or property address is required.');
     if(!sides.length)return err('At least one buyer or listing agent is required.');
     let openSides=[];try{openSides=JSON.parse(modal.dataset.v231OpenSides||'[]')}catch(e){}
@@ -16916,7 +16916,7 @@ window.rmAuditVisibleButtons=function(){
     const type=modal.dataset.activityType||'CTC Call';
     let txnId=modal.dataset.txnId||'';
     const err=msg=>{const e=document.getElementById('v175TxError');if(e){e.textContent=msg||'';e.classList.toggle('show',!!msg)}};
-    const sides=['Listing'].map(side=>({role:side,name:val('v175Tx'+side+'Agent'),outcome:val('v175Tx'+side+'Outcome'),feedback:val('v175Tx'+side+'Feedback'),textSent:chk('v175Tx'+side+'TextSent'),phone:val('v175Tx'+side+'Phone')})).filter(s=>s.name);
+    const sides=['Buyer','Listing'].map(side=>({role:side,name:val('v175Tx'+side+'Agent'),outcome:val('v175Tx'+side+'Outcome'),feedback:val('v175Tx'+side+'Feedback'),textSent:chk('v175Tx'+side+'TextSent'),phone:val('v175Tx'+side+'Phone')})).filter(s=>s.name);
     if(!val('v175TxBuyerName')&&!val('v175TxProperty'))return err('Buyer/client name or property address is required.');
     if(!sides.length)return err('At least one buyer or listing agent is required.');
     if(!txnId&&typeof wp33MakeTxnId==='function')txnId=wp33MakeTxnId(type==='CTC Call'?'Clear to Close':'New Contract',[val('v175TxBuyerName'),val('v175TxProperty')].filter(Boolean).join(' · '),val('v175TxBuyerAgent'),val('v175TxListingAgent'),td());
@@ -18863,9 +18863,19 @@ if(typeof oldBuild==='function'&&!oldBuild.__rmTxnV9){
         return calls.some(c=>{
           if(c.act_type!==callType)return false;
           const cr=roleFn(c.notes),cid=idFn(c.notes);
-          if(tid&&cid&&tid!==cid)return false;
+          // A transaction ID must match exactly. A call with no ID cannot complete a
+          // transaction-specific trigger, even when the same agent appears on another loan.
+          if(tid&&cid!==tid)return false;
           if(!tid&&norm(c.agent_name)!==norm(name))return false;
-          return norm(cr)===norm(role)||norm(cr)==='agent';
+          if(!(norm(cr)===norm(role)||norm(cr)==='agent'))return false;
+          // Reuse the authoritative completion rule: correct agent and date, terminal outcome,
+          // and the required follow-up text for voicemail/no-answer.
+          if(typeof window.wp33CallCompletesTrigger==='function')return window.wp33CallCompletesTrigger(c,trig,role);
+          const status=((String(c.notes||'').match(/\[TXN_STATUS:([^\]]+)\]/i)||[])[1]||'').trim().toLowerCase();
+          const outcome=norm(c.outcome),needsMore=['requires follow-up','needs manager attention','issue / escalation'].includes(outcome);
+          if(norm(c.agent_name)!==norm(name)||String(c.act_date||'')<String(trig.act_date||'')||status==='progress'||status==='pending'||needsMore)return false;
+          if(outcome==='no answer'||outcome==='left voicemail')return /\[TXN_TEXT_SENT:Y\]/i.test(String(c.notes||''))&&status!=='progress';
+          return status==='complete'||['positive','connected','meeting scheduled','remove / no further contact','not interested'].includes(outcome);
         });
       };
       const existing=new Set(rows.map(r=>{
@@ -19371,7 +19381,9 @@ if(typeof priorOpenEdit==='function'){
   try{openEditModal=window.openEditModal}catch(e){}
 }
 
-// Force execution cards to refresh after any Amanda activity POST/PATCH settles in this browser.
+// Activity writes invalidate cached execution data, but they do not redraw the Snapshot here.
+// Each successful save flow owns one deliberate refresh. The former generic redraw raced those
+// save flows and caused cards to flash, jump, or appear to refresh at random during batch work.
 const priorSb=window.sbFetch;
 if(typeof priorSb==='function'&&!priorSb.__v301ActivityRefresh){
   const wrapped=function(path,opts){
@@ -19379,10 +19391,9 @@ if(typeof priorSb==='function'&&!priorSb.__v301ActivityRefresh){
     try{
       const p=String(path||''),method=String(opts&&opts.method||'GET').toUpperCase();
       if(p.indexOf('amanda_activities')>=0&&['POST','PATCH','DELETE'].includes(method)){
-        Promise.resolve(result).then(()=>setTimeout(()=>{
-          try{if(typeof window.v23LoadAmandaSnapshot==='function')window.v23LoadAmandaSnapshot(true)}catch(e){}
+        Promise.resolve(result).then(()=>{
           try{if(window.R){window.R.cache=null;window.R.ts=0}}catch(e){}
-        },120)).catch(()=>{});
+        }).catch(()=>{});
       }
     }catch(e){}
     return result;
