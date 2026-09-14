@@ -1,4 +1,3 @@
- 
 
 <!-- v384: Daniel's complete 100-point scorecard is mounted first, RM Playbook review is separated from Amanda execution, and the five-tile Power BI summary remains shared with LP. Retains the full v381 4-week save/clear fix. -->
 <!-- v381: 4-week New Realtor follow-ups now save idempotently, verify against Supabase before success, refetch only conversion rows so new saves cannot fall behind a 3000-row cap, and completed campaigns clear from the active queue immediately. -->
@@ -6507,11 +6506,11 @@ async function loadFollowups(){
       '<div class="fu-dot" style="background:'+dotC+'"></div>'+
       '<div class="fu-body">'+
         '<div class="fu-name">'+properCase(f.agent_name)+'</div>'+
-        '<div class="fu-meta">'+badgeEmoji(f.act_type)+(f.notes?" · "+escHtml(f.notes.substring(0,45)):"")+'</div>'+
+        '<div class="fu-meta">'+badgeEmoji(f.act_type)+(f.notes?" · "+escHtml((typeof v301CleanVisibleActivityNote==='function'?v301CleanVisibleActivityNote(f.notes):f.notes).substring(0,45)):"")+'</div>'+
         '<div id="fu-edit-'+f.id+'" class="fu-edit-area"><input type="date" id="fu-date-'+f.id+'" value="'+f.follow_up_date+'" style="border:0.5px solid #D9D3C7;border-radius:6px;padding:5px 9px;font-size:12px;margin-right:6px;font-family:inherit"><button class="btn-sm" onclick="saveFollowupDate('+f.id+')">Save</button><button class="btn-sm" onclick="document.getElementById('+"'fu-edit-"+f.id+"'"+').style.display=\'none\'" style="margin-left:4px">Cancel</button></div>'+
         '<div id="fu-log-'+f.id+'" class="fu-inline-log">'+
           '<div style="font-size:11px;font-weight:600;color:#9585C0;margin-bottom:8px">Log outcome for '+properCase(f.agent_name)+'</div>'+
-          (f.notes?'<div style="font-size:11px;color:var(--text-3);background:var(--surface-2);border-radius:6px;padding:7px 10px;margin-bottom:8px;font-style:italic">Previous note: "'+escHtml(f.notes)+'"</div>':'')+
+          (f.notes?'<div style="font-size:11px;color:var(--text-3);background:var(--surface-2);border-radius:6px;padding:7px 10px;margin-bottom:8px;font-style:italic">Previous note: "'+escHtml(typeof v301CleanVisibleActivityNote==='function'?v301CleanVisibleActivityNote(f.notes):f.notes)+'"</div>':'')+
           '<select id="fu-log-type-'+f.id+'">'+ACT_TYPE_OPTIONS+'</select>'+
           '<div class="inline-row"><select id="fu-log-outcome-'+f.id+'"><option value="">Outcome...</option><option>Positive</option><option>Meeting Scheduled</option><option>Requires follow-up</option><option>Needs manager attention</option><option>Remove / No Further Contact</option></select>'+
           '<input type="date" id="fu-log-newfu-'+f.id+'" placeholder="New follow-up date (if needed)"></div>'+
@@ -7091,7 +7090,7 @@ async function showDailyCheckin(viewDateStr){
 
     // ── Still open — things worth actually talking through together. ──
     const openItems=[
-      ...(escToday||[]).map(f=>"⚠️ "+properCase(f.agent_name)+" — "+escHtml(f.act_type)+(f.notes?": "+escHtml(f.notes):"")),
+      ...(escToday||[]).map(f=>"⚠️ "+properCase(f.agent_name)+" — "+escHtml(f.act_type)+(f.notes?": "+escHtml(typeof v301CleanVisibleActivityNote==='function'?v301CleanVisibleActivityNote(f.notes):f.notes):"")),
       ...(amandaOpenFlags.length?["🚩 "+amandaOpenFlags.length+" open LP flag"+(amandaOpenFlags.length!==1?"s":"")+" awaiting Amanda response"]:[])
     ];
 
@@ -7248,7 +7247,7 @@ function showTodayWinsDetail(){
       +'<div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start"><div><div style="font-size:13px;font-weight:600;color:var(--text-1)">'+properCase(w.agent_name)+'</div>'
       +'<div style="font-size:11px;color:var(--text-3);margin-top:1px">'+escHtml(w.act_type||"")+'</div></div>'
       +'<span style="font-size:11px;font-weight:700;color:var(--success);text-align:right">'+escHtml(w.outcome||"")+'</span></div>'
-      +(w.notes?'<div style="font-size:11px;color:var(--text-2);margin-top:5px;line-height:1.4"><strong>Notes:</strong> '+escHtml(w.notes)+'</div>':'<div style="font-size:11px;color:var(--danger);margin-top:5px"><strong>Notes:</strong> none logged</div>')
+      +(w.notes?'<div style="font-size:11px;color:var(--text-2);margin-top:5px;line-height:1.4"><strong>Notes:</strong> '+escHtml(typeof v301CleanVisibleActivityNote==='function'?v301CleanVisibleActivityNote(w.notes):w.notes)+'</div>':'<div style="font-size:11px;color:var(--danger);margin-top:5px"><strong>Notes:</strong> none logged</div>')
       +'<div style="font-size:10.5px;color:'+(w.follow_up_date?'var(--brand-dark)':'var(--text-4)')+';margin-top:4px"><strong>Next:</strong> '+escHtml(next)+'</div>'
       +'</div>';
   }).join("");
@@ -8391,7 +8390,7 @@ function renderRcGroup(list,groupStatus){
             (closesInfo?'<span>'+closesInfo+'</span>':'')+
             '<span>'+lpTouchStr+'</span>'+
             (contactInfo?'<span>'+contactInfo+'</span>':'')+
-            (r.notes?'<span>'+escHtml(r.notes)+'</span>':'')+
+            (r.notes?'<span>'+escHtml(typeof v301CleanVisibleActivityNote==='function'?v301CleanVisibleActivityNote(r.notes):r.notes)+'</span>':'')+
           '</div>'+
         '</div>'+
         '<div class="rc-agent-actions">'+actions+'</div>'+
@@ -8400,7 +8399,7 @@ function renderRcGroup(list,groupStatus){
       '<div id="rc-log-'+rid+'" class="rc-inline-form">'+
         '<div style="font-size:11px;font-weight:600;color:#9585C0;margin-bottom:6px">Log outreach — '+properCase(r.agent_name)+'</div>'+
         '<div style="font-size:11px;color:var(--brand);margin-bottom:8px;font-weight:500">Pull up RETR first — find a recent sale to mention in your opener.</div>'+
-        (r.notes?'<div style="font-size:11px;color:var(--text-3);background:var(--surface-2);border-radius:6px;padding:7px 10px;margin-bottom:8px;font-style:italic">Last note: "'+escHtml(r.notes)+'"</div>':'')+
+        (r.notes?'<div style="font-size:11px;color:var(--text-3);background:var(--surface-2);border-radius:6px;padding:7px 10px;margin-bottom:8px;font-style:italic">Last note: "'+escHtml(typeof v301CleanVisibleActivityNote==='function'?v301CleanVisibleActivityNote(r.notes):r.notes)+'"</div>':'')+
         '<select id="rc-log-type-'+rid+'">'+ACT_TYPE_OPTIONS+'</select>'+
         '<div class="rc-inline-row">'+
           '<select id="rc-log-outcome-'+rid+'"><option value="">Outcome...</option><option>Positive</option><option>Meeting Scheduled</option><option>Requires follow-up</option><option>Needs manager attention</option><option>Remove / No Further Contact</option></select>'+
@@ -10271,7 +10270,7 @@ function renderProspects(list){
     let actHtml="";
     if(acts.length){
       actHtml='<div class="pc-activity-feed"><div class="pc-activity-feed-title">Recent activity</div>';
-      acts.forEach(a=>{actHtml+='<div class="pc-activity-item"><span>'+badgeEmoji(a.act_type)+" "+fmtDate(a.act_date)+(a.outcome?" · "+escHtml(a.outcome):"")+'</span><span style="color:#bbb;font-size:10px;white-space:nowrap">'+(a.notes?escHtml(a.notes.substring(0,40))+"...":"")+'</span></div>';});
+      acts.forEach(a=>{actHtml+='<div class="pc-activity-item"><span>'+badgeEmoji(a.act_type)+" "+fmtDate(a.act_date)+(a.outcome?" · "+escHtml(a.outcome):"")+'</span><span style="color:#bbb;font-size:10px;white-space:nowrap">'+(a.notes?escHtml((typeof v301CleanVisibleActivityNote==='function'?v301CleanVisibleActivityNote(a.notes):a.notes).substring(0,40))+"...":"")+'</span></div>';});
       actHtml+='</div>';
     }
     let html='<div class="prospect-card '+(isDNC?"dnc":(isNFM||isExcluded)?"nfm":"")+'">';
@@ -20207,7 +20206,14 @@ window.rm372Save=async function(){const kind=$('rm372Kind').value,agent=$('rm372
 window.rm372Complete=async function(id){try{const rows=(state().acts||[]),r=rows.find(x=>String(x.id)===String(id));if(!r)return;const n=String(r.notes||'').replace(/\[RI_STATUS:[^\]]*\]/i,'[RI_STATUS:complete]')+' [RI_COMPLETED:'+today2()+']';await sbFetch('amanda_activities?id=eq.'+encodeURIComponent(id),{method:'PATCH',prefer:'return=minimal',body:JSON.stringify({notes:n,outcome:'Completed',follow_up_date:null})});if(typeof window.rm359DirectorRefresh==='function')await window.rm359DirectorRefresh();setTimeout(()=>show(tag(r.notes,'RI_KIND')==='recovery'?'recovery':'commitments'),220)}catch(e){try{toast('Could not complete this item.','error')}catch(x){}}};
 window.rm372Brief=function(name){const p=profile(name),S=state(),acts=(S.acts||[]).filter(a=>K(a.agent_name)===K(name)&&!/TXN_TRIGGER/i.test(a.notes||'')).sort((a,b)=>dateOf(b).localeCompare(dateOf(a))).slice(0,6),openC=records('commitment').filter(r=>K(r.agent_name)===K(name)&&tag(r.notes,'RI_STATUS')!=='complete'),voices=records('voice').filter(r=>K(r.agent_name)===K(name)).slice(0,3),risk=p.competitor_risk_flag===true||String(p.competitor_risk_flag).toLowerCase()==='true';modal('Relationship Intelligence Brief · '+name,'<div class="rm372-brief"><div class="rm372-brief-card"><b>Position</b><p>Owner: '+E(owner(name))+'\nTier: '+E(p.tier||p.powerbi_level||'Not set')+'\nRolling-12: '+Number(p.closes_past_year||0)+' closings · '+Number(p.total_leads_past_year||0)+' leads\nHealth signal: '+(risk?'Competitor / retention risk':'No active competitor flag')+'</p></div><div class="rm372-brief-card"><b>Known strategy</b><p>'+E(p.next_growth_opportunity||'No next growth move documented.')+'</p></div><div class="rm372-brief-card"><b>Partner goals and pain points</b><p>'+E([p.partner_goals,p.partner_pain_points,p.referral_leakage_notes].filter(Boolean).join('\n')||'No structured partner goals or pain points recorded.')+'</p></div><div class="rm372-brief-card"><b>Open commitments</b><p>'+E(openC.map(r=>(tag(r.notes,'RI_DUE')||'No date')+' · '+(tag(r.notes,'RI_VALUE')||r.outcome)).join('\n')||'None recorded.')+'</p></div><div class="rm372-brief-card"><b>Recent partner voice</b><p>'+E(voices.map(r=>(tag(r.notes,'RI_CATEGORY')||'Signal')+' · '+(tag(r.notes,'RI_VALUE')||r.outcome)).join('\n')||'No structured partner voice captured.')+'</p></div><div class="rm372-brief-card"><b>Recent history</b><p>'+E(acts.map(a=>dateOf(a)+' · '+(a.act_type||a.activity_type||'Activity')+' · '+(a.outcome||'')).join('\n')||'No recent activity found.')+'</p></div><div class="rm372-actions"><button class="rm372-btn primary" onclick="rm372Close();v98DirectorLog(\''+safe(name)+'\',\'Nyny\',\'Partner Meeting\')">Log relationship work</button><button class="rm372-btn" onclick="rm372Close();rm372Open(\'commitment\',\''+safe(name)+'\')">Add commitment</button></div></div>')};
 window.rm372CopyReport=async function(){const r=reportText(),text='RELATIONSHIP INTELLIGENCE & CLIENT EXPERIENCE — MONTHLY IMPACT\n\nEXECUTIVE HEADLINE\n'+r.headline+'\n\nVERIFIED OUTCOMES\n'+r.outcomes+'\n\nMARKET & RELATIONSHIP INTELLIGENCE\n'+r.intelligence+'\n\nDIRECTOR LEADERSHIP\n'+r.leadership+'\n\nDECISION / SUPPORT NEEDED\n'+r.ask;try{await navigator.clipboard.writeText(text);toast('Leadership summary copied','success')}catch(e){window.prompt('Copy leadership summary:',text)}};
-function boot(){if(!document.body.classList.contains('rm-director-route'))return;let n=0,t=setInterval(()=>{n++;if(ensure()){clearInterval(t);focusView()}else if(n>30)clearInterval(t)},100)}const old=window.rm359DirectorRefresh;if(typeof old==='function'&&!old.__rm372){const w=async function(){const r=await old.apply(this,arguments);setTimeout(()=>{if($('rm372IntelligenceOS'))show((document.querySelector('#rm372Tabs button.active')||{}).dataset?.v||'focus')},260);return r};w.__rm372=true;window.rm359DirectorRefresh=w}window.addEventListener('hashchange',()=>setTimeout(boot,220));if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(boot,400),{once:true});else setTimeout(boot,400);
+function boot(){if(!document.body.classList.contains('rm-director-route'))return;let n=0,t=setInterval(()=>{n++;if(ensure()){clearInterval(t);focusView()}else if(n>30)clearInterval(t)},100)}
+/* v901 code-quality note: this wrap of window.rm359DirectorRefresh is DEAD CODE at runtime — this
+   script block executes at page-load time, before the real rm359DirectorRefresh is defined further
+   down the document (search v393Refresh below), so `old` is undefined here and `typeof old==='function'`
+   is always false. The intended behavior (re-show the active Intelligence OS tab after any Director
+   refresh) is now implemented directly inside v393Refresh instead, where it actually runs. Left in
+   place rather than deleted so nothing else that might reference `.__rm372` changes behavior. */
+const old=window.rm359DirectorRefresh;if(typeof old==='function'&&!old.__rm372){const w=async function(){const r=await old.apply(this,arguments);setTimeout(()=>{if($('rm372IntelligenceOS'))show((document.querySelector('#rm372Tabs button.active')||{}).dataset?.v||'focus')},260);return r};w.__rm372=true;window.rm359DirectorRefresh=w}window.addEventListener('hashchange',()=>setTimeout(boot,220));if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(boot,400),{once:true});else setTimeout(boot,400);
 })();
 </script>
 <!-- v373: Director Command Center. Presentation/routing only; Amanda tracker remains untouched. -->
@@ -20903,7 +20909,15 @@ var routeMeta={day:['My Day','Who needs your judgment today, and what happens ne
 window.v393Route=function(key){key=routeMeta[key]?key:'day';V393.current=key;document.querySelectorAll('[data-v393-section]').forEach(function(s){s.hidden=s.getAttribute('data-v393-section')!==key});document.querySelectorAll('[data-v393-route]').forEach(function(b){var on=b.getAttribute('data-v393-route')===key;b.classList.toggle('active',on);b.setAttribute('aria-current',on?'page':'false')});var m=routeMeta[key];if($('v393PageTitle'))$('v393PageTitle').textContent=m[0];if($('v393PageSub'))$('v393PageSub').textContent=m[1];if(key==='advanced')setTimeout(function(){renderAdvanced()},0);try{sessionStorage.setItem('v393DirectorRoute',key)}catch(e){}window.scrollTo({top:0,behavior:'smooth'})};
 window.rm359Go=function(id){var map={v91NeedsMe:'day',rm359MyBook:'relationships',v106TierGrowthCenter:'relationships',v91RetentionBoard:'relationships',v107DirectorFaceTimeCard:'relationships',strategicPartnersDirectorCard:'relationships',rm359Incoming:'team',rm367Impact:'results',v91DirectorScorecard:'results',rm359TeamOversight:'team',rm372IntelligenceOS:'advanced'};if(map[id])return v393Route(map[id]);var el=$(id);if(el)el.scrollIntoView({behavior:'smooth',block:'start'})};
 function renderAll(state){var model=relationshipModel(state);window.V393_REL_MODEL=model;renderDay(state,model);renderRelationships(model);renderResults(state);renderTeam(state,model);renderAdvanced();topHeader()}
-async function v393Refresh(force){if(!document.body.classList.contains('rm-director-route')&&location.hash!=='#director')return;var btn=$('v393RefreshBtn');if(btn){btn.disabled=true;btn.textContent='Refreshing…'}try{var s=await v393LoadDirectorState(!!force);renderAll(s);v393Route(V393.current||'day')}catch(e){console.error('v393 Director refresh failed',e);var host=$('v393DayBody');if(host)host.innerHTML='<div class="v393-alert"><b>Director data could not refresh.</b> Your saved work has not been erased. Try Refresh once after the connection recovers.</div>'}finally{if(btn){btn.disabled=false;btn.textContent='Refresh'}}}
+async function v393Refresh(force){if(!document.body.classList.contains('rm-director-route')&&location.hash!=='#director')return;var btn=$('v393RefreshBtn');if(btn){btn.disabled=true;btn.textContent='Refreshing…'}try{var s=await v393LoadDirectorState(!!force);renderAll(s);v393Route(V393.current||'day');
+  // v901: re-show whichever Director Intelligence OS tab (Focus/Pipeline/Commitments/Voice/Recovery/
+  // Career) is currently active so it reflects the refreshed data too. This used to be done by a
+  // wrapper around window.rm359DirectorRefresh (see the rm372 script above), but that wrapper ran at
+  // page-load time BEFORE this function existed yet, so `typeof old==='function'` was always false and
+  // the wrap silently never applied. Doing it here directly means it actually runs, on every refresh,
+  // regardless of load order.
+  try{if(typeof show==='function'&&$('rm372IntelligenceOS')){var activeBtn=document.querySelector('#rm372Tabs button.active');show((activeBtn&&activeBtn.dataset?activeBtn.dataset.v:'')||'focus')}}catch(e){}
+}catch(e){console.error('v393 Director refresh failed',e);var host=$('v393DayBody');if(host)host.innerHTML='<div class="v393-alert"><b>Director data could not refresh.</b> Your saved work has not been erased. Try Refresh once after the connection recovers.</div>'}finally{if(btn){btn.disabled=false;btn.textContent='Refresh'}}}
 window.v393Refresh=v393Refresh;
 window.rm359DirectorRefresh=function(){return v393Refresh(true)};
 window.v91RefreshDirectorOS=function(){return v393Refresh(true)};
