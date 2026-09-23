@@ -8298,7 +8298,7 @@ async function loadPortfolioReview(){
       const daysUntilYellow=[daysToYellowTouch,daysToYellowLead].filter(d=>d!==null).length
         ?Math.min(...[daysToYellowTouch,daysToYellowLead].filter(d=>d!==null))
         :null;
-      return{name,tier,health,daysAny,daysSinceLead,daysUntilYellow,next_growth_opportunity:a.next_growth_opportunity||null,satisfaction:a.satisfaction_rating||null,high_potential:!!a.high_potential_flag,agent:a};
+      return{name,tier,health,daysAny,daysSinceLead,daysUntilYellow,next_growth_opportunity:a.next_growth_opportunity||null,next_growth_due:a.growth_opportunity_deadline||null,satisfaction:a.satisfaction_rating||null,high_potential:!!a.high_potential_flag,agent:a};
     });
     const PROACTIVE_WINDOW_DAYS=7;
     const proactiveWatch=rows.filter(r=>r.health==="Green"&&r.daysUntilYellow!==null&&r.daysUntilYellow<=PROACTIVE_WINDOW_DAYS)
@@ -8343,7 +8343,13 @@ async function loadPortfolioReview(){
     if(leadsMTD===0)scoreDataGaps.push("No Velocify leads found month-to-date.");
     const noTierProduction=active.filter(a=>!a.tier).length;
     if(noTierProduction)scoreDataGaps.push(noTierProduction+" managed partner"+(noTierProduction===1?" has":"s have")+" no qualifying production/lead tier under the current definition.");
-    pfDrillData={rows,migrations,missingGrowthOpp,escalation};
+    pfDrillData={rows,migrations,missingGrowthOpp,escalation,
+      leadership:{snapshotAvailable:!!(v343Meta||v124Snapshot.stamp),snapshotDate:latestPowerBiStamp,
+        tiers:{...officialCountByTier},goals:{Channel:4,A:20,B:30},
+        active:officialTotalActive,leadsMTD,projectedRatio,score:weighted,
+        period:range.label,red:healthCounts.Red,yellow:healthCounts.Yellow,
+        missingNextMove:missingGrowthOpp.length,
+        cToB:migCtoB,bToA:migBtoA,aToChannel:migAtoChannel}};
     const FORMAL_CADENCE={Channel:30,A:30,B:60,C:90};
     const lastPartnerMeeting={};
     allPartnerMeetings.forEach(m=>{const n=(m.agent_name||"").trim().toLowerCase();if(n&&!lastPartnerMeeting[n])lastPartnerMeeting[n]=m.act_date;});
@@ -11663,7 +11669,7 @@ setTimeout(function(){v124MountAudit();v122RenderAudit();},1200);
 </script>
 <script id="v145-ctob-resilient">
 (function(){
-  const STORE='rm_ctob_last_good_direct';let busy=false,mutating=false;
+  const STORE='rm_ctob_last_good_direct';let busy=false,refreshPending=false,mutating=false;
   function key(s){return String(s||'').trim().toLowerCase().replace(/\s+/g,' ');}
   function stored(){try{const x=JSON.parse(localStorage.getItem(STORE)||'null');return x&&Array.isArray(x.rows)?x.rows:[];}catch(e){return[];}}
   function save(rows){try{localStorage.setItem(STORE,JSON.stringify({saved_at:new Date().toISOString(),rows:rows}));}catch(e){}}
@@ -11685,7 +11691,20 @@ setTimeout(function(){v124MountAudit();v122RenderAudit();},1200);
   function ownerFrom(name,p,assignments){try{if(typeof wp18OwnerRecord==='function'&&typeof wp18ResolveOwner==='function'){const recs=wp18OwnerRecord(assignments||[]);return wp18ResolveOwner(name,p,recs,'');}}catch(e){}const ks=key(name),rms=new Set();(assignments||[]).forEach(a=>{if(key(a.agent_name)===ks&&a.rm)rms.add(String(a.rm).trim());});if(rms.has('Amanda')&&!rms.has('Nyny'))return'Amanda';if(rms.has('Nyny'))return'Nyny';return danielTierFromProduction(p)==='C'?'Amanda':'Unassigned';}
   function latestRows(profiles){const all=Array.isArray(profiles)?profiles:[];try{if(typeof v124LatestPowerBiSnapshot==='function'){const s=v124LatestPowerBiSnapshot(all);if(s&&Array.isArray(s.rows)&&s.rows.length)return s.rows;}}catch(e){}const valid=all.filter(p=>p&&String(p.powerbi_level||'').trim());let latest=0;valid.forEach(p=>{const m=Date.parse(p.powerbi_last_seen_at||'');if(Number.isFinite(m)&&m>latest)latest=m;});if(!latest)return valid;const near=valid.filter(p=>{const m=Date.parse(p.powerbi_last_seen_at||'');return Number.isFinite(m)&&Math.abs(m-latest)<120000;});return near.length?near:valid;}
   async function fetchDirect(){if(typeof sbFetch!=='function')throw new Error('Database helper unavailable');let profiles=[];try{profiles=await sbFetch('agent_profiles?select=agent_name,tier,powerbi_level,powerbi_last_seen_at,relationship_status,do_not_contact,relationship_type,next_growth_opportunity,growth_opportunity_deadline,last_meaningful_contact_date,latest_lead_date,competitor_risk_flag,high_potential_flag,satisfaction_rating,closes_past_year,total_leads_past_year&limit=5000');}catch(e){profiles=await sbFetch('agent_profiles?select=agent_name,tier,powerbi_level,powerbi_last_seen_at,relationship_status,do_not_contact,closes_past_year,total_leads_past_year&limit=5000');}const assignments=await sbFetch('agent_assignments?select=agent_name,rm,lp,priority,level&limit=5000').catch(()=>[]);const rows=[];latestRows(profiles).forEach(p=>{if(danielTierFromProduction(p)!=='C'||!p.agent_name)return;if(p.do_not_contact||String(p.relationship_status||'active').toLowerCase()==='inactive'||String(p.relationship_type||'realtor').toLowerCase()==='strategic_partner')return;if(ownerFrom(p.agent_name,p,assignments)!=='Amanda')return;const sc=typeof v106CandidateScore==='function'?v106CandidateScore(p,'B'):{score:Number(p.closes_past_year||0)*1000+Number(p.total_leads_past_year||0)*100,reasons:[],away:Math.max(0,2-Number(p.closes_past_year||0))};rows.push({name:p.agent_name,tier:'C',next:'B',owner:'Amanda',score:Number(sc.score||0),reasons:sc.reasons||[],away:Number(sc.away||0),closes:Number(p.closes_past_year||0),leads:Number(p.total_leads_past_year||0),profile:p});});rows.sort((a,b)=>b.score-a.score||a.away-b.away||String(a.name).localeCompare(String(b.name)));const focus=rows.slice(0,5);try{const activities=await sbFetch('amanda_activities?select=agent_name,act_date&act_date=eq.'+encodeURIComponent(today())+'&limit=500');const touched=new Set((activities||[]).map(a=>key(a.agent_name)));focus.forEach(c=>{c.touchedToday=touched.has(key(c.name));});}catch(e){console.warn('C→B touch status unavailable',e);}return focus;}
-  async function refresh(){const host=document.getElementById('v113GrowthHost');if(!host||busy)return;const last=stored();if(last.length&&!host.querySelector('.v112-growth-card'))render(last,true);busy=true;try{const rows=await Promise.race([fetchDirect(),new Promise((_,rej)=>setTimeout(()=>rej(new Error('C→B direct timeout')),12000))]);if(rows.length){save(rows);render(rows,false);}else if(!host.querySelector('.v112-growth-card')){mutating=true;host.innerHTML='<div class="v113-body-empty">No Amanda-owned C → B candidate is ready right now.</div>';mutating=false;}}catch(e){console.warn('direct C→B loader',e);if(!host.querySelector('.v112-growth-card')){const old=stored();if(old.length)render(old,true);else{mutating=true;host.innerHTML='<div class="v113-body-empty">C → B is refreshing. Click Refresh if this remains blank.</div>';mutating=false;}}}finally{busy=false;}}
+  async function refresh(){
+    const host=document.getElementById('v113GrowthHost');if(!host)return;
+    if(busy){refreshPending=true;return;}
+    const last=stored();if(last.length&&!host.querySelector('.v112-growth-card'))render(last,true);
+    busy=true;
+    try{
+      const rows=await Promise.race([fetchDirect(),new Promise((_,rej)=>setTimeout(()=>rej(new Error('C→B direct timeout')),12000))]);
+      if(rows.length){save(rows);render(rows,false);}
+      else{localStorage.removeItem(STORE);mutating=true;host.innerHTML='<div class="v113-body-empty">No Amanda-owned C → B candidate is ready right now.</div>';mutating=false;}
+    }catch(e){
+      console.warn('direct C→B loader',e);
+      if(!host.querySelector('.v112-growth-card')){const old=stored();if(old.length)render(old,true);else{mutating=true;host.innerHTML='<div class="v113-body-empty">C → B is refreshing. Click Refresh if this remains blank.</div>';mutating=false;}}
+    }finally{busy=false;if(refreshPending){refreshPending=false;queueMicrotask(refresh);}}
+  }
   window.v145RefreshCtoB=refresh;window.v134EnsureGrowthVisible=refresh;
   function start(){setTimeout(refresh,800);}if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start,{once:true});else start();
 })();
@@ -18500,6 +18519,10 @@ else setTimeout(boot,120);
 .pf390-reporting>summary::-webkit-details-marker{display:none}.pf390-reporting>summary:after{content:'Show';font-size:10px;color:var(--brand);background:#EFEAF7;border-radius:20px;padding:4px 8px}.pf390-reporting[open]>summary:after{content:'Hide'}
 .pf390-reporting-copy{font-size:10.5px;color:var(--text-4);font-weight:500;margin-left:6px}
 .pf390-reporting-inner{padding:12px;background:#F9F8FB}.pf390-reporting-inner>.card:first-of-type{margin-top:10px}
+.pf390-leadership{border:1px solid #D9C8EC;background:linear-gradient(110deg,#FBF8FF,#FFFFFF);border-radius:13px;padding:16px;margin-bottom:14px}
+.pf390-leadership-head{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:start;margin-bottom:12px}.pf390-leadership-head strong{font-size:16px;color:#322246}.pf390-leadership-head small{display:block;font-size:11px;color:#665873;margin-top:4px;line-height:1.45}.pf390-leadership-stamp{font-size:10px;color:#716481}
+.pf390-goal-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}.pf390-goal{padding:11px;border:1px solid #E9E0F0;border-radius:9px;background:#fff}.pf390-goal b{font-size:19px;color:#392653}.pf390-goal small{display:block;color:#665873;font-size:10px;margin-top:3px}.pf390-goal-title{font-size:11px;font-weight:800;color:#4C3865;margin-bottom:5px}.pf390-brief{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:10px}.pf390-brief div{background:#F5F0FA;border-radius:8px;padding:9px;font-size:11px;line-height:1.45}.pf390-brief strong{display:block;color:#352549;margin-bottom:3px}.pf390-leadership-note{font-size:10px;color:#6F6479;line-height:1.5;margin-top:9px}
+@media(max-width:780px){.pf390-goal-grid,.pf390-brief{grid-template-columns:1fr}}
 .pf390-period-row{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;padding:9px 10px;background:#fff;border:1px solid #E8E3ED;border-radius:9px;margin-bottom:10px}.pf390-period-row>span{font-size:10.5px;color:var(--text-3);font-weight:700}
 .pf390-reporting-heading{font-size:11px;font-weight:800;color:var(--brand-dark);margin:2px 0 8px}
 @media(max-width:1100px){.pf390-directory-head{display:none}.pf390-directory-row{grid-template-columns:1.2fr .55fr .7fr 1fr 1fr}.pf390-directory-row .pf390-dir-next{grid-column:1/5}.pf390-dir-actions{grid-column:5;grid-row:1/3}.pf390-stat-grid{grid-template-columns:repeat(2,1fr)}}
@@ -18532,7 +18555,7 @@ function v390InstallPortfolioShell(){
 }
 function v390TierRank(t){return t==='Channel'?0:t==='A'?1:t==='B'?2:t==='C'?3:4}
 function v390StatusDetail(r){
-  if(r.health==='Red')return 'Reconnect now · '+(r.daysAny==null?'no meaningful touch logged':r.daysAny+'d since meaningful touch');
+  if(r.health==='Red')return r.daysAny==null?'No meaningful touch in tracker · verify history, then reconnect':'Reconnect now · '+r.daysAny+'d since meaningful touch';
   if(r.health==='Yellow')return 'Reconnect this week · '+(r.daysAny==null?'touch overdue':r.daysAny+'d since meaningful touch');
   if(r.daysUntilYellow!=null&&r.daysUntilYellow<=7)return 'Reach out before cadence slips · '+Math.max(0,r.daysUntilYellow)+'d remaining';
   return r.next_growth_opportunity?String(r.next_growth_opportunity):'Maintain relationship cadence';
@@ -18551,7 +18574,7 @@ function v390PersonRow(r,kind){
   const encoded=encodeURIComponent(r.name||'');
   const dot=kind==='growth'?'purple':String(r.health||'').toLowerCase();
   let detail=v390StatusDetail(r);
-  if(kind==='growth'&&r.next_growth_opportunity)detail=String(r.next_growth_opportunity);
+  if(kind==='growth'&&r.next_growth_opportunity)detail=String(r.next_growth_opportunity)+(r.next_growth_due?' · due '+String(r.next_growth_due).slice(0,10):' · set a due date');
   return '<div class="pf390-person-row"><div class="pf390-person-name"><span class="pf390-dot '+dot+'"></span><div><b>'+escHtml(properCase(r.name||''))+'</b><small>'+escHtml(tierLabel(r.tier||''))+' · '+escHtml(r.health||'')+'</small></div></div><div class="pf390-person-next">'+escHtml(detail)+'</div><div class="pf390-person-actions"><button class="btn-sm" onclick="v390OpenPartner(\''+encoded+'\',\'call\')">Call</button><button class="btn-sm" onclick="v390OpenPartner(\''+encoded+'\',\'open\')">Open</button></div></div>';
 }
 function v390DirectoryRow(r){
@@ -18592,6 +18615,16 @@ function v390PeriodControls(){
   const b=(key,label)=>'<button class="ptoggle '+(p===key?'active btn-active':'')+'" id="pfPeriod'+key.charAt(0).toUpperCase()+key.slice(1)+'" onclick="setPortfolioPeriod(\''+key+'\')">'+label+'</button>';
   return '<div class="pf390-period-row"><span>Reporting period</span><div class="period-toggle">'+b('week','This week')+b('month','This month')+b('quarter','This quarter')+'</div></div>';
 }
+function v390LeadershipBrief(info){
+  if(!info||!info.snapshotAvailable)return '<div class="pf390-leadership"><div class="pf390-leadership-head"><div><strong>Portfolio review with Daniel</strong><small>Current Power BI tier counts are unavailable. Refresh the shared report before discussing progress against the year-end goals.</small></div></div></div>';
+  const tier=info.tiers||{},goal=info.goals||{};
+  const tile=(label,actual,target)=>{const a=Number(actual||0),t=Number(target||0),gap=Math.max(0,t-a);return '<div class="pf390-goal"><div class="pf390-goal-title">'+label+'</div><b>'+a+' / '+t+'</b><small>'+(gap?gap+' more to reach the year-end goal':'Goal reached')+'</small></div>'};
+  const stamp=info.snapshotDate?String(info.snapshotDate).slice(0,10):'date unavailable';
+  return '<div class="pf390-leadership"><div class="pf390-leadership-head"><div><strong>Portfolio review with Daniel</strong><small>Use this to assess the whole referral partner book and decide where to focus next. Amanda’s daily C-agent calls are in the Work List.</small></div><span class="pf390-leadership-stamp">Power BI snapshot: '+escHtml(stamp)+'</span></div>'+
+    '<div class="pf390-goal-grid">'+tile('Channel',tier.Channel,goal.Channel)+tile('A accounts',tier.A,goal.A)+tile('B accounts',tier.B,goal.B)+'</div>'+
+    '<div class="pf390-brief"><div><strong>Referral activity</strong>'+Number(info.leadsMTD||0)+' leads recorded this month · '+Number(info.active||0)+' active agents. Projected monthly leads per agent: '+Number(info.projectedRatio||0).toFixed(2)+'.</div><div><strong>Relationship health</strong>'+Number(info.red||0)+' red · '+Number(info.yellow||0)+' yellow · '+Number(info.missingNextMove||0)+' without a documented next move.</div><div><strong>Tier movement · '+escHtml(info.period||'selected period')+'</strong>'+Number(info.cToB||0)+' C → B · '+Number(info.bToA||0)+' B → A · '+Number(info.aToChannel||0)+' A → Channel.</div></div>'+
+    '<div class="pf390-leadership-note">A count includes Channel accounts under the existing scorecard definition. Red indicates a tracker health signal, including missing logged contact; verify the relationship history before treating every red partner as lost. Discuss the largest goal gaps, at-risk partners, and who owns the next move.</div></div>';
+}
 function v390RenderSimplePortfolio(legacyHtml,reportingWasOpen){
   const body=document.getElementById('portfolioReviewBody');if(!body)return;
   const d=(typeof pfDrillData!=='undefined'&&pfDrillData)||{};
@@ -18611,6 +18644,7 @@ function v390RenderSimplePortfolio(legacyHtml,reportingWasOpen){
   const legacy=legacyHtml||'<div class="no-data">Reporting data unavailable.</div>';
   body.innerHTML=`
     <section class="pf390-panel" data-pf390-panel="overview">
+      ${v390LeadershipBrief(d.leadership)}
       ${needsAttention.length?'<div class="pf390-action-banner"><div><strong>'+needsAttention.length+' partner'+(needsAttention.length===1?' needs':'s need')+' attention.</strong><span>Start with the Work List.</span></div><button class="btn-primary" onclick="v390ShowPortfolioView(\'work\')">Open Work List</button></div>':''}
       <div class="pf390-stat-grid">
         ${v390Metric('Active Partners',total,'Channel '+tierCounts.Channel+' · A '+tierCounts.A+' · B '+tierCounts.B,"v390ShowPortfolioView('directory')")}
@@ -18627,9 +18661,9 @@ function v390RenderSimplePortfolio(legacyHtml,reportingWasOpen){
     <section class="pf390-panel" data-pf390-panel="work">
       <div class="pf390-section-head"><div><div class="pf390-section-title">Work My Portfolio</div><div class="pf390-section-sub">Start here. Work top to bottom, then move on.</div></div><button class="btn-sm" onclick="v390ShowPortfolioView('overview')">Back to Overview</button></div>
       <div class="pf390-work-grid">
-        <div class="pf390-work-card"><div class="pf390-work-head"><div><strong>Needs Attention</strong><small>Red first, then Yellow.</small></div><span class="pf390-count">${needsAttention.length}</span></div><div class="pf390-work-body">${needsAttention.length?needsAttention.slice(0,25).map(r=>v390PersonRow(r,'attention')).join(''):workEmpty}</div></div>
-        <div class="pf390-work-card"><div class="pf390-work-head"><div><strong>Coming Due</strong><small>Green today, but close to slipping.</small></div><span class="pf390-count">${comingDue.length}</span></div><div class="pf390-work-body">${comingDue.length?comingDue.slice(0,25).map(r=>v390PersonRow(r,'due')).join(''):workEmpty}</div></div>
-        <div class="pf390-work-card"><div class="pf390-work-head"><div><strong>Growth Opportunities</strong><small>Partners with a documented next move.</small></div><span class="pf390-count">${growth.length}</span></div><div class="pf390-work-body">${growth.length?growth.slice(0,25).map(r=>v390PersonRow(r,'growth')).join(''):workEmpty}</div></div>
+        <div class="pf390-work-card"><div class="pf390-work-head"><div><strong>Needs Attention</strong><small>Confirm missing contact history before calling a partner lost; work real overdue conversations first.</small></div><span class="pf390-count">${needsAttention.length}</span></div><div class="pf390-work-body">${needsAttention.length?needsAttention.slice(0,25).map(r=>v390PersonRow(r,'attention')).join(''):workEmpty}</div></div>
+        <div class="pf390-work-card"><div class="pf390-work-head"><div><strong>Coming Due</strong><small>Green relationships within seven days of a cadence threshold.</small></div><span class="pf390-count">${comingDue.length}</span></div><div class="pf390-work-body">${comingDue.length?comingDue.slice(0,25).map(r=>v390PersonRow(r,'due')).join(''):'<div class="pf390-empty">No green partner is within seven days of a cadence threshold.</div>'}</div></div>
+        <div class="pf390-work-card"><div class="pf390-work-head"><div><strong>Growth Opportunities</strong><small>Documented next moves. Check the due date before making another call.</small></div><span class="pf390-count">${growth.length}</span></div><div class="pf390-work-body">${growth.length?growth.slice(0,25).map(r=>v390PersonRow(r,'growth')).join(''):'<div class="pf390-empty">No next moves are documented yet. Open a partner, add a specific growth action and due date after your next conversation.</div>'}</div></div>
       </div>
     </section>
     <section class="pf390-panel" data-pf390-panel="directory">
