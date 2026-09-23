@@ -8348,6 +8348,7 @@ async function loadPortfolioReview(){
         tiers:{...officialCountByTier},goals:{Channel:4,A:20,B:30},
         active:officialTotalActive,leadsMTD,projectedRatio,score:weighted,
         period:range.label,red:healthCounts.Red,yellow:healthCounts.Yellow,
+        redMissingHistory:rows.filter(r=>r.health==='Red'&&r.daysAny===null).length,
         missingNextMove:missingGrowthOpp.length,
         cToB:migCtoB,bToA:migBtoA,aToChannel:migAtoChannel}};
     const FORMAL_CADENCE={Channel:30,A:30,B:60,C:90};
@@ -18522,6 +18523,7 @@ else setTimeout(boot,120);
 .pf390-leadership{border:1px solid #D9C8EC;background:linear-gradient(110deg,#FBF8FF,#FFFFFF);border-radius:13px;padding:16px;margin-bottom:14px}
 .pf390-leadership-head{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:start;margin-bottom:12px}.pf390-leadership-head strong{font-size:16px;color:#322246}.pf390-leadership-head small{display:block;font-size:11px;color:#665873;margin-top:4px;line-height:1.45}.pf390-leadership-stamp{font-size:10px;color:#716481}
 .pf390-goal-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}.pf390-goal{padding:11px;border:1px solid #E9E0F0;border-radius:9px;background:#fff}.pf390-goal b{font-size:19px;color:#392653}.pf390-goal small{display:block;color:#665873;font-size:10px;margin-top:3px}.pf390-goal-title{font-size:11px;font-weight:800;color:#4C3865;margin-bottom:5px}.pf390-brief{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:10px}.pf390-brief div{background:#F5F0FA;border-radius:8px;padding:9px;font-size:11px;line-height:1.45}.pf390-brief strong{display:block;color:#352549;margin-bottom:3px}.pf390-leadership-note{font-size:10px;color:#6F6479;line-height:1.5;margin-top:9px}
+.pf390-decisions{margin-top:12px;padding:11px;background:#fff;border:1px solid #E9E0F0;border-radius:9px}.pf390-decisions strong{font-size:11px;color:#392653}.pf390-decisions ol{margin:7px 0 0;padding-left:19px;font-size:11px;line-height:1.65;color:#4D405C}.pf390-copy{font-size:10.5px!important}
 @media(max-width:780px){.pf390-goal-grid,.pf390-brief{grid-template-columns:1fr}}
 .pf390-period-row{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;padding:9px 10px;background:#fff;border:1px solid #E8E3ED;border-radius:9px;margin-bottom:10px}.pf390-period-row>span{font-size:10.5px;color:var(--text-3);font-weight:700}
 .pf390-reporting-heading{font-size:11px;font-weight:800;color:var(--brand-dark);margin:2px 0 8px}
@@ -18620,11 +18622,25 @@ function v390LeadershipBrief(info){
   const tier=info.tiers||{},goal=info.goals||{};
   const tile=(label,actual,target)=>{const a=Number(actual||0),t=Number(target||0),gap=Math.max(0,t-a);return '<div class="pf390-goal"><div class="pf390-goal-title">'+label+'</div><b>'+a+' / '+t+'</b><small>'+(gap?gap+' more to reach the year-end goal':'Goal reached')+'</small></div>'};
   const stamp=info.snapshotDate?String(info.snapshotDate).slice(0,10):'date unavailable';
+  const red=Number(info.red||0),noHistory=Number(info.redMissingHistory||0);
   return '<div class="pf390-leadership"><div class="pf390-leadership-head"><div><strong>Portfolio review with Daniel</strong><small>Use this to assess the whole referral partner book and decide where to focus next. Amanda’s daily C-agent calls are in the Work List.</small></div><span class="pf390-leadership-stamp">Power BI snapshot: '+escHtml(stamp)+'</span></div>'+
     '<div class="pf390-goal-grid">'+tile('Channel',tier.Channel,goal.Channel)+tile('A accounts',tier.A,goal.A)+tile('B accounts',tier.B,goal.B)+'</div>'+
-    '<div class="pf390-brief"><div><strong>Referral activity</strong>'+Number(info.leadsMTD||0)+' leads recorded this month · '+Number(info.active||0)+' active agents. Projected monthly leads per agent: '+Number(info.projectedRatio||0).toFixed(2)+'.</div><div><strong>Relationship health</strong>'+Number(info.red||0)+' red · '+Number(info.yellow||0)+' yellow · '+Number(info.missingNextMove||0)+' without a documented next move.</div><div><strong>Tier movement · '+escHtml(info.period||'selected period')+'</strong>'+Number(info.cToB||0)+' C → B · '+Number(info.bToA||0)+' B → A · '+Number(info.aToChannel||0)+' A → Channel.</div></div>'+
-    '<div class="pf390-leadership-note">A count includes Channel accounts under the existing scorecard definition. Red indicates a tracker health signal, including missing logged contact; verify the relationship history before treating every red partner as lost. Discuss the largest goal gaps, at-risk partners, and who owns the next move.</div></div>';
+    '<div class="pf390-brief"><div><strong>Referral activity</strong>'+Number(info.leadsMTD||0)+' leads recorded this month · '+Number(info.active||0)+' active agents. Projected monthly leads per agent: '+Number(info.projectedRatio||0).toFixed(2)+'.</div><div><strong>Relationship health</strong>'+red+' red: '+noHistory+' without a logged meaningful touch, '+Math.max(0,red-noHistory)+' with touch history · '+Number(info.yellow||0)+' yellow. '+Number(info.missingNextMove||0)+' without a documented next move.</div><div><strong>Tier movement · '+escHtml(info.period||'selected period')+'</strong>'+Number(info.cToB||0)+' C → B · '+Number(info.bToA||0)+' B → A · '+Number(info.aToChannel||0)+' A → Channel.</div></div>'+
+    '<div class="pf390-decisions"><strong>Decide together</strong><ol><li>Which red partners need a real recovery plan? Verify missing contact history first and assign the owner.</li><li>Which C partners can reach B and which B partners can reach A? Book the October and November business-planning meetings and save each next move.</li><li>What is the referral gap to close before year-end? Agree on weekly lead and meeting actions, then review progress next week.</li></ol><button type="button" class="btn-sm pf390-copy" onclick="v390CopyLeadershipBrief()">Copy meeting brief</button></div>'+
+    '<div class="pf390-leadership-note">A count includes Channel accounts under the existing scorecard definition. Red is a tracker health signal; an absent touch log is not proof that a relationship was lost.</div></div>';
 }
+window.v390CopyLeadershipBrief=async function(){
+  const d=(typeof pfDrillData!=='undefined'&&pfDrillData)||{},x=d.leadership;
+  if(!x||!x.snapshotAvailable){toast('Refresh the shared Power BI report before copying the brief.','error');return;}
+  const gap=t=>Math.max(0,Number(x.goals?.[t]||0)-Number(x.tiers?.[t]||0));
+  const lines=['Portfolio review with Daniel · '+String(x.snapshotDate||'').slice(0,10),
+    'Year-end goals: Channel '+x.tiers.Channel+'/'+x.goals.Channel+' ('+gap('Channel')+' to go); A '+x.tiers.A+'/'+x.goals.A+' ('+gap('A')+' to go); B '+x.tiers.B+'/'+x.goals.B+' ('+gap('B')+' to go).',
+    'Referral activity: '+x.leadsMTD+' leads this month; '+x.active+' active agents; projected monthly leads per agent '+Number(x.projectedRatio||0).toFixed(2)+'.',
+    'Health: '+x.red+' red ('+x.redMissingHistory+' with no logged meaningful touch to verify); '+x.yellow+' yellow; '+x.missingNextMove+' without a documented next move.',
+    'Tier movement ('+x.period+'): '+x.cToB+' C to B, '+x.bToA+' B to A, '+x.aToChannel+' A to Channel.',
+    'Decide: confirm real relationship risks and owners; book October/November business plans; agree on weekly referral and tier-growth actions.'];
+  try{await navigator.clipboard.writeText(lines.join('\n'));toast('Meeting brief copied.','success');}catch(e){toast('Could not copy the brief. Check clipboard access and try again.','error');}
+};
 function v390RenderSimplePortfolio(legacyHtml,reportingWasOpen){
   const body=document.getElementById('portfolioReviewBody');if(!body)return;
   const d=(typeof pfDrillData!=='undefined'&&pfDrillData)||{};
