@@ -11070,7 +11070,16 @@ window.v109RenderAmandaTasks=v112RenderAmandaTasks;
         var phone=(document.getElementById('wp73Phone')?.value||'').trim(),email=(document.getElementById('wp73Email')?.value||'').trim(),address=(document.getElementById('wp73Address')?.value||'').trim(),birthday=(document.getElementById('wp73Birthday')?.value||'').trim();
         if(phone)payload.phone=phone;if(email)payload.email=email;if(address)payload.address=address;if(birthday)payload.birthday=birthday;
         await sbProfileWrite('agent_profiles?agent_name=eq.'+encodeURIComponent(match.exact.agent_name),'PATCH',payload);
-        document.getElementById('wp37PartnerCheckinModal')?.classList.remove('open');wp37PendingPartnerSave=null;wp37PartnerGateBypass=true;
+        document.getElementById('wp37PartnerCheckinModal')?.classList.remove('open');wp37PendingPartnerSave=null;
+        if(pending.resumeKind==='v198-preflight'||pending.resumeKind==='v203-direct'){
+          window._v198PortfolioPreflight=true;
+          window._v198PortfolioAgent=pending.agentName;
+          const log=document.getElementById('v175OutreachModal');
+          if(log){log.style.removeProperty('display');log.removeAttribute('aria-hidden');log.classList.add('open');}
+          loadPortfolioReview?.();
+          return;
+        }
+        wp37PartnerGateBypass=true;
         try{if(pending.resumeKind==='quick')await quickLogSave();else if(pending.resumeKind==='full')await logActivity();}finally{wp37PartnerGateBypass=false;}
         loadPortfolioReview?.();
       }catch(e){toast('Touch save failed: '+e.message,'error',5000);}
@@ -13737,7 +13746,7 @@ window.rmAuditVisibleButtons=function(){
     const wrapped=async function(){
       const direct=window.wp37PendingPartnerSave&&window.wp37PendingPartnerSave.resumeKind==='v203-direct';
       const result=await originalSave.apply(this,arguments);
-      if(direct){
+      if(direct && !window.wp37PendingPartnerSave){
         window._v198PortfolioPreflight=true;
         window._v198PortfolioAgent=window._v203PendingMeaningful?.name||'';
         const log=document.getElementById('v175OutreachModal');
