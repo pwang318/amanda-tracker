@@ -18378,15 +18378,6 @@ function v391PatchAmandaLabels(prepared){
   const workTitle=document.querySelector('[data-pf390-panel="work"] .pf390-section-title');if(workTitle)workTitle.textContent="Work Amanda's Portfolio";
   const workSub=document.querySelector('[data-pf390-panel="work"] .pf390-section-sub');if(workSub)workSub.textContent='Only people actually due for Amanda. A fresh meaningful touch resets the cadence.';
   const dirSub=document.querySelector('[data-pf390-panel="directory"] .pf390-section-sub');if(dirSub){const count=document.getElementById('pf390DirectoryCount');dirSub.innerHTML=(count?count.outerHTML:(prepared.rows.length+' partners'))+' · Amanda-owned relationships only.'}
-  document.querySelectorAll('#portfolioReviewBody .pf390-simple-row').forEach(function(row){
-    const n=row.querySelector('.name');if(!n)return;
-    if(n.textContent.trim()==='Channel / A missing a next move'){
-      const missing=prepared.rows.filter(r=>!String(r.next_growth_opportunity||'').trim()).length;
-      n.textContent='Partners missing a next move';
-      const v=row.querySelector('.value');if(v)v.textContent=String(missing);
-      const m=row.querySelector('.meta');if(m)m.textContent=missing?'Capture the next move on the next meaningful conversation':'Every relationship has a next move';
-    }
-  });
 }
 window.loadPortfolioReview=async function(){
   const todayStr=(typeof today==='function'?today():new Date().toISOString().slice(0,10));
@@ -18654,7 +18645,7 @@ function v390RenderSimplePortfolio(legacyHtml,reportingWasOpen){
   const growth=rows.filter(r=>r.next_growth_opportunity&&!r.attemptCooling).sort((a,b)=>v390TierRank(a.tier)-v390TierRank(b.tier));
   const meetingRows=Array.isArray(d.meetingRows)?d.meetingRows:[],meetingsDue=meetingRows.filter(r=>!r.compliant);
   const meetingPct=meetingRows.length?Math.round(((meetingRows.length-meetingsDue.length)/meetingRows.length)*100):0;
-  const missingTopTier=rows.filter(r=>(r.tier==='Channel'||r.tier==='A')&&!r.next_growth_opportunity);
+  const missingNextMove=rows.filter(r=>!String(r.next_growth_opportunity||'').trim());
   const highPotential=Array.isArray(d.highPotential)?d.highPotential:rows.filter(r=>r.high_potential);
   const workEmpty='<div class="pf390-empty">Nothing here right now.</div>';
   const legacy=legacyHtml||'<div class="no-data">Reporting data unavailable.</div>';
@@ -18670,7 +18661,7 @@ function v390RenderSimplePortfolio(legacyHtml,reportingWasOpen){
       </div>
       <div class="pf390-grid-2">
         <div class="pf390-card"><div class="pf390-card-head"><div><div class="pf390-card-title">Partner Health</div><div class="pf390-card-sub">Click a status to see the names.</div></div><button class="btn-sm" onclick="openPartnerHealthHelp()">How it works</button></div><div class="pf390-health-grid"><div class="pf390-health green" onclick="openPortfolioList('health:Green')"><b>${healthCounts.Green}</b><span>Green</span></div><div class="pf390-health yellow" onclick="openPortfolioList('health:Yellow')"><b>${healthCounts.Yellow}</b><span>Yellow</span></div><div class="pf390-health red" onclick="openPortfolioList('health:Red')"><b>${healthCounts.Red}</b><span>Red</span></div></div></div>
-        <div class="pf390-card"><div class="pf390-card-head"><div><div class="pf390-card-title">Growth &amp; Meetings</div><div class="pf390-card-sub">The few numbers Amanda needs to manage relationships.</div></div></div><div class="pf390-simple-list">${v390SimpleRow('Growth opportunities documented',growth.length+' / '+total,total?Math.round(growth.length/total*100)+'% of portfolio':null)}${v390SimpleRow('Formal meetings due',meetingsDue.length,meetingRows.length?meetingPct+'% currently on cadence':'No cadence population')}${v390SimpleRow('Channel / A missing a next move',missingTopTier.length,missingTopTier.length?'Add a growth opportunity when you next connect':'All covered')}${v390SimpleRow('High-potential partners',highPotential.length,'Keep these relationships visible')}</div></div>
+        <div class="pf390-card"><div class="pf390-card-head"><div><div class="pf390-card-title">Growth &amp; Meetings</div><div class="pf390-card-sub">The few numbers Amanda needs to manage relationships.</div></div></div><div class="pf390-simple-list">${v390SimpleRow('Growth opportunities documented',growth.length+' / '+total,total?Math.round(growth.length/total*100)+'% of portfolio':null)}${v390SimpleRow('Formal meetings due',meetingsDue.length,meetingRows.length?meetingPct+'% currently on cadence':'No formal cadence group; still schedule business plans')}${v390SimpleRow('Partners missing a next move',missingNextMove.length,missingNextMove.length?'Capture a specific action and due date after the next conversation':'Every partner has a documented next move')}${v390SimpleRow('High-potential partners',highPotential.length,'Keep these relationships visible')}</div></div>
       </div>
       <details id="pf390ReportingAdmin" class="pf390-reporting" ${reportingWasOpen?'open':''}><summary><span>Reporting &amp; Admin <span class="pf390-reporting-copy">Scorecard, Power BI audit, diagnostics and leadership detail</span></span></summary><div class="pf390-reporting-inner">${v390PeriodControls()}<div class="pf390-reporting-heading">Power BI Source + Portfolio Reconciliation, scorecard &amp; diagnostics</div>${legacy}</div></details>
     </section>
