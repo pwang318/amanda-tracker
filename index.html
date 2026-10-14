@@ -20771,5 +20771,155 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
   };
 })();
 </script>
+<script id="rm-v467-contact-import-core">
+(function(){
+  'use strict';
+  function normalizeName(value){
+    return String(value||'').normalize('NFKD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim().replace(/\s+/g,' ');
+  }
+  function normalizeAddress(value){
+    return String(value||'').normalize('NFKD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim().replace(/\s+/g,' ');
+  }
+  function headerKey(value){return String(value||'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim().replace(/\s+/g,' ');}
+  function parseMatrix(matrix){
+    var headerRow=-1,keys=[],nameAliases=['full name','agent name','name'];
+    for(var r=0;r<Math.min((matrix||[]).length,20);r++){
+      var candidate=(matrix[r]||[]).map(headerKey),nameIndex=candidate.findIndex(function(key){return nameAliases.indexOf(key)>=0;});
+      if(nameIndex>=0){headerRow=r;keys=candidate;break;}
+    }
+    if(headerRow<0)throw new Error('Could not find a Full Name or Agent Name column in the first 20 rows.');
+    function indexOf(aliases){return keys.findIndex(function(key){return aliases.indexOf(key)>=0;});}
+    var ix={name:keys.findIndex(function(key){return nameAliases.indexOf(key)>=0;}),street:indexOf(['street address','street','address line 1']),city:indexOf(['city']),state:indexOf(['state']),zip:indexOf(['zip code','zip','postal code']),address:indexOf(['address','home address','mailing address']),review:indexOf(['review'])};
+    function val(row,index){return index>=0?String(row[index]||'').trim():'';}
+    var rows=[];(matrix||[]).slice(headerRow+1).forEach(function(row){
+      var name=val(row,ix.name);if(!name)return;
+      var address=val(row,ix.address);if(!address)address=[val(row,ix.street),val(row,ix.city),[val(row,ix.state),val(row,ix.zip)].filter(Boolean).join(' ')].filter(Boolean).join(', ');
+      rows.push({name:name,address:address,review:val(row,ix.review)});
+    });
+    return rows;
+  }
+  function buildPlan(rows,profiles){
+    var incoming=new Map(),existing=new Map(),create=[],fill=[],alreadyHasAddress=[],review=[];
+    (Array.isArray(rows)?rows:[]).forEach(function(row){
+      var name=String(row&&row.name||'').trim(),address=String(row&&row.address||'').trim(),key=normalizeName(name);
+      if(!key){review.push({name:name,address:address,reason:'Missing full name'});return;}
+      if(!address){review.push({name:name,address:address,reason:'Missing complete address'});return;}
+      if(row&&String(row.review||'').trim()){review.push({name:name,address:address,reason:String(row.review).trim()});return;}
+      if(!incoming.has(key))incoming.set(key,{name:name,address:address,key:key});
+      else if(normalizeAddress(incoming.get(key).address)!==normalizeAddress(address))incoming.get(key).conflict=true;
+    });
+    (Array.isArray(profiles)?profiles:[]).forEach(function(profile){
+      var key=normalizeName(profile&&profile.agent_name);
+      if(key){if(!existing.has(key))existing.set(key,[]);existing.get(key).push(profile);}
+    });
+    incoming.forEach(function(item){
+      if(item.conflict){review.push({name:item.name,address:item.address,reason:'This name has different addresses in the workbook'});return;}
+      var matches=existing.get(item.key)||[];
+      if(matches.length>1){review.push({name:item.name,address:item.address,reason:'Multiple tracker contacts match this name'});return;}
+      if(matches.length===1){
+        var profile=matches[0];
+        if(String(profile.address||'').trim())alreadyHasAddress.push({name:item.name,agent_name:profile.agent_name,address:item.address,existingAddress:profile.address});
+        else fill.push({name:item.name,agent_name:profile.agent_name,address:item.address});
+        return;
+      }
+      create.push({name:item.name,agent_name:item.name,address:item.address});
+    });
+    return {create:create,fill:fill,alreadyHasAddress:alreadyHasAddress,review:review};
+  }
+  window.rmV467NormalizeContactName=normalizeName;
+  window.rmV467BuildContactImportPlan=buildPlan;
+  window.rmV467ParseContactMatrix=parseMatrix;
+})();
+</script>
+<script id="rm-v467-contact-import">
+(function(){
+  'use strict';
+  var currentPlan=null;
+  function el(tag,props,text){var node=document.createElement(tag);Object.keys(props||{}).forEach(function(key){if(key==='className')node.className=props[key];else node[key]=props[key]});if(text!=null)node.textContent=text;return node;}
+  function setStatus(message,error){var status=document.getElementById('rmV467ImportStatus');if(status){status.textContent=message||'';status.style.color=error?'#A32D2D':'var(--text-3)';}}
+  function readRows(matrix){
+    return window.rmV467ParseContactMatrix(matrix);
+  }
+  async function ensureXlsx(){if(window.XLSX)return window.XLSX;await new Promise(function(resolve,reject){var script=document.createElement('script');script.src='https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';script.onload=resolve;script.onerror=function(){reject(new Error('Could not load the Excel reader'));};document.head.appendChild(script);});return window.XLSX;}
+  function formatPlan(plan){return 'Ready to add '+plan.create.length+' contacts, fill '+plan.fill.length+' missing addresses, leave '+plan.alreadyHasAddress.length+' existing addresses unchanged, and review '+plan.review.length+' rows.';}
+  function actionFor(plan,item){if(plan.create.indexOf(item)>=0)return 'New contact';if(plan.fill.indexOf(item)>=0)return 'Add missing address';if(plan.alreadyHasAddress.indexOf(item)>=0)return 'Address already present';return 'Review';}
+  function preview(plan){
+    var host=document.getElementById('rmV467ImportPreview');if(!host)return;host.replaceChildren();
+    var summary=el('div',{className:'rmV467Summary'},formatPlan(plan));host.appendChild(summary);
+    var wrap=el('div',{className:'rmV467TableWrap'}),table=el('table',{className:'rmV467Table'}),thead=el('thead'),head=el('tr');
+    ['Full name','Address','Action'].forEach(function(label){head.appendChild(el('th',{},label));});thead.appendChild(head);table.appendChild(thead);
+    var tbody=el('tbody');
+    plan.create.concat(plan.fill,plan.alreadyHasAddress,plan.review).forEach(function(item){var row=el('tr'),name=el('td',{},item.name||'(blank)'),address=el('td',{},item.address||'(blank)'),action=el('td',{},item.reason?'Review: '+item.reason:actionFor(plan,item));row.append(name,address,action);tbody.appendChild(row);});
+    table.appendChild(tbody);wrap.appendChild(table);host.appendChild(wrap);
+    var buttons=el('div',{className:'rmV467Actions'}),apply=el('button',{type:'button',className:'btn-primary'},'Apply changes'),cancel=el('button',{type:'button',className:'btn-sm'},'Cancel');
+    apply.disabled=plan.create.length+plan.fill.length===0;apply.onclick=applyPlan;cancel.onclick=closePreview;buttons.append(apply,cancel);host.appendChild(buttons);
+  }
+  function closePreview(){var panel=document.getElementById('rmV467ImportPanel');if(panel)panel.remove();currentPlan=null;}
+  async function prepareImport(input){
+    var file=input&&input.files&&input.files[0];if(!file)return;setStatus('Reading '+file.name+'…');
+    try{
+      var X=await ensureXlsx(),book=X.read(await file.arrayBuffer(),{type:'array',raw:false}),matrix=null;
+      for(var s=0;s<book.SheetNames.length;s++){try{var candidate=X.utils.sheet_to_json(book.Sheets[book.SheetNames[s]],{header:1,defval:'',raw:false});window.rmV467ParseContactMatrix(candidate);matrix=candidate;break;}catch(e){}}
+      if(!matrix)throw new Error('No worksheet contains a Full Name or Agent Name column.');
+      var rows=readRows(matrix);if(!rows.length)throw new Error('No named agent rows were found.');
+      setStatus('Checking for existing tracker contacts…');
+      var profiles=await sbFetch('agent_profiles?select=agent_name,address,display_name,relationship_status&limit=5000');
+      if(!Array.isArray(profiles))throw new Error('Could not verify existing contacts.');
+      currentPlan=window.rmV467BuildContactImportPlan(rows,profiles);
+      var panel=el('div',{id:'rmV467ImportPanel',className:'rmV467Overlay'}),box=el('div',{className:'rmV467Dialog'}),title=el('h2',{},'Review address import'),close=el('button',{type:'button',className:'rmV467Close','aria-label':'Close'},'×'),top=el('div',{className:'rmV467DialogTop'});
+      close.onclick=closePreview;top.append(title,close);box.appendChild(top);box.appendChild(el('p',{className:'rmV467Help'},'Only new contacts and missing addresses will be saved. Existing addresses stay as they are. Conflicts and flagged workbook rows need review.'));
+      var previewHost=el('div',{id:'rmV467ImportPreview'});box.appendChild(previewHost);panel.appendChild(box);panel.addEventListener('click',function(event){if(event.target===panel)closePreview();});document.body.appendChild(panel);preview(currentPlan);
+      setStatus('Review the import preview before applying changes.');input.value='';
+    }catch(error){input.value='';setStatus(String(error&&error.message||error),true);if(typeof toast==='function')toast('Could not prepare address import: '+String(error&&error.message||error),'error',5500);}
+  }
+  async function applyPlan(){
+    if(!currentPlan)return;var host=document.getElementById('rmV467ImportPreview'),button=host&&host.querySelector('.rmV467Actions button');if(button){button.disabled=true;button.textContent='Saving…';}
+    var added=0,updated=0,failed=0,errors=[];
+    for(var i=0;i<currentPlan.create.length;i++){
+      var item=currentPlan.create[i];try{await sbProfileWrite('agent_profiles','POST',{agent_name:item.agent_name,address:item.address,relationship_type:'realtor'});added++;}catch(error){failed++;errors.push(item.name+': '+String(error&&error.message||error));}
+    }
+    for(var j=0;j<currentPlan.fill.length;j++){
+      var target=currentPlan.fill[j];try{await sbProfileWrite('agent_profiles?agent_name=eq.'+encodeURIComponent(target.agent_name),'PATCH',{address:target.address});updated++;}catch(error){failed++;errors.push(target.name+': '+String(error&&error.message||error));}
+    }
+    var message='Import finished: '+added+' new contacts, '+updated+' addresses added, '+currentPlan.alreadyHasAddress.length+' existing addresses left unchanged, '+currentPlan.review.length+' rows for review.'+(failed?' '+failed+' writes failed.':'');
+    setStatus(message,failed>0);if(typeof toast==='function')toast(message,failed?'error':'success',7000);
+    if(typeof loadContacts==='function'){try{await loadContacts();}catch(e){console.warn('Contact refresh after address import failed',e);}}
+    if(typeof initAutocomplete==='function')initAutocomplete();
+    if(errors.length)setStatus(message+' First error: '+errors[0],true);
+    closePreview();
+  }
+  function mount(){
+    if(document.getElementById('rmV467ImportButton'))return true;
+    var view=document.getElementById('view-contacts'),card=view&&view.querySelector('.card'),head=card&&card.firstElementChild,actions=head&&head.lastElementChild;if(!actions)return false;
+    var input=el('input',{id:'rmV467ImportFile',type:'file',accept:'.xlsx,.xls,.csv',hidden:true});input.addEventListener('change',function(){prepareImport(input);});
+    var button=el('button',{id:'rmV467ImportButton',type:'button',className:'btn-sm'},'Import addresses');button.title='Upload an address workbook to create contacts and fill missing addresses.';button.onclick=function(){input.click();};
+    actions.insertBefore(input,actions.lastElementChild);actions.insertBefore(button,actions.lastElementChild);
+    var status=el('div',{id:'rmV467ImportStatus',className:'rmV467ImportStatus'},'Upload an address workbook to add new contacts and fill missing addresses.');if(head.nextSibling)card.insertBefore(status,head.nextSibling);else card.appendChild(status);
+    return true;
+  }
+  function boot(){if(mount())return;var tries=0,timer=setInterval(function(){tries++;if(mount()||tries>20)clearInterval(timer);},250);}
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
+})();
+</script>
+<style id="rm-v467-contact-import-css">
+.rmV467ImportStatus{font-size:11px;color:var(--text-3);margin:-8px 0 12px;line-height:1.45}
+.rmV467Overlay{position:fixed;inset:0;z-index:100000;background:rgba(27,18,48,.52);display:flex;align-items:center;justify-content:center;padding:18px}
+.rmV467Dialog{background:#fff;border-radius:14px;padding:18px;max-width:940px;width:100%;max-height:88vh;overflow:auto;box-shadow:0 16px 48px rgba(30,17,48,.24)}
+.rmV467DialogTop{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:8px}
+.rmV467DialogTop h2{font-size:18px;margin:0;color:#2C2440}
+.rmV467Close{border:0;background:transparent;font-size:25px;color:#6b6474;cursor:pointer}
+.rmV467Help{font-size:12px;line-height:1.5;color:#5f5868;margin:0 0 12px}
+.rmV467Summary{font-size:12px;font-weight:700;padding:10px 12px;background:#F5F2FA;border-radius:8px;margin-bottom:10px;color:#40335F}
+.rmV467TableWrap{overflow:auto;max-height:56vh;border:1px solid #E6E1ED;border-radius:8px}
+.rmV467Table{width:100%;border-collapse:collapse;font-size:11px}
+.rmV467Table th,.rmV467Table td{padding:8px 9px;text-align:left;border-bottom:1px solid #EEEAF2;vertical-align:top}
+.rmV467Table th{position:sticky;top:0;background:#F8F6FB;color:#4b4260;z-index:1}
+.rmV467Table td:first-child{min-width:155px;font-weight:650}
+.rmV467Table td:nth-child(2){min-width:230px}
+.rmV467Table td:last-child{min-width:185px}
+.rmV467Actions{display:flex;justify-content:flex-end;gap:8px;margin-top:12px}
+.rmV467Actions button:disabled{opacity:.55;cursor:wait}
+@media(max-width:650px){.rmV467Dialog{padding:13px}.rmV467Table{font-size:10px}.rmV467Table th,.rmV467Table td{padding:7px}}
+</style>
 </body>
 </html>
