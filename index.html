@@ -9557,7 +9557,7 @@ function renderContacts(list){
         (c.relationship_status==="inactive"?('<button class="btn-sm" onclick="rmV456ReactivateContact(encodeURIComponent(\''+String(c.agent_name||"").replace(/\'/g,"%27")+'\'),this)" title="Move this contact back to active">Reactivate</button>'):'')+
         ((c.relationship_status!=="inactive"&&c.do_not_contact!==true)?('<button class="btn-sm" data-name="'+c.agent_name.replace(/"/g,'&quot;')+'" onclick="quickLogBuddyAsk(this)" title="Log that you asked this agent for a buddy introduction">Asked buddy</button>'+
         '<button class="btn-sm" data-name="'+c.agent_name.replace(/"/g,'&quot;')+'" onclick="quickLogBuddyIntro(this)" title="Log an actual buddy introduction received from this agent">Intro received</button>'):'')+
-        '<button class="btn-sm" onclick="openPortfolioNotes(this)" data-name="'+c.agent_name.replace(/"/g,'&quot;')+'" title="Open Portfolio Review / Partner Health notes">Portfolio notes</button>'+
+        '<button class="btn-sm" onclick="openPortfolioNotes(this)" data-name="'+c.agent_name.replace(/"/g,'&quot;')+'" data-profile-id="'+escHtml(String(c.id==null?'':c.id))+'" title="Open Portfolio Review / Partner Health notes">Portfolio notes</button>'+
         '<button class="btn-sm" onclick="openContactsEdit(this)" data-name="'+c.agent_name.replace(/"/g,'&quot;')+'" data-profile-id="'+escHtml(String(c.id==null?'':c.id))+'">Contact</button>'+
       '</div>'+
     '</div>';
@@ -9565,7 +9565,7 @@ function renderContacts(list){
 }
 function openPortfolioNotes(nameOrEl){
   const name=typeof nameOrEl==="string"?nameOrEl:(nameOrEl&&nameOrEl.dataset?nameOrEl.dataset.name:String(nameOrEl));
-  openContactsEdit(name);
+  openContactsEdit(nameOrEl);
   const titleEl=document.getElementById("contactModalTitle");
   if(titleEl)titleEl.textContent="Portfolio & Relationship Notes";
   const details=document.getElementById("partnerPlaybookDetails");
@@ -9587,7 +9587,9 @@ function openContactsEdit(nameOrEl){
   const scrollBody0=document.getElementById("contactModalScrollBody");
   if(scrollBody0)scrollBody0.scrollTop=0;
   const requestedId=nameOrEl&&nameOrEl.dataset&&nameOrEl.dataset.profileId?String(nameOrEl.dataset.profileId):"";
-  const c=(requestedId?allContacts.find(x=>String(x.id)===requestedId):null)||allContacts.find(x=>x.agent_name===name)||{agent_name:name};
+  const nameKey=agentMatchKey(name);
+  const nameMatches=allContacts.filter(x=>agentMatchKey(x.agent_name)===nameKey);
+  const c=requestedId?(allContacts.find(x=>String(x.id)===requestedId)||{agent_name:name}):(nameMatches.length===1?nameMatches[0]:{agent_name:name});
   editingContactName=name;
   editingContactOriginalName=c.agent_name||name; // best-effort cache; saveContactModal re-verifies before writing
   editingContactProfileId=c.id==null?null:c.id;
@@ -20965,7 +20967,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
         if(!Array.isArray(matches)||matches.length!==1||String(matches[0].id)!==key){report.skipped.push({name:name,reason:matches&&matches.length>1?'Profile ID is ambiguous':'Profile no longer exists'});continue;}
         if(String(matches[0].agent_name||'').trim()!==name){report.skipped.push({name:name,reason:'Profile changed since selection'});continue;}
         var deleted=await deleteProfile(id,name);
-        if(Array.isArray(deleted)&&deleted.length===0){report.failed.push({name:name,reason:'No profile was deleted'});continue;}
+        if(Array.isArray(deleted)&&deleted.length===0){report.skipped.push({name:name,reason:'Profile changed or no longer exists'});continue;}
         report.deleted.push(name);report.deletedIds.push(key);
       }catch(error){report.failed.push({name:name,reason:String(error&&error.message||error)});}
     }
@@ -21035,7 +21037,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
       var report=await window.rmV468DeleteProfiles(names,function(id){
         return window.sbFetch('agent_profiles?id=eq.'+encodeURIComponent(id)+'&select=id,agent_name&limit=2');
       },function(id){
-        return window.sbFetch('agent_profiles?id=eq.'+encodeURIComponent(id),{method:'DELETE',prefer:'return=representation'});
+        return window.sbFetch('agent_profiles?id=eq.'+encodeURIComponent(id)+'&agent_name=eq.'+encodeURIComponent(name),{method:'DELETE',prefer:'return=representation'});
       });
       report.deletedIds.forEach(function(id){selected.delete(String(id));});
       if(typeof editingContactProfileId!=='undefined'&&editingContactProfileId!=null&&report.deletedIds.indexOf(String(editingContactProfileId))>=0)window.closeContactModal();
