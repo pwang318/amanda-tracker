@@ -2021,7 +2021,7 @@ body[data-rm-tab="week"] #view-week .v95-amanda-greeting{
 
 </select>
 </div>
-<div class="rmV468SelectionToolbar"><label class="rmV468SelectAll"><input id="rmV468SelectAllShown" type="checkbox" onchange="rmV468SelectShown(this.checked)"/><span>Select all shown</span></label><span id="rmV468SelectionCount" aria-live="polite">0 selected</span><button class="btn-sm" type="button" onclick="rmV468ClearSelection()">Clear selection</button><button class="btn-sm danger" id="rmV468DeleteSelectedBtn" type="button" onclick="rmV468DeleteSelected()" disabled>Permanently delete selected</button></div>
+<div class="rmV468SelectionToolbar"><label class="rmV468SelectAll"><input id="rmV468SelectAllShown" type="checkbox" onchange="rmV468SelectShown(this.checked)"/><span>Select all shown</span></label><span id="rmV468SelectionCount" aria-live="polite">0 selected</span><span class="rmV468SelectionHelp">Selection stays across filters; every selected profile is listed before deletion.</span><button class="btn-sm" type="button" onclick="rmV468ClearSelection()">Clear selection</button><button class="btn-sm danger" id="rmV468DeleteSelectedBtn" type="button" onclick="rmV468DeleteSelected()" disabled>Permanently delete selected</button></div>
 <div id="contactsDupeBanner"></div>
 <div id="contacts-list"><div class="no-data">Loading contacts...</div></div>
 </div>
@@ -8980,7 +8980,7 @@ async function unmarkDNC(id){
     if(typeof rmRefreshProspectTruth==="function")await rmRefreshProspectTruth();else await loadPipeline();
   }catch(e){toast("Error: "+e.message,"error");}
 }
-let editingContactName=null,editingContactOriginalName=null;
+let editingContactName=null,editingContactOriginalName=null,editingContactProfileId=null;
 async function findAgentProfileByName(name){
   if(!name)return{matches:[],exact:null,ambiguous:false};
   const rows=await sbFetch("agent_profiles?agent_name=ilike."+encodeURIComponent(name)+"&limit=5").catch(()=>null);
@@ -9133,6 +9133,7 @@ async function permanentlyHideAgent(){
 async function openContactModal(name,phone,email,brokerage,birthday){
   editingContactName=name;
   editingContactOriginalName=null;
+  editingContactProfileId=null;
   const scrollBody0=document.getElementById("contactModalScrollBody");
   if(scrollBody0)scrollBody0.scrollTop=0;
   document.getElementById("contactModalName").textContent=resolvedDisplayName(name);
@@ -9148,6 +9149,7 @@ async function openContactModal(name,phone,email,brokerage,birthday){
       const p=exact||(profiles&&profiles[0]);
       if(p){
         editingContactOriginalName=p.agent_name;
+        editingContactProfileId=ambiguous?null:(p.id==null?null:p.id);
         phone=p.phone||phone||"";email=p.email||email||"";birthday=p.birthday||birthday||"";
         var contactHomeAddress=p.address||"";
         var contactOrg=p.brokerage||brokerage||"";
@@ -9186,7 +9188,7 @@ async function openContactModal(name,phone,email,brokerage,birthday){
   if(typeof rmSmartPaintContactLifecycleBanner==="function")rmSmartPaintContactLifecycleBanner(name).catch(()=>{});
   document.getElementById("contactModal").classList.add("open");
 }
-function closeContactModal(){document.getElementById("contactModal").classList.remove("open");const d=document.getElementById("partnerPlaybookDetails");if(d)d.open=false;const t=document.getElementById("contactModalTitle");if(t)t.textContent="Edit contact info";editingContactName=null;editingContactOriginalName=null;}
+function closeContactModal(){document.getElementById("contactModal").classList.remove("open");const d=document.getElementById("partnerPlaybookDetails");if(d)d.open=false;const t=document.getElementById("contactModalTitle");if(t)t.textContent="Edit contact info";editingContactName=null;editingContactOriginalName=null;editingContactProfileId=null;}
 async function saveContactModal(){
   if(!editingContactName)return;
   const saveBtn=document.querySelector("#contactModal .btn-primary");
@@ -9555,15 +9557,15 @@ function renderContacts(list){
         (c.relationship_status==="inactive"?('<button class="btn-sm" onclick="rmV456ReactivateContact(encodeURIComponent(\''+String(c.agent_name||"").replace(/\'/g,"%27")+'\'),this)" title="Move this contact back to active">Reactivate</button>'):'')+
         ((c.relationship_status!=="inactive"&&c.do_not_contact!==true)?('<button class="btn-sm" data-name="'+c.agent_name.replace(/"/g,'&quot;')+'" onclick="quickLogBuddyAsk(this)" title="Log that you asked this agent for a buddy introduction">Asked buddy</button>'+
         '<button class="btn-sm" data-name="'+c.agent_name.replace(/"/g,'&quot;')+'" onclick="quickLogBuddyIntro(this)" title="Log an actual buddy introduction received from this agent">Intro received</button>'):'')+
-        '<button class="btn-sm" onclick="openPortfolioNotes(this)" data-name="'+c.agent_name.replace(/"/g,'&quot;')+'" title="Open Portfolio Review / Partner Health notes">Portfolio notes</button>'+
-        '<button class="btn-sm" onclick="openContactsEdit(this)" data-name="'+c.agent_name.replace(/"/g,'&quot;')+'">Contact</button>'+
+        '<button class="btn-sm" onclick="openPortfolioNotes(this)" data-name="'+c.agent_name.replace(/"/g,'&quot;')+'" data-profile-id="'+escHtml(String(c.id==null?'':c.id))+'" title="Open Portfolio Review / Partner Health notes">Portfolio notes</button>'+
+        '<button class="btn-sm" onclick="openContactsEdit(this)" data-name="'+c.agent_name.replace(/"/g,'&quot;')+'" data-profile-id="'+escHtml(String(c.id==null?'':c.id))+'">Contact</button>'+
       '</div>'+
     '</div>';
   }).join("");
 }
 function openPortfolioNotes(nameOrEl){
   const name=typeof nameOrEl==="string"?nameOrEl:(nameOrEl&&nameOrEl.dataset?nameOrEl.dataset.name:String(nameOrEl));
-  openContactsEdit(name);
+  openContactsEdit(nameOrEl);
   const titleEl=document.getElementById("contactModalTitle");
   if(titleEl)titleEl.textContent="Portfolio & Relationship Notes";
   const details=document.getElementById("partnerPlaybookDetails");
@@ -9584,9 +9586,13 @@ function openContactsEdit(nameOrEl){
   if(playbookDetails)playbookDetails.open=false;
   const scrollBody0=document.getElementById("contactModalScrollBody");
   if(scrollBody0)scrollBody0.scrollTop=0;
-  const c=allContacts.find(x=>x.agent_name===name)||{agent_name:name};
+  const requestedId=nameOrEl&&nameOrEl.dataset&&nameOrEl.dataset.profileId?String(nameOrEl.dataset.profileId):"";
+  const nameKey=agentMatchKey(name);
+  const nameMatches=allContacts.filter(x=>agentMatchKey(x.agent_name)===nameKey);
+  const c=requestedId?(allContacts.find(x=>String(x.id)===requestedId)||{agent_name:name}):(nameMatches.length===1?nameMatches[0]:{agent_name:name});
   editingContactName=name;
   editingContactOriginalName=c.agent_name||name; // best-effort cache; saveContactModal re-verifies before writing
+  editingContactProfileId=c.id==null?null:c.id;
   document.getElementById("contactModalName").textContent=c.display_name||resolvedDisplayName(name);
   loadOwnershipIntoContactModal(name).catch(()=>{});
   if(document.getElementById("contactDisplayName"))document.getElementById("contactDisplayName").value=c.display_name||"";
@@ -20951,17 +20957,18 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
     if(type===String(window.CTC_TYPE||'CTC Call').trim().toLowerCase())return true;
     return !(typeof window.rmV324IsSystemFeedActivity==='function'&&window.rmV324IsSystemFeedActivity(activity));
   }
-  async function deleteProfiles(names,findProfile,deleteProfile){
-    var report={deleted:[],skipped:[],failed:[]},seen=new Set();
-    for(var i=0;i<(names||[]).length;i++){
-      var name=String(names[i]||'').trim();if(!name||seen.has(name))continue;seen.add(name);
+  async function deleteProfiles(profiles,findProfile,deleteProfile){
+    var report={deleted:[],deletedIds:[],skipped:[],failed:[]},seen=new Set();
+    for(var i=0;i<(profiles||[]).length;i++){
+      var profile=profiles[i]||{},id=profile.id,name=String(profile.agent_name||'').trim(),key=String(id==null?'':id);
+      if(!name||!key||seen.has(key)){report.skipped.push({name:name||'(unnamed)',reason:'Missing or duplicate profile ID'});continue;}seen.add(key);
       try{
-        var result=await findProfile(name),matches=result&&Array.isArray(result.matches)?result.matches:[];
-        if(result&&result.ambiguous){report.skipped.push({name:name,reason:'Multiple profiles match'});continue;}
-        if(!result||!result.exact){report.skipped.push({name:name,reason:'Profile no longer exists'});continue;}
-        var deleted=await deleteProfile(result.exact.agent_name);
-        if(Array.isArray(deleted)&&deleted.length===0){report.failed.push({name:name,reason:'No profile was deleted'});continue;}
-        report.deleted.push(result.exact.agent_name);
+        var matches=await findProfile(id);
+        if(!Array.isArray(matches)||matches.length!==1||String(matches[0].id)!==key){report.skipped.push({name:name,reason:matches&&matches.length>1?'Profile ID is ambiguous':'Profile no longer exists'});continue;}
+        if(String(matches[0].agent_name||'').trim()!==name){report.skipped.push({name:name,reason:'Profile changed since selection'});continue;}
+        var deleted=await deleteProfile(id,name);
+        if(Array.isArray(deleted)&&deleted.length===0){report.skipped.push({name:name,reason:'Profile changed or no longer exists'});continue;}
+        report.deleted.push(name);report.deletedIds.push(key);
       }catch(error){report.failed.push({name:name,reason:String(error&&error.message||error)});}
     }
     return report;
@@ -20976,6 +20983,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 .rmV468SelectAll{display:flex;align-items:center;gap:6px;font-weight:750;color:var(--text-1);cursor:pointer}
 .rmV468SelectAll input,.rmV468RowSelect{width:16px;height:16px;accent-color:#6F5AA7;cursor:pointer}
 .rmV468SelectionToolbar #rmV468SelectionCount{font-weight:750;color:var(--brand-dark)}
+.rmV468SelectionHelp{flex-basis:100%;font-size:10px;color:var(--text-3)}
 .rmV468SelectionToolbar button:disabled{opacity:.5;cursor:not-allowed}
 .rmV468RowSelectWrap{display:flex;align-items:center;padding-right:4px;flex:0 0 auto}
 .rmV468RowSelect:disabled{cursor:not-allowed;opacity:.4}
@@ -20984,9 +20992,8 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 <script id="rm-v468-contact-repair-ui">
 (function(){
   'use strict';
-  var selected=new Set();
+  var selected=new Map();
   function el(id){return document.getElementById(id);}
-  function activeFilter(){var field=el('contactsFilter');return field&&field.value||'active';}
   function visibleRows(){return Array.from(document.querySelectorAll('#contacts-list .contact-row'));}
   function sync(){
     var count=el('rmV468SelectionCount'),button=el('rmV468DeleteSelectedBtn'),master=el('rmV468SelectAllShown');
@@ -21000,9 +21007,10 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
     visibleRows().forEach(function(row,index){
       var contact=(list||[])[index],wrap=document.createElement('label'),box=document.createElement('input');
       if(!contact)return;
-      wrap.className='rmV468RowSelectWrap';wrap.title=contact._activityOnly?'No saved contact profile to delete':'Select '+String(contact.agent_name||'contact');
-      box.type='checkbox';box.className='rmV468RowSelect';box.dataset.agent=encodeURIComponent(String(contact.agent_name||''));box.checked=selected.has(String(contact.agent_name||''));box.disabled=!!contact._activityOnly;
-      box.addEventListener('change',function(){var name=decodeURIComponent(box.dataset.agent||'');if(box.checked)selected.add(name);else selected.delete(name);sync();});
+      var key=contact.id==null?'':String(contact.id);
+      wrap.className='rmV468RowSelectWrap';wrap.title=contact._activityOnly?'No saved contact profile to delete':(!key?'This profile has no stable row ID':'Select '+String(contact.agent_name||'contact'));
+      box.type='checkbox';box.className='rmV468RowSelect';box.dataset.profileId=encodeURIComponent(key);box.dataset.agentName=encodeURIComponent(String(contact.agent_name||''));box.dataset.phone=encodeURIComponent(String(contact.phone||''));box.dataset.email=encodeURIComponent(String(contact.email||''));box.checked=!!key&&selected.has(key);box.disabled=!!contact._activityOnly||!key;
+      box.addEventListener('change',function(){var id=decodeURIComponent(box.dataset.profileId||'');if(box.checked)selected.set(id,{id:id,agent_name:String(contact.agent_name||''),phone:String(contact.phone||''),email:String(contact.email||'')});else selected.delete(id);sync();});
       wrap.appendChild(box);row.insertBefore(wrap,row.firstChild);
     });
     sync();
@@ -21015,22 +21023,24 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
     var list=window.rmV468FilterContacts(allContacts||[],activityOnlyContacts||[],field&&field.value||'active',query&&query.value||'',ownership);
     window.renderContacts(list);
   };
-  window.rmV468SelectShown=function(checked){visibleRows().forEach(function(row){var box=row.querySelector('.rmV468RowSelect');if(!box||box.disabled)return;box.checked=!!checked;var name=decodeURIComponent(box.dataset.agent||'');if(checked)selected.add(name);else selected.delete(name);});sync();};
+  window.rmV468SelectShown=function(checked){visibleRows().forEach(function(row){var box=row.querySelector('.rmV468RowSelect');if(!box||box.disabled)return;box.checked=!!checked;var id=decodeURIComponent(box.dataset.profileId||''),name=decodeURIComponent(box.dataset.agentName||'');if(checked)selected.set(id,{id:id,agent_name:name,phone:decodeURIComponent(box.dataset.phone||''),email:decodeURIComponent(box.dataset.email||'')});else selected.delete(id);});sync();};
   window.rmV468ClearSelection=function(){selected.clear();visibleRows().forEach(function(row){var box=row.querySelector('.rmV468RowSelect');if(box)box.checked=false;});sync();};
   function confirmDelete(names){
-    var list=names.slice(0,8).map(function(n){return '• '+n;}).join('\n');
-    var more=names.length>8?'\n…plus '+(names.length-8)+' more.':'';
-    return window.confirm('Permanently delete '+names.length+' shared contact profile'+(names.length===1?'':'s')+'?\n\n'+list+more+'\n\nThis removes the contact profile used by the RM and Core Team trackers. Activity history stays. Future imports may add the profile again.');
+    var totals=new Map();names.forEach(function(n){var key=String(n.agent_name||'');totals.set(key,(totals.get(key)||0)+1);});
+    var list=names.map(function(n){var name=String(n.agent_name||'(unnamed)'),details=[n.phone,n.email].filter(Boolean).join(' · ');return '• '+name+(totals.get(name)>1?' (profile ID '+n.id+')':'')+(details?' — '+details:'');}).join('\n');
+    return window.confirm('Permanently delete '+names.length+' shared contact profile'+(names.length===1?'':'s')+'?\n\n'+list+'\n\nThis removes the selected contact profile rows used by the RM and Core Team trackers. Activity history stays. Future imports may add a profile again.');
   }
   async function removeNames(names){
     if(!names.length||!confirmDelete(names))return;
     var button=el('rmV468DeleteSelectedBtn');if(button){button.disabled=true;button.textContent='Deleting…';}
     try{
-      var report=await window.rmV468DeleteProfiles(names,window.findAgentProfileByName,function(canonical){
-        return window.sbFetch('agent_profiles?agent_name=eq.'+encodeURIComponent(canonical),{method:'DELETE',prefer:'return=representation'});
+      var report=await window.rmV468DeleteProfiles(names,function(id){
+        return window.sbFetch('agent_profiles?id=eq.'+encodeURIComponent(id)+'&select=id,agent_name&limit=2');
+      },function(id){
+        return window.sbFetch('agent_profiles?id=eq.'+encodeURIComponent(id)+'&agent_name=eq.'+encodeURIComponent(name),{method:'DELETE',prefer:'return=representation'});
       });
-      report.deleted.forEach(function(name){selected.delete(name);});
-      if(typeof editingContactOriginalName!=='undefined'&&editingContactOriginalName&&report.deleted.indexOf(editingContactOriginalName)>=0)window.closeContactModal();
+      report.deletedIds.forEach(function(id){selected.delete(String(id));});
+      if(typeof editingContactProfileId!=='undefined'&&editingContactProfileId!=null&&report.deletedIds.indexOf(String(editingContactProfileId))>=0)window.closeContactModal();
       await window.loadContacts();if(typeof window.initAutocomplete==='function')window.initAutocomplete();
       var message=report.deleted.length+' profile'+(report.deleted.length===1?'':'s')+' permanently deleted; history kept.';
       if(report.skipped.length)message+=' '+report.skipped.length+' skipped for review.';
@@ -21040,8 +21050,8 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
     }catch(error){if(typeof window.toast==='function')window.toast('Delete failed: '+String(error&&error.message||error),'error',6000);}
     finally{if(button){button.textContent='Permanently delete selected';button.disabled=selected.size===0;}sync();}
   }
-  window.rmV468DeleteSelected=function(){removeNames(Array.from(selected));};
-  window.rmV468DeleteCurrentProfile=function(){var name=(typeof editingContactOriginalName!=='undefined'&&editingContactOriginalName)|| (typeof editingContactName!=='undefined'&&editingContactName);if(name)removeNames([name]);};
+  window.rmV468DeleteSelected=function(){removeNames(Array.from(selected.values()));};
+  window.rmV468DeleteCurrentProfile=function(){var name=(typeof editingContactOriginalName!=='undefined'&&editingContactOriginalName)|| (typeof editingContactName!=='undefined'&&editingContactName),id=(typeof editingContactProfileId!=='undefined'&&editingContactProfileId);if(name&&id!=null)removeNames([{id:id,agent_name:name}]);else if(typeof window.toast==='function')window.toast('Select the exact profile row to permanently delete it.','error',5000);};
   if(window.document.readyState==='loading')window.document.addEventListener('DOMContentLoaded',sync,{once:true});else sync();
 })();
 </script>
