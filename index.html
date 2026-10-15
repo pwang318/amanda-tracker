@@ -3,8 +3,8 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta content="rm-tracker-v454-explicit-owner-everywhere" name="version"/>
-<meta content="v454: Explicit saved RM owner wins everywhere, including strategic/tier routing, contacts, check-ins, health, and Amanda work queues. Tier never overrides an existing Amanda/Nyny assignment." name="build-notes"/>
+<meta content="rm-tracker-v468-contact-repair-bulk-select" name="version"/>
+<meta content="v468: Clear active/inactive/all contact filters, visible CTC history, profile delete controls, and bulk contact selection." name="build-notes"/>
 <meta content="no-cache, no-store, must-revalidate" http-equiv="Cache-Control"/>
 <meta content="no-cache" http-equiv="Pragma"/>
 <meta content="0" http-equiv="Expires"/>
@@ -2006,9 +2006,9 @@ body[data-rm-tab="week"] #view-week .v95-amanda-greeting{
 <div style="display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap">
 <input id="contactsSearch" oninput="filterContacts()" placeholder="Search by name, team / brokerage, phone, email or birthday..." style="flex:1;min-width:180px;padding:9px 11px;border:0.5px solid #D9D3C7;border-radius:8px;font-size:13px;font-family:inherit;color:#1a1a2e;outline:none" type="text"/>
 <select id="contactsFilter" onchange="filterContacts()" style="padding:8px 11px;border:0.5px solid var(--border);border-radius:8px;font-size:12px;font-family:inherit;color:var(--text-2);background:var(--surface);">
-<option value="all">Current agents</option>
-<option value="inactive">Inactive / removed</option>
-<option value="missing-profile">Needs contact profile</option>
+<option value="active">Active agents</option>
+<option value="inactive">Inactive agents</option>
+<option value="all">All agents</option>
 <option value="tier-Channel">Channel</option>
 <option value="tier-A">A-tier</option>
 <option value="tier-B">B-tier</option>
@@ -2018,12 +2018,10 @@ body[data-rm-tab="week"] #view-week .v95-amanda-greeting{
 <option value="rm-amanda">RM owner: Amanda</option>
 <option value="rm-unassigned">RM owner: Unassigned</option>
 <option value="bday">Has birthday</option>
-<option value="nobday">Missing birthday</option>
-<option value="noaddress">Missing address</option>
-<option value="noemail">Missing email</option>
-<option value="nophone">Missing phone</option>
+
 </select>
 </div>
+<div class="rmV468SelectionToolbar"><label class="rmV468SelectAll"><input id="rmV468SelectAllShown" type="checkbox" onchange="rmV468SelectShown(this.checked)"/><span>Select all shown</span></label><span id="rmV468SelectionCount" aria-live="polite">0 selected</span><button class="btn-sm" type="button" onclick="rmV468ClearSelection()">Clear selection</button><button class="btn-sm danger" id="rmV468DeleteSelectedBtn" type="button" onclick="rmV468DeleteSelected()" disabled>Permanently delete selected</button></div>
 <div id="contactsDupeBanner"></div>
 <div id="contacts-list"><div class="no-data">Loading contacts...</div></div>
 </div>
@@ -2267,7 +2265,7 @@ body[data-rm-tab="week"] #view-week .v95-amanda-greeting{
 </div>
 <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:flex-end">
 <button class="btn-sm" id="deleteAgentBtn" onclick="deleteAgent()" title="Use this when an agent should no longer count in Amanda's active roster, queues, Face Time or carryover.">Remove from active</button>
-<button class="btn-sm danger" id="permanentHideAgentBtn" onclick="permanentlyHideAgent()" title="Use only for a bad spelling or duplicate profile you want gone from the tracker">Delete bad/duplicate</button>
+<button class="btn-sm" id="permanentHideAgentBtn" onclick="permanentlyHideAgent()" title="Hide a bad spelling or duplicate from the tracker while preserving its row">Hide bad/duplicate</button><button class="btn-sm danger" id="rmV468DeleteProfileBtn" onclick="rmV468DeleteCurrentProfile()" title="Permanently delete the shared contact profile while keeping activity history">Permanently delete profile</button>
 </div>
 </div>
 </div>
@@ -7783,7 +7781,7 @@ async function doSearchHistory(name){
       sbFetch("agent_assignments?agent_name=ilike.*"+encodeURIComponent(name)+"*&select=agent_name,rm,lp&limit=20").catch(()=>[])
     ]);
     const profiles=historyResults[0].status==="fulfilled"?(historyResults[0].value||[]):[];
-    const activities=(historyResults[1].status==="fulfilled"?(historyResults[1].value||[]):[]).filter(a=>!(typeof rmV324IsSystemFeedActivity==="function"&&rmV324IsSystemFeedActivity(a)));
+    const activities=(historyResults[1].status==="fulfilled"?(historyResults[1].value||[]):[]).filter(rmV468HistoryActivityVisible);
     const callLogs=historyResults[2].status==="fulfilled"?(historyResults[2].value||[]):[];
     const historyOwnership=historyResults[3]&&historyResults[3].status==="fulfilled"?(historyResults[3].value||[]):[];(historyOwnership||[]).forEach(cacheOwnershipRow);
     if(historyResults.slice(0,3).every(r=>r.status==="rejected")){
@@ -20867,7 +20865,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
       if(!Array.isArray(profiles))throw new Error('Could not verify existing contacts.');
       currentPlan=window.rmV467BuildContactImportPlan(rows,profiles);
       var panel=el('div',{id:'rmV467ImportPanel',className:'rmV467Overlay'}),box=el('div',{className:'rmV467Dialog'}),title=el('h2',{},'Review address import'),close=el('button',{type:'button',className:'rmV467Close','aria-label':'Close'},'×'),top=el('div',{className:'rmV467DialogTop'});
-      close.onclick=closePreview;top.append(title,close);box.appendChild(top);box.appendChild(el('p',{className:'rmV467Help'},'Only new contacts and missing addresses will be saved. Existing addresses stay as they are. Conflicts and flagged workbook rows need review.'));
+      close.onclick=closePreview;top.append(title,close);box.appendChild(top);box.appendChild(el('p',{className:'rmV467Help'},'Only new contacts and missing addresses will be saved. Existing addresses stay as they are. New cards contain only the fields supplied in this workbook (currently name and address), so phone and email will stay blank unless they are included. Conflicts and flagged workbook rows need review.'));
       var previewHost=el('div',{id:'rmV467ImportPreview'});box.appendChild(previewHost);panel.appendChild(box);panel.addEventListener('click',function(event){if(event.target===panel)closePreview();});document.body.appendChild(panel);preview(currentPlan);
       setStatus('Review the import preview before applying changes.');input.value='';
     }catch(error){input.value='';setStatus(String(error&&error.message||error),true);if(typeof toast==='function')toast('Could not prepare address import: '+String(error&&error.message||error),'error',5500);}
@@ -20921,5 +20919,131 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 .rmV467Actions button:disabled{opacity:.55;cursor:wait}
 @media(max-width:650px){.rmV467Dialog{padding:13px}.rmV467Table{font-size:10px}.rmV467Table th,.rmV467Table td{padding:7px}}
 </style>
+<script id="rm-v468-contact-repair-core">
+(function(){
+  'use strict';
+  function isInactive(contact){return String(contact&&contact.relationship_status||'').trim().toLowerCase()==='inactive';}
+  function searchMatch(contact,query){
+    if(!query)return true;
+    return [contact.agent_name,contact.phone,contact.email,contact.birthday,contact.brokerage,contact.team]
+      .some(function(value){return String(value||'').toLowerCase().includes(query);});
+  }
+  function filterContacts(contacts,historyOnly,filter,query,ownership){
+    var profiles=Array.isArray(contacts)?contacts:[],placeholders=Array.isArray(historyOnly)?historyOnly:[];
+    var f=String(filter||'active'),q=String(query||'').toLowerCase().trim(),list;
+    if(f==='all')list=profiles.concat(placeholders);
+    else if(f==='inactive')list=profiles.filter(isInactive);
+    else list=profiles.filter(function(c){return !isInactive(c);});
+    if(q)list=list.filter(function(c){return searchMatch(c,q);});
+    if(f==='tier-Channel')list=list.filter(function(c){return c.tier==='Channel';});
+    else if(f==='tier-A')list=list.filter(function(c){return c.tier==='A';});
+    else if(f==='tier-B')list=list.filter(function(c){return c.tier==='B';});
+    else if(f==='tier-C')list=list.filter(function(c){return c.tier==='C';});
+    else if(f==='notier')list=list.filter(function(c){return !c.tier;});
+    else if(f==='rm-nyny')list=list.filter(function(c){return ownership(c.agent_name).rm==='Nyny';});
+    else if(f==='rm-amanda')list=list.filter(function(c){return ownership(c.agent_name).rm==='Amanda';});
+    else if(f==='rm-unassigned')list=list.filter(function(c){return !ownership(c.agent_name).rm;});
+    else if(f==='bday')list=list.filter(function(c){return !!c.birthday;});
+    return list;
+  }
+  function historyVisible(activity){
+    var type=String(activity&&activity.act_type||'').trim().toLowerCase();
+    if(type===String(window.CTC_TYPE||'CTC Call').trim().toLowerCase())return true;
+    return !(typeof window.rmV324IsSystemFeedActivity==='function'&&window.rmV324IsSystemFeedActivity(activity));
+  }
+  async function deleteProfiles(names,findProfile,deleteProfile){
+    var report={deleted:[],skipped:[],failed:[]},seen=new Set();
+    for(var i=0;i<(names||[]).length;i++){
+      var name=String(names[i]||'').trim();if(!name||seen.has(name))continue;seen.add(name);
+      try{
+        var result=await findProfile(name),matches=result&&Array.isArray(result.matches)?result.matches:[];
+        if(result&&result.ambiguous){report.skipped.push({name:name,reason:'Multiple profiles match'});continue;}
+        if(!result||!result.exact){report.skipped.push({name:name,reason:'Profile no longer exists'});continue;}
+        var deleted=await deleteProfile(result.exact.agent_name);
+        if(Array.isArray(deleted)&&deleted.length===0){report.failed.push({name:name,reason:'No profile was deleted'});continue;}
+        report.deleted.push(result.exact.agent_name);
+      }catch(error){report.failed.push({name:name,reason:String(error&&error.message||error)});}
+    }
+    return report;
+  }
+  window.rmV468FilterContacts=filterContacts;
+  window.rmV468HistoryActivityVisible=historyVisible;
+  window.rmV468DeleteProfiles=deleteProfiles;
+})();
+</script>
+<style id="rm-v468-contact-repair-css">
+.rmV468SelectionToolbar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:-3px 0 14px;padding:9px 10px;background:#FAF9FC;border:1px solid #E7E2ED;border-radius:10px;font-size:11px;color:var(--text-2)}
+.rmV468SelectAll{display:flex;align-items:center;gap:6px;font-weight:750;color:var(--text-1);cursor:pointer}
+.rmV468SelectAll input,.rmV468RowSelect{width:16px;height:16px;accent-color:#6F5AA7;cursor:pointer}
+.rmV468SelectionToolbar #rmV468SelectionCount{font-weight:750;color:var(--brand-dark)}
+.rmV468SelectionToolbar button:disabled{opacity:.5;cursor:not-allowed}
+.rmV468RowSelectWrap{display:flex;align-items:center;padding-right:4px;flex:0 0 auto}
+.rmV468RowSelect:disabled{cursor:not-allowed;opacity:.4}
+@media(max-width:620px){.rmV468SelectionToolbar{gap:6px}.rmV468SelectionToolbar button{padding:6px 8px}}
+</style>
+<script id="rm-v468-contact-repair-ui">
+(function(){
+  'use strict';
+  var selected=new Set();
+  function el(id){return document.getElementById(id);}
+  function activeFilter(){var field=el('contactsFilter');return field&&field.value||'active';}
+  function visibleRows(){return Array.from(document.querySelectorAll('#contacts-list .contact-row'));}
+  function sync(){
+    var count=el('rmV468SelectionCount'),button=el('rmV468DeleteSelectedBtn'),master=el('rmV468SelectAllShown');
+    if(count)count.textContent=selected.size+' selected';
+    if(button)button.disabled=selected.size===0;
+    if(master){var boxes=visibleRows().map(function(row){return row.querySelector('.rmV468RowSelect');}).filter(function(box){return box&&!box.disabled;});var checked=boxes.filter(function(box){return box.checked;}).length;master.checked=boxes.length>0&&checked===boxes.length;master.indeterminate=checked>0&&checked<boxes.length;}
+  }
+  function renderWithSelection(list){
+    var original=window.rmV468OriginalRenderContacts;
+    if(typeof original==='function')original(list);
+    visibleRows().forEach(function(row,index){
+      var contact=(list||[])[index],wrap=document.createElement('label'),box=document.createElement('input');
+      if(!contact)return;
+      wrap.className='rmV468RowSelectWrap';wrap.title=contact._activityOnly?'No saved contact profile to delete':'Select '+String(contact.agent_name||'contact');
+      box.type='checkbox';box.className='rmV468RowSelect';box.dataset.agent=encodeURIComponent(String(contact.agent_name||''));box.checked=selected.has(String(contact.agent_name||''));box.disabled=!!contact._activityOnly;
+      box.addEventListener('change',function(){var name=decodeURIComponent(box.dataset.agent||'');if(box.checked)selected.add(name);else selected.delete(name);sync();});
+      wrap.appendChild(box);row.insertBefore(wrap,row.firstChild);
+    });
+    sync();
+  }
+  window.rmV468OriginalRenderContacts=window.renderContacts;
+  window.renderContacts=renderWithSelection;
+  window.filterContacts=function(){
+    var query=el('contactsSearch'),field=el('contactsFilter');
+    var ownership=typeof window.getAgentOwnership==='function'?window.getAgentOwnership:function(){return{};};
+    var list=window.rmV468FilterContacts(allContacts||[],activityOnlyContacts||[],field&&field.value||'active',query&&query.value||'',ownership);
+    window.renderContacts(list);
+  };
+  window.rmV468SelectShown=function(checked){visibleRows().forEach(function(row){var box=row.querySelector('.rmV468RowSelect');if(!box||box.disabled)return;box.checked=!!checked;var name=decodeURIComponent(box.dataset.agent||'');if(checked)selected.add(name);else selected.delete(name);});sync();};
+  window.rmV468ClearSelection=function(){selected.clear();visibleRows().forEach(function(row){var box=row.querySelector('.rmV468RowSelect');if(box)box.checked=false;});sync();};
+  function confirmDelete(names){
+    var list=names.slice(0,8).map(function(n){return '• '+n;}).join('\n');
+    var more=names.length>8?'\n…plus '+(names.length-8)+' more.':'';
+    return window.confirm('Permanently delete '+names.length+' shared contact profile'+(names.length===1?'':'s')+'?\n\n'+list+more+'\n\nThis removes the contact profile used by the RM and Core Team trackers. Activity history stays. Future imports may add the profile again.');
+  }
+  async function removeNames(names){
+    if(!names.length||!confirmDelete(names))return;
+    var button=el('rmV468DeleteSelectedBtn');if(button){button.disabled=true;button.textContent='Deleting…';}
+    try{
+      var report=await window.rmV468DeleteProfiles(names,window.findAgentProfileByName,function(canonical){
+        return window.sbFetch('agent_profiles?agent_name=eq.'+encodeURIComponent(canonical),{method:'DELETE',prefer:'return=representation'});
+      });
+      report.deleted.forEach(function(name){selected.delete(name);});
+      if(typeof editingContactOriginalName!=='undefined'&&editingContactOriginalName&&report.deleted.indexOf(editingContactOriginalName)>=0)window.closeContactModal();
+      await window.loadContacts();if(typeof window.initAutocomplete==='function')window.initAutocomplete();
+      var message=report.deleted.length+' profile'+(report.deleted.length===1?'':'s')+' permanently deleted; history kept.';
+      if(report.skipped.length)message+=' '+report.skipped.length+' skipped for review.';
+      if(report.failed.length)message+=' '+report.failed.length+' failed.';
+      if(typeof window.toast==='function')window.toast(message,report.failed.length?'error':'success',6000);
+      sync();
+    }catch(error){if(typeof window.toast==='function')window.toast('Delete failed: '+String(error&&error.message||error),'error',6000);}
+    finally{if(button){button.textContent='Permanently delete selected';button.disabled=selected.size===0;}sync();}
+  }
+  window.rmV468DeleteSelected=function(){removeNames(Array.from(selected));};
+  window.rmV468DeleteCurrentProfile=function(){var name=(typeof editingContactOriginalName!=='undefined'&&editingContactOriginalName)|| (typeof editingContactName!=='undefined'&&editingContactName);if(name)removeNames([name]);};
+  if(window.document.readyState==='loading')window.document.addEventListener('DOMContentLoaded',sync,{once:true});else sync();
+})();
+</script>
 </body>
 </html>
