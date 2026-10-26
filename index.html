@@ -9432,6 +9432,7 @@ function renderContactsDupeBanner(contacts){
 function openDupeCleanupModal(){
   document.getElementById("dupeCleanupModal").classList.add("open");
   renderDupeCleanupList();
+  if(typeof window.rmV468SyncSelection==='function')window.rmV468SyncSelection();
 }
 function closeDupeCleanupModal(){document.getElementById("dupeCleanupModal").classList.remove("open");}
 function computeDupeGroups(){
@@ -21008,6 +21009,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
     Array.from(document.querySelectorAll('[data-profile-id]')).forEach(function(box){box.checked=selected.has(String(box.dataset.profileId||''));});
     if(master){var boxes=visibleRows().map(function(row){return row.querySelector('.rmV468RowSelect');}).filter(function(box){return box&&!box.disabled;});var checked=boxes.filter(function(box){return box.checked;}).length;master.checked=boxes.length>0&&checked===boxes.length;master.indeterminate=checked>0&&checked<boxes.length;}
   }
+  window.rmV468SyncSelection=sync;
   function renderWithSelection(list){
     var original=window.rmV468OriginalRenderContacts;
     if(typeof original==='function')original(list);
