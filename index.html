@@ -2085,7 +2085,7 @@ body[data-rm-tab="week"] #view-week .v95-amanda-greeting{
 <div class="modal-overlay" id="dupeCleanupModal">
 <div class="modal-box">
 <div class="modal-header"><span class="modal-title">Review duplicate agents</span><button class="modal-close" onclick="closeDupeCleanupModal()">×</button></div>
-<div class="modal-sub">Grouped by name, ignoring case/spacing. Review only — this tracker will NOT auto-delete profiles because older activities/assignments may still reference the stored agent_name. Use display name for spelling/casing corrections; merge records only through a deliberate data migration.</div>
+<div class="modal-sub">Review matching profiles, then select the duplicate profile rows you want to remove. Deletion removes only the selected contact profiles; activity history stays attached to the agent name. Check the details before deleting profiles with the same name.</div>
 <div id="dupeCleanupList" style="margin-top:10px;max-height:60vh;overflow-y:auto">Loading...</div>
 <div style="margin-top:14px"><button class="btn-sm" onclick="closeDupeCleanupModal()">Close</button></div>
 </div>
@@ -9450,10 +9450,11 @@ function renderDupeCleanupList(){
   const dupes=computeDupeGroups();
   const spelling=possibleSpellingPairs(allContacts||[]);
   if(!dupes.length&&!spelling.length){listEl.innerHTML='<div class="no-data">No duplicate or likely spelling issues found — all clean!</div>';return;}
-  let html='<div style="background:var(--warning-bg);border:1px solid #FFE69C;border-radius:8px;padding:12px 14px;margin-bottom:14px;font-size:12px;color:#765A19"><strong>Name cleanup is review-only.</strong><br>Casing is normalized automatically. Use the contact’s <strong>Correct name / display spelling</strong> field for a typo. True duplicate merges are never automatic because history must be preserved.'+(spelling.length?'<div style="margin-top:9px"><button onclick="markContactsSpellingReviewed()" style="font-size:11px;font-weight:700;padding:6px 10px;background:#fff;color:#765A19;border:1px solid #D9C38E;border-radius:6px;cursor:pointer">Mark spelling suggestions reviewed</button></div>':'')+'</div>';
+  let html='<div style="background:var(--warning-bg);border:1px solid #FFE69C;border-radius:8px;padding:12px 14px;margin-bottom:14px;font-size:12px;color:#765A19"><strong>Review before deleting.</strong><br>Casing is normalized automatically. Use the contact’s <strong>Correct name / display spelling</strong> field for a typo. Deleting a selected profile keeps its activity history; it does not merge profiles automatically.'+(spelling.length?'<div style="margin-top:9px"><button onclick="markContactsSpellingReviewed()" style="font-size:11px;font-weight:700;padding:6px 10px;background:#fff;color:#765A19;border:1px solid #D9C38E;border-radius:6px;cursor:pointer">Mark spelling suggestions reviewed</button></div>':'')+'</div>';
   if(dupes.length){
     html+='<div style="font-size:12px;font-weight:800;color:var(--text-1);margin:12px 0 8px">Exact duplicates</div>';
-    html+=dupes.map(group=>'<div style="border:1px solid var(--border-light);border-radius:8px;padding:12px;margin-bottom:12px"><div style="font-size:12px;font-weight:700;color:var(--text-1);margin-bottom:8px">'+properCase(group[0].agent_name)+' — '+group.length+' profiles</div>'+group.map(c=>{const details=[c.agent_name,c.phone||'',c.email||'',c.tier?('tier '+c.tier):'',c.birthday?('birthday '+c.birthday):'',c.relationship_status==='inactive'?'inactive':''].filter(Boolean).join(' · ');return '<div style="padding:7px 0;border-top:1px solid var(--border-light);font-size:11.5px;color:var(--text-2)">'+escHtml(details)+'</div>';}).join('')+'</div>').join('');
+    html+='<div class="rmV468DupeSelectionToolbar"><button class="btn-sm" type="button" onclick="rmV468SelectDuplicateProfiles(true)">Select all duplicate profiles</button><span id="rmV468DupeSelectionCount" aria-live="polite">0 selected</span><button class="btn-sm" type="button" onclick="rmV468ClearSelection()">Clear selection</button><button class="btn-sm danger" id="rmV468DupeDeleteSelectedBtn" type="button" onclick="rmV468DeleteSelected()" disabled>Permanently delete selected</button></div>';
+    html+=dupes.map(group=>'<div style="border:1px solid var(--border-light);border-radius:8px;padding:12px;margin-bottom:12px"><div style="font-size:12px;font-weight:700;color:var(--text-1);margin-bottom:8px">'+properCase(group[0].agent_name)+' — '+group.length+' profiles</div>'+group.map(c=>{const id=escHtml(c.id==null?'':String(c.id)),details=[c.agent_name,c.phone||'',c.email||'',c.tier?('tier '+c.tier):'',c.birthday?('birthday '+c.birthday):'',c.relationship_status==='inactive'?'inactive':''].filter(Boolean).join(' · ');return '<label style="display:flex;align-items:flex-start;gap:8px;padding:7px 0;border-top:1px solid var(--border-light);font-size:11.5px;color:var(--text-2);cursor:'+(id?'pointer':'not-allowed')+'"><input type="checkbox" data-profile-id="'+id+'" onchange="rmV468ToggleProfile(this.dataset.profileId,this.checked)"'+(id?'':' disabled')+' style="width:16px;height:16px;flex:0 0 auto;accent-color:#6F5AA7;margin-top:1px"><span>'+escHtml(details)+'</span></label>';}).join('')+'</div>').join('');
   }
   if(spelling.length){
     html+='<div style="font-size:12px;font-weight:800;color:var(--text-1);margin:16px 0 8px">Possible spelling matches</div>';
@@ -20989,7 +20990,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 .rmV468SelectionToolbar #rmV468SelectionCount{font-weight:750;color:var(--brand-dark)}
 .rmV468SelectionToolbar button:disabled{opacity:.5;cursor:not-allowed}
 .rmV468RowSelectWrap{display:flex;align-items:center;padding-right:4px;flex:0 0 auto}
-.rmV468RowSelect:disabled{cursor:not-allowed;opacity:.4}
+.rmV468RowSelect:disabled{cursor:not-allowed;opacity:.4}.rmV468DupeSelectionToolbar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:10px 0 12px;padding:9px 10px;background:#FAF9FC;border:1px solid #E7E2ED;border-radius:10px;font-size:11px;color:var(--text-2)}.rmV468DupeSelectionToolbar #rmV468DupeSelectionCount{font-weight:750;color:var(--brand-dark)}.rmV468DupeSelectionToolbar button:disabled{opacity:.5;cursor:not-allowed}
 @media(max-width:620px){.rmV468SelectionToolbar{gap:6px}.rmV468SelectionToolbar button{padding:6px 8px}}
 </style>
 <script id="rm-v468-contact-repair-ui">
@@ -21003,6 +21004,8 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
     var count=el('rmV468SelectionCount'),button=el('rmV468DeleteSelectedBtn'),master=el('rmV468SelectAllShown');
     if(count)count.textContent=selected.size+' selected';
     if(button)button.disabled=selected.size===0;
+    var dupeCount=el('rmV468DupeSelectionCount'),dupeButton=el('rmV468DupeDeleteSelectedBtn');if(dupeCount)dupeCount.textContent=selected.size+' selected';if(dupeButton)dupeButton.disabled=selected.size===0;
+    Array.from(document.querySelectorAll('[data-profile-id]')).forEach(function(box){box.checked=selected.has(String(box.dataset.profileId||''));});
     if(master){var boxes=visibleRows().map(function(row){return row.querySelector('.rmV468RowSelect');}).filter(function(box){return box&&!box.disabled;});var checked=boxes.filter(function(box){return box.checked;}).length;master.checked=boxes.length>0&&checked===boxes.length;master.indeterminate=checked>0&&checked<boxes.length;}
   }
   function renderWithSelection(list){
@@ -21012,8 +21015,8 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
       var contact=(list||[])[index],wrap=document.createElement('label'),box=document.createElement('input');
       if(!contact)return;
       wrap.className='rmV468RowSelectWrap';wrap.title=contact._activityOnly?'No saved contact profile to delete':'Select '+String(contact.agent_name||'contact');
-      box.type='checkbox';box.className='rmV468RowSelect';box.dataset.agent=encodeURIComponent(String(contact.agent_name||''));box.checked=selected.has(String(contact.agent_name||''));box.disabled=!!contact._activityOnly;
-      box.addEventListener('change',function(){var name=decodeURIComponent(box.dataset.agent||'');if(box.checked)selected.add(name);else selected.delete(name);sync();});
+      box.type='checkbox';box.className='rmV468RowSelect';box.dataset.profileId=contact.id==null?'':String(contact.id);box.checked=selected.has(String(contact.id==null?'':contact.id));box.disabled=!!contact._activityOnly||contact.id==null;
+      box.addEventListener('change',function(){var id=String(box.dataset.profileId||'');if(!id)return;if(box.checked)selected.add(id);else selected.delete(id);sync();});
       wrap.appendChild(box);row.insertBefore(wrap,row.firstChild);
     });
     sync();
@@ -21026,8 +21029,37 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
     var list=window.rmV468FilterContacts(allContacts||[],activityOnlyContacts||[],field&&field.value||'active',query&&query.value||'',ownership);
     window.renderContacts(list);
   };
-  window.rmV468SelectShown=function(checked){visibleRows().forEach(function(row){var box=row.querySelector('.rmV468RowSelect');if(!box||box.disabled)return;box.checked=!!checked;var name=decodeURIComponent(box.dataset.agent||'');if(checked)selected.add(name);else selected.delete(name);});sync();};
-  window.rmV468ClearSelection=function(){selected.clear();visibleRows().forEach(function(row){var box=row.querySelector('.rmV468RowSelect');if(box)box.checked=false;});sync();};
+  window.rmV468SelectShown=function(checked){visibleRows().forEach(function(row){var box=row.querySelector('.rmV468RowSelect');if(!box||box.disabled)return;box.checked=!!checked;var id=String(box.dataset.profileId||'');if(!id)return;if(checked)selected.add(id);else selected.delete(id);});sync();};
+  window.rmV468ClearSelection=function(){selected.clear();visibleRows().forEach(function(row){var box=row.querySelector('.rmV468RowSelect');if(box)box.checked=false;});Array.from(document.querySelectorAll('[data-profile-id]')).forEach(function(box){box.checked=false;});sync();};
+  window.rmV468ToggleProfile=function(id,checked){id=String(id||'');if(!id)return;if(checked)selected.add(id);else selected.delete(id);sync();};
+  window.rmV468SelectDuplicateProfiles=function(checked){var counts=new Map();(allContacts||[]).forEach(function(c){var key=typeof agentMatchKey==='function'?agentMatchKey(c.agent_name):String(c.agent_name||'').trim().toLowerCase();if(key)counts.set(key,(counts.get(key)||0)+1);});(allContacts||[]).forEach(function(c){var key=typeof agentMatchKey==='function'?agentMatchKey(c.agent_name):String(c.agent_name||'').trim().toLowerCase();if(!key||counts.get(key)<2||c.id==null)return;var id=String(c.id);if(checked)selected.add(id);else selected.delete(id);});sync();};
+  async function removeSelectedProfiles(ids){
+    var byId=new Map((allContacts||[]).filter(function(c){return c&&c.id!=null;}).map(function(c){return[String(c.id),c];}));
+    var profiles=Array.from(new Set((ids||[]).map(function(id){return String(id);}))).map(function(id){return byId.get(id);}).filter(Boolean);
+    if(!profiles.length)return;
+    var preview=profiles.slice(0,8).map(function(c){return '• '+String(c.agent_name||'Agent')+(c.phone?' — '+c.phone:'')+(c.email?' — '+c.email:'');}).join('\\n');
+    var more=profiles.length>8?'\\n…plus '+(profiles.length-8)+' more.':'';
+    if(!window.confirm('Permanently delete '+profiles.length+' selected contact profile'+(profiles.length===1?'':'s')+'?\\n\\n'+preview+more+'\\n\\nOnly these profile rows will be removed from both trackers. Activity history stays. Future imports may add a profile again.'))return;
+    var buttons=[el('rmV468DeleteSelectedBtn'),el('rmV468DupeDeleteSelectedBtn')].filter(Boolean);
+    buttons.forEach(function(button){button.disabled=true;button.textContent='Deleting…';});
+    var deleted=[],failed=[];
+    try{
+      for(var i=0;i<profiles.length;i++){
+        var profile=profiles[i],id=String(profile.id);
+        try{
+          var response=await window.sbFetch('agent_profiles?id=eq.'+encodeURIComponent(id),{method:'DELETE',prefer:'return=representation'});
+          if(Array.isArray(response)&&response.length===0)failed.push({id:id,name:profile.agent_name||'Agent'});
+          else{deleted.push(id);selected.delete(id);}
+        }catch(error){failed.push({id:id,name:profile.agent_name||'Agent',error:error});}
+      }
+      await window.loadContacts();if(typeof window.initAutocomplete==='function')window.initAutocomplete();
+      if(el('dupeCleanupModal')&&el('dupeCleanupModal').classList.contains('open'))renderDupeCleanupList();
+      var message=deleted.length+' profile'+(deleted.length===1?'':'s')+' permanently deleted; history kept.';
+      if(failed.length)message+=' '+failed.length+' failed — still selected for retry.';
+      if(typeof window.toast==='function')window.toast(message,failed.length?'error':'success',6000);
+    }catch(error){if(typeof window.toast==='function')window.toast('Delete failed: '+String(error&&error.message||error),'error',6000);}
+    finally{buttons.forEach(function(button){button.textContent='Permanently delete selected';});sync();}
+  }
   function confirmDelete(names){
     var list=names.slice(0,8).map(function(n){return '• '+n;}).join('\n');
     var more=names.length>8?'\n…plus '+(names.length-8)+' more.':'';
@@ -21051,7 +21083,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
     }catch(error){if(typeof window.toast==='function')window.toast('Delete failed: '+String(error&&error.message||error),'error',6000);}
     finally{if(button){button.textContent='Permanently delete selected';button.disabled=selected.size===0;}sync();}
   }
-  window.rmV468DeleteSelected=function(){removeNames(Array.from(selected));};
+  window.rmV468DeleteSelected=function(){removeSelectedProfiles(Array.from(selected));};
   window.rmV468DeleteCurrentProfile=function(){var name=(typeof editingContactOriginalName!=='undefined'&&editingContactOriginalName)|| (typeof editingContactName!=='undefined'&&editingContactName);if(name)removeNames([name]);};
   if(window.document.readyState==='loading')window.document.addEventListener('DOMContentLoaded',sync,{once:true});else sync();
 })();
