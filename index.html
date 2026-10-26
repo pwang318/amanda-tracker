@@ -3,8 +3,8 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta content="rm-tracker-v468-contact-repair-bulk-select" name="version"/>
-<meta content="v468: Clear active/inactive/all contact filters, visible CTC history, profile delete controls, and bulk contact selection." name="build-notes"/>
+<meta content="rm-tracker-v469-duplicate-bulk-delete" name="version"/>
+<meta content="v469: Select and permanently delete duplicate contact profile rows by ID while preserving activity history." name="build-notes"/>
 <meta content="no-cache, no-store, must-revalidate" http-equiv="Cache-Control"/>
 <meta content="no-cache" http-equiv="Pragma"/>
 <meta content="0" http-equiv="Expires"/>
@@ -21037,9 +21037,9 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
     var byId=new Map((allContacts||[]).filter(function(c){return c&&c.id!=null;}).map(function(c){return[String(c.id),c];}));
     var profiles=Array.from(new Set((ids||[]).map(function(id){return String(id);}))).map(function(id){return byId.get(id);}).filter(Boolean);
     if(!profiles.length)return;
-    var preview=profiles.slice(0,8).map(function(c){return '• '+String(c.agent_name||'Agent')+(c.phone?' — '+c.phone:'')+(c.email?' — '+c.email:'');}).join('\\n');
-    var more=profiles.length>8?'\\n…plus '+(profiles.length-8)+' more.':'';
-    if(!window.confirm('Permanently delete '+profiles.length+' selected contact profile'+(profiles.length===1?'':'s')+'?\\n\\n'+preview+more+'\\n\\nOnly these profile rows will be removed from both trackers. Activity history stays. Future imports may add a profile again.'))return;
+    var preview=profiles.slice(0,8).map(function(c){return '• '+String(c.agent_name||'Agent')+(c.phone?' — '+c.phone:'')+(c.email?' — '+c.email:'');}).join('\n');
+    var more=profiles.length>8?'\n…plus '+(profiles.length-8)+' more.':'';
+    if(!window.confirm('Permanently delete '+profiles.length+' selected contact profile'+(profiles.length===1?'':'s')+'?\n\n'+preview+more+'\n\nOnly these profile rows will be removed from both trackers. Activity history stays. Future imports may add a profile again.'))return;
     var buttons=[el('rmV468DeleteSelectedBtn'),el('rmV468DupeDeleteSelectedBtn')].filter(Boolean);
     buttons.forEach(function(button){button.disabled=true;button.textContent='Deleting…';});
     var deleted=[],failed=[];
