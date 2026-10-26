@@ -21086,7 +21086,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
     finally{if(button){button.textContent='Permanently delete selected';button.disabled=selected.size===0;}sync();}
   }
   window.rmV468DeleteSelected=function(){removeSelectedProfiles(Array.from(selected));};
-  window.rmV468DeleteCurrentProfile=function(){var name=(typeof editingContactOriginalName!=='undefined'&&editingContactOriginalName)|| (typeof editingContactName!=='undefined'&&editingContactName);if(name)removeNames([name]);};
+  window.rmV468DeleteCurrentProfile=function(){var name=(typeof editingContactOriginalName!=='undefined'&&editingContactOriginalName)|| (typeof editingContactName!=='undefined'&&editingContactName);if(!name)return;var key=typeof agentMatchKey==='function'?agentMatchKey(name):String(name).trim().toLowerCase();var matches=(allContacts||[]).filter(function(c){var candidate=typeof agentMatchKey==='function'?agentMatchKey(c.agent_name):String(c.agent_name||'').trim().toLowerCase();return candidate===key;});if(matches.length>1){if(typeof window.toast==='function')window.toast('More than one profile uses this name. Select the correct row in duplicate review.','error',6000);if(typeof openDupeCleanupModal==='function')openDupeCleanupModal();return;}if(matches.length===1&&matches[0].id!=null){removeSelectedProfiles([matches[0].id]);return;}removeNames([name]);};
   if(window.document.readyState==='loading')window.document.addEventListener('DOMContentLoaded',sync,{once:true});else sync();
 })();
 </script>
