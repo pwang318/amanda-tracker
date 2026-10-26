@@ -21045,4 +21045,15 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
       var message=report.deleted.length+' profile'+(report.deleted.length===1?'':'s')+' permanently deleted; history kept.';
       if(report.skipped.length)message+=' '+report.skipped.length+' skipped for review.';
       if(report.failed.length)message+=' '+report.failed.length+' failed.';
-      if(typeof window.toast==='function')window.toast(mes
+      if(typeof window.toast==='function')window.toast(message,report.failed.length?'error':'success',6000);
+      sync();
+    }catch(error){if(typeof window.toast==='function')window.toast('Delete failed: '+String(error&&error.message||error),'error',6000);}
+    finally{if(button){button.textContent='Permanently delete selected';button.disabled=selected.size===0;}sync();}
+  }
+  window.rmV468DeleteSelected=function(){removeNames(Array.from(selected));};
+  window.rmV468DeleteCurrentProfile=function(){var name=(typeof editingContactOriginalName!=='undefined'&&editingContactOriginalName)|| (typeof editingContactName!=='undefined'&&editingContactName);if(name)removeNames([name]);};
+  if(window.document.readyState==='loading')window.document.addEventListener('DOMContentLoaded',sync,{once:true});else sync();
+})();
+</script>
+</body>
+</html>
