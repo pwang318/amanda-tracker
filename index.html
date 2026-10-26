@@ -9086,8 +9086,9 @@ async function deleteAgent(){
   try{
     const{matches,exact,ambiguous}=await findAgentProfileByName(name);
     if(ambiguous){
-      // The contact modal is name-based, so apply the explicit remove action to
-      // every matching duplicate profile instead of silently refusing it.
+      if(!confirm(matches.length+" profiles match this name. Move all matching profiles to inactive across both trackers? Contact data and activity history will be kept."))return;
+      // The contact modal is name-based, so apply the confirmed action to every
+      // exact case-insensitive name match instead of silently refusing it.
       await Promise.all(matches.map(profile=>sbProfileWrite(
         "agent_profiles?agent_name=eq."+encodeURIComponent(profile.agent_name),
         "PATCH",
