@@ -8983,9 +8983,10 @@ async function unmarkDNC(id){
 let editingContactName=null,editingContactOriginalName=null;
 async function findAgentProfileByName(name){
   if(!name)return{matches:[],exact:null,ambiguous:false};
-  const rows=await sbFetch("agent_profiles?agent_name=ilike."+encodeURIComponent(name)+"&limit=5").catch(()=>null);
+  const rows=await sbFetch("agent_profiles?agent_name=ilike."+encodeURIComponent(name)+"&limit=1000").catch(()=>null);
   if(rows===null)throw new Error("Couldn't check existing contacts — try again.");
-  return{matches:rows,exact:rows.length===1?rows[0]:null,ambiguous:rows.length>1};
+  const exactMatches=rows.filter(row=>String(row.agent_name||"").trim().toLowerCase()===String(name).trim().toLowerCase());
+  return{matches:exactMatches,exact:exactMatches.length===1?exactMatches[0]:null,ambiguous:exactMatches.length>1};
 }
 function openAddAgentModal(){
   document.getElementById("addAgentName").value="";
@@ -9085,17 +9086,26 @@ async function deleteAgent(){
   try{
     const{matches,exact,ambiguous}=await findAgentProfileByName(name);
     if(ambiguous){
-      toast(matches.length+" contacts match this name — not removed. Clean up the duplicates first (Management View \u2192 Clean up duplicate agents).","error",6000);
-      return;
-    }
-    if(!exact){
-      await sbProfileWrite("agent_profiles","POST",{agent_name:name,relationship_status:"inactive"});
+      // The contact modal is name-based, so apply the explicit remove action to
+      // every matching duplicate profile instead of silently refusing it.
+      await Promise.all(matches.map(profile=>sbProfileWrite(
+        "agent_profiles?agent_name=eq."+encodeURIComponent(profile.agent_name),
+        "PATCH",
+        {relationship_status:"inactive"}
+      )));
+      const removedNames=[...new Map(matches.filter(profile=>profile.agent_name).map(profile=>[wp18Key(profile.agent_name),profile.agent_name])).values()];
+      await Promise.all(removedNames.map(removeAgentAcrossSharedTrackers));
+      toast(displayLabel+" moved to inactive across RM + Core Team ("+matches.length+" matching profiles updated). Review duplicates in Management View when convenient.","success",6000);
     }else{
-      await sbProfileWrite("agent_profiles?agent_name=eq."+encodeURIComponent(exact.agent_name),"PATCH",{relationship_status:"inactive"});
+      if(!exact){
+        await sbProfileWrite("agent_profiles","POST",{agent_name:name,relationship_status:"inactive"});
+      }else{
+        await sbProfileWrite("agent_profiles?agent_name=eq."+encodeURIComponent(exact.agent_name),"PATCH",{relationship_status:"inactive"});
+      }
+      const removedCanonical=(exact&&exact.agent_name)||name;
+      await removeAgentAcrossSharedTrackers(removedCanonical);
+      toast(displayLabel+" removed across RM + Core Team ✓","success");
     }
-    const removedCanonical=(exact&&exact.agent_name)||name;
-    await removeAgentAcrossSharedTrackers(removedCanonical);
-    toast(displayLabel+" removed across RM + Core Team ✓","success");
     closeContactModal();
     loadContacts();
     initAutocomplete();
@@ -21035,15 +21045,4 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
       var message=report.deleted.length+' profile'+(report.deleted.length===1?'':'s')+' permanently deleted; history kept.';
       if(report.skipped.length)message+=' '+report.skipped.length+' skipped for review.';
       if(report.failed.length)message+=' '+report.failed.length+' failed.';
-      if(typeof window.toast==='function')window.toast(message,report.failed.length?'error':'success',6000);
-      sync();
-    }catch(error){if(typeof window.toast==='function')window.toast('Delete failed: '+String(error&&error.message||error),'error',6000);}
-    finally{if(button){button.textContent='Permanently delete selected';button.disabled=selected.size===0;}sync();}
-  }
-  window.rmV468DeleteSelected=function(){removeNames(Array.from(selected));};
-  window.rmV468DeleteCurrentProfile=function(){var name=(typeof editingContactOriginalName!=='undefined'&&editingContactOriginalName)|| (typeof editingContactName!=='undefined'&&editingContactName);if(name)removeNames([name]);};
-  if(window.document.readyState==='loading')window.document.addEventListener('DOMContentLoaded',sync,{once:true});else sync();
-})();
-</script>
-</body>
-</html>
+      if(typeof window.toast==='function')window.toast(mes
