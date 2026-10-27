@@ -8989,6 +8989,7 @@ async function findAgentProfileByName(name){
   return{matches:exactMatches,exact:exactMatches.length===1?exactMatches[0]:null,ambiguous:exactMatches.length>1};
 }
 function openAddAgentModal(){
+  if(document.getElementById('rm470MeetingAfterSave'))document.getElementById('rm470MeetingAfterSave').checked=false;
   document.getElementById("addAgentName").value="";
   document.getElementById("addAgentPhone").value="";
   document.getElementById("addAgentEmail").value="";
@@ -9032,9 +9033,10 @@ async function saveNewAgent(){
       return;
     }
     if(exact){
-      await sbProfileWrite("agent_profiles?agent_name=eq."+encodeURIComponent(exact.agent_name),"PATCH",Object.assign({relationship_status:"active"},exact.display_name===HIDDEN_PROFILE_MARKER?{display_name:null}:{},payload));
-      await clearSharedRemovalMarker(exact.agent_name).catch(()=>{});
-      toast(name+" already existed — updated and reactivated across both trackers ✓","success");
+      toast(name+" already exists. Review and edit the existing contact instead of adding a duplicate.","warning",6000);
+      closeAddAgentModal();
+      await openContactModal(exact.agent_name);
+      return;
     }else{
       payload.agent_name=name;
       await sbProfileWrite("agent_profiles","POST",payload);
@@ -9042,9 +9044,11 @@ async function saveNewAgent(){
     }
     if(typeof wp18EnsureStrategicOwnership==="function")await wp18EnsureStrategicOwnership((exact&&exact.agent_name)||name,payload).catch(()=>{});
     if(typeof v77ApplyStrategicPartnerRouting==="function")await v77ApplyStrategicPartnerRouting((exact&&exact.agent_name)||name,payload).catch(()=>{});
+    const openMeeting=document.getElementById('rm470MeetingAfterSave')?.checked;
     closeAddAgentModal();
-    loadContacts();
+    await loadContacts();
     initAutocomplete();
+    if(openMeeting && payload.relationship_type==='realtor')window.rm470StartMeeting(name);
   }catch(e){toast("Failed: "+e.message,"error");}
   finally{if(btn){btn.disabled=false;btn.textContent="Add relationship";}}
 }
@@ -9322,13 +9326,21 @@ async function saveAgentOwnership(name){
 }
 let allContacts=[];
 let activityOnlyContacts=[];
+async function rm470LoadAllProfiles(){
+  const rows=[];
+  for(let offset=0;;){
+    const page=await sbFetch("agent_profiles?select=*&order=agent_name.asc&limit=1000&offset="+offset);
+    if(!Array.isArray(page))throw new Error("Unable to read contact profiles");
+    rows.push(...page); if(page.length<1000)return rows; offset+=page.length;
+  }
+}
 async function loadContacts(){
   const el=document.getElementById("contacts-list");
   if(!el)return;
   el.innerHTML='<div class="no-data">Loading...</div>';
   try{
     const[profiles,agentList,ownershipRows,activityRows,prospectRows,lpCallRows]=await Promise.all([
-      sbFetch("agent_profiles?select=*&order=agent_name.asc&limit=5000"),
+      rm470LoadAllProfiles(),
       sbFetch("agent_profiles?select=agent_name&order=agent_name.asc&limit=5000"),
       sbFetch("agent_assignments?select=*&limit=5000").catch(()=>[]),
       sbFetch("amanda_activities?select=agent_name&order=created_at.desc&limit=5000").catch(()=>[]),
@@ -21078,5 +21090,71 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
   if(window.document.readyState==='loading')window.document.addEventListener('DOMContentLoaded',sync,{once:true});else sync();
 })();
 </script>
+
+<style id="rm470ContactsStyle">
+.rm470-tools{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0}.rm470-tools button,.rm470-tools select{padding:9px 12px;border:1px solid #d9d3e7;border-radius:8px;background:#fff;color:#4e3d8a;font:inherit;font-size:12px;cursor:pointer}.rm470-tools button:hover{background:#eee9f8}.rm470-help{font-size:12px;color:#645b70;margin:8px 0;line-height:1.5}.rm470-missing{display:inline-block;background:#fff1d6;color:#795300;border-radius:6px;padding:3px 6px;margin:3px 4px 0 0;font-size:11px}.rm470-address{font-size:12px;color:#645b70;margin-top:5px;overflow-wrap:anywhere}#rm470Summary{font-size:12px;font-weight:600;margin-bottom:12px}.contact-row{flex-wrap:wrap}.contact-info{min-width:160px}
+</style>
+<script id="rm470Contacts">
+(function(){
+ 'use strict';
+ const $=id=>document.getElementById(id);
+ const fields=[['email','Email'],['phone','Phone'],['birthday','Birthday'],['address','Home address']];
+ let current=[],base=[];
+ function missing(c){return fields.filter(([key])=>!String(c[key]||'').trim()).map(([key])=>key);}
+ function csvCell(value){let s=String(value==null?'':value);if(/^[\s]*[=+@-]/.test(s))s="'"+s;return '"'+s.replace(/"/g,'""')+'"';}
+ function profileRows(){return (allContacts||[]).filter(c=>!c._activityOnly&&c.display_name!==HIDDEN_PROFILE_MARKER);}
+ function matches(c,key){const m=missing(c);return !key||(key==='any'?m.length>0:key==='complete'?m.length===0:key==='profile'?!!c._activityOnly:m.includes(key));}
+ const previousRender=window.renderContacts;
+ window.renderContacts=function(list){
+   base=(list||[]).filter(c=>c.display_name!==HIDDEN_PROFILE_MARKER);
+   const need=$('rm470Missing')?.value||'';
+   current=base.filter(c=>matches(c,need));
+   previousRender(current);
+   const counts=fields.map(([key,label])=>label+': '+base.filter(c=>missing(c).includes(key)).length).join(' · ');
+   if($('rm470Summary'))$('rm470Summary').textContent=current.length+' shown of '+base.length+' in this search / roster · Missing '+counts;
+   document.querySelectorAll('#contacts-list .contact-row').forEach((row,i)=>{
+     const c=current[i],info=row.querySelector('.contact-info');if(!c||!info)return;
+     const address=document.createElement('div');address.className='rm470-address';address.textContent=c.address?'Home: '+c.address:'Home address missing';info.appendChild(address);
+     fields.filter(([key])=>missing(c).includes(key)).forEach(([,label])=>{const tag=document.createElement('span');tag.className='rm470-missing';tag.textContent='Missing '+label.toLowerCase();info.appendChild(tag);});
+     const edit=Array.from(row.querySelectorAll('button')).find(b=>b.textContent.trim()==='Contact');if(edit)edit.textContent='Edit contact';
+     if(!c._activityOnly){const meeting=document.createElement('button');meeting.className='btn-sm';meeting.textContent='Log meeting';meeting.onclick=()=>window.rm470StartMeeting(c.agent_name);row.appendChild(meeting);}
+   });
+ };
+ window.rm470StartMeeting=function(name){
+   switchTab('log');
+   const input=$('agentInput'),type=$('activityType');
+   if(input){input.value=name;input.dispatchEvent(new Event('input',{bubbles:true}));}
+   if(type){type.value='New Realtor Meeting';type.dispatchEvent(new Event('change',{bubbles:true}));}
+   if(typeof toast==='function')toast('Contact ready. Review the meeting date, participants and details, then save the meeting.','success',6000);
+ };
+ function exportRows(scope){
+   let rows=scope==='all'?profileRows():current;
+   if(scope==='selected'){
+     const names=new Set(Array.from(document.querySelectorAll('#contacts-list .rmV468RowSelect:checked')).map(b=>b.dataset.profileName));
+     rows=current.filter(c=>names.has(String(c.agent_name||'')));
+   }
+   if(!rows.length){toast('No contacts in this export. Adjust your filters or select contacts.','error');return;}
+   const header=['Name','Record name','Email','Phone','Birthday (MM/DD)','Home address','Brokerage / team','Tier','RM owner','LP owner','Relationship type','Status','Do not contact','Contact profile saved','Missing email','Missing phone','Missing birthday','Missing home address','Missing details','Personal notes'];
+   const data=rows.map(c=>{const o=typeof getAgentOwnership==='function'?getAgentOwnership(c.agent_name):{},m=missing(c);return [c.display_name||c.agent_name,c.agent_name,c.email,c.phone,c.birthday,c.address,c.brokerage,c.tier,o.rm,o.lp,c.relationship_type,c.relationship_status,c.do_not_contact?'Yes':'No',c._activityOnly?'No':'Yes',...fields.map(([key])=>m.includes(key)?'Yes':'No'),fields.filter(([key])=>m.includes(key)).map(([,label])=>label).join('; '),c.personal_notes];});
+   const csv='\uFEFF'+[header,...data].map(r=>r.map(csvCell).join(',')).join('\r\n');
+   const url=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8;'})),a=document.createElement('a');a.href=url;a.download='RM-contacts-'+scope+'-'+new Date().toISOString().slice(0,10)+'.csv';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);toast(rows.length+' contacts exported. Open the CSV in Excel.','success');
+ }
+ function mount(){
+   const list=$('contacts-list');if(!list||$('rm470Tools'))return;
+   const tools=document.createElement('div');tools.id='rm470Tools';tools.className='rm470-tools';
+   tools.innerHTML='<label>Contact details <select id="rm470Missing" aria-label="Filter missing contact details"><option value="">All details</option><option value="any">Missing any detail</option><option value="email">Missing email</option><option value="phone">Missing phone</option><option value="birthday">Missing birthday</option><option value="address">Missing home address</option><option value="complete">Complete contact details</option><option value="profile">Needs saved contact profile</option></select></label><button type="button" data-export="filtered">Export filtered contacts</button><button type="button" data-export="all">Export all saved contacts</button><button type="button" data-export="selected">Export selected shown</button>';
+   list.parentNode.insertBefore(tools,$('contactsDupeBanner'));
+   const help=document.createElement('div');help.className='rm470-help';help.textContent='Choose a roster or owner above, then filter missing details. CSV exports open in Excel and include email, phone, birthday, home address and missing-detail flags. Select rows to delete in bulk. Hidden contacts are excluded.';tools.after(help);
+   const summary=document.createElement('div');summary.id='rm470Summary';summary.setAttribute('aria-live','polite');help.after(summary);
+   $('rm470Missing').onchange=()=>{if(typeof rmV468ClearSelection==='function')rmV468ClearSelection();filterContacts();};
+   tools.querySelectorAll('[data-export]').forEach(b=>b.onclick=()=>exportRows(b.dataset.export));
+   const save=$('saveNewAgentBtn');if(save){const label=document.createElement('label');label.className='rm470-help';label.style.display='block';label.innerHTML='<input type="checkbox" id="rm470MeetingAfterSave"> After saving, open the new-agent meeting form';save.before(label);}
+   const log=$('agentInput');if(log){const add=document.createElement('button');add.type='button';add.className='btn-sm';add.textContent='+ Add new agent contact';add.onclick=()=>{const name=log.value;openAddAgentModal();$('addAgentName').value=name;$('rm470MeetingAfterSave').checked=true;};log.parentNode.after(add);}
+   filterContacts();
+ }
+ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',mount,{once:true});else mount();
+})();
+</script>
+
 </body>
 </html>
