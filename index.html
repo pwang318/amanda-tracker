@@ -3,8 +3,8 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta content="rm-tracker-v474-all-scorecards-powerbi-active-agent-count-20261027" name="version"/>
-<meta content="v474: All RM scorecard views use the current Power BI A/B/C roster toward 200 for the 20% Active Agent Count score." name="build-notes"/>
+<meta content="rm-tracker-v475-fix-official-scorecard-powerbi-scope-20261027" name="version"/>
+<meta content="v475: Official RM scorecard uses its local Power BI snapshot rows and count, avoiding an undefined roster variable." name="build-notes"/>
 <meta content="no-cache, no-store, must-revalidate" http-equiv="Cache-Control"/>
 <meta content="no-cache" http-equiv="Pragma"/>
 <meta content="0" http-equiv="Expires"/>
@@ -15917,7 +15917,7 @@ async function renderOfficial(force){
     const monthlyLeadCount=Math.max(scoredMonthLeads.length,verifiedLeadCheckpoint),monthDay=Math.max(1,now.getDate()),monthDays=new Date(now.getFullYear(),now.getMonth()+1,0).getDate(),projectedLeadCount=Math.round(monthlyLeadCount/monthDay*monthDays), referralRate=total?projectedLeadCount/total:0, ratioTarget=1.15;
     const ratioPct=Math.min(100,(referralRate/ratioTarget)*100),ratioPts=ratioPct/100*30;
     // The scorecard's 20% count is the full active Power BI roster, not the separate 90-day retained subset.
-    const activePartners=currentPowerBiAgents.filter(Boolean),activePartnerCount=officialTotalActive||currentPowerBiAgents.length,activePct=Math.min(100,(activePartnerCount/200)*100),activePts=activePct/100*20;
+    const activePartners=sourceRows.filter(Boolean),activePartnerCount=Number(meta&&meta.total||0)||activePartners.length,activePct=Math.min(100,(activePartnerCount/200)*100),activePts=activePct/100*20;
     const target=danielTierMilestone(now),tierScore=danielTierCountScore(counts,target);
     const weighted=Math.round((tierScore.total+ratioPts+activePts)*10)/10;
 
