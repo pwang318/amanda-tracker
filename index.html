@@ -4270,11 +4270,15 @@ async function loadAgentGrowth(){
   if(!el)return;
   el.innerHTML='<div class="no-data">Loading...</div>';
   try{
-    const rows=await sbFetch("agent_profiles?select=agent_name,tier,do_not_contact,closes_past_year&do_not_contact=neq.true&limit=2000").catch(()=>[]);
+    const rows=await rm470LoadAllProfiles();
+    const seen=new Set();
     const cToB_ready=[],cToB_close=[],bToA_ready=[],bToA_close=[];
     (rows||[]).forEach(a=>{
+      const key=String(a.agent_name||'').trim().toLowerCase().replace(/\s+/g,' ');
+      if(!key || /^__.*__$/.test(key) || a.display_name==='__HIDDEN__' || a.relationship_status==='inactive' || a.do_not_contact===true || seen.has(key))return;
+      seen.add(key);
       const closes=a.closes_past_year||0;
-      const row={name:a.agent_name,closes};
+      const row={name:a.display_name||a.agent_name,closes};
       if(a.tier==="C"){
         if(closes>=2)cToB_ready.push(row);
         else if(closes===1)cToB_close.push(row);
@@ -4293,7 +4297,7 @@ async function loadAgentGrowth(){
     const vid=growthContainerVersion;
     const rowHtml=(c,color,bg,badgeText)=>{
       return'<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border-light);gap:8px">'
-        +'<div><span style="font-size:13px;font-weight:600;color:var(--text-1)">'+properCase(c.name)+'</span></div>'
+        +'<div><span style="font-size:13px;font-weight:600;color:var(--text-1)">'+escHtml(properCase(c.name))+'</span></div>'
         +'<div style="display:flex;align-items:center;gap:8px;flex-shrink:0">'
         +'<span style="font-size:11px;color:var(--text-3)">'+c.closes+' close'+(c.closes!==1?"s":"")+'</span>'
         +'<span style="font-size:9px;font-weight:700;padding:2px 8px;border-radius:10px;background:'+bg+';color:'+color+'">'+badgeText+'</span>'
@@ -5646,6 +5650,16 @@ async function logActivity(){
   const lpAttendee=(document.getElementById("activityLpAttendee")?.value||"").trim();
   const nextStepOwner=(document.getElementById("activityNextStepOwner")?.value||"").trim();
   if((outcome==="Requires follow-up"||outcome==="Meeting Scheduled")&&!nextStepOwner){toast("Choose who owns the next step before saving.","error");return;}
+  try{
+    const resolved=await findAgentProfileByName(agentName);
+    if(resolved.ambiguous){toast("More than one contact matches. Open the correct profile from Contacts before logging.","error");return;}
+    if(resolved.exact)agentName=resolved.exact.agent_name;
+  }catch(e){
+    if(!isNetworkFailure(e)){toast("Could not verify the contact. Please retry before saving.","error");return;}
+    const aliases=Object.keys(amandaDisplayNames||{}).filter(key=>String(amandaDisplayNames[key]||'').trim().toLowerCase()===agentName.toLowerCase());
+    if(aliases.length>1){toast("Multiple contacts match this name. Reconnect before saving.","error");return;}
+    if(aliases.length===1)agentName=(agentNames||[]).find(n=>n.toLowerCase()===aliases[0])||aliases[0];
+  }
   if(window._rmFullGateBusy)return;
   window._rmFullGateBusy=true;
   let gateOk=false;
@@ -5678,8 +5692,10 @@ async function logActivity(){
     finalNotes=intakeComplete?(notes?COMPLETE_TAG+"\n\n"+notes:COMPLETE_TAG):buildPendingNotes(intakeStates,notes);
   }
   btn.textContent="Saving...";
+  let activityWasSaved=false;
   try{
     const inserted=await sbFetch("amanda_activities",{method:"POST",body:JSON.stringify({agent_name:agentName,act_type:activityType,act_date:date,outcome,follow_up_date:followupDate,notes:finalNotes})});
+    activityWasSaved=true;
     const insertedRow=inserted&&inserted[0]?inserted[0]:null;
     await clearOldFollowups(agentName,insertedRow&&insertedRow.id);
     await completeActiveFlagAfterActivity(agentName);
@@ -5748,7 +5764,11 @@ async function logActivity(){
   }catch(e){
     const msg=e.message||"Unknown error";
     console.error("Log error:",e);
-    if(isNetworkFailure(e)&&!isNewRealtorMeeting){
+    if(activityWasSaved){
+      toast("Activity saved. A follow-up update or refresh failed. Do not save again; check Activity Feed and refresh.","warning",8000);
+      document.getElementById("agentInput").value="";
+      document.getElementById("activityNotes").value="";
+    }else if(isNetworkFailure(e)&&!isNewRealtorMeeting){
       queueOffline(agentName,activityType,date,outcome,finalNotes,followupDate);
       document.getElementById("agentInput").value="";
       document.getElementById("activityType").selectedIndex=0;
@@ -6647,6 +6667,7 @@ function splitAddress(full){
     if(stateZipMatch&&parts.length>=3){
       return{street,city:parts.slice(1,parts.length-1).join(", "),state:stateZipMatch[1]?stateZipMatch[1].toUpperCase():"",zip:stateZipMatch[2]||""};
     }
+    if(parts.length>=3 && /^\d{5}(-\d{4})?$/.test(parts[parts.length-1]))return{street,city:parts.slice(1,-1).join(", "),state:"",zip:parts[parts.length-1]};
     return{street,city:parts.slice(1).join(", "),state:"",zip:""};
   }
   return{street:full,city:"",state:"",zip:""};
@@ -6668,7 +6689,8 @@ function formatBirthdayInput(input){
 }
 function isValidBirthdayFormat(str){
   if(!str)return true;
-  return /^(0[1-9]|1[0-2])\/(0[1-9]|[12]\d|3[01])$/.test(str.trim());
+  const match=str.trim().match(/^(0[1-9]|1[0-2])\/(0[1-9]|[12]\d|3[01])$/);
+  return !!match && Number(match[2])<=[31,29,31,30,31,30,31,31,30,31,30,31][Number(match[1])-1];
 }
 function normalizeBirthdayForImport(raw){
   if(!raw)return null;
@@ -8983,10 +9005,15 @@ async function unmarkDNC(id){
 let editingContactName=null,editingContactOriginalName=null;
 async function findAgentProfileByName(name){
   if(!name)return{matches:[],exact:null,ambiguous:false};
-  const rows=await sbFetch("agent_profiles?agent_name=ilike."+encodeURIComponent(name)+"&limit=1000").catch(()=>null);
-  if(rows===null)throw new Error("Couldn't check existing contacts — try again.");
-  const exactMatches=rows.filter(row=>String(row.agent_name||"").trim().toLowerCase()===String(name).trim().toLowerCase());
-  return{matches:exactMatches,exact:exactMatches.length===1?exactMatches[0]:null,ambiguous:exactMatches.length>1};
+  const key=String(name).trim().toLowerCase();
+  const groups=await Promise.all([
+    sbFetch("agent_profiles?agent_name=ilike."+encodeURIComponent(name)+"&limit=1000"),
+    sbFetch("agent_profiles?display_name=ilike."+encodeURIComponent(name)+"&limit=1000")
+  ]);
+  const direct=groups[0].filter(row=>String(row.agent_name||"").trim().toLowerCase()===key);
+  const aliases=groups[1].filter(row=>String(row.display_name||"").trim().toLowerCase()===key&&!direct.some(d=>d.agent_name===row.agent_name));
+  const matches=direct.concat(aliases);
+  return{matches,exact:matches.length===1?matches[0]:null,ambiguous:matches.length>1};
 }
 function openAddAgentModal(){
   if(document.getElementById('rm470MeetingAfterSave'))document.getElementById('rm470MeetingAfterSave').checked=false;
@@ -21131,8 +21158,17 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
    });
  };
  window.rm470StartMeeting=function(name){
-   switchTab('log');
    const input=$('agentInput'),type=$('activityType');
+   const oldName=String(input?.value||'').trim().toLowerCase();
+   const different=oldName!==String(name||'').trim().toLowerCase();
+   const hasDraft=['activityNotes','activityOutcome','followupDate'].some(id=>String($(id)?.value||'').trim());
+   if(different && hasDraft && !confirm('There is an unfinished activity for another contact. Discard that draft and start this meeting?'))return;
+   if(different){
+     ['activityNotes','activityOutcome','followupDate','referredByInput','activityNextStepOwner','activityLpAttendee'].forEach(id=>{if($(id))$(id).value='';});
+     if($('activityDate'))$('activityDate').value=today();
+     if(typeof resetIntakeChecklist==='function')resetIntakeChecklist();
+   }
+   switchTab('log');
    if(input){input.value=name;input.dispatchEvent(new Event('input',{bubbles:true}));}
    if(type){type.value='New Realtor Meeting';type.dispatchEvent(new Event('change',{bubbles:true}));}
    if(typeof toast==='function')toast('Contact ready. Review the meeting date, participants and details, then save the meeting.','success',6000);
