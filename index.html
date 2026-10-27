@@ -3,8 +3,8 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta content="rm-tracker-v469-duplicate-bulk-delete" name="version"/>
-<meta content="v469: Select and permanently delete duplicate contact profile rows by ID while preserving activity history." name="build-notes"/>
+<meta content="rm-tracker-v472-scorecard-alignment-20261027" name="version"/>
+<meta content="v472: RM and LP scorecards share production-based Channel/A/B growth, the Power BI A/B/C lead-volume base, repeat/C-tier lead counts, and the separate 90-day Active Partner Count." name="build-notes"/>
 <meta content="no-cache, no-store, must-revalidate" http-equiv="Cache-Control"/>
 <meta content="no-cache" http-equiv="Pragma"/>
 <meta content="0" http-equiv="Expires"/>
@@ -8333,7 +8333,8 @@ async function loadPortfolioReview(){
     const countByTier={Channel:0,A:0,B:0,C:0,None:0};
     active.forEach(a=>{const t=a.tier&&countByTier.hasOwnProperty(a.tier)?a.tier:"None";countByTier[t]++;});
     const totalActive=active.length;
-    const officialCountByTier=v343Meta?{Channel:Number(v343Meta.Channel||0),A:Number(v343Meta.A||0),B:Number(v343Meta.B||0),C:Number(v343Meta.C||0),None:Number(v343Meta.blank||0)+Number(v343Meta.other||0)}:countByTier;
+    const officialCountByTier={Channel:0,A:0,B:0,C:0,None:0};
+    currentPowerBiAgents.forEach(a=>{const t=danielApplyTier(Object.assign({},a)).tier;if(Object.prototype.hasOwnProperty.call(officialCountByTier,t))officialCountByTier[t]++;else officialCountByTier.None++});
     const officialTotalActive=v343Meta?Number(v343Meta.total||0):totalActive;
     const activeAgentKeys=new Set(currentPowerBiAgents.filter(Boolean).map(a=>typeof agentMatchKey==='function'?agentMatchKey(a.agent_name):String(a.agent_name||'').trim().toLowerCase()).filter(Boolean));
     const scoredMonthLeads=(monthVelocifyLeads||[]).filter(l=>{const k=typeof agentMatchKey==='function'?agentMatchKey(l.referral_partner_name):String(l.referral_partner_name||'').trim().toLowerCase();return !!k&&activeAgentKeys.has(k)});
@@ -15907,7 +15908,7 @@ async function renderOfficial(force){
     active.forEach(p=>{if(p&&Object.prototype.hasOwnProperty.call(counts,p.tier))counts[p.tier]++});
 
     // Tier Migration uses net production tiers only; lead volume does not earn Tier Growth points.
-    const total=active.length, activeKeys=new Set(active.map(p=>typeof agentMatchKey==='function'?agentMatchKey(p.agent_name):String(p.agent_name||'').trim().toLowerCase()).filter(Boolean));
+    const total=Number(meta&&meta.total||0)||active.length, activeKeys=new Set(active.map(p=>typeof agentMatchKey==='function'?agentMatchKey(p.agent_name):String(p.agent_name||'').trim().toLowerCase()).filter(Boolean));
     const scoredMonthLeads=(monthLeads||[]).filter(l=>{const k=typeof agentMatchKey==='function'?agentMatchKey(l.referral_partner_name):String(l.referral_partner_name||'').trim().toLowerCase();return !!k&&activeKeys.has(k)});
     const monthlyLeadCount=scoredMonthLeads.length,monthDay=Math.max(1,now.getDate()),monthDays=new Date(now.getFullYear(),now.getMonth()+1,0).getDate(),projectedLeadCount=Math.round(monthlyLeadCount/monthDay*monthDays), referralRate=total?projectedLeadCount/total:0, ratioTarget=1.15;
     const ratioPct=Math.min(100,(referralRate/ratioTarget)*100),ratioPts=ratioPct/100*30;
