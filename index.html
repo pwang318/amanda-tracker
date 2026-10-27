@@ -9336,6 +9336,7 @@ async function rm470LoadAllProfiles(){
   }
 }
 async function loadContacts(){
+  window.rmContactLoadState='loading';
   const el=document.getElementById("contacts-list");
   if(!el)return;
   el.innerHTML='<div class="no-data">Loading...</div>';
@@ -9369,9 +9370,10 @@ async function loadContacts(){
     (prospectRows||[]).forEach(r=>rememberActivityOnly(r,'Prospect'));
     activityOnlyContacts=Array.from(placeholderMap.values()).sort((a,b)=>String(a.agent_name).localeCompare(String(b.agent_name)));
     allAgentNames=Array.from(new Set([...(allContacts||[]).map(a=>a.agent_name),...activityOnlyContacts.map(a=>a.agent_name)]));
+    window.rmContactLoadState='ready';
     renderContactsDupeBanner(allContacts);
     filterContacts();
-  }catch(e){el.innerHTML='<div class="no-data">Unable to load contacts.</div>';}
+  }catch(e){window.rmContactLoadState='error';el.innerHTML='<div class="no-data">Unable to load contacts. Refresh to retry.</div>';}
 }
 function nameEditDistance(a,b){
   a=agentMatchKey(a);b=agentMatchKey(b);
@@ -21040,7 +21042,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
       var contact=(list||[])[index],wrap=document.createElement('label'),box=document.createElement('input');
       if(!contact)return;
       var profileName=String(contact.agent_name||'');
-      wrap.className='rmV468RowSelectWrap';wrap.title=contact._activityOnly?'No saved contact profile to delete':(profileName?'Select '+profileName:'No contact name available');
+      wrap.className='rmV468RowSelectWrap';wrap.title=contact._activityOnly?'No saved contact profile to delete':(profileName?'Select '+(contact.display_name||profileName):'No contact name available');
       box.type='checkbox';box.className='rmV468RowSelect';box.dataset.profileName=profileName;box.checked=!!profileName&&selected.has(profileName);box.disabled=!!contact._activityOnly||!profileName;
       box.addEventListener('change',function(){var name=String(box.dataset.profileName||'');if(!name)return;if(box.checked)selected.add(name);else selected.delete(name);sync();});
       wrap.appendChild(box);row.insertBefore(wrap,row.firstChild);
@@ -21109,6 +21111,11 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
  function matches(c,key){const m=missing(c);return !key||(key==='any'?m.length>0:key==='complete'?m.length===0:key==='profile'?!!c._activityOnly:m.includes(key));}
  const previousRender=window.renderContacts;
  window.renderContacts=function(list){
+   if(window.rmContactLoadState!=='ready'){
+     if($('contacts-list'))$('contacts-list').innerHTML='<div class="no-data">'+(window.rmContactLoadState==='error'?'Unable to load contacts. Refresh to retry.':'Loading contacts…')+'</div>';
+     if($('rm470Summary'))$('rm470Summary').textContent=window.rmContactLoadState==='error'?'Contacts could not be loaded.':'Loading your saved contacts…';
+     return;
+   }
    base=(list||[]).filter(c=>c.display_name!==HIDDEN_PROFILE_MARKER);
    const need=$('rm470Missing')?.value||'';
    current=base.filter(c=>matches(c,need));
@@ -21131,6 +21138,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
    if(typeof toast==='function')toast('Contact ready. Review the meeting date, participants and details, then save the meeting.','success',6000);
  };
  function exportRows(scope){
+   if(window.rmContactLoadState!=='ready'){toast('Wait for contacts to finish loading before exporting.','warning');return;}
    let rows=scope==='all'?profileRows():current;
    if(scope==='selected'){
      const names=new Set(Array.from(document.querySelectorAll('#contacts-list .rmV468RowSelect:checked')).map(b=>b.dataset.profileName));
