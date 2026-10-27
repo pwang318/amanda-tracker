@@ -19675,7 +19675,9 @@ function ensureBottomPanel(){
 function v441Row(r,color){
  var name=esc(r.agent_name||'');
  var title=esc(r.act_type||'Activity')+(name?' \u2014 '+name:'');
- var when=[r.act_date?fmtDate(r.act_date):'',r.created_at?v441Time(r.created_at):''].filter(Boolean).join(' \u00b7 ');
+ var activityDate=String(r.act_date||String(r.created_at||'').slice(0,10));
+ var dateLabel=activityDate?(typeof fmtDate==='function'?fmtDate(activityDate):activityDate):'';
+ var when=[dateLabel?'Activity date: '+esc(dateLabel):'',r.created_at?esc(v441Time(r.created_at)):''].filter(Boolean).join(' \u00b7 ');
  var sub=[esc(r.outcome||''),when].filter(Boolean).join(' \u00b7 ');
  return '<div class="rmv441-row" data-agent="'+name+'"><span class="rmv441-dot" style="background:'+color+'"></span><div class="rmv441-row-main"><div class="rmv441-row-title">'+title+'</div><div class="rmv441-row-sub">'+sub+'</div></div></div>';
 }
