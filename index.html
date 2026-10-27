@@ -15899,14 +15899,11 @@ async function renderOfficial(force){
 
     let meta=null;
     try{if(typeof v129PowerBiMeta==='function')meta=await v129PowerBiMeta(false)}catch(e){}
-    const current= (sourceRows||[]).filter(p=>p&&p.do_not_contact!==true&&String(p.relationship_status||'active').toLowerCase()!=='inactive'&&!(typeof v76IsStrategicPartner==='function'&&v76IsStrategicPartner(p.agent_name,p))).map(p=>danielApplyTier(Object.assign({},p)));
-    const active=current.filter(p=>p.retained===true);
+    const current=(sourceRows||[]).filter(p=>p&&p.do_not_contact!==true&&String(p.relationship_status||'active').toLowerCase()!=='inactive'&&!(typeof v76IsStrategicPartner==='function'&&v76IsStrategicPartner(p.agent_name,p))).map(p=>danielApplyTier(Object.assign({},p)));
     const calculated={Channel:0,A:0,B:0,C:0};
-    current.forEach(p=>{if(Object.prototype.hasOwnProperty.call(calculated,p.tier))calculated[p.tier]++});
+    const active=current.filter(p=>{if(!p||!Object.prototype.hasOwnProperty.call(calculated,p.tier))return false;calculated[p.tier]++;return true});
 
-    const counts=meta
-      ?{Channel:Number(meta.Channel||0),A:Number(meta.A||0),B:Number(meta.B||0),C:Number(meta.C||0)}
-      :calculated;
+    const counts=calculated;
     const powerBiActiveAgents=meta?Number(meta.total||0):sourceRows.length;
     const total=active.length;
     const target=danielTierMilestone(now), tierScore=danielTierCountScore(counts,target);
@@ -15930,14 +15927,14 @@ async function renderOfficial(force){
       {label:'12/31 Goal',Channel:4,A:20,B:30}
     ];
     const html='<div class="rm-weighted-head"><div><div class="rm-weighted-kicker">OFFICIAL RM SCORECARD</div>'
-      +'<div class="rm-weighted-title">Portfolio Outcome Score</div><div class="rm-v4-source">50% Tier Growth · 30% Active Agent-to-Lead Ratio · 20% Active Partner Count · source '+E(sourceStamp)+'</div></div>'
+      +'<div class="rm-weighted-title">Portfolio Outcome Score</div><div class="rm-v4-source">50% Net Tier Counts · 30% Projected Agent-to-Lead Ratio · 20% Qualified Partner Count · Channel 10+ closes · A 4–9 · B 2–3 · C 1 close or lead · source '+E(sourceStamp)+'</div></div>'
       +'<div class="rm-weighted-total">'+weighted.toFixed(1)+' / 100<small>'+E(target.label)+'</small></div></div>'
       +'<div class="rm-account-strip">'
       +account('Channel',counts.Channel,'rm-account-channel',target.Channel+' current target','Channel')
       +account('A Accounts',counts.A,'rm-account-a',target.A+' current target','A')
       +account('B Accounts',counts.B,'rm-account-b',target.B+' current target','B')
       +account('C Accounts',counts.C,'rm-account-c','pipeline','C')
-      +account('Active Partners',total,'rm-account-total','goal 200 · recent activity','active')+account('Power BI Active Agents',powerBiActiveAgents,'rm-account-total','current A/B/C export','powerbi')+'</div>'
+      +account('Active Partners',total,'rm-account-total','goal 200 · qualifying tier population','active')+account('Power BI Active Agents',powerBiActiveAgents,'rm-account-total','current A/B/C export','powerbi')+'</div>'
       +'<div class="rm-weighted-grid">'
       +metric('Tier Growth · 50%',tierScore.total,50,counts.Channel+' Channel · '+counts.A+' A · '+counts.B+' B','tier')
       +metric('Agent-to-Lead · 30%',ratioPts,30,leadsMTD+' leads MTD · projected ratio '+projectedRatio.toFixed(2)+' per Power BI active agent','leads')
