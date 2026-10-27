@@ -3,8 +3,8 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta content="rm-tracker-v476-reconcile-tier-counts-to-powerbi-20261027" name="version"/>
-<meta content="v476: RM tier cards reconcile to Power BI A/B/C levels, with Channel broken out from A." name="build-notes"/>
+<meta content="rm-tracker-v477-channel-included-in-powerbi-a-20261027" name="version"/>
+<meta content="v477: RM tier cards match Power BI A/B/C counts; Channel is shown as a subset of A." name="build-notes"/>
 <meta content="no-cache, no-store, must-revalidate" http-equiv="Cache-Control"/>
 <meta content="no-cache" http-equiv="Pragma"/>
 <meta content="0" http-equiv="Expires"/>
@@ -8335,7 +8335,7 @@ async function loadPortfolioReview(){
     active.forEach(a=>{const t=a.tier&&countByTier.hasOwnProperty(a.tier)?a.tier:"None";countByTier[t]++;});
     const totalActive=active.length;
     const officialCountByTier={Channel:0,A:0,B:0,C:0,None:0};
-    currentPowerBiAgents.forEach(a=>{const level=String(a&&a.powerbi_level||'').trim().toUpperCase();if(!['A','B','C'].includes(level)){officialCountByTier.None++;return}const t=level==='A'&&Number(a.closes_past_year||0)>=10?'Channel':level;if(Object.prototype.hasOwnProperty.call(officialCountByTier,t))officialCountByTier[t]++});
+    currentPowerBiAgents.forEach(a=>{const level=String(a&&a.powerbi_level||'').trim().toUpperCase();if(!['A','B','C'].includes(level)){officialCountByTier.None++;return}officialCountByTier[level]++;if(level==='A'&&Number(a.closes_past_year||0)>=10)officialCountByTier.Channel++});
     const officialTotalActive=v343Meta?Number(v343Meta.total||0):totalActive;
     const activeAgentKeys=new Set(currentPowerBiAgents.filter(Boolean).map(a=>typeof agentMatchKey==='function'?agentMatchKey(a.agent_name):String(a.agent_name||'').trim().toLowerCase()).filter(Boolean));
     const scoredMonthLeads=(monthVelocifyLeads||[]).filter(l=>{const k=typeof agentMatchKey==='function'?agentMatchKey(l.referral_partner_name):String(l.referral_partner_name||'').trim().toLowerCase();return !!k&&activeAgentKeys.has(k)});
@@ -15907,7 +15907,7 @@ async function renderOfficial(force){
     // The Power BI A/B/C roster is the scorecard base in every RM view; managed exclusions stay separate.
     const active=(sourceRows||[]).filter(p=>p&&(!v124PowerBiLevel||v124PowerBiLevel(p.powerbi_level))).map(p=>danielApplyTier(Object.assign({},p)));
     const counts={Channel:0,A:0,B:0,C:0};
-    (sourceRows||[]).forEach(p=>{const level=String(p&&p.powerbi_level||'').trim().toUpperCase();if(!['A','B','C'].includes(level))return;if(level==='A'&&Number(p.closes_past_year||0)>=10)counts.Channel++;else counts[level]++;});
+    (sourceRows||[]).forEach(p=>{const level=String(p&&p.powerbi_level||'').trim().toUpperCase();if(!['A','B','C'].includes(level))return;counts[level]++;if(level==='A'&&Number(p.closes_past_year||0)>=10)counts.Channel++;});
 
     // Tier Migration uses net production tiers only; lead volume does not earn Tier Growth points.
     const total=Number(meta&&meta.total||0)||active.length, activeKeys=new Set(active.map(p=>typeof agentMatchKey==='function'?agentMatchKey(p.agent_name):String(p.agent_name||'').trim().toLowerCase()).filter(Boolean));
@@ -15933,7 +15933,7 @@ async function renderOfficial(force){
       +'<div class="rm-weighted-title">Portfolio Outcome Score</div><div class="rm-v4-source">50% Tier Growth · 30% Active Agent-to-Lead Ratio · 20% Active Agent Count · source '+E(sourceStamp)+'</div></div>'
       +'<div class="rm-weighted-total">'+weighted.toFixed(1)+' / 100<small>'+E(target.label)+'</small></div></div>'
       +'<div class="rm-account-strip">'
-      +account('Channel',counts.Channel,'rm-account-channel',target.Channel+' current target','Channel')
+      +account('Channel',counts.Channel,'rm-account-channel',target.Channel+' target · subset of A','Channel')
       +account('A Accounts',counts.A,'rm-account-a',target.A+' current target','A')
       +account('B Accounts',counts.B,'rm-account-b',target.B+' current target','B')
       +account('C Accounts',counts.C,'rm-account-c','pipeline','C')
