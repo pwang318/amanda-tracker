@@ -15899,27 +15899,29 @@ async function renderOfficial(force){
 
     let meta=null;
     try{if(typeof v129PowerBiMeta==='function')meta=await v129PowerBiMeta(false)}catch(e){}
-    const active=(sourceRows||[]).filter(p=>p&&p.do_not_contact!==true&&String(p.relationship_status||'active').toLowerCase()!=='inactive'&&!(typeof v76IsStrategicPartner==='function'&&v76IsStrategicPartner(p.agent_name,p))).map(p=>danielApplyTier(Object.assign({},p)));
+    const current= (sourceRows||[]).filter(p=>p&&p.do_not_contact!==true&&String(p.relationship_status||'active').toLowerCase()!=='inactive'&&!(typeof v76IsStrategicPartner==='function'&&v76IsStrategicPartner(p.agent_name,p))).map(p=>danielApplyTier(Object.assign({},p)));
+    const active=current.filter(p=>p.retained===true);
     const calculated={Channel:0,A:0,B:0,C:0};
-    active.forEach(p=>{if(Object.prototype.hasOwnProperty.call(calculated,p.tier))calculated[p.tier]++});
+    current.forEach(p=>{if(Object.prototype.hasOwnProperty.call(calculated,p.tier))calculated[p.tier]++});
 
     const counts=meta
       ?{Channel:Number(meta.Channel||0),A:Number(meta.A||0),B:Number(meta.B||0),C:Number(meta.C||0)}
       :calculated;
-    const total=meta?Number(meta.total||0):active.length;
+    const powerBiActiveAgents=meta?Number(meta.total||0):sourceRows.length;
+    const total=active.length;
     const target=danielTierMilestone(now), tierScore=danielTierCountScore(counts,target);
 
     const leadsMTD=(monthLeads||[]).length, day=Math.max(1,now.getDate()),
           daysInMonth=new Date(now.getFullYear(),now.getMonth()+1,0).getDate(),
           projectedLeads=Math.round(leadsMTD/day*daysInMonth),
-          projectedRatio=total>0?projectedLeads/total:0,
+          projectedRatio=powerBiActiveAgents>0?projectedLeads/powerBiActiveAgents:0,
           ratioPct=Math.min(100,(projectedRatio/1.15)*100),
           ratioPts=ratioPct/100*30,
           activePct=Math.min(100,(total/200)*100),
           activePts=activePct/100*20,
           weighted=Math.round((tierScore.total+ratioPts+activePts)*10)/10;
 
-    window.rmV429ScoreData={active:active,monthLeads:(monthLeads||[]),counts:counts,total:total,target:target,sourceStamp:(meta&&meta.imported_at?String(meta.imported_at).slice(0,10):'latest synced portfolio')};
+    window.rmV429ScoreData={active:active,monthLeads:(monthLeads||[]),counts:counts,total:total,powerBiActiveAgents:powerBiActiveAgents,target:target,sourceStamp:(meta&&meta.imported_at?String(meta.imported_at).slice(0,10):'latest synced portfolio')};
     const sourceStamp=meta&&meta.imported_at?String(meta.imported_at).slice(0,10):'latest synced portfolio';
     const roadmap=[
       {label:'9/30 Target',Channel:2,A:14,B:21},
@@ -15935,11 +15937,11 @@ async function renderOfficial(force){
       +account('A Accounts',counts.A,'rm-account-a',target.A+' current target','A')
       +account('B Accounts',counts.B,'rm-account-b',target.B+' current target','B')
       +account('C Accounts',counts.C,'rm-account-c','pipeline','C')
-      +account('Active Partners',total,'rm-account-total','goal 200','active')+'</div>'
+      +account('Active Partners',total,'rm-account-total','goal 200 · recent activity','active')+account('Power BI Active Agents',powerBiActiveAgents,'rm-account-total','current A/B/C export','powerbi')+'</div>'
       +'<div class="rm-weighted-grid">'
       +metric('Tier Growth · 50%',tierScore.total,50,counts.Channel+' Channel · '+counts.A+' A · '+counts.B+' B','tier')
-      +metric('Agent-to-Lead · 30%',ratioPts,30,leadsMTD+' leads MTD · projected ratio '+projectedRatio.toFixed(2)+' vs 1.15 target','leads')
-      +metric('Active Partner Count · 20%',activePts,20,total+' / 200 active partners','active')+'</div>'
+      +metric('Agent-to-Lead · 30%',ratioPts,30,leadsMTD+' leads MTD · projected ratio '+projectedRatio.toFixed(2)+' per Power BI active agent','leads')
+      +metric('Active Partner Count · 20%',activePts,20,total+' / 200 recent-activity partners','active')+'</div>'
       +'<div class="rm-score-roadmap">'+roadmap.map(m=>'<div class="rm-score-milestone '+(m.label===target.label?'current':'')+'"><b>'+m.label+'</b><span>'+m.Channel+' Channel · '+m.A+' A · '+m.B+' B</span></div>').join('')+'</div>';
     rmV428OfficialHTML=html;rmV428OfficialAt=Date.now();
     if(host.innerHTML!==html)host.innerHTML=html;
