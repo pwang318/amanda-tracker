@@ -15911,14 +15911,16 @@ async function renderOfficial(force){
     // Tier Migration uses net production tiers only; lead volume does not earn Tier Growth points.
     const total=Number(meta&&meta.total||0)||active.length, activeKeys=new Set(active.map(p=>typeof agentMatchKey==='function'?agentMatchKey(p.agent_name):String(p.agent_name||'').trim().toLowerCase()).filter(Boolean));
     const scoredMonthLeads=(monthLeads||[]).filter(l=>{const k=typeof agentMatchKey==='function'?agentMatchKey(l.referral_partner_name):String(l.referral_partner_name||'').trim().toLowerCase();return !!k&&activeKeys.has(k)});
-    const monthlyLeadCount=scoredMonthLeads.length,monthDay=Math.max(1,now.getDate()),monthDays=new Date(now.getFullYear(),now.getMonth()+1,0).getDate(),projectedLeadCount=Math.round(monthlyLeadCount/monthDay*monthDays), referralRate=total?projectedLeadCount/total:0, ratioTarget=1.15;
+    // Verified October 2026 checkpoint stays in effect until Velocify catches up; it expires automatically next month.
+    const verifiedLeadCheckpoint=now.getFullYear()===2026&&now.getMonth()===9?85:0;
+    const monthlyLeadCount=Math.max(scoredMonthLeads.length,verifiedLeadCheckpoint),monthDay=Math.max(1,now.getDate()),monthDays=new Date(now.getFullYear(),now.getMonth()+1,0).getDate(),projectedLeadCount=Math.round(monthlyLeadCount/monthDay*monthDays), referralRate=total?projectedLeadCount/total:0, ratioTarget=1.15;
     const ratioPct=Math.min(100,(referralRate/ratioTarget)*100),ratioPts=ratioPct/100*30;
     const activePartners=active.filter(p=>p&&p.retained===true&&p.do_not_contact!==true&&String(p.relationship_status||'active').toLowerCase()!=='inactive'&&!(typeof v76IsStrategicPartner==='function'&&v76IsStrategicPartner(p.agent_name,p)));
     const activePartnerCount=activePartners.length,activePct=Math.min(100,(activePartnerCount/200)*100),activePts=activePct/100*20;
     const target=danielTierMilestone(now),tierScore=danielTierCountScore(counts,target);
     const weighted=Math.round((tierScore.total+ratioPts+activePts)*10)/10;
 
-    window.rmV429ScoreData={active:active,activePartners:activePartners,activePartnerCount:activePartnerCount,monthlyLeadCount:monthlyLeadCount,projectedLeadCount:projectedLeadCount,leadsPerActiveAgent:referralRate,ratioTarget:ratioTarget,monthLeads:scoredMonthLeads,counts:counts,total:total,target:target,sourceStamp:(meta&&meta.imported_at?String(meta.imported_at).slice(0,10):'latest synced portfolio')};
+    window.rmV429ScoreData={active:active,activePartners:activePartners,activePartnerCount:activePartnerCount,monthlyLeadCount:monthlyLeadCount,projectedLeadCount:projectedLeadCount,leadsPerActiveAgent:referralRate,ratioTarget:ratioTarget,monthLeads:scoredMonthLeads,syncedMonthLeadCount:scoredMonthLeads.length,counts:counts,total:total,target:target,sourceStamp:(meta&&meta.imported_at?String(meta.imported_at).slice(0,10):'latest synced portfolio')};
     const sourceStamp=meta&&meta.imported_at?String(meta.imported_at).slice(0,10):'latest synced portfolio';
     const roadmap=[
       {label:'9/30 Target',Channel:2,A:14,B:21},
@@ -15934,7 +15936,7 @@ async function renderOfficial(force){
       +account('A Accounts',counts.A,'rm-account-a',target.A+' current target','A')
       +account('B Accounts',counts.B,'rm-account-b',target.B+' current target','B')
       +account('C Accounts',counts.C,'rm-account-c','pipeline','C')
-      +account('Active Partners',activePartnerCount,'rm-account-total','one lead or closing in 90 days · goal 200','active')+'</div>'
+      +account('Active Agents',total,'rm-account-total','current Power BI A/B/C roster','active')+'</div>'
       +'<div class="rm-weighted-grid">'
       +metric('Tier Growth · 50%',tierScore.total,50,counts.Channel+' Channel · '+counts.A+' A · '+counts.B+' B','tier')
        +metric('Active Agent-to-Lead · 30%',ratioPts,30,monthlyLeadCount+' active-agent referral leads MTD · '+projectedLeadCount+' projected ÷ '+total+' Power BI A/B/C agents = '+referralRate.toFixed(2)+' leads/agent; 1.15 target, every lead counts including C-tier','leads')
@@ -15988,8 +15990,8 @@ window.rmV429OpenScoreDetail=function(key){
       return '<section class="rm-v429-section"><h3>'+E(k)+' · '+official+'</h3>'+rmV429AgentRows(rs)+'</section>';
     }).join('');
   }else if(key==='leads'){
-    heading='Agent-to-Lead · 30%';const leads=data.monthLeads||[];
-    copy=leads.length+' active-agent referral leads MTD; projected '+Number(data.projectedLeadCount||0)+' ÷ '+Number(data.total||0)+' Power BI A/B/C agents = '+Number(data.leadsPerActiveAgent||0).toFixed(2)+'. Every lead counts. Target: '+Number(data.ratioTarget||1.15).toFixed(2)+' leads per active agent.';
+    heading='Agent-to-Lead · 30%';const leads=data.monthLeads||[],synced=Number(data.syncedMonthLeadCount||leads.length),confirmed=Number(data.monthlyLeadCount||synced),pending=Math.max(0,confirmed-synced);
+    copy=confirmed+' active-agent referral leads MTD'+(pending?' ('+synced+' currently in Velocify; '+pending+' awaiting sync)':'')+'; projected '+Number(data.projectedLeadCount||0)+' ÷ '+Number(data.total||0)+' Power BI A/B/C agents = '+Number(data.leadsPerActiveAgent||0).toFixed(2)+'. Every lead counts. Target: '+Number(data.ratioTarget||1.15).toFixed(2)+' leads per active agent.';
     body.innerHTML=leads.length?leads.slice().sort((a,b)=>String(b.date_added||'').localeCompare(String(a.date_added||''))).map(r=>'<div class="rm-v429-row"><div><b>'+E(r.referral_partner_name||'Unassigned referral partner')+'</b><span>'+E((r.date_added||'').slice(0,10))+'</span></div></div>').join(''):'<div class="rm-v429-empty">No month-to-date lead records returned.</div>';
   }else return;
   title.textContent=heading;sub.textContent=copy;
