@@ -2105,9 +2105,9 @@ body[data-rm-tab="week"] #view-week .v95-amanda-greeting{
 <div class="modal-sub" id="contactModalName"></div>
 <div id="rmLifecycleProfileBanner" style="display:none;margin:0 0 12px;padding:10px 12px;border-radius:9px;font-size:11px;line-height:1.45"></div>
 <div class="field" style="margin-bottom:12px">
-<label>Correct display name <span style="font-weight:400;color:var(--text-4)">(safe spelling/capitalization correction — does not rename the database record)</span></label>
+<label>Contact name <span style="font-weight:400;color:var(--text-4)">(fix spelling here — keeps this profile and history)</span></label>
 <input id="contactDisplayName" placeholder="e.g. Jordan Holibaugh" type="text"/>
-<div style="font-size:11px;color:var(--text-3);margin-top:4px">Use this when a name is misspelled or badly capitalized. Both trackers will show this version; the underlying agent record/history stays connected.</div>
+<div style="font-size:11px;color:var(--text-3);margin-top:4px">Correct a misspelled name here and click Save changes. Contacts, search and exports use the corrected name. Your existing activity history stays connected.</div>
 </div>
 <div class="field" style="margin-bottom:12px"><label>Phone</label><input id="contactPhone" placeholder="Phone number" type="text"/></div>
 <div class="field" style="margin-bottom:12px"><label>Email</label><input id="contactEmail" placeholder="Email address" type="email"/></div>
@@ -9259,6 +9259,7 @@ async function saveContactModal(){
     const savedAgentName=(exact&&exact.agent_name)||editingContactName;
     const displayKey=(savedAgentName||"").trim().toLowerCase();
     if(payload.display_name)amandaDisplayNames[displayKey]=payload.display_name;else delete amandaDisplayNames[displayKey];
+    await loadContacts();
     const ownershipOk=await saveAgentOwnership(savedAgentName);
     /* v454: explicit Relationship Owner wins; profile/tier routing must not overwrite it. */
     if(typeof v77ApplyStrategicPartnerRouting==="function")await v77ApplyStrategicPartnerRouting(savedAgentName,payload).catch(()=>{});
@@ -9351,7 +9352,7 @@ async function loadContacts(){
     allContacts=(profiles||[]).filter(p=>p.display_name!==HIDDEN_PROFILE_MARKER).map(p=>danielApplyTier(p));
     const v330ProspectByKey={};(prospectRows||[]).forEach(pr=>{const k=agentMatchKey(pr.agent_name);if(!k)return;const cur=v330ProspectByKey[k];if(!cur||String(pr.follow_up_date||'')>String(cur.follow_up_date||''))v330ProspectByKey[k]=pr;});
     allContacts.forEach(c=>{const pr=v330ProspectByKey[agentMatchKey(c.agent_name)];if(pr){c._prospectStatus=pr.status||'';c._prospectFollowUp=pr.follow_up_date||'';if(!c.phone&&pr.phone)c.phone=pr.phone;if(!c.email&&pr.email)c.email=pr.email;if(!c.brokerage&&pr.brokerage)c.brokerage=pr.brokerage;}});
-    const profileKeys=new Set((allContacts||[]).map(p=>agentMatchKey(p.agent_name)).filter(Boolean));
+    const profileKeys=new Set((profiles||[]).map(p=>agentMatchKey(p.agent_name)).filter(Boolean));
     const placeholderMap=new Map();
     const rememberActivityOnly=(row,source)=>{
       const name=String(row&&row.agent_name||'').trim(),k=agentMatchKey(name);
@@ -20958,13 +20959,14 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
   function isInactive(contact){return String(contact&&contact.relationship_status||'').trim().toLowerCase()==='inactive';}
   function searchMatch(contact,query){
     if(!query)return true;
-    return [contact.agent_name,contact.phone,contact.email,contact.birthday,contact.brokerage,contact.team]
+    return [contact.agent_name,contact.display_name,contact.phone,contact.email,contact.birthday,contact.brokerage,contact.team]
       .some(function(value){return String(value||'').toLowerCase().includes(query);});
   }
   function filterContacts(contacts,historyOnly,filter,query,ownership){
     var profiles=Array.isArray(contacts)?contacts:[],placeholders=Array.isArray(historyOnly)?historyOnly:[];
     var f=String(filter||'active'),q=String(query||'').toLowerCase().trim(),list;
-    if(f==='all')list=profiles.concat(placeholders);
+    if(f==='all')list=profiles.slice();
+    else if(f==='history-only')list=placeholders.slice();
     else if(f==='inactive')list=profiles.filter(isInactive);
     else list=profiles.filter(function(c){return !isInactive(c);});
     if(q)list=list.filter(function(c){return searchMatch(c,q);});
@@ -21050,7 +21052,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
   window.filterContacts=function(){
     var query=el('contactsSearch'),field=el('contactsFilter');
     var ownership=typeof window.getAgentOwnership==='function'?window.getAgentOwnership:function(){return{};};
-    var list=window.rmV468FilterContacts(allContacts||[],activityOnlyContacts||[],field&&field.value||'active',query&&query.value||'',ownership);
+    var list=window.rmV468FilterContacts(allContacts||[],activityOnlyContacts||[],el('rm470Missing')&&el('rm470Missing').value==='profile'?'history-only':(field&&field.value||'active'),query&&query.value||'',ownership);
     window.renderContacts(list);
   };
   window.rmV468SelectShown=function(checked){visibleRows().forEach(function(row){var box=row.querySelector('.rmV468RowSelect');if(!box||box.disabled)return;box.checked=!!checked;var name=String(box.dataset.profileName||'');if(!name)return;if(checked)selected.add(name);else selected.delete(name);});sync();};
@@ -21060,7 +21062,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
   async function removeSelectedProfiles(names){
     var selectedNames=Array.from(new Set((names||[]).map(function(name){return String(name||'');}).filter(Boolean)));
     var profiles=(allContacts||[]).filter(function(c){return c&&!c._activityOnly&&selectedNames.includes(String(c.agent_name||''));});
-    if(!profiles.length)return;
+    if(!profiles.length){if(typeof toast==='function')toast('This is an activity-history entry, not a saved contact profile. Use Agent History to review it.','warning',6000);return;}
     var counts=new Map();profiles.forEach(function(c){var name=String(c.agent_name||'');counts.set(name,(counts.get(name)||0)+1);});
     var total=profiles.length,preview=Array.from(counts.entries()).slice(0,8).map(function(entry){return '• '+entry[0]+(entry[1]>1?' ('+entry[1]+' profile rows)':'');}).join('\n');
     var more=counts.size>8?'\n…plus '+(counts.size-8)+' more names.':'';
@@ -21073,8 +21075,9 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
         var name=selectedNames[i];
         try{
           var response=await window.sbFetch('agent_profiles?agent_name=eq.'+encodeURIComponent(name),{method:'DELETE',prefer:'return=representation'});
-          if(!Array.isArray(response)||response.length===0)failed.push({name:name});
-          else{deleted+=response.length;selected.delete(name);}
+          const remaining=await window.sbFetch('agent_profiles?select=agent_name&agent_name=eq.'+encodeURIComponent(name)+'&limit=1');
+          if(!Array.isArray(remaining)||remaining.length)failed.push({name:name});
+          else{deleted+=counts.get(name)||1;selected.delete(name);if((typeof editingContactOriginalName!=='undefined'&&editingContactOriginalName===name)||(typeof editingContactName!=='undefined'&&editingContactName===name)){if(typeof closeContactModal==='function')closeContactModal();}}
         }catch(error){failed.push({name:name,error:error});}
       }
       await window.loadContacts();if(typeof window.initAutocomplete==='function')window.initAutocomplete();
@@ -21086,7 +21089,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
     finally{buttons.forEach(function(button){button.textContent='Permanently delete selected';});sync();}
   }
   window.rmV468DeleteSelected=function(){removeSelectedProfiles(Array.from(selected));};
-  window.rmV468DeleteCurrentProfile=function(){var name=(typeof editingContactOriginalName!=='undefined'&&editingContactOriginalName)|| (typeof editingContactName!=='undefined'&&editingContactName);if(!name)return;var key=typeof agentMatchKey==='function'?agentMatchKey(name):String(name).trim().toLowerCase();var matches=(allContacts||[]).filter(function(c){var candidate=typeof agentMatchKey==='function'?agentMatchKey(c.agent_name):String(c.agent_name||'').trim().toLowerCase();return candidate===key;});if(matches.length>1){if(typeof window.toast==='function')window.toast('More than one profile uses this name. Select the correct row in duplicate review.','error',6000);if(typeof openDupeCleanupModal==='function')openDupeCleanupModal();return;}if(matches.length===1&&matches[0].agent_name){removeSelectedProfiles([matches[0].agent_name]);return;}removeNames([name]);};
+  window.rmV468DeleteCurrentProfile=function(){var name=(typeof editingContactOriginalName!=='undefined'&&editingContactOriginalName)|| (typeof editingContactName!=='undefined'&&editingContactName);if(!name)return;var key=typeof agentMatchKey==='function'?agentMatchKey(name):String(name).trim().toLowerCase();var matches=(allContacts||[]).filter(function(c){var candidate=typeof agentMatchKey==='function'?agentMatchKey(c.agent_name):String(c.agent_name||'').trim().toLowerCase();return candidate===key;});if(matches.length>1){if(typeof window.toast==='function')window.toast('More than one profile uses this name. Select the correct row in duplicate review.','error',6000);if(typeof openDupeCleanupModal==='function')openDupeCleanupModal();return;}if(matches.length===1&&matches[0].agent_name){removeSelectedProfiles([matches[0].agent_name]);return;}if(typeof toast==='function')toast('No saved profile found. Activity history is preserved separately.','warning',6000);};
   if(window.document.readyState==='loading')window.document.addEventListener('DOMContentLoaded',sync,{once:true});else sync();
 })();
 </script>
