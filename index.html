@@ -3,8 +3,8 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta content="rm-tracker-v472-scorecard-alignment-20261027" name="version"/>
-<meta content="v472: RM and LP scorecards share production-based Channel/A/B growth, the Power BI A/B/C lead-volume base, repeat/C-tier lead counts, and the separate 90-day Active Partner Count." name="build-notes"/>
+<meta content="rm-tracker-v473-powerbi-active-agent-scorecard-20261027" name="version"/>
+<meta content="v473: RM scorecard Active Agent Count uses the current Power BI A/B/C roster toward 200; the 90-day count no longer drives the 20% score." name="build-notes"/>
 <meta content="no-cache, no-store, must-revalidate" http-equiv="Cache-Control"/>
 <meta content="no-cache" http-equiv="Pragma"/>
 <meta content="0" http-equiv="Expires"/>
@@ -15915,8 +15915,8 @@ async function renderOfficial(force){
     const verifiedLeadCheckpoint=now.getFullYear()===2026&&now.getMonth()===9?85:0;
     const monthlyLeadCount=Math.max(scoredMonthLeads.length,verifiedLeadCheckpoint),monthDay=Math.max(1,now.getDate()),monthDays=new Date(now.getFullYear(),now.getMonth()+1,0).getDate(),projectedLeadCount=Math.round(monthlyLeadCount/monthDay*monthDays), referralRate=total?projectedLeadCount/total:0, ratioTarget=1.15;
     const ratioPct=Math.min(100,(referralRate/ratioTarget)*100),ratioPts=ratioPct/100*30;
-    const activePartners=active.filter(p=>p&&p.retained===true&&p.do_not_contact!==true&&String(p.relationship_status||'active').toLowerCase()!=='inactive'&&!(typeof v76IsStrategicPartner==='function'&&v76IsStrategicPartner(p.agent_name,p)));
-    const activePartnerCount=activePartners.length,activePct=Math.min(100,(activePartnerCount/200)*100),activePts=activePct/100*20;
+    // The scorecard's 20% count is the full active Power BI roster, not the separate 90-day retained subset.
+    const activePartners=currentPowerBiAgents.filter(Boolean),activePartnerCount=officialTotalActive||currentPowerBiAgents.length,activePct=Math.min(100,(activePartnerCount/200)*100),activePts=activePct/100*20;
     const target=danielTierMilestone(now),tierScore=danielTierCountScore(counts,target);
     const weighted=Math.round((tierScore.total+ratioPts+activePts)*10)/10;
 
@@ -15940,7 +15940,7 @@ async function renderOfficial(force){
       +'<div class="rm-weighted-grid">'
       +metric('Tier Growth · 50%',tierScore.total,50,counts.Channel+' Channel · '+counts.A+' A · '+counts.B+' B','tier')
        +metric('Active Agent-to-Lead · 30%',ratioPts,30,monthlyLeadCount+' active-agent referral leads MTD · '+projectedLeadCount+' projected ÷ '+total+' Power BI A/B/C agents = '+referralRate.toFixed(2)+' leads/agent; 1.15 target, every lead counts including C-tier','leads')
-      +metric('Active Partner Count · 20%',activePts,20,activePartnerCount+' qualifying partners / 200; one lead or closing in the last 90 days','active')+'</div>'
+      +metric('Active Agent Count · 20%',activePts,20,activePartnerCount+' active Power BI agents / 200 year-end target','active')+'</div>'
       +'<div class="rm-score-roadmap">'+roadmap.map(m=>'<div class="rm-score-milestone '+(m.label===target.label?'current':'')+'"><b>'+m.label+'</b><span>'+m.Channel+' Channel · '+m.A+' A · '+m.B+' B</span></div>').join('')+'</div>';
     rmV428OfficialHTML=html;rmV428OfficialAt=Date.now();
     if(host.innerHTML!==html)host.innerHTML=html;
@@ -15979,8 +15979,8 @@ window.rmV429OpenScoreDetail=function(key){
     copy=official+' in the official scorecard'+(rows.length!==official?' · '+rows.length+' underlying profile records available in this synced snapshot':'');
     body.innerHTML=rmV429AgentRows(rows);
   }else if(key==='active'){
-    heading='Active Partners';rows=data.activePartners||[];
-    copy=Number(data.activePartnerCount||0)+' qualifying partners toward the 200 goal; active means a lead or closing in the last 90 days.'+(rows.length!==Number(data.activePartnerCount||0)?' · '+rows.length+' underlying profile records available':'');
+    heading='Active Agents';rows=data.activePartners||[];
+    copy=Number(data.activePartnerCount||0)+' active agents in the current Power BI A/B/C roster toward the 200 goal.'+(rows.length!==Number(data.activePartnerCount||0)?' · '+rows.length+' Power BI roster records available':'');
     body.innerHTML=rmV429AgentRows(rows);
   }else if(key==='tier'){
     heading='Tier Growth · 50%';
