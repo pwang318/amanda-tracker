@@ -3,7 +3,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta content="rm-tracker-v491-compact-mockup-20261028" name="version"/>
+<meta content="rm-tracker-v492-loaded-scorecard-mobile-20261028" name="version"/>
 <meta content="v481: RM Portfolio tiles focus the active work panel; Growth Plans and Meeting Cadence open their matching Amanda-owned lists." name="build-notes"/>
 <meta content="no-cache, no-store, must-revalidate" http-equiv="Cache-Control"/>
 <meta content="no-cache" http-equiv="Pragma"/>
@@ -15897,14 +15897,15 @@ async function renderOfficial(force){
   try{
     const now=new Date(), monthStart=localDateStr(new Date(now.getFullYear(),now.getMonth(),1));
     const [profiles,monthLeads]=await Promise.all([
-      sbFetch("agent_profiles?select=*&limit=5000").catch(()=>[]),
-      sbFetch("velocify_leads?date_added=gte."+monthStart+"&select=referral_partner_name,date_added&limit=10000").catch(()=>[])
+      sbFetch("agent_profiles?select=*&limit=5000"),
+      sbFetch("velocify_leads?date_added=gte."+monthStart+"&select=referral_partner_name,date_added&limit=10000")
     ]);
     let sourceRows=[];
     if(typeof v124LatestPowerBiSnapshot==='function'){
       const snap=v124LatestPowerBiSnapshot(profiles||[]);
       sourceRows=(snap&&Array.isArray(snap.rows))?snap.rows:[];
     }else sourceRows=(profiles||[]).filter(p=>p&&p.retained===true);
+    if(!Array.isArray(profiles)||!Array.isArray(monthLeads)||!sourceRows.length)throw new Error('Current Power BI roster or referral data unavailable');
 
     let meta=null;
     try{if(typeof v129PowerBiMeta==='function')meta=await v129PowerBiMeta(false)}catch(e){}
@@ -15973,8 +15974,24 @@ function rmV429AgentRows(rows){
     return '<div class="rm-v429-row"><div><b>'+E(rmV429AgentName(r))+'</b><span>'+(tier?'Tier '+E(tier):'')+(owner?' · Owner: '+E(owner):'')+'</span>'+(note?'<small>'+E(note)+'</small>':'')+'</div></div>';
   }).join('');
 }
-window.rmV429OpenScoreDetail=function(key){
-  const data=window.rmV429ScoreData||{},drawer=rmV429EnsureScoreDrawer(),
+window.rmV429OpenScoreDetail=async function(key){
+  if(!window.rmV429ScoreData){
+    const pending=rmV429EnsureScoreDrawer();
+    pending.classList.add('open');document.body.style.overflow='hidden';
+    pending.querySelector('#rmV429ScoreTitle').textContent='Loading scorecard…';
+    pending.querySelector('#rmV429ScoreSub').textContent='Retrieving the current Power BI roster and referral leads.';
+    pending.querySelector('#rmV429ScoreBody').innerHTML='';
+    await renderOfficial(true);
+    if(!pending.classList.contains('open'))return;
+    if(!window.rmV429ScoreData){
+      pending.querySelector('#rmV429ScoreTitle').textContent='Scorecard unavailable';
+      pending.querySelector('#rmV429ScoreSub').textContent='The current data could not load. No zero totals have been substituted.';
+      pending.querySelector('#rmV429ScoreBody').innerHTML='<button class="btn-sm" id="rm492Retry">Retry loading</button>';
+      pending.querySelector('#rm492Retry').onclick=()=>window.rmV429OpenScoreDetail(key);
+      return;
+    }
+  }
+  const data=window.rmV429ScoreData,drawer=rmV429EnsureScoreDrawer(),
         title=drawer.querySelector('#rmV429ScoreTitle'),sub=drawer.querySelector('#rmV429ScoreSub'),body=drawer.querySelector('#rmV429ScoreBody');
   let rows=[],heading='',copy='';
   if(['Channel','A','B','C'].includes(key)){
@@ -21378,5 +21395,38 @@ body[data-rm-tab="week"] #rm350Workboard .rm350-hero-side{display:flex!important
 #rm350Workboard #rmV440PortfolioGrid small{font-size:10px!important}
 #rm350Workboard .rm350-shell{margin-top:15px}
 @media(max-width:700px){body[data-rm-tab="week"] #rm350Workboard .rm350-hero{align-items:flex-start!important;flex-direction:column!important}body[data-rm-tab="week"] #rm350Workboard .rm350-hero-side{justify-content:flex-start!important}.rm490-fields{grid-template-columns:1fr}}
-</style></body>
+</style>
+<style id="rm492-layout">
+#rm492Additional{margin:18px 0;border:1px solid #e8e3f3;background:white;border-radius:12px;padding:14px;color:#503d70}
+#rm492Additional>summary{cursor:pointer;font-weight:700}
+#rm492Additional .rm350-shell{display:block!important}
+@media(max-width:700px){
+:root{--sidebar:0px!important}
+html body{padding-left:0!important;margin-left:0!important}
+body .tabs{position:sticky!important;top:0!important;left:0!important;width:100%!important;height:auto!important;max-height:none!important;display:flex!important;flex-direction:row!important;overflow-x:auto!important;padding:8px!important;box-sizing:border-box!important;z-index:1000!important}
+body .tabs .tab{flex:0 0 auto!important;width:auto!important;min-width:90px!important;padding:10px!important;margin:0 3px!important}
+body .tabs .nav-group-label,body #rm352SidebarFooter{display:none!important}
+body .header{position:relative!important;left:0!important;width:100%!important;padding:10px 14px!important;height:auto!important;min-height:50px!important}
+body .header .brand-wrap{min-width:0!important}
+body #rm352HeaderSearch,body .header .brand-tagline{display:none!important}
+body .view{margin-left:0!important;padding:12px!important;width:auto!important}
+#rm350Workboard .rm350-title{font-size:28px!important}
+#rm350Workboard .rm350-hero-side{max-width:100%!important}
+#rm350Workboard .rm358-goals{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+#rm350Workboard .rm358-goal-label{font-size:12px!important}
+#rm350Workboard #rmv487Meetings button{font-size:10px!important}
+.rm490-scoregrid{grid-template-columns:1fr!important}
+#rmV429ScoreDrawer .rm-v429-panel{width:100%!important}
+#rmV429ScoreDrawer .rm-v429-head{padding:18px!important}
+#rmV429ScoreDrawer .rm-v429-head h2{font-size:23px!important}
+#rmV429ScoreDrawer .rm-v429-head p{font-size:14px!important;line-height:1.5!important}
+#rmV429ScoreDrawer .rm-v429-body{padding:18px!important}
+}
+</style>
+<script id="rm492-consolidate">
+(function(){
+function mount(){const host=document.getElementById('rm350Workboard');if(!host)return;const shell=host.querySelector('.rm350-shell');if(!shell||document.getElementById('rm492Additional'))return;const d=document.createElement('details');d.id='rm492Additional';d.innerHTML='<summary>Additional workflows · transaction calls, Tuesday updates and outreach</summary>';shell.before(d);d.appendChild(shell);}
+mount();let scheduled=false;new MutationObserver(()=>{if(!scheduled){scheduled=true;requestAnimationFrame(()=>{scheduled=false;mount()})}}).observe(document.body,{childList:true,subtree:true});
+})();
+</script></body>
 </html>
