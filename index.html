@@ -3,8 +3,8 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta content="rm-tracker-v478-rm-portfolio-drills-20261028" name="version"/>
-<meta content="v478: RM Portfolio tiles open focused lists; Growth Plans shows Amanda-owned partners missing a documented next move." name="build-notes"/>
+<meta content="rm-tracker-v479-rm-meeting-and-growth-drills-20261028" name="version"/>
+<meta content="v479: RM Portfolio tiles open focused lists; Growth Plans and Meeting Cadence show the matching Amanda-owned partner lists." name="build-notes"/>
 <meta content="no-cache, no-store, must-revalidate" http-equiv="Cache-Control"/>
 <meta content="no-cache" http-equiv="Pragma"/>
 <meta content="0" http-equiv="Expires"/>
@@ -18632,6 +18632,13 @@ function v390PersonRow(r,kind){
   if(kind==='growth'&&r.next_growth_opportunity)detail=String(r.next_growth_opportunity)+(r.next_growth_due?' · due '+String(r.next_growth_due).slice(0,10):' · set a due date');
   return '<div class="pf390-person-row"><div class="pf390-person-name"><span class="pf390-dot '+dot+'"></span><div><b>'+escHtml(properCase(r.name||''))+'</b><small>'+escHtml(tierLabel(r.tier||''))+' · '+escHtml(r.health||'')+'</small></div></div><div class="pf390-person-next">'+escHtml(detail)+'</div><div class="pf390-person-actions"><button class="btn-sm" onclick="v390OpenPartner(\''+encoded+'\',\'call\')">Call</button><button class="btn-sm" onclick="v390OpenPartner(\''+encoded+'\',\'open\')">Open</button></div></div>';
 }
+function v390MeetingDueRow(r){
+  const encoded=encodeURIComponent(r.name||'');
+  const since=r.daysSince===null||r.daysSince===undefined?'No formal meeting logged':r.daysSince+' days since last meeting';
+  const cadence=Number(r.cadence||0);
+  const detail=since+(cadence?' · expected every '+cadence+' days':'');
+  return '<div class="pf390-person-row"><div class="pf390-person-name"><span class="pf390-dot yellow"></span><div><b>'+escHtml(properCase(r.name||''))+'</b><small>'+escHtml(tierLabel(r.tier||''))+' · Meeting cadence due</small></div></div><div class="pf390-person-next">'+escHtml(detail)+'</div><div class="pf390-person-actions"><button class="btn-sm" onclick="v390OpenPartner(\\''+encoded+'\\',\\'call\\')">Call</button><button class="btn-sm" onclick="v390OpenPartner(\\''+encoded+'\\',\\'open\\')">Open</button></div></div>';
+}
 function v390DirectoryRow(r){
   const encoded=encodeURIComponent(r.name||'');
   const tier=String(r.tier||'No Tier'),health=String(r.health||'');
@@ -18731,10 +18738,10 @@ function v390RenderSimplePortfolio(legacyHtml,reportingWasOpen){
   const meetingRows=Array.isArray(d.meetingRows)?d.meetingRows:[],meetingsDue=meetingRows.filter(r=>!r.compliant);
   const meetingPct=meetingRows.length?Math.round(((meetingRows.length-meetingsDue.length)/meetingRows.length)*100):0;
   const missingNextMove=rows.filter(r=>!String(r.next_growth_opportunity||'').trim());
-  const growthPlanMissingKeys=new Set((Array.isArray(d.missingGrowthOpp)?d.missingGrowthOpp:[]).map(a=>String((a&&a.agent_name)||'').trim().toLowerCase().replace(/\\s+/g,' ')).filter(Boolean));
+  const growthPlanMissingKeys=new Set((Array.isArray(d.missingGrowthOpp)?d.missingGrowthOpp:[]).map(a=>String((a&&a.agent_name)||'').trim().toLowerCase()).filter(Boolean));
   const missingGrowthPlans=rows.filter(r=>{
-    const key=String(r.name||'').trim().toLowerCase().replace(/\\s+/g,' ');
-    return growthPlanMissingKeys.size?growthPlanMissingKeys.has(key):!String(r.next_growth_opportunity||'').trim();
+    const key=String(r.name||'').trim().toLowerCase();
+    return growthPlanMissingKeys.has(key)||!String(r.next_growth_opportunity||'').trim();
   }).sort((a,b)=>v390TierRank(a.tier)-v390TierRank(b.tier)||String(a.name||'').localeCompare(String(b.name||'')));
   const highPotential=Array.isArray(d.highPotential)?d.highPotential:rows.filter(r=>r.high_potential);
   const workEmpty='<div class="pf390-empty">Nothing here right now.</div>';
@@ -18760,6 +18767,7 @@ function v390RenderSimplePortfolio(legacyHtml,reportingWasOpen){
       <div class="pf390-work-grid">
         <div class="pf390-work-card" data-pf390-work="attention"><div class="pf390-work-head"><div><strong>Needs Attention</strong><small>Confirm missing contact history before calling a partner lost; work real overdue conversations first.</small></div><span class="pf390-count">${needsAttention.length}</span></div><div class="pf390-work-body">${needsAttention.length?needsAttention.slice(0,25).map(r=>v390PersonRow(r,'attention')).join(''):workEmpty}</div></div>
         <div class="pf390-work-card" data-pf390-work="due"><div class="pf390-work-head"><div><strong>Coming Due</strong><small>Green relationships within seven days of a cadence threshold.</small></div><span class="pf390-count">${comingDue.length}</span></div><div class="pf390-work-body">${comingDue.length?comingDue.slice(0,25).map(r=>v390PersonRow(r,'due')).join(''):'<div class="pf390-empty">No green partner is within seven days of a cadence threshold.</div>'}</div></div>
+        <div class="pf390-work-card" data-pf390-work="meetings"><div class="pf390-work-head"><div><strong>Formal Meetings Due</strong><small>Partners outside their tier's meeting cadence.</small></div><span class="pf390-count">${meetingsDue.length}</span></div><div class="pf390-work-body">${meetingsDue.length?meetingsDue.slice(0,25).map(v390MeetingDueRow).join(''):'<div class="pf390-empty">No Amanda-owned partner is currently outside the formal meeting cadence.</div>'}</div></div>
         <div class="pf390-work-card" data-pf390-work="growth"><div class="pf390-work-head"><div><strong>Growth Moves Ready Now</strong><small>Only saved moves requiring attention now. The Overview also counts plans waiting after a touch.</small></div><span class="pf390-count">${growth.length}</span></div><div class="pf390-work-body">${growth.length?growth.slice(0,25).map(r=>v390PersonRow(r,'growth')).join(''):'<div class="pf390-empty">No growth move needs action now. '+(growthAll.length-growth.length)+' documented plans are waiting or scheduled. Review them in All Partners.</div>'}</div></div>
       </div>
     </section>
