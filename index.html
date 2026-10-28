@@ -3,8 +3,8 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta content="rm-tracker-v477-channel-included-in-powerbi-a-20261027" name="version"/>
-<meta content="v477: RM tier cards match Power BI A/B/C counts; Channel is shown as a subset of A." name="build-notes"/>
+<meta content="rm-tracker-v478-rm-portfolio-drills-20261028" name="version"/>
+<meta content="v478: RM Portfolio tiles open focused lists; Growth Plans shows Amanda-owned partners missing a documented next move." name="build-notes"/>
 <meta content="no-cache, no-store, must-revalidate" http-equiv="Cache-Control"/>
 <meta content="no-cache" http-equiv="Pragma"/>
 <meta content="0" http-equiv="Expires"/>
@@ -1484,9 +1484,9 @@ body[data-rm-tab="week"] #view-week .v95-amanda-greeting{
 <section aria-labelledby="rmPlaybookReviewTitle" class="rm-playbook-review">
 <div class="rm-playbook-head"><div><div class="rm-playbook-kicker">RM Playbook Review</div><h2 id="rmPlaybookReviewTitle">Portfolio Health &amp; Action</h2></div><span>Supporting review · not additional scorecard points</span></div>
 <div class="rm-playbook-grid">
-<button onclick="switchTab('portfolio')" type="button"><b>Partner Health</b><small>Protect at-risk relationships</small><em>Open Portfolio</em></button>
-<button onclick="switchTab('growth')" type="button"><b>Growth Opportunities</b><small>Advance documented next moves</small><em>Open Agent Growth</em></button>
-<button onclick="switchTab('portfolio')" type="button"><b>Meeting Cadence</b><small>Review partners due for a meeting</small><em>Open Portfolio</em></button>
+<button onclick="v390OpenPortfolioPanel('work','attention')" type="button"><b>Partner Health</b><small>Protect at-risk relationships</small><em>Open attention list</em></button>
+<button onclick="v390OpenPortfolioPanel('missing-growth')" type="button"><b>Missing Growth Plans</b><small>Find Amanda-owned agents without a documented next move</small><em>Open missing plans</em></button>
+<button onclick="v390OpenPortfolioPanel('work','meetings')" type="button"><b>Meeting Cadence</b><small>Review partners due for a meeting</small><em>Open meeting list</em></button>
 <button onclick="switchTab('feed')" type="button"><b>Support &amp; Escalations</b><small>Review items needing attention</small><em>Open Activity Feed</em></button>
 </div>
 </section>
@@ -18602,6 +18602,7 @@ function v390InstallPortfolioShell(){
     <div class="pf390-nav" aria-label="Portfolio sections">
       <button type="button" data-pf390-view="overview" onclick="v390ShowPortfolioView('overview')">Overview</button>
       <button type="button" data-pf390-view="work" onclick="v390ShowPortfolioView('work')">Work List</button>
+      <button type="button" data-pf390-view="missing-growth" onclick="v390ShowPortfolioView('missing-growth')">Missing Growth Plans</button>
       <button type="button" data-pf390-view="directory" onclick="v390ShowPortfolioView('directory')">All Partners</button>
     </div>
     <div id="portfolioReviewBody"><div class="no-data">Loading portfolio...</div></div>`;
@@ -18626,8 +18627,8 @@ function v390Metric(label,value,note,onclick){return '<div class="pf390-stat'+(o
 function v390SimpleRow(label,value,note){return '<div class="pf390-simple-row"><div class="left"><div class="name">'+label+'</div>'+(note?'<div class="meta">'+note+'</div>':'')+'</div><div class="value">'+value+'</div></div>'}
 function v390PersonRow(r,kind){
   const encoded=encodeURIComponent(r.name||'');
-  const dot=kind==='growth'?'purple':String(r.health||'').toLowerCase();
-  let detail=v390StatusDetail(r);
+  const dot=(kind==='growth'||kind==='missing-growth')?'purple':String(r.health||'').toLowerCase();
+  let detail=kind==='missing-growth'?'No documented growth plan saved':v390StatusDetail(r);
   if(kind==='growth'&&r.next_growth_opportunity)detail=String(r.next_growth_opportunity)+(r.next_growth_due?' · due '+String(r.next_growth_due).slice(0,10):' · set a due date');
   return '<div class="pf390-person-row"><div class="pf390-person-name"><span class="pf390-dot '+dot+'"></span><div><b>'+escHtml(properCase(r.name||''))+'</b><small>'+escHtml(tierLabel(r.tier||''))+' · '+escHtml(r.health||'')+'</small></div></div><div class="pf390-person-next">'+escHtml(detail)+'</div><div class="pf390-person-actions"><button class="btn-sm" onclick="v390OpenPartner(\''+encoded+'\',\'call\')">Call</button><button class="btn-sm" onclick="v390OpenPartner(\''+encoded+'\',\'open\')">Open</button></div></div>';
 }
@@ -18646,12 +18647,34 @@ window.v390OpenPartner=function(encoded,action){
   if(typeof openContactsEdit==='function')openContactsEdit(name);
 };
 function v390ShowPortfolioView(which){
-  which=['overview','work','directory'].includes(which)?which:'overview';window._pf390PortfolioView=which;
+  which=['overview','work','missing-growth','directory'].includes(which)?which:'overview';window._pf390PortfolioView=which;
   document.querySelectorAll('#portfolioReviewBody .pf390-panel').forEach(el=>el.classList.toggle('active',el.dataset.pf390Panel===which));
   document.querySelectorAll('#view-portfolio [data-pf390-view]').forEach(btn=>btn.classList.toggle('active',btn.dataset.pf390View===which));
   if(which==='directory')setTimeout(()=>document.getElementById('pf390DirectorySearch')?.focus(),20);
 }
 window.v390ShowPortfolioView=v390ShowPortfolioView;
+function v390OpenPortfolioPanel(which,workKey){
+  const allowed=['overview','work','missing-growth','directory'];
+  which=allowed.includes(which)?which:'overview';
+  window._pf390PortfolioView=which;
+  if(typeof window.switchTab==='function')window.switchTab('portfolio');
+  let attempts=0;
+  const reveal=function(){
+    const panel=document.querySelector('#portfolioReviewBody [data-pf390-panel="'+which+'"]');
+    if(panel){
+      window.v390ShowPortfolioView(which);
+      if(workKey){
+        const card=document.querySelector('#portfolioReviewBody [data-pf390-work="'+workKey+'"]');
+        if(card){card.scrollIntoView({behavior:'smooth',block:'start'});return;}
+        if(attempts++<40){setTimeout(reveal,100);return;}
+      }
+      return;
+    }
+    if(attempts++<40)setTimeout(reveal,100);
+  };
+  setTimeout(reveal,60);
+}
+window.v390OpenPortfolioPanel=v390OpenPortfolioPanel;
 function v390FilterPortfolioDirectory(){
   const q=String(document.getElementById('pf390DirectorySearch')?.value||'').trim().toLowerCase();
   const tier=String(document.getElementById('pf390DirectoryTier')?.value||'all');
@@ -18708,6 +18731,11 @@ function v390RenderSimplePortfolio(legacyHtml,reportingWasOpen){
   const meetingRows=Array.isArray(d.meetingRows)?d.meetingRows:[],meetingsDue=meetingRows.filter(r=>!r.compliant);
   const meetingPct=meetingRows.length?Math.round(((meetingRows.length-meetingsDue.length)/meetingRows.length)*100):0;
   const missingNextMove=rows.filter(r=>!String(r.next_growth_opportunity||'').trim());
+  const growthPlanMissingKeys=new Set((Array.isArray(d.missingGrowthOpp)?d.missingGrowthOpp:[]).map(a=>String((a&&a.agent_name)||'').trim().toLowerCase().replace(/\\s+/g,' ')).filter(Boolean));
+  const missingGrowthPlans=rows.filter(r=>{
+    const key=String(r.name||'').trim().toLowerCase().replace(/\\s+/g,' ');
+    return growthPlanMissingKeys.size?growthPlanMissingKeys.has(key):!String(r.next_growth_opportunity||'').trim();
+  }).sort((a,b)=>v390TierRank(a.tier)-v390TierRank(b.tier)||String(a.name||'').localeCompare(String(b.name||'')));
   const highPotential=Array.isArray(d.highPotential)?d.highPotential:rows.filter(r=>r.high_potential);
   const workEmpty='<div class="pf390-empty">Nothing here right now.</div>';
   const legacy=legacyHtml||'<div class="no-data">Reporting data unavailable.</div>';
@@ -18717,23 +18745,27 @@ function v390RenderSimplePortfolio(legacyHtml,reportingWasOpen){
       ${needsAttention.length?'<div class="pf390-action-banner"><div><strong>'+needsAttention.length+' partner'+(needsAttention.length===1?' needs':'s need')+' attention.</strong><span>Start with the Work List.</span></div><button class="btn-primary" onclick="v390ShowPortfolioView(\'work\')">Open Work List</button></div>':''}
       <div class="pf390-stat-grid">
         ${v390Metric('Active Partners',total,'Channel '+tierCounts.Channel+' · A '+tierCounts.A+' · B '+tierCounts.B,"v390ShowPortfolioView('directory')")}
-        ${v390Metric('Needs Attention',needsAttention.length,(rawNeedsAttention.length-needsAttention.length)+' recently attempted · '+healthCounts.Red+' red / '+healthCounts.Yellow+' yellow overall',"v390ShowPortfolioView('work')")}
-        ${v390Metric('Coming Due',comingDue.length,'Reach out before cadence slips',"v390ShowPortfolioView('work')")}
-        ${v390Metric('Growth Plans',growthAll.length,growth.length+' ready now · '+(growthAll.length-growth.length)+' waiting or scheduled',"v390ShowPortfolioView('work')")}
+        ${v390Metric('Needs Attention',needsAttention.length,(rawNeedsAttention.length-needsAttention.length)+' recently attempted · '+healthCounts.Red+' red / '+healthCounts.Yellow+' yellow overall',"v390OpenPortfolioPanel('work','attention')")}
+        ${v390Metric('Coming Due',comingDue.length,'Reach out before cadence slips',"v390OpenPortfolioPanel('work','due')")}
+        ${v390Metric('Missing Growth Plans',missingGrowthPlans.length,'Amanda-owned partners without a documented next move',"v390OpenPortfolioPanel('missing-growth')")}
       </div>
       <div class="pf390-grid-2">
         <div class="pf390-card"><div class="pf390-card-head"><div><div class="pf390-card-title">Partner Health</div><div class="pf390-card-sub">Click a status to see the names.</div></div><button class="btn-sm" onclick="openPartnerHealthHelp()">How it works</button></div><div class="pf390-health-grid"><div class="pf390-health green" onclick="openPortfolioList('health:Green')"><b>${healthCounts.Green}</b><span>Green</span></div><div class="pf390-health yellow" onclick="openPortfolioList('health:Yellow')"><b>${healthCounts.Yellow}</b><span>Yellow</span></div><div class="pf390-health red" onclick="openPortfolioList('health:Red')"><b>${healthCounts.Red}</b><span>Red</span></div></div></div>
-        <div class="pf390-card"><div class="pf390-card-head"><div><div class="pf390-card-title">Growth &amp; Meetings</div><div class="pf390-card-sub">The few numbers Amanda needs to manage relationships.</div></div></div><div class="pf390-simple-list">${v390SimpleRow('Growth opportunities documented',growthAll.length+' / '+total,total?Math.round(growthAll.length/total*100)+'% of portfolio':null)}${v390SimpleRow('Formal meetings due',meetingsDue.length,meetingRows.length?meetingPct+'% currently on cadence':'No formal cadence group; still schedule business plans')}${v390SimpleRow('Partners missing a next move',missingNextMove.length,missingNextMove.length?'Capture a specific action and due date after the next conversation':'Every partner has a documented next move')}${v390SimpleRow('High-potential partners',highPotential.length,'Keep these relationships visible')}</div></div>
+        <div class="pf390-card"><div class="pf390-card-head"><div><div class="pf390-card-title">Growth &amp; Meetings</div><div class="pf390-card-sub">The few numbers Amanda needs to manage relationships.</div></div></div><div class="pf390-simple-list">${v390SimpleRow('Growth opportunities documented',growthAll.length+' / '+total,total?Math.round(growthAll.length/total*100)+'% of portfolio':null)}${v390SimpleRow('Formal meetings due',meetingsDue.length,meetingRows.length?meetingPct+'% currently on cadence':'No formal cadence group; still schedule business plans')}${v390SimpleRow('Partners missing a growth plan',missingGrowthPlans.length,missingGrowthPlans.length?'See the Missing Growth Plans list':'Every Amanda-owned partner has a documented next move')}${v390SimpleRow('High-potential partners',highPotential.length,'Keep these relationships visible')}</div></div>
       </div>
       <details id="pf390ReportingAdmin" class="pf390-reporting" ${reportingWasOpen?'open':''}><summary><span>Reporting &amp; Admin <span class="pf390-reporting-copy">Scorecard, Power BI audit, diagnostics and leadership detail</span></span></summary><div class="pf390-reporting-inner">${v390PeriodControls()}<div class="pf390-reporting-heading">Power BI Source + Portfolio Reconciliation, scorecard &amp; diagnostics</div>${legacy}</div></details>
     </section>
     <section class="pf390-panel" data-pf390-panel="work">
       <div class="pf390-section-head"><div><div class="pf390-section-title">Work My Portfolio</div><div class="pf390-section-sub">Start here. Work top to bottom, then move on.</div></div><button class="btn-sm" onclick="v390ShowPortfolioView('overview')">Back to Overview</button></div>
       <div class="pf390-work-grid">
-        <div class="pf390-work-card"><div class="pf390-work-head"><div><strong>Needs Attention</strong><small>Confirm missing contact history before calling a partner lost; work real overdue conversations first.</small></div><span class="pf390-count">${needsAttention.length}</span></div><div class="pf390-work-body">${needsAttention.length?needsAttention.slice(0,25).map(r=>v390PersonRow(r,'attention')).join(''):workEmpty}</div></div>
-        <div class="pf390-work-card"><div class="pf390-work-head"><div><strong>Coming Due</strong><small>Green relationships within seven days of a cadence threshold.</small></div><span class="pf390-count">${comingDue.length}</span></div><div class="pf390-work-body">${comingDue.length?comingDue.slice(0,25).map(r=>v390PersonRow(r,'due')).join(''):'<div class="pf390-empty">No green partner is within seven days of a cadence threshold.</div>'}</div></div>
-        <div class="pf390-work-card"><div class="pf390-work-head"><div><strong>Growth Moves Ready Now</strong><small>Only saved moves requiring attention now. The Overview also counts plans waiting after a touch.</small></div><span class="pf390-count">${growth.length}</span></div><div class="pf390-work-body">${growth.length?growth.slice(0,25).map(r=>v390PersonRow(r,'growth')).join(''):'<div class="pf390-empty">No growth move needs action now. '+(growthAll.length-growth.length)+' documented plans are waiting or scheduled. Review them in All Partners.</div>'}</div></div>
+        <div class="pf390-work-card" data-pf390-work="attention"><div class="pf390-work-head"><div><strong>Needs Attention</strong><small>Confirm missing contact history before calling a partner lost; work real overdue conversations first.</small></div><span class="pf390-count">${needsAttention.length}</span></div><div class="pf390-work-body">${needsAttention.length?needsAttention.slice(0,25).map(r=>v390PersonRow(r,'attention')).join(''):workEmpty}</div></div>
+        <div class="pf390-work-card" data-pf390-work="due"><div class="pf390-work-head"><div><strong>Coming Due</strong><small>Green relationships within seven days of a cadence threshold.</small></div><span class="pf390-count">${comingDue.length}</span></div><div class="pf390-work-body">${comingDue.length?comingDue.slice(0,25).map(r=>v390PersonRow(r,'due')).join(''):'<div class="pf390-empty">No green partner is within seven days of a cadence threshold.</div>'}</div></div>
+        <div class="pf390-work-card" data-pf390-work="growth"><div class="pf390-work-head"><div><strong>Growth Moves Ready Now</strong><small>Only saved moves requiring attention now. The Overview also counts plans waiting after a touch.</small></div><span class="pf390-count">${growth.length}</span></div><div class="pf390-work-body">${growth.length?growth.slice(0,25).map(r=>v390PersonRow(r,'growth')).join(''):'<div class="pf390-empty">No growth move needs action now. '+(growthAll.length-growth.length)+' documented plans are waiting or scheduled. Review them in All Partners.</div>'}</div></div>
       </div>
+    </section>
+    <section class="pf390-panel" data-pf390-panel="missing-growth">
+      <div class="pf390-section-head"><div><div class="pf390-section-title">Missing Growth Plans</div><div class="pf390-section-sub">Amanda-owned active partners with no documented next growth opportunity.</div></div><button class="btn-sm" onclick="v390ShowPortfolioView('overview')">Back to Overview</button></div>
+      <div class="pf390-work-card"><div class="pf390-work-head"><div><strong>Agents needing a growth plan</strong><small>Open a partner profile to document the next opportunity and follow-up.</small></div><span class="pf390-count">${missingGrowthPlans.length}</span></div><div class="pf390-work-body">${missingGrowthPlans.length?missingGrowthPlans.map(r=>v390PersonRow(r,'missing-growth')).join(''):'<div class="pf390-empty">No Amanda-owned active partner is missing a documented growth plan.</div>'}</div></div>
     </section>
     <section class="pf390-panel" data-pf390-panel="directory">
       <div class="pf390-section-head"><div><div class="pf390-section-title">All Partners</div><div class="pf390-section-sub"><span id="pf390DirectoryCount">${total} partners</span> · Search the full managed book.</div></div><button class="btn-sm" onclick="v390ShowPortfolioView('overview')">Back to Overview</button></div>
