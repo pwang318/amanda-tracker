@@ -3,7 +3,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta content="rm-tracker-v487-daily-meetings-portfolio-20261028" name="version"/>
+<meta content="rm-tracker-v488-unified-portfolio-20261028" name="version"/>
 <meta content="v481: RM Portfolio tiles focus the active work panel; Growth Plans and Meeting Cadence open their matching Amanda-owned lists." name="build-notes"/>
 <meta content="no-cache, no-store, must-revalidate" http-equiv="Cache-Control"/>
 <meta content="no-cache" http-equiv="Pragma"/>
@@ -19525,7 +19525,11 @@ async function buildPortfolio(){
 function tile(kind,n,label,sub){return '<button type="button" class="rm-v440-pt" data-v440-kind="'+kind+'"><b>'+n+'</b><span>'+label+'</span><small>'+sub+'</small></button>'}
 function ensureHost(){
  const pace=el('rm358Pace');if(!pace||el('rmV440PortfolioToday'))return;
- const box=document.createElement('section');box.id='rmV440PortfolioToday';box.innerHTML='<div class="rm-v440-pt-head"><div><div class="rm-v440-pt-title">Portfolio Today</div><div class="rm-v440-pt-sub">Amanda-owned relationships that need attention before routine prospecting.</div></div><button type="button" class="rm-v440-pt-open" data-v440-kind="work">Open Work List →</button></div><div class="rm-v440-pt-grid" id="rmV440PortfolioGrid"><div style="grid-column:1/-1;padding:8px 2px;font-size:10px;color:#81779a">Loading portfolio priorities…</div></div>';
+ const box=document.createElement('section');box.id='rmV440PortfolioToday';box.innerHTML='<div class="rm-v440-pt-head"><div><div class="rm-v440-pt-title">Portfolio Today</div><div class="rm-v440-pt-sub">Review relationship health, meeting cadence, growth plans and next moves in one place.</div></div><button type="button" class="rm-v440-pt-open" data-v440-kind="work">Open Work List →</button></div><div class="rm-v440-pt-grid" id="rmV440PortfolioGrid"><div style="grid-column:1/-1;padding:8px 2px;font-size:10px;color:#81779a">Loading portfolio priorities…</div></div>';
+
+ const actions=document.createElement('div');actions.className='rmv488-portfolio-actions';
+ actions.innerHTML='<button type="button" onclick="v390OpenPortfolioPanel(\'missing-growth\')">Missing Growth Plans →</button><button type="button" onclick="v390OpenPortfolioPanel(\'directory\')">All Partners →</button><button type="button" onclick="rmV429OpenScoreDetail(\'leads\')">Referral Goal Progress →</button>';
+ box.appendChild(actions);
  pace.insertAdjacentElement('afterend',box);
  box.addEventListener('click',e=>{const b=e.target.closest('[data-v440-kind]');if(!b)return;const k=b.dataset.v440Kind;if(['attention','touches','meetings','growth'].includes(k)&&typeof window.v442OpenPortfolioTile==='function'){window.v442OpenPortfolioTile(k);return}openPortfolio(k)});
 }
@@ -21253,6 +21257,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 
 
 <style id="rmv487-css">
+.rmv488-portfolio-actions{display:flex;flex-wrap:wrap;gap:8px;padding:0 12px 14px}.rmv488-portfolio-actions button{border:1px solid #D9CFE8;background:#F8F5FE;color:#503D70;border-radius:9px;padding:9px 12px;font:600 12px inherit;cursor:pointer}.rmv488-portfolio-actions button:hover{background:#EEE6FB}
 .rmv487-panel{margin:14px 0;padding:18px;background:#FBF9FD;border:1px solid #E5DDF0;border-radius:14px;color:#15184D}.rmv487-panel h2{margin:0 0 8px;font-size:17px}.rmv487-panel p{font-size:12px;color:#66617B}.rmv487-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:9px}.rmv487-grid button,.rmv487-tools button{background:white;border:1px solid #D9CFE8;border-radius:10px;padding:12px;color:#503D70;text-align:left;cursor:pointer}.rmv487-grid b,.rmv487-grid small{display:block}.rmv487-grid strong{font-size:23px;display:block;margin:6px 0}.rmv487-tools{display:flex;gap:8px}.rmv487-tools button{padding:7px 12px}#rmv487Modal{position:fixed;inset:0;background:#17203388;z-index:110000;display:grid;place-items:center;padding:20px}#rmv487Modal>section{background:white;color:#15184D;border-radius:16px;padding:24px;max-width:620px;max-height:85vh;overflow:auto;width:100%;box-sizing:border-box}#rmv487Modal p{line-height:1.6}#rmv487Modal button{border:1px solid #D9CFE8;background:#F2ECFF;color:#503D70;border-radius:8px;padding:9px 13px;cursor:pointer}
 </style>
 <script id="rmv487-daily-tools">
@@ -21274,7 +21279,6 @@ const hero=host.querySelector('.rm350-hero-side');
 if(hero&&!document.getElementById('rmv487Tools')){const tools=document.createElement('div');tools.id='rmv487Tools';tools.className='rmv487-tools';tools.innerHTML='<button onclick="rmV487Settings()">Settings</button><button onclick="rmV487Help()">Help</button>';hero.appendChild(tools);}
 if(!document.getElementById('rmv487Meetings')){const section=document.createElement('section');section.id='rmv487Meetings';section.className='rmv487-panel';section.innerHTML='<h2>Meetings held today</h2><p>Business planning turns relationship conversations into a documented plan and next step. Click a meeting type to see its records.</p><div class="rmv487-grid">'+types.map((t,i)=>'<button data-meeting-index="'+i+'"><b>'+t+'</b><strong id="rmv487MeetingCount'+i+'">0</strong><small>View saved meetings →</small></button>').join('')+'</div>';(document.getElementById('rm358Pace')||host.firstChild).after(section);section.querySelectorAll('button').forEach(b=>b.onclick=()=>window.rmV487MeetingDetails(types[Number(b.dataset.meetingIndex)]));}
 types.forEach((t,i)=>{const el=document.getElementById('rmv487MeetingCount'+i),value=String(rows().filter(r=>category(r)===t).length);if(el&&el.textContent!==value)el.textContent=value;});
-if(!document.getElementById('rmv487Portfolio')){const p=document.createElement('section');p.id='rmv487Portfolio';p.className='rmv487-panel';p.innerHTML='<h2>Portfolio plan check</h2><p>Keep every active relationship assigned, with a documented growth plan and a clear next move. These links open the current portfolio lists.</p><div class="rmv487-grid"><button onclick="v390OpenPortfolioPanel(\'missing-growth\')"><b>Missing Growth Plans</b><small>Document the next opportunity →</small></button><button onclick="v390OpenPortfolioPanel(\'work\')"><b>Portfolio Work List</b><small>Health, follow-ups and meeting cadence →</small></button><button onclick="v390OpenPortfolioPanel(\'directory\')"><b>All Partners</b><small>Review your portfolio directory →</small></button><button onclick="rmV429OpenScoreDetail(\'leads\')"><b>Referral Goal Progress</b><small>Open current leads and target →</small></button></div>';document.getElementById('rmv487Meetings').after(p);}
 host.querySelectorAll('.rm350-card[data-kind="tuesday"]').forEach(el=>{el.hidden=new Date().getDay()!==2;el.style.display=el.hidden?'none':'';});
 }
 document.addEventListener('keydown',e=>{if(e.key==='Escape')close();});
