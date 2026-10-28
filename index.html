@@ -3,7 +3,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta content="rm-tracker-v492-loaded-scorecard-mobile-20261028" name="version"/>
+<meta content="rm-tracker-v493-scorecard-explanation-20261028" name="version"/>
 <meta content="v481: RM Portfolio tiles focus the active work panel; Growth Plans and Meeting Cadence open their matching Amanda-owned lists." name="build-notes"/>
 <meta content="no-cache, no-store, must-revalidate" http-equiv="Cache-Control"/>
 <meta content="no-cache" http-equiv="Pragma"/>
@@ -21293,7 +21293,6 @@ window.rmV487MeetingDetails=function(type){const matched=rows().filter(r=>catego
 function mount(){
 const host=document.getElementById('rm350Workboard');if(!host)return;
 const hero=host.querySelector('.rm350-hero-side');
-if(hero&&!document.getElementById('rmv487Tools')){const tools=document.createElement('div');tools.id='rmv487Tools';tools.className='rmv487-tools';tools.innerHTML='<button onclick="rmV487Settings()">Settings</button><button onclick="rmV487Help()">Help</button>';hero.appendChild(tools);}
 if(!document.getElementById('rmv487Meetings')){const section=document.createElement('section');section.id='rmv487Meetings';section.className='rmv487-panel';section.innerHTML='<div class="rmv487-grid">'+types.map((t,i)=>'<button data-meeting-index="'+i+'"><b>'+t+'</b><strong id="rmv487MeetingCount'+i+'">0</strong><small>View saved meetings →</small></button>').join('')+'</div>';(document.getElementById('rm358Pace')||host.firstChild).after(section);section.querySelectorAll('button').forEach(b=>b.onclick=()=>window.rmV487MeetingDetails(types[Number(b.dataset.meetingIndex)]));}
 types.forEach((t,i)=>{const el=document.getElementById('rmv487MeetingCount'+i),value=String(rows().filter(r=>category(r)===t).length);if(el&&el.textContent!==value)el.textContent=value;});
 host.querySelectorAll('.rm350-card[data-kind="tuesday"]').forEach(el=>{el.hidden=new Date().getDay()!==2;el.style.display=el.hidden?'none':'';});
@@ -21355,7 +21354,7 @@ const host=$('rm350Workboard'),pace=$('rm358Pace');if(!host||!pace)return;
 const title=pace.querySelector('.rm358-pace-title');if(title&&title.textContent!=='Daily Snapshot')title.textContent='Daily Snapshot';
 const grid=pace.querySelector('.rm358-goals');put($('rmv487Meetings'),grid);
 if(grid&&!$('rm490Referral')){const b=document.createElement('button');b.id='rm490Referral';b.innerHTML='<b>Referral Leads</b><strong>—</strong><small>This month · view details →</small>';b.onclick=()=>rmV429OpenScoreDetail('leads');grid.appendChild(b);}
-if(!$('rm490Score')){const s=document.createElement('section');s.id='rm490Score';s.innerHTML='<h2>Daily Scorecard Work</h2><div class="rm490-scoregrid">'+[['leads','Referral Leads'],['B','B-tier Accounts'],['active','Active Agents']].map(x=>'<button onclick="rmV429OpenScoreDetail(\''+x[0]+'\')"><b>'+x[1]+'</b><strong id="rm490Value'+x[0]+'">Loading…</strong><small id="rm490Gap'+x[0]+'"></small><progress id="rm490Progress'+x[0]+'" max="100" value="0"></progress></button>').join('')+'</div>';pace.after(s);}
+if(!$('rm490Score')){const s=document.createElement('section');s.id='rm490Score';s.innerHTML='<h2>Daily Scorecard Work</h2><details class="rm493-score-help"><summary>How your scorecard is calculated</summary><p><b>50% · Tier Growth:</b> Progress toward the current Channel, A and B account milestones, based on closing production. Channel accounts have 10+ closings and remain included in A accounts.</p><p><b>30% · Active Agent-to-Lead:</b> Monthly referral volume from the active Power BI A/B/C roster compared with a target of 1.15 leads per active agent. Every referral counts, including multiple leads from the same agent and leads from C agents. The current score uses projected month-end leads; the progress card shows actual MTD leads.</p><p><b>20% · Active Agent Count:</b> The Power BI active roster compared with the 200-agent year-end goal.</p><p><b>Monthly minimum:</b> At least 100 referred leads. With 132 active agents, the 1.15 scorecard target rounds up to 152 leads. Calls, conversations, meetings and portfolio plans support these results; they do not add separate scorecard points.</p></details><div class="rm490-scoregrid">'+[['leads','Referral Leads'],['B','B-tier Accounts'],['active','Active Agents']].map(x=>'<button onclick="rmV429OpenScoreDetail(\''+x[0]+'\')"><b>'+x[1]+'</b><strong id="rm490Value'+x[0]+'">Loading…</strong><small id="rm490Gap'+x[0]+'"></small><progress id="rm490Progress'+x[0]+'" max="100" value="0"></progress></button>').join('')+'</div>';pace.after(s);}
 put($('rmV440PortfolioToday'),$('rm490Score'));
 if(!$('rm490Bottom')){
 const b=document.createElement('div');b.id='rm490Bottom';b.className='rm490-bottom';
@@ -21428,5 +21427,5 @@ body .view{margin-left:0!important;padding:12px!important;width:auto!important}
 function mount(){const host=document.getElementById('rm350Workboard');if(!host)return;const shell=host.querySelector('.rm350-shell');if(!shell||document.getElementById('rm492Additional'))return;const d=document.createElement('details');d.id='rm492Additional';d.innerHTML='<summary>Additional workflows · transaction calls, Tuesday updates and outreach</summary>';shell.before(d);d.appendChild(shell);}
 mount();let scheduled=false;new MutationObserver(()=>{if(!scheduled){scheduled=true;requestAnimationFrame(()=>{scheduled=false;mount()})}}).observe(document.body,{childList:true,subtree:true});
 })();
-</script></body>
+</script><style>.rm493-score-help{margin:0 0 16px;padding:12px 14px;border:1px solid #e5dff0;border-radius:10px;background:#faf8ff;color:#55466d;font-size:13px}.rm493-score-help summary{cursor:pointer;font-weight:700}.rm493-score-help p{line-height:1.6;margin:12px 0 0}</style></body>
 </html>
