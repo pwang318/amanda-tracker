@@ -10994,31 +10994,31 @@ window.v109RenderAmandaTasks=v112RenderAmandaTasks;
 (function(){
   function el(tag,cls,html){var n=document.createElement(tag);if(cls)n.className=cls;if(html!==undefined)n.innerHTML=html;return n;}
   function step(num,icon,title,desc,id){
-    var row=el('section','v113-step');row.id=id;
-    var rail=el('div','v113-step-rail','<div class="v113-rail-icon">'+icon+'</div><div><div class="v113-num">Step '+num+'</div><b>'+title+'</b><small>'+desc+'</small></div>');
+    var row=el('details','v113-step');row.id=id;row.open=(num===2);
+    var rail=el('summary','v113-step-rail','<div class="v113-rail-icon">'+icon+'</div><div><b>'+title+'</b><small>'+desc+'</small></div>');
     var body=el('div','v113-step-body');body.id=id+'Body';row.append(rail,body);return row;
   }
   function bodyTitle(text,note){return '<div class="v113-body-title"><span>'+text+'</span>'+(note?'<span class="v113-body-note">'+note+'</span>':'')+'</div>';}
   function build(){
     var card=document.getElementById('weeklyCallPlanCard');if(!card||document.getElementById('v113AmandaDashboard'))return;
-    var dash=el('div','v113-dashboard');dash.id='v113AmandaDashboard';
-    var s1=step(1,'▣','Meetings + blocked time','Only add real calendar constraints.','v113StepSchedule');
-    var s2=step(2,'!','Urgent / mandatory work','Handle time-sensitive work first.','v113StepUrgent');
-    var s3=step(3,'↔','LP handoffs','Work warm handoffs before broad outreach.','v113StepLP');
-    var s4=step(4,'◉','Relationship meetings','Who should Amanda meet with next?','v113StepFaceTime');
-    var s5=step(5,'☎','New Meeting Opportunities','Highest-value new Realtor opportunities first.','v113StepMeetings');
-    var s6=step(6,'☆','Weekly Realtor Calls','Call Amanda-owned C agents with a lead in 90 days and no active contract.','v113StepSmart');
-    var s7=step(7,'↗','C → B growth opportunities','Develop C relationships with growth evidence.','v113StepGrowth');
-    var s8=step(8,'♡','Maintenance if time','Only after priority work is done.','v113StepMaintenance');
-    dash.append(s1,s2,s3,s4,s5,s6,s7,s8);
-    var foot=el('div','v113-footer-actions','<button onclick="v85OpenInsightModal()">Share with Nyny</button><button onclick="openScriptsModal()">Scripts + Training</button><button onclick="openResourcesModal()">Resources</button><button class="primary" onclick="switchTab(\'log\')">Log Activity</button>');dash.appendChild(foot);
+    var dash=el('div','v113-dashboard');dash.id='v113AmandaDashboard';var intro=el('div','v113-clean-heading','<b>Today · work in this order</b><small>Clear active transactions, follow through with current partners, then build new business.</small>');dash.appendChild(intro);
+    var s1=step(1,'▣','Schedule constraints','Add real meetings or unavailable time when needed.','v113StepSchedule');
+    var s2=step(2,'!','Urgent transaction work','New Contract, CTC, and time-sensitive updates.','v113StepUrgent');
+    var s3=step(3,'↔','Team handoffs · when available','Use only when a teammate offers an introduction.','v113StepLP');
+    var s4=step(4,'◉','Portfolio follow-through','Due meetings, missing plans, and relationship next steps.','v113StepFaceTime');
+    var s5=step(5,'☎','New-agent outreach','Cold calls and first meetings.','v113StepMeetings');
+    var s6=step(6,'☆','Weekly Realtor Calls','Scheduled outreach to Amanda’s current partners.','v113StepSmart');
+    var s7=step(7,'↗','Portfolio growth opportunities','Develop C relationships with growth evidence.','v113StepGrowth');
+    var s8=step(8,'♡','Maintenance if time','Routine maintenance after priority work.','v113StepMaintenance');
+    dash.append(s2,s4,s5,s6,s7,s1,s3,s8);
+    var foot=el('div','v113-footer-actions','<button onclick="openScriptsModal()">Scripts + Training</button><button onclick="openResourcesModal()">Resources</button><button class="primary" onclick="switchTab(\'log\')">Log Activity</button>');dash.appendChild(foot);
     card.appendChild(dash);
     var weekView=document.getElementById('view-week');if(weekView)weekView.classList.add('v113-ready');
     var sched=document.getElementById('v23AmandaAddTimeDetails');if(sched){sched.open=true;s1.lastChild.innerHTML=bodyTitle('Today’s meetings / blocked time','Meetings only');s1.lastChild.appendChild(sched);}
-    s2.lastChild.innerHTML=bodyTitle('Do this first','Time-sensitive only');var uh=el('div');uh.id='v113UrgentHost';s2.lastChild.appendChild(uh);
+    s2.lastChild.innerHTML=bodyTitle('Active transaction work','New Contract + CTC calls');var uh=el('div');uh.id='v113UrgentHost';s2.lastChild.appendChild(uh);var tue=el('div','v113-step-shortcut','<button type="button" onclick="v350OpenLane(\'tuesday\')">Open Tuesday listing-agent updates →</button>');s2.lastChild.appendChild(tue);
     var lpCard=document.getElementById('rmLpCoordCard'),sections=lpCard?Array.from(lpCard.querySelectorAll(':scope .rm-lp-coord-grid > section')):[];
-    s3.lastChild.innerHTML=bodyTitle('LP handoffs','Warm handoffs first');var lph=el('div');lph.id='v113LpHost';s3.lastChild.appendChild(lph);if(sections[0])lph.appendChild(sections[0]);
-    s4.lastChild.innerHTML=bodyTitle('Relationship meeting priorities','Schedule the next intentional visit');var fth=el('div');fth.id='v113FaceTimeHost';s4.lastChild.appendChild(fth);if(sections[1])fth.appendChild(sections[1]);
+    s3.lastChild.innerHTML=bodyTitle('Occasional team handoffs','Only when an introduction is offered');var lph=el('div');lph.id='v113LpHost';s3.lastChild.appendChild(lph);if(sections[0])lph.appendChild(sections[0]);
+    s4.lastChild.innerHTML=bodyTitle('Portfolio follow-through','Meetings, plans, and next steps');var fth=el('div');fth.id='v113FaceTimeHost';s4.lastChild.appendChild(fth);if(sections[1])fth.appendChild(sections[1]);
     s5.lastChild.innerHTML=bodyTitle('Smart new meeting opportunities · 20 new meetings / month','Quality over call volume');var mp=document.getElementById('v109NewMeetingPush');if(mp)s5.lastChild.appendChild(mp);
     s6.lastChild.innerHTML=bodyTitle('Weekly Realtor Calls','All agents · calls needed first');var sh=el('div');sh.id='v113SmartHost';s6.lastChild.appendChild(sh);
     s7.lastChild.innerHTML=bodyTitle('C → B growth','Grow the right C relationships');var gh=el('div');gh.id='v113GrowthHost';s7.lastChild.appendChild(gh);
@@ -12218,7 +12218,7 @@ setTimeout(function(){v124MountAudit();v122RenderAudit();},1200);
     const step=document.getElementById('v113StepGrowth');
     const host=document.getElementById('v113GrowthHost');
     const step8=document.getElementById('v113StepMaintenance');
-    if(step&&step8&&step.nextElementSibling!==step8)step8.parentNode.insertBefore(step,step8);
+    const schedule=document.getElementById('v113StepSchedule');if(step&&schedule&&step.nextElementSibling!==schedule)schedule.parentNode.insertBefore(step,schedule);
     if(!host)return;
     if(!host.querySelector('.v112-growth-card')&&!/Loading Amanda-owned/.test(host.textContent||'')){
       host.innerHTML='<div class="v113-body-empty">Loading Amanda-owned C → B graduation candidates…</div>';
@@ -12272,14 +12272,14 @@ setTimeout(function(){v124MountAudit();v122RenderAudit();},1200);
     if(!dash||!after||!before||!card)return false;
     let step=document.getElementById('v161StepConversion');
     if(!step){
-      step=document.createElement('section');
-      step.className='v113-step v161-conversion-step';
+      step=document.createElement('details');
+      step.open=false;step.className='v113-step v161-conversion-step';
       step.id='v161StepConversion';
       step.innerHTML=
-        '<div class="v113-step-rail">'
+        '<summary class="v113-step-rail">'
         +'<div class="v113-rail-icon">↻</div>'
         +'<div><div class="v113-num">Step 6</div><b>New Agent · Weeks 1–4</b><small>Convert every new meeting into an opportunity. Weekly follow-up is required.</small></div>'
-        +'</div>'
+        +'</div></summary>'
         +'<div class="v113-step-body"><div class="v113-body-title"><span>4-Week Conversion</span><span class="v113-body-note">Stay in front until they send business</span></div><div id="v161ConversionHost"></div></div>';
       dash.insertBefore(step,before);
     }
@@ -21502,5 +21502,34 @@ window.rm494CallBrief=function(r,kind){
 #rm350Workboard #rm490Quick{max-width:980px;margin:0 auto!important}
 #rm350Workboard #rm490Quick h2{margin-bottom:12px!important}
 @media(max-width:1000px){#rm350Workboard #rm490Quick{max-width:none!important}}
+</style>
+<style id="rm-today-workflow-cleanup">
+#view-week #v113AmandaDashboard{display:block!important;max-width:1280px!important;margin:0 auto 18px!important}
+#view-week #v113AmandaDashboard>.v113-step{display:block!important;grid-template-columns:minmax(0,1fr)!important;margin:0 0 8px!important;border:1px solid #E2DCEA!important;border-radius:11px!important;box-shadow:none!important;background:#fff!important;overflow:hidden!important}
+#view-week #v113AmandaDashboard>.v113-step>.v113-step-rail{display:flex!important;align-items:center!important;gap:9px!important;min-height:0!important;padding:9px 12px!important;border:0!important;background:#fff!important;cursor:pointer!important;list-style:none!important}
+#view-week #v113AmandaDashboard>.v113-step>.v113-step-rail::-webkit-details-marker{display:none!important}
+#view-week #v113AmandaDashboard>.v113-step>.v113-step-rail:after{content:'+';margin-left:auto;color:#78648F;font-size:16px;font-weight:500}
+#view-week #v113AmandaDashboard>.v113-step[open]>.v113-step-rail{border-bottom:1px solid #EEEAF2!important;background:#FCFAFE!important}
+#view-week #v113AmandaDashboard>.v113-step[open]>.v113-step-rail:after{content:'−'}
+#view-week #v113AmandaDashboard .v113-num{display:none!important}
+#view-week #v113AmandaDashboard .v113-rail-icon{width:26px!important;height:26px!important;flex-basis:26px!important;font-size:13px!important;border-radius:8px!important}
+#view-week #v113AmandaDashboard .v113-step-rail b{font-size:11.5px!important;color:#352A47!important}
+#view-week #v113AmandaDashboard .v113-step-rail small{font-size:9.5px!important;color:#7A7083!important;margin-top:2px!important}
+#view-week #v113AmandaDashboard .v113-step-body{grid-column:1/-1!important;padding:10px 12px!important}
+#view-week #v113AmandaDashboard .v113-body-title{display:none!important}
+#view-week #v113AmandaDashboard .v113-footer-actions{padding:6px 0 0!important}
+#view-week #v113AmandaDashboard .v113-footer-actions button{font-size:9.5px!important;padding:6px 8px!important}
+#view-week #v113AmandaDashboard .v113-step-shortcut{display:flex;justify-content:flex-end;margin:7px 0 0}
+#view-week #v113AmandaDashboard .v113-step-shortcut button{border:1px solid #DDD3E9;border-radius:7px;background:#FBF9FD;color:#5A4380;padding:6px 9px;font:700 9.5px inherit;cursor:pointer}
+#view-week #v113AmandaDashboard #v113StepLP{margin-top:8px!important}
+#view-week #v113AmandaDashboard #v113StepLP>.v113-step-rail{color:#81788A;background:#FAF9FB!important}
+@media(max-width:900px){#view-week #v113AmandaDashboard>.v113-step{grid-template-columns:minmax(0,1fr)!important}}
+</style>
+<style id="rm-today-workflow-final-tidy">
+#view-week button[onclick*="v85OpenInsightModal"]{display:none!important}
+#view-week #v113AmandaDashboard>.v113-step.v161-conversion-step{display:block!important;grid-template-columns:minmax(0,1fr)!important}
+#view-week #v113AmandaDashboard>.v113-step.v161-conversion-step>.v113-step-rail{display:flex!important;align-items:center!important;gap:9px!important;min-height:0!important;padding:8px 11px!important;border:0!important;background:#fff!important;cursor:pointer!important;list-style:none!important}
+#view-week #v113AmandaDashboard>.v113-step.v161-conversion-step>.v113-step-rail:after{content:'+';margin-left:auto;color:#78648F;font-size:16px}
+#view-week #v113AmandaDashboard>.v113-step.v161-conversion-step[open]>.v113-step-rail:after{content:'−'}
 </style>
 </html>
