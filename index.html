@@ -17472,9 +17472,10 @@ function rm358RenderDaily(){
 let rm358Loading=null,rm358LoadedAt=0;
 async function rm358LoadTodayBanner(force){if(isDirector()||!$('rm358Pace'))return false;if(rm358Loading)return rm358Loading;if(!force&&rm358Daily.loaded&&Date.now()-rm358LoadedAt<12000){rm358RenderDaily();return true}rm358Loading=(async()=>{try{const date=typeof today==='function'?today():new Date().toISOString().slice(0,10);const rows=await sbFetch('amanda_activities?select=agent_name,act_type,act_date,outcome,notes,follow_up_date,created_at&act_date=eq.'+date+'&limit=2000').catch(()=>[]);const a=(Array.isArray(rows)?rows:[]).filter(x=>{try{return typeof isAmandaDailyActivity==='function'?isAmandaDailyActivity(x):(typeof activityCreditsPerson==='function'?activityCreditsPerson(x,'Amanda'):true)}catch(e){return true}});rm358DailyRows=a;rm358Daily={calls:rm358TodayRowsForKind('calls',a).length,live:rm358TodayRowsForKind('live',a).length,cold:rm358TodayRowsForKind('cold',a).length,talk:rm358TodayRowsForKind('talk',a).length,newHeld:rm358TodayRowsForKind('newHeld',a).length,bread:rm358TodayRowsForKind('bread',a).length,buddy:rm358TodayRowsForKind('buddy',a).length,booked:rm358TodayRowsForKind('booked',a).length,loaded:true,updated:rmEasternTime(new Date())};rm358LoadedAt=Date.now();rm358RenderDaily();return true}catch(e){console.warn('daily pace banner',e);const u=$('rm358Updated');if(u)u.textContent='Could not refresh today’s numbers';return false}finally{rm358Loading=null}})();return rm358Loading}
 window.rm358RefreshToday=()=>rm358LoadTodayBanner(true);
+function dailyPathHTML(){const symbols={calls:'↗',tuesday:'✓',handoffs:'↔',cold:'＋',conversion:'↻',smart:'☎'};const lane=(kind,label,detail)=>'<button type="button" class="rm-daily-path-link" onclick="v350OpenLane(\''+kind+'\')"><span class="rm-daily-path-icon">'+symbols[kind]+'</span><span class="rm-daily-path-copy"><b>'+label+'</b><small>'+detail+'</small></span><span class="rm-daily-path-arrow">›</span></button>';return '<section class="rm-daily-path" aria-label="Quick paths for today"><div class="rm-daily-path-head"><div><span class="rm-daily-path-kicker">TODAY · FIRST THINGS FIRST</span><h2>Work the priorities in order</h2><p>Finish must-do updates, then build the next conversations.</p></div><button type="button" class="rm-daily-score-link" onclick="v350Go(\'scorecard\')">Scorecard progress <span>→</span></button></div><div class="rm-daily-path-groups"><div class="rm-daily-path-group"><h3>Must do</h3><div class="rm-daily-path-grid">'+lane('calls','Transaction calls','New contract + CTC')+lane('tuesday','Tuesday Updates','Listing-agent status calls')+lane('handoffs','Warm team handoffs','LP introductions + next steps')+'</div></div><div class="rm-daily-path-group build"><h3>Build pipeline</h3><div class="rm-daily-path-grid">'+lane('cold','New-agent cold calls','Prospecting + first meetings')+lane('conversion','4-week campaign','Keep new meetings moving')+lane('smart','Weekly Realtor calls','Active agents + outreach')+'</div></div></div></section>';}
 function boardHTML(){let date='Today';try{date=new Date().toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric',year:'numeric'})}catch(e){}
  const work=groups.map(g=>'<section class="rm350-group"><div class="rm350-group-head"><div class="rm350-group-title">'+g[0]+'</div><div class="rm350-group-tag">'+g[1]+'</div></div><div class="rm350-grid">'+g[2].map(card).join('')+'</div></section>').join('');
- return '<div class="rm350-hero"><div><div class="rm350-kicker">Amanda <span>•</span> Today</div><div class="rm350-title">Today’s Priorities</div><div class="rm350-subtitle">Focus. Follow up. Move forward. <span class="rm352-heart">♡</span></div></div><div class="rm350-hero-side"><div class="rm350-date">▣ &nbsp;'+date+'</div><button type="button" class="rm352-import-link" onclick="rmTxnImportShow()">Import New Contracts / CTCs →</button></div></div>'+rm358BannerHTML()+rm358SourceDrawerHTML()+'<div class="rm350-shell"><main class="rm350-main">'+work+'</main></div>';
+ return '<div class="rm350-hero"><div><div class="rm350-kicker">Amanda <span>•</span> Today</div><div class="rm350-title">Today’s Priorities</div><div class="rm350-subtitle">Focus. Follow up. Move forward. <span class="rm352-heart">♡</span></div></div><div class="rm350-hero-side"><div class="rm350-date">▣ &nbsp;'+date+'</div><button type="button" class="rm352-import-link" onclick="rmTxnImportShow()">Import New Contracts / CTCs →</button></div></div>'+dailyPathHTML()+rm358BannerHTML()+rm358SourceDrawerHTML()+'<div class="rm350-shell"><main class="rm350-main">'+work+'</main></div>';
 }
 function applyChrome(){
  try{
@@ -21450,4 +21451,29 @@ window.rm494CallBrief=function(r,kind){
 })();
 </script>
 <style>.rm494-brief{margin:9px 0;padding:12px;border:1px solid #e5dff0;border-radius:9px;background:#faf8ff;color:#514566;font-size:12px;line-height:1.5}.rm494-brief>b{display:block;margin:6px 0;color:#382752}.rm494-brief ul{margin:4px 0;padding-left:18px}.pf390-person-next .rm494-brief{min-width:180px;white-space:normal}</style></body>
-</html>
+<style id="rm-daily-path-style-v1">
+.rm-daily-path{margin:0 0 16px;padding:16px;background:linear-gradient(135deg,#FAF7FF 0%,#F0E9FB 100%);border:1px solid #D8C9EC;border-left:5px solid #7651AE;border-radius:16px;box-shadow:0 5px 18px rgba(76,53,119,.075);color:#322543}
+.rm-daily-path-head{display:flex;justify-content:space-between;align-items:flex-end;gap:10px;flex-wrap:wrap;margin-bottom:12px}
+.rm-daily-path-kicker{display:block;color:#7956AD;font-size:9px;font-weight:850;letter-spacing:.1em;margin-bottom:3px}
+.rm-daily-path-head h2{margin:0;color:#2D2340;font-size:18px;letter-spacing:-.02em}
+.rm-daily-path-head p{margin:4px 0 0;color:#71647F;font-size:10.5px}
+.rm-daily-score-link{display:flex;align-items:center;gap:10px;padding:8px 11px;border:1px solid #D8C9EC;border-radius:9px;background:#fff;color:#68469D;font-family:inherit;font-size:10.5px;font-weight:700;cursor:pointer}
+.rm-daily-score-link:hover{background:#F8F3FF;border-color:#B99BD9}
+.rm-daily-score-link span{font-size:15px}
+.rm-daily-path-groups{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.rm-daily-path-group{min-width:0;padding:10px;background:rgba(255,255,255,.78);border:1px solid #E3D9EF;border-radius:12px}
+.rm-daily-path-group h3{margin:0 0 7px;font-size:9px;font-weight:850;text-transform:uppercase;letter-spacing:.08em;color:#64448F}
+.rm-daily-path-group.build h3{color:#547047}
+.rm-daily-path-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}
+.rm-daily-path-link{min-width:0;display:flex;align-items:center;gap:7px;padding:8px;border:1px solid #ECE5F4;border-radius:9px;background:#fff;color:#382A50;text-align:left;cursor:pointer;transition:transform .15s,border-color .15s,box-shadow .15s}
+.rm-daily-path-link:hover{transform:translateY(-1px);border-color:#BDA8D7;box-shadow:0 4px 10px rgba(74,52,111,.08)}
+.rm-daily-path-link:focus-visible,.rm-daily-score-link:focus-visible{outline:2px solid #7651AE;outline-offset:2px}
+.rm-daily-path-icon{display:grid;place-items:center;flex:0 0 23px;width:23px;height:23px;border-radius:7px;background:#F0E8FA;color:#6A489B;font-size:13px;font-weight:800}
+.rm-daily-path-group.build .rm-daily-path-icon{background:#EEF4EA;color:#547047}
+.rm-daily-path-copy{min-width:0;flex:1}
+.rm-daily-path-copy b{display:block;font-size:9.5px;font-weight:750;line-height:1.2;color:#382A50}
+.rm-daily-path-copy small{display:block;margin-top:3px;font-size:8px;line-height:1.25;color:#776B82}
+.rm-daily-path-arrow{color:#9078B0;font-size:15px}
+@media(max-width:1000px){.rm-daily-path-groups{grid-template-columns:1fr}.rm-daily-path-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:600px){.rm-daily-path{padding:12px}.rm-daily-path-head h2{font-size:16px}.rm-daily-path-grid{grid-template-columns:1fr}.rm-daily-path-link{padding:9px}.rm-daily-path-copy b{font-size:10px}.rm-daily-path-copy small{font-size:9px}}
+</style></html>
