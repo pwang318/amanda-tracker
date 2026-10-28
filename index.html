@@ -3,7 +3,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta content="rm-tracker-v486-portfolio-help-settings-20261028" name="version"/>
+<meta content="rm-tracker-v487-daily-meetings-portfolio-20261028" name="version"/>
 <meta content="v481: RM Portfolio tiles focus the active work panel; Growth Plans and Meeting Cadence open their matching Amanda-owned lists." name="build-notes"/>
 <meta content="no-cache, no-store, must-revalidate" http-equiv="Cache-Control"/>
 <meta content="no-cache" http-equiv="Pragma"/>
@@ -1559,7 +1559,10 @@ body[data-rm-tab="week"] #view-week .v95-amanda-greeting{
 <option value="Cold Calls">New Realtor Outreach</option>
 <option>New Realtor Meeting</option>
 </optgroup>
-<optgroup label="Strategic Partner Meetings">
+<optgroup label="Meetings">
+<option>Business Planning</option>
+<option>Break Bread</option>
+<option>Team Meeting</option>
 <option>Partner Meeting</option>
 <option>Strategic Partner Meeting</option>
 <option>Channel Meeting</option>
@@ -1625,6 +1628,7 @@ body[data-rm-tab="week"] #view-week .v95-amanda-greeting{
 <select id="activityOutcome">
 <option value="">Select outcome...</option>
 <option>Positive</option>
+<option>Meeting Held</option>
 <option>Meeting Scheduled</option>
 <option>No answer</option>
 <option>Left voicemail</option>
@@ -2767,7 +2771,7 @@ function setPlaybookChoice(id,prefix){
 }
 const NOT_MEANINGFUL_RM_OUTCOMES=["left voicemail","no answer"];
 const NOT_MEANINGFUL_LP_OUTCOMES=["left vm"];
-const MEETING_ACT_TYPES=["Partner Meeting","Break Breads","Strategic Partner Meeting","Channel Meeting","Team / Office Presentation","Retention Meeting","New Realtor Meeting"];
+const MEETING_ACT_TYPES=["Business Planning","Break Bread","Team Meeting","Partner Meeting","Break Breads","Strategic Partner Meeting","Channel Meeting","Team / Office Presentation","Retention Meeting","New Realtor Meeting"];
 function isMeaningfulOutcome(outcome,list,actType){
   if(actType&&MEETING_ACT_TYPES.indexOf(actType)>=0)return true;
   const o=(outcome||"").trim().toLowerCase();
@@ -2799,7 +2803,7 @@ const RM_TEAM_GOALS={
   nynyTotalMin:20,
   nynyTotalMax:25
 };
-const EXISTING_MEETING_TYPES=["Partner Meeting","Break Breads","Strategic Partner Meeting","Channel Meeting","Team / Office Presentation","Retention Meeting"];
+const EXISTING_MEETING_TYPES=["Business Planning","Break Bread","Team Meeting","Partner Meeting","Break Breads","Strategic Partner Meeting","Channel Meeting","Team / Office Presentation","Retention Meeting"];
 const DIRECTOR_LEADERSHIP_TYPES=["Amanda Coaching / Development","RM Scorecard Review","RM Portfolio Review","RM Process Improvement","Tracker / System Development","RM Training","RM Leadership Escalation Support"];
 const RM_META_START="\u2063\u2063\u2063", RM_META_END="\u2064\u2064\u2064";
 function zwEncode(s){
@@ -2883,7 +2887,7 @@ function rmCanonicalPartnerCheckInType(type){return rmIsPartnerCheckInType(type)
 window.rmIsPartnerCheckInType=rmIsPartnerCheckInType;
 window.rmCanonicalPartnerCheckInType=rmCanonicalPartnerCheckInType;
 const TALKTO_TYPES=["Agent Talk-to","Active Agent Talk-to","Active Agent Check-in","Agent Partner conversation","Reconnect Outreach","CTC Call","Under Contract Call","Birthday Outreach","Holiday Outreach","Agent Appreciation","Market Update","Market Update Call","Sent Market Report","Sent Referral","Co-Marketing Discussion","New Agent Follow-up","Closed Deal Thank You","Loan Client Contact","Listing Agent Update","Buyer Agent Update","Transaction Update"];
-const NOTES_REQUIRED_TYPES=["Agent Talk-to","Reconnect Outreach","Birthday Outreach","Break Breads","Partner Meeting","Strategic Partner Meeting","Channel Meeting","Team / Office Presentation","Retention Meeting","New Lead Received","Pre-Approval Issued","New Contract","Clear to Close","Service Recovery","Partner Feedback"];
+const NOTES_REQUIRED_TYPES=["Business Planning","Break Bread","Team Meeting","Agent Talk-to","Reconnect Outreach","Birthday Outreach","Break Breads","Partner Meeting","Strategic Partner Meeting","Channel Meeting","Team / Office Presentation","Retention Meeting","New Lead Received","Pre-Approval Issued","New Contract","Clear to Close","Service Recovery","Partner Feedback"];
 const NOTES_MANDATORY_NO_MIN=["Cold Calls","CTC Call","Under Contract Call"];
 const MIN_NOTE_WORDS=10;
 function stripMethodTag(notes){
@@ -17098,7 +17102,7 @@ function company(){return document.getElementById('v333BuilderCompany')}
 function catEl(){return document.getElementById('v334StrategicCategory')}
 function hint(){return document.getElementById('v333MeetingLaneHint')}
 function label(){return document.getElementById('v334CompanyLabel')}
-function meetingType(v){return ['New Realtor Meeting','Partner Meeting','Strategic Partner Meeting','Channel Meeting','Team / Office Presentation','Retention Meeting','Break Breads'].includes(String(v||''))}
+function meetingType(v){return ['Business Planning','Break Bread','Team Meeting','New Realtor Meeting','Partner Meeting','Strategic Partner Meeting','Channel Meeting','Team / Office Presentation','Retention Meeting','Break Breads'].includes(String(v||''))}
 const LANES={
   realtor:{button:'v333LaneRealtor',type:'New Realtor Meeting',focus:'Standard',category:'',label:'Company / brokerage (optional)',placeholder:'e.g. Keller Williams',hint:'<strong>Realtor / agent first meeting.</strong> Uses the New Realtor Meeting checklist and 4-week conversion workflow.'},
   builder:{button:'v333LaneBuilder',type:'Strategic Partner Meeting',focus:'Builder / Developer',category:'Builder / Developer',label:'Builder / company',placeholder:'e.g. Rockford Homes',hint:'<strong>Builder / developer relationship.</strong> Saves the person as an individual strategic contact, routes to Nyny, and skips Realtor-only onboarding + conversion.'},
@@ -19330,7 +19334,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 <script id="rm-v437-pace-controller">
 (function(){
 'use strict';
-const HELD_TYPES=new Set(['New Realtor Meeting','Partner Meeting','Break Breads','Strategic Partner Meeting','Channel Meeting','Team / Office Presentation','Retention Meeting']);
+const HELD_TYPES=new Set(['Business Planning','Break Bread','Team Meeting','New Realtor Meeting','Partner Meeting','Break Breads','Strategic Partner Meeting','Channel Meeting','Team / Office Presentation','Retention Meeting']);
 let lastRows=[];
 function todayISO(){try{if(typeof today==='function')return today();}catch(e){} const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
 function attendees(row){
@@ -21247,5 +21251,36 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 })();
 </script>
 
-<style id="rmv485-daily-focus-css">#rmv485DailyFocus{margin:12px 0;padding:16px;border:1px solid #E5DDF0;border-radius:14px;background:#FBF9FD}#rmv485DailyFocus h2{margin:0 0 10px;color:#32274A;font-size:16px}#rmv485DailyFocus .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:9px}#rmv485DailyFocus button{padding:12px;text-align:left;border:1px solid #E5DDF0;border-radius:10px;background:#fff;color:#32274A;cursor:pointer}#rmv485DailyFocus button:hover{border-color:#8C70BE;box-shadow:0 2px 8px #8C70BE22}#rmv485DailyFocus b{display:block;margin-bottom:4px}#rmv485DailyFocus small{color:#657683}</style><script id="rmv485-daily-focus">(function(){function mount(){var host=document.getElementById('rm350Workboard');if(!host||host.querySelector('#rmv485DailyFocus'))return;var card=document.createElement('section');card.id='rmv485DailyFocus';card.innerHTML='<h2>Daily Scorecard Work</h2><div class="grid"><button onclick="rmV429OpenScoreDetail(\'leads\')"><b>Referral leads · 86 / 152</b><small>66 to go · open lead detail and focus on agents without an MTD referral.</small></button><button onclick="rmV429OpenScoreDetail(\'B\')"><b>B-tier · 17 / 24</b><small>7 to go · open tier detail and work C-tier agents closest to B.</small></button><button onclick="switchTab(\'new\')"><b>Active agents · 132 / 200</b><small>68 to go · open the new-agent activation list.</small></button></div>';var pace=host.querySelector('.rm358Pace');if(pace)pace.insertAdjacentElement('afterend',card);else host.prepend(card)}setTimeout(mount,500);new MutationObserver(mount).observe(document.body,{childList:true,subtree:true});})();</script><style id="rmv486-goal-tools">#rmv486PlanCheck{margin:12px 0;padding:14px 16px;border:1px solid #E5DDF0;border-radius:14px;background:#FBF9FD;color:#32274A;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}#rmv486PlanCheck button,#rmv486HelpBtn,#rmv486SettingsBtn{border:1px solid #D9CFE8;border-radius:9px;background:#fff;color:#503D70;padding:8px 12px;cursor:pointer;font-weight:700}#rmv486Modal{position:fixed;inset:0;background:#17203366;z-index:99999;display:flex;align-items:center;justify-content:center;padding:20px}#rmv486Modal>div{max-width:560px;width:100%;background:#fff;border:1px solid #E5DDF0;border-radius:16px;padding:22px;color:#253044;box-shadow:0 16px 48px #1B153022}#rmv486Modal h2{margin:0 0 12px;color:#372953}#rmv486Modal button{margin-top:14px;border:0;border-radius:9px;background:#8062AC;color:#fff;padding:9px 14px;cursor:pointer}</style><script id="rmv486-goal-tools">(function(){function mount(){var host=document.getElementById('rm350Workboard');if(host&&!host.querySelector('#rmv486PlanCheck')){var p=document.createElement('section');p.id='rmv486PlanCheck';p.innerHTML='<div><b>Portfolio Plan Check</b><div style="font-size:12px;margin-top:4px">Power BI active roster: 132 · Amanda portfolio: 44 · 22 missing plans</div><small>Review active agents for an owner, portfolio plan, and next step.</small></div><button onclick="switchTab(\'portfolio\');setTimeout(function(){v390OpenPortfolioPanel(\'missing-growth\')},250)">Open missing plans →</button>';var w=host.querySelector('.rm358Pace');if(w)w.insertAdjacentElement('afterend',p);else host.prepend(p)}var nav=document.querySelector('#rm352HeaderProfile');if(nav&&!document.getElementById('rmv486HelpBtn')){var b=document.createElement('button');b.id='rmv486HelpBtn';b.textContent='Help';b.style.cssText='position:fixed;right:18px;bottom:18px;z-index:1000';b.onclick=function(){show('Help','Calls are attempts; live conversations require a real connection. Meeting activity is counted when held. Referral target = 1.15 × active Power BI agents. Tier milestones come from Power BI. Log notes and next steps so follow-up is visible.')};document.body.appendChild(b);var s=document.createElement('button');s.id='rmv486SettingsBtn';s.textContent='Settings';s.style.cssText='position:fixed;right:82px;bottom:18px;z-index:1000';s.onclick=function(){show('Settings','Scorecard targets: 1.15 leads per active agent; 200 active agents by year-end. Meeting types: Business Planning, Break Bread, Team Meeting, New Realtor Meeting, Strategic Partner Meeting. Targets are sourced from the current scorecard configuration.')};document.body.appendChild(s)}}function show(title,body){var old=document.getElementById('rmv486Modal');if(old)old.remove();var m=document.createElement('div');m.id='rmv486Modal';m.innerHTML='<div role="dialog" aria-modal="true"><h2>'+title+'</h2><p>'+body+'</p><button onclick="document.getElementById(\'rmv486Modal\').remove()">Close</button></div>';m.addEventListener('click',function(e){if(e.target===m)m.remove()});document.body.appendChild(m)}setTimeout(mount,500);new MutationObserver(mount).observe(document.body,{childList:true,subtree:true})})();</script></body>
+
+<style id="rmv487-css">
+.rmv487-panel{margin:14px 0;padding:18px;background:#FBF9FD;border:1px solid #E5DDF0;border-radius:14px;color:#15184D}.rmv487-panel h2{margin:0 0 8px;font-size:17px}.rmv487-panel p{font-size:12px;color:#66617B}.rmv487-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:9px}.rmv487-grid button,.rmv487-tools button{background:white;border:1px solid #D9CFE8;border-radius:10px;padding:12px;color:#503D70;text-align:left;cursor:pointer}.rmv487-grid b,.rmv487-grid small{display:block}.rmv487-grid strong{font-size:23px;display:block;margin:6px 0}.rmv487-tools{display:flex;gap:8px}.rmv487-tools button{padding:7px 12px}#rmv487Modal{position:fixed;inset:0;background:#17203388;z-index:110000;display:grid;place-items:center;padding:20px}#rmv487Modal>section{background:white;color:#15184D;border-radius:16px;padding:24px;max-width:620px;max-height:85vh;overflow:auto;width:100%;box-sizing:border-box}#rmv487Modal p{line-height:1.6}#rmv487Modal button{border:1px solid #D9CFE8;background:#F2ECFF;color:#503D70;border-radius:8px;padding:9px 13px;cursor:pointer}
+</style>
+<script id="rmv487-daily-tools">
+(function(){
+'use strict';
+const types=['Business Planning','Break Bread','Team Meeting','New Realtor Meeting','Strategic Partner Meeting'];
+const aliases={'Break Breads':'Break Bread','Team / Office Presentation':'Team Meeting'};
+function category(r){return aliases[r.act_type]||r.act_type;}
+function rows(){return Array.isArray(window.__rmV437HeldRows)?window.__rmV437HeldRows:[];}
+function esc(v){return String(v==null?'':v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function close(){document.getElementById('rmv487Modal')?.remove();}
+function modal(title,body){close();const el=document.createElement('div');el.id='rmv487Modal';el.innerHTML='<section role="dialog" aria-modal="true" aria-label="'+esc(title)+'"><button style="float:right" id="rmv487Close">Close</button><h2>'+esc(title)+'</h2>'+body+'</section>';el.onclick=e=>{if(e.target===el)close();};document.body.appendChild(el);document.getElementById('rmv487Close').onclick=close;document.getElementById('rmv487Close').focus();}
+window.rmV487Help=function(){modal('Using your RM Tracker','<p>Start with Today: review calls made, live phone conversations, booked meetings and held meetings. Click a number to see the saved records, outcomes, notes and timestamps behind it.</p><p>Log Business Planning as a meeting type. Record what you agreed, the next step, its owner and follow-up date. The other meeting types are Break Bread, Team Meeting, New Realtor Meeting and Strategic Partner Meeting.</p><p>Review Portfolio daily. Open Missing Growth Plans to document the next opportunity, then use the Work List for relationship health and meeting cadence.</p><p>Tuesday Updates appears in Today on Tuesdays. The monthly referral floor is 100; the scorecard referral target is 1.15 leads per active Power BI agent.</p>');};
+window.rmV487Settings=function(){modal('Tracker settings and targets','<p><b>Scorecard:</b> 50% Tier Growth, 30% Active Agent-to-Lead, 20% Active Agent Count.</p><p><b>Referral goals:</b> at least 100 monthly referred leads; scorecard target = 1.15 × the current Power BI active roster, rounded up.</p><p><b>Active agent goal:</b> 200 by year-end. Power BI controls the active roster. Channel accounts remain included in A accounts.</p><p><b>Daily planning:</b> review business-planning opportunities, missing portfolio plans, calls and meetings. Activity supports the scorecard outcomes.</p><button id="rmv487OpenScore">Open current scorecard</button>');document.getElementById('rmv487OpenScore').onclick=()=>{close();switchTab('scorecard');};};
+window.rmV487MeetingDetails=function(type){const matched=rows().filter(r=>category(r)===type);modal(type+' — held today',matched.length?matched.map(r=>'<p><b>'+esc(r.agent_name)+'</b><br>'+esc(r.act_date)+(r.created_at?' · Logged '+esc(new Date(r.created_at).toLocaleString()):'')+'<br>'+esc(r.outcome)+'<br>'+esc(typeof v301CleanVisibleActivityNote==='function'?v301CleanVisibleActivityNote(r.notes||''):r.notes||'')+(r.follow_up_date?'<br>Follow-up: '+esc(r.follow_up_date):'')+'</p>').join(''):'<p>No saved held meetings of this type today.</p>');};
+function mount(){
+const host=document.getElementById('rm350Workboard');if(!host)return;
+const hero=host.querySelector('.rm350-hero-side');
+if(hero&&!document.getElementById('rmv487Tools')){const tools=document.createElement('div');tools.id='rmv487Tools';tools.className='rmv487-tools';tools.innerHTML='<button onclick="rmV487Settings()">Settings</button><button onclick="rmV487Help()">Help</button>';hero.appendChild(tools);}
+if(!document.getElementById('rmv487Meetings')){const section=document.createElement('section');section.id='rmv487Meetings';section.className='rmv487-panel';section.innerHTML='<h2>Meetings held today</h2><p>Business planning turns relationship conversations into a documented plan and next step. Click a meeting type to see its records.</p><div class="rmv487-grid">'+types.map((t,i)=>'<button data-meeting-index="'+i+'"><b>'+t+'</b><strong id="rmv487MeetingCount'+i+'">0</strong><small>View saved meetings →</small></button>').join('')+'</div>';(document.getElementById('rm358Pace')||host.firstChild).after(section);section.querySelectorAll('button').forEach(b=>b.onclick=()=>window.rmV487MeetingDetails(types[Number(b.dataset.meetingIndex)]));}
+types.forEach((t,i)=>{const el=document.getElementById('rmv487MeetingCount'+i),value=String(rows().filter(r=>category(r)===t).length);if(el&&el.textContent!==value)el.textContent=value;});
+if(!document.getElementById('rmv487Portfolio')){const p=document.createElement('section');p.id='rmv487Portfolio';p.className='rmv487-panel';p.innerHTML='<h2>Portfolio plan check</h2><p>Keep every active relationship assigned, with a documented growth plan and a clear next move. These links open the current portfolio lists.</p><div class="rmv487-grid"><button onclick="v390OpenPortfolioPanel(\'missing-growth\')"><b>Missing Growth Plans</b><small>Document the next opportunity →</small></button><button onclick="v390OpenPortfolioPanel(\'work\')"><b>Portfolio Work List</b><small>Health, follow-ups and meeting cadence →</small></button><button onclick="v390OpenPortfolioPanel(\'directory\')"><b>All Partners</b><small>Review your portfolio directory →</small></button><button onclick="rmV429OpenScoreDetail(\'leads\')"><b>Referral Goal Progress</b><small>Open current leads and target →</small></button></div>';document.getElementById('rmv487Meetings').after(p);}
+host.querySelectorAll('.rm350-card[data-kind="tuesday"]').forEach(el=>{el.hidden=new Date().getDay()!==2;el.style.display=el.hidden?'none':'';});
+}
+document.addEventListener('keydown',e=>{if(e.key==='Escape')close();});
+let pending=false;new MutationObserver(()=>{if(!pending){pending=true;requestAnimationFrame(()=>{pending=false;mount();});}}).observe(document.body,{childList:true,subtree:true});
+mount();setTimeout(mount,1200);
+})();
+</script>
+</body>
 </html>
