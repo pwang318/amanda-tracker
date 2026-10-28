@@ -3,7 +3,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta content="rm-tracker-v489-clean-daily-layout-20261028" name="version"/>
+<meta content="rm-tracker-v490-mockup-layout-20261028" name="version"/>
 <meta content="v481: RM Portfolio tiles focus the active work panel; Growth Plans and Meeting Cadence open their matching Amanda-owned lists." name="build-notes"/>
 <meta content="no-cache, no-store, must-revalidate" http-equiv="Cache-Control"/>
 <meta content="no-cache" http-equiv="Pragma"/>
@@ -21286,5 +21286,70 @@ let pending=false;new MutationObserver(()=>{if(!pending){pending=true;requestAni
 mount();setTimeout(mount,1200);
 })();
 </script>
-</body>
+
+<style id="rm490-design">
+body .tabs{background:#0e1d34!important;border-right:1px solid #263650!important}
+body .tabs .tab{color:#cbd4e9!important;border-radius:9px!important}
+body .tabs .tab.active{background:linear-gradient(100deg,#6545c3,#4b41a6)!important;color:#fff!important}
+body .tabs .nav-group-label{color:#8291b0!important}
+body .header{background:#0e1d34!important}
+#rm350Workboard{max-width:1500px;margin:auto}
+#rm350Workboard .rm350-title{font-size:36px!important;color:#101a34!important}
+#rm350Workboard .rm350-subtitle{display:none!important}
+#rm350Workboard .rm350-hero{padding:10px 0 18px!important}
+#rm350Workboard .rm358-pace,#rm490Score,#rm490Priorities,#rm490Quick{background:#fff;border:1px solid #e8e3f3;border-radius:12px;padding:18px;box-shadow:0 3px 12px #6545c308;margin-bottom:16px}
+#rm350Workboard .rm358-pace-title{font-size:21px!important}
+#rm350Workboard .rm358-pace-eyebrow,#rm350Workboard .rm358-next,#rm350Workboard #rm411Funnel,#rm350Workboard #rm358Funnel{display:none!important}
+#rm350Workboard .rm358-goals{display:grid!important;grid-template-columns:repeat(4,minmax(0,1fr))!important;gap:12px!important}
+#rm350Workboard .rm358-goal{min-height:165px!important;border:1px solid #e8e3f3!important;background:#fff!important;border-radius:10px!important;box-shadow:none!important}
+#rm350Workboard #rm358Goal-cold,#rm350Workboard #rm358Goal-booked,#rm350Workboard #rm358Goal-held{display:none!important}
+#rmv487Meetings{margin:0!important;padding:14px!important;background:white!important;border:1px solid #e8e3f3!important;border-radius:10px!important}
+#rmv487Meetings .rmv487-grid{display:block!important}
+#rmv487Meetings button{display:flex!important;align-items:center;justify-content:space-between;width:100%;padding:4px 0!important;border:0!important;background:none!important;font-size:11px!important}
+#rmv487Meetings button strong{font-size:13px!important;margin:0!important}
+#rmv487Meetings button small{display:none!important}
+#rm490Score h2,#rm490Priorities h2,#rm490Quick h2{font-size:21px;margin:0 0 14px;color:#101a34}
+.rm490-scoregrid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.rm490-scoregrid button{background:#fff;border:1px solid #e8e3f3;border-radius:10px;padding:20px;text-align:left;color:#15184d;cursor:pointer}
+.rm490-scoregrid strong{display:block;font-size:27px;margin:15px 0 5px}
+.rm490-scoregrid progress{width:100%;height:9px;margin-top:16px;accent-color:#9c73ed}
+#rmV440PortfolioToday{border:1px solid #e8e3f3!important;box-shadow:none!important;margin:16px 0 0!important}
+.rm490-bottom{display:grid;grid-template-columns:1.05fr 1fr;gap:16px}
+#rm490Priorities button{display:flex;gap:15px;align-items:center;width:100%;text-align:left;background:none;border:0;border-top:1px solid #ede8f6;padding:15px 0;color:#17213d;cursor:pointer}
+#rm490Priorities i{display:grid;place-items:center;min-width:35px;height:35px;border-radius:50%;background:#e9dcff;color:#6847a5;font-style:normal;font-weight:700}
+#rm490Priorities small{display:block;color:#77758e;margin-top:5px}
+#rm490Quick label{display:block;font-size:12px;margin:10px 0 5px}
+#rm490Quick input,#rm490Quick select,#rm490Quick textarea{width:100%;box-sizing:border-box;background:#fcfbff;border:1px solid #e5dff0;border-radius:8px;padding:10px;color:#17213d}
+#rm490Quick textarea{min-height:76px}
+#rm490Quick button{float:right;margin-top:12px;padding:11px 28px;background:#9566ed;color:white;border:0;border-radius:8px;cursor:pointer}
+#rm490Quick:after{content:"";display:block;clear:both}
+.rm490-fields{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+#rm490Referral{padding:18px;background:#fff;border:1px solid #e8e3f3;border-radius:10px;color:#15184d;cursor:pointer;text-align:left}
+#rm490Referral strong{display:block;font-size:30px;margin-top:25px}
+@media(max-width:1000px){#rm350Workboard .rm358-goals{grid-template-columns:repeat(2,minmax(0,1fr))!important}.rm490-bottom{grid-template-columns:1fr}.rm490-scoregrid{grid-template-columns:1fr}}
+</style>
+<script id="rm490-layout">
+(function(){
+const $=id=>document.getElementById(id);
+function put(el,parent){if(el&&parent&&el.parentNode!==parent)parent.appendChild(el);}
+window.rm490QuickContinue=function(){const type=$('rm490Type').value;prefillActivityLog($('rm490Agent').value,type);$('activityNotes').value=$('rm490Notes').value;const outcome=$('rm490Outcome').value;if(outcome)$('activityOutcome').value=outcome;if($('rm490Follow').value)$('followupDate').value=$('rm490Follow').value;$('activityOutcome').dispatchEvent(new Event('change',{bubbles:true}));};
+function mount(){
+const host=$('rm350Workboard'),pace=$('rm358Pace');if(!host||!pace)return;
+const title=pace.querySelector('.rm358-pace-title');if(title&&title.textContent!=='Daily Snapshot')title.textContent='Daily Snapshot';
+const grid=pace.querySelector('.rm358-goals');put($('rmv487Meetings'),grid);
+if(grid&&!$('rm490Referral')){const b=document.createElement('button');b.id='rm490Referral';b.innerHTML='<b>Referral Leads</b><strong>—</strong><small>This month · view details →</small>';b.onclick=()=>rmV429OpenScoreDetail('leads');grid.appendChild(b);}
+if(!$('rm490Score')){const s=document.createElement('section');s.id='rm490Score';s.innerHTML='<h2>Daily Scorecard Work</h2><div class="rm490-scoregrid">'+[['leads','Referral Leads'],['B','B-tier Accounts'],['active','Active Agents']].map(x=>'<button onclick="rmV429OpenScoreDetail(\''+x[0]+'\')"><b>'+x[1]+'</b><strong id="rm490Value'+x[0]+'">Loading…</strong><small id="rm490Gap'+x[0]+'"></small><progress id="rm490Progress'+x[0]+'" max="100" value="0"></progress></button>').join('')+'</div>';pace.after(s);}
+put($('rmV440PortfolioToday'),$('rm490Score'));
+if(!$('rm490Bottom')){
+const b=document.createElement('div');b.id='rm490Bottom';b.className='rm490-bottom';
+b.innerHTML='<section id="rm490Priorities"><h2>Prioritized Today’s Work</h2>'+
+[['Business Planning Meetings','Plan, schedule and document the next meeting.',"prefillActivityLog('','Business Planning')"],['Referral Goal Progress','Review referral activity and the remaining goal.',"rmV429OpenScoreDetail('leads')"],['Tier Growth','Review C-tier relationships and growth opportunities.',"v390OpenPortfolioPanel('work','growth')"],['New-agent Activation','Work the onboarding and conversion pipeline.',"switchTab('pipeline')"],['Portfolio Plans Missing','Document the next opportunity and follow-up.',"v390OpenPortfolioPanel('missing-growth')"]].map((x,i)=>'<button onclick="'+x[2]+'"><i>'+(i+1)+'</i><span><b>'+x[0]+'</b><small>'+x[1]+'</small></span></button>').join('')+'</section><section id="rm490Quick"><h2>Quick Log</h2><label>Agent / contact</label><input id="rm490Agent" placeholder="Agent name"><div class="rm490-fields"><div><label>Activity / meeting type</label><select id="rm490Type">'+['Business Planning','Break Bread','Team Meeting','New Realtor Meeting','Strategic Partner Meeting','Cold Calls','Agent Talk-to'].map(x=>'<option>'+x+'</option>').join('')+'</select></div><div><label>Outcome</label><select id="rm490Outcome"><option value="">Select outcome</option><option>Meeting Held</option><option>Positive</option><option>Left voicemail</option><option>No answer</option><option>Requires follow-up</option><option>Meeting Scheduled</option></select></div></div><label>Notes</label><textarea id="rm490Notes" placeholder="What happened and what is next?"></textarea><label>Follow-up date</label><input type="date" id="rm490Follow"><button onclick="rm490QuickContinue()">Review & save →</button></section>';
+$('rm490Score').after(b);
+}
+const data=window.rmV429ScoreData;if(data){const vals={leads:[data.monthlyLeadCount,Math.ceil((data.ratioTarget||1.15)*data.total)],B:[data.counts.B,data.target.B],active:[data.activePartnerCount,200]};Object.keys(vals).forEach(k=>{const a=Number(vals[k][0]),t=Number(vals[k][1]);if(!Number.isFinite(a)||!Number.isFinite(t))return;const el=$('rm490Value'+k),text=a+' / '+t;if(el.textContent!==text)el.textContent=text;const gap=$('rm490Gap'+k),copy=Math.max(0,t-a)+' to go';if(gap.textContent!==copy)gap.textContent=copy;$('rm490Progress'+k).value=t?Math.min(100,a/t*100):0;});const n=$('rm490Referral')?.querySelector('strong');if(n&&n.textContent!==String(data.monthlyLeadCount))n.textContent=String(data.monthlyLeadCount);}
+}
+let queued=false;new MutationObserver(()=>{if(!queued){queued=true;requestAnimationFrame(()=>{queued=false;mount();});}}).observe(document.body,{childList:true,subtree:true});
+mount();if(typeof window.rmV426RenderOfficialScorecard==='function')Promise.resolve(window.rmV426RenderOfficialScorecard()).then(mount);
+})();
+</script></body>
 </html>
