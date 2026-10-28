@@ -3,8 +3,8 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta content="rm-tracker-v480-rm-tile-navigation-20261028" name="version"/>
-<meta content="v480: RM Portfolio tiles open focused lists; Growth Plans and Meeting Cadence show the matching Amanda-owned partner lists." name="build-notes"/>
+<meta content="rm-tracker-v481-focus-active-portfolio-panel-20261028" name="version"/>
+<meta content="v481: RM Portfolio tiles focus the active work panel; Growth Plans and Meeting Cadence open their matching Amanda-owned lists." name="build-notes"/>
 <meta content="no-cache, no-store, must-revalidate" http-equiv="Cache-Control"/>
 <meta content="no-cache" http-equiv="Pragma"/>
 <meta content="0" http-equiv="Expires"/>
@@ -18655,7 +18655,7 @@ window.v390OpenPartner=function(encoded,action){
 };
 function v390ShowPortfolioView(which){
   which=['overview','work','missing-growth','directory'].includes(which)?which:'overview';window._pf390PortfolioView=which;
-  document.querySelectorAll('#portfolioReviewBody .pf390-panel').forEach(el=>el.classList.toggle('active',el.dataset.pf390Panel===which));
+  document.querySelectorAll('#portfolioReviewBody > .pf390-panel').forEach(el=>el.classList.toggle('active',el.dataset.pf390Panel===which));
   document.querySelectorAll('#view-portfolio [data-pf390-view]').forEach(btn=>btn.classList.toggle('active',btn.dataset.pf390View===which));
   if(which==='directory')setTimeout(()=>document.getElementById('pf390DirectorySearch')?.focus(),20);
 }
@@ -18667,11 +18667,11 @@ function v390OpenPortfolioPanel(which,workKey){
   if(typeof window.switchTab==='function')window.switchTab('portfolio');
   let attempts=0;
   const reveal=function(){
-    const panel=document.querySelector('#portfolioReviewBody [data-pf390-panel="'+which+'"]');
+    const panel=document.querySelector('#portfolioReviewBody > .pf390-panel[data-pf390-panel="'+which+'"]');
     if(panel){
       window.v390ShowPortfolioView(which);
       if(workKey){
-        const card=document.querySelector('#portfolioReviewBody [data-pf390-work="'+workKey+'"]');
+        const card=panel.querySelector('[data-pf390-work="'+workKey+'"]');
         if(card){card.scrollIntoView({behavior:'smooth',block:'start'});return;}
         if(attempts++<40){setTimeout(reveal,100);return;}
       }
