@@ -3,7 +3,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta content="rm-tracker-v493-scorecard-explanation-20261028" name="version"/>
+<meta content="rm-tracker-v494-specific-call-briefs-20261028" name="version"/>
 <meta content="v481: RM Portfolio tiles focus the active work panel; Growth Plans and Meeting Cadence open their matching Amanda-owned lists." name="build-notes"/>
 <meta content="no-cache, no-store, must-revalidate" http-equiv="Cache-Control"/>
 <meta content="no-cache" http-equiv="Pragma"/>
@@ -18651,14 +18651,14 @@ function v390PersonRow(r,kind){
   const dot=(kind==='growth'||kind==='missing-growth')?'purple':String(r.health||'').toLowerCase();
   let detail=kind==='missing-growth'?'No documented growth plan saved':v390StatusDetail(r);
   if(kind==='growth'&&r.next_growth_opportunity)detail=String(r.next_growth_opportunity)+(r.next_growth_due?' · due '+String(r.next_growth_due).slice(0,10):' · set a due date');
-  return '<div class="pf390-person-row"><div class="pf390-person-name"><span class="pf390-dot '+dot+'"></span><div><b>'+escHtml(properCase(r.name||''))+'</b><small>'+escHtml(tierLabel(r.tier||''))+' · '+escHtml(r.health||'')+'</small></div></div><div class="pf390-person-next">'+escHtml(detail)+'</div><div class="pf390-person-actions"><button class="btn-sm" onclick="v390OpenPartner(\''+encoded+'\',\'call\')">Call</button><button class="btn-sm" onclick="v390OpenPartner(\''+encoded+'\',\'open\')">Open</button></div></div>';
+  return '<div class="pf390-person-row"><div class="pf390-person-name"><span class="pf390-dot '+dot+'"></span><div><b>'+escHtml(properCase(r.name||''))+'</b><small>'+escHtml(tierLabel(r.tier||''))+' · '+escHtml(r.health||'')+'</small></div></div><div class="pf390-person-next">'+escHtml(detail)+(typeof window.rm494CallBrief==='function'?window.rm494CallBrief(r,typeof kind==='undefined'?'meetings':kind):'')+'</div><div class="pf390-person-actions"><button class="btn-sm" onclick="v390OpenPartner(\''+encoded+'\',\'call\')">Call</button><button class="btn-sm" onclick="v390OpenPartner(\''+encoded+'\',\'open\')">Open</button></div></div>';
 }
 function v390MeetingDueRow(r){
   const encoded=encodeURIComponent(r.name||'');
   const since=r.daysSince===null||r.daysSince===undefined?'No formal meeting logged':r.daysSince+' days since last meeting';
   const cadence=Number(r.cadence||0);
   const detail=since+(cadence?' · expected every '+cadence+' days':'');
-  return '<div class="pf390-person-row"><div class="pf390-person-name"><span class="pf390-dot yellow"></span><div><b>'+escHtml(properCase(r.name||''))+'</b><small>'+escHtml(tierLabel(r.tier||''))+' · Meeting cadence due</small></div></div><div class="pf390-person-next">'+escHtml(detail)+'</div><div class="pf390-person-actions"><button class="btn-sm" data-agent="'+encoded+'" data-action="call" onclick="v390OpenPartner(this.dataset.agent,this.dataset.action)">Call</button><button class="btn-sm" data-agent="'+encoded+'" data-action="open" onclick="v390OpenPartner(this.dataset.agent,this.dataset.action)">Open</button></div></div>';
+  return '<div class="pf390-person-row"><div class="pf390-person-name"><span class="pf390-dot yellow"></span><div><b>'+escHtml(properCase(r.name||''))+'</b><small>'+escHtml(tierLabel(r.tier||''))+' · Meeting cadence due</small></div></div><div class="pf390-person-next">'+escHtml(detail)+(typeof window.rm494CallBrief==='function'?window.rm494CallBrief(r,typeof kind==='undefined'?'meetings':kind):'')+'</div><div class="pf390-person-actions"><button class="btn-sm" data-agent="'+encoded+'" data-action="call" onclick="v390OpenPartner(this.dataset.agent,this.dataset.action)">Call</button><button class="btn-sm" data-agent="'+encoded+'" data-action="open" onclick="v390OpenPartner(this.dataset.agent,this.dataset.action)">Open</button></div></div>';
 }
 function v390DirectoryRow(r){
   const encoded=encodeURIComponent(r.name||'');
@@ -19533,7 +19533,7 @@ async function buildPortfolio(){
   active=active.filter(a=>{const owner=v443OwnerOf(a.agent_name,a),tier=String(a&&a.tier||'').trim();return owner==='Amanda'&&(tier==='C'||!tier);});
   const T={Channel:14,A:14,B:30,C:30},U={Channel:21,A:21,B:45,C:45},M={Channel:30,A:30,B:60,C:90};
   const todayStr=typeof today==='function'?today():new Date().toISOString().slice(0,10);
-  const rows=active.map(a=>{const name=String(a.agent_name||'').trim(),k=norm(name),tier=a.tier||null,dr=daysSince(lastRM[k]),dl=daysSince(lastLP[k]),da=dr==null&&dl==null?null:Math.min(dr==null?Infinity:dr,dl==null?Infinity:dl);let health='Green';try{health=computeHealthScore(daysSince(a.latest_lead_date),da,T[tier]||14,U[tier]||21,!!a.competitor_risk_flag)}catch(e){if(da==null||da>(U[tier]||21))health='Red';else if(da>(T[tier]||14))health='Yellow'}const until=da==null?null:(T[tier]||14)-da;const md=daysSince(lastMeeting[k]),eligible=['Channel','A','B'].includes(tier)||(tier==='C'&&a.high_potential_flag),meetingDue=eligible&&(md==null||md>(M[tier]||90)),attemptDays=daysSince(lastAttempt[k]),follow=String(latestOpenFollowUp[k]||'').slice(0,10),meaningfulCooling=(tier==='C'||!tier)&&da!==null&&da<30,attemptCooling=typeof window.rmV452PortfolioHold==='function'?window.rmV452PortfolioHold({lastAttemptDays:attemptDays,tier,lastMeaningfulDays:da,followUpDate:follow,todayDate:todayStr}):false;return{name,tier,health,daysAny:da,daysUntilYellow:until,next_growth_opportunity:a.next_growth_opportunity||null,meetingDue,lastAttemptDays:attemptDays,followUpDate:follow,meaningfulCooling,attemptCooling}});
+  const rows=active.map(a=>{const name=String(a.agent_name||'').trim(),k=norm(name),tier=a.tier||null,dr=daysSince(lastRM[k]),dl=daysSince(lastLP[k]),da=dr==null&&dl==null?null:Math.min(dr==null?Infinity:dr,dl==null?Infinity:dl);let health='Green';try{health=computeHealthScore(daysSince(a.latest_lead_date),da,T[tier]||14,U[tier]||21,!!a.competitor_risk_flag)}catch(e){if(da==null||da>(U[tier]||21))health='Red';else if(da>(T[tier]||14))health='Yellow'}const until=da==null?null:(T[tier]||14)-da;const md=daysSince(lastMeeting[k]),eligible=['Channel','A','B'].includes(tier)||(tier==='C'&&a.high_potential_flag),meetingDue=eligible&&(md==null||md>(M[tier]||90)),attemptDays=daysSince(lastAttempt[k]),follow=String(latestOpenFollowUp[k]||'').slice(0,10),meaningfulCooling=(tier==='C'||!tier)&&da!==null&&da<30,attemptCooling=typeof window.rmV452PortfolioHold==='function'?window.rmV452PortfolioHold({lastAttemptDays:attemptDays,tier,lastMeaningfulDays:da,followUpDate:follow,todayDate:todayStr}):false;return{name,tier,health,daysSinceLead:daysSince(a.latest_lead_date),competitor_risk_flag:!!a.competitor_risk_flag,next_growth_due:a.next_growth_due||null,daysAny:da,daysUntilYellow:until,next_growth_opportunity:a.next_growth_opportunity||null,meetingDue,lastAttemptDays:attemptDays,followUpDate:follow,meaningfulCooling,attemptCooling}});
   const data=claimPortfolioRows(rows);
   cache={ts:Date.now(),data,promise:null};return data;
  })().catch(e=>{console.warn('V440 Portfolio Today load',e);cache.promise=null;return{rows:[],attention:[],touches:[],meetings:[],growth:[]}});
@@ -19823,7 +19823,7 @@ function detailFor(r,kind){
 function row(r,kind){
  var encoded=encodeURIComponent(r.name||'');
  var detail=detailFor(r,kind);
- return '<div class="rm358-source-row"><div class="rm358-source-row-top"><div class="rm358-source-agent">'+esc(nameCase(r.name))+'</div><div class="rm358-source-time">'+esc(tierText(r.tier))+'</div></div><div class="rm358-source-type">'+esc(detail)+'</div><div class="rm358-source-detail" style="display:flex;gap:6px;margin-top:6px">'
+ return '<div class="rm358-source-row"><div class="rm358-source-row-top"><div class="rm358-source-agent">'+esc(nameCase(r.name))+'</div><div class="rm358-source-time">'+esc(tierText(r.tier))+'</div></div><div class="rm358-source-type">'+esc(detail)+'</div>'+(typeof window.rm494CallBrief==='function'?window.rm494CallBrief(r,kind):'')+'<div class="rm358-source-detail" style="display:flex;gap:6px;margin-top:6px">'
   +'<button type="button" class="btn-sm" onclick="window.v390OpenPartner&&window.v390OpenPartner(\''+encoded+'\',\'call\')">Call</button>'
   +'<button type="button" class="btn-sm" onclick="window.v390OpenPartner&&window.v390OpenPartner(\''+encoded+'\',\'open\')">Open</button>'
   +'</div></div>';
@@ -21427,5 +21427,27 @@ body .view{margin-left:0!important;padding:12px!important;width:auto!important}
 function mount(){const host=document.getElementById('rm350Workboard');if(!host)return;const shell=host.querySelector('.rm350-shell');if(!shell||document.getElementById('rm492Additional'))return;const d=document.createElement('details');d.id='rm492Additional';d.innerHTML='<summary>Additional workflows · transaction calls, Tuesday updates and outreach</summary>';shell.before(d);d.appendChild(shell);}
 mount();let scheduled=false;new MutationObserver(()=>{if(!scheduled){scheduled=true;requestAnimationFrame(()=>{scheduled=false;mount()})}}).observe(document.body,{childList:true,subtree:true});
 })();
-</script><style>.rm493-score-help{margin:0 0 16px;padding:12px 14px;border:1px solid #e5dff0;border-radius:10px;background:#faf8ff;color:#55466d;font-size:13px}.rm493-score-help summary{cursor:pointer;font-weight:700}.rm493-score-help p{line-height:1.6;margin:12px 0 0}</style></body>
+</script><style>.rm493-score-help{margin:0 0 16px;padding:12px 14px;border:1px solid #e5dff0;border-radius:10px;background:#faf8ff;color:#55466d;font-size:13px}.rm493-score-help summary{cursor:pointer;font-weight:700}.rm493-score-help p{line-height:1.6;margin:12px 0 0}</style>
+<script id="rm494-call-briefs">
+(function(){
+window.rm494CallBrief=function(r,kind){
+ const facts=[],talk=[],actions=[];r=r||{};
+ const lead=r.daysSinceLead;
+ if(lead!=null&&Number.isFinite(Number(lead))){facts.push(Number(lead)===0?'Latest recorded referral: today':Number(lead)+' days since latest recorded referral');if(Number(lead)>=30){talk.push('Ask what buyers or listings are coming up, what is blocking referrals, and who needs financing help.');actions.push('Agree on one specific introduction or buyer follow-up.');}}
+ else{facts.push('Referral recency is unavailable in this record');talk.push('Confirm the last referral and current buyer pipeline before treating this as an inactive relationship.');}
+ const plan=String(r.next_growth_opportunity||'').trim();
+ if(plan){facts.push('Saved growth plan: '+plan);if(/co[- ]?market|open house|joint event|social media|lunch.and.learn/i.test(plan)){talk.push('Review the documented co-marketing opportunity: audience, format, event or launch date, responsibilities and how leads will be followed up.');actions.push('Confirm the next co-marketing deliverable, owner and due date.');}else{talk.push('Review the saved growth plan and ask what is needed to complete its next step.');}}
+ else{facts.push('No documented growth opportunity in this record');talk.push('Ask about production goals, target clients and the biggest business obstacle. Book a Business Planning meeting and document a portfolio plan.');}
+ const fu=String(r.followUpDate||r.next_growth_due||'').slice(0,10),todayKey=typeof today==='function'?today():new Date().toISOString().slice(0,10);
+ if(fu){facts.push('Recorded next-step date: '+fu+(fu<todayKey?' · overdue — confirm whether completed':''));talk.unshift('Confirm the status of the previously agreed next step before making a new request.');}
+ if(r.competitor_risk_flag){facts.push('Competitor risk flag recorded');talk.unshift('Ask about service concerns and other lender relationships; agree on a recovery step.');}
+ if(r.daysAny!=null)facts.push(Number(r.daysAny)+' days since recorded meaningful contact');
+ if(kind==='meetings'||r.meetingDue){talk.push('Schedule the due relationship meeting; select Business Planning when the agenda is goals and the portfolio plan.');actions.push('Record the meeting date and agreed agenda.');}
+ actions.push('Log the actual outcome: live conversation, voicemail or no answer; save factual notes, next-step owner and follow-up date.');
+ const e=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+ return '<div class="rm494-brief"><b>Why this call</b><div>'+facts.map(e).join('<br>')+'</div><b>What to cover</b><ul>'+talk.map(s=>'<li>'+e(s)+'</li>').join('')+'</ul><b>Next action</b><ul>'+actions.map(s=>'<li>'+e(s)+'</li>').join('')+'</ul></div>';
+};
+})();
+</script>
+<style>.rm494-brief{margin:9px 0;padding:12px;border:1px solid #e5dff0;border-radius:9px;background:#faf8ff;color:#514566;font-size:12px;line-height:1.5}.rm494-brief>b{display:block;margin:6px 0;color:#382752}.rm494-brief ul{margin:4px 0;padding-left:18px}.pf390-person-next .rm494-brief{min-width:180px;white-space:normal}</style></body>
 </html>
