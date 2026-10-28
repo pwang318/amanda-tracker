@@ -19474,6 +19474,14 @@ console.log('Relationship Manager Tracker V438 · portfolio click authority load
 #rmV440PortfolioToday{margin:12px 0 14px;border:1px solid #e1d7f4;border-radius:14px;background:#fff;box-shadow:0 5px 18px rgba(70,48,120,.05);overflow:hidden}
 .rm-v440-pt-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:11px 14px 8px}.rm-v440-pt-title{font-size:13px;font-weight:850;color:#24144f}.rm-v440-pt-sub{font-size:10px;color:#746a91;margin-top:2px}.rm-v440-pt-open{border:0;background:transparent;color:#6841b5;font:800 10px Arial;cursor:pointer;padding:6px 0}.rm-v440-pt-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px;padding:0 12px 12px}.rm-v440-pt{border:1px solid #e7e0f1;border-radius:10px;background:#fbfaff;text-align:left;padding:9px 10px;cursor:pointer;min-height:66px;font-family:inherit}.rm-v440-pt:hover{border-color:#bda9e2;box-shadow:0 3px 10px rgba(79,55,132,.08)}.rm-v440-pt b{display:block;font-size:19px;line-height:1;color:#301c67}.rm-v440-pt span{display:block;font-size:10px;font-weight:800;color:#34245b;margin-top:5px}.rm-v440-pt small{display:block;font-size:8.8px;color:#81779a;margin-top:2px}.rm-v440-next-label{font-size:9px;font-weight:900;letter-spacing:.05em;color:#7655b4;background:#f0eafa;border-radius:999px;padding:5px 8px;white-space:nowrap}.rm-v440-next-btn{border:0!important;background:#6b42b5!important;color:#fff!important;border-radius:9px!important;padding:8px 13px!important;font-weight:850!important;cursor:pointer!important;white-space:nowrap}.rm-v440-next-btn:hover{filter:brightness(.96)}
 @media(max-width:760px){.rm-v440-pt-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.rm-v440-pt-head{align-items:flex-start}.rm-v440-pt-sub{max-width:240px}}
+.rm-v440-pt-grid{display:block!important;padding:0 12px 12px!important}
+.rm-v440-pt-section{margin-top:8px}.rm-v440-pt-section:first-child{margin-top:0}
+.rm-v440-pt-section-title{font-size:8.5px;font-weight:900;letter-spacing:.08em;text-transform:uppercase;color:#7655a5;margin:0 0 5px;padding:0 1px}
+.rm-v440-pt-row{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:7px}
+.rm-v440-pt-row.portfolio{grid-template-columns:repeat(4,minmax(0,1fr))}
+.rm-v440-pt-row .rm-v440-pt{width:100%;min-width:0;box-sizing:border-box}
+@media(max-width:950px){.rm-v440-pt-row,.rm-v440-pt-row.portfolio{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:620px){.rm-v440-pt-row,.rm-v440-pt-row.portfolio{grid-template-columns:repeat(2,minmax(0,1fr))}.rm-v440-pt-section-title{margin-top:3px}}
 </style>
 <script id="rm-v440-portfolio-today-flow">
 (function(){
@@ -19549,11 +19557,13 @@ function ensureHost(){
  actions.innerHTML='<button type="button" onclick="v390OpenPortfolioPanel(\'missing-growth\')">Missing Growth Plans →</button><button type="button" onclick="v390OpenPortfolioPanel(\'directory\')">All Partners →</button><button type="button" onclick="rmV429OpenScoreDetail(\'leads\')">Referral Goal Progress →</button>';
  box.appendChild(actions);
  pace.insertAdjacentElement('afterend',box);
- box.addEventListener('click',e=>{const b=e.target.closest('[data-v440-kind]');if(!b)return;const k=b.dataset.v440Kind;if(['attention','touches','meetings','growth'].includes(k)&&typeof window.v442OpenPortfolioTile==='function'){window.v442OpenPortfolioTile(k);return}openPortfolio(k)});
+ box.addEventListener('click',e=>{const b=e.target.closest('[data-v440-kind]');if(!b)return;const k=b.dataset.v440Kind;if(k==='transactions'){if(typeof window.v350OpenLane==='function')window.v350OpenLane('calls');return}if(k==='tuesday'){if(typeof window.v350OpenLane==='function')window.v350OpenLane('tuesday');return}if(k==='weekly'){if(typeof window.v350OpenLane==='function')window.v350OpenLane('smart');return}if(k==='campaigns'){if(typeof window.v350OpenLane==='function')window.v350OpenLane('conversion');return}if(k==='missing-growth'){if(typeof window.v390OpenPortfolioPanel==='function')window.v390OpenPortfolioPanel('missing-growth');else openPortfolio('work');return}if(['attention','touches','meetings','growth'].includes(k)&&typeof window.v442OpenPortfolioTile==='function'){window.v442OpenPortfolioTile(k);return}openPortfolio(k)});
 }
 function transactionDue(){try{if(typeof rmOutstandingTransactionCallCount==='function')return Number(rmOutstandingTransactionCallCount()||0)}catch(e){}return 0}
 function tuesdayDue(){return numText('rmV1TuesdayBadge')}
 function conversionDue(){try{const node=document.querySelector('#onboardingList .v162-conv-summary')||el('onboardingSub'),meta=node&&node.dataset?node.dataset:{};return typeof window.rmV460CampaignDue==='function'?window.rmV460CampaignDue(meta):0}catch(e){return 0}}
+function weeklyCallsDue(){const state=window._rmV267BuyerAgentState;if(!state||!Array.isArray(state.rows))return null;return state.rows.filter(r=>r&&!r.waiting&&r.due).length}
+function missingGrowthPlansDue(data){return(Array.isArray(data&&data.rows)?data.rows:[]).filter(r=>!String(r&&r.next_growth_opportunity||'').trim()).length}
 function setNext(data){
  const copy=el('rm358NextCopy'),btn=el('rm358NextBtn');if(!copy||!btn)return;
  let task=null;
@@ -19570,10 +19580,10 @@ function setNext(data){
  btn.textContent='Start →';btn.classList.add('rm-v440-next-btn');btn.onclick=task.open;
 }
 async function refresh(){
- ensureHost();const data=await buildPortfolio();window.rmV440RenderedPortfolioData=data;const g=el('rmV440PortfolioGrid');if(g)g.innerHTML=tile('attention',data.attention.length,'Need Attention','At-risk or overdue')+tile('meetings',data.meetings.length,'Meeting Due','Relationship meetings')+tile('growth',data.growth.length,'Growth Next Steps','Documented opportunities')+tile('touches',data.touches.length,'Partner Touches Due','Coming due only after higher-value work');setNext(data);
+ ensureHost();const data=await buildPortfolio();window.rmV440RenderedPortfolioData=data;const g=el('rmV440PortfolioGrid');if(g){const weekly=weeklyCallsDue(),missingPlans=missingGrowthPlansDue(data);g.innerHTML='<div class="rm-v440-pt-section"><div class="rm-v440-pt-section-title">Open work · do these first</div><div class="rm-v440-pt-row">'+tile('transactions',transactionDue(),'Transaction Calls','New Contract + CTC')+tile('tuesday',tuesdayDue(),'Tuesday Updates','Listing-agent updates')+tile('weekly',weekly===null?'Loading…':weekly,'Weekly Realtor Calls','Still due this week')+tile('campaigns',conversionDue(),'4-Week Campaigns','Follow-ups due now')+tile('missing-growth',missingPlans,'Missing Growth Plans','No documented next move')+'</div></div><div class="rm-v440-pt-section"><div class="rm-v440-pt-section-title">Portfolio health</div><div class="rm-v440-pt-row portfolio">'+tile('attention',data.attention.length,'Need Attention','At-risk or overdue')+tile('meetings',data.meetings.length,'Meeting Due','Relationship meetings')+tile('growth',data.growth.length,'Growth Next Steps','Documented opportunities')+tile('touches',data.touches.length,'Partner Touches Due','Coming due after higher-value work')+'</div></div>'}setNext(data);
 }
 window.rmV440RefreshToday=()=>{cache={ts:0,data:null,promise:null};return refresh()};
-function boot(){if(!el('view-week'))return;setTimeout(refresh,350);setTimeout(()=>{ensureHost();refresh()},1600)}
+function boot(){if(!el('view-week'))return;setTimeout(refresh,350);setTimeout(()=>{ensureHost();refresh()},1600);setTimeout(refresh,4200)}
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
 const obs=new MutationObserver(()=>{if(document.body&&document.body.dataset.rmTab==='week'&&!el('rmV440PortfolioToday'))setTimeout(refresh,100)});setTimeout(()=>{try{obs.observe(document.body,{childList:true,subtree:true})}catch(e){}},500);
 })();
@@ -19688,10 +19698,10 @@ function v441Load(){
   var list=Array.isArray(rows)?rows:[];
   var hiddenRecentTypes=new Set([
    'Tuesday Contact Classification','Tuesday Call Plan Snapshot','Funded Unit Snapshot',
-   'Transaction Snapshot','Transaction Contact Override','Data Sync','Power BI Sync',
+   'Transaction Snapshot','Transaction Contact Override','Data Sync','Power BI Sync','Relationship Ownership Confirmation',
    'Power BI Agent Snapshot','Portfolio Profile','Tier Migration','LP Tuesday File Update'
   ]);
-  var recent=list.filter(function(r){return !hiddenRecentTypes.has(String(r&&r.act_type||'').trim());});
+  var recent=list.filter(function(r){var type=String(r&&r.act_type||'').trim();return !hiddenRecentTypes.has(type)&&!/(relationship\s+)?ownership\s+(confirmation|change|changed|update|updated)/i.test(type);});
   /* De-dupe exact repeated visible activity records without hiding separate legitimate work. */
   var seenRecent=new Set();
   recent=recent.filter(function(r){
@@ -19732,7 +19742,7 @@ function ensureBottomPanel(){
  if(!host){
   host=document.createElement('div');host.id='rmV441Bottom';host.className='rmv441-bottom';
   host.innerHTML='<div class="rmv441-panel"><div class="rmv441-panel-head"><div class="rmv441-panel-title">Today\u2019s Schedule</div><button type="button" class="rmv441-panel-link" id="rmV441ScheduleOpen">Open \u2192</button></div><div id="rmV441ScheduleList"><div class="rmv441-empty">Loading\u2026</div></div></div>'
-   +'<div class="rmv441-panel"><div class="rmv441-panel-head"><div class="rmv441-panel-title">Recent Activity</div><button type="button" class="rmv441-panel-link" id="rmV441ViewAll">View all \u2192</button></div><div id="rmV441ActivityList"><div class="rmv441-empty">Loading\u2026</div></div></div>';
+   +'<div class="rmv441-panel"><div class="rmv441-panel-head"><div class="rmv441-panel-title">Recent Contact Attempts</div><button type="button" class="rmv441-panel-link" id="rmV441ViewAll">View all \u2192</button></div><div id="rmV441ActivityList"><div class="rmv441-empty">Loading\u2026</div></div></div>';
   var board=document.getElementById('rm350Workboard');
   (board||pace.parentNode).appendChild(host);
   var vb=document.getElementById('rmV441ViewAll');
