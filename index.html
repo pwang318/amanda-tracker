@@ -3,8 +3,8 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta content="rm-tracker-v496-today-hierarchy-20261028" name="version"/>
-<meta content="v496: Today work order is larger and Quick Log follows the day’s task cards." name="build-notes"/>
+<meta content="rm-tracker-v497-simplified-today-20261028" name="version"/>
+<meta content="v497: Repeated Today tiles are tucked away; activity log opens from one compact action." name="build-notes"/>
 <meta content="no-cache, no-store, must-revalidate" http-equiv="Cache-Control"/>
 <meta content="no-cache" http-equiv="Pragma"/>
 <meta content="0" http-equiv="Expires"/>
@@ -17475,7 +17475,7 @@ window.rm358RefreshToday=()=>rm358LoadTodayBanner(true);
 function dailyPathHTML(){const lane=(kind,label)=>'<button type="button" class="rm-daily-step-link" onclick="v350OpenLane(\''+kind+'\')">'+label+' →</button>';const portfolio='<button type="button" class="rm-daily-step-link" onclick="rmV440OpenPortfolio(\'work\')">Portfolio follow-through →</button>';return '<section class="rm-daily-path" aria-label="Today’s work order"><div class="rm-daily-path-head"><div><span class="rm-daily-path-kicker">TODAY · IN ORDER</span><h2>Today’s work order</h2><p>Clear required updates, work current partners, then grow the pipeline.</p></div><button type="button" class="rm-daily-score-link" onclick="v350Go(\'scorecard\')">Scorecard progress →</button></div><ol class="rm-daily-steps"><li><span class="rm-daily-step-num">1</span><div class="rm-daily-step-copy"><b>Time-sensitive updates</b><small>Handle active transactions and Tuesday listing-agent calls.</small></div><div class="rm-daily-step-actions">'+lane('calls','Transaction calls')+lane('tuesday','Tuesday updates')+'</div></li><li><span class="rm-daily-step-num">2</span><div class="rm-daily-step-copy"><b>Current portfolio</b><small>Clear due plans, meetings, and relationship follow-through; make weekly calls.</small></div><div class="rm-daily-step-actions">'+portfolio+lane('smart','Weekly Realtor calls')+'</div></li><li><span class="rm-daily-step-num">3</span><div class="rm-daily-step-copy"><b>Build new business</b><small>Complete due meeting follow-ups, then reach out to new agents.</small></div><div class="rm-daily-step-actions">'+lane('conversion','4-week follow-ups')+lane('cold','New-agent cold calls')+'</div></li></ol></section>'; }
 function boardHTML(){let date='Today';try{date=new Date().toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric',year:'numeric'})}catch(e){}
  const work=groups.map(g=>'<section class="rm350-group"><div class="rm350-group-head"><div class="rm350-group-title">'+g[0]+'</div><div class="rm350-group-tag">'+g[1]+'</div></div><div class="rm350-grid">'+g[2].map(card).join('')+'</div></section>').join('');
- return '<div class="rm350-hero"><div><div class="rm350-kicker">Amanda <span>•</span> Today</div><div class="rm350-title">Today’s Priorities</div><div class="rm350-subtitle">Focus. Follow up. Move forward. <span class="rm352-heart">♡</span></div></div><div class="rm350-hero-side"><div class="rm350-date">▣ &nbsp;'+date+'</div><button type="button" class="rm352-import-link" onclick="rmTxnImportShow()">Import New Contracts / CTCs →</button></div></div>'+dailyPathHTML()+rm358BannerHTML()+rm358SourceDrawerHTML()+'<div class="rm350-shell"><main class="rm350-main">'+work+'</main></div>';
+ return '<div class="rm350-hero"><div><div class="rm350-kicker">Amanda <span>•</span> Today</div><div class="rm350-title">Today’s Priorities</div><div class="rm350-subtitle">Focus. Follow up. Move forward. <span class="rm352-heart">♡</span></div></div><div class="rm350-hero-side"><div class="rm350-date">▣ &nbsp;'+date+'</div><button type="button" class="rm352-import-link" onclick="rmTxnImportShow()">Import New Contracts / CTCs →</button></div></div>'+dailyPathHTML()+rm358BannerHTML()+rm358SourceDrawerHTML()+'<div class="rm350-shell"><main class="rm350-main"><details class="rm350-more-tools"><summary>More work tools</summary>'+work+'</details></main></div>';
 }
 function applyChrome(){
  try{
@@ -21369,7 +21369,7 @@ if(!$('rm490Score')){const s=document.createElement('section');s.id='rm490Score'
 put($('rmV440PortfolioToday'),$('rm490Score'));
 if(!$('rm490Bottom')){
 const b=document.createElement('div');b.id='rm490Bottom';b.className='rm490-bottom';
-b.innerHTML='<section id="rm490Quick"><h2>Log an activity</h2><p class="rm490-help">Log the call or meeting after you complete it.</p><label>Agent / contact</label><input id="rm490Agent" placeholder="Agent name"><div class="rm490-fields"><div><label>Activity / meeting type</label><select id="rm490Type"><option value="" selected>Select activity type</option>'+['Cold Calls','Agent Talk-to','New Realtor Meeting','Break Bread','Strategic Partner Meeting','Team Meeting'].map(x=>'<option>'+x+'</option>').join('')+'</select></div><div><label>Outcome</label><select id="rm490Outcome"><option value="">Select outcome</option><option>Meeting Held</option><option>Positive</option><option>Left voicemail</option><option>No answer</option><option>Requires follow-up</option><option>Meeting Scheduled</option></select></div></div><label>Notes</label><textarea id="rm490Notes" placeholder="What happened and what is next?"></textarea><label>Follow-up date</label><input type="date" id="rm490Follow"><button onclick="rm490QuickContinue()">Review & save →</button></section>';
+b.innerHTML='<section id="rm490Quick"><div class="rm490-log-copy"><h2>Log an activity</h2><p class="rm490-help">Record a call, message, or meeting.</p></div><button class="rm490-open-log" onclick="v350Go(&quot;log&quot;)">Open activity log →</button></section>';
 $('rm490Score').after(b);
 }
 const shell=host.querySelector('.rm350-shell');if(shell&&$('rm490Bottom'))shell.after($('rm490Bottom'));
@@ -21480,6 +21480,22 @@ window.rm494CallBrief=function(r,kind){
 #rm350Workboard #rm490Quick .rm490-help{margin:-6px 0 12px;color:#71647f;font-size:12px;line-height:1.45}
 @media(max-width:1150px){#rm350Workboard .rm-daily-steps li{grid-template-columns:32px minmax(190px,1fr)}#rm350Workboard .rm-daily-step-actions{grid-column:2;justify-content:flex-start}}
 @media(max-width:600px){#rm350Workboard .rm-daily-path{padding:14px}#rm350Workboard .rm-daily-path-head h2{font-size:19px}#rm350Workboard .rm-daily-path-head p{font-size:12px}#rm350Workboard .rm-daily-steps li{grid-template-columns:28px minmax(0,1fr);gap:9px}#rm350Workboard .rm-daily-step-num{width:27px;height:27px;font-size:12px}#rm350Workboard .rm-daily-step-copy b{font-size:13px}#rm350Workboard .rm-daily-step-copy small{font-size:11px}#rm350Workboard .rm-daily-step-link{font-size:11px;padding:8px 10px}}
+</style>
+
+<style id="rm497-clean-today">
+#rm350Workboard .rm350-more-tools{margin:12px 0 0;border:1px solid #e7e0f0;border-radius:12px;background:#fff;padding:0 14px}
+#rm350Workboard .rm350-more-tools>summary{padding:13px 2px;color:#5f428f;font-size:13px;font-weight:750;cursor:pointer;list-style:none}
+#rm350Workboard .rm350-more-tools>summary::-webkit-details-marker{display:none}
+#rm350Workboard .rm350-more-tools>summary:after{content:'＋';float:right;color:#7651ae}
+#rm350Workboard .rm350-more-tools[open]>summary:after{content:'−'}
+#rm350Workboard .rm350-more-tools[open] .rm350-group:first-child{margin-top:8px}
+#rm350Workboard #rm490Bottom.rm490-bottom{display:block!important;width:100%!important;grid-template-columns:none!important;margin:18px 0 0!important}
+#rm350Workboard #rm490Quick{display:flex;align-items:center;justify-content:space-between;gap:18px;max-width:none!important;margin:0!important;padding:16px 20px}
+#rm350Workboard #rm490Quick h2{margin:0!important;font-size:18px!important}
+#rm350Workboard #rm490Quick .rm490-help{margin:4px 0 0!important;color:#71647f;font-size:12px;line-height:1.45}
+#rm350Workboard #rm490Quick .rm490-open-log{float:none;margin:0!important;padding:10px 15px!important;border:1px solid #d8c9ec!important;border-radius:9px!important;background:#f7f3ff!important;color:#5f428f!important;font-size:13px;font-weight:700;white-space:nowrap;cursor:pointer}
+#rm350Workboard #rm490Quick .rm490-open-log:hover{background:#eee7fa!important;border-color:#cdbde0!important}
+@media(max-width:600px){#rm350Workboard #rm490Quick{align-items:flex-start;flex-direction:column;padding:14px!important}#rm350Workboard #rm490Quick .rm490-open-log{align-self:flex-start}}
 </style>
 </body>
 <style id="rm-daily-path-style-v1">
