@@ -3,8 +3,8 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta content="rm-tracker-v498-today-navigation-fix-20261028" name="version"/>
-<meta content="v498: Today shortcuts expand their work panels and avoid repeated layout moves." name="build-notes"/>
+<meta content="rm-tracker-v499-snapshot-time-and-counts-20261029" name="version"/>
+<meta content="v499: Daily Snapshot counts and details share one refresh; source times use Eastern time." name="build-notes"/>
 <meta content="no-cache, no-store, must-revalidate" http-equiv="Cache-Control"/>
 <meta content="no-cache" http-equiv="Pragma"/>
 <meta content="0" http-equiv="Expires"/>
@@ -17327,7 +17327,7 @@ function rm358RenderSourceRows(kind,rows){
   return '<div class="rm358-source-detail"><strong>'+matched.length+' exact saved record'+(matched.length===1?'':'s')+'</strong></div>'+matched.map(r=>{
     const cleaned=typeof v301CleanVisibleActivityNote==='function'?v301CleanVisibleActivityNote(r.notes||''):String(r.notes||'').trim();
     let when=typeof fmtDate==='function'?fmtDate(r.act_date):String(r.act_date||'');
-    if(r.created_at){const dt=new Date(r.created_at);if(!isNaN(dt.getTime()))when+=' · '+rmEasternTime(dt);}
+    if(r.created_at){const time=rmEasternTime(r.created_at);if(time)when+=' · '+time+' ET';}
     return '<div class="rm358-source-row"><div class="rm358-source-row-top"><div class="rm358-source-agent">'+escHtml(properCase(r.agent_name||'Unknown agent'))+'</div><div class="rm358-source-time">'+escHtml(when)+'</div></div><div class="rm358-source-type">'+escHtml(r.act_type||'Activity')+'</div>'+(r.outcome?'<div class="rm358-source-detail"><strong>Outcome:</strong> '+escHtml(r.outcome)+'</div>':'')+(cleaned?'<div class="rm358-source-detail"><strong>Notes:</strong> '+escHtml(cleaned.substring(0,500))+'</div>':'')+(r.follow_up_date?'<div class="rm358-source-detail"><strong>Follow-up:</strong> '+escHtml(fmtDate(r.follow_up_date))+'</div>':'')+'</div>';
   }).join('');
 }
@@ -17385,7 +17385,7 @@ window.rm358OpenTodayDetails=async function(kind){
         const encoded=encodeURIComponent(String(r.agent_name||'')).replace(/'/g,'%27');
         const cleaned=typeof v301CleanVisibleActivityNote==='function'?v301CleanVisibleActivityNote(r.notes||''):(typeof stripRmMeta==='function'?stripRmMeta(r.notes||'').trim():String(r.notes||'').trim());
         let when=typeof fmtDate==='function'?fmtDate(r.act_date):String(r.act_date||'');
-        if(r.created_at){const dt=new Date(r.created_at);if(!isNaN(dt.getTime()))when+=' · '+rmEasternTime(dt);}
+        if(r.created_at){const time=rmEasternTime(r.created_at);if(time)when+=' · '+time+' ET';}
         return '<div style="padding:10px 0;border-bottom:1px solid var(--border-light)">'
           +'<div style="display:flex;justify-content:space-between;gap:12px;align-items:flex-start">'
           +'<button onclick="rm358OpenAgentHistory(\''+encoded+'\')" style="background:none;border:none;padding:0;font-family:inherit;font-size:13px;font-weight:700;color:var(--brand);cursor:pointer;text-align:left">'+escHtml(properCase(r.agent_name||'Unknown agent'))+'</button>'
@@ -19179,7 +19179,7 @@ function rm358RenderSourceRows(kind,rows){
  let matched=kind==='held'?(window.rmV434HeldRows||[]):(kind==='followups'?rm411Rows(kind,[]):rm411Rows(kind==='talk'?'relationship':kind,rows));
 
  if(!matched.length)return '<div class="rm358-source-empty">No saved records are behind this number today.</div>';
- return '<div class="rm358-source-detail"><strong>'+matched.length+' exact saved record'+(matched.length===1?'':'s')+'</strong></div>'+matched.map(r=>{const cleaned=typeof v301CleanVisibleActivityNote==='function'?v301CleanVisibleActivityNote(r.notes||''):String(r.notes||'').trim();let when=kind==='followups'&&r.follow_up_date?'Due '+(typeof fmtDate==='function'?fmtDate(r.follow_up_date):r.follow_up_date):(typeof fmtDate==='function'?fmtDate(r.act_date):String(r.act_date||''));if(kind!=='followups'&&r.created_at){const dt=new Date(r.created_at);if(!isNaN(dt.getTime()))when+=' · '+rmEasternTime(dt)}return '<div class="rm358-source-row"><div class="rm358-source-row-top"><div class="rm358-source-agent">'+escHtml(properCase(r.agent_name||'Unknown agent'))+'</div><div class="rm358-source-time">'+escHtml(when)+'</div></div><div class="rm358-source-type">'+escHtml(r.act_type||'Activity')+'</div>'+(r.outcome?'<div class="rm358-source-detail"><strong>Outcome:</strong> '+escHtml(r.outcome)+'</div>':'')+(cleaned?'<div class="rm358-source-detail"><strong>Notes:</strong> '+escHtml(cleaned.substring(0,500))+'</div>':'')+'</div>'}).join('');
+ return '<div class="rm358-source-detail"><strong>'+matched.length+' exact saved record'+(matched.length===1?'':'s')+'</strong></div>'+matched.map(r=>{const cleaned=typeof v301CleanVisibleActivityNote==='function'?v301CleanVisibleActivityNote(r.notes||''):String(r.notes||'').trim();let when=kind==='followups'&&r.follow_up_date?'Due '+(typeof fmtDate==='function'?fmtDate(r.follow_up_date):r.follow_up_date):(typeof fmtDate==='function'?fmtDate(r.act_date):String(r.act_date||''));if(kind!=='followups'&&r.created_at){const time=rmEasternTime(r.created_at);if(time)when+=' · '+time+' ET'}return '<div class="rm358-source-row"><div class="rm358-source-row-top"><div class="rm358-source-agent">'+escHtml(properCase(r.agent_name||'Unknown agent'))+'</div><div class="rm358-source-time">'+escHtml(when)+'</div></div><div class="rm358-source-type">'+escHtml(r.act_type||'Activity')+'</div>'+(r.outcome?'<div class="rm358-source-detail"><strong>Outcome:</strong> '+escHtml(r.outcome)+'</div>':'')+(cleaned?'<div class="rm358-source-detail"><strong>Notes:</strong> '+escHtml(cleaned.substring(0,500))+'</div>':'')+'</div>'}).join('');
 };
 window.rm358RenderSourceRows=rm358RenderSourceRows;
 function rm358OpenTodaySource(kind){const drawer=document.getElementById('rm358SourceDrawer'),title=document.getElementById('rm358SourceTitle'),body=document.getElementById('rm358SourceBody');if(!drawer||!title||!body)return;const titles={calls:'Total Calls — today',cold:'Cold Calls — today',talk:'Relationship Conversations — today',transaction:'Transaction Conversations — today',booked:'Meetings Booked — today',held:'Meetings Held — today'};title.textContent=titles[kind]||'Today’s activity';drawer.classList.add('open');drawer.setAttribute('aria-hidden','false');body.innerHTML=rm358RenderSourceRows(kind,rm358DailyRows)};
@@ -19352,49 +19352,10 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 <script id="rm-v437-pace-controller">
 (function(){
 'use strict';
-const HELD_TYPES=new Set(['Business Planning','Break Bread','Team Meeting','New Realtor Meeting','Partner Meeting','Break Breads','Strategic Partner Meeting','Channel Meeting','Team / Office Presentation','Retention Meeting']);
-let lastRows=[];
-function todayISO(){try{if(typeof today==='function')return today();}catch(e){} const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
-function attendees(row){
-  try{if(typeof extractRmMeta==='function'){const m=extractRmMeta(String(row&&row.notes||''));if(m&&Array.isArray(m.rmAttendees))return m.rmAttendees.map(String);}}catch(e){}
-  try{if(typeof getRmAttendees==='function'){const a=getRmAttendees(row);if(Array.isArray(a))return a.map(String);}}catch(e){}
-  return [];
-}
-function amandaAttended(row){return attendees(row).some(x=>String(x).trim().toLowerCase()==='amanda');}
-function isHeld(row){return HELD_TYPES.has(String(row&&row.act_type||'').trim())&&amandaAttended(row);}
-function isCold(row){const t=String(row&&row.act_type||'').toLowerCase();return t.includes('cold')&&t.includes('call');}
-function sig(row){try{if(typeof rmActivitySignals==='function')return rmActivitySignals(row)||{};}catch(e){} return {};}
-function isCall(row){const s=sig(row),t=String(row&&row.act_type||'').toLowerCase();return !!s.callAttempt||!!s.liveCall||t.includes('call');}
-function isLive(row){const s=sig(row); if(s.liveCall)return true; const o=String(row&&row.outcome||'').trim().toLowerCase(); const t=String(row&&row.act_type||'').toLowerCase(); return t.includes('call')&&(o==='connected'||o.includes('connected / meaningful'));}
-function isBooked(row){const o=String(row&&row.outcome||'').trim().toLowerCase();return o==='meeting scheduled';}
-function dedupe(rows,keyFn){const m=new Map();for(const r of rows){const k=keyFn(r);if(!m.has(k))m.set(k,r);}return [...m.values()];}
-function heldRows(rows){return dedupe(rows.filter(isHeld),r=>[String(r.agent_name||'').trim().toLowerCase(),String(r.act_type||'').trim().toLowerCase(),String(r.act_date||'')].join('|'));}
-function setTile(kind,value,sub){const v=document.getElementById('rm358Val-'+kind);if(v)v.textContent=String(value);const s=document.getElementById('rm358Sub-'+kind);if(s&&sub!=null)s.textContent=sub;}
-function setMeta(){const e=document.getElementById('rm358Updated');if(e)e.textContent='Updated '+rmEasternTime(new Date())+' · live saved activity';const p=document.getElementById('rm358Pace');if(p)p.dataset.rmBuild='V437';}
-function render(rows){
-  lastRows=Array.isArray(rows)?rows:[];
-  const calls=lastRows.filter(isCall), live=calls.filter(isLive), cold=lastRows.filter(isCold), booked=lastRows.filter(isBooked), held=heldRows(lastRows);
-  setTile('calls',calls.length,live.length+' connected by phone · '+(calls.length?Math.round(live.length/calls.length*100):0)+'% call contact rate');
-  setTile('cold',cold.length+' / 25',Math.max(0,25-cold.length)+' remaining today');
-  setTile('talk',live.length,live.length+' live phone conversation'+(live.length===1?'':'s'));
-  setTile('booked',booked.length,'meetings scheduled');
-  setTile('held',held.length,'completed meetings');
-  setMeta();
-  const f=document.getElementById('rm358Funnel');if(f)f.innerHTML='<strong>Today’s Funnel</strong>&nbsp;&nbsp; '+calls.length+' calls &nbsp;→&nbsp; '+live.length+' connected &nbsp;→&nbsp; '+booked.length+' booked &nbsp;→&nbsp; '+held.length+' held';
-  window.__rmV437HeldRows=held;
-}
-async function refresh(){
-  try{
-    const date=todayISO();
-    if(typeof sbFetch!=='function')throw new Error('Supabase fetch helper unavailable');
-    const rows=await sbFetch('amanda_activities?act_date=eq.'+encodeURIComponent(date)+'&select=id,agent_name,act_type,act_date,outcome,follow_up_date,created_at,notes&order=created_at.asc&limit=2000');
-    render(Array.isArray(rows)?rows:[]);
-    return rows;
-  }catch(e){console.error('V437 Daily Pace load failed',e);const meta=document.getElementById('rm358Updated');if(meta)meta.textContent='Could not refresh today’s numbers';return [];}
-}
-// Make the existing Today click drawer use the exact same authoritative classification.
-window.rm358TodayRowsForKind=function(kind,rows){const src=Array.isArray(rows)?rows:lastRows;if(kind==='held')return heldRows(src);if(kind==='talk'||kind==='live')return src.filter(isLive);if(kind==='calls')return src.filter(isCall);if(kind==='cold')return src.filter(isCold);if(kind==='booked')return src.filter(isBooked);return [];};
-window.rm358LoadTodayBanner=refresh;
+// Tiles and their detail drawer must use the same loader and saved-record cache.
+const sharedRefresh=window.rm358LoadTodayBanner;
+if(typeof sharedRefresh!=='function')return;
+function refresh(){return sharedRefresh(true);}
 window.rmV437RefreshPace=refresh;
 function start(){
   let tries=0;
@@ -19884,7 +19845,7 @@ function renderHeld(rows){
  body.innerHTML='<div class="rm358-source-detail"><strong>'+rows.length+' exact saved meeting record'+(rows.length===1?'':'s')+'</strong></div>'+rows.map(function(r){
   var note='';try{note=typeof v301CleanVisibleActivityNote==='function'?v301CleanVisibleActivityNote(r.notes||''):String(r.notes||'').trim()}catch(e){}
   var when='';try{when=typeof fmtDate==='function'?fmtDate(r.act_date):String(r.act_date||'')}catch(e){when=String(r.act_date||'')}
-  if(r.created_at){try{var d=new Date(r.created_at);if(!isNaN(d.getTime()))when+=' · '+rmEasternTime(d)}catch(e){}}
+  if(r.created_at){try{var time=rmEasternTime(r.created_at);if(time)when+=' · '+time+' ET'}catch(e){}}
   return '<div class="rm358-source-row"><div class="rm358-source-row-top"><div class="rm358-source-agent">'+esc(typeof properCase==='function'?properCase(r.agent_name||'Unknown agent'):(r.agent_name||'Unknown agent'))+'</div><div class="rm358-source-time">'+esc(when)+'</div></div><div class="rm358-source-type">'+esc(r.act_type||'Meeting')+'</div>'+(r.outcome?'<div class="rm358-source-detail"><strong>Outcome:</strong> '+esc(r.outcome)+'</div>':'')+(note?'<div class="rm358-source-detail"><strong>Notes:</strong> '+esc(note.substring(0,500))+'</div>':'')+'</div>';
  }).join('');
 }
