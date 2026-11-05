@@ -16,6 +16,8 @@ assert(portfolio.includes("r.owner!=='Amanda'"),'Weekly work must count Amanda-o
 assert(portfolio.includes("seenPortfolioNames"),'Portfolio rows must be unique');
 assert(portfolio.includes("String(a.display_name||'').trim()==='__HIDDEN__'"),'Hidden profiles must be excluded');
 assert(portfolio.includes("inactive|deleted|archived|removed"),'Inactive and removed relationships must be excluded');
+assert(html.includes("String(p.display_name||'').trim()==='__HIDDEN__'"),'Weekly calls must exclude tombstone profiles');
+assert(html.includes("/^(inactive|deleted|archived|removed)$/i.test(p.relationship_status||'')"),'Weekly calls must exclude removed relationship status');
 assert(detail.includes("Competitor risk flagged"),'Performance warnings must include specific reasons');
 assert(html.includes("rm-v495-health-details"),'Secondary health tiles should be collapsed by default');
 assert(html.includes("#rm350Workboard #rm490Referral{display:none!important}"),'Homepage must not duplicate the referral counter');
