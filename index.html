@@ -21458,6 +21458,56 @@ window.rm494CallBrief=function(r,kind){
 #rm350Workboard #rm490Quick .rm490-open-log:hover{background:#eee7fa!important;border-color:#cdbde0!important}
 @media(max-width:600px){#rm350Workboard #rm490Quick{align-items:flex-start;flex-direction:column;padding:14px!important}#rm350Workboard #rm490Quick .rm490-open-log{align-self:flex-start}}
 </style>
+<!-- RM live Velocify referral counter: refresh independently of Power BI imports. -->
+<script id="rm-v494-live-velocify-lead-refresh">
+(function(){
+  'use strict';
+  var lastSignature='',inFlight=false,lastMonth='';
+  function monthKey(){var d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');}
+  async function refreshLeadCounter(force){
+    if(inFlight||document.visibilityState==='hidden')return;
+    if(typeof sbFetch!=='function'||typeof window.rmV428RenderOfficialScorecard!=='function')return;
+    inFlight=true;
+    try{
+      var month=monthKey(),start=month+'-01';
+      // Fetch immutable lead IDs; do not rely on Power BI import timestamps.
+      var rows=await sbFetch('velocify_leads?date_added=gte.'+start+'&date_added=lt.'+((function(){var d=new Date(),next=new Date(d.getFullYear(),d.getMonth()+1,1);return next.getFullYear()+'-'+String(next.getMonth()+1).padStart(2,'0')+'-01';})())+'&select=lead_key,date_added&limit=10000');
+      if(!Array.isArray(rows))return;
+      var keys=new Set();
+      rows.forEach(function(r,i){keys.add(String(r.lead_key||'').trim().toUpperCase()||'UNKEYED:'+i);});
+      var signature=month+'|'+keys.size+'|'+Array.from(keys).sort().join('|');
+      var changed=signature!==lastSignature||lastMonth!==month;
+      if(!changed&&!force)return;
+      lastSignature=signature;lastMonth=month;
+      await window.rmV428RenderOfficialScorecard(true);
+      // The home referral tiles read this shared scorecard object.
+      // Update them immediately rather than waiting for a MutationObserver.
+      var data=window.rmV429ScoreData;
+      if(!data)return;
+      var n=Number(data.monthlyLeadCount);
+      if(!Number.isFinite(n))return;
+      var home=document.getElementById('rm490Referral');
+      if(home){var strong=home.querySelector('strong');if(strong)strong.textContent=String(n);}
+      var value=document.getElementById('rm490Valueleads');
+      if(value)value.textContent=n+' / '+Math.ceil((Number(data.ratioTarget)||1.15)*Number(data.total||0));
+      var gap=document.getElementById('rm490Gapleads');
+      if(gap)gap.textContent=Math.max(0,Math.ceil((Number(data.ratioTarget)||1.15)*Number(data.total||0))-n)+' to go';
+      var bar=document.getElementById('rm490Progressleads');
+      if(bar)bar.value=Number(data.total)>0?Math.min(100,n/Math.ceil((Number(data.ratioTarget)||1.15)*Number(data.total))*100):0;
+    }catch(err){console.warn('RM Velocify lead auto-refresh failed',err);}
+    finally{inFlight=false;}
+  }
+  window.rmV494RefreshLeads=refreshLeadCounter;
+  function boot(){
+    refreshLeadCounter(true);
+    setInterval(function(){if(document.visibilityState==='visible')refreshLeadCounter(false);},30000);
+    window.addEventListener('focus',function(){refreshLeadCounter(true);});
+    document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible')refreshLeadCounter(true);});
+  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});
+  else boot();
+})();
+</script>
 </body>
 <style id="rm-daily-path-style-v1">
 .rm-daily-path{margin:0 0 14px;padding:15px 18px;background:#fff;border:1px solid #DED4EC;border-left:4px solid #7651AE;border-radius:13px;color:#322543}
