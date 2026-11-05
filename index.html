@@ -15135,7 +15135,7 @@ window.rmV234AddTransactionRule=addRule;
     if(!Number.isFinite(leadAge)||leadAge<0||leadAge>90)return false;
     const k=norm(p.agent_name);
     if((owners||[]).some(o=>norm(o.agent_name)===k&&(o.rm==='__REMOVED__'||o.lp==='__REMOVED__')))return false;
-    if(p.do_not_contact===true||/^(inactive|deleted|archived)$/i.test(p.relationship_status||''))return false;
+    if(p.do_not_contact===true||String(p.display_name||'').trim()==='__HIDDEN__'||/^__/.test(norm(p.agent_name))||/^(inactive|deleted|archived|removed)$/i.test(p.relationship_status||''))return false;
     if(isStrategic(p)||(typeof wp18StrategicNynyMatch==='function'&&wp18StrategicNynyMatch(p.agent_name,p)))return false;
     // Weekly ownership review must include eligible Nyny-owned C agents so they can
     // be reassigned inline. Keep every other shared routing exclusion intact.
