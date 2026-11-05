@@ -16765,17 +16765,19 @@ function renderCurrent(){
     const ac=noCall(aCls)?1:0,bc=noCall(bCls)?1:0;
     return ac-bc || rmV323PlanOrder(a)-rmV323PlanOrder(b);
   });
-  const rows=displayRows.map(r=>{
+  const rows=displayRows.filter(r=>!noCall(listingClass(r))&&!done(r,S)).map(r=>{
     const tx=rowClassKey(r),name=meta(r.notes,'TUE_CONTACT_NAME'),explicit=S.classes[tx]||S.classes[rowMatchKey(r)]||'',cls=listingClass(r),finished=done(r,S),nc=noCall(cls),issue=cls==='CONTACT_ISSUE'||(cls==='CALL_REQUIRED'&&!usableAgent(name));
-    let status;if(nc){cleared++;status='Cleared ✓ · '+classLabel(cls)}else if(issue){issues++;status='Needs review'}else if(finished){complete++;status='Completed this week ✓'}else{due++;status='Due Tuesday'};
+    let status;if(issue){issues++;status='Needs review'}else{due++;status='Due Tuesday'};
     const client=meta(r.notes,'TXN_CLIENT'),property=meta(r.notes,'TXN_PROPERTY'),close=meta(r.notes,'TXN_CLOSE_DATE'),mile=meta(r.notes,'TXN_MILESTONE'),lp=lpShort(meta(r.notes,'LP_OWNER')),ph=meta(r.notes,'TUE_PHONE'),em=meta(r.notes,'TUE_EMAIL'),rowClass=nc?'cleared':issue?'issue':'',stateClass=finished&&!nc&&!issue?'done':nc?'cleared':'';
     const saved=!!explicit,saveButton='<button class="rm-v313-save-class'+(saved?' saved':'')+'" type="button" '+(saved?'disabled ':'')+'onclick="rmV313SaveListingClass(\''+encodeURIComponent(tx)+'\',this)">'+(saved?'Saved ✓':'Save status')+'</button>';
     const addContact=!usableAgent(name)||(!ph&&!em);
     const addButton=addContact?'<button class="rm-v312-add-contact" type="button" onclick="rmV312AddListingAgent(\''+encodeURIComponent(tx)+'\')">'+(!usableAgent(name)?'+ Add listing agent':'+ Add contact info')+'</button>':'';
     return '<div class="rm-v312-row '+rowClass+'"><div><div class="rm-v312-name">'+esc(name||'Listing contact missing')+'</div><div class="rm-v312-file">'+esc(client)+(property?' · '+esc(property):'')+(close?' · close '+esc(close):'')+(mile?' · '+esc(mile):'')+(lp?' · LP: '+esc(lp):'')+'</div></div><div class="rm-v312-contact">'+esc(ph||'No phone')+'<br>'+esc(em||'No email')+'</div><div class="rm-v312-state '+stateClass+'">'+esc(status)+'</div><div class="rm-v312-actions">'+select(tx,cls)+saveButton+addButton+(!nc&&!issue?'<button class="rm-v312-call" onclick="rmV312Open(\''+encodeURIComponent(tx)+'\')">'+(finished?'Add note':'Log update')+'</button>':'')+'</div></div>'
   }).join('');
-  host.innerHTML='<section class="rm-v312-card"><div class="rm-v312-head"><div><h3>Tuesday listing-agent calls</h3></div><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:flex-end"><label style="font-size:10px;font-weight:800;color:#5B4B78">WORKING AS <select id="rmV318Operator" onchange="rmV318SetOperator(this.value)" style="margin-left:5px;border:1px solid #CFC3E7;border-radius:8px;padding:7px 9px;background:#fff;color:#4B3675"><option>Amanda</option><option>Nyny</option></select></label><button type="button" class="rm-v313-save-class" onclick="rmV318ExportCalls()">Export RM calls</button><div class="rm-v312-summary">'+due+' due · '+complete+' done · '+cleared+' cleared · '+issues+' review</div></div></div>'+ (rows||'<div class="rm-v312-empty">No current-week RM listing-agent plan loaded. Upload Mack’s RM Excel in the Core Team Weekly Data Hub.</div>')+'</section>';rmApplyCoverage(rmCoveragePerson(),false);
-  const badge=document.getElementById('rmV1TuesdayBadge');if(badge){badge.textContent=String(due);badge.title=due+' listing-agent Tuesday call'+(due===1?'':'s')+' due'}
+  complete=displayRows.filter(r=>!noCall(listingClass(r))&&done(r,S)).length;
+  cleared=displayRows.filter(r=>noCall(listingClass(r))).length;
+  host.innerHTML='<section class="rm-v312-card"><div class="rm-v312-head"><div><h3>Tuesday listing-agent calls</h3></div><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:flex-end"><label style="font-size:10px;font-weight:800;color:#5B4B78">WORKING AS <select id="rmV318Operator" onchange="rmV318SetOperator(this.value)" style="margin-left:5px;border:1px solid #CFC3E7;border-radius:8px;padding:7px 9px;background:#fff;color:#4B3675"><option>Amanda</option><option>Nyny</option></select></label><button type="button" class="rm-v313-save-class" onclick="rmV318ExportCalls()">Export RM calls</button><div class="rm-v312-summary">'+due+' due · '+complete+' done · '+cleared+' cleared · '+issues+' review</div></div></div>'+ (rows||'<div class="rm-v312-empty">No outstanding listing-agent updates this week. Completed and cleared items remain in the export history.</div>')+'</section>';rmApplyCoverage(rmCoveragePerson(),false);
+  const badge=document.getElementById('rmV1TuesdayBadge');if(badge){badge.textContent=String(due);badge.title=due+' outstanding listing-agent update'+(due===1?'':'s')+' this week'}
 }
 let rmV319RenderSeq=0;async function render(){const host=document.getElementById('rm-v1-tuesday-host');if(!host)return;const seq=++rmV319RenderSeq;try{const next=await state();if(seq!==rmV319RenderSeq)return;S=next;renderCurrent();host.classList.add('rm-v319-ready')}catch(e){console.error('RM Tuesday render failed',e);if(seq!==rmV319RenderSeq)return;host.innerHTML='<section class="rm-v312-card"><div class="rm-v312-empty">Tuesday Updates could not load. Refresh once; if this remains, verify the RM weekly list in Core Team Weekly Data Hub.</div></section>';host.classList.add('rm-v319-ready')}}
 window.rmV312RenderTuesday=render;window.rmEnsureTuesdayUpdates=render;window.v265RefreshListingUpdates=render;
@@ -19452,7 +19454,7 @@ let cache={ts:0,data:null,promise:null};
 const DAY=86400000;
 function el(id){return document.getElementById(id)}
 function numText(id){const n=parseInt(String(el(id)?.textContent||'0').replace(/[^0-9-]/g,''),10);return Number.isFinite(n)?n:0}
-function norm(v){return String(v==null?'':v).trim().toLowerCase()}
+function norm(v){const s=String(v==null?'':v).trim();try{return typeof agentMatchKey==='function'?agentMatchKey(s):s.toLowerCase().replace(/\s+/g,' ')}catch(e){return s.toLowerCase().replace(/\s+/g,' ')}}
 function dateOnly(v){return String(v||'').slice(0,10)}
 function daysSince(v){if(!v)return null;const d=new Date(dateOnly(v)+'T12:00:00');if(isNaN(d))return null;return Math.max(0,Math.round((new Date()-d)/DAY))}
 function isMeaningfulRM(a){try{return typeof isMeaningfulOutcome==='function'?isMeaningfulOutcome(a.outcome,NOT_MEANINGFUL_RM_OUTCOMES,a.act_type):!/voicemail|no answer/i.test(String(a.outcome||''))}catch(e){return !/voicemail|no answer/i.test(String(a.outcome||''))}}
@@ -19488,7 +19490,7 @@ async function buildPortfolio(){
   (acts||[]).forEach(a=>{const q=norm(a.agent_name),fu=String(a.follow_up_date||'').slice(0,10),ad=String(a.act_date||a.created_at||'').slice(0,10);if(!q||!fu||(lastRM[q]&&ad<String(lastRM[q]).slice(0,10)))return;if(!latestOpenFollowUp[q]||fu<latestOpenFollowUp[q])latestOpenFollowUp[q]=fu});
   (lpCalls||[]).forEach(a=>{const k=norm(a.agent_name);if(k&&!lastLP[k]&&isMeaningfulLP(a))lastLP[k]=a.call_date});
   let active=[];
-  try{const snap=typeof v124LatestPowerBiSnapshot==='function'?v124LatestPowerBiSnapshot(agents||[]):{rows:agents||[]};active=(snap.rows||[]).filter(a=>!!a.retained&&!(typeof v76IsStrategicPartner==='function'&&v76IsStrategicPartner(a.agent_name,a))&&a.do_not_contact!==true&&a.relationship_status!=='inactive').map(a=>typeof danielApplyTier==='function'?danielApplyTier(a):a)}catch(e){active=(agents||[]).filter(a=>a.relationship_status!=='inactive')}
+  try{const snap=typeof v124LatestPowerBiSnapshot==='function'?v124LatestPowerBiSnapshot(agents||[]):{rows:agents||[]};active=(snap.rows||[]).filter(a=>!!a.retained&&!(typeof v76IsStrategicPartner==='function'&&v76IsStrategicPartner(a.agent_name,a))&&a.do_not_contact!==true&&!/^(inactive|deleted|archived|removed)$/i.test(String(a.relationship_status||''))&&String(a.display_name||'')!=='__HIDDEN__').map(a=>typeof danielApplyTier==='function'?danielApplyTier(a):a)}catch(e){active=(agents||[]).filter(a=>!/^(inactive|deleted|archived|removed)$/i.test(String(a.relationship_status||''))&&String(a.display_name||'')!=='__HIDDEN__')}
   // V443: Portfolio Today is Amanda's own work list, not the full managed book.
   // Scope it to C-tier partners and any agent explicitly assigned to Amanda (e.g. new agents),
   // and drop Channel/A/B and anyone assigned to Nyny — those belong to the Director view.
@@ -19500,7 +19502,7 @@ async function buildPortfolio(){
    if(rms.has('Nyny'))return 'Nyny';
    return profile&&profile.tier==='C'?'Amanda':'Unassigned';
   }
-  active=active.filter(a=>{const owner=v443OwnerOf(a.agent_name,a),tier=String(a&&a.tier||'').trim();return owner==='Amanda'&&(tier==='C'||!tier);});
+  const seenPortfolioNames=new Set();active=active.filter(a=>{const key=norm(a&&a.agent_name),owner=v443OwnerOf(a.agent_name,a),tier=String(a&&a.tier||'').trim().toUpperCase();if(!key||seenPortfolioNames.has(key)||/^__/.test(key)||String(a.display_name||'').trim()==='__HIDDEN__'||/^(inactive|deleted|archived|removed)$/i.test(String(a.relationship_status||'').trim())||a.do_not_contact===true||owner!=='Amanda'||(tier!=='C'&&tier!==''))return false;seenPortfolioNames.add(key);return true;});
   const T={Channel:14,A:14,B:30,C:30},U={Channel:21,A:21,B:45,C:45},M={Channel:30,A:30,B:60,C:90};
   const todayStr=typeof today==='function'?today():new Date().toISOString().slice(0,10);
   const rows=active.map(a=>{const name=String(a.agent_name||'').trim(),k=norm(name),tier=a.tier||null,dr=daysSince(lastRM[k]),dl=daysSince(lastLP[k]),da=dr==null&&dl==null?null:Math.min(dr==null?Infinity:dr,dl==null?Infinity:dl);let health='Green';try{health=computeHealthScore(daysSince(a.latest_lead_date),da,T[tier]||14,U[tier]||21,!!a.competitor_risk_flag)}catch(e){if(da==null||da>(U[tier]||21))health='Red';else if(da>(T[tier]||14))health='Yellow'}const until=da==null?null:(T[tier]||14)-da;const md=daysSince(lastMeeting[k]),eligible=['Channel','A','B'].includes(tier)||(tier==='C'&&a.high_potential_flag),meetingDue=eligible&&(md==null||md>(M[tier]||90)),attemptDays=daysSince(lastAttempt[k]),follow=String(latestOpenFollowUp[k]||'').slice(0,10),meaningfulCooling=(tier==='C'||!tier)&&da!==null&&da<30,attemptCooling=typeof window.rmV452PortfolioHold==='function'?window.rmV452PortfolioHold({lastAttemptDays:attemptDays,tier,lastMeaningfulDays:da,followUpDate:follow,todayDate:todayStr}):false;return{name,tier,health,daysSinceLead:daysSince(a.latest_lead_date),competitor_risk_flag:!!a.competitor_risk_flag,next_growth_due:a.next_growth_due||null,daysAny:da,daysUntilYellow:until,next_growth_opportunity:a.next_growth_opportunity||null,meetingDue,lastAttemptDays:attemptDays,followUpDate:follow,meaningfulCooling,attemptCooling}});
@@ -19521,10 +19523,10 @@ function ensureHost(){
  box.addEventListener('click',e=>{const b=e.target.closest('[data-v440-kind]');if(!b)return;const k=b.dataset.v440Kind;if(k==='transactions'){if(typeof window.v350OpenLane==='function')window.v350OpenLane('calls');return}if(k==='tuesday'){if(typeof window.v350OpenLane==='function')window.v350OpenLane('tuesday');return}if(k==='weekly'){if(typeof window.v350OpenLane==='function')window.v350OpenLane('smart');return}if(k==='campaigns'){if(typeof window.v350OpenLane==='function')window.v350OpenLane('conversion');return}if(k==='missing-growth'){if(typeof window.v390OpenPortfolioPanel==='function')window.v390OpenPortfolioPanel('missing-growth');else openPortfolio('work');return}if(['attention','touches','meetings','growth'].includes(k)&&typeof window.v442OpenPortfolioTile==='function'){window.v442OpenPortfolioTile(k);return}openPortfolio(k)});
 }
 function transactionDue(){try{if(typeof rmOutstandingTransactionCallCount==='function')return Number(rmOutstandingTransactionCallCount()||0)}catch(e){}return 0}
-function tuesdayDue(){return numText('rmV1TuesdayBadge')}
+function tuesdayDue(){const badge=el('rmV1TuesdayBadge');if(!badge||!/^\d+$/.test(String(badge.textContent||'').trim()))return null;return numText('rmV1TuesdayBadge')}
 function conversionDue(){try{const node=document.querySelector('#onboardingList .v162-conv-summary')||el('onboardingSub'),meta=node&&node.dataset?node.dataset:{};return typeof window.rmV460CampaignDue==='function'?window.rmV460CampaignDue(meta):0}catch(e){return 0}}
-function weeklyCallsDue(){const state=window._rmV267BuyerAgentState;if(!state||!Array.isArray(state.rows))return null;return state.rows.filter(r=>r&&!r.waiting&&r.due).length}
-function missingGrowthPlansDue(data){return(Array.isArray(data&&data.rows)?data.rows:[]).filter(r=>!String(r&&r.next_growth_opportunity||'').trim()).length}
+function weeklyCallsDue(){const state=window._rmV267BuyerAgentState;if(!state||!Array.isArray(state.rows))return null;const seen=new Set();return state.rows.filter(r=>{const key=norm(r&&r.name);if(!key||seen.has(key)||r.owner!=='Amanda'||r.waiting||!r.due)return false;seen.add(key);return true}).length}
+function missingGrowthPlansDue(data){const seen=new Set();return(Array.isArray(data&&data.rows)?data.rows:[]).filter(r=>{const key=norm(r&&r.name);if(!key||seen.has(key))return false;seen.add(key);return !String(r&&r.next_growth_opportunity||'').trim()}).length}
 function setNext(data){
  const copy=el('rm358NextCopy'),btn=el('rm358NextBtn');if(!copy||!btn)return;
  let task=null;
@@ -19541,7 +19543,7 @@ function setNext(data){
  btn.textContent='Start →';btn.classList.add('rm-v440-next-btn');btn.onclick=task.open;
 }
 async function refresh(){
- ensureHost();const data=await buildPortfolio();window.rmV440RenderedPortfolioData=data;const g=el('rmV440PortfolioGrid');if(g){const weekly=weeklyCallsDue(),missingPlans=missingGrowthPlansDue(data);g.innerHTML='<div class="rm-v440-pt-section"><div class="rm-v440-pt-section-title">Open work · do these first</div><div class="rm-v440-pt-row">'+tile('transactions',transactionDue(),'Transaction Calls','New Contract + CTC')+tile('tuesday',tuesdayDue(),'Tuesday Updates','Listing-agent updates')+tile('weekly',weekly===null?'Loading…':weekly,'Weekly Realtor Calls','Still due this week')+tile('campaigns',conversionDue(),'4-Week Campaigns','Follow-ups due now')+tile('missing-growth',missingPlans,'Missing Growth Plans','No documented next move')+'</div></div><div class="rm-v440-pt-section"><div class="rm-v440-pt-section-title">Portfolio health</div><div class="rm-v440-pt-row portfolio">'+tile('attention',data.attention.length,'Need Attention','At-risk or overdue')+tile('meetings',data.meetings.length,'Meeting Due','Relationship meetings')+tile('growth',data.growth.length,'Growth Next Steps','Documented opportunities')+tile('touches',data.touches.length,'Partner Touches Due','Coming due after higher-value work')+'</div></div>'}setNext(data);
+ ensureHost();const data=await buildPortfolio();window.rmV440RenderedPortfolioData=data;const g=el('rmV440PortfolioGrid');if(g){const weekly=weeklyCallsDue(),missingPlans=missingGrowthPlansDue(data);g.innerHTML='<div class="rm-v440-pt-section"><div class="rm-v440-pt-section-title">Open work · do these first</div><div class="rm-v440-pt-row">'+tile('transactions',transactionDue(),'Transaction Calls','New Contract + CTC')+tile('tuesday',tuesdayDue()===null?'Loading…':tuesdayDue(),'Tuesday Updates','Only outstanding')+tile('weekly',weekly===null?'Loading…':weekly,'Weekly Realtor Calls','Still due this week')+tile('campaigns',conversionDue(),'4-Week Campaigns','Follow-ups due now')+tile('missing-growth',missingPlans,'Missing Growth Plans','Amanda-owned only')+'</div></div><details class="rm-v440-pt-section rm-v495-health-details"><summary class="rm-v440-pt-section-title">Additional portfolio health · expand when needed</summary><div class="rm-v440-pt-row portfolio">'+tile('attention',data.attention.length,'Need Attention','At-risk or overdue')+tile('meetings',data.meetings.length,'Meeting Due','Relationship meetings')+tile('growth',data.growth.length,'Growth Next Steps','Documented opportunities')+tile('touches',data.touches.length,'Partner Touches Due','Coming due after higher-value work')+'</div></details>'}setNext(data);
 }
 window.rmV440RefreshToday=()=>{cache={ts:0,data:null,promise:null};return refresh()};
 function boot(){if(!el('view-week'))return;setTimeout(refresh,350);setTimeout(()=>{ensureHost();refresh()},1600);setTimeout(refresh,4200)}
@@ -19786,9 +19788,9 @@ function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return
 function nameCase(n){try{return typeof properCase==='function'?properCase(n||''):String(n||'')}catch(e){return String(n||'')}}
 function tierText(t){try{return typeof tierLabel==='function'?tierLabel(t||''):(t||'No Tier')}catch(e){return t||'No Tier'}}
 function detailFor(r,kind){
- if(kind==='attention')return (r.health==='Red'?'Red \u00b7 ':'Yellow \u00b7 ')+(r.daysAny==null?'no meaningful touch logged':r.daysAny+'d since meaningful touch');
+ if(kind==='attention'){var why=[];if(r.competitor_risk_flag)why.push('Competitor risk flagged');if(r.daysAny==null)why.push('No meaningful conversation logged');else why.push(r.daysAny+' days since last meaningful conversation');if(r.followUpDate&&r.followUpDate<=new Date().toISOString().slice(0,10))why.push('Follow-up due '+r.followUpDate);if(r.daysSinceLead!=null)why.push('Last referral '+r.daysSinceLead+' days ago');return r.health+' · '+why.join(' · ')}
  if(kind==='touches')return 'Coming due'+(r.daysUntilYellow!=null?' in '+Math.max(0,r.daysUntilYellow)+'d':'');
- if(kind==='meetings')return 'Relationship meeting due';
+ if(kind==='meetings')return 'Relationship meeting due · cadence review for '+String(r.tier||'untiered')+' tier';
  if(kind==='growth')return r.next_growth_opportunity?String(r.next_growth_opportunity):'Growth opportunity documented';
  return '';
 }
@@ -21506,6 +21508,35 @@ window.rm494CallBrief=function(r,kind){
   }
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});
   else boot();
+})();
+</script>
+<style id="rm-v495-home-focus">
+#rm350Workboard #rm490Referral{display:none!important}
+#rmV440PortfolioToday .rm-v495-health-details{padding:5px 12px 10px;border-top:1px solid #eee8f5}
+#rmV440PortfolioToday .rm-v495-health-details summary{cursor:pointer;color:#644a91;font-size:11px;font-weight:750}
+#rmV440PortfolioToday .rm-v495-health-details:not([open]) .rm-v440-pt-row{display:none}
+</style>
+<script id="rm-v495-outstanding-live-refresh">
+(function(){
+'use strict';
+var busy=false;
+async function refresh(){
+ if(busy||document.visibilityState==='hidden')return;busy=true;
+ try{
+  if(typeof window.rmV312RenderTuesday==='function')await window.rmV312RenderTuesday();
+  if(typeof window.rmV267RefreshSmartCalls==='function')await window.rmV267RefreshSmartCalls(true);
+  if(typeof window.rmV440RefreshToday==='function')await window.rmV440RefreshToday();
+ }catch(e){console.warn('RM outstanding refresh failed',e)}
+ finally{busy=false}
+}
+window.rmV495RefreshOutstanding=refresh;
+function init(){
+ setTimeout(refresh,1800);
+ window.addEventListener('focus',refresh);
+ document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible')refresh()});
+ setInterval(function(){if(document.visibilityState==='visible')refresh()},120000);
+}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
 })();
 </script>
 </body>
