@@ -1,6 +1,7 @@
 (function(){
 'use strict';
 const $=id=>document.getElementById(id);
+const COACHING_START='2026-11-09';
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const today=()=>{const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')};
 const style=document.createElement('style');style.textContent=[
@@ -12,6 +13,14 @@ const style=document.createElement('style');style.textContent=[
 '#rmDailyChecklist .rmCheckStats{display:flex;gap:7px;flex-wrap:wrap;margin:10px 0}',
 '#rmDailyChecklist .rmCheckStat{padding:5px 8px;border:1px solid #ebe5f1;border-radius:7px;font-size:11px;color:#533f6d}',
 '#rmDailyChecklist .rmCheckGroups{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}',
+'#rmDailyChecklist .rmCheckGroup{padding:10px 12px}',
+'#rmDailyChecklist .rmCheckItem:nth-of-type(n+4){display:none}',
+'#rmDailyChecklist .rmCheckGroup small{display:block}',
+'#rmDailyChecklist .rmCheckGroupHead{gap:6px}',
+'#rmDailyChecklist .rmCheckGroupHead button{white-space:nowrap}',
+'#rmDailyChecklist .rmCheckDetails>summary{list-style:none;cursor:pointer;color:#5c3d85;font-size:12px;font-weight:700;padding:10px 0}',
+'#rmDailyChecklist .rmCheckDetails>summary::-webkit-details-marker{display:none}',
+'#rmDailyChecklist .rmCheckDetails>summary:after{content:"  ▾"}',
 '#rmDailyChecklist .rmCheckGroup{border:1px solid #e9e3f0;border-radius:9px;padding:10px;background:#fff;min-width:0}',
 '#rmDailyChecklist .rmCheckGroupHead{display:flex;justify-content:space-between;gap:9px;align-items:center}',
 '#rmDailyChecklist .rmCheckGroupHead b{font-size:12px;color:#302047}',
@@ -62,13 +71,15 @@ function decorate(r){
 function mount(){
  const board=$('rm350Workboard');if(!board||$('rmDailyChecklist'))return;
  const e=document.createElement('section');e.id='rmDailyChecklist';e.setAttribute('aria-label','Outstanding Amanda daily checklist');
- e.innerHTML='<div class="rmCheckHeader"><div><h2>Outstanding work · daily checklist</h2><p>Overdue work carries forward until the required activity is saved. Work through these before new nonurgent tasks.</p></div><button type="button" id="rmCheckRefresh">Refresh checklist</button></div><div id="rmCheckCounts" class="rmCheckStats"></div><div id="rmCheckContent" class="rmCheckEmpty">Reading open work…</div><small>Counts are tied to existing RM workflows. Opening an item takes you to its actual record. The checklist does not silently mark tasks complete.</small>';
+ e.innerHTML='<div class="rmCheckHeader"><div><h2>What needs attention</h2><p>Fresh start · November 9 onward. Previous backlog is archived from this daily view, not deleted.</p></div><button type="button" id="rmCheckRefresh">Refresh</button></div><div id="rmCheckCounts" class="rmCheckStats"></div><details id="rmCheckDetails" class="rmCheckDetails"><summary>See agent-by-agent outstanding work</summary><div id="rmCheckContent" class="rmCheckEmpty">Reading open work…</div><small>Completed items clear when saved in their original workflow. Historical activity remains in the system.</small></details>';
  const steps=board.querySelector('.rm-daily-path');if(steps)steps.before(e);else board.prepend(e);
  $('rmCheckRefresh').onclick=()=>refresh(true);
 }
 function classify(rows){
  const buckets=Object.fromEntries(GROUPS.map(g=>[g.id,[]]));
  for(const row of rows||[]){
+  const due=String(row['Due Date']||'').slice(0,10);
+  if(due && due<COACHING_START)continue;
   const id=groupsFor(row);if(!id)continue;
   buckets[id].push(decorate(row));
  }
@@ -83,7 +94,7 @@ function output(rows,partial=false){
  const box=$('rmCheckContent'),counts=$('rmCheckCounts');if(!box||!counts)return;
  const buckets=classify(rows);const total=Object.values(buckets).reduce((n,rs)=>n+rs.length,0);
  const overdue=Object.values(buckets).flat().filter(x=>x.late).length;
- counts.innerHTML=(partial?'<span class="rmCheckStat">Partial data only · full checklist connection unavailable</span>':'')+'<span class="rmCheckStat">'+total+' '+(partial?'verified visible items':'outstanding items')+'</span><span class="rmCheckStat">'+overdue+' overdue · carry forward</span><span class="rmCheckStat">Review again tomorrow if unfinished</span>';
+ counts.innerHTML=(partial?'<span class="rmCheckStat">Partial data · verify full work list</span>':'')+'<span class="rmCheckStat">'+total+' current open items</span><span class="rmCheckStat">'+overdue+' carried forward since Nov 9</span><span class="rmCheckStat">Old backlog excluded</span>';
  box.className='rmCheckGroups';
  box.replaceChildren();
  for(const group of GROUPS){
@@ -108,8 +119,8 @@ async function fallback(){
  // Narrow, honest fallback: never label unverified categories as clear.
  if(typeof sbFetch!=='function')throw Error('Shared RM database connection unavailable');
  const [queue,activities]=await Promise.all([
-  sbFetch('rm_work_queue?select=agent_name,activity_type,work_date,status,source,owner&status=eq.open&owner=eq.Amanda&limit=1500'),
-  sbFetch('amanda_activities?select=agent_name,act_type,act_date,follow_up_date&follow_up_date=not.is.null&follow_up_date=lte.'+today()+'&limit=1500')
+  sbFetch('rm_work_queue?select=agent_name,activity_type,work_date,status,source,owner&status=eq.open&owner=eq.Amanda&work_date=gte.'+COACHING_START+'&limit=1500'),
+  sbFetch('amanda_activities?select=agent_name,act_type,act_date,follow_up_date&follow_up_date=not.is.null&follow_up_date=gte.'+COACHING_START+'&follow_up_date=lte.'+today()+'&limit=1500')
  ]);
  if(!Array.isArray(queue)||!Array.isArray(activities))throw Error('Shared RM work records could not be verified');
  const rows=[];
@@ -137,7 +148,7 @@ async function refresh(force=false){
    }
    data=await window.rmV462LoadMorningRows(today());
    try{
-    const open=await sbFetch('rm_work_queue?select=id,agent_name,activity_type,source,work_date,status,owner&status=eq.open&owner=eq.Amanda&limit=1000');
+    const open=await sbFetch('rm_work_queue?select=id,agent_name,activity_type,source,work_date,status,owner&status=eq.open&owner=eq.Amanda&work_date=gte.'+COACHING_START+'&limit=1000');
     const names=new Set((data.rows||[]).map(x=>String(x['Agent / Item']||'').trim().toLowerCase()+'|'+String(x.Category||'').toLowerCase()));
     for(const q of (Array.isArray(open)?open:[])){
       const n=String(q.agent_name||'').trim();if(!n)continue;
