@@ -52,6 +52,8 @@ jobs:
           s=s.replace('</html>',style+'</html>',1)
           # Reuse the authoritative morning worklist for live checklist counts.
           bridge='window.rmV462LoadMorningRows=loadMorningRows;'
+          # Repair the literal backslash-n inserted by the prior workflow version.
+          s=s.replace(bridge+chr(92)+'nasync function ensureXlsx(){',bridge+chr(10)+'async function ensureXlsx(){')
           marker='async function ensureXlsx(){'
           if bridge not in s:
               if marker not in s:
