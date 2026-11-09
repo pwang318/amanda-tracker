@@ -57,7 +57,8 @@ function dataOf(b){if(!b)return null;try{return JSON.parse(b.notes||'{}')}catch(
 function planned(d){return queue.filter(q=>String(q.status||'').toLowerCase()==='open'&&String(q.work_date||'').slice(0,10)===d&&d>=COACHING_START)}
 function pastDue(d){return queue.filter(q=>String(q.status||'').toLowerCase()==='open'&&q.work_date&&String(q.work_date).slice(0,10)>=COACHING_START&&String(q.work_date).slice(0,10)<d)}
 function mount(){
- const board=$('rm350Workboard')||$('view-week');if(!board||$('rmExecutionPlan'))return;
+ const board=$('view-week')||$('rm350Workboard');if(!board)return;
+ const existing=$('rmExecutionPlan');if(existing){if(existing.parentElement!==board)board.prepend(existing);return;}
  const div=document.createElement('section');div.id='rmExecutionPlan';
  div.innerHTML='<div class="execRow"><div><h2>Today’s plan</h2><p>Fresh start · November 9 onward. Goals, open work and next steps in one place.</p></div><button id="execReload" type="button">Refresh live activity</button></div>'+
  '<div id="execNotice" class="execNotice">Loading shared activity and schedule…</div>'+
@@ -73,7 +74,8 @@ function mount(){
  '<div id="execDates" class="execDates"></div><div class="execForm"><label>First day off<input id="execOOOStart" type="date"></label><label>Last day off<input id="execOOOEnd" type="date"></label><button id="execSaveOOO" type="button">Save days off</button></div>'+
  '<div id="execOOOCoverage" class="execNotice"></div><div id="execOOOStatus" class="execStatus"></div></details>'+
  '<details id="execCoaching"><summary>Director coaching · since November 9</summary><div id="execTrends">Loading trend…</div></details>';
- const checklist=$('rmDailyChecklist');if(checklist)checklist.before(div);else board.prepend(div);
+ // Keep the live execution plan directly under the Today view, not nested in a legacy panel that can be hidden by cleanup styles.
+ board.prepend(div);
  $('execReload').onclick=()=>refresh(true);
  $('execSaveCloseout').onclick=saveCloseout;
  $('execSaveOOO').onclick=saveOOO;
@@ -230,7 +232,7 @@ window.rmAmandaIsOOO=d=>loaded?isOff(String(d||iso()).slice(0,10)):null;
 window.rmAmandaNextWorkday=d=>loaded?nextWorkday(String(d||iso()).slice(0,10)):null;
 function init(){
  mount();refresh(true);
- const board=$('rm350Workboard')||$('view-week');if(board)new MutationObserver(()=>mount()).observe(board,{childList:true});
+ const board=$('view-week')||$('rm350Workboard');if(board)new MutationObserver(()=>mount()).observe(board,{childList:true,subtree:true});
  window.addEventListener('focus',()=>refresh(false));
  document.addEventListener('visibilitychange',()=>{if(!document.hidden)refresh(false)});
 }
