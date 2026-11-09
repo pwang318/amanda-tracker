@@ -23,7 +23,7 @@ jobs:
           p=Path('index.html')
           s=p.read_text(encoding='utf-8')
           import re
-          asset='<script defer src="./ui/compact-workspace.js?v=20261109-clean6"></script>'
+          asset='<script defer src="./ui/compact-workspace.js?v=20261109-clean7"></script>'
           old=r'<script defer src="\./ui/compact-workspace\.js\?v=[^"]+"></script>'
           if re.search(old,s):
               s=re.sub(old,asset,s,count=1)
@@ -43,6 +43,11 @@ jobs:
               s=re.sub(old_summary,summary,s,count=1)
           else:
               s=s.replace('</body>',summary+'</body>',1)
+          # Override the original gradient rule at its actual selector specificity.
+          # Inline near the end of index.html so it wins even when JavaScript is cached.
+          style='<style id="rm-uniform-prospecting-row">#rm350Workboard .rm-daily-steps li.rm-daily-prospect-step{background:#fff!important;background-image:none!important;border:0!important;border-bottom:1px solid #eee8f3!important;border-radius:0!important;box-shadow:none!important;padding:12px 0!important;margin:0!important}#rm350Workboard .rm-daily-steps li.rm-daily-prospect-step .rm-daily-step-num{background:#f1e8fa!important;color:#67468e!important}#rm350Workboard .rm-daily-steps li.rm-daily-prospect-step .rm-daily-step-copy b{color:inherit!important}</style>'
+          s=re.sub(r'<style id="rm-uniform-prospecting-row">[\\s\\S]*?</style>', '', s)
+          s=s.replace('</html>',style+'</html>',1)
           p.write_text(s,encoding='utf-8')
           PY
       - name: Commit dashboard update
