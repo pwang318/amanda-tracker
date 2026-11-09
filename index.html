@@ -15898,7 +15898,7 @@ async function renderOfficial(force){
     const now=new Date(), monthStart=localDateStr(new Date(now.getFullYear(),now.getMonth(),1));
     const [profiles,monthLeads]=await Promise.all([
       sbFetch("agent_profiles?select=*&limit=5000"),
-      sbFetch("velocify_leads?date_added=gte."+monthStart+"&select=referral_partner_name,date_added&limit=10000")
+      sbFetch("velocify_leads?date_added=gte."+monthStart+"&select=lead_key,referral_partner_name,date_added&limit=10000")
     ]);
     let sourceRows=[];
     if(typeof v124LatestPowerBiSnapshot==='function'){
@@ -15916,7 +15916,7 @@ async function renderOfficial(force){
 
     // Tier Migration uses net production tiers only; lead volume does not earn Tier Growth points.
     const total=sourceRows.length||Number(meta&&meta.total||0)||active.length, activeKeys=new Set(active.map(p=>typeof agentMatchKey==='function'?agentMatchKey(p.agent_name):String(p.agent_name||'').trim().toLowerCase()).filter(Boolean));
-    const scoredMonthLeads=(monthLeads||[]).filter(l=>{const k=typeof agentMatchKey==='function'?agentMatchKey(l.referral_partner_name):String(l.referral_partner_name||'').trim().toLowerCase();return !!k&&activeKeys.has(k)});
+    const scoredMonthLeads=Array.from((monthLeads||[]).filter(l=>{const k=typeof agentMatchKey==='function'?agentMatchKey(l.referral_partner_name):String(l.referral_partner_name||'').trim().toLowerCase();return !!k&&activeKeys.has(k)}).reduce((map,l,i)=>{const id=String(l.lead_key||'').trim().toUpperCase()||'NO_KEY:'+String(l.referral_partner_name||'')+':'+String(l.date_added||'')+':'+i;if(!map.has(id))map.set(id,l);return map;},new Map()).values());
     // Verified October 2026 checkpoint stays in effect until Velocify catches up; it expires automatically next month.
     const verifiedLeadCheckpoint=now.getFullYear()===2026&&now.getMonth()===9?85:0;
     const monthlyLeadCount=Math.max(scoredMonthLeads.length,verifiedLeadCheckpoint),monthDay=Math.max(1,now.getDate()),monthDays=new Date(now.getFullYear(),now.getMonth()+1,0).getDate(),projectedLeadCount=Math.round(monthlyLeadCount/monthDay*monthDays), referralRate=total?projectedLeadCount/total:0, ratioTarget=1.15;
@@ -21625,12 +21625,12 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
   if(typeof sbFetch!=='function')return '';
   const d=new Date(),start=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-01';
   const [p,imports,leads]=await Promise.all([
-   sbFetch('agent_profiles?select=powerbi_last_seen_at&powerbi_last_seen_at=not.is.null&order=powerbi_last_seen_at.desc&limit=1'),
+   sbFetch('agent_profiles?select=agent_name,powerbi_last_seen_at,powerbi_level,retained,relationship_status,do_not_contact,closes_past_year&limit=5000'),
    sbFetch('powerbi_import_log?select=imported_at&order=imported_at.desc&limit=1'),
    sbFetch('velocify_leads?date_added=gte.'+start+'&select=lead_key,date_added,status,lp_user&limit=10000')
   ]);
   const leadSig=(leads||[]).map(x=>[x.lead_key,x.date_added,x.status,x.lp_user].join('~')).sort().join('|');
-  return [p&&p[0]&&p[0].powerbi_last_seen_at,imports&&imports[0]&&imports[0].imported_at,leadSig].join('#');
+  const profileSig=(p||[]).map(x=>[x.agent_name,x.powerbi_last_seen_at,x.powerbi_level,x.retained,x.relationship_status,x.do_not_contact,x.closes_past_year].join('~')).sort().join('|');return [profileSig,imports&&imports[0]&&imports[0].imported_at,leadSig].join('#');
  }
  async function refresh(force){
   if(running){queued=true;return;}if(document.visibilityState==='hidden')return;
