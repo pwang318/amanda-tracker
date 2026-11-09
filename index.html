@@ -17511,7 +17511,7 @@ return '<section class="rm-daily-path" aria-label="Today’s work order"><div cl
 +'<li><span class="rm-daily-step-num">2</span><div class="rm-daily-step-copy"><b>Follow-ups due today</b><small>Complete the next touchpoints for Realtors already met and enrolled in the 4-week campaign, plus overdue relationship commitments.</small></div><div class="rm-daily-step-actions">'+lane('conversion','4-week campaign follow-ups',true)+portfolio+'</div></li>'
 +'<li><span class="rm-daily-step-num">3</span><div class="rm-daily-step-copy"><b>Protect C-agent relationships</b><small>Review referral gaps, competitor risks and agents who need attention.</small></div><div class="rm-daily-step-actions">'+growth('protect','C agents needing attention')+growth('grow','All active C agents')+'</div></li>'
 +'<li class="rm-daily-prospect-step"><span class="rm-daily-step-num">4</span><div class="rm-daily-step-copy"><b>Daily prospecting · 60 minutes protected</b><small>New-agent cold calls: one dedicated hour or two 30-minute blocks. Separate from campaign follow-ups.</small></div><div class="rm-daily-step-actions">'+lane('cold','Start prospecting block',true)+'<button type="button" class="rm-daily-step-link" onclick="v350Go(\'log\')">Log prospecting activity <span aria-hidden="true">→</span></button></div></li>'
-+'<li><span class="rm-daily-step-num">5</span><div class="rm-daily-step-copy"><b>Grow actual business</b><small>Advance C agents to B through verified closings, referral opportunities and clear next commitments.</small></div><div class="rm-daily-step-actions">'+growth('near','C agents close to B')+growth('convert','Referral opportunities')+'</div></li></ol></section>';
++'<li><span class="rm-daily-step-num">5</span><div class="rm-daily-step-copy"><b>Grow actual business</b><small>Advance C agents to B through verified closings, referral opportunities and clear next commitments.</small></div><div class="rm-daily-step-actions">'+growth('near','C agents close to B')+growth('convert','Referral opportunities')+'</div></li></ol><div class="rm-daily-wrapup" id="rmDailyWrapup"><div><b>End-of-day wrap-up</b><small>Export remaining work and record completed activity after your calls.</small></div><div class="rm-daily-wrapup-actions" id="rmDailyWrapupActions"></div></div></section>';
 }
 if(typeof window!=='undefined')window.rmOpenCWork=function(filter){
  const c=window.rmGrowthCommand;
@@ -20599,7 +20599,7 @@ window.rmV462EndOfDayRecap=async function(){
   }catch(e){console.error('End-of-day recap',e);if(typeof toast==='function')toast('Could not build the recap: '+String(e&&e.message||e),'error',5000)}
   finally{if(btn){btn.disabled=false;btn.textContent=old||'End-of-Day Recap'}}
 };
-function mount(){const host=document.querySelector('#rm350Workboard .rm350-hero-side');if(!host||document.getElementById('rmV462MorningExport'))return false;const b=document.createElement('button');b.type='button';b.id='rmV462MorningExport';b.textContent='Export Today’s Outstanding Work';b.onclick=window.rmV462ExportMorningWork;host.appendChild(b);const recap=document.createElement('button');recap.type='button';recap.id='rmV462Recap';recap.textContent='End-of-Day Recap';recap.onclick=window.rmV462EndOfDayRecap;host.appendChild(recap);return true}
+function mount(){const host=document.querySelector('#rm350Workboard #rmDailyWrapupActions');if(!host||document.getElementById('rmV462MorningExport'))return false;const b=document.createElement('button');b.type='button';b.id='rmV462MorningExport';b.textContent='Export Today’s Outstanding Work';b.onclick=window.rmV462ExportMorningWork;host.appendChild(b);const recap=document.createElement('button');recap.type='button';recap.id='rmV462Recap';recap.textContent='End-of-Day Recap';recap.onclick=window.rmV462EndOfDayRecap;host.appendChild(recap);return true}
 function boot(){if(mount())return;let tries=0;const timer=setInterval(()=>{tries++;if(mount()||tries>20)clearInterval(timer)},250)}
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
 console.log('Relationship Manager Tracker '+BUILD+' · morning outstanding-work export loaded');
@@ -21623,6 +21623,16 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 <script src="./rm-growth-command.js?v=20261109"></script>
 <script src="./rm-growth-deep-dive.js?v=20261109b"></script>
 <script src="./rm-daily-relationship-audit.js?v=20261109c"></script>
+<style id="rm507-end-of-day-wrapup">
+#rm350Workboard .rm-daily-wrapup{display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap;padding:15px 4px 2px;border-top:1px solid #e8dff1;margin-top:10px}
+#rm350Workboard .rm-daily-wrapup>b{font-weight:800}
+#rm350Workboard .rm-daily-wrapup>div:first-child{display:flex;flex-direction:column;gap:5px}
+#rm350Workboard .rm-daily-wrapup small{font-size:12px;color:#675877}
+#rm350Workboard .rm-daily-wrapup-actions{display:flex;gap:9px;flex-wrap:wrap}
+#rm350Workboard .rm-daily-wrapup-actions button{background:#faf7fe;color:#543684;border:1px solid #d4c1e9;border-radius:10px;min-height:42px;padding:10px 15px;font-weight:750;cursor:pointer}
+#rm350Workboard .rm-daily-wrapup-actions button:hover{background:#efe5f8;border-color:#7d55aa}
+#rm350Workboard .rm-daily-wrapup-actions button:focus-visible{outline:3px solid #9a71ca;outline-offset:2px}
+</style>
 <style id="rm506-daily-button-polish">
 #rm350Workboard .rm-daily-path{background:linear-gradient(145deg,#fff 58%,#faf7ff);border:1px solid #e4d9ef;box-shadow:0 12px 35px rgba(55,30,91,.045)}
 #rm350Workboard .rm-daily-step-actions{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
