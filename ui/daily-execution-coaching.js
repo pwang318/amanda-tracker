@@ -45,7 +45,7 @@ styles.textContent=[
 '#rmExecutionPlan summary{cursor:pointer;color:#56387f;font-weight:750;font-size:13px;padding:8px 0}',
 '@media(max-width:750px){#rmExecutionPlan .execMetrics{grid-template-columns:repeat(2,minmax(0,1fr))}#rmExecutionPlan .execTasks{grid-template-columns:1fr}}'
 ].join('\n');document.head.append(styles);
-let blocks=[],activities=[],queue=[],fullWork=[],fullVerified=false,loaded=false,working=false,selected=iso();
+let blocks=[],activities=[],queue=[],completedQueue=[],fullWork=[],fullVerified=false,loaded=false,working=false,selected=iso();
 const off=b=>/^(out of office|pto|vacation|time off)$/i.test(String(b.block_type||'').trim());
 const close=b=>String(b.block_type||'')==='Daily Closeout'&&String(b.title||'').startsWith('Execution closeout');
 const outDates=()=>new Set(blocks.filter(off).map(b=>String(b.work_date).slice(0,10)));
@@ -97,10 +97,11 @@ async function refresh(force=false){
   const result=await Promise.all([
    sbFetch('rm_day_blocks?select=*&owner=eq.Amanda&work_date=gte.'+from+'&work_date=lte.'+to+'&limit=1200'),
    sbFetch('amanda_activities?select=id,act_type,act_date,agent_name,outcome,created_at&act_date=gte.'+from+'&act_date=lte.'+to+'&limit=10000'),
-   sbFetch('rm_work_queue?select=id,work_date,agent_name,activity_type,reason,status,owner&owner=eq.Amanda&status=eq.open&work_date=gte.'+COACHING_START+'&limit=2500')
+   sbFetch('rm_work_queue?select=id,work_date,agent_name,activity_type,reason,status,owner&owner=eq.Amanda&status=eq.open&work_date=gte.'+COACHING_START+'&limit=2500'),
+   sbFetch('rm_work_queue?select=id,work_date,agent_name,activity_type,reason,status,owner&owner=eq.Amanda&status=neq.open&work_date=gte.'+COACHING_START+'&limit=2500')
   ]);
   if(result.some(r=>!Array.isArray(r)))throw Error('One of the live data lists is unavailable');
-  [blocks,activities,queue]=result;fullVerified=false;fullWork=[];
+  [blocks,activities,queue,completedQueue]=result;fullVerified=false;fullWork=[];
   if(typeof window.rmV462LoadMorningRows==='function'){
    try{const overview=await window.rmV462LoadMorningRows(iso());if(Array.isArray(overview?.rows)){fullWork=overview.rows;fullVerified=true}}catch(err){console.warn('Full RM work list not verified',err)}
   }
@@ -143,6 +144,7 @@ function render(){
  const tmrw=next?all.filter(q=>q.work_date===next):[];
  const weekEnd=addDays(d,7);
  const thisWeek=all.filter(q=>q.work_date&&q.work_date>d&&q.work_date<=weekEnd&&(!next||q.work_date!==next));
+ const done=completedQueue.filter(q=>/^(worked|complete|completed|done|closed|resolved)$/i.test(String(q.status||''))).map(q=>({...q,Category:q.activity_type,work_date:String(q.work_date||'').slice(0,10)}));
  const nextOff=[...outDates()].filter(x=>x>=d).sort();
  const notice=$('execNotice');notice.className='execNotice'+(offNow?'':' execWarn');
  notice.textContent=offNow?'Out of office today — no cold-call target or missed-day flag. Outstanding agent commitments still require coverage.':cold<25?'Prospecting below minimum: '+cold+' of 25 logged. The full 60-minute block is also required; actual time is not verified by call count.':'25+ calls logged. Keep the protected 60-minute prospecting block; elapsed time is not inferred.';
@@ -154,13 +156,15 @@ function render(){
   ['Due today',need.length,'today'],
   ['Next workday',tmrw.length,'next'],
   ['Next 7 days (later)',thisWeek.length,'week'],
+  ['Completed assigned tasks',done.length,'done'],
   ['Activities logged today',activeFor(d).length,'log']
  ].map(x=>'<div class="execMetric" role="button" tabindex="0" data-exec-target="'+safe(x[2])+'" aria-label="Open '+safe(x[0])+'"><strong>'+safe(x[1])+'</strong><span>'+safe(x[0])+' ↗</span></div>').join('');
  const sections=[
   ['Carry forward · overdue',late,'No overdue commitments from the Nov 9 baseline'],
   ['Due today',need,'No due-today work confirmed in the connected lists'],
   ['Next workday · '+(next?fmt(next):'unknown'),tmrw,'No dated work queued for the next workday'],
-  ['Due in the next 7 days',thisWeek,'No other dated work found in the coming week']
+  ['Due in the next 7 days',thisWeek,'No other dated work found in the coming week'],
+  ['Completed assigned tasks since Nov 9',done,'No completed assigned tasks verified in the shared queue']
  ];
  const categories=[
  ['4-week campaigns',/4.week|campaign|conversion/i],
@@ -187,7 +191,7 @@ function render(){
     if(kind==='log'){if(typeof switchTab==='function')switchTab('log');return}
     if(kind==='closeout'){$('execCloseout').open=true;$('execCloseout').scrollIntoView({behavior:'smooth',block:'center'});return}
     $('execTaskDetails').open=true;
-    const section={overdue:0,today:1,next:2,week:3}[kind];
+    const section={overdue:0,today:1,next:2,week:3,done:4}[kind];
     const cards=$('execTaskSummary').querySelectorAll('section');
     if(cards[section])cards[section].scrollIntoView({behavior:'smooth',block:'center'});
    };
