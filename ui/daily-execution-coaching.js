@@ -80,12 +80,12 @@ function mount(){
  '<div id="execMetrics" class="execMetrics"></div>'+
  '<div class="execHomeWork" id="execHomeWork"><h3>Open work by category</h3><p>Choose a worklist to see the assigned agents and next actions.</p><div id="execCategoryGrid" class="execCategoryGrid"></div></div>'+
  '<div class="execDetailArea" id="execDetailArea" hidden><button type="button" id="execBack" class="execBack">← Back to Today</button><div class="execRow"><h3 id="execDetailTitle"></h3><button type="button" id="execDetailRefresh">Refresh worklist</button></div><div id="execTaskSummary" class="execTasks"></div></div>'+
- '<details id="execCloseout"><summary>End-of-day closeout · why goals were missed</summary>'+
+ '<details id="execCloseout"><summary>Daily results & closeout · what was missed</summary><div id="execMissedSummary" class="execNotice" aria-live="polite"></div>'+
  '<div class="execForm"><label>Review date<input type="date" id="execReviewDate"></label>'+
  '<label>Main reason<select id="execReason"><option value="">Select a reason</option><option value="meetings">Realtor or business meetings</option><option value="transactions">Urgent transactions or client needs</option><option value="relationships">Existing partner calls</option><option value="interruptions">Schedule changes or interruptions</option><option value="time">Other priorities / time management</option><option value="other">Other / coaching needed</option></select></label></div>'+
  '<div class="execForm"><label>Prospecting minutes completed (self-reported)<input id="execMinutes" type="number" min="0" max="480" step="1" placeholder="0–480"></label></div><label style="font-size:12px;color:#56476b">What happened and what is the next workday plan?</label><textarea id="execNote" maxlength="2000" placeholder="Example: Two appointments ran long. Tomorrow I will block two 30-minute prospecting sessions."></textarea>'+
  '<div style="margin-top:9px"><button id="execSaveCloseout" type="button">Save coaching closeout</button> <span id="execSaveStatus" class="execStatus"></span></div>'+
- '<small>Reasons explain results; they do not mark outstanding follow-ups complete. No closeout needed on approved days off.</small></details>'+
+ '<small>Use the results above to explain any gap and record the next workday plan. Saving this explanation does not complete outstanding follow-ups. No closeout is needed on approved days off.</small></details>'+
  '<details id="execOOO"><summary>Out-of-office calendar & coverage plan</summary><p>Days off are excluded from prospecting-goal calculations, not treated as missed goals. Any due relationship work still requires coverage or rescheduling.</p>'+
  '<div id="execDates" class="execDates"></div><div class="execForm"><label>First day off<input id="execOOOStart" type="date"></label><label>Last day off<input id="execOOOEnd" type="date"></label><button id="execSaveOOO" type="button">Save days off</button></div>'+
  '<div id="execOOOCoverage" class="execNotice"></div><div id="execOOOStatus" class="execStatus"></div></details>'+
@@ -310,8 +310,36 @@ function render(){
  }else cover.textContent='Add time off so those days are excluded from daily prospecting coaching. Date-specific work must still be reviewed.';
  populateCloseout();renderTrends();
 }
+function renderMissedSummary(d){
+ const el=$('execMissedSummary');if(!el)return;
+ if(!loaded){el.textContent='Daily results are not yet verified. Refresh live activity before reviewing missed goals.';return}
+ if(isOff(d)){el.innerHTML='<strong>Approved day off.</strong> No daily cold-call or prospecting-minute goal applies. Open relationship commitments still require coverage.';return}
+ const calls=coldFor(d),shortfall=Math.max(0,25-calls),record=dataOf(closeRecord(d));
+ const mins=record?.prospecting_minutes;
+ const minsKnown=Number.isFinite(Number(mins))&&mins!==null&&mins!==undefined&&mins!=='';
+ const minShort=minsKnown?Math.max(0,60-Number(mins)):null;
+ // Match today's snapshot task sources, but only count items that remain open.
+ const canonical=fullVerified?fullWork.filter(r=>{const date=String(r['Due Date']||'').slice(0,10);return date>=COACHING_START}).map(r=>({
+  agent_name:r['Agent / Item'],activity_type:r.Category,work_date:String(r['Due Date']||'').slice(0,10)
+ })):[];
+ const unique=canonical.concat(queue.filter(q=>!canonical.some(r=>String(r.agent_name||'').trim().toLowerCase()===String(q.agent_name||'').trim().toLowerCase()&&String(r.activity_type||'').trim().toLowerCase()===String(q.activity_type||'').trim().toLowerCase()&&r.work_date===String(q.work_date||'').slice(0,10))));
+ const due=unique.filter(q=>String(q.work_date||'').slice(0,10)===d);
+ const past=unique.filter(q=>{const date=String(q.work_date||'').slice(0,10);return date>=COACHING_START&&date<d});
+ const goals=[
+  '<li><strong>Cold calls:</strong> '+calls+' of 25 minimum logged'+(shortfall?' — '+shortfall+' below minimum':' — minimum met')+'</li>',
+  '<li><strong>Prospecting time:</strong> '+(minsKnown?Number(mins)+' of 60 minutes reported'+(minShort?' — '+minShort+' minutes short':' — minimum met'):'Not reported — cannot confirm whether the 60-minute goal was met')+'</li>',
+  '<li><strong>Meetings:</strong> '+meetingFor(d)+' logged (no numeric meeting minimum set here)</li>'
+ ];
+ const taskLine=q=>safe(q.agent_name||q['Agent / Item']||'Unspecified agent')+' · '+safe(q.activity_type||q.Category||'Follow-up');
+ el.innerHTML='<strong>Results for '+safe(fmt(d))+'</strong><ul>'+goals.join('')+'</ul>'+
+  '<strong>Open work still needing attention</strong><p>'+due.length+' due on this date; '+past.length+' earlier open item(s) carried forward.</p>'+
+  (due.length?'<ul>'+due.slice(0,15).map(q=>'<li>'+taskLine(q)+'</li>').join('')+(due.length>15?'<li>Plus '+(due.length-15)+' more — use the Due Today worklist.</li>':'')+'</ul>':'')+
+  (!fullVerified?'<p><strong>Partial worklist:</strong> some relationship sources could not be verified. Do not interpret an empty list as no outstanding work.</p>':'')+
+  '<small>These are currently open assignments, not proof they were missed or incomplete at the end of the selected date. Minutes are self-reported; calls and meetings come from saved activity.</small>';
+}
 function populateCloseout(){
  if(!$('execReviewDate'))return;const d=selected;const record=dataOf(closeRecord(d));
+ renderMissedSummary(d);
  $('execSaveCloseout').disabled=isOff(d);
  $('execReason').value=record?.reason||'';
  $('execNote').value=record?.note||'';
