@@ -71,7 +71,7 @@ function decorate(r){
 function mount(){
  const board=$('rm350Workboard');if(!board||$('rmDailyChecklist'))return;
  const e=document.createElement('section');e.id='rmDailyChecklist';e.setAttribute('aria-label','Outstanding Amanda daily checklist');
- e.innerHTML='<div class="rmCheckHeader"><div><h2>What needs attention</h2><p>Fresh start · November 9 onward. Previous backlog is archived from this daily view, not deleted.</p></div><button type="button" id="rmCheckRefresh">Refresh</button></div><div id="rmCheckCounts" class="rmCheckStats"></div><details id="rmCheckDetails" class="rmCheckDetails"><summary>See agent-by-agent outstanding work</summary><div id="rmCheckContent" class="rmCheckEmpty">Reading open work…</div><small>Completed items clear when saved in their original workflow. Historical activity remains in the system.</small></details>';
+ e.innerHTML='<div class="rmCheckHeader"><div><h2>What needs attention</h2><p>Review assigned work and follow through on outstanding commitments.</p></div><button type="button" id="rmCheckRefresh">Refresh</button></div><div id="rmCheckCounts" class="rmCheckStats"></div><details id="rmCheckDetails" class="rmCheckDetails"><summary>See agent-by-agent outstanding work</summary><div id="rmCheckContent" class="rmCheckEmpty">Reading open work…</div><small>Completed items clear when saved in their original workflow. Historical activity remains in the system.</small></details>';
  const steps=board.querySelector('.rm-daily-path');if(steps)steps.before(e);else board.prepend(e);
  $('rmCheckRefresh').onclick=()=>refresh(true);
 }
@@ -94,7 +94,7 @@ function output(rows,partial=false){
  const box=$('rmCheckContent'),counts=$('rmCheckCounts');if(!box||!counts)return;
  const buckets=classify(rows);const total=Object.values(buckets).reduce((n,rs)=>n+rs.length,0);
  const overdue=Object.values(buckets).flat().filter(x=>x.late).length;
- counts.innerHTML=(partial?'<span class="rmCheckStat">Partial data · verify full work list</span>':'')+'<span class="rmCheckStat">'+total+' current open items</span><span class="rmCheckStat">'+overdue+' carried forward since Nov 9</span><span class="rmCheckStat">Old backlog excluded</span>';
+ counts.innerHTML=(partial?'<span class="rmCheckStat">Partial data · verify full work list</span>':'')+'<span class="rmCheckStat">'+total+' current open items</span><span class="rmCheckStat">'+overdue+' overdue items</span><span class="rmCheckStat">Open work by category</span>';
  box.className='rmCheckGroups';
  box.replaceChildren();
  for(const group of GROUPS){
