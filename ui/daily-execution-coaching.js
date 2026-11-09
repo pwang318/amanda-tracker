@@ -1,6 +1,7 @@
 (function(){
 'use strict';
 const $=id=>document.getElementById(id);
+const COACHING_START='2026-11-09';
 const iso=(d=new Date())=>d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
 const addDays=(s,n)=>{let d=new Date(s+'T12:00:00');d.setDate(d.getDate()+n);return iso(d)};
 const fmt=s=>new Date(s+'T12:00:00').toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});
@@ -16,6 +17,10 @@ styles.textContent=[
 '#rmExecutionPlan button:disabled{opacity:.5}',
 '#rmExecutionPlan .execRow{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px}',
 '#rmExecutionPlan .execMetrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:12px 0}',
+'#rmExecutionPlan .execMetric[role="button"]{cursor:pointer;transition:border-color .15s,background .15s}',
+'#rmExecutionPlan .execMetric[role="button"]:hover,#rmExecutionPlan .execMetric[role="button"]:focus-visible{border-color:#9871c5;background:#f2eafa;outline:2px solid #7351a5;outline-offset:2px}',
+'#rmExecutionPlan .execTaskDetails>summary{cursor:pointer;color:#593b83;font-size:12px;font-weight:700;padding:9px 0}',
+'#rmExecutionPlan .execTaskDetails{border-top:1px solid #eee7f5;margin:9px 0}',
 '#rmExecutionPlan .execMetric{background:#faf8fc;border:1px solid #ede8f1;border-radius:9px;padding:11px}',
 '#rmExecutionPlan .execMetric strong{display:block;font-size:23px;color:#523784}',
 '#rmExecutionPlan .execMetric span{font-size:11px;color:#645674}',
@@ -48,15 +53,15 @@ const coldFor=d=>activeFor(d).filter(x=>String(x.act_type||'').trim()==='Cold Ca
 const meetingFor=d=>activeFor(d).filter(x=>/^(New Realtor Meeting|Business Planning|Break Breads?|Team Meeting|Strategic Partner Meeting|Partner Meeting|Retention Meeting)$/i.test(x.act_type||'')).length;
 const closeRecord=d=>blocks.filter(b=>close(b)&&b.work_date===d).sort((a,b)=>String(b.updated_at).localeCompare(String(a.updated_at)))[0];
 function dataOf(b){if(!b)return null;try{return JSON.parse(b.notes||'{}')}catch(e){return null}}
-function planned(d){return queue.filter(q=>String(q.status||'').toLowerCase()==='open'&&String(q.work_date||'').slice(0,10)===d)}
-function pastDue(d){return queue.filter(q=>String(q.status||'').toLowerCase()==='open'&&q.work_date&&String(q.work_date).slice(0,10)<d)}
+function planned(d){return queue.filter(q=>String(q.status||'').toLowerCase()==='open'&&String(q.work_date||'').slice(0,10)===d&&d>=COACHING_START)}
+function pastDue(d){return queue.filter(q=>String(q.status||'').toLowerCase()==='open'&&q.work_date&&String(q.work_date).slice(0,10)>=COACHING_START&&String(q.work_date).slice(0,10)<d)}
 function mount(){
  const board=$('rm350Workboard');if(!board||$('rmExecutionPlan'))return;
  const div=document.createElement('section');div.id='rmExecutionPlan';
- div.innerHTML='<div class="execRow"><div><h2>Daily goals, tomorrow & coaching</h2><p>Priorities from saved activities and assigned work. No manual checkboxes that make unfinished work disappear.</p></div><button id="execReload" type="button">Refresh live activity</button></div>'+
+ div.innerHTML='<div class="execRow"><div><h2>Today’s plan</h2><p>Fresh start · November 9 onward. Goals, open work and next steps in one place.</p></div><button id="execReload" type="button">Refresh live activity</button></div>'+
  '<div id="execNotice" class="execNotice">Loading shared activity and schedule…</div>'+
  '<div id="execMetrics" class="execMetrics"></div>'+
- '<div id="execTaskSummary" class="execTasks"></div>'+
+ '<details class="execTaskDetails" id="execTaskDetails"><summary>View all assigned tasks</summary><div id="execTaskSummary" class="execTasks"></div></details>'+
  '<details id="execCloseout"><summary>End-of-day closeout · why goals were missed</summary>'+
  '<div class="execForm"><label>Review date<input type="date" id="execReviewDate"></label>'+
  '<label>Main reason<select id="execReason"><option value="">Select a reason</option><option value="meetings">Realtor or business meetings</option><option value="transactions">Urgent transactions or client needs</option><option value="relationships">Existing partner calls</option><option value="interruptions">Schedule changes or interruptions</option><option value="time">Other priorities / time management</option><option value="other">Other / coaching needed</option></select></label></div>'+
@@ -66,8 +71,8 @@ function mount(){
  '<details id="execOOO"><summary>Out-of-office calendar & coverage plan</summary><p>Days off are excluded from prospecting-goal calculations, not treated as missed goals. Any due relationship work still requires coverage or rescheduling.</p>'+
  '<div id="execDates" class="execDates"></div><div class="execForm"><label>First day off<input id="execOOOStart" type="date"></label><label>Last day off<input id="execOOOEnd" type="date"></label><button id="execSaveOOO" type="button">Save days off</button></div>'+
  '<div id="execOOOCoverage" class="execNotice"></div><div id="execOOOStatus" class="execStatus"></div></details>'+
- '<details id="execCoaching"><summary>Director coaching · last 10 workdays</summary><div id="execTrends">Loading trend…</div></details>';
- const checklist=$('rmDailyChecklist');if(checklist)checklist.after(div);else board.prepend(div);
+ '<details id="execCoaching"><summary>Director coaching · since November 9</summary><div id="execTrends">Loading trend…</div></details>';
+ const checklist=$('rmDailyChecklist');if(checklist)checklist.before(div);else board.prepend(div);
  $('execReload').onclick=()=>refresh(true);
  $('execSaveCloseout').onclick=saveCloseout;
  $('execSaveOOO').onclick=saveOOO;
@@ -80,11 +85,11 @@ async function refresh(force=false){
  mount();if(working)return;working=true;
  try{
   if(typeof sbFetch!=='function')throw Error('Shared database connection unavailable');
-  const from=addDays(iso(),-35),to=addDays(iso(),21);
+  const from=COACHING_START,to=addDays(iso(),21);
   const result=await Promise.all([
    sbFetch('rm_day_blocks?select=*&owner=eq.Amanda&work_date=gte.'+from+'&work_date=lte.'+to+'&limit=1200'),
    sbFetch('amanda_activities?select=id,act_type,act_date,agent_name,outcome,created_at&act_date=gte.'+from+'&act_date=lte.'+to+'&limit=10000'),
-   sbFetch('rm_work_queue?select=id,work_date,agent_name,activity_type,reason,status,owner&owner=eq.Amanda&status=eq.open&limit=2500')
+   sbFetch('rm_work_queue?select=id,work_date,agent_name,activity_type,reason,status,owner&owner=eq.Amanda&status=eq.open&work_date=gte.'+COACHING_START+'&limit=2500')
   ]);
   if(result.some(r=>!Array.isArray(r)))throw Error('One of the live data lists is unavailable');
   [blocks,activities,queue]=result;loaded=true;render();
@@ -102,18 +107,31 @@ function render(){
  const notice=$('execNotice');notice.className='execNotice'+(offNow?'':' execWarn');
  notice.textContent=offNow?'Out of office today — no cold-call target or missed-day flag. Outstanding agent commitments still require coverage.':cold<25?'Prospecting below minimum: '+cold+' of 25 logged. The full 60-minute block is also required; actual time is not verified by call count.':'25+ calls logged. Keep the protected 60-minute prospecting block; elapsed time is not inferred.';
  $('execMetrics').innerHTML=[
-  ['Cold calls today',offNow?'PTO':cold+' / 25'],
-  ['Prospecting shortfall',offNow?'Excluded':Math.max(0,25-cold)+' calls'],
-  ['Realtor/partner meetings logged',meetingFor(d)],
-  ['Overdue assigned queue',late.length],
-  ['Due today in assigned queue',need.length],
-  ['Next workday',next?fmt(next):'Unverified']
- ].map(x=>'<div class="execMetric"><strong>'+safe(x[1])+'</strong><span>'+safe(x[0])+'</span></div>').join('');
+  ['Cold calls today',offNow?'PTO':cold+' / 25','log'],
+  ['Prospecting time','60 min goal','closeout'],
+  ['Meetings logged',meetingFor(d),'log'],
+  ['Overdue since Nov 9',late.length,'overdue'],
+  ['Due today',need.length,'today'],
+  ['Next workday',next?fmt(next):'Unverified','next']
+ ].map(x=>'<div class="execMetric" role="button" tabindex="0" data-exec-target="'+safe(x[2])+'" aria-label="Open '+safe(x[0])+'"><strong>'+safe(x[1])+'</strong><span>'+safe(x[0])+' ↗</span></div>').join('');
  $('execTaskSummary').innerHTML=taskList('Carry forward · overdue',late,'No dated overdue queue entries. Other workflow lists may contain additional follow-ups.')+
  taskList('Assigned queue · today',need,'No dated open queue entries today.')+
  taskList('Next workday · '+(next?fmt(next):'unknown'),tmrw,'No dated open queue entries for this workday.')+
  '<section><strong>What still needs verification</strong><p>4-week campaign touches, meeting obligations, growth plans, and transaction milestones come from their existing work lists. Open the outstanding checklist for the full picture.</p><button type="button" id="execOpenFull">Refresh full checklist</button></section>';
  $('execOpenFull').onclick=()=>{if(typeof window.rmRefreshOutstandingChecklist==='function')window.rmRefreshOutstandingChecklist()};
+ $('execMetrics').querySelectorAll('[data-exec-target]').forEach(tile=>{
+   const action=()=>{
+    const kind=tile.dataset.execTarget;
+    if(kind==='log'){if(typeof switchTab==='function')switchTab('log');return}
+    if(kind==='closeout'){$('execCloseout').open=true;$('execCloseout').scrollIntoView({behavior:'smooth',block:'center'});return}
+    $('execTaskDetails').open=true;
+    const section={overdue:0,today:1,next:2}[kind];
+    const cards=$('execTaskSummary').querySelectorAll('section');
+    if(cards[section])cards[section].scrollIntoView({behavior:'smooth',block:'center'});
+   };
+   tile.addEventListener('click',action);
+   tile.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();action()}});
+ });
  const dayEls=$('execDates');dayEls.replaceChildren();
  for(const b of blocks.filter(off).sort((a,b)=>a.work_date.localeCompare(b.work_date))){
   const span=document.createElement('span');span.className='execDate';span.append(document.createTextNode(fmt(b.work_date)+' · off'));
@@ -174,11 +192,11 @@ async function removeOOO(b){
 }
 function renderTrends(){
  const host=$('execTrends');if(!host)return;
- const dates=[];for(let d=iso(),n=0;n<10;d=addDays(d,-1)){if(workday(d)){dates.push(d);n++}}
+ const dates=[];for(let d=iso(),n=0;n<10&&d>=COACHING_START;d=addDays(d,-1)){if(workday(d)){dates.push(d);n++}}
  const rows=dates.map(d=>({date:d,cold:coldFor(d),meet:meetingFor(d),reason:dataOf(closeRecord(d))?.reason||'',note:dataOf(closeRecord(d))?.note||'',minutes:dataOf(closeRecord(d))?.prospecting_minutes??null}));
  const met=rows.filter(x=>x.cold>=25).length,short=rows.filter(x=>x.cold<25),withExplanation=short.filter(x=>x.reason).length;
  const counts={};for(const r of rows)if(r.reason)counts[r.reason]=(counts[r.reason]||0)+1;
- host.innerHTML='<p>Prospecting minimum met '+met+' of '+rows.length+' scheduled workdays. '+short.length+' below minimum; '+withExplanation+' of those have a saved explanation. This view uses logged cold-call entries only, not assumed time worked.</p>'+
+ host.innerHTML='<p>Coaching baseline: November 9, 2026. Prospecting minimum met '+met+' of '+rows.length+' scheduled workdays. '+short.length+' below minimum; '+withExplanation+' of those have a saved explanation. This view uses logged cold-call entries only, not assumed time worked.</p>'+
  '<div style="overflow:auto"><table style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr><th align="left">Day</th><th align="left">Cold calls</th><th align="left">Meetings</th><th align="left">Prospecting minutes</th><th align="left">Closeout reason</th></tr></thead><tbody>'+
  rows.map(r=>'<tr><td style="padding:6px;border-bottom:1px solid #eee">'+safe(fmt(r.date))+'</td><td>'+r.cold+' / 25</td><td>'+r.meet+'</td><td>'+safe(reasons[r.reason]||(r.cold>=25?'Goal met':'Not documented'))+'</td></tr>').join('')+'</tbody></table></div>'+
  '<p><strong>Frequent explanations:</strong> '+(Object.keys(counts).length?Object.entries(counts).sort((a,b)=>b[1]-a[1]).map(x=>safe(reasons[x[0]]||x[0])+' ('+x[1]+')').join(' · '):'None saved yet')+'.</p><small>Interpret low-call days alongside partner service, calendar commitments, and lead results. A missed goal is a coaching prompt, not proof of inactivity.</small>';
