@@ -5,6 +5,8 @@ on:
       - 'ui/compact-workspace.js'
       - 'ui/relationship-funnel.js'
       - 'ui/scorecard-source-summary.js'
+      - 'ui/fast-activity-workflow.js'
+      - 'ui/outstanding-daily-checklist.js'
       - '.github/workflows/install-compact-dashboard.yml'
   workflow_dispatch:
 permissions:
@@ -48,6 +50,20 @@ jobs:
           style='<style id="rm-uniform-prospecting-row">#rm350Workboard .rm-daily-steps li.rm-daily-prospect-step{background:#fff!important;background-image:none!important;border:0!important;border-bottom:1px solid #eee8f3!important;border-radius:0!important;box-shadow:none!important;padding:12px 0!important;margin:0!important}#rm350Workboard .rm-daily-steps li.rm-daily-prospect-step .rm-daily-step-num{background:#f1e8fa!important;color:#67468e!important}#rm350Workboard .rm-daily-steps li.rm-daily-prospect-step .rm-daily-step-copy b{color:inherit!important}</style>'
           s=re.sub(r'<style id="rm-uniform-prospecting-row">[\\s\\S]*?</style>', '', s)
           s=s.replace('</html>',style+'</html>',1)
+          # Reuse the authoritative morning worklist for live checklist counts.
+          bridge='window.rmV462LoadMorningRows=loadMorningRows;'
+          marker='async function ensureXlsx(){'
+          if bridge not in s:
+              if marker not in s:
+                  raise SystemExit('Morning worklist implementation not found; refusing incomplete checklist deployment')
+              s=s.replace(marker,bridge+'\\n'+marker,1)
+          for filename,version in [('fast-activity-workflow.js','20261109-fast1'),('outstanding-daily-checklist.js','20261109-check1')]:
+              asset='<script defer src="./ui/'+filename+'?v='+version+'"></script>'
+              old=r'<script defer src="\\./ui/'+re.escape(filename)+r'\\?v=[^"]+"></script>'
+              if re.search(old,s):
+                  s=re.sub(old,lambda _:asset,s,count=1)
+              else:
+                  s=s.replace('</body>',asset+'</body>',1)
           p.write_text(s,encoding='utf-8')
           PY
       - name: Commit dashboard update
