@@ -37,7 +37,7 @@ const key=s=>String(s||'').trim().toLowerCase().replace(/\s+/g,' ');
 const date=s=>String(s||'').slice(0,10);
 const safeNumber=n=>n===null||n===undefined||n===''?null:Math.max(0,Number(n)||0);
 const state={profiles:[],rows:[],ownerMap:{},migrations:[],view:'grow',search:'',tier:'all',loading:false,loaded:false,lastSeen:null,importLog:null};
-const getTier=p=>{const t=String(p.powerbi_level||p.tier||'').trim();return ['C','B','A','Channel'].includes(t)?t:null};
+const getTier=p=>{const t=String(p.powerbi_level||p.tier||'').trim().toUpperCase();return ['C','B','A','CHANNEL'].includes(t)?(t==='CHANNEL'?'Channel':t):null};
 const getOwner=(p,tier)=>tier==='C'?'Amanda':'Director';
 function daysSince(value){const v=date(value);if(!/^\d{4}-\d{2}-\d{2}$/.test(v))return null;const t=Date.parse(v+'T12:00:00');return Number.isFinite(t)?Math.max(0,Math.floor((Date.now()-t)/86400000)):null}
 function action(p){if(p.competitor_risk_flag)return 'Service recovery: find out what changed and agree on a recovery action';
@@ -74,7 +74,7 @@ sbFetch('tier_migrations?select=agent_name,from_tier,to_tier,migration_date&orde
 if(!Array.isArray(profiles)||!Array.isArray(owners)||!Array.isArray(migrations))throw Error('The shared source returned incomplete data.');
 state.importLog=null;try{const imports=await sbFetch('powerbi_import_log?select=imported_at,source_app,rows_processed,errors&order=imported_at.desc&limit=1');if(Array.isArray(imports)&&imports.length)state.importLog=imports[0];}catch(e){console.warn('Import reconciliation ledger unavailable',e)}
 state.profiles=profiles;state.ownerMap=Object.fromEntries(owners.filter(x=>x.agent_name).map(o=>[key(o.agent_name),o]));state.migrations=migrations;normalize();state.loaded=true;setStatus('');render();window.dispatchEvent(new Event('rm-growth-updated'));
-}catch(e){state.loaded=false;state.rows=[];setStatus('Could not verify live shared data. No saved totals are being shown. '+(e.message||'Retry refresh.'));render();}
+}catch(e){state.loaded=false;state.rows=[];state.profiles=[];state.lastSeen=null;state.importLog=null;setStatus('Could not verify live shared data. No saved totals are being shown. '+(e.message||'Retry refresh.'));render();window.dispatchEvent(new Event('rm-growth-updated'));}
 finally{state.loading=false;}
 }
 function setStatus(msg){const n=document.getElementById('rmGrowStatus');if(n)n.textContent=msg}
@@ -98,7 +98,21 @@ const grid=document.getElementById('rmGrowStats'),tbody=document.getElementById(
 if(!grid||!tbody)return;grid.replaceChildren();tbody.replaceChildren();
 if(!state.loaded){meta.textContent='Live data unavailable. Refresh to retry.';subtitle.textContent='No unverified production counts displayed.';brief.textContent='Weekly review requires current shared data.';return}
 const latest=state.lastSeen?new Date(state.lastSeen).toLocaleString():'not available';
-const stamped=state.profiles.filter(p=>date(p.powerbi_last_seen_at)===date(state.lastSeen)),stampedC=stamped.filter(p=>getTier(p)==='C');const importRow=state.importLog;let raw=importRow?Number(importRow.rows_processed):null;const rawC=importRow&&String(importRow.source_app||'').match(/(?:^|;)C=(\d+)/);meta.textContent='All active C accounts only ('+state.rows.length+') · Latest Power BI profile stamp: '+latest+'. Latest stamped profiles: '+stamped.length+'; stamped C profiles including inactive: '+stampedC.length+'.'+(importRow?' Import reports '+raw+' processed rows'+(rawC?' and '+rawC[1]+' C rows':'')+'.':' Import ledger unavailable.')+(raw!==null&&raw!==stamped.length?' RECONCILIATION REQUIRED: import rows and stamped profiles differ; do not use this view as the official full Power BI count.':'')+' Inactive, hidden and non-C profiles excluded.';
+const stamped=state.profiles.filter(p=>date(p.powerbi_last_seen_at)===date(state.lastSeen)),stampedC=stamped.filter(p=>getTier(p)==='C');
+const importRow=state.importLog,raw=importRow?Number(importRow.rows_processed):null;
+const importDate=date(importRow&&importRow.imported_at),stampDate=date(state.lastSeen);
+const receiptCurrent=Boolean(importDate&&stampDate&&importDate===stampDate);
+const excluded=raw===null?null:raw-stamped.length;
+const nov9Approved=receiptCurrent&&stampDate==='2026-11-09'&&raw===136&&stamped.length===132
+ &&stamped.filter(p=>getTier(p)==='A').length===16
+ &&stamped.filter(p=>getTier(p)==='B').length===21
+ &&stamped.filter(p=>getTier(p)==='C').length===95;
+const verified=receiptCurrent&&raw!==null&&Number.isFinite(raw)&&excluded>=0;
+const warning=nov9Approved?'November 9 import reconciled: four approved source-row exclusions.'
+ :!verified?' RECONCILIATION REQUIRED: latest import receipt or stamped profile batch not verified; do not use these as official Power BI totals.'
+ :excluded>0?' RECONCILIATION REQUIRED: '+excluded+' source-row exclusion'+(excluded===1?'':'s')+' must be reviewed before treating import totals as official.'
+ :' Import receipt matches the latest stamped profile count.';
+meta.textContent='All active C accounts only ('+state.rows.length+') · Latest Power BI profile stamp: '+latest+'. Latest stamped profiles: '+stamped.length+'; stamped C profiles (before inactive/hidden exclusions): '+stampedC.length+'.'+(importRow?' Import reports '+raw+' processed source rows.':' Import ledger unavailable.')+' '+warning+' Inactive, hidden and non-C profiles excluded.';
 stats().forEach(([label,value])=>{const c=document.createElement('div');c.className='rmGrowStat';const strong=document.createElement('strong');strong.textContent=value;const sub=document.createElement('span');sub.textContent=label;c.append(strong,sub);grid.append(c)});
 const list=filtered();subtitle.textContent=list.length+' relationships · Sorted by actionable priority (not guaranteed promotion or closing).';
 for(const p of list){
