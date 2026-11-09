@@ -21675,16 +21675,20 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
      const unique=new Set(members.map(p=>String(p.agent_name||'').trim().toLowerCase()));
      const raw=Number((String(imports[0]?.source_app||'').match(/(?:^|;)raw=(\d+)/)||[])[1]||imports[0]?.rows_processed||0),gap=Math.max(0,raw-unique.size);
      const signature=[members.map(p=>[p.agent_name,p.powerbi_level,p.retained,p.relationship_status,p.do_not_contact,p.closes_past_year].join('~')).sort().join('|'),imports[0]?.imported_at,leads.map(l=>[l.lead_key,l.date_added,l.lp_user,l.status].join('~')).sort().join('|')].join('#');
+     const panelFailures=[];
      if(force||signature!==last){
-       if(typeof window.rmV453RefreshPowerBi==='function')await window.rmV453RefreshPowerBi(true);
-       if(typeof window.rmV428RenderOfficialScorecard==='function')await window.rmV428RenderOfficialScorecard(true);
-       if(typeof window.rmV494RefreshLeads==='function')await window.rmV494RefreshLeads(true);
-       if(typeof window.v23LoadAmandaSnapshot==='function')await window.v23LoadAmandaSnapshot(true);
-       if(typeof window.rmV440RefreshToday==='function')await window.rmV440RefreshToday();
-       if(document.getElementById('view-portfolio')?.classList.contains('active')&&typeof window.loadPortfolioReview==='function')await window.loadPortfolioReview();
-       last=signature;
+       const panels=[
+         ['Power BI',()=>typeof window.rmV453RefreshPowerBi==='function'?window.rmV453RefreshPowerBi(true):null],
+         ['Scorecard',()=>typeof window.rmV428RenderOfficialScorecard==='function'?window.rmV428RenderOfficialScorecard(true):null],
+         ['Velocify leads',()=>typeof window.rmV494RefreshLeads==='function'?window.rmV494RefreshLeads(true):null],
+         ['RM snapshot',()=>typeof window.v23LoadAmandaSnapshot==='function'?window.v23LoadAmandaSnapshot(true):null],
+         ['Today',()=>typeof window.rmV440RefreshToday==='function'?window.rmV440RefreshToday():null],
+         ['Portfolio',()=>document.getElementById('view-portfolio')?.classList.contains('active')&&typeof window.loadPortfolioReview==='function'?window.loadPortfolioReview():null]
+       ];
+       for(const panel of panels){try{await panel[1]()}catch(panelError){panelFailures.push(panel[0]+': '+String(panelError&&panelError.message||panelError));console.warn('RM '+panel[0]+' refresh error',panelError)}}
+       if(!panelFailures.length)last=signature;else last='';
      }
-     status('Shared data: '+(gap?'review import difference':'synced')+' · Power BI '+date(latest)+' · '+unique.size+' agent profiles'+(gap?' / '+raw+' rows (+'+gap+' unmatched)':'')+' · Velocify '+date(velStamp?.[0]?.created_at)+' · checked '+date(Date.now()),gap>0);
+     status('Shared data: '+(gap?'reconciliation required':'synced')+' · Power BI '+date(latest)+' · '+raw+' source rows / '+unique.size+' matched agent profiles'+(gap?' ('+gap+' unmatched)':'')+' · Velocify '+date(velStamp?.[0]?.created_at)+' · checked '+date(Date.now())+(panelFailures.length?' · Panel refresh errors: '+panelFailures.join('; '):''),gap>0||panelFailures.length>0);
    }catch(e){last='';status('Shared data refresh FAILED — displayed totals may be stale. '+String(e&&e.message||e),true);console.warn('RM shared data refresh failed',e)}
    finally{busy=false;if(queued){queued=false;setTimeout(()=>refresh(false),1000)}}
  }
