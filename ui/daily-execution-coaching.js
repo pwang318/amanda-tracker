@@ -10,6 +10,7 @@ const reasons={'meetings':'Realtor or business meetings','transactions':'Urgent 
 const styles=document.createElement('style');styles.id='rmExecutionCoachingStyles';
 styles.textContent=[
 '#rmExecutionPlan{margin:12px 0;border:1px solid #e7deee;border-radius:12px;background:white;padding:17px 20px}',
+'body[data-rm-tab="week"] #view-week.rm350-board > #rmExecutionPlan{display:block!important}',
 '#rmExecutionPlan h2{margin:0 0 5px;font-size:20px;color:#211b35}',
 '#rmExecutionPlan h3{font-size:15px;margin:13px 0 8px;color:#302242}',
 '#rmExecutionPlan p,#rmExecutionPlan small{font-size:12px;color:#685b78;line-height:1.5}',
@@ -57,7 +58,7 @@ function dataOf(b){if(!b)return null;try{return JSON.parse(b.notes||'{}')}catch(
 function planned(d){return queue.filter(q=>String(q.status||'').toLowerCase()==='open'&&String(q.work_date||'').slice(0,10)===d&&d>=COACHING_START)}
 function pastDue(d){return queue.filter(q=>String(q.status||'').toLowerCase()==='open'&&q.work_date&&String(q.work_date).slice(0,10)>=COACHING_START&&String(q.work_date).slice(0,10)<d)}
 function mount(){
- const board=$('view-week')||$('rm350Workboard');if(!board)return;
+ const board=$('rm350Workboard')||$('view-week');if(!board)return;
  const existing=$('rmExecutionPlan');if(existing){if(existing.parentElement!==board)board.prepend(existing);return;}
  const div=document.createElement('section');div.id='rmExecutionPlan';
  div.innerHTML='<div class="execRow"><div><h2>Today’s plan</h2><p>Fresh start · November 9 onward. Goals, open work and next steps in one place.</p></div><button id="execReload" type="button">Refresh live activity</button></div>'+
@@ -74,7 +75,7 @@ function mount(){
  '<div id="execDates" class="execDates"></div><div class="execForm"><label>First day off<input id="execOOOStart" type="date"></label><label>Last day off<input id="execOOOEnd" type="date"></label><button id="execSaveOOO" type="button">Save days off</button></div>'+
  '<div id="execOOOCoverage" class="execNotice"></div><div id="execOOOStatus" class="execStatus"></div></details>'+
  '<details id="execCoaching"><summary>Director coaching · since November 9</summary><div id="execTrends">Loading trend…</div></details>';
- // Keep the live execution plan directly under the Today view, not nested in a legacy panel that can be hidden by cleanup styles.
+ // The RM workboard is the only visible direct child of Today: its siblings are intentionally hidden by the existing layout CSS.
  board.prepend(div);
  $('execReload').onclick=()=>refresh(true);
  $('execSaveCloseout').onclick=saveCloseout;
