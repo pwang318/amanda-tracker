@@ -57,7 +57,7 @@ function dataOf(b){if(!b)return null;try{return JSON.parse(b.notes||'{}')}catch(
 function planned(d){return queue.filter(q=>String(q.status||'').toLowerCase()==='open'&&String(q.work_date||'').slice(0,10)===d&&d>=COACHING_START)}
 function pastDue(d){return queue.filter(q=>String(q.status||'').toLowerCase()==='open'&&q.work_date&&String(q.work_date).slice(0,10)>=COACHING_START&&String(q.work_date).slice(0,10)<d)}
 function mount(){
- const board=$('rm350Workboard');if(!board||$('rmExecutionPlan'))return;
+ const board=$('rm350Workboard')||$('view-week');if(!board||$('rmExecutionPlan'))return;
  const div=document.createElement('section');div.id='rmExecutionPlan';
  div.innerHTML='<div class="execRow"><div><h2>Today’s plan</h2><p>Fresh start · November 9 onward. Goals, open work and next steps in one place.</p></div><button id="execReload" type="button">Refresh live activity</button></div>'+
  '<div id="execNotice" class="execNotice">Loading shared activity and schedule…</div>'+
@@ -80,6 +80,8 @@ function mount(){
  $('execReviewDate').value=selected;
  $('execReviewDate').onchange=()=>{selected=$('execReviewDate').value;populateCloseout()};
  $('execOOOStart').value='2026-11-12';$('execOOOEnd').value='2026-11-13';
+ // Phone and desktop use the same live plan; only the layout changes.
+ div.dataset.sameDataOnMobile='true';
  if(loaded)render();
 }
 async function refresh(force=false){
@@ -228,7 +230,7 @@ window.rmAmandaIsOOO=d=>loaded?isOff(String(d||iso()).slice(0,10)):null;
 window.rmAmandaNextWorkday=d=>loaded?nextWorkday(String(d||iso()).slice(0,10)):null;
 function init(){
  mount();refresh(true);
- const board=$('rm350Workboard');if(board)new MutationObserver(()=>mount()).observe(board,{childList:true});
+ const board=$('rm350Workboard')||$('view-week');if(board)new MutationObserver(()=>mount()).observe(board,{childList:true});
  window.addEventListener('focus',()=>refresh(false));
  document.addEventListener('visibilitychange',()=>{if(!document.hidden)refresh(false)});
 }
