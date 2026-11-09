@@ -62,8 +62,8 @@ for(const p of state.profiles){
 if(!latestStamp||date(p.powerbi_last_seen_at)!==latestStamp)continue;
 const k=key(p.agent_name),tier=getTier(p);
 if(!k||seen.has(k)||k.startsWith('__')||p.display_name==='__HIDDEN__'||p.do_not_contact===true||p.relationship_status==='inactive'||p.relationship_type==='strategic_partner')continue;
-seen.add(k);
 if(tier!=='C')continue;
+seen.add(k);
 const rm=getOwner(p,tier),closes=safeNumber(p.closes_past_year),leads=safeNumber(p.total_leads_past_year),daysNoLead=daysSince(p.latest_lead_date);
 const r={name:typeof resolvedDisplayName==='function'?resolvedDisplayName(p.agent_name):(typeof displayName==='function'?displayName(p.display_name||p.agent_name):(p.display_name||p.agent_name)),sourceName:p.agent_name,tier,rm,closings:closes,leads,daysNoLead,latestLead:date(p.latest_lead_date),latestClose:date(p.latest_close_date),competitor_risk_flag:!!p.competitor_risk_flag,high_potential_flag:!!p.high_potential_flag,next_growth_opportunity:p.next_growth_opportunity||'',growth_opportunity_deadline:p.growth_opportunity_deadline||'',partner_pain_points:p.partner_pain_points||'',referral_leakage_notes:p.referral_leakage_notes||'',recovery_plan:p.recovery_plan||'',last_contact:date(p.last_meaningful_contact_date),followup:date(p.next_rm_followup),migration:state.migrations.find(m=>key(m.agent_name)===k)};
 r.score=score(r);r.action=action(r);out.push(r);
