@@ -15,7 +15,7 @@ duplicateKeys=[];leadByAgent={};for(const [key,arr] of groups){if(arr.length>1){
 ready=true;draw();
 }catch(e){ready=false;el('gdStatus').textContent='Could not verify live Velocify records: '+e.message}
 }
-function rowFor(name){return ctl()?.state?.profiles.find(p=>norm(p.agent_name)===norm(name))}
+function rowFor(name){return ctl()?.state?.profiles.find(p=>norm(p.agent_name)===norm(name)&&ctl()?.state?.rows.some(r=>norm(r.sourceName)===norm(name)))}
 function draw(){
 const state=ctl()?.state;if(!state?.loaded||!ready)return;el('gdStatus').textContent='Live Velocify lead keys: '+Object.values(leadByAgent).reduce((n,x)=>n+x.total,0)+' · Duplicate keys excluded: '+duplicateKeys.length+'.';
 const table=el('gdRows');table.replaceChildren();
@@ -28,17 +28,19 @@ const health=el('gdHealth');health.replaceChildren();for(const a of state.rows.f
 const commitments=el('gdCommitments');commitments.replaceChildren();for(const a of state.rows.filter(x=>x.rm==='Amanda'&&x.next_growth_opportunity).sort((a,b)=>String(a.growth_opportunity_deadline||'9999').localeCompare(String(b.growth_opportunity_deadline||'9999'))).slice(0,25)){const b=document.createElement('button');b.textContent=a.name+': '+a.next_growth_opportunity+' · due '+(a.growth_opportunity_deadline||'not set');b.onclick=()=>edit(a.sourceName);commitments.append(b)}
 }
 function edit(name){
-const p=rowFor(name);if(!p){el('gdStatus').textContent='Agent is missing from the latest shared profiles';return}selected=p.agent_name;el('gdDialog').hidden=false;el('gdTitle').textContent='Agent plan · '+(typeof resolvedDisplayName==='function'?resolvedDisplayName(p.agent_name):(p.display_name||p.agent_name));
+const p=rowFor(name);if(!p){const status=el('gdStatus');if(status)status.textContent='This agent is not in the current active C-agent roster. Refresh shared data.';return false}const dialog=el('gdDialog');if(!dialog){const status=el('gdStatus');if(status)status.textContent='Agent plan editor failed to load. Refresh the page.';return false}selected=p.agent_name;el('gdDialog').hidden=false;el('gdTitle').textContent='Agent plan · '+(typeof resolvedDisplayName==='function'?resolvedDisplayName(p.agent_name):(p.display_name||p.agent_name));
 for(const id of ['next_growth_opportunity','growth_opportunity_deadline','partner_pain_points','referral_leakage_notes','recovery_plan'])el('gd_'+id).value=p[id]||'';
-for(const id of ['high_potential_flag','competitor_risk_flag'])el('gd_'+id).checked=!!p[id];el('gdSaveStatus').textContent='';
+for(const id of ['high_potential_flag','competitor_risk_flag'])el('gd_'+id).checked=!!p[id];el('gdSaveStatus').textContent='';return true;
 }
 async function save(){
 if(!selected)return;const data={};for(const id of ['next_growth_opportunity','growth_opportunity_deadline','partner_pain_points','referral_leakage_notes','recovery_plan'])data[id]=el('gd_'+id).value.trim()||null;
 for(const id of ['high_potential_flag','competitor_risk_flag'])data[id]=el('gd_'+id).checked;
 el('gdSave').disabled=true;el('gdSaveStatus').textContent='Saving…';
 try{await sbFetch('agent_profiles?agent_name=eq.'+encodeURIComponent(selected),{method:'PATCH',body:JSON.stringify(data)});
-const found=await sbFetch('agent_profiles?select=agent_name,next_growth_opportunity&agent_name=eq.'+encodeURIComponent(selected));if(!Array.isArray(found)||found.length!==1||found[0].next_growth_opportunity!==data.next_growth_opportunity)throw Error('Shared data verification failed');
-el('gdSaveStatus').textContent='Saved and verified. Record actual referrals and closings in the normal work log.';await ctl().refresh();draw();
+const found=await sbFetch('agent_profiles?select=agent_name,next_growth_opportunity,growth_opportunity_deadline,partner_pain_points,referral_leakage_notes,recovery_plan,high_potential_flag,competitor_risk_flag&agent_name=eq.'+encodeURIComponent(selected));if(!Array.isArray(found)||found.length!==1)throw Error('Shared record verification failed');
+for(const [field,expected] of Object.entries(data)){const actual=found[0][field];if(typeof expected==='boolean'?actual!==expected:(actual||null)!==(expected||null))throw Error('Shared record verification failed for '+field)}
+await ctl().refresh();if(!ctl()?.state?.loaded)throw Error('Saved, but could not refresh the shared C-agent list. Refresh again to verify completion.');
+el('gdSaveStatus').textContent='Saved and verified. Growth queues and missing-plan totals refreshed.';draw();window.dispatchEvent(new Event('rm-growth-updated'));
 }catch(e){el('gdSaveStatus').textContent='Save not verified: '+e.message}finally{el('gdSave').disabled=false}
 }
 function start(){
@@ -50,7 +52,7 @@ const fields=[['next_growth_opportunity','Next specific referral / buyer commitm
 for(const [id,label,type] of fields){const node=document.createElement('label');node.textContent=label;const input=document.createElement('input');input.id='gd_'+id;input.type=type;node.append(input);el('gdFields').append(node)}
 el('gdRefresh').onclick=()=>reload();el('gdDuplicates').onclick=()=>{el('gdStatus').textContent=duplicateKeys.map(d=>d.key+' ('+d.arr.length+' records; LPs '+[...new Set(d.arr.map(r=>r.lp_user||'unknown'))].join('/')+')').join(' | ')||'No duplicate lead keys';};
 el('gdTop').onclick=()=>{const x=ctl()?.state?.rows.filter(x=>x.rm==='Amanda').sort((a,b)=>b.score-a.score)[0];if(x)edit(x.sourceName)};
-el('gdClose').onclick=()=>{el('gdDialog').hidden=true};el('gdSave').onclick=save;
+el('gdClose').onclick=()=>{el('gdDialog').hidden=true;selected=''};el('gdSave').onclick=save;
 let attempts=0;function wait(){if(ctl()?.state?.loaded)reload();else if(attempts++<18)setTimeout(wait,700);else el('gdStatus').textContent='Open the Grow + Protect work order and refresh shared profiles first.'}wait();
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start);else start();
