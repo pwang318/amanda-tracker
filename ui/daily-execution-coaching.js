@@ -164,7 +164,39 @@ function taskList(title,rows,empty){
  }).join('');
  return '<section><strong>'+safe(title)+' · '+rows.length+'</strong>'+(rows.length?'<ul>'+list+'</ul>':'<p>'+safe(empty)+'</p>')+'</section>';
 }
+function openActivityDetail(kind,scroll=true){
+ const d=iso();
+ const rows=activeFor(d).filter(a=>kind==='cold'?String(a.act_type||'').trim()==='Cold Calls':kind==='meetings'?/^(New Realtor Meeting|Business Planning|Break Breads?|Team Meeting|Strategic Partner Meeting|Partner Meeting|Retention Meeting)$/i.test(a.act_type||''):true);
+ activeDetail='activity:'+kind;
+ const home=$('execHomeWork'),detail=$('execDetailArea'),list=$('execTaskSummary');
+ if(!home||!detail||!list)return;
+ home.hidden=true;detail.hidden=false;
+ const title=kind==='cold'?'Cold calls logged today':kind==='meetings'?'Meetings logged today':'Activity logged today';
+ $('execDetailTitle').textContent=title+' · '+rows.length;
+ const escapeDate=x=>String(x||'').slice(0,10);
+ list.innerHTML='<section><p>These are the saved activity records counted in this tile. Select an agent to review their relationship, or log another activity below.</p>'+
+ (rows.length?'<ul>'+rows.map((a,i)=>{
+  const detailText=[a.act_type,a.outcome].filter(Boolean).join(' · ');
+  const date=escapeDate(a.act_date);
+  const timestamp=String(a.created_at||'').replace('T',' ').slice(0,19);
+  return '<li><button type="button" class="execTaskGo" data-activity-index="'+i+'"><b>'+safe(a.agent_name||'Agent not recorded')+'</b><span style="display:block;font-size:12px;color:#625373">'+safe(detailText)+'</span><span style="display:block;font-size:11px;color:#756886">'+safe(date)+(timestamp?' · Logged '+safe(timestamp):'')+'</span><span style="display:block">Open agent record ↗</span></button></li>';
+ }).join('')+'</ul>':'<p>No saved activity records match this tile.</p>')+
+ '<button type="button" id="execLogRelated">'+(kind==='cold'?'Log next cold call':kind==='meetings'?'Log a meeting':'Log activity')+' ↗</button></section>';
+ list.querySelectorAll('[data-activity-index]').forEach(button=>button.onclick=()=>{
+  const a=rows[Number(button.dataset.activityIndex)];
+  if(a)openTask({agent_name:a.agent_name,activity_type:a.act_type});
+ });
+ $('execLogRelated').onclick=()=>{
+  if(typeof window.switchTab!=='function')return;
+  window.switchTab('log');
+  if(kind==='cold'){
+   const input=$('rmFastAgent')||$('agentInput');input?.focus();
+  }else $('agentInput')?.focus();
+ };
+ if(scroll)detail.scrollIntoView({behavior:'smooth',block:'start'});
+}
 function showDetail(key,scroll=true){
+ if(typeof key==='string'&&key.startsWith('activity:'))return openActivityDetail(key.slice(9),scroll);
  activeDetail=key;
  const detail=$('execDetailArea'),home=$('execHomeWork'),list=$('execTaskSummary');
  if(!detail||!home||!list)return;
@@ -234,9 +266,9 @@ function render(){
  const missingPlans=all.filter(q=>/missing growth plan/i.test(q.Category||q.activity_type||''));
  const noticeMissing=!fullVerified?' (partial)':'';
  $('execMetrics').innerHTML=[
-  ['Cold calls today',offNow?'PTO':cold+' / 25+','log'],
+  ['Cold calls today',offNow?'PTO':cold+' / 25+','cold'],
   ['Prospecting minutes',dataOf(closeRecord(d))?.prospecting_minutes==null?'Not logged / 60':dataOf(closeRecord(d)).prospecting_minutes+' / 60','closeout'],
-  ['Meetings logged',meetingFor(d),'feed'],
+  ['Meetings logged',meetingFor(d),'meetings'],
   ['Overdue work'+noticeMissing,late.length,'section:0'],
   ['Due today'+noticeMissing,need.length,'section:1'],
   ['Weekly calls remaining'+noticeMissing,weekly.length,'category:2'],
@@ -251,7 +283,10 @@ function render(){
  $('execMetrics').querySelectorAll('[data-exec-target]').forEach(tile=>{
   const action=()=>{
    const kind=tile.dataset.execTarget;
-   if(kind==='log'||kind==='feed'){if(typeof window.switchTab==='function')window.switchTab(kind==='feed'?'feed':'log');return}
+   if(kind==='cold')return showDetail('activity:cold');
+   if(kind==='meetings')return showDetail('activity:meetings');
+   if(kind==='feed')return showDetail('activity:all');
+   if(kind==='log'){if(typeof window.switchTab==='function')window.switchTab('log');return}
    if(kind==='closeout'){$('execCloseout').open=true;$('execCloseout').scrollIntoView({behavior:'smooth',block:'center'});return}
    if(kind==='plans')return showDetail('category:4');
    if(kind.startsWith('section:')||kind.startsWith('category:'))return showDetail(kind);
