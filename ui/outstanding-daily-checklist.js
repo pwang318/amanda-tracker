@@ -141,7 +141,7 @@ async function refresh(force=false){
    }catch(e){console.warn('Open RM queue could not be read',e)}
    // Tuesday updates have their own completed/outstanding workflow.
    const badge=$('rmV1TuesdayBadge');
-   const num=badge&&/^\\d+$/.test(String(badge.textContent||'').trim())?Number(badge.textContent.trim()):null;
+   const num=badge&&/^\d+$/.test(String(badge.textContent||'').trim())?Number(badge.textContent.trim()):null;
    if(num!==null&&num>0)for(let k=0;k<num;k++)data.rows.push({Category:'Tuesday Updates','Agent / Item':'Outstanding listing update '+(k+1),'Due Date':today(),Status:'Open','Next Action':'Complete the Tuesday listing-agent update'});
    if(!data||!Array.isArray(data.rows))throw Error('Incomplete RM work-list results');
   }else{
