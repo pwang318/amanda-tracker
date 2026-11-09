@@ -29,7 +29,8 @@ const GROUPS=[
  {id:'weekly',label:'Weekly C-agent calls',detail:'Still due this week',action:'weekly'},
  {id:'transaction',label:'Transaction calls',detail:'Contracts / CTCs needing a call',action:'transaction'},
  {id:'tuesday',label:'Tuesday updates',detail:'Listing-agent updates still outstanding',action:'tuesday'},
- {id:'meeting',label:'Meetings and growth plans',detail:'Scheduled commitments and missing plans',action:'portfolio'}
+ {id:'meeting',label:'Meetings and growth plans',detail:'Scheduled commitments and missing plans',action:'portfolio'},
+ {id:'outreach',label:'Open outreach queue',detail:'Outstanding assigned agent calls',action:'reconnect'}
 ];
 let busy=false,lastLoaded=null,at=0;
 function open(kind){
@@ -37,6 +38,7 @@ function open(kind){
   if(kind==='campaign'&&typeof window.v350OpenLane==='function')return window.v350OpenLane('conversion');
   if(kind==='transaction'&&typeof window.v350OpenLane==='function')return window.v350OpenLane('calls');
   if(kind==='tuesday'&&typeof window.v350OpenLane==='function')return window.v350OpenLane('tuesday');
+  if(kind==='reconnect'&&typeof switchTab==='function')return switchTab('reconnect');
   if(kind==='weekly'&&typeof window.rmV440OpenPortfolio==='function')return window.rmV440OpenPortfolio('work');
   if(typeof window.rmV440OpenPortfolio==='function')return window.rmV440OpenPortfolio('work');
   if(typeof switchTab==='function')return switchTab('portfolio');
@@ -49,6 +51,7 @@ const groupsFor=r=>{
  if(type==='Weekly Realtor Call')return 'weekly';
  if(type==='Transaction Call')return 'transaction';
  if(type==='Tuesday Updates')return 'tuesday';
+ if(type==='Open Outreach')return 'outreach';
  if(/Portfolio · (Meeting Due|Growth Next Step|Needs Attention)/.test(type))return 'meeting';
  return null;
 };
@@ -120,7 +123,26 @@ async function refresh(force=false){
  try{
   let data;
   if(typeof window.rmV462LoadMorningRows==='function'){
+   // First load live Portfolio data so the same missing-plan and meeting actions
+   // used elsewhere are available to this checklist.
+   if(typeof window.rmV440GetPortfolioData==='function'){
+    try{window.rmV440RenderedPortfolioData=await window.rmV440GetPortfolioData()}catch(e){console.warn('Portfolio work not yet available',e)}
+   }
    data=await window.rmV462LoadMorningRows(today());
+   try{
+    const open=await sbFetch('rm_work_queue?select=id,agent_name,activity_type,source,work_date,status,owner&status=eq.open&owner=eq.Amanda&limit=1000');
+    const names=new Set((data.rows||[]).map(x=>String(x['Agent / Item']||'').trim().toLowerCase()+'|'+String(x.Category||'').toLowerCase()));
+    for(const q of (Array.isArray(open)?open:[])){
+      const n=String(q.agent_name||'').trim();if(!n)continue;
+      const k=n.toLowerCase()+'|open outreach';if(names.has(k))continue;
+      names.add(k);
+      data.rows.push({Category:'Open Outreach','Agent / Item':n,'Due Date':String(q.work_date||'').slice(0,10),Status:'Open','Next Action':String(q.activity_type||'Call assigned agent')});
+    }
+   }catch(e){console.warn('Open RM queue could not be read',e)}
+   // Tuesday updates have their own completed/outstanding workflow.
+   const badge=$('rmV1TuesdayBadge');
+   const num=badge&&/^\\d+$/.test(String(badge.textContent||'').trim())?Number(badge.textContent.trim()):null;
+   if(num!==null&&num>0)for(let k=0;k<num;k++)data.rows.push({Category:'Tuesday Updates','Agent / Item':'Outstanding listing update '+(k+1),'Due Date':today(),Status:'Open','Next Action':'Complete the Tuesday listing-agent update'});
    if(!data||!Array.isArray(data.rows))throw Error('Incomplete RM work-list results');
   }else{
    throw Error('RM unified work-list bridge is unavailable');
