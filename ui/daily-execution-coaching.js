@@ -206,7 +206,7 @@ function showDetail(key,scroll=true){
   return;
  }
  const match=/^(section|category):(\d+)$/.exec(key);
- const index=match?(match[1]==='section'?Number(match[2]):5+Number(match[2])):-1;
+ const index=key==='plans'?detailGroups.length-1:match?(match[1]==='section'?Number(match[2]):5+Number(match[2])):-1;
  const group=detailGroups[index];
  if(!group){activeDetail=null;detail.hidden=true;home.hidden=false;return}
  home.hidden=true;detail.hidden=false;
@@ -265,6 +265,7 @@ function render(){
  const campaigns=all.filter(q=>/4.week|campaign/i.test(q.Category||q.activity_type||''));
  const missingPlans=all.filter(q=>/missing growth plan/i.test(q.Category||q.activity_type||''));
  const noticeMissing=!fullVerified?' (partial)':'';
+ const exactPlans=['Missing growth plans',missingPlans,'No agents with missing growth plans found in available worklists'];
  $('execMetrics').innerHTML=[
   ['Cold calls today',offNow?'PTO':cold+' / 25+','cold'],
   ['Prospecting minutes',dataOf(closeRecord(d))?.prospecting_minutes==null?'Not logged / 60':dataOf(closeRecord(d)).prospecting_minutes+' / 60','closeout'],
@@ -277,6 +278,7 @@ function render(){
   ['Activity logged today',activeFor(d).length,'feed']
  ].map(x=>'<div class="execMetric" role="button" tabindex="0" data-exec-target="'+safe(x[2])+'" aria-label="Open '+safe(x[0])+'"><strong>'+safe(x[1])+'</strong><span>'+safe(x[0])+' ↗</span></div>').join('');
  detailGroups=sections.concat(categoryRows);
+ detailGroups.push(exactPlans);
  const grid=$('execCategoryGrid');
  grid.innerHTML=categoryRows.map((group,i)=>'<button type="button" class="execCategoryBtn" data-category="'+i+'"><span>'+safe(group[0])+'</span><strong>'+group[1].length+' ↗</strong></button>').join('');
  grid.querySelectorAll('[data-category]').forEach(b=>b.onclick=()=>showDetail('category:'+b.dataset.category));
@@ -288,7 +290,7 @@ function render(){
    if(kind==='feed')return showDetail('activity:all');
    if(kind==='log'){if(typeof window.switchTab==='function')window.switchTab('log');return}
    if(kind==='closeout'){$('execCloseout').open=true;$('execCloseout').scrollIntoView({behavior:'smooth',block:'center'});return}
-   if(kind==='plans')return showDetail('category:4');
+   if(kind==='plans')return showDetail('plans');
    if(kind.startsWith('section:')||kind.startsWith('category:'))return showDetail(kind);
   };
   tile.addEventListener('click',action);
