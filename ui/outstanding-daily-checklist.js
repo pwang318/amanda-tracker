@@ -32,7 +32,7 @@ const GROUPS=[
  {id:'meeting',label:'Meetings and growth plans',detail:'Scheduled commitments and missing plans',action:'portfolio'},
  {id:'outreach',label:'Open outreach queue',detail:'Outstanding assigned agent calls',action:'reconnect'}
 ];
-let busy=false,lastLoaded=null,at=0;
+let busy=false,lastLoaded=null,at=0,tuesdayKnown=false;
 function open(kind){
  try{
   if(kind==='campaign'&&typeof window.v350OpenLane==='function')return window.v350OpenLane('conversion');
@@ -90,10 +90,10 @@ function output(rows){
   const list=buckets[group.id];
   const section=document.createElement('section');section.className='rmCheckGroup';
   const head=document.createElement('div');head.className='rmCheckGroupHead';
-  head.innerHTML='<div><b>'+esc(group.label)+'</b><small>'+esc(group.detail)+'</small></div><strong>'+list.length+'</strong>';
+  head.innerHTML='<div><b>'+esc(group.label)+'</b><small>'+esc(group.detail)+'</small></div><strong>'+(group.id==='tuesday'&&!tuesdayKnown?'—':list.length)+'</strong>';
   const button=document.createElement('button');button.type='button';button.textContent='Open list';button.onclick=()=>open(group.action);
   head.append(button);section.append(head);
-  if(!list.length){const empty=document.createElement('div');empty.className='rmCheckEmpty';empty.textContent='Nothing outstanding';section.append(empty)}
+  if(!list.length){const empty=document.createElement('div');empty.className='rmCheckEmpty';empty.textContent=group.id==='tuesday'&&!tuesdayKnown?'Tuesday status not verified · open list':'Nothing outstanding';section.append(empty)}
   for(const item of list.slice(0,3)){
    const row=document.createElement('div');row.className='rmCheckItem';
    const label=document.createElement('span');label.textContent=item.name+(item.context?' · '+item.context:'');
@@ -142,6 +142,7 @@ async function refresh(force=false){
    // Tuesday updates have their own completed/outstanding workflow.
    const badge=$('rmV1TuesdayBadge');
    const num=badge&&/^\d+$/.test(String(badge.textContent||'').trim())?Number(badge.textContent.trim()):null;
+   tuesdayKnown=num!==null;
    if(num!==null&&num>0)for(let k=0;k<num;k++)data.rows.push({Category:'Tuesday Updates','Agent / Item':'Outstanding listing update '+(k+1),'Due Date':today(),Status:'Open','Next Action':'Complete the Tuesday listing-agent update'});
    if(!data||!Array.isArray(data.rows))throw Error('Incomplete RM work-list results');
   }else{
