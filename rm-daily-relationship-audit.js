@@ -4,7 +4,7 @@ const id='rmDailyRelationshipReview';const $=name=>document.getElementById(name)
 function go(mode){const cmd=window.rmGrowthCommand;if(cmd&&typeof cmd.open==='function'){cmd.open();if(mode==='protect'&&typeof cmd.view==='function')cmd.view('protect')}else if(typeof switchTab==='function')switchTab('portfolio')}
 function update(){
 const st=window.rmGrowthCommand&&window.rmGrowthCommand.state,title=$('rmDailyRelationshipHeadline'),detail=$('rmDailyRelationshipDetail');if(!title||!detail)return;
-if(!st||!st.loaded){title.textContent='Review your active C-agent relationships today';detail.textContent='Check buyer opportunities, referral gaps and next commitments. Live profile counts are loading.';return}
+if(!st||!st.loaded){title.textContent='Review your active C-agent relationships today';detail.textContent=st&&!st.loading?'⚠ Shared agent data could not be verified. Refresh the Grow + Protect work order before relying on any counts.':'Check buyer opportunities, referral gaps and next commitments. Live profile counts are loading.';return}
 const all=st.rows.filter(r=>r.tier==='C'),stale=all.filter(r=>r.daysNoLead!==null&&r.daysNoLead>=30),unknown=all.filter(r=>r.daysNoLead===null),near=all.filter(r=>r.closings===1),missing=all.filter(r=>!String(r.next_growth_opportunity||'').trim());
 title.textContent='Review '+all.length+' active C-agent relationships today';
 const latest=st.profiles.filter(p=>String(p.powerbi_last_seen_at||'').slice(0,10)===String(st.lastSeen||'').slice(0,10));
