@@ -8297,8 +8297,8 @@ async function loadPortfolioReview(){
     const currentPowerBiAgents=v124Snapshot.rows;
     const pbiLevelSummary=v343Meta?{A:Number(v343Meta.A||0),B:Number(v343Meta.B||0),C:Number(v343Meta.C||0),total:Number(v343Meta.total||0)}:v124Snapshot.counts;
     const powerBiActiveAgents=v343Meta?Number(v343Meta.total||0):currentPowerBiAgents.length;
-    const rmActivePartners=currentPowerBiAgents.filter(a=>!!a.retained&&!v76IsStrategicPartner(a.agent_name,a));
-    const active=rmActivePartners.filter(a=>a.do_not_contact!==true&&a.relationship_status!=="inactive").map(a=>danielApplyTier(a));
+    const rmActivePartners=currentPowerBiAgents.filter(a=>String(a.powerbi_level||a.tier||'').trim().toUpperCase()==='C'&&!v76IsStrategicPartner(a.agent_name,a));
+    const active=rmActivePartners.filter(a=>a.do_not_contact!==true&&a.relationship_status!=="inactive"&&a.display_name!=='__HIDDEN__').map(a=>({...a,tier:'C'}));
     const managedNameSet=new Set(active.map(a=>(a.agent_name||"").trim().toLowerCase()).filter(Boolean));
     const validMigrationTiers=new Set(["C","B","A","Channel"]);
     const migrations=(migrationsRaw||[]).filter(m=>managedNameSet.has((m.agent_name||"").trim().toLowerCase())&&validMigrationTiers.has(m.from_tier)&&validMigrationTiers.has(m.to_tier)&&m.from_tier!==m.to_tier);
@@ -18777,10 +18777,10 @@ function v390RenderSimplePortfolio(legacyHtml,reportingWasOpen){
   const legacy=legacyHtml||'<div class="no-data">Reporting data unavailable.</div>';
   body.innerHTML=`
     <section class="pf390-panel" data-pf390-panel="overview">
-      ${v390LeadershipBrief(d.leadership)}
+      <div style="display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap;background:#f3eefa;border:1px solid #e2d8f0;border-radius:10px;padding:11px 13px;margin-bottom:12px"><div><strong style="font-size:12px;color:#4b2a72">All active C relationships</strong><div style="font-size:11px;color:#665276">Complete current C portfolio, including relationships that have not yet reached retained status. B, A, and Channel accounts are excluded.</div></div><button class="btn-primary" onclick="window.rmGrowthCommand&&window.rmGrowthCommand.open()">Work C growth opportunities →</button></div>
       ${needsAttention.length?'<div class="pf390-action-banner"><div><strong>'+needsAttention.length+' partner'+(needsAttention.length===1?' needs':'s need')+' attention.</strong><span>Start with the Work List.</span></div><button class="btn-primary" onclick="v390ShowPortfolioView(\'work\')">Open Work List</button></div>':''}
       <div class="pf390-stat-grid">
-        ${v390Metric('Active Partners',total,'Channel '+tierCounts.Channel+' · A '+tierCounts.A+' · B '+tierCounts.B,"v390ShowPortfolioView('directory')")}
+        ${v390Metric('Active C Agents',total,'All eligible C accounts from latest Power BI',"v390ShowPortfolioView('directory')")}
         ${v390Metric('Needs Attention',needsAttention.length,(rawNeedsAttention.length-needsAttention.length)+' recently attempted · '+healthCounts.Red+' red / '+healthCounts.Yellow+' yellow overall',"v390OpenPortfolioPanel('work','attention')")}
         ${v390Metric('Coming Due',comingDue.length,'Reach out before cadence slips',"v390OpenPortfolioPanel('work','due')")}
         ${v390Metric('Missing Growth Plans',missingGrowthPlans.length,'Amanda-owned partners without a documented next move',"v390OpenPortfolioPanel('missing-growth')")}
