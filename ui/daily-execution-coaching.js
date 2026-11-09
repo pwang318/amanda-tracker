@@ -155,7 +155,13 @@ function openTask(q){
  if(typeof window.switchTab==='function')return window.switchTab('portfolio');
 }
 function taskList(title,rows,empty){
- const list=rows.map((q,i)=>'<li><button type="button" class="execTaskGo" data-list="'+safe(title)+'" data-index="'+i+'">'+safe(q.agent_name||q['Agent / Item']||'Assigned agent')+' · '+safe(q.activity_type||q.Category||q.reason||q['Next Action']||'Outstanding action')+(q.work_date||q['Due Date']?' ('+safe(q.work_date||q['Due Date'])+')':'')+' ↗</button></li>').join('');
+ const list=rows.map((q,i)=>{
+  const agent=q.agent_name||q['Agent / Item']||'Assigned agent';
+  const type=q.Category||q.activity_type||'Assigned work';
+  const action=q['Next Action']||q.reason||'Open relationship to review and log the next step';
+  const due=q.work_date||q['Due Date']||'';
+  return '<li><button type="button" class="execTaskGo" data-index="'+i+'"><b>'+safe(agent)+'</b><span style="display:block;font-size:11px;color:#736482">'+safe(type)+(due?' · Due '+safe(due):'')+'</span><span style="display:block;font-size:12px;color:#453755;margin-top:4px">'+safe(action)+'</span><span style="display:block;font-size:11px;margin-top:4px">Open agent record ↗</span></button></li>';
+ }).join('');
  return '<section><strong>'+safe(title)+' · '+rows.length+'</strong>'+(rows.length?'<ul>'+list+'</ul>':'<p>'+safe(empty)+'</p>')+'</section>';
 }
 function showDetail(key,scroll=true){
