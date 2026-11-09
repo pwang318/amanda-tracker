@@ -31,7 +31,7 @@ styles.textContent=[
 '#rmExecutionPlan .execWarn{background:#fff8ee;color:#795028}',
 '#rmExecutionPlan .execTasks{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}',
 '#rmExecutionPlan .execTasks section{border:1px solid #ece5f1;border-radius:9px;padding:11px;min-width:0}',
-'#rmExecutionPlan .execTasks ul{margin:7px 0;padding-left:19px;max-height:165px;overflow-y:auto;font-size:12px;color:#3d3151}',
+'#rmExecutionPlan .execTasks ul{margin:7px 0;padding-left:19px;max-height:320px;overflow-y:auto;font-size:12px;color:#3d3151}',
 '#rmExecutionPlan .execTasks li{margin-bottom:6px}',
 '#rmExecutionPlan .execTaskGo{display:block;text-align:left;width:100%;padding:4px!important;border:0!important;background:transparent!important;color:#543781!important}',
 '#rmExecutionPlan .execForm{display:flex;flex-wrap:wrap;align-items:end;gap:9px;margin:10px 0}',
@@ -130,8 +130,8 @@ function openTask(q){
  return tab('portfolio');
 }
 function taskList(title,rows,empty){
- const list=rows.slice(0,7).map((q,i)=>'<li><button type="button" class="execTaskGo" data-list="'+safe(title)+'" data-index="'+i+'">'+safe(q.agent_name||q['Agent / Item']||'Assigned agent')+' · '+safe(q.activity_type||q.Category||q.reason||q['Next Action']||'Outstanding action')+(q.work_date||q['Due Date']?' ('+safe(q.work_date||q['Due Date'])+')':'')+' ↗</button></li>').join('');
- return '<section><strong>'+safe(title)+' · '+rows.length+'</strong>'+(rows.length?'<ul>'+list+(rows.length>7?'<li>+'+(rows.length-7)+' more in RM work queue</li>':'')+'</ul>':'<p>'+safe(empty)+'</p>')+'</section>';
+ const list=rows.map((q,i)=>'<li><button type="button" class="execTaskGo" data-list="'+safe(title)+'" data-index="'+i+'">'+safe(q.agent_name||q['Agent / Item']||'Assigned agent')+' · '+safe(q.activity_type||q.Category||q.reason||q['Next Action']||'Outstanding action')+(q.work_date||q['Due Date']?' ('+safe(q.work_date||q['Due Date'])+')':'')+' ↗</button></li>').join('');
+ return '<section><strong>'+safe(title)+' · '+rows.length+'</strong>'+(rows.length?'<ul>'+list'</ul>':'<p>'+safe(empty)+'</p>')+'</section>';
 }
 function render(){
  if(!$('execNotice'))return;const d=iso(),offNow=isOff(d),cold=coldFor(d),next=nextWorkday(d);
@@ -183,7 +183,7 @@ function render(){
  '<p class="execNotice'+(fullVerified?'':' execWarn')+'">'+(fullVerified?'Work derived from the live RM morning queue plus Amanda’s assigned open tasks. Completing an activity does not automatically close unrelated commitments.':'Only some task sources could be verified. Counts above are incomplete; check the original portfolio and campaign lists before declaring a category clear.')+'</p>';
  $('execTaskSummary').querySelectorAll('.execTaskGo').forEach(button=>{
   const group=sections.concat(categoryRows).find(s=>s[0]===button.dataset.list);
-  button.onclick=()=>{if(group)openTask(group[1][Number(button.dataset.index)])};
+  button.onclick=()=>{if(!group)return;if(group[0].startsWith('Completed assigned tasks')){if(typeof window.switchTab==='function')window.switchTab('feed');return;}openTask(group[1][Number(button.dataset.index)])};
  });
  $('execMetrics').querySelectorAll('[data-exec-target]').forEach(tile=>{
    const action=()=>{
