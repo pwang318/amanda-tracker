@@ -129,7 +129,7 @@ function render(){
  notice.textContent=offNow?'Out of office today — no cold-call target or missed-day flag. Outstanding agent commitments still require coverage.':cold<25?'Prospecting below minimum: '+cold+' of 25 logged. The full 60-minute block is also required; actual time is not verified by call count.':'25+ calls logged. Keep the protected 60-minute prospecting block; elapsed time is not inferred.';
  $('execMetrics').innerHTML=[
   ['Cold calls today',offNow?'PTO':cold+' / 25','log'],
-  ['Prospecting time','60 min goal','closeout'],
+  ['Prospecting minutes',dataOf(closeRecord(d))?.prospecting_minutes==null?'Not logged / 60':dataOf(closeRecord(d)).prospecting_minutes+' / 60','closeout'],
   ['Meetings logged',meetingFor(d),'log'],
   ['Overdue since Nov 9',late.length,'overdue'],
   ['Due today',need.length,'today'],
