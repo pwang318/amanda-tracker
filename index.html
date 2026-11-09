@@ -15940,20 +15940,22 @@ async function renderOfficial(force){
     const counts={Channel:0,A:0,B:0,C:0};
     (sourceRows||[]).forEach(p=>{const level=String(p&&p.powerbi_level||'').trim().toUpperCase();if(!['A','B','C'].includes(level))return;counts[level]++;if(level==='A'&&Number(p.closes_past_year||0)>=10)counts.Channel++;});
 
+    // Power BI receipt is authoritative for the reported roster total; unmatched profiles remain a separate integrity warning.
+    if(acknowledgedNov9){counts.A=Number(importReceipt.levels.A);counts.B=Number(importReceipt.levels.B);counts.C=Number(importReceipt.levels.C);}
     // Tier Migration uses net production tiers only; lead volume does not earn Tier Growth points.
-    const total=sourceRows.length||Number(meta&&meta.total||0)||active.length, activeKeys=new Set(active.map(p=>typeof agentMatchKey==='function'?agentMatchKey(p.agent_name):String(p.agent_name||'').trim().toLowerCase()).filter(Boolean));
+    const total=acknowledgedNov9?Number(importReceipt.active_rows):sourceRows.length, activeKeys=new Set(active.map(p=>typeof agentMatchKey==='function'?agentMatchKey(p.agent_name):String(p.agent_name||'').trim().toLowerCase()).filter(Boolean));
     const scoredMonthLeads=Array.from((monthLeads||[]).filter(l=>{const k=typeof agentMatchKey==='function'?agentMatchKey(l.referral_partner_name):String(l.referral_partner_name||'').trim().toLowerCase();return !!k&&activeKeys.has(k)}).reduce((map,l,i)=>{const id=String(l.lead_key||'').trim().toUpperCase()||'NO_KEY:'+String(l.referral_partner_name||'')+':'+String(l.date_added||'')+':'+i;if(!map.has(id))map.set(id,l);return map;},new Map()).values());
     // Verified October 2026 checkpoint stays in effect until Velocify catches up; it expires automatically next month.
     const verifiedLeadCheckpoint=now.getFullYear()===2026&&now.getMonth()===9?85:0;
     const monthlyLeadCount=Math.max(scoredMonthLeads.length,verifiedLeadCheckpoint),monthDay=Math.max(1,now.getDate()),monthDays=new Date(now.getFullYear(),now.getMonth()+1,0).getDate(),projectedLeadCount=Math.round(monthlyLeadCount/monthDay*monthDays), referralRate=total?projectedLeadCount/total:0, ratioTarget=1.15;
     const ratioPct=Math.min(100,(referralRate/ratioTarget)*100),ratioPts=ratioPct/100*30;
     // The scorecard's 20% count is the full active Power BI roster, not the separate 90-day retained subset.
-    const activePartners=sourceRows.filter(Boolean),activePartnerCount=activePartners.length||Number(meta&&meta.total||0),activePct=Math.min(100,(activePartnerCount/200)*100),activePts=activePct/100*20;
+    const activePartners=sourceRows.filter(Boolean),activePartnerCount=total,activePct=Math.min(100,(activePartnerCount/200)*100),activePts=activePct/100*20;
     const target=danielTierMilestone(now),tierScore=danielTierCountScore(counts,target);
     const weighted=Math.round((tierScore.total+ratioPts+activePts)*10)/10;
 
-    window.rmV429ScoreData={active:active,activePartners:activePartners,activePartnerCount:activePartnerCount,monthlyLeadCount:monthlyLeadCount,projectedLeadCount:projectedLeadCount,leadsPerActiveAgent:referralRate,ratioTarget:ratioTarget,monthLeads:scoredMonthLeads,syncedMonthLeadCount:scoredMonthLeads.length,counts:counts,total:total,target:target,sourceStamp:(meta&&meta.imported_at?String(meta.imported_at).slice(0,10):'latest synced portfolio')};
-    const sourceStamp=(meta&&meta.imported_at?String(meta.imported_at).slice(0,10):'latest synced portfolio')+(acknowledgedNov9?' · 4 approved source-row exclusions':'');
+    window.rmV429ScoreData={active:active,activePartners:activePartners,activePartnerCount:activePartnerCount,matchedAgentCount:sourceRows.length,unmatchedAgentCount:Math.max(0,total-sourceRows.length),monthlyLeadCount:monthlyLeadCount,projectedLeadCount:projectedLeadCount,leadsPerActiveAgent:referralRate,ratioTarget:ratioTarget,monthLeads:scoredMonthLeads,syncedMonthLeadCount:scoredMonthLeads.length,counts:counts,total:total,target:target,sourceStamp:(meta&&meta.imported_at?String(meta.imported_at).slice(0,10):'latest synced portfolio')};
+    const sourceStamp=(meta&&meta.imported_at?String(meta.imported_at).slice(0,10):'latest synced portfolio')+(acknowledgedNov9?' · 136 Power BI source agents, 132 linked profiles; 4 need reconciliation':'');
     const roadmap=[
       {label:'9/30 Target',Channel:2,A:14,B:21},
       {label:'10/31 Target',Channel:2,A:16,B:24},
