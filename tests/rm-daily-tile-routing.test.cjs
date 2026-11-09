@@ -51,4 +51,9 @@ assert(code.includes('window.rmV440GetPortfolioData'), 'Portfolio work must load
 assert(code.includes("rows.map((q,i)=>"), 'Every assigned item must be accessible');
 assert(!/Fresh start · November 9 onward/i.test(code), 'Internal reset wording not user facing');
 assert(html.includes('ui/daily-execution-coaching.js?v='), 'Daily script loaded');
+for(const path of ['ui/daily-execution-coaching.js','ui/outstanding-daily-checklist.js','ui/fast-activity-workflow.js']){
+ const count=html.split('<script defer src="./'+path+'?v=').length-1;
+ assert.equal(count,1,'Expected exactly one script load for '+path);
+}
+assert(!code.includes('Fresh start ·'), 'Private wording must not appear in Amanda daily plan');
 console.log('PASS: mapped RM task destinations, visible workboard, portfolio source and daily metrics');
