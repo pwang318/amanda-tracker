@@ -140,24 +140,19 @@ async function refresh(force=false){
  }finally{working=false}
 }
 function openTask(q){
- const category=String(q.Category||q.activity_type||q.reason||'').toLowerCase();
- const lane=kind=>{if(typeof window.v350OpenLane==='function'){window.v350OpenLane(kind);return true}return false};
- const tab=name=>{if(typeof window.switchTab==='function'){window.switchTab(name);return true}return false};
- // Open the workflow that owns the task, not a generic agent modal.
- if(/4.week|campaign|conversion/.test(category))return lane('conversion')||tab('portfolio');
- if(/tuesday|listing update/.test(category))return tab('tuesday');
- if(/transaction|contract|ctc|buyer call/.test(category))return lane('calls')||tab('portfolio');
- if(/weekly realtor|weekly.*call|portfolio.*call/.test(category))return lane('smart')||tab('portfolio');
- if(/new agent|cold call|prospect/.test(category))return tab('log');
- if(/reconnect|reactivat|outreach/.test(category))return tab('reconnect');
- if(/missing growth plan|growth next step/.test(category)){if(typeof window.rmV440OpenPortfolio==='function')return window.rmV440OpenPortfolio('work');return tab('portfolio')}
- if(/growth|tier|c.agent|promotion/.test(category))return tab('growth');
- if(/meeting|business plan|portfolio|follow.up|relationship/.test(category)){
-  if(typeof window.rmV440OpenPortfolio==='function')return window.rmV440OpenPortfolio('work');
-  return tab('portfolio');
+ const name=String(q.agent_name||q['Agent / Item']||'').trim();
+ const type=String(q.Category||q.activity_type||'').toLowerCase();
+ // Take Amanda to the selected relationship rather than an unrelated workflow landing page.
+ if(name&&typeof window.openContactModal==='function'){
+  Promise.resolve(window.openContactModal(name)).catch(err=>{
+   console.warn('Could not open agent profile',name,err);
+   if(typeof window.switchTab==='function')window.switchTab('contacts');
+  });
+  return;
  }
- if(typeof window.rmV440OpenPortfolio==='function')return window.rmV440OpenPortfolio('work');
- return tab('portfolio');
+ if(/tuesday/.test(type)&&typeof window.switchTab==='function')return window.switchTab('tuesday');
+ if(/transaction/.test(type)&&typeof window.v350OpenLane==='function')return window.v350OpenLane('calls');
+ if(typeof window.switchTab==='function')return window.switchTab('portfolio');
 }
 function taskList(title,rows,empty){
  const list=rows.map((q,i)=>'<li><button type="button" class="execTaskGo" data-list="'+safe(title)+'" data-index="'+i+'">'+safe(q.agent_name||q['Agent / Item']||'Assigned agent')+' · '+safe(q.activity_type||q.Category||q.reason||q['Next Action']||'Outstanding action')+(q.work_date||q['Due Date']?' ('+safe(q.work_date||q['Due Date'])+')':'')+' ↗</button></li>').join('');
@@ -173,7 +168,7 @@ function showDetail(key,scroll=true){
   return;
  }
  const match=/^(section|category):(\d+)$/.exec(key);
- const index=match?(match[1]==='section'?Number(match[2]):6+Number(match[2])):-1;
+ const index=match?(match[1]==='section'?Number(match[2]):5+Number(match[2])):-1;
  const group=detailGroups[index];
  if(!group){activeDetail=null;detail.hidden=true;home.hidden=false;return}
  home.hidden=true;detail.hidden=false;
@@ -204,38 +199,40 @@ function render(){
  const nextOff=[...outDates()].filter(x=>x>=d).sort();
  const notice=$('execNotice');notice.className='execNotice'+(offNow?'':' execWarn');
  notice.textContent=offNow?'Out of office today — no cold-call target or missed-day flag. Outstanding agent commitments still require coverage.':cold<25?'Prospecting below minimum: '+cold+' of 25 logged. The full 60-minute block is also required; actual time is not verified by call count.':'25+ calls logged. Keep the protected 60-minute prospecting block; elapsed time is not inferred.';
+ const sections=[
+  ['Overdue work',late,'No overdue assigned work found in the available lists'],
+  ['Due today',need,'No dated tasks due today'],
+  ['Next workday · '+(next?fmt(next):'unknown'),tmrw,'No dated work scheduled for the next workday'],
+  ['Upcoming dated work',thisWeek,'No other dated work scheduled in the next seven days'],
+  ['Completed queue work',done,'No completed assigned queue entries verified']
+ ];
+ const categories=[
+  ['4-week campaigns',/4.week|campaign|conversion/i],
+  ['Relationship follow-ups',/follow.up|portfolio.*follow|partner touch|needs attention/i],
+  ['Weekly Realtor calls',/weekly realtor|weekly.*call/i],
+  ['Transaction and Tuesday updates',/transaction|contract|ctc|tuesday/i],
+  ['Meetings and growth plans',/meeting|business plan|growth.*plan|growth next step/i],
+  ['C-agent growth and protection',/c.agent|growth|retention|protect|promotion/i],
+  ['Outreach and reconnect',/outreach|reconnect|cold call/i]
+ ];
+ const categoryRows=categories.map(([title,rx])=>[title,all.filter(q=>rx.test(String(q.Category||q.activity_type||q.reason||''))),'No currently open items found for this category']);
+ const known=all.filter(q=>!categories.some(([,rx])=>rx.test(String(q.Category||q.activity_type||q.reason||''))));
+ if(known.length)categoryRows.push(['Other assigned tasks',known,'No other tasks verified']);
+ const weekly=all.filter(q=>/weekly realtor|weekly.*call/i.test(q.Category||q.activity_type||''));
+ const campaigns=all.filter(q=>/4.week|campaign/i.test(q.Category||q.activity_type||''));
+ const missingPlans=all.filter(q=>/missing growth plan/i.test(q.Category||q.activity_type||''));
+ const noticeMissing=!fullVerified?' (partial)':'';
  $('execMetrics').innerHTML=[
   ['Cold calls today',offNow?'PTO':cold+' / 25+','log'],
   ['Prospecting minutes',dataOf(closeRecord(d))?.prospecting_minutes==null?'Not logged / 60':dataOf(closeRecord(d)).prospecting_minutes+' / 60','closeout'],
   ['Meetings logged',meetingFor(d),'feed'],
-  ['Overdue work',late.length,'overdue'],
-  ['Due today',need.length,'today'],
-  ['Next workday · '+(next?fmt(next):'unverified'),tmrw.length,'next'],
-  ['Next 7 days (later)',thisWeek.length,'week'],
-  ['Completed assigned tasks',done.length,'done'],
-  ['Needs a due date',undated.length,'undated']
+  ['Overdue work'+noticeMissing,late.length,'section:0'],
+  ['Due today'+noticeMissing,need.length,'section:1'],
+  ['Weekly calls remaining'+noticeMissing,weekly.length,'category:2'],
+  ['4-week follow-ups'+noticeMissing,campaigns.length,'category:0'],
+  ['Missing growth plans'+noticeMissing,missingPlans.length,'plans'],
+  ['Activity logged today',activeFor(d).length,'feed']
  ].map(x=>'<div class="execMetric" role="button" tabindex="0" data-exec-target="'+safe(x[2])+'" aria-label="Open '+safe(x[0])+'"><strong>'+safe(x[1])+'</strong><span>'+safe(x[0])+' ↗</span></div>').join('');
- const sections=[
-  ['Carry forward · overdue',late,'No overdue commitments found in the available work lists'],
-  ['Due today',need,'No due-today work confirmed in the connected lists'],
-  ['Open work without a due date',undated,'No undated open work found'], 
-  ['Next workday · '+(next?fmt(next):'unknown'),tmrw,'No dated work queued for the next workday'],
-  ['Due in the next 7 days',thisWeek,'No other dated work found in the coming week'],
-  ['Completed assigned tasks',done,'No completed assigned tasks verified in the shared queue']
- ];
- const categories=[
- ['4-week campaigns',/4.week|campaign|conversion/i],
- ['Relationship follow-ups',/follow.up|portfolio.*follow|partner touch|needs attention/i],
- ['Weekly Realtor calls',/weekly realtor|weekly.*call/i],
- ['Transaction and Tuesday updates',/transaction|contract|ctc|tuesday/i],
- ['Meetings and growth plans',/meeting|business plan|growth.*plan|growth next step/i],
- ['C-agent growth and protection',/c.agent|growth|retention|protect|promotion/i],
- ['Outreach and reconnect',/outreach|reconnect|cold call/i]
- ];
- const categoryRows=categories.map(([title,rx])=>[title,all.filter(q=>rx.test(String(q.Category||q.activity_type||q.reason||''))),'No currently open items found for this category']);
- const known=all.filter(q=>!categories.some(([,rx])=>rx.test(String(q.Category||q.activity_type||q.reason||''))));
- if(known.length)categoryRows.push(['Other assigned tasks',known,'']);
-
  detailGroups=sections.concat(categoryRows);
  const grid=$('execCategoryGrid');
  grid.innerHTML=categoryRows.map((group,i)=>'<button type="button" class="execCategoryBtn" data-category="'+i+'"><span>'+safe(group[0])+'</span><strong>'+group[1].length+' ↗</strong></button>').join('');
@@ -245,8 +242,8 @@ function render(){
    const kind=tile.dataset.execTarget;
    if(kind==='log'||kind==='feed'){if(typeof window.switchTab==='function')window.switchTab(kind==='feed'?'feed':'log');return}
    if(kind==='closeout'){$('execCloseout').open=true;$('execCloseout').scrollIntoView({behavior:'smooth',block:'center'});return}
-   const map={overdue:0,today:1,undated:2,next:3,week:4,done:5};
-   if(map[kind]!==undefined)showDetail('section:'+map[kind]);
+   if(kind==='plans')return showDetail('category:4');
+   if(kind.startsWith('section:')||kind.startsWith('category:'))return showDetail(kind);
   };
   tile.addEventListener('click',action);
   tile.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();action()}});
