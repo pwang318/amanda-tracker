@@ -9,43 +9,31 @@ const m = code.match(/function openTask\(q\)\{[\s\S]*?\n\}\nfunction taskList\(/
 assert(m, 'openTask handler is present');
 const events = [];
 const win = {
+ openContactModal: name => events.push('agent:'+name),
  v350OpenLane: name => events.push('lane:' + name),
- switchTab: name => events.push('tab:' + name),
- rmV440OpenPortfolio: name => events.push('portfolio:' + name)
+ switchTab: name => events.push('tab:' + name)
 };
-const ctx = { window: win };
+const ctx = { window: win, Promise, console };
 vm.createContext(ctx);
 vm.runInContext(m[0].replace(/\nfunction taskList\($/, '') + '\nthis.open = openTask;',ctx);
-for(const [type, expected] of [
- ['4-Week Campaign','lane:conversion'],
- ['Tuesday Updates','tab:tuesday'],
- ['Transaction Call','lane:calls'],
- ['Weekly Realtor Call','lane:smart'],
- ['Cold Calls','tab:log'],
- ['Reconnect Outreach','tab:reconnect'],
- ['C-agent growth','tab:growth'],
- ['Portfolio · Meeting Due','portfolio:work'],
- ['Missing Growth Plan','portfolio:work'],
- ['Portfolio · Growth Next Step','portfolio:work'],
- ['Portfolio · Partner Touch Due','portfolio:work'],
- ['Follow-up','portfolio:work']
+for(const type of [
+ '4-Week Campaign','Tuesday Updates','Transaction Call','Weekly Realtor Call',
+ 'Cold Calls','Reconnect Outreach','C-agent growth','Portfolio · Meeting Due',
+ 'Missing Growth Plan','Portfolio · Growth Next Step','Portfolio · Partner Touch Due','Follow-up'
 ]){
  events.length = 0;
  ctx.open({Category:type,agent_name:'Sample Agent'});
- assert.equal(events[0],expected,'Wrong destination for ' + type);
+ assert.equal(events[0],'agent:Sample Agent','Must open exact agent record for ' + type);
 }
-for(const [key,title] of [
- ['log','Cold calls today'],
- ['closeout','Prospecting minutes'],
- ['overdue','Overdue work'],
- ['today','Due today'],
- ['next','Next workday · '],
- ['week','Next 7 days (later)'],
- ['done','Completed assigned tasks'],
- ['undated','Needs a due date']
+for(const label of [
+ 'Cold calls today','Prospecting minutes','Meetings logged','Overdue work',
+ 'Due today','Weekly calls remaining','4-week follow-ups',
+ 'Missing growth plans','Activity logged today'
 ]){
- assert(code.includes("['"+title+"'") || code.includes("['"+title+"',"),'Missing metric ' + title);
+ assert(code.includes(label),'Missing daily tile '+label);
 }
+assert(!code.includes("['Needs a due date'"),'Weekly calls and growth plans are not missing deadlines');
+assert(code.includes("const index=match?(match[1]==='section'?Number(match[2]):5+Number(match[2]))"),'Category indexes match the section offset');
 assert(code.includes("const board=$('rm350Workboard')||$('view-week')"), 'Daily plan mounts inside the visible board');
 assert(code.includes('window.rmV440GetPortfolioData'), 'Portfolio work must load into the daily task list');
 assert(code.includes("rows.map((q,i)=>"), 'Every assigned item must be accessible');
