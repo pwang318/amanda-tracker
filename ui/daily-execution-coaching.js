@@ -172,7 +172,7 @@ function showDetail(key,scroll=true){
   if(scroll)$('rmExecutionPlan')?.scrollIntoView({behavior:'smooth',block:'start'});
   return;
  }
- const match=/^(section|category):(\\d+)$/.exec(key);
+ const match=/^(section|category):(\d+)$/.exec(key);
  const index=match?(match[1]==='section'?Number(match[2]):6+Number(match[2])):-1;
  const group=detailGroups[index];
  if(!group){activeDetail=null;detail.hidden=true;home.hidden=false;return}
