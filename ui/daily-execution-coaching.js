@@ -221,9 +221,14 @@ function render(){
   ['C-agent growth and protection',/c.agent|growth|retention|protect|promotion/i],
   ['Outreach and reconnect',/outreach|reconnect|cold call/i]
  ];
- const categoryRows=categories.map(([title,rx])=>[title,all.filter(q=>rx.test(String(q.Category||q.activity_type||q.reason||''))),'No currently open items found for this category']);
- const known=all.filter(q=>!categories.some(([,rx])=>rx.test(String(q.Category||q.activity_type||q.reason||''))));
- if(known.length)categoryRows.push(['Other assigned tasks',known,'No other tasks verified']);
+ const categoryRows=categories.map(([title])=>[title,[],'No currently open items found for this category']);
+ const otherRows=[];
+ for(const q of all){
+  const type=String(q.Category||q.activity_type||q.reason||'');
+  const index=categories.findIndex(([,rx])=>rx.test(type));
+  if(index>=0)categoryRows[index][1].push(q);else otherRows.push(q);
+ }
+ if(otherRows.length)categoryRows.push(['Other assigned tasks',otherRows,'No other tasks verified']);
  const weekly=all.filter(q=>/weekly realtor|weekly.*call/i.test(q.Category||q.activity_type||''));
  const campaigns=all.filter(q=>/4.week|campaign/i.test(q.Category||q.activity_type||''));
  const missingPlans=all.filter(q=>/missing growth plan/i.test(q.Category||q.activity_type||''));
