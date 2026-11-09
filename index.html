@@ -3,7 +3,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta content="rm-tracker-v501-october-leads-85-20261102" name="version"/>
+<meta content="rm-tracker-v504-shared-powerbi-verified-20261109" name="version"/>
 <meta content="v501: RM verified October lead checkpoint aligned to LP source; the active-agent scoring formula remains unchanged." name="build-notes"/>
 <meta content="no-cache, no-store, must-revalidate" http-equiv="Cache-Control"/>
 <meta content="no-cache" http-equiv="Pragma"/>
@@ -20202,9 +20202,40 @@ function rmV453MetaFromProfiles(profiles){
 window.rmV453MetaFromProfiles=rmV453MetaFromProfiles;
 function parseReceipt(row){if(!row)return null;try{if(typeof v328ParsePowerBiReceipt==='function'){const r=v328ParsePowerBiReceipt(row.source_app,row.imported_at);if(!r)return null;return{imported_at:r.imported_at||'',raw:Number(r.raw_rows||0),Channel:Number(r.levels&&r.levels.Channel||0),A:Number(r.levels&&r.levels.A||0),B:Number(r.levels&&r.levels.B||0),C:Number(r.levels&&r.levels.C||0),blank:Number(r.levels&&r.levels.Blank||0),other:Number(r.levels&&r.levels.Other||0),total:Number(r.active_rows||0),source:'shared Core Team Power BI receipt'}}}catch(e){}return null}
 let cache=null,cacheAt=0,pending=null;
+function rmVerifiedPowerBiWarning(msg){
+ let e=document.getElementById('rmSharedPowerBiWarning');
+ if(!msg){if(e)e.remove();return;}
+ if(!e){e=document.createElement('div');e.id='rmSharedPowerBiWarning';e.setAttribute('role','alert');e.style.cssText='position:sticky;top:0;z-index:9999;background:#FFF3DC;color:#79450A;border:2px solid #DCAC47;text-align:center;font-weight:700;padding:12px';document.body.prepend(e);}
+ e.textContent='⚠ Shared Power BI cannot be verified: '+msg+'. Counts are unavailable until the server refresh succeeds.';
+}
 async function rmV453PowerBiMeta(force){
-  if(!force&&cache&&Date.now()-cacheAt<30000)return cache;if(pending)return pending;
-  pending=(async()=>{const [profiles,logs]=await Promise.all([sbFetch('agent_profiles?select=agent_name,powerbi_level,powerbi_last_seen_at,closes_past_year&powerbi_last_seen_at=not.is.null&limit=5000').catch(()=>[]),sbFetch('powerbi_import_log?select=imported_at,source_app,rows_processed,errors&source_app=like.core-team-tracker%25&order=imported_at.desc&limit=1').catch(()=>[])]);const profileMeta=rmV453MetaFromProfiles(profiles),receipt=parseReceipt(logs&&logs[0]),profileMs=Date.parse(profileMeta.imported_at||'')||0,receiptMs=Date.parse(receipt&&receipt.imported_at||'')||0;cache=receipt&&receiptMs>profileMs+120000?receipt:(profileMeta.total||profileMeta.raw?profileMeta:(receipt||profileMeta));cacheAt=Date.now();return cache})().finally(()=>{pending=null});return pending;
+ if(!force&&cache&&Date.now()-cacheAt<30000)return cache;
+ if(pending)return pending;
+ pending=(async()=>{
+  try{
+   const [profiles,logs]=await Promise.all([
+    sbFetch('agent_profiles?select=agent_name,powerbi_level,powerbi_last_seen_at,closes_past_year&powerbi_last_seen_at=not.is.null&limit=5000'),
+    sbFetch('powerbi_import_log?select=imported_at,source_app,rows_processed,errors&source_app=like.core-team-tracker%25&order=imported_at.desc&limit=1')
+   ]);
+   const row=logs&&logs[0],receipt=parseReceipt(row);
+   if(!row||!receipt||String(row.errors||'0')!=='0')throw new Error('Missing successful shared import receipt');
+   const p=String(row.source_app||'').match(/(?:^|;)profileStamp=([^;]+)/);
+   const timestamp=p?decodeURIComponent(p[1]):row.imported_at,ms=Date.parse(timestamp),expected=Number(row.rows_processed);
+   if(!Number.isFinite(ms)||!Number.isInteger(expected)||expected<1)throw new Error('Invalid server import receipt');
+   const names=new Set();const levels={A:0,B:0,C:0};
+   (profiles||[]).forEach(r=>{
+    if(Math.abs(Date.parse(r.powerbi_last_seen_at||'')-ms)>=1000)return;
+    const k=String(r.agent_name||'').trim().toLowerCase().replace(/\s+/g,' ');
+    if(!k||names.has(k))return;names.add(k);
+    const level=String(r.powerbi_level||'').trim().toUpperCase();if(levels[level]!==undefined)levels[level]++;
+   });
+   if(names.size!==expected)throw new Error('Only '+names.size+' of '+expected+' agent profiles stamped');
+   if(['A','B','C'].some(t=>levels[t]!==Number(receipt[t])))throw new Error('Tier counts differ from server receipt');
+   cache={...receipt,raw:expected,total:expected,source:'verified shared Power BI server'};
+   cacheAt=Date.now();rmVerifiedPowerBiWarning(null);return cache;
+  }catch(e){cache=null;cacheAt=0;rmVerifiedPowerBiWarning(e.message||'Unknown error');throw e;}
+ })().finally(()=>{pending=null});
+ return pending;
 }
 window.v129PowerBiMeta=rmV453PowerBiMeta;window.rmV453PowerBiMeta=rmV453PowerBiMeta;
 async function signature(){const [p,l]=await Promise.all([sbFetch('agent_profiles?select=powerbi_last_seen_at&powerbi_last_seen_at=not.is.null&order=powerbi_last_seen_at.desc&limit=1').catch(()=>[]),sbFetch('powerbi_import_log?select=imported_at&source_app=like.core-team-tracker%25&order=imported_at.desc&limit=1').catch(()=>[])]);return String(p&&p[0]&&p[0].powerbi_last_seen_at||'')+'|'+String(l&&l[0]&&l[0].imported_at||'')}
