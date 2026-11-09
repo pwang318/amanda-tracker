@@ -49,9 +49,11 @@ return 'Ask about upcoming buyers and agree on a dated referral goal';}
 function score(p){return (p.tier==='C'?40:0)+(p.closings===1?35:0)+(p.high_potential_flag?18:0)+(p.leads?Math.min(p.leads,15):0)+(p.competitor_risk_flag?20:0)+(p.daysNoLead!==null&&p.daysNoLead>=30?25:0);}
 function normalize(){
 const seen=new Set(),out=[];
+const latestStamp=state.profiles.map(p=>date(p.powerbi_last_seen_at)).filter(Boolean).sort().at(-1)||null;
 for(const p of state.profiles){
+if(!latestStamp||date(p.powerbi_last_seen_at)!==latestStamp)continue;
 const k=key(p.agent_name),tier=getTier(p);
-if(!k||seen.has(k)||k.startsWith('__')||p.display_name==='__HIDDEN__'||p.do_not_contact===true||p.relationship_status==='inactive'||p.retained===false||p.relationship_type==='strategic_partner')continue;
+if(!k||seen.has(k)||k.startsWith('__')||p.display_name==='__HIDDEN__'||p.do_not_contact===true||p.relationship_status==='inactive'||p.relationship_type==='strategic_partner')continue;
 seen.add(k);
 if(!['C','B','A','Channel'].includes(tier))continue;
 const rm=getOwner(p,tier),closes=safeNumber(p.closes_past_year),leads=safeNumber(p.total_leads_past_year),daysNoLead=daysSince(p.latest_lead_date);
