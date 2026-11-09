@@ -62,3 +62,10 @@ assert(code.includes("list.querySelectorAll('[data-activity-index]')"),'Specific
 assert(code.includes("id=\"execLogRelated\""),'Activity drilldown must provide a new logging action');
 assert(code.includes("activeDetail='activity:'+kind"),'Activity breakdown stays visible after refresh');
 console.log('PASS exact cold-call and meeting record drilldowns with agent and logging controls');
+
+assert(code.includes('function renderMissedSummary(d)'), 'Daily closeout must show concrete missed goals');
+assert(code.includes("'<strong>Cold calls:</strong> '"), 'Daily closeout shows call target and gap');
+assert(code.includes("'<strong>Prospecting time:</strong> '"), 'Daily closeout shows prospecting minutes and gap');
+assert(code.includes('Open work still needing attention'), 'Closeout shows currently open assignments');
+assert(code.includes('Partial worklist:'), 'Closeout warns when full relationship sources are unverified');
+assert(code.includes('renderMissedSummary(d);'), 'Review date changes refresh missed-goal summary');
