@@ -15896,16 +15896,35 @@ async function renderOfficial(force){
   rmV428OfficialPromise=(async()=>{
   try{
     const now=new Date(), monthStart=localDateStr(new Date(now.getFullYear(),now.getMonth(),1));
-    const [profiles,monthLeads]=await Promise.all([
+    const [profiles,monthLeads,importLogs]=await Promise.all([
       sbFetch("agent_profiles?select=*&limit=5000"),
-      sbFetch("velocify_leads?date_added=gte."+monthStart+"&select=lead_key,referral_partner_name,date_added&limit=10000")
+      sbFetch("velocify_leads?date_added=gte."+monthStart+"&select=lead_key,referral_partner_name,date_added&limit=10000"),
+      sbFetch("powerbi_import_log?select=imported_at,source_app,rows_processed,errors&source_app=like.core-team-tracker%25&order=imported_at.desc&limit=1")
     ]);
     let sourceRows=[];
     if(typeof v124LatestPowerBiSnapshot==='function'){
       const snap=v124LatestPowerBiSnapshot(profiles||[]);
       sourceRows=(snap&&Array.isArray(snap.rows))?snap.rows:[];
     }else sourceRows=(profiles||[]).filter(p=>p&&p.retained===true);
-    if(!Array.isArray(profiles)||!Array.isArray(monthLeads)||!sourceRows.length)throw new Error('Current Power BI roster or referral data unavailable');
+    if(!Array.isArray(profiles)||!Array.isArray(monthLeads)||!Array.isArray(importLogs)||!sourceRows.length)throw new Error('Current Power BI roster, import receipt, or referral data unavailable');
+    // Compensation safety: do not present a weighted score as verified when imported source
+    // levels do not reconcile to the exact latest stamped agent profiles.
+    const importReceipt=importLogs[0]&&typeof v328ParsePowerBiReceipt==='function'
+      ?v328ParsePowerBiReceipt(importLogs[0].source_app,importLogs[0].imported_at):null;
+    const snapStamp=sourceRows.reduce((max,p)=>Math.max(max,Date.parse(p.powerbi_last_seen_at||'')||0),0);
+    const receiptStamp=Date.parse(importReceipt&&importReceipt.imported_at||'')||0;
+    const snapLevels={A:0,B:0,C:0};
+    sourceRows.forEach(p=>{const lv=String(p.powerbi_level||'').toUpperCase();if(Object.hasOwn(snapLevels,lv))snapLevels[lv]++});
+    const receiptValid=!!importReceipt&&!Number(importReceipt.errors||0)&&Math.abs(snapStamp-receiptStamp)<=120000;
+    const receiptMatches=receiptValid&&Number(importReceipt.active_rows)===sourceRows.length
+      &&['A','B','C'].every(level=>Number(importReceipt.levels[level])===snapLevels[level]);
+    if(!receiptMatches){
+      window.rmV429ScoreData=null;rmV428OfficialHTML=null;rmV428OfficialAt=0;
+      const msg=!importReceipt?'Latest Power BI import receipt unavailable.':
+        'Power BI import receipt: '+importReceipt.active_rows+' A/B/C agents (A '+importReceipt.levels.A+', B '+importReceipt.levels.B+', C '+importReceipt.levels.C+'). Matched profiles: '+sourceRows.length+' (A '+snapLevels.A+', B '+snapLevels.B+', C '+snapLevels.C+').';
+      host.innerHTML='<div style="background:#fff8e7;border:2px solid #c48b27;border-radius:12px;padding:18px;color:#64440e"><h2 style="margin:0 0 8px">Scorecard verification required</h2><p style="font-size:13px;line-height:1.5">'+E(msg)+'</p><p style="font-size:12px">Weighted score withheld because the import and linked agent records are not reconciled. This tracker is not approved as a compensation source until the four exclusions and the official payout denominator are confirmed in Power BI. The referral-lead count must also be matched against the official monthly report.</p><button type="button" class="btn-sm" onclick="rmV428RenderOfficialScorecard(true)">Recheck shared scorecard</button></div>';
+      return;
+    }
 
     let meta=null;
     try{if(typeof v129PowerBiMeta==='function')meta=await v129PowerBiMeta(false)}catch(e){}
@@ -15952,7 +15971,7 @@ async function renderOfficial(force){
     if(host.innerHTML!==html)host.innerHTML=html;
   }catch(err){
     console.error('V426 official scorecard',err);
-    if(!rmV428OfficialHTML)host.innerHTML='<div class="no-data">Scorecard data could not load. <button class="btn-sm" type="button" onclick="rmV426RenderOfficialScorecard(true)">Retry</button></div>';
+    window.rmV429ScoreData=null;rmV428OfficialHTML=null;rmV428OfficialAt=0;host.innerHTML='<div class="no-data">Scorecard data unavailable or refresh failed. No cached or zero score will be used for compensation. <button class="btn-sm" type="button" onclick="rmV428RenderOfficialScorecard(true)">Retry</button></div>';
   }finally{rmV428OfficialPromise=null}
   })();
   return rmV428OfficialPromise;
