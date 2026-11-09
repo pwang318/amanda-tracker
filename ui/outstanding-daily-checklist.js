@@ -79,21 +79,21 @@ function classify(rows){
  }
  return buckets;
 }
-function output(rows){
+function output(rows,partial=false){
  const box=$('rmCheckContent'),counts=$('rmCheckCounts');if(!box||!counts)return;
  const buckets=classify(rows);const total=Object.values(buckets).reduce((n,rs)=>n+rs.length,0);
  const overdue=Object.values(buckets).flat().filter(x=>x.late).length;
- counts.innerHTML='<span class="rmCheckStat">'+total+' outstanding items</span><span class="rmCheckStat">'+overdue+' overdue · carry forward</span><span class="rmCheckStat">Review again tomorrow if unfinished</span>';
+ counts.innerHTML=(partial?'<span class="rmCheckStat">Partial data only · full checklist connection unavailable</span>':'')+'<span class="rmCheckStat">'+total+' '+(partial?'verified visible items':'outstanding items')+'</span><span class="rmCheckStat">'+overdue+' overdue · carry forward</span><span class="rmCheckStat">Review again tomorrow if unfinished</span>';
  box.className='rmCheckGroups';
  box.replaceChildren();
  for(const group of GROUPS){
-  const list=buckets[group.id];
+  const list=buckets[group.id];const unverified=partial&&!['followup','outreach'].includes(group.id);
   const section=document.createElement('section');section.className='rmCheckGroup';
   const head=document.createElement('div');head.className='rmCheckGroupHead';
-  head.innerHTML='<div><b>'+esc(group.label)+'</b><small>'+esc(group.detail)+'</small></div><strong>'+(group.id==='tuesday'&&!tuesdayKnown?'—':list.length)+'</strong>';
+  head.innerHTML='<div><b>'+esc(group.label)+'</b><small>'+esc(group.detail)+'</small></div><strong>'+(unverified||(group.id==='tuesday'&&!tuesdayKnown)?'—':list.length)+'</strong>';
   const button=document.createElement('button');button.type='button';button.textContent='Open list';button.onclick=()=>open(group.action);
   head.append(button);section.append(head);
-  if(!list.length){const empty=document.createElement('div');empty.className='rmCheckEmpty';empty.textContent=group.id==='tuesday'&&!tuesdayKnown?'Tuesday status not verified · open list':'Nothing outstanding';section.append(empty)}
+  if(!list.length){const empty=document.createElement('div');empty.className='rmCheckEmpty';empty.textContent=unverified||group.id==='tuesday'&&!tuesdayKnown?'Not verified · open the full work list':'Nothing outstanding';section.append(empty)}
   for(const item of list.slice(0,3)){
    const row=document.createElement('div');row.className='rmCheckItem';
    const label=document.createElement('span');label.textContent=item.name+(item.context?' · '+item.context:'');
@@ -105,15 +105,22 @@ function output(rows){
  }
 }
 async function fallback(){
- // If the unified work-list builder is temporarily unavailable, do not invent "zero" counts.
+ // Narrow, honest fallback: never label unverified categories as clear.
+ if(typeof sbFetch!=='function')throw Error('Shared RM database connection unavailable');
  const [queue,activities]=await Promise.all([
   sbFetch('rm_work_queue?select=agent_name,activity_type,work_date,status,source,owner&status=eq.open&owner=eq.Amanda&limit=1500'),
   sbFetch('amanda_activities?select=agent_name,act_type,act_date,follow_up_date&follow_up_date=not.is.null&follow_up_date=lte.'+today()+'&limit=1500')
  ]);
- const rows=(queue||[]).map(t=>({
-  Category:/reconnect|talk-to|follow-up/i.test(t.activity_type||'')?'Follow-up':'Weekly Realtor Call',
-  'Agent / Item':t.agent_name,'Due Date':t.work_date||'',Status:'Open','Next Action':'Complete '+(t.activity_type||'required call')
- }));
+ if(!Array.isArray(queue)||!Array.isArray(activities))throw Error('Shared RM work records could not be verified');
+ const rows=[];
+ for(const t of queue){
+  const name=String(t.agent_name||'').trim();if(!name)continue;
+  rows.push({Category:'Open Outreach','Agent / Item':name,'Due Date':String(t.work_date||'').slice(0,10),Status:'Open','Next Action':String(t.activity_type||'Complete assigned outreach')});
+ }
+ for(const a of activities){
+  const name=String(a.agent_name||'').trim();if(!name)continue;
+  rows.push({Category:'Follow-up','Agent / Item':name,'Due Date':String(a.follow_up_date||'').slice(0,10),Status:'Open','Next Action':'Complete promised follow-up and log outcome'});
+ }
  return rows;
 }
 async function refresh(force=false){
@@ -121,7 +128,7 @@ async function refresh(force=false){
  if(!force&&at&&Date.now()-at<50000)return;
  busy=true;$('rmCheckContent').textContent='Checking overdue commitments and outstanding tasks…';
  try{
-  let data;
+  let data,partial=false;
   if(typeof window.rmV462LoadMorningRows==='function'){
    // First load live Portfolio data so the same missing-plan and meeting actions
    // used elsewhere are available to this checklist.
@@ -146,9 +153,9 @@ async function refresh(force=false){
    if(num!==null&&num>0)for(let k=0;k<num;k++)data.rows.push({Category:'Tuesday Updates','Agent / Item':'Outstanding listing update '+(k+1),'Due Date':today(),Status:'Open','Next Action':'Complete the Tuesday listing-agent update'});
    if(!data||!Array.isArray(data.rows))throw Error('Incomplete RM work-list results');
   }else{
-   throw Error('RM unified work-list bridge is unavailable');
+   data={rows:await fallback()};partial=true;
   }
-  lastLoaded=data.rows;at=Date.now();output(data.rows);
+  lastLoaded=data.rows;at=Date.now();output(data.rows,partial);
  }catch(e){
   $('rmCheckContent').className='rmCheckEmpty';
   $('rmCheckContent').textContent='Checklist could not verify outstanding work: '+String(e.message||e)+'. Open the work lists and retry. No zero totals are substituted.';
