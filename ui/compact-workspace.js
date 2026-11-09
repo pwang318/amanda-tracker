@@ -40,7 +40,7 @@ function mountPlan(board){
  if(board.querySelector('#rmWorkdayPlan'))return;
  const d=document.createElement('details');d.id='rmWorkdayPlan';
  const s=document.createElement('summary');s.textContent='8-hour workday plan · see time blocks';
- const note=document.createElement('p');note.textContent='480 minutes of work, with a separate 30-minute lunch. Prospecting is protected for 60 minutes; planned time does not mean an activity has been completed.';
+ const note=document.createElement('p');note.textContent='eight hours of work, with a separate 30-minute lunch. Prospecting is protected for 60 minutes; planned time does not mean an activity has been completed.';
  const rows=document.createElement('div');rows.className='rmPlanRows';
  slots.forEach(([time,name,dur])=>{const row=document.createElement('div');row.className='rmPlanRow';const a=document.createElement('span');a.className='rmPlanTime';a.textContent=time;const b=document.createElement('span');b.className='rmPlanName';b.textContent=name+' · '+dur;row.append(a,b);rows.append(row)});
  d.append(s,note,rows);board.append(d);
@@ -82,6 +82,20 @@ function hideWarnings(){
   }p.setAttribute('data-director-only-warning','true');
  }
 }
+
+function prospectingExpectation(){
+ const board=getWorkboard();if(!board)return;
+ const row=board.querySelector('.rm-daily-prospect-step');if(!row)return;
+ // Label the expected output, but never treat 25 completed calls as permission to end the time block early.
+ const subtitle=row.querySelector('.rm-daily-step-copy small');
+ const heading=row.querySelector('.rm-daily-step-copy b');
+ if(heading&&heading.textContent!=='Daily prospecting · 60 minutes · 25+ calls')heading.textContent='Daily prospecting · 60 minutes · 25+ calls';
+ if(subtitle){
+  const wording='Minimum 25 cold-call attempts. Keep dialing for the full hour—even after 25. Prioritize live conversations and booked meetings; log the outcome of each attempt.';
+  if(subtitle.textContent!==wording)subtitle.textContent=wording;
+ }
+}
+
 function render(){
  const board=getWorkboard();
  if(board){
@@ -89,7 +103,7 @@ function render(){
   const desc=[...board.querySelectorAll('p')].find(x=>/one clear route through your day/i.test(x.textContent||''));
   if(desc&&desc.textContent!=='Your focused worklist: transactions, follow-ups, prospecting, and agent growth.')desc.textContent='Your focused worklist: transactions, follow-ups, prospecting, and agent growth.';
  }
- hideSecondary();hideWarnings();
+ prospectingExpectation();hideSecondary();hideWarnings();
 }
 let queued=false;function schedule(){if(queued)return;queued=true;requestAnimationFrame(()=>{queued=false;render()})}
 function start(){
