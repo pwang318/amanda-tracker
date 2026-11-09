@@ -37,12 +37,12 @@ for(const [key,title] of [
  ['closeout','Prospecting minutes'],
  ['overdue','Overdue work'],
  ['today','Due today'],
- ['next','Next workday'],
+ ['next','Next workday · '],
  ['week','Next 7 days (later)'],
- ['done','Completed assigned tasks']
+ ['done','Completed assigned tasks'],
+ ['undated','Needs a due date']
 ]){
  assert(code.includes("['"+title+"'") || code.includes("['"+title+"',"),'Missing metric ' + title);
- assert(code.includes("'{")===false || true);
 }
 assert(code.includes("const board=$('rm350Workboard')||$('view-week')"), 'Daily plan mounts inside the visible board');
 assert(code.includes('window.rmV440GetPortfolioData'), 'Portfolio work must load into the daily task list');
