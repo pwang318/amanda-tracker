@@ -63,7 +63,7 @@ function mount(){
  const board=$('rm350Workboard')||$('view-week');if(!board)return;
  const existing=$('rmExecutionPlan');if(existing){if(existing.parentElement!==board)board.prepend(existing);return;}
  const div=document.createElement('section');div.id='rmExecutionPlan';
- div.innerHTML='<div class="execRow"><div><h2>Today’s plan</h2><p>Fresh start · November 9 onward. Goals, open work and next steps in one place.</p></div><button id="execReload" type="button">Refresh live activity</button></div>'+
+ div.innerHTML='<div class="execRow"><div><h2>Today’s plan</h2><p>Your daily goals, open work, completed activity, and next steps.</p></div><button id="execReload" type="button">Refresh live activity</button></div>'+
  '<div id="execNotice" class="execNotice">Loading shared activity and schedule…</div>'+
  '<div id="execMetrics" class="execMetrics"></div>'+
  '<details class="execTaskDetails" id="execTaskDetails" open><summary>Outstanding work · open the actual task list</summary><div id="execTaskSummary" class="execTasks"></div></details>'+
@@ -76,7 +76,7 @@ function mount(){
  '<details id="execOOO"><summary>Out-of-office calendar & coverage plan</summary><p>Days off are excluded from prospecting-goal calculations, not treated as missed goals. Any due relationship work still requires coverage or rescheduling.</p>'+
  '<div id="execDates" class="execDates"></div><div class="execForm"><label>First day off<input id="execOOOStart" type="date"></label><label>Last day off<input id="execOOOEnd" type="date"></label><button id="execSaveOOO" type="button">Save days off</button></div>'+
  '<div id="execOOOCoverage" class="execNotice"></div><div id="execOOOStatus" class="execStatus"></div></details>'+
- '<details id="execCoaching"><summary>Director coaching · since November 9</summary><div id="execTrends">Loading trend…</div></details>';
+ '<details id="execCoaching"><summary>Director coaching</summary><div id="execTrends">Loading trend…</div></details>';
  // The RM workboard is the only visible direct child of Today: its siblings are intentionally hidden by the existing layout CSS.
  board.prepend(div);
  $('execReload').onclick=()=>refresh(true);
@@ -131,7 +131,7 @@ function openTask(q){
 }
 function taskList(title,rows,empty){
  const list=rows.map((q,i)=>'<li><button type="button" class="execTaskGo" data-list="'+safe(title)+'" data-index="'+i+'">'+safe(q.agent_name||q['Agent / Item']||'Assigned agent')+' · '+safe(q.activity_type||q.Category||q.reason||q['Next Action']||'Outstanding action')+(q.work_date||q['Due Date']?' ('+safe(q.work_date||q['Due Date'])+')':'')+' ↗</button></li>').join('');
- return '<section><strong>'+safe(title)+' · '+rows.length+'</strong>'+(rows.length?'<ul>'+list'</ul>':'<p>'+safe(empty)+'</p>')+'</section>';
+ return '<section><strong>'+safe(title)+' · '+rows.length+'</strong>'+(rows.length?'<ul>'+list+'</ul>':'<p>'+safe(empty)+'</p>')+'</section>';
 }
 function render(){
  if(!$('execNotice'))return;const d=iso(),offNow=isOff(d),cold=coldFor(d),next=nextWorkday(d);
@@ -152,7 +152,7 @@ function render(){
   ['Cold calls today',offNow?'PTO':cold+' / 25+','log'],
   ['Prospecting minutes',dataOf(closeRecord(d))?.prospecting_minutes==null?'Not logged / 60':dataOf(closeRecord(d)).prospecting_minutes+' / 60','closeout'],
   ['Meetings logged',meetingFor(d),'log'],
-  ['Overdue from Nov 9',late.length,'overdue'],
+  ['Overdue work',late.length,'overdue'],
   ['Due today',need.length,'today'],
   ['Next workday',tmrw.length,'next'],
   ['Next 7 days (later)',thisWeek.length,'week'],
@@ -160,11 +160,11 @@ function render(){
   ['Activities logged today',activeFor(d).length,'log']
  ].map(x=>'<div class="execMetric" role="button" tabindex="0" data-exec-target="'+safe(x[2])+'" aria-label="Open '+safe(x[0])+'"><strong>'+safe(x[1])+'</strong><span>'+safe(x[0])+' ↗</span></div>').join('');
  const sections=[
-  ['Carry forward · overdue',late,'No overdue commitments from the Nov 9 baseline'],
+  ['Carry forward · overdue',late,'No overdue commitments found in the available work lists'],
   ['Due today',need,'No due-today work confirmed in the connected lists'],
   ['Next workday · '+(next?fmt(next):'unknown'),tmrw,'No dated work queued for the next workday'],
   ['Due in the next 7 days',thisWeek,'No other dated work found in the coming week'],
-  ['Completed assigned tasks since Nov 9',done,'No completed assigned tasks verified in the shared queue']
+  ['Completed assigned tasks',done,'No completed assigned tasks verified in the shared queue']
  ];
  const categories=[
  ['4-week campaigns',/4.week|campaign|conversion/i],
@@ -262,7 +262,7 @@ function renderTrends(){
  const rows=dates.map(d=>({date:d,cold:coldFor(d),meet:meetingFor(d),reason:dataOf(closeRecord(d))?.reason||'',note:dataOf(closeRecord(d))?.note||'',minutes:dataOf(closeRecord(d))?.prospecting_minutes??null}));
  const met=rows.filter(x=>x.cold>=25).length,short=rows.filter(x=>x.cold<25),withExplanation=short.filter(x=>x.reason).length;
  const counts={};for(const r of rows)if(r.reason)counts[r.reason]=(counts[r.reason]||0)+1;
- host.innerHTML='<p>Coaching baseline: November 9, 2026. Prospecting minimum met '+met+' of '+rows.length+' scheduled workdays. '+short.length+' below minimum; '+withExplanation+' of those have a saved explanation. This view uses logged cold-call entries only, not assumed time worked.</p>'+
+ host.innerHTML='<p>Prospecting minimum met '+met+' of '+rows.length+' scheduled workdays. '+short.length+' below minimum; '+withExplanation+' of those have a saved explanation. This view uses logged cold-call entries only, not assumed time worked.</p>'+
  '<div style="overflow:auto"><table style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr><th align="left">Day</th><th align="left">Cold calls</th><th align="left">Meetings</th><th align="left">Prospecting minutes</th><th align="left">Closeout reason</th></tr></thead><tbody>'+
  rows.map(r=>'<tr><td style="padding:6px;border-bottom:1px solid #eee">'+safe(fmt(r.date))+'</td><td>'+r.cold+' / 25</td><td>'+r.meet+'</td><td>'+safe(reasons[r.reason]||(r.cold>=25?'Goal met':'Not documented'))+'</td></tr>').join('')+'</tbody></table></div>'+
  '<p><strong>Frequent explanations:</strong> '+(Object.keys(counts).length?Object.entries(counts).sort((a,b)=>b[1]-a[1]).map(x=>safe(reasons[x[0]]||x[0])+' ('+x[1]+')').join(' · '):'None saved yet')+'.</p><small>Interpret low-call days alongside partner service, calendar commitments, and lead results. A missed goal is a coaching prompt, not proof of inactivity.</small>';
