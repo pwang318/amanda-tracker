@@ -30,6 +30,7 @@ styles.textContent=[
 '#rmExecutionPlan .execTasks section{border:1px solid #ece5f1;border-radius:9px;padding:11px;min-width:0}',
 '#rmExecutionPlan .execTasks ul{margin:7px 0;padding-left:19px;max-height:165px;overflow-y:auto;font-size:12px;color:#3d3151}',
 '#rmExecutionPlan .execTasks li{margin-bottom:6px}',
+'#rmExecutionPlan .execTaskGo{display:block;text-align:left;width:100%;padding:4px!important;border:0!important;background:transparent!important;color:#543781!important}',
 '#rmExecutionPlan .execForm{display:flex;flex-wrap:wrap;align-items:end;gap:9px;margin:10px 0}',
 '#rmExecutionPlan .execForm label{font-size:12px;display:flex;flex-direction:column;gap:3px;color:#56476b}',
 '#rmExecutionPlan input,#rmExecutionPlan select,#rmExecutionPlan textarea{border:1px solid #ddd1e8;background:white;color:#302440;border-radius:7px;padding:8px;font:inherit;font-size:12px}',
@@ -41,7 +42,7 @@ styles.textContent=[
 '#rmExecutionPlan summary{cursor:pointer;color:#56387f;font-weight:750;font-size:13px;padding:8px 0}',
 '@media(max-width:750px){#rmExecutionPlan .execMetrics{grid-template-columns:repeat(2,minmax(0,1fr))}#rmExecutionPlan .execTasks{grid-template-columns:1fr}}'
 ].join('\n');document.head.append(styles);
-let blocks=[],activities=[],queue=[],loaded=false,working=false,selected=iso();
+let blocks=[],activities=[],queue=[],fullWork=[],fullVerified=false,loaded=false,working=false,selected=iso();
 const off=b=>/^(out of office|pto|vacation|time off)$/i.test(String(b.block_type||'').trim());
 const close=b=>String(b.block_type||'')==='Daily Closeout'&&String(b.title||'').startsWith('Execution closeout');
 const outDates=()=>new Set(blocks.filter(off).map(b=>String(b.work_date).slice(0,10)));
@@ -92,17 +93,37 @@ async function refresh(force=false){
    sbFetch('rm_work_queue?select=id,work_date,agent_name,activity_type,reason,status,owner&owner=eq.Amanda&status=eq.open&work_date=gte.'+COACHING_START+'&limit=2500')
   ]);
   if(result.some(r=>!Array.isArray(r)))throw Error('One of the live data lists is unavailable');
-  [blocks,activities,queue]=result;loaded=true;render();
+  [blocks,activities,queue]=result;fullVerified=false;fullWork=[];
+  if(typeof window.rmV462LoadMorningRows==='function'){
+   try{const overview=await window.rmV462LoadMorningRows(iso());if(Array.isArray(overview?.rows)){fullWork=overview.rows;fullVerified=true}}catch(err){console.warn('Full RM work list not verified',err)}
+  }
+  loaded=true;render();
  }catch(e){
   const el=$('execNotice');if(el){el.textContent='Unable to verify live work and daily goals. '+String(e.message||e)+'. Please refresh; no zero counts substituted.';el.className='execNotice execWarn'}
  }finally{working=false}
 }
+function openTask(q){
+ const agent=q.agent_name||q['Agent / Item']||'';
+ if(agent&&typeof openContactModal==='function'){Promise.resolve(openContactModal(agent)).catch(()=>{if(typeof switchTab==='function')switchTab('portfolio')});return}
+ const category=String(q.Category||q.activity_type||'').toLowerCase();
+ if(category.includes('campaign')&&typeof window.v350OpenLane==='function')return window.v350OpenLane('conversion');
+ if(category.includes('transaction')&&typeof window.v350OpenLane==='function')return window.v350OpenLane('calls');
+ if(typeof window.rmV440OpenPortfolio==='function')return window.rmV440OpenPortfolio('work');
+ if(typeof switchTab==='function')switchTab('portfolio');
+}
 function taskList(title,rows,empty){
- const list=rows.slice(0,7).map(q=>'<li>'+safe(q.agent_name||'Assigned agent')+' · '+safe(q.activity_type||q.reason||'Outstanding action')+(q.work_date?' ('+safe(q.work_date)+')':'')+'</li>').join('');
+ const list=rows.slice(0,7).map((q,i)=>'<li><button type="button" class="execTaskGo" data-list="'+safe(title)+'" data-index="'+i+'">'+safe(q.agent_name||q['Agent / Item']||'Assigned agent')+' · '+safe(q.activity_type||q.Category||q.reason||q['Next Action']||'Outstanding action')+(q.work_date||q['Due Date']?' ('+safe(q.work_date||q['Due Date'])+')':'')+' ↗</button></li>').join('');
  return '<section><strong>'+safe(title)+' · '+rows.length+'</strong>'+(rows.length?'<ul>'+list+(rows.length>7?'<li>+'+(rows.length-7)+' more in RM work queue</li>':'')+'</ul>':'<p>'+safe(empty)+'</p>')+'</section>';
 }
 function render(){
- if(!$('execNotice'))return;const d=iso(),offNow=isOff(d),cold=coldFor(d),next=nextWorkday(d),need=planned(d),late=pastDue(d),tmrw=next?planned(next):[];
+ if(!$('execNotice'))return;const d=iso(),offNow=isOff(d),cold=coldFor(d),next=nextWorkday(d);
+ const cleanFull=fullWork.filter(r=>{const due=String(r['Due Date']||'').slice(0,10);return !due||due>=COACHING_START});
+ const canonical=cleanFull.map(r=>({agent_name:r['Agent / Item'],activity_type:r.Category,work_date:String(r['Due Date']||'').slice(0,10),Category:r.Category,'Next Action':r['Next Action']}));
+ const queueOnly=queue.filter(q=>!canonical.some(r=>String(r.agent_name||'').trim().toLowerCase()===String(q.agent_name||'').trim().toLowerCase()&&String(r.activity_type||'').toLowerCase()===String(q.activity_type||'').toLowerCase()));
+ const all=fullVerified?canonical.concat(queueOnly):queue;
+ const late=all.filter(q=>q.work_date&&q.work_date>=COACHING_START&&q.work_date<d);
+ const need=all.filter(q=>!q.work_date||q.work_date===d);
+ const tmrw=next?all.filter(q=>q.work_date===next):[];
  const nextOff=[...outDates()].filter(x=>x>=d).sort();
  const notice=$('execNotice');notice.className='execNotice'+(offNow?'':' execWarn');
  notice.textContent=offNow?'Out of office today — no cold-call target or missed-day flag. Outstanding agent commitments still require coverage.':cold<25?'Prospecting below minimum: '+cold+' of 25 logged. The full 60-minute block is also required; actual time is not verified by call count.':'25+ calls logged. Keep the protected 60-minute prospecting block; elapsed time is not inferred.';
@@ -114,11 +135,12 @@ function render(){
   ['Due today',need.length,'today'],
   ['Next workday',next?fmt(next):'Unverified','next']
  ].map(x=>'<div class="execMetric" role="button" tabindex="0" data-exec-target="'+safe(x[2])+'" aria-label="Open '+safe(x[0])+'"><strong>'+safe(x[1])+'</strong><span>'+safe(x[0])+' ↗</span></div>').join('');
- $('execTaskSummary').innerHTML=taskList('Carry forward · overdue',late,'No dated overdue queue entries. Other workflow lists may contain additional follow-ups.')+
- taskList('Assigned queue · today',need,'No dated open queue entries today.')+
- taskList('Next workday · '+(next?fmt(next):'unknown'),tmrw,'No dated open queue entries for this workday.')+
- '<section><strong>What still needs verification</strong><p>4-week campaign touches, meeting obligations, growth plans, and transaction milestones come from their existing work lists. Open the outstanding checklist for the full picture.</p><button type="button" id="execOpenFull">Refresh full checklist</button></section>';
- $('execOpenFull').onclick=()=>{if(typeof window.rmRefreshOutstandingChecklist==='function')window.rmRefreshOutstandingChecklist()};
+ const sections=[['Carry forward · overdue',late,'No overdue commitments from the new baseline.'],['Due today & this week',need,'No due-now work in the verified lists.'],['Next workday · '+(next?fmt(next):'unknown'),tmrw,'No dated work queued for the next workday.']];
+ $('execTaskSummary').innerHTML=sections.map(s=>taskList(s[0],s[1],s[2])).join('')+(fullVerified?'':'<p class="execNotice execWarn">Some workflow lists could not be verified. Numbers show only the assigned queue; open the original work lists for the full picture.</p>');
+ $('execTaskSummary').querySelectorAll('.execTaskGo').forEach(button=>{
+  const group=sections.find(s=>s[0]===button.dataset.list);
+  button.onclick=()=>{if(group)openTask(group[1][Number(button.dataset.index)])};
+ });
  $('execMetrics').querySelectorAll('[data-exec-target]').forEach(tile=>{
    const action=()=>{
     const kind=tile.dataset.execTarget;
