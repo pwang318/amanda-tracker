@@ -90,9 +90,9 @@ async function refresh(){
    '</div><div class="rmFunnelRates">'+
    '<div class="rmRate"><b>'+pct(s.connected,s.attempts)+'</b>Live connection rate · connected ÷ outreach attempts</div>'+
    '<div class="rmRate"><b>'+pct(s.scheduled,s.connected)+'</b>Meetings scheduled ÷ live conversations (same-period activity ratio)</div>'+
-   '<div class="rmRate"><b>'+pct(s.held,s.scheduled)+'</b>Meetings held ÷ meetings scheduled (same-period activity ratio)</div>'+
+   '<div class="rmRate"><b>'+(s.scheduled>0&&s.held<=s.scheduled?pct(s.held,s.scheduled):'Not verified')+'</b>Meeting-held rate · only meaningful when bookings and held meetings are logged consistently</div>'+
    '</div>'+receipt+
-   '<div class="rmFunnelNotes">Retained relationship rate: <b>not reliably measurable yet</b>. A meeting or positive conversation does not prove the agent retained or sent business. This section excludes LP transaction updates and system snapshots. A scheduled meeting and held meeting may be recorded in different months, so the ratios are indicators, not cohort conversion. '+s.other+' outreach records have outcomes that cannot be classified as connected or missed. Check actual agent records before making coaching decisions.</div>';
+   '<div class="rmFunnelNotes">Retained relationship rate: <b>not reliably measurable yet</b>. A meeting or positive conversation does not prove the agent retained or sent business. This section excludes LP transaction updates and system snapshots. A scheduled meeting and held meeting may be recorded in different months. If held meetings outnumber logged bookings, held-to-booked conversion is withheld as unreliable. The other ratios are same-period activity indicators, not cohort conversion. '+s.other+' outreach records have outcomes that cannot be classified as connected or missed. Check actual agent records before making coaching decisions.</div>';
   document.getElementById('rmFunnelUpdated').textContent='Activity period: '+month+' to today · '+unique.length+' records examined';
  }catch(e){body.innerHTML='<p class="rmDataIssue">Shared activity could not be verified. '+esc(e.message||e)+' Try Refresh performance. No zero values are substituted.</p>'}
  finally{loading=false}
