@@ -50,6 +50,9 @@ jobs:
           style='<style id="rm-uniform-prospecting-row">#rm350Workboard .rm-daily-steps li.rm-daily-prospect-step{background:#fff!important;background-image:none!important;border:0!important;border-bottom:1px solid #eee8f3!important;border-radius:0!important;box-shadow:none!important;padding:12px 0!important;margin:0!important}#rm350Workboard .rm-daily-steps li.rm-daily-prospect-step .rm-daily-step-num{background:#f1e8fa!important;color:#67468e!important}#rm350Workboard .rm-daily-steps li.rm-daily-prospect-step .rm-daily-step-copy b{color:inherit!important}</style>'
           s=re.sub(r'<style id="rm-uniform-prospecting-row">[\\s\\S]*?</style>', '', s)
           s=s.replace('</html>',style+'</html>',1)
+          # Keep missed campaign touches visible even when the original four weeks end.
+          s=s.replace('const cut=plusDays(day,-42);','const cut=plusDays(day,-365);',1)
+          s=s.replace('if(age<0||age>35)return;','if(age<0)return;',1)
           # Reuse the authoritative morning worklist for live checklist counts.
           bridge='window.rmV462LoadMorningRows=loadMorningRows;'
           # Repair the literal backslash-n inserted by the prior workflow version.
