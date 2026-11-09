@@ -9,12 +9,20 @@ const all=st.rows.filter(r=>r.tier==='C'),stale=all.filter(r=>r.daysNoLead!==nul
 title.textContent='Review '+all.length+' active C-agent relationships today';
 const latest=st.profiles.filter(p=>String(p.powerbi_last_seen_at||'').slice(0,10)===String(st.lastSeen||'').slice(0,10));
 const imported=st.importLog?Number(st.importLog.rows_processed):null;
-const approved=String(st.lastSeen||'').slice(0,10)==='2026-11-09'&&imported===136&&latest.length===132
+const importedAt=String(st.importLog&&st.importLog.imported_at||'').slice(0,10);
+const stampedAt=String(st.lastSeen||'').slice(0,10);
+const receiptCurrent=Boolean(importedAt&&stampedAt&&importedAt===stampedAt);
+const excluded=imported===null?null:imported-latest.length;
+const nov9Approved=receiptCurrent&&stampedAt==='2026-11-09'&&imported===136&&latest.length===132
   &&latest.filter(p=>String(p.powerbi_level||'').toUpperCase()==='A').length===16
   &&latest.filter(p=>String(p.powerbi_level||'').toUpperCase()==='B').length===21
   &&latest.filter(p=>String(p.powerbi_level||'').toUpperCase()==='C').length===95;
-const mismatch=!approved&&(imported===null||!Number.isFinite(imported)||imported!==latest.length);
-detail.textContent=(mismatch?'⚠ POWER BI SCORECARD NOT RECONCILED: '+(imported===null?'import total unavailable':imported+' source rows')+' / '+latest.length+' matched profiles · ':approved?'Power BI: 132 matched agent profiles (4 approved excluded source rows) · ':'')+stale.length+' with no recorded lead in 30+ days · '+near.length+' with one closing · '+missing.length+' missing a next growth action'+(unknown.length?' · '+unknown.length+' need last-lead verification':'')+'. Actual referrals and closings matter more than call volume.';
+const validReceipt=receiptCurrent&&imported!==null&&Number.isFinite(imported)&&excluded>=0;
+const reconciliation=nov9Approved?'Power BI: 132 matched profiles (4 approved source-row exclusions) · '
+  :!validReceipt?'⚠ POWER BI IMPORT NEEDS VERIFICATION: '+(imported===null?'import total unavailable':imported+' source rows')+' / '+latest.length+' stamped profiles · '
+  :excluded>0?'⚠ REVIEW '+excluded+' excluded source row'+(excluded===1?'':'s')+': '+imported+' imported / '+latest.length+' stamped profiles · '
+  :'Power BI: '+latest.length+' stamped profiles · ';
+detail.textContent=reconciliation+stale.length+' with no recorded lead in 30+ days · '+near.length+' with one closing · '+missing.length+' missing a next growth action'+(unknown.length?' · '+unknown.length+' need last-lead verification':'')+'. Actual referrals and closings matter more than call volume.';
 }
 function mount(){
 const pace=$('rm358Pace');if(!pace||$(id))return;const head=pace.querySelector('.rm358-pace-head');if(!head)return;
