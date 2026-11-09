@@ -13,7 +13,9 @@ css.textContent=[
 '#view-week #rm350Workboard .rm-daily-step-link.rm-daily-primary,#view-week #rm350Workboard .rm-daily-primary{background:#fff!important;color:#553584!important;border-color:#ddd3eb!important}',
 '#view-week #rm350Workboard .rm-daily-step-link.rm-daily-primary:hover{background:#f4f0f9!important}',
 '#rmDailyRelationshipReview,#rmDailyProspecting{display:none!important}',
-'#rmWorkdayPlan{margin:12px 0 2px;padding:10px 4px;border-top:1px solid #ece6f2}',
+'#rmWorkdayPlan{display:none!important}',
+'#view-week .rm-daily-prospect-step{background:#fff!important;border:0!important;box-shadow:none!important;border-radius:0!important;padding:10px 5px!important}',
+'#view-week .rm-daily-prospect-step .rm-daily-step-num{background:#f1e9fa!important;color:#593b89!important}',
 '#rmWorkdayPlan summary{cursor:pointer;color:#553584;font-size:12px;font-weight:750}',
 '#rmWorkdayPlan p{font-size:11px;line-height:1.4;color:#6a5d77;margin:6px 0}',
 '#rmWorkdayPlan .rmPlanRows{display:grid;grid-template-columns:1fr 1fr;gap:2px 18px;margin-top:8px}',
@@ -27,17 +29,6 @@ css.textContent=[
 '[data-director-only-warning="true"]{display:none!important}',
 '@media(max-width:820px){#rmWorkdayPlan .rmPlanRows{grid-template-columns:1fr}}'
 ].join('\n');document.head.append(css);
-const slots=[
-['8:30–9:15','Urgent transaction work','45 min'],
-['9:15–10:15','Protected prospecting','60 min'],
-['10:15–11:45','Campaign and overdue follow-ups','90 min'],
-['11:45–12:45','C-agent growth and retention','60 min'],
-['12:45–1:15','Lunch (separate from work)','30 min'],
-['1:15–2:30','Buyer/transaction follow-through','75 min'],
-['2:30–3:30','Agent meetings and outreach','60 min'],
-['3:30–4:15','LP referral coordination','45 min'],
-['4:15–5:00','Logging and tomorrow planning','45 min']
-];
 function getWorkboard(){
  return document.getElementById('rm350Workboard') ||
  [...document.querySelectorAll('#view-week h1,#view-week h2,#view-week h3')].map(h=>{
@@ -94,7 +85,7 @@ function hideWarnings(){
 function render(){
  const board=getWorkboard();
  if(board){
-  mountPlan(board);
+  const oldPlan=board.querySelector('#rmWorkdayPlan');if(oldPlan)oldPlan.remove();
   const desc=[...board.querySelectorAll('p')].find(x=>/one clear route through your day/i.test(x.textContent||''));
   if(desc&&desc.textContent!=='Your focused worklist: transactions, follow-ups, prospecting, and agent growth.')desc.textContent='Your focused worklist: transactions, follow-ups, prospecting, and agent growth.';
  }
