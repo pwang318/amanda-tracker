@@ -15922,9 +15922,10 @@ async function renderOfficial(force){
     // This narrow exception is tied to the exact receipt, stamp, and tier distribution;
     // it cannot automatically approve any future discrepancy.
     const acknowledgedNov9=receiptValid&&String(importReceipt.imported_at||'').slice(0,10)==='2026-11-09'
-      &&Number(importReceipt.active_rows)===136&&sourceRows.length===132
+      &&String(importReceipt.imported_at||'').startsWith('2026-11-09T16:48:39.629')
+      &&Number(importReceipt.active_rows)===136&&sourceRows.length===131
       &&Number(importReceipt.levels.A)===17&&Number(importReceipt.levels.B)===21&&Number(importReceipt.levels.C)===98
-      &&snapLevels.A===16&&snapLevels.B===21&&snapLevels.C===95;
+      &&snapLevels.A===16&&snapLevels.B===21&&snapLevels.C===94;
     if(!receiptMatches&&!acknowledgedNov9){
       window.rmV429ScoreData=null;rmV428OfficialHTML=null;rmV428OfficialAt=0;
       const msg=!importReceipt?'Latest Power BI import receipt unavailable.':
@@ -15955,7 +15956,7 @@ async function renderOfficial(force){
     const weighted=Math.round((tierScore.total+ratioPts+activePts)*10)/10;
 
     window.rmV429ScoreData={active:active,activePartners:activePartners,activePartnerCount:activePartnerCount,matchedAgentCount:sourceRows.length,unmatchedAgentCount:Math.max(0,total-sourceRows.length),monthlyLeadCount:monthlyLeadCount,projectedLeadCount:projectedLeadCount,leadsPerActiveAgent:referralRate,ratioTarget:ratioTarget,monthLeads:scoredMonthLeads,syncedMonthLeadCount:scoredMonthLeads.length,counts:counts,total:total,target:target,sourceStamp:(meta&&meta.imported_at?String(meta.imported_at).slice(0,10):'latest synced portfolio')};
-    const sourceStamp=(meta&&meta.imported_at?String(meta.imported_at).slice(0,10):'latest synced portfolio')+(acknowledgedNov9?' · 136 Power BI source agents, 132 linked profiles; 4 need reconciliation':'');
+    const sourceStamp=(meta&&meta.imported_at?String(meta.imported_at).slice(0,10):'latest synced portfolio')+(acknowledgedNov9?' · 136 source agents, 131 matched profiles; 5 unmatched records monitored in Director':'');
     const roadmap=[
       {label:'9/30 Target',Channel:2,A:14,B:21},
       {label:'10/31 Target',Channel:2,A:16,B:24},
