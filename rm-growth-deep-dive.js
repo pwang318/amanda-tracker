@@ -3,7 +3,7 @@
 const ctl=()=>window.rmGrowthCommand;
 const norm=s=>String(s||'').trim().toLowerCase().replace(/\s+/g,' ');
 let selected='',leadByAgent={},duplicateKeys=[],ready=false;
-function group(s){s=String(s||'').toLowerCase();if(s==='started')return'applied';if(s==='contacted'||s==='scheduled'||s.includes('meeting scheduled')||s==='nurture - contacted')return'contacted';if(s==='funding')return'funding';if(s==='processing'||s==='submittal'||s==='ready for pack out')return'processing';if(s.includes('does not qualify')||s.includes('withdrawn')||s.includes('denied')||s.includes('not interested')||s.includes('bad lead')||s.includes('do not contact'))return'excluded';return'other'}
+function group(s){s=String(s||'').toLowerCase();if(s==='started')return'applied';if(s==='contacted'||s==='scheduled'||s.includes('meeting scheduled'))return'contacted';if(s==='funding')return'funding';if(s==='processing'||s==='submittal'||s==='ready for pack out')return'processing';if(s.includes('does not qualify')||s.includes('withdrawn')||s.includes('denied')||s.includes('not interested')||s.includes('bad lead')||s.includes('do not contact'))return'excluded';return'other'}
 function el(id){return document.getElementById(id)}
 async function reload(){
 el('gdStatus').textContent='Checking Velocify lead status…';
