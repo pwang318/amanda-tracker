@@ -21614,4 +21614,49 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 #view-week #v113AmandaDashboard>.v113-step.v161-conversion-step>.v113-step-rail:after{content:'+';margin-left:auto;color:#78648F;font-size:16px}
 #view-week #v113AmandaDashboard>.v113-step.v161-conversion-step[open]>.v113-step-rail:after{content:'−'}
 </style>
+
+<!-- v502: shared-source refresh orchestrator. No hard-coded agent/lead totals. -->
+<script id="rm-v502-shared-live-sync">
+(function(){
+ 'use strict';
+ let last='',running=false,queued=false;
+ const safe=async(fn)=>{try{if(typeof fn==='function')await fn();}catch(e){console.warn('RM shared refresh step',e);}};
+ async function signature(){
+  if(typeof sbFetch!=='function')return '';
+  const d=new Date(),start=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-01';
+  const [p,imports,leads]=await Promise.all([
+   sbFetch('agent_profiles?select=powerbi_last_seen_at&powerbi_last_seen_at=not.is.null&order=powerbi_last_seen_at.desc&limit=1'),
+   sbFetch('powerbi_import_log?select=imported_at&order=imported_at.desc&limit=1'),
+   sbFetch('velocify_leads?date_added=gte.'+start+'&select=lead_key,date_added,status,lp_user&limit=10000')
+  ]);
+  const leadSig=(leads||[]).map(x=>[x.lead_key,x.date_added,x.status,x.lp_user].join('~')).sort().join('|');
+  return [p&&p[0]&&p[0].powerbi_last_seen_at,imports&&imports[0]&&imports[0].imported_at,leadSig].join('#');
+ }
+ async function refresh(force){
+  if(running){queued=true;return;}if(document.visibilityState==='hidden')return;
+  running=true;
+  try{
+   const next=await signature();if(!next)return;
+   if(!force&&next===last)return;last=next;
+   // Refresh source caches first, then all visible RM and director surfaces.
+   await safe(()=>window.rmV453RefreshPowerBi&&window.rmV453RefreshPowerBi(true));
+   await safe(()=>window.rmV428RenderOfficialScorecard&&window.rmV428RenderOfficialScorecard(true));
+   await safe(()=>window.rmV494RefreshLeads&&window.rmV494RefreshLeads(true));
+   await safe(()=>window.v23LoadAmandaSnapshot&&window.v23LoadAmandaSnapshot(true));
+   await safe(()=>window.rmV440RefreshToday&&window.rmV440RefreshToday());
+   if(document.getElementById('view-portfolio')?.classList.contains('active'))
+    await safe(()=>window.loadPortfolioReview&&window.loadPortfolioReview());
+  }catch(e){console.warn('RM live source check failed; previous values retained',e);}
+  finally{running=false;if(queued){queued=false;setTimeout(()=>refresh(false),1000);}}
+ }
+ window.rmV502RefreshAll=()=>refresh(true);
+ function boot(){
+  setTimeout(()=>refresh(true),2200);
+  setInterval(()=>refresh(false),30000);
+  window.addEventListener('focus',()=>refresh(true));
+  document.addEventListener('visibilitychange',()=>{if(!document.hidden)refresh(true);});
+ }
+ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
+})();
+</script>
 </html>
