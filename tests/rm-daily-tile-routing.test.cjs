@@ -25,6 +25,8 @@ for(const [type, expected] of [
  ['Reconnect Outreach','tab:reconnect'],
  ['C-agent growth','tab:growth'],
  ['Portfolio · Meeting Due','portfolio:work'],
+ ['Missing Growth Plan','portfolio:work'],
+ ['Portfolio · Growth Next Step','portfolio:work'],
  ['Portfolio · Partner Touch Due','portfolio:work'],
  ['Follow-up','portfolio:work']
 ]){
