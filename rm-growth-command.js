@@ -12,7 +12,7 @@ const STYLE = `
 .rmGrowTop p{margin:0;font-size:13px;line-height:1.5;color:#f2e8fa}
 .rmGrowNotice{background:#fff3dc;border-left:4px solid #b78021;border-radius:8px;padding:10px 12px;font-size:12px;margin:10px 0}
 .rmGrowStatGrid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:12px 0}
-.rmGrowStat{background:#fff;border:1px solid #e7dcef;border-radius:10px;padding:13px}
+.rmGrowStat{background:#fff;border:1px solid #e7dcef;border-radius:10px;padding:13px;cursor:pointer}.rmGrowStat:hover,.rmGrowStat:focus{outline:2px solid #7855a3;outline-offset:2px}
 .rmGrowStat strong{display:block;font-size:23px;color:#533078}.rmGrowStat span{font-size:11px;color:#63536f}
 .rmGrowNav{display:flex;flex-wrap:wrap;gap:7px;margin:12px 0}
 .rmGrowNav button{background:#fff;border:1px solid #cbbbdc;padding:10px 13px;border-radius:9px;cursor:pointer;font-family:inherit}
@@ -27,7 +27,7 @@ const STYLE = `
 .rmGrowSmall{font-size:11px;color:#6b597b}
 .rmGrowFilters{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0}
 .rmGrowFilters input,.rmGrowFilters select{font-size:12px;padding:9px;border:1px solid #d2c6dc;border-radius:8px;background:white}
-.rmGrowFilters input{flex:1;min-width:150px}
+.rmGrowFilters input{flex:1;min-width:150px}.rmGrowHelp{font-size:12px;line-height:1.6;color:#5b4971;margin:10px 0}.rmGrowHelp strong{color:#36224e}#rmGrowAdminAudit{margin:8px 0}#rmGrowAdminAudit summary{cursor:pointer;font-size:11px;color:#675578}#rmGrowMeta{padding:9px 12px;font-size:11px;margin-top:7px}
 .rmGrowSteps{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px}
 .rmGrowSteps>div{background:#f5f0fa;border-radius:10px;padding:12px;font-size:12px;line-height:1.5}
 @media(max-width:720px){.rmGrowStatGrid{grid-template-columns:repeat(2,1fr)}.rmGrowSteps{grid-template-columns:1fr}}
@@ -36,7 +36,7 @@ const escape=(s)=>String(s===null||s===undefined?'':s).replace(/[&<>"']/g,c=>({'
 const key=s=>String(s||'').trim().toLowerCase().replace(/\s+/g,' ');
 const date=s=>String(s||'').slice(0,10);
 const safeNumber=n=>n===null||n===undefined||n===''?null:Math.max(0,Number(n)||0);
-const state={profiles:[],rows:[],ownerMap:{},migrations:[],view:'grow',search:'',tier:'all',loading:false,loaded:false,lastSeen:null,importLog:null};
+const state={profiles:[],rows:[],ownerMap:{},migrations:[],view:'grow',search:'',sort:'priority',tier:'all',loading:false,loaded:false,lastSeen:null,importLog:null};
 const getTier=p=>{const t=String(p.powerbi_level||p.tier||'').trim().toUpperCase();return ['C','B','A','CHANNEL'].includes(t)?(t==='CHANNEL'?'Channel':t):null};
 const getOwner=(p,tier)=>tier==='C'?'Amanda':'Director';
 function daysSince(value){const v=date(value);if(!/^\d{4}-\d{2}-\d{2}$/.test(v))return null;const t=Date.parse(v+'T12:00:00');return Number.isFinite(t)?Math.max(0,Math.floor((Date.now()-t)/86400000)):null}
@@ -83,10 +83,23 @@ let rows=state.rows;
 if(state.view==='grow')rows=rows.filter(r=>r.tier==='C');
 if(state.view==='protect')rows=rows.filter(r=>r.rm==='Amanda'&&(r.daysNoLead===null||r.daysNoLead>=30||r.competitor_risk_flag));
 if(state.view==='convert')rows=rows.filter(r=>r.rm==='Amanda'&&r.leads>0);
+if(state.view==='near')rows=rows.filter(r=>r.closings===1);
+if(state.view==='missing')rows=rows.filter(r=>!String(r.next_growth_opportunity||'').trim());
 
 
 if(state.search)rows=rows.filter(r=>r.name.toLowerCase().includes(state.search.toLowerCase()));
-return [...rows].sort((a,b)=>b.score-a.score||a.name.localeCompare(b.name));
+const comparisons={
+ priority:(a,b)=>b.score-a.score,
+ 'leads-desc':(a,b)=>(b.leads??-1)-(a.leads??-1),
+ 'leads-asc':(a,b)=>(a.leads??Infinity)-(b.leads??Infinity),
+ 'closings-desc':(a,b)=>(b.closings??-1)-(a.closings??-1),
+ 'closings-asc':(a,b)=>(a.closings??Infinity)-(b.closings??Infinity),
+ 'lastlead-desc':(a,b)=>(b.daysNoLead??-1)-(a.daysNoLead??-1),
+ 'lastlead-asc':(a,b)=>(a.daysNoLead??Infinity)-(b.daysNoLead??Infinity),
+ 'name':(a,b)=>a.name.localeCompare(b.name)
+};
+const compare=comparisons[state.sort]||comparisons.priority;
+return [...rows].sort((a,b)=>compare(a,b)||a.name.localeCompare(b.name));
 }
 function cell(row,value){const el=document.createElement('td');el.textContent=String(value===null||value===undefined?'—':value);row.append(el);return el}
 function stats(){
@@ -112,22 +125,23 @@ const warning=nov9Approved?'November 9 import reconciled: four approved source-r
  :!verified?' RECONCILIATION REQUIRED: latest import receipt or stamped profile batch not verified; do not use these as official Power BI totals.'
  :excluded>0?' RECONCILIATION REQUIRED: '+excluded+' source-row exclusion'+(excluded===1?'':'s')+' must be reviewed before treating import totals as official.'
  :' Import receipt matches the latest stamped profile count.';
-meta.textContent='All active C accounts only ('+state.rows.length+') · Latest Power BI profile stamp: '+latest+'. Latest stamped profiles: '+stamped.length+'; stamped C profiles (before inactive/hidden exclusions): '+stampedC.length+'.'+(importRow?' Import reports '+raw+' processed source rows.':' Import ledger unavailable.')+' '+warning+' Inactive, hidden and non-C profiles excluded.';
-stats().forEach(([label,value])=>{const c=document.createElement('div');c.className='rmGrowStat';const strong=document.createElement('strong');strong.textContent=value;const sub=document.createElement('span');sub.textContent=label;c.append(strong,sub);grid.append(c)});
+meta.textContent='Data verification · '+latest+' · '+stamped.length+' stamped profiles; '+stampedC.length+' stamped C profiles; '+(importRow?raw+' imported rows':'import receipt unavailable')+'. '+warning+' Inactive, hidden and non-C profiles excluded.';
+const summary=document.getElementById('rmGrowCleanSummary');if(summary)summary.textContent=state.rows.length+' active C relationships · Review growth, protect those at risk, and follow referrals through to business.';
+stats().forEach(([label,value])=>{const c=document.createElement('div');c.className='rmGrowStat';c.setAttribute('role','button');c.tabIndex=0;c.setAttribute('aria-label','View '+label);const target=label==='Active C agents'?'grow':label==='C agents with 1 closing'?'near':label==='Retention attention'?'protect':'convert';const activate=()=>view(target);c.addEventListener('click',activate);c.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();activate()}});const strong=document.createElement('strong');strong.textContent=value;const sub=document.createElement('span');sub.textContent=label;c.append(strong,sub);grid.append(c)});
 const list=filtered();subtitle.textContent=list.length+' relationships · Sorted by actionable priority (not guaranteed promotion or closing).';
 for(const p of list){
-const tr=document.createElement('tr');cell(tr,p.name+' · '+p.tier);cell(tr,p.rm);cell(tr,p.leads);cell(tr,p.closings);cell(tr,p.daysNoLead===null?'Unknown':p.daysNoLead+' days');
+const tr=document.createElement('tr');cell(tr,p.name+' · '+p.tier);cell(tr,p.rm);cell(tr,p.leads);cell(tr,p.closings);cell(tr,p.closings===1?'1 more for B':p.closings===0?'2 more for B':'Verify tier');cell(tr,p.daysNoLead===null?'Unknown':p.daysNoLead+' days');
 const actionCell=cell(tr,p.action);if(p.partner_pain_points){const d=document.createElement('div');d.className='rmGrowSmall';d.textContent='Known blocker: '+p.partner_pain_points;actionCell.append(d)}
-const td=document.createElement('td');const btn=document.createElement('button');btn.className='rmGrowBtn alt';btn.textContent='Log follow-up';btn.addEventListener('click',()=>{if(typeof prefillActivityLog==='function')prefillActivityLog(p.sourceName);else switchTab('log')});td.append(btn);tr.append(td);tbody.append(tr);
+const td=document.createElement('td');const btn=document.createElement('button');btn.className='rmGrowBtn alt';btn.textContent='Agent plan';btn.addEventListener('click',()=>{if(window.rmGrowthDeepDive&&typeof window.rmGrowthDeepDive.edit==='function')window.rmGrowthDeepDive.edit(p.sourceName)});const log=document.createElement('button');log.className='rmGrowBtn alt';log.textContent='Log';log.setAttribute('aria-label','Log activity for '+p.name);log.style.marginLeft='5px';btn.addEventListener('click',()=>{if(typeof prefillActivityLog==='function')prefillActivityLog(p.sourceName);else switchTab('log')});td.append(btn,log);log.addEventListener('click',()=>{if(typeof prefillActivityLog==='function')prefillActivityLog(p.sourceName);else switchTab('log')});tr.append(td);tbody.append(tr);
 }
-if(!list.length){const tr=document.createElement('tr');const td=document.createElement('td');td.colSpan=7;td.textContent='No relationships match this view. Try a different filter.';tr.append(td);tbody.append(tr)}
+if(!list.length){const tr=document.createElement('tr');const td=document.createElement('td');td.colSpan=8;td.textContent='No relationships match this view. Try a different filter.';tr.append(td);tbody.append(tr)}
 const owned=state.rows,focus=[...owned].sort((a,b)=>b.score-a.score).slice(0,5);
-brief.replaceChildren();const intro=document.createElement('p');intro.textContent='Weekly review — top five Amanda priorities (derived from current portfolio signals):';brief.append(intro);
+brief.replaceChildren();const intro=document.createElement('p');intro.textContent='Today’s top five relationship priorities:';brief.append(intro);
 const ol=document.createElement('ol');for(const p of focus){const li=document.createElement('li');li.textContent=p.name+' ('+p.tier+') — '+p.action;ol.append(li)}brief.append(ol);
-const note=document.createElement('p');note.className='rmGrowSmall';note.textContent='Amanda sees all active C profiles from the latest stamped Power BI batch. B, A and Channel relationships are excluded. Counts are for eligible profiles only; they are not the raw Power BI import row count.';brief.append(note);
+const note=document.createElement('p');note.className='rmGrowSmall';note.textContent='Contact each priority agent, identify a real buyer or referral opportunity, agree on a dated next step, and log what happened. Follow up on referred buyers with the assigned loan partner.';brief.append(note);
 const home=document.getElementById('rmGrowHomeHint');if(home)home.textContent=owned.filter(r=>r.tier==='C'&&r.closings===1).length+' C agents with 1 close · '+owned.filter(r=>r.daysNoLead!==null&&r.daysNoLead>=30).length+' with 30+ days since last lead. Open the work order →';
 }
-function view(v){state.view=v;document.querySelectorAll('.rmGrowNav button').forEach(b=>b.classList.toggle('active',b.dataset.view===v));render();}
+function view(v){state.view=v;document.querySelectorAll('.rmGrowNav button').forEach(b=>b.classList.toggle('active',b.dataset.view===v));const desc={grow:'All C Accounts: grow relationships with a clear referral goal and a dated next step.',protect:'Protect Active: agents with 30+ days without a recorded lead, unknown lead date, or a competitor risk flag. Call to understand their buyer pipeline, resolve service issues, agree on a referral opportunity, and schedule follow-up.',convert:'Convert Referrals: C agents who have referred at least one lead in the past year. Coordinate with their loan partner to move qualified buyers forward and ask for the next referral.',near:'Close to B: C agents with one annual closing. One additional verified closing would meet the two-closing B threshold, subject to official tier rules.',missing:'Missing Plans: C agents without a saved next growth opportunity. Set a specific buyer/referral action and due date.'};const expl=document.getElementById('rmGrowViewExplain');if(expl)expl.textContent=desc[v]||desc.grow;render();}
 function create(){
 if(document.getElementById('rmGrowthHome'))return;
 const style=document.createElement('style');style.textContent=STYLE;document.head.append(style);
@@ -136,7 +150,7 @@ const box=document.createElement('section');box.id='rmGrowthHome';box.innerHTML=
 box.hidden=true;home.insertBefore(box,home.firstChild); // Avoid duplicating the daily relationship reminder
 let nav=document.querySelector('.tab[data-tab="growth"]');if(nav){const newnav=document.createElement('div');newnav.className='tab';newnav.dataset.tab='growth-command';newnav.title='Live growth, retention, conversion and weekly action plan';newnav.innerHTML='<span class="nav-num">↑</span><span>Grow + Protect</span>';nav.before(newnav);newnav.addEventListener('click',()=>open())}
 const target=document.getElementById('view-growth');if(!target)return;
-const page=document.createElement('div');page.className='view';page.id='view-growth-command';page.innerHTML='<div class="rmGrowTop"><h2>Grow & Protect · Business Growth Work Order</h2><p>Amanda’s complete active C-account work order. B, A and Channel accounts are not shown here.</p></div><div class="rmGrowthHomeActions"><button id="rmGrowRefresh" class="rmGrowBtn">↻ Refresh shared data</button><button id="rmGrowPortfolio" class="rmGrowBtn alt">Portfolio health</button><button id="rmGrowExistingGrowth" class="rmGrowBtn alt">Existing tier movement</button></div><p class="rmGrowSmall" id="rmGrowStatus" role="status"></p><div class="rmGrowNotice" id="rmGrowMeta">Current data pending. No cached Power BI fallbacks will be used.</div><div id="rmGrowStats" class="rmGrowStatGrid"></div><div class="rmGrowNav"><button data-view="grow" class="active">All C Accounts · Growth</button><button data-view="protect">Protect Active</button><button data-view="convert">Convert Referrals</button></div><section class="rmGrowList"><h3>Priority relationships</h3><p id="rmGrowSubtitle" class="rmGrowSmall">Refresh to load.</p><div class="rmGrowFilters"><input id="rmGrowSearch" type="search" placeholder="Search agent names…" aria-label="Search growth agents"><button class="rmGrowBtn alt" id="rmGrowExport">Export visible CSV</button></div><div class="rmGrowTableWrap"><table class="rmGrowTable"><thead><tr><th>Agent / tier</th><th>RM</th><th>12m leads</th><th>12m closings</th><th>Last lead</th><th>Recommended next action</th><th>Log work</th></tr></thead><tbody id="rmGrowRows"></tbody></table></div></section><section class="rmGrowList"><h3>Monday Growth Brief</h3><div id="rmGrowBrief" class="rmGrowSmall">Loads with shared source.</div></section><section class="rmGrowList"><h3>30 / 60 / 90 growth framework</h3><div class="rmGrowSteps"><div><b>30 days — discover</b><p>Confirm buyer demand, identify service and conversion blockers, and set a dated referral commitment.</p></div><div><b>60 days — convert</b><p>Follow qualified referrals through preapproval and contracts. Coordinate with the correct LP on barriers.</p></div><div><b>90 days — measure</b><p>Review actual referrals, closings, retained activity, and verified tier movement; reset the plan.</p></div></div><p class="rmGrowSmall">Production and last-lead figures reflect shared agent profiles, not a complete loan-level conversion funnel. Review LP Tracker for individual buyer status. Contact history and outreach reasons must be logged through the existing RM workflow.</p></section>';
+const page=document.createElement('div');page.className='view';page.id='view-growth-command';page.innerHTML='<div class="rmGrowTop"><h2>Grow & Protect · C-Agent Work Order</h2><p>One place to grow existing C relationships, protect referrals and track business results.</p></div><div class="rmGrowthHomeActions"><button id="rmGrowRefresh" class="rmGrowBtn">↻ Refresh shared data</button><button id="rmGrowPortfolio" class="rmGrowBtn alt">Portfolio health</button><button id="rmGrowExistingGrowth" class="rmGrowBtn alt">Tier results</button></div><p class="rmGrowSmall" id="rmGrowStatus" role="status"></p><p id="rmGrowCleanSummary" class="rmGrowHelp">Loading live C-agent priorities…</p><details id="rmGrowAdminAudit"><summary>Data verification · admin details</summary><div class="rmGrowNotice" id="rmGrowMeta">Checking live data…</div></details><div id="rmGrowStats" class="rmGrowStatGrid"></div><div class="rmGrowNav"><button data-view="grow" class="active">All C Accounts · Growth</button><button data-view="protect">Protect Active</button><button data-view="convert">Convert Referrals</button><button data-view="near">Close to B</button><button data-view="missing">Missing Plans</button></div><p id="rmGrowViewExplain" class="rmGrowHelp" role="status">All C accounts: review each agent’s leads, closings and next growth action.</p><section class="rmGrowList"><h3>Priority relationships</h3><p id="rmGrowSubtitle" class="rmGrowSmall">Refresh to load.</p><div class="rmGrowFilters"><input id="rmGrowSearch" type="search" placeholder="Search agent names…" aria-label="Search growth agents"><select id="rmGrowSort" aria-label="Sort C-agent relationships"><option value="priority">Sort: Recommended priority</option><option value="closings-desc">Closings: most first</option><option value="closings-asc">Closings: fewest first</option><option value="leads-desc">Leads: most first</option><option value="leads-asc">Leads: fewest first</option><option value="lastlead-desc">Days since lead: longest</option><option value="lastlead-asc">Days since lead: shortest</option><option value="name">Agent name: A to Z</option></select><button class="rmGrowBtn alt" id="rmGrowExport">Export visible CSV</button></div><div class="rmGrowTableWrap"><table class="rmGrowTable"><thead><tr><th>Agent / tier</th><th>RM</th><th>12m leads</th><th>12m closings</th><th>To B</th><th>Last lead</th><th>Recommended next action</th><th>Log work</th></tr></thead><tbody id="rmGrowRows"></tbody></table></div></section><section class="rmGrowList"><h3>Today’s Top Priorities</h3><div id="rmGrowBrief" class="rmGrowSmall">Loads with shared source.</div></section><section class="rmGrowList"><h3>30 / 60 / 90 growth framework</h3><div class="rmGrowSteps"><div><b>30 days — discover</b><p>Confirm buyer demand, identify service and conversion blockers, and set a dated referral commitment.</p></div><div><b>60 days — convert</b><p>Follow qualified referrals through preapproval and contracts. Coordinate with the correct LP on barriers.</p></div><div><b>90 days — measure</b><p>Review actual referrals, closings, retained activity, and verified tier movement; reset the plan.</p></div></div><p class="rmGrowSmall">Production and last-lead figures reflect shared agent profiles, not a complete loan-level conversion funnel. Review LP Tracker for individual buyer status. Contact history and outreach reasons must be logged through the existing RM workflow.</p></section>';
 target.after(page);
 document.getElementById('rmGrowHomeOpen').onclick=open;
 document.getElementById('rmGrowHomePortfolio').onclick=()=>switchTab('portfolio');
@@ -145,9 +159,9 @@ document.getElementById('rmGrowPortfolio').onclick=()=>switchTab('portfolio');
 document.getElementById('rmGrowExistingGrowth').onclick=()=>switchTab('growth');
 document.getElementById('rmGrowRefresh').onclick=refresh;
 document.querySelectorAll('.rmGrowNav button').forEach(b=>b.addEventListener('click',()=>view(b.dataset.view)));
-document.getElementById('rmGrowSearch').addEventListener('input',e=>{state.search=e.target.value;render()});
+document.getElementById('rmGrowSearch').addEventListener('input',e=>{state.search=e.target.value;render()});document.getElementById('rmGrowSort').addEventListener('change',e=>{state.sort=e.target.value;render()});
 
-document.getElementById('rmGrowExport').addEventListener('click',()=>{const rows=[['Agent','Tier','Owner','Leads past year','Closings past year','Days since last lead','Suggested action','Source'],...filtered().map(p=>[p.name,p.tier,p.rm,p.leads??'',p.closings??'',p.daysNoLead??'',p.action,'Shared agent profile'])];const csv=rows.map(r=>r.map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(',')).join('\r\n');const url=URL.createObjectURL(new Blob([csv],{type:'text/csv'})),a=document.createElement('a');a.href=url;a.download='rm-growth-work-order.csv';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000)});
+document.getElementById('rmGrowExport').addEventListener('click',()=>{const rows=[['Agent','Tier','Owner','Leads past year','Closings past year','Closings to B','Days since last lead','Suggested action','Source'],...filtered().map(p=>[p.name,p.tier,p.rm,p.leads??'',p.closings??'',p.closings===1?1:p.closings===0?2:'verify',p.daysNoLead??'',p.action,'Shared agent profile'])];const csv=rows.map(r=>r.map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(',')).join('\r\n');const url=URL.createObjectURL(new Blob([csv],{type:'text/csv'})),a=document.createElement('a');a.href=url;a.download='rm-growth-work-order.csv';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000)});
 refresh();
 }
 function open(){if(typeof switchTab==='function'){switchTab('growth-command');if(!state.loaded)refresh();}else location.href='./c-to-b-opportunities.html'}
