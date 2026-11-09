@@ -4,6 +4,7 @@ on:
     paths:
       - 'ui/compact-workspace.js'
       - 'ui/relationship-funnel.js'
+      - 'ui/scorecard-source-summary.js'
       - '.github/workflows/install-compact-dashboard.yml'
   workflow_dispatch:
 permissions:
@@ -22,7 +23,7 @@ jobs:
           p=Path('index.html')
           s=p.read_text(encoding='utf-8')
           import re
-          asset='<script defer src="./ui/compact-workspace.js?v=20261109-clean4"></script>'
+          asset='<script defer src="./ui/compact-workspace.js?v=20261109-clean5"></script>'
           old=r'<script defer src="\./ui/compact-workspace\.js\?v=[^"]+"></script>'
           if re.search(old,s):
               s=re.sub(old,asset,s,count=1)
@@ -36,6 +37,12 @@ jobs:
               s=re.sub(old_funnel,funnel,s,count=1)
           else:
               s=s.replace('</body>',funnel+'</body>',1)
+          summary='<script defer src="./ui/scorecard-source-summary.js?v=20261109-source1"></script>'
+          old_summary=r'<script defer src="\./ui/scorecard-source-summary\.js\?v=[^"]+"></script>'
+          if re.search(old_summary,s):
+              s=re.sub(old_summary,summary,s,count=1)
+          else:
+              s=s.replace('</body>',summary+'</body>',1)
           p.write_text(s,encoding='utf-8')
           PY
       - name: Commit dashboard update
