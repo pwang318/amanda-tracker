@@ -18,7 +18,13 @@ const css=document.createElement('style');css.textContent=[
 '#rmProspectDailyStrip b{font-size:13px;color:#3e2b61}',
 '#rmProspectDailyStrip span{font-size:11px;color:#675977}',
 '#rmProspectDailyStrip button{background:white;border:1px solid #dbd1e6;border-radius:7px;padding:7px 10px;color:#543684;cursor:pointer}',
-'@media(max-width:750px){#rmBusinessOutcomes .rmMetrics{grid-template-columns:repeat(2,minmax(0,1fr))}}'
+'#rmBusinessOutcomes{max-width:100%;box-sizing:border-box;overflow-wrap:anywhere}',
+'#rmBusinessOutcomes .rmMetrics{min-width:0}',
+'#rmBusinessOutcomes .rmMetric{min-width:0;overflow-wrap:anywhere}',
+'#rmBusinessOutcomes .rmMetric b{font-size:clamp(17px,3vw,22px);line-height:1.2}',
+'#rmBusinessOutcomes p{max-width:100%;line-height:1.55}',
+'@media(max-width:750px){#rmBusinessOutcomes .rmMetrics{grid-template-columns:repeat(2,minmax(0,1fr))}}',
+'@media(max-width:480px){#rmBusinessOutcomes{padding:12px;margin:10px 0}#rmBusinessOutcomes .rmMetrics{grid-template-columns:1fr 1fr;gap:7px}#rmBusinessOutcomes .rmMetric{padding:9px}#rmBusinessOutcomes .rmMetric span{font-size:11px}}'
 ].join('\n');document.head.append(css);
 const nameKey=s=>String(s||'').normalize('NFKD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,'');
 const iso=(d=new Date())=>d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
@@ -70,7 +76,7 @@ function render(){
  if(target)target.innerHTML='<div class="rmMetrics">'+[
  ['Cold calls today',m.cold+' / 25+'],['Connection rate',pct(m.connections,m.attempts)],
  ['Booking per connection',pct(m.booked,m.connections)],['Linked bookings held',j.linked+' / '+j.booked]
- ].map(([a,b])=>metric(a,b)).join('')+'</div><p>25 attempts is a minimum, not a stopping point: use the full 60 minutes. Booked-to-held rate uses the same agent and a nearby meeting date; '+j.unmatched+' logged held meetings lack a matched booking. Retained partners must be verified through subsequent business; positive calls alone are not retention.</p>';
+ ].map(([a,b])=>metric(a,b)).join('')+'</div><p>Prospecting: Protect the full 60 minutes and make at least 25 cold-call attempts. Keep dialing for the full hour, even if you reach 25 early. Meeting tracking: '+j.unmatched+' completed meeting(s) do not have a matching booking in the activity log. Check those records if needed. Relationship success means new leads and repeat business—not just a good conversation.</p>';
 
 }
 function mount(){
