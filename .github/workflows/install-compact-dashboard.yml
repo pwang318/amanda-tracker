@@ -3,6 +3,7 @@ on:
   push:
     paths:
       - 'ui/compact-workspace.js'
+      - 'ui/relationship-funnel.js'
       - '.github/workflows/install-compact-dashboard.yml'
   workflow_dispatch:
 permissions:
@@ -29,6 +30,12 @@ jobs:
               if '</body>' not in s:
                   raise SystemExit('Missing closing body tag')
               s=s.replace('</body>',asset+'</body>',1)
+          funnel='<script defer src="./ui/relationship-funnel.js?v=20261109-funnel1"></script>'
+          old_funnel=r'<script defer src="\./ui/relationship-funnel\.js\?v=[^"]+"></script>'
+          if re.search(old_funnel,s):
+              s=re.sub(old_funnel,funnel,s,count=1)
+          else:
+              s=s.replace('</body>',funnel+'</body>',1)
           p.write_text(s,encoding='utf-8')
           PY
       - name: Commit dashboard update
