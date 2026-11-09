@@ -107,7 +107,14 @@ async function refresh(force=false){
     // Ensure portfolio relationship work is loaded before assembling the complete morning work list.
     if(typeof window.rmV440GetPortfolioData==='function')window.rmV440RenderedPortfolioData=await window.rmV440GetPortfolioData();
     const overview=await window.rmV462LoadMorningRows(iso());
-    if(Array.isArray(overview?.rows)){fullWork=overview.rows;fullVerified=true}
+    if(Array.isArray(overview?.rows)){
+     const portfolio=window.rmV440RenderedPortfolioData;
+     const missingPlans=(Array.isArray(portfolio?.rows)?portfolio.rows:[]).filter(r=>!String(r.next_growth_opportunity||'').trim()).map(r=>({
+      'Agent / Item':r.name||r.agent_name||'',Category:'Missing Growth Plan','Due Date':'',
+      'Next Action':'Document the next growth opportunity and a follow-up commitment.'
+     })).filter(r=>r['Agent / Item']);
+     fullWork=overview.rows.concat(missingPlans);fullVerified=true;
+    }
    }catch(err){console.warn('Full RM work list not verified',err)}
   }
   loaded=true;render();
@@ -126,6 +133,7 @@ function openTask(q){
  if(/weekly realtor|weekly.*call|portfolio.*call/.test(category))return lane('smart')||tab('portfolio');
  if(/new agent|cold call|prospect/.test(category))return tab('log');
  if(/reconnect|reactivat|outreach/.test(category))return tab('reconnect');
+ if(/missing growth plan|growth next step/.test(category)){if(typeof window.rmV440OpenPortfolio==='function')return window.rmV440OpenPortfolio('work');return tab('portfolio')}
  if(/growth|tier|c.agent|promotion/.test(category))return tab('growth');
  if(/meeting|business plan|portfolio|follow.up|relationship/.test(category)){
   if(typeof window.rmV440OpenPortfolio==='function')return window.rmV440OpenPortfolio('work');
