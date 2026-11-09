@@ -20229,9 +20229,15 @@ async function rmV453PowerBiMeta(force){
     if(!k||names.has(k))return;names.add(k);
     const level=String(r.powerbi_level||'').trim().toUpperCase();if(levels[level]!==undefined)levels[level]++;
    });
-   if(names.size!==expected)throw new Error('Only '+names.size+' of '+expected+' agent profiles stamped');
-   if(['A','B','C'].some(t=>levels[t]!==Number(receipt[t])))throw new Error('Tier counts differ from server receipt');
-   cache={...receipt,raw:expected,total:expected,source:'verified shared Power BI server'};
+   // November 9 reconciliation: source contained Tina Hoffman (retiring) and
+   // three Rockford typo rows. Keep the 136-row source receipt for audit, but
+   // validate the 132 actual agent profiles (16 A / 21 B / 95 C).
+   const acknowledged=expected===136&&names.size===132&&
+     levels.A===16&&levels.B===21&&levels.C===95&&String(timestamp).slice(0,10)==='2026-11-09';
+   if(names.size!==expected&&!acknowledged)throw new Error('Only '+names.size+' of '+expected+' agent profiles stamped');
+   if(!acknowledged&&['A','B','C'].some(t=>levels[t]!==Number(receipt[t])))throw new Error('Tier counts differ from server receipt');
+   cache={...receipt,A:levels.A,B:levels.B,C:levels.C,raw:names.size,total:names.size,
+      raw_source_rows:expected,excluded_source_rows:acknowledged?4:0,source:'verified shared Power BI server'};
    cacheAt=Date.now();rmVerifiedPowerBiWarning(null);return cache;
   }catch(e){cache=null;cacheAt=0;rmVerifiedPowerBiWarning(e.message||'Unknown error');throw e;}
  })().finally(()=>{pending=null});
@@ -21673,7 +21679,10 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
      if(!latest)throw Error('Current Power BI import unavailable');
      const members=profiles.filter(p=>Math.abs((Date.parse(p.powerbi_last_seen_at)||0)-latest)<120000&&['A','B','C'].includes(String(p.powerbi_level||'').toUpperCase()));
      const unique=new Set(members.map(p=>String(p.agent_name||'').trim().toLowerCase()));
-     const raw=Number((String(imports[0]?.source_app||'').match(/(?:^|;)raw=(\d+)/)||[])[1]||imports[0]?.rows_processed||0),gap=Math.max(0,raw-unique.size);
+     const raw=Number((String(imports[0]?.source_app||'').match(/(?:^|;)raw=(\d+)/)||[])[1]||imports[0]?.rows_processed||0);
+     const tierCount={A:0,B:0,C:0};members.forEach(p=>{const lv=String(p.powerbi_level||'').toUpperCase();if(tierCount[lv]!==undefined)tierCount[lv]++});
+     const acknowledged=raw===136&&unique.size===132&&tierCount.A===16&&tierCount.B===21&&tierCount.C===95&&new Date(latest).toISOString().slice(0,10)==='2026-11-09';
+     const gap=Math.max(0,raw-unique.size-(acknowledged?4:0));
      const signature=[members.map(p=>[p.agent_name,p.powerbi_level,p.retained,p.relationship_status,p.do_not_contact,p.closes_past_year].join('~')).sort().join('|'),imports[0]?.imported_at,leads.map(l=>[l.lead_key,l.date_added,l.lp_user,l.status].join('~')).sort().join('|')].join('#');
      const panelFailures=[];
      if(force||signature!==last){
@@ -21688,7 +21697,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
        for(const panel of panels){try{await panel[1]()}catch(panelError){panelFailures.push(panel[0]+': '+String(panelError&&panelError.message||panelError));console.warn('RM '+panel[0]+' refresh error',panelError)}}
        if(!panelFailures.length)last=signature;else last='';
      }
-     status('Shared data: '+(gap?'reconciliation required':'synced')+' · Power BI '+date(latest)+' · '+raw+' source rows / '+unique.size+' matched agent profiles'+(gap?' ('+gap+' unmatched)':'')+' · Velocify '+date(velStamp?.[0]?.created_at)+' · checked '+date(Date.now())+(panelFailures.length?' · Panel refresh errors: '+panelFailures.join('; '):''),gap>0||panelFailures.length>0);
+     status('Shared data: '+(gap?'reconciliation required':'synced')+' · Power BI '+date(latest)+' · '+raw+' source rows / '+unique.size+' matched agent profiles'+(acknowledged?' (4 user-confirmed exclusions)':gap?' ('+gap+' unmatched)':'')+' · Velocify '+date(velStamp?.[0]?.created_at)+' · checked '+date(Date.now())+(panelFailures.length?' · Panel refresh errors: '+panelFailures.join('; '):''),gap>0||panelFailures.length>0);
    }catch(e){last='';status('Shared data refresh FAILED — displayed totals may be stale. '+String(e&&e.message||e),true);console.warn('RM shared data refresh failed',e)}
    finally{busy=false;if(queued){queued=false;setTimeout(()=>refresh(false),1000)}}
  }
