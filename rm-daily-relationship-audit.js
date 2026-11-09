@@ -1,28 +1,13 @@
 (function(){
 'use strict';
 const id='rmDailyRelationshipReview';const $=name=>document.getElementById(name);
-function go(mode){const cmd=window.rmGrowthCommand;if(cmd&&typeof cmd.open==='function'){cmd.open();if(mode==='protect'&&typeof cmd.view==='function')cmd.view('protect')}else if(typeof switchTab==='function')switchTab('portfolio')}
+function go(mode){const cmd=window.rmGrowthCommand;if(cmd&&typeof cmd.open==='function'){cmd.open();if((mode==='protect'||mode==='near')&&typeof cmd.view==='function')cmd.view(mode)}else if(typeof switchTab==='function')switchTab('portfolio')}
 function update(){
 const st=window.rmGrowthCommand&&window.rmGrowthCommand.state,title=$('rmDailyRelationshipHeadline'),detail=$('rmDailyRelationshipDetail');if(!title||!detail)return;
 if(!st||!st.loaded){title.textContent='Review your active C-agent relationships today';detail.textContent=st&&!st.loading?'⚠ Shared agent data could not be verified. Refresh the Grow + Protect work order before relying on any counts.':'Check buyer opportunities, referral gaps and next commitments. Live profile counts are loading.';return}
 const all=st.rows.filter(r=>r.tier==='C'),stale=all.filter(r=>r.daysNoLead!==null&&r.daysNoLead>=30),unknown=all.filter(r=>r.daysNoLead===null),near=all.filter(r=>r.closings===1),missing=all.filter(r=>!String(r.next_growth_opportunity||'').trim());
 title.textContent='Review '+all.length+' active C-agent relationships today';
-const latest=st.profiles.filter(p=>String(p.powerbi_last_seen_at||'').slice(0,10)===String(st.lastSeen||'').slice(0,10));
-const imported=st.importLog?Number(st.importLog.rows_processed):null;
-const importedAt=String(st.importLog&&st.importLog.imported_at||'').slice(0,10);
-const stampedAt=String(st.lastSeen||'').slice(0,10);
-const receiptCurrent=Boolean(importedAt&&stampedAt&&importedAt===stampedAt);
-const excluded=imported===null?null:imported-latest.length;
-const nov9Approved=receiptCurrent&&stampedAt==='2026-11-09'&&imported===136&&latest.length===132
-  &&latest.filter(p=>String(p.powerbi_level||'').toUpperCase()==='A').length===16
-  &&latest.filter(p=>String(p.powerbi_level||'').toUpperCase()==='B').length===21
-  &&latest.filter(p=>String(p.powerbi_level||'').toUpperCase()==='C').length===95;
-const validReceipt=receiptCurrent&&imported!==null&&Number.isFinite(imported)&&excluded>=0;
-const reconciliation=nov9Approved?'Power BI: 132 matched profiles (4 approved source-row exclusions) · '
-  :!validReceipt?'⚠ POWER BI IMPORT NEEDS VERIFICATION: '+(imported===null?'import total unavailable':imported+' source rows')+' / '+latest.length+' stamped profiles · '
-  :excluded>0?'⚠ REVIEW '+excluded+' excluded source row'+(excluded===1?'':'s')+': '+imported+' imported / '+latest.length+' stamped profiles · '
-  :'Power BI: '+latest.length+' stamped profiles · ';
-detail.textContent=reconciliation+stale.length+' with no recorded lead in 30+ days · '+near.length+' with one closing · '+missing.length+' missing a next growth action'+(unknown.length?' · '+unknown.length+' need last-lead verification':'')+'. Actual referrals and closings matter more than call volume.';
+detail.textContent=stale.length+' with no recorded lead in 30+ days · '+near.length+' with one closing · '+missing.length+' missing a next growth action'+(unknown.length?' · '+unknown.length+' need last-lead verification':'')+'.';
 }
 function mount(){
 const pace=$('rm358Pace');if(!pace||$(id))return;const head=pace.querySelector('.rm358-pace-head');if(!head)return;
@@ -34,7 +19,7 @@ const detail=document.createElement('small');detail.id='rmDailyRelationshipDetai
 copy.append(kicker,title,detail);const actions=document.createElement('div');actions.className='rmDailyRelationActions';
 const all=document.createElement('button');all.type='button';all.textContent='Review all C agents →';all.addEventListener('click',()=>go('grow'));
 const risk=document.createElement('button');risk.type='button';risk.textContent='Protect at-risk C agents →';risk.addEventListener('click',()=>go('protect'));
-actions.append(all,risk);wrap.append(copy,actions);head.after(wrap);update();
+const nearBtn=document.createElement('button');nearBtn.type='button';nearBtn.textContent='C agents close to B →';nearBtn.addEventListener('click',()=>go('near'));actions.append(all,risk,nearBtn);wrap.append(copy,actions);head.after(wrap);update();
 }
 const style=document.createElement('style');style.id='rmDailyRelationshipAuditStyles';
 style.textContent=[
