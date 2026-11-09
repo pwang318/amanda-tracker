@@ -145,7 +145,8 @@ function render(){
  const queueOnly=queue.filter(q=>!canonical.some(r=>String(r.agent_name||'').trim().toLowerCase()===String(q.agent_name||'').trim().toLowerCase()&&String(r.activity_type||'').toLowerCase()===String(q.activity_type||'').toLowerCase()));
  const all=fullVerified?canonical.concat(queueOnly):queue;
  const late=all.filter(q=>q.work_date&&q.work_date>=COACHING_START&&q.work_date<d);
- const need=all.filter(q=>!q.work_date||q.work_date===d);
+ const need=all.filter(q=>q.work_date===d);
+ const undated=all.filter(q=>!q.work_date);
  const tmrw=next?all.filter(q=>q.work_date===next):[];
  const weekEnd=addDays(d,7);
  const thisWeek=all.filter(q=>q.work_date&&q.work_date>d&&q.work_date<=weekEnd&&(!next||q.work_date!==next));
@@ -156,17 +157,18 @@ function render(){
  $('execMetrics').innerHTML=[
   ['Cold calls today',offNow?'PTO':cold+' / 25+','log'],
   ['Prospecting minutes',dataOf(closeRecord(d))?.prospecting_minutes==null?'Not logged / 60':dataOf(closeRecord(d)).prospecting_minutes+' / 60','closeout'],
-  ['Meetings logged',meetingFor(d),'log'],
+  ['Meetings logged',meetingFor(d),'feed'],
   ['Overdue work',late.length,'overdue'],
   ['Due today',need.length,'today'],
-  ['Next workday',tmrw.length,'next'],
+  ['Next workday · '+(next?fmt(next):'unverified'),tmrw.length,'next'],
   ['Next 7 days (later)',thisWeek.length,'week'],
   ['Completed assigned tasks',done.length,'done'],
-  ['Activities logged today',activeFor(d).length,'log']
+  ['Needs a due date',undated.length,'undated']
  ].map(x=>'<div class="execMetric" role="button" tabindex="0" data-exec-target="'+safe(x[2])+'" aria-label="Open '+safe(x[0])+'"><strong>'+safe(x[1])+'</strong><span>'+safe(x[0])+' ↗</span></div>').join('');
  const sections=[
   ['Carry forward · overdue',late,'No overdue commitments found in the available work lists'],
   ['Due today',need,'No due-today work confirmed in the connected lists'],
+  ['Open work without a due date',undated,'No undated open work found'], 
   ['Next workday · '+(next?fmt(next):'unknown'),tmrw,'No dated work queued for the next workday'],
   ['Due in the next 7 days',thisWeek,'No other dated work found in the coming week'],
   ['Completed assigned tasks',done,'No completed assigned tasks verified in the shared queue']
@@ -193,10 +195,10 @@ function render(){
  $('execMetrics').querySelectorAll('[data-exec-target]').forEach(tile=>{
    const action=()=>{
     const kind=tile.dataset.execTarget;
-    if(kind==='log'){if(typeof switchTab==='function')switchTab('log');return}
+    if(kind==='log'||kind==='feed'){if(typeof switchTab==='function')switchTab(kind==='feed'?'feed':'log');return}
     if(kind==='closeout'){$('execCloseout').open=true;$('execCloseout').scrollIntoView({behavior:'smooth',block:'center'});return}
     $('execTaskDetails').open=true;
-    const section={overdue:0,today:1,next:2,week:3,done:4}[kind];
+    const section={overdue:0,today:1,next:3,week:4,done:5,undated:2}[kind];
     const cards=$('execTaskSummary').querySelectorAll('section');
     if(cards[section])cards[section].scrollIntoView({behavior:'smooth',block:'center'});
    };
