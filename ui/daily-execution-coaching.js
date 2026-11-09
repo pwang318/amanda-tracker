@@ -96,12 +96,14 @@ async function refresh(force=false){
   const from=COACHING_START,to=addDays(iso(),21);
   const result=await Promise.all([
    sbFetch('rm_day_blocks?select=*&owner=eq.Amanda&work_date=gte.'+from+'&work_date=lte.'+to+'&limit=1200'),
-   sbFetch('amanda_activities?select=id,act_type,act_date,agent_name,outcome,created_at&act_date=gte.'+from+'&act_date=lte.'+to+'&limit=10000'),
+   sbFetch('amanda_activities?select=*&act_date=gte.'+from+'&act_date=lte.'+to+'&limit=10000'),
    sbFetch('rm_work_queue?select=id,work_date,agent_name,activity_type,reason,status,owner&owner=eq.Amanda&status=eq.open&work_date=gte.'+COACHING_START+'&limit=2500'),
    sbFetch('rm_work_queue?select=id,work_date,agent_name,activity_type,reason,status,owner&owner=eq.Amanda&status=neq.open&work_date=gte.'+COACHING_START+'&limit=2500')
   ]);
   if(result.some(r=>!Array.isArray(r)))throw Error('One of the live data lists is unavailable');
-  [blocks,activities,queue,completedQueue]=result;fullVerified=false;fullWork=[];
+  [blocks,activities,queue,completedQueue]=result;
+  activities=activities.filter(a=>{try{return typeof window.isAmandaDailyActivity==='function'?window.isAmandaDailyActivity(a):(typeof window.activityCreditsPerson==='function'?window.activityCreditsPerson(a,'Amanda'):true)}catch(e){return true}});
+  fullVerified=false;fullWork=[];
   if(typeof window.rmV462LoadMorningRows==='function'){
    try{
     // Ensure portfolio relationship work is loaded before assembling the complete morning work list.
@@ -195,7 +197,7 @@ function render(){
  if(known.length)categoryRows.push(['Other assigned tasks',known,'']);
  $('execTaskSummary').innerHTML='<h3>By due date</h3>'+sections.map(s=>taskList(s[0],s[1],s[2])).join('')+
  '<h3>By workflow · all open work</h3>'+categoryRows.map(s=>taskList(s[0],s[1],s[2])).join('')+
- '<p class="execNotice'+(fullVerified?'':' execWarn')+'">'+(fullVerified?'Work derived from the live RM morning queue plus Amanda’s assigned open tasks. Completing an activity does not automatically close unrelated commitments.':'Only some task sources could be verified. Counts above are incomplete; check the original portfolio and campaign lists before declaring a category clear.')+'</p>';
+ '<p class="execNotice'+(fullVerified?'':' execWarn')+'">'+(fullVerified?'Open work uses the RM morning list and assigned queue. Future dates show known scheduled items only; recurring commitments may appear as they become due. Completed activity does not automatically close unrelated tasks.':'Only some task sources could be verified. Counts above are incomplete; check the original portfolio and campaign lists before declaring a category clear.')+'</p>';
  $('execTaskSummary').querySelectorAll('.execTaskGo').forEach(button=>{
   const group=sections.concat(categoryRows).find(s=>s[0]===button.dataset.list);
   button.onclick=()=>{if(!group)return;if(group[0].startsWith('Completed assigned tasks')){if(typeof window.switchTab==='function')window.switchTab('feed');return;}openTask(group[1][Number(button.dataset.index)])};
@@ -279,7 +281,7 @@ function renderTrends(){
  const counts={};for(const r of rows)if(r.reason)counts[r.reason]=(counts[r.reason]||0)+1;
  host.innerHTML='<p>Prospecting minimum met '+met+' of '+rows.length+' scheduled workdays. '+short.length+' below minimum; '+withExplanation+' of those have a saved explanation. This view uses logged cold-call entries only, not assumed time worked.</p>'+
  '<div style="overflow:auto"><table style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr><th align="left">Day</th><th align="left">Cold calls</th><th align="left">Meetings</th><th align="left">Prospecting minutes</th><th align="left">Closeout reason</th></tr></thead><tbody>'+
- rows.map(r=>'<tr><td style="padding:6px;border-bottom:1px solid #eee">'+safe(fmt(r.date))+'</td><td>'+r.cold+' / 25</td><td>'+r.meet+'</td><td>'+safe(reasons[r.reason]||(r.cold>=25?'Goal met':'Not documented'))+'</td></tr>').join('')+'</tbody></table></div>'+
+ rows.map(r=>'<tr><td style="padding:6px;border-bottom:1px solid #eee">'+safe(fmt(r.date))+'</td><td>'+r.cold+' / 25</td><td>'+r.meet+'</td><td>'+(r.minutes==null?'Not logged':r.minutes+' / 60')+'</td><td>'+safe(reasons[r.reason]||(r.cold>=25?'Goal met':'Not documented'))+'</td></tr>').join('')+'</tbody></table></div>'+
  '<p><strong>Frequent explanations:</strong> '+(Object.keys(counts).length?Object.entries(counts).sort((a,b)=>b[1]-a[1]).map(x=>safe(reasons[x[0]]||x[0])+' ('+x[1]+')').join(' · '):'None saved yet')+'.</p><small>Interpret low-call days alongside partner service, calendar commitments, and lead results. A missed goal is a coaching prompt, not proof of inactivity.</small>';
 }
 window.rmRefreshExecutionCoaching=()=>refresh(true);
