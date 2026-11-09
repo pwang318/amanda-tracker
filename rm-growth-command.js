@@ -35,12 +35,20 @@ const STYLE = `
 const escape=(s)=>String(s===null||s===undefined?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const key=s=>String(s||'').trim().toLowerCase().replace(/\s+/g,' ');
 const date=s=>String(s||'').slice(0,10);
+const todayKey=()=>new Date().toLocaleDateString('en-CA',{year:'numeric',month:'2-digit',day:'2-digit'});
+const validDay=v=>/^\d{4}-\d{2}-\d{2}$/.test(date(v))&&Number.isFinite(Date.parse(date(v)+'T12:00:00'));
+const dueType=p=>{const candidates=[date(p.growth_opportunity_deadline),date(p.followup)].filter(validDay);if(!candidates.length)return 'none';const earliest=[...candidates].sort()[0],today=todayKey();return earliest<today?'overdue':earliest===today?'today':'future'};
+const dueDate=p=>[date(p.growth_opportunity_deadline),date(p.followup)].filter(validDay).sort()[0]||'';
+const attentionReason=p=>{const reasons=[];const due=dueType(p);if(due==='overdue')reasons.push('Overdue commitment or follow-up');else if(due==='today')reasons.push('Due today');if(p.competitor_risk_flag)reasons.push('Competitor/retention risk');if(p.daysNoLead===null)reasons.push('Last lead needs verification');else if(p.daysNoLead>=30)reasons.push('No recorded lead in '+p.daysNoLead+' days');if(p.closings===1)reasons.push('One closing away from B threshold');if(!String(p.next_growth_opportunity||'').trim())reasons.push('No growth action saved');return reasons.join(' · ')||'Maintain referral relationship'};
+const todayRank=p=>{const due=dueType(p);return (due==='overdue'?10000:due==='today'?8000:0)+(p.competitor_risk_flag?1800:0)+(p.closings===1?1200:0)+(p.daysNoLead!==null&&p.daysNoLead>=30?700:0)+(p.daysNoLead===null?300:0)+(!String(p.next_growth_opportunity||'').trim()?200:0)+p.score};
 const safeNumber=n=>n===null||n===undefined||n===''?null:Math.max(0,Number(n)||0);
 const state={profiles:[],rows:[],ownerMap:{},migrations:[],view:'grow',search:'',sort:'priority',tier:'all',loading:false,loaded:false,lastSeen:null,importLog:null};
 const getTier=p=>{const t=String(p.powerbi_level||p.tier||'').trim().toUpperCase();return ['C','B','A','CHANNEL'].includes(t)?(t==='CHANNEL'?'Channel':t):null};
 const getOwner=(p,tier)=>tier==='C'?'Amanda':'Director';
 function daysSince(value){const v=date(value);if(!/^\d{4}-\d{2}-\d{2}$/.test(v))return null;const t=Date.parse(v+'T12:00:00');return Number.isFinite(t)?Math.max(0,Math.floor((Date.now()-t)/86400000)):null}
-function action(p){if(p.competitor_risk_flag)return 'Service recovery: find out what changed and agree on a recovery action';
+function action(p){if(dueType(p)==='overdue')return 'Overdue: complete the agreed follow-up, confirm the next referral step, and log the result';
+if(dueType(p)==='today')return 'Due today: contact the agent, confirm the commitment, and log the next step';
+if(p.competitor_risk_flag)return 'Protect: identify the issue, agree on a recovery action and follow-up date';
 if(p.daysNoLead!==null&&p.daysNoLead>=30)return 'Re-engage: identify buyer activity and ask for the next qualified referral';
 if(p.next_growth_opportunity)return 'Follow through: '+p.next_growth_opportunity;
 if(p.closings>0&&p.tier==='C')return 'Review current pipeline and the next closing opportunity';
@@ -89,7 +97,7 @@ if(state.view==='missing')rows=rows.filter(r=>!String(r.next_growth_opportunity|
 
 if(state.search)rows=rows.filter(r=>r.name.toLowerCase().includes(state.search.toLowerCase()));
 const comparisons={
- priority:(a,b)=>b.score-a.score,
+ priority:(a,b)=>todayRank(b)-todayRank(a),
  'leads-desc':(a,b)=>(b.leads??-1)-(a.leads??-1),
  'leads-asc':(a,b)=>(a.leads??Infinity)-(b.leads??Infinity),
  'closings-desc':(a,b)=>(b.closings??-1)-(a.closings??-1),
@@ -128,16 +136,16 @@ const warning=nov9Approved?'November 9 import reconciled: four approved source-r
 meta.textContent='Data verification · '+latest+' · '+stamped.length+' stamped profiles; '+stampedC.length+' stamped C profiles; '+(importRow?raw+' imported rows':'import receipt unavailable')+'. '+warning+' Inactive, hidden and non-C profiles excluded.';
 const summary=document.getElementById('rmGrowCleanSummary');if(summary)summary.textContent=state.rows.length+' active C relationships · Review growth, protect those at risk, and follow referrals through to business.';
 stats().forEach(([label,value])=>{const c=document.createElement('div');c.className='rmGrowStat';c.setAttribute('role','button');c.tabIndex=0;c.setAttribute('aria-label','View '+label);const target=label==='Active C agents'?'grow':label==='C agents with 1 closing'?'near':label==='Retention attention'?'protect':'convert';const activate=()=>view(target);c.addEventListener('click',activate);c.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();activate()}});const strong=document.createElement('strong');strong.textContent=value;const sub=document.createElement('span');sub.textContent=label;c.append(strong,sub);grid.append(c)});
-const list=filtered();subtitle.textContent=list.length+' relationships · Sorted by actionable priority (not guaranteed promotion or closing).';
+const list=filtered();const sortTitle={priority:'today’s follow-ups and relationship risk','leads-desc':'most annual leads','leads-asc':'fewest annual leads','closings-desc':'most annual closings','closings-asc':'fewest annual closings','lastlead-desc':'longest since last lead','lastlead-asc':'shortest since last lead',name:'agent name'};subtitle.textContent=list.length+' relationships · Sorted by '+(sortTitle[state.sort]||'priority')+'. Counts may overlap across views.';
 for(const p of list){
 const tr=document.createElement('tr');cell(tr,p.name+' · '+p.tier);cell(tr,p.rm);cell(tr,p.leads);cell(tr,p.closings);cell(tr,p.closings===1?'1 more for B':p.closings===0?'2 more for B':'Verify tier');cell(tr,p.daysNoLead===null?'Unknown':p.daysNoLead+' days');
-const actionCell=cell(tr,p.action);if(p.partner_pain_points){const d=document.createElement('div');d.className='rmGrowSmall';d.textContent='Known blocker: '+p.partner_pain_points;actionCell.append(d)}
-const td=document.createElement('td');const btn=document.createElement('button');btn.className='rmGrowBtn alt';btn.textContent='Agent plan';btn.addEventListener('click',()=>{if(window.rmGrowthDeepDive&&typeof window.rmGrowthDeepDive.edit==='function')window.rmGrowthDeepDive.edit(p.sourceName)});const log=document.createElement('button');log.className='rmGrowBtn alt';log.textContent='Log';log.setAttribute('aria-label','Log activity for '+p.name);log.style.marginLeft='5px';td.append(btn,log);log.addEventListener('click',()=>{if(typeof prefillActivityLog==='function')prefillActivityLog(p.sourceName);else switchTab('log')});tr.append(td);tbody.append(tr);
+const actionCell=cell(tr,attentionReason(p)+' — '+p.action);if(p.partner_pain_points){const d=document.createElement('div');d.className='rmGrowSmall';d.textContent='Known blocker: '+p.partner_pain_points;actionCell.append(d)}
+const td=document.createElement('td');const btn=document.createElement('button');btn.className='rmGrowBtn alt';btn.textContent='Agent plan';btn.addEventListener('click',()=>{try{if(window.rmGrowthDeepDive&&typeof window.rmGrowthDeepDive.edit==='function'){const opened=window.rmGrowthDeepDive.edit(p.sourceName);if(opened===false)throw Error('Agent record could not be opened');}else throw Error('Agent plan editor is unavailable. Refresh this page.');}catch(e){setStatus('Could not open '+p.name+' plan: '+(e.message||'Unknown error'));}});const log=document.createElement('button');log.className='rmGrowBtn alt';log.textContent='Log';log.setAttribute('aria-label','Log activity for '+p.name);log.style.marginLeft='5px';td.append(btn,log);log.addEventListener('click',()=>{if(typeof prefillActivityLog==='function')prefillActivityLog(p.sourceName);else switchTab('log')});tr.append(td);tbody.append(tr);
 }
 if(!list.length){const tr=document.createElement('tr');const td=document.createElement('td');td.colSpan=8;td.textContent='No relationships match this view. Try a different filter.';tr.append(td);tbody.append(tr)}
-const owned=state.rows,focus=[...owned].sort((a,b)=>b.score-a.score).slice(0,5);
+const owned=state.rows,focus=[...owned].sort((a,b)=>todayRank(b)-todayRank(a)||a.name.localeCompare(b.name)).slice(0,5);
 brief.replaceChildren();const intro=document.createElement('p');intro.textContent='Today’s top five relationship priorities:';brief.append(intro);
-const ol=document.createElement('ol');for(const p of focus){const li=document.createElement('li');li.textContent=p.name+' ('+p.tier+') — '+p.action;ol.append(li)}brief.append(ol);
+const ol=document.createElement('ol');for(const p of focus){const li=document.createElement('li');li.textContent=p.name+' — '+attentionReason(p)+(dueDate(p)?' · Next due '+dueDate(p):'')+' — '+p.action;const act=document.createElement('button');act.type='button';act.className='rmGrowBtn alt';act.textContent='Open plan';act.style.marginLeft='8px';act.addEventListener('click',()=>{try{if(!window.rmGrowthDeepDive?.edit||window.rmGrowthDeepDive.edit(p.sourceName)===false)throw Error('Editor unavailable');}catch(e){setStatus('Could not open '+p.name+' plan. Refresh shared data.')}});li.append(act);ol.append(li)}brief.append(ol);
 const note=document.createElement('p');note.className='rmGrowSmall';note.textContent='Contact each priority agent, identify a real buyer or referral opportunity, agree on a dated next step, and log what happened. Follow up on referred buyers with the assigned loan partner.';brief.append(note);
 const home=document.getElementById('rmGrowHomeHint');if(home)home.textContent=owned.filter(r=>r.tier==='C'&&r.closings===1).length+' C agents with 1 close · '+owned.filter(r=>r.daysNoLead!==null&&r.daysNoLead>=30).length+' with 30+ days since last lead. Open the work order →';
 }
@@ -156,7 +164,7 @@ document.getElementById('rmGrowHomeOpen').onclick=open;
 document.getElementById('rmGrowHomePortfolio').onclick=()=>switchTab('portfolio');
 document.getElementById('rmGrowHomeRefresh').onclick=()=>refresh();
 document.getElementById('rmGrowPortfolio').onclick=()=>switchTab('portfolio');
-document.getElementById('rmGrowExistingGrowth').onclick=()=>switchTab('growth');
+document.getElementById('rmGrowExistingGrowth').onclick=()=>{const panel=document.getElementById('gdMigrations');if(panel){panel.closest('details').open=true;panel.scrollIntoView({behavior:'smooth',block:'start'});}else setStatus('Tier results are loading. Refresh the page to retry.');};
 document.getElementById('rmGrowRefresh').onclick=refresh;
 document.querySelectorAll('.rmGrowNav button').forEach(b=>b.addEventListener('click',()=>view(b.dataset.view)));
 document.getElementById('rmGrowSearch').addEventListener('input',e=>{state.search=e.target.value;render()});document.getElementById('rmGrowSort').addEventListener('change',e=>{state.sort=e.target.value;render()});
