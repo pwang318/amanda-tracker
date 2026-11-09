@@ -232,7 +232,9 @@ window.rmAmandaIsOOO=d=>loaded?isOff(String(d||iso()).slice(0,10)):null;
 window.rmAmandaNextWorkday=d=>loaded?nextWorkday(String(d||iso()).slice(0,10)):null;
 function init(){
  mount();refresh(true);
- const board=$('view-week')||$('rm350Workboard');if(board)new MutationObserver(()=>mount()).observe(board,{childList:true,subtree:true});
+ // The app may replace the Today view after page initialization. Observe the document rather than a stale board node.
+ let scheduled=false;
+ new MutationObserver(()=>{if(scheduled)return;scheduled=true;requestAnimationFrame(()=>{scheduled=false;try{mount()}catch(e){console.error('RM daily plan mount failed',e)}})}).observe(document.body,{childList:true,subtree:true});
  window.addEventListener('focus',()=>refresh(false));
  document.addEventListener('visibilitychange',()=>{if(!document.hidden)refresh(false)});
 }
