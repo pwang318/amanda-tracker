@@ -103,7 +103,12 @@ async function refresh(force=false){
   if(result.some(r=>!Array.isArray(r)))throw Error('One of the live data lists is unavailable');
   [blocks,activities,queue,completedQueue]=result;fullVerified=false;fullWork=[];
   if(typeof window.rmV462LoadMorningRows==='function'){
-   try{const overview=await window.rmV462LoadMorningRows(iso());if(Array.isArray(overview?.rows)){fullWork=overview.rows;fullVerified=true}}catch(err){console.warn('Full RM work list not verified',err)}
+   try{
+    // Ensure portfolio relationship work is loaded before assembling the complete morning work list.
+    if(typeof window.rmV440GetPortfolioData==='function')window.rmV440RenderedPortfolioData=await window.rmV440GetPortfolioData();
+    const overview=await window.rmV462LoadMorningRows(iso());
+    if(Array.isArray(overview?.rows)){fullWork=overview.rows;fullVerified=true}
+   }catch(err){console.warn('Full RM work list not verified',err)}
   }
   loaded=true;render();
  }catch(e){
@@ -168,10 +173,10 @@ function render(){
  ];
  const categories=[
  ['4-week campaigns',/4.week|campaign|conversion/i],
- ['Relationship follow-ups',/follow.up|portfolio.*follow/i],
+ ['Relationship follow-ups',/follow.up|portfolio.*follow|partner touch|needs attention/i],
  ['Weekly Realtor calls',/weekly realtor|weekly.*call/i],
  ['Transaction and Tuesday updates',/transaction|contract|ctc|tuesday/i],
- ['Meetings and missing plans',/meeting|business plan|growth.*plan/i],
+ ['Meetings and growth plans',/meeting|business plan|growth.*plan|growth next step/i],
  ['C-agent growth and protection',/c.agent|growth|retention|protect|promotion/i],
  ['Outreach and reconnect',/outreach|reconnect|cold call/i]
  ];
