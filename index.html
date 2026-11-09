@@ -20323,7 +20323,6 @@ async function rmV454ReplaceReconnectFeed(rows,fileName){
   await batches(tasks,18);return{rows:rows.length,writes:tasks.length,file:fileName,stamp}
 }
 window.rmV454ReplaceReconnectFeed=rmV454ReplaceReconnectFeed;
-window.rmV462LoadMorningRows=loadMorningRows;
 async function ensureXlsx(){if(window.XLSX)return window.XLSX;await new Promise((resolve,reject)=>{const s=document.createElement('script');s.src='https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';s.onload=resolve;s.onerror=()=>reject(new Error('Could not load the Excel reader'));document.head.appendChild(s)});return window.XLSX}
 async function rmV454ImportFile(input){const file=input&&input.files&&input.files[0],status=document.getElementById('rmV454UploadStatus');if(!file)return;try{if(status)status.textContent='Reading '+file.name+'…';const X=await ensureXlsx(),wb=X.read(await file.arrayBuffer(),{type:'array',cellDates:true}),raw=X.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{defval:''}),rows=rmV454ParseReconnectRows(raw);if(!rows.length)throw new Error('No Agent rows were found');if(status)status.textContent='Refreshing '+rows.length+' reconnect records and preserving removals…';await rmV454ReplaceReconnectFeed(rows,file.name);if(status)status.textContent='Loaded '+rows.length+' unique agents. Removed names stayed suppressed. Missing old rows were archived.';if(typeof toast==='function')toast('Reconnect list refreshed · '+rows.length+' agents','success',4200);await window.loadReconnect()}catch(e){if(status)status.textContent='Import failed: '+String(e&&e.message||e);if(typeof toast==='function')toast('Reconnect import failed: '+String(e&&e.message||e),'error',5200)}finally{input.value=''}}
 window.rmV454ImportFile=rmV454ImportFile;
@@ -20529,6 +20528,7 @@ async function loadMorningRows(day=todayIso()){
   const todayActs=typeof rm411Amanda==='function'?rm411Amanda(result[5]||[]):(result[5]||[]).filter(a=>{try{return typeof isAmandaDailyActivity==='function'?isAmandaDailyActivity(a):(typeof activityCreditsPerson==='function'?activityCreditsPerson(a,'Amanda'):true)}catch(e){return true}}),coldDone=todayActs.filter(a=>String(a.act_type||'')==='Cold Calls').length;
   return{rows:unique,activities:todayActs,rawActivityCount:(result[5]||[]).length,daily:{coldDone:coldDone,coldTarget:25,coldRemaining:Math.max(0,25-coldDone)}};
 }
+window.rmV462LoadMorningRows=loadMorningRows;
 async function ensureXlsx(){if(window.XLSX)return window.XLSX;await new Promise((resolve,reject)=>{const s=document.createElement('script');s.src='https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';s.onload=resolve;s.onerror=()=>reject(new Error('Excel export library unavailable'));document.head.appendChild(s)});return window.XLSX}
 window.rmV462ExportMorningWork=async function(){
   const btn=document.getElementById('rmV462MorningExport'),old=btn&&btn.textContent;if(btn){btn.disabled=true;btn.textContent='Building Excel…'}
