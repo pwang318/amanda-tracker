@@ -21,6 +21,9 @@ css.textContent=[
 '#rmWorkdayPlan .rmPlanTime{min-width:93px;color:#6c617b;font-variant-numeric:tabular-nums}',
 '#rmWorkdayPlan .rmPlanName{color:#34234e;font-weight:600}',
 '#view-week .rmTodayHideSecondary{display:none!important}',
+'#view-week #rm490Score,#view-week #rm490Bottom,#view-week #rm492Additional,#view-week #rmV441Bottom{display:none!important}',
+'#view-week #rmV440PortfolioToday{margin:10px 0!important;padding:12px 15px!important;box-shadow:none!important}',
+'#view-week #rmV440PortfolioToday .rm-v440-pt-row{padding:9px 10px!important}',
 '[data-director-only-warning="true"]{display:none!important}',
 '@media(max-width:820px){#rmWorkdayPlan .rmPlanRows{grid-template-columns:1fr}}'
 ].join('\n');document.head.append(css);
