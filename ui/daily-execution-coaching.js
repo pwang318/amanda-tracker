@@ -21,6 +21,8 @@ styles.textContent=[
 '#rmExecutionPlan .execMetric[role="button"]{cursor:pointer;transition:border-color .15s,background .15s}',
 '#rmExecutionPlan .execMetric[role="button"]:hover,#rmExecutionPlan .execMetric[role="button"]:focus-visible{border-color:#9871c5;background:#f2eafa;outline:2px solid #7351a5;outline-offset:2px}',
 '#rmExecutionPlan .execTaskDetails>summary{cursor:pointer;color:#593b83;font-size:12px;font-weight:700;padding:9px 0}',
+'#rmExecutionPlan #execTaskSummary>h3{grid-column:1/-1;margin:16px 0 2px}',
+'#rmExecutionPlan #execTaskSummary>p{grid-column:1/-1}',
 '#rmExecutionPlan .execTaskDetails{border-top:1px solid #eee7f5;margin:9px 0}',
 '#rmExecutionPlan .execMetric{background:#faf8fc;border:1px solid #ede8f1;border-radius:9px;padding:11px}',
 '#rmExecutionPlan .execMetric strong{display:block;font-size:23px;color:#523784}',
@@ -64,7 +66,7 @@ function mount(){
  div.innerHTML='<div class="execRow"><div><h2>Today’s plan</h2><p>Fresh start · November 9 onward. Goals, open work and next steps in one place.</p></div><button id="execReload" type="button">Refresh live activity</button></div>'+
  '<div id="execNotice" class="execNotice">Loading shared activity and schedule…</div>'+
  '<div id="execMetrics" class="execMetrics"></div>'+
- '<details class="execTaskDetails" id="execTaskDetails"><summary>View all assigned tasks</summary><div id="execTaskSummary" class="execTasks"></div></details>'+
+ '<details class="execTaskDetails" id="execTaskDetails" open><summary>Outstanding work · open the actual task list</summary><div id="execTaskSummary" class="execTasks"></div></details>'+
  '<details id="execCloseout"><summary>End-of-day closeout · why goals were missed</summary>'+
  '<div class="execForm"><label>Review date<input type="date" id="execReviewDate"></label>'+
  '<label>Main reason<select id="execReason"><option value="">Select a reason</option><option value="meetings">Realtor or business meetings</option><option value="transactions">Urgent transactions or client needs</option><option value="relationships">Existing partner calls</option><option value="interruptions">Schedule changes or interruptions</option><option value="time">Other priorities / time management</option><option value="other">Other / coaching needed</option></select></label></div>'+
@@ -108,13 +110,23 @@ async function refresh(force=false){
  }finally{working=false}
 }
 function openTask(q){
- const agent=q.agent_name||q['Agent / Item']||'';
- if(agent&&typeof openContactModal==='function'){Promise.resolve(openContactModal(agent)).catch(()=>{if(typeof switchTab==='function')switchTab('portfolio')});return}
- const category=String(q.Category||q.activity_type||'').toLowerCase();
- if(category.includes('campaign')&&typeof window.v350OpenLane==='function')return window.v350OpenLane('conversion');
- if(category.includes('transaction')&&typeof window.v350OpenLane==='function')return window.v350OpenLane('calls');
+ const category=String(q.Category||q.activity_type||q.reason||'').toLowerCase();
+ const lane=kind=>{if(typeof window.v350OpenLane==='function'){window.v350OpenLane(kind);return true}return false};
+ const tab=name=>{if(typeof window.switchTab==='function'){window.switchTab(name);return true}return false};
+ // Open the workflow that owns the task, not a generic agent modal.
+ if(/4.week|campaign|conversion/.test(category))return lane('conversion')||tab('portfolio');
+ if(/tuesday|listing update/.test(category))return tab('tuesday');
+ if(/transaction|contract|ctc|buyer call/.test(category))return lane('calls')||tab('portfolio');
+ if(/weekly realtor|weekly.*call|portfolio.*call/.test(category))return lane('smart')||tab('portfolio');
+ if(/new agent|cold call|prospect/.test(category))return tab('log');
+ if(/reconnect|reactivat|outreach/.test(category))return tab('reconnect');
+ if(/growth|tier|c.agent|promotion/.test(category))return tab('growth');
+ if(/meeting|business plan|portfolio|follow.up|relationship/.test(category)){
+  if(typeof window.rmV440OpenPortfolio==='function')return window.rmV440OpenPortfolio('work');
+  return tab('portfolio');
+ }
  if(typeof window.rmV440OpenPortfolio==='function')return window.rmV440OpenPortfolio('work');
- if(typeof switchTab==='function')switchTab('portfolio');
+ return tab('portfolio');
 }
 function taskList(title,rows,empty){
  const list=rows.slice(0,7).map((q,i)=>'<li><button type="button" class="execTaskGo" data-list="'+safe(title)+'" data-index="'+i+'">'+safe(q.agent_name||q['Agent / Item']||'Assigned agent')+' · '+safe(q.activity_type||q.Category||q.reason||q['Next Action']||'Outstanding action')+(q.work_date||q['Due Date']?' ('+safe(q.work_date||q['Due Date'])+')':'')+' ↗</button></li>').join('');
@@ -129,21 +141,44 @@ function render(){
  const late=all.filter(q=>q.work_date&&q.work_date>=COACHING_START&&q.work_date<d);
  const need=all.filter(q=>!q.work_date||q.work_date===d);
  const tmrw=next?all.filter(q=>q.work_date===next):[];
+ const weekEnd=addDays(d,7);
+ const thisWeek=all.filter(q=>q.work_date&&q.work_date>d&&q.work_date<=weekEnd&&(!next||q.work_date!==next));
  const nextOff=[...outDates()].filter(x=>x>=d).sort();
  const notice=$('execNotice');notice.className='execNotice'+(offNow?'':' execWarn');
  notice.textContent=offNow?'Out of office today — no cold-call target or missed-day flag. Outstanding agent commitments still require coverage.':cold<25?'Prospecting below minimum: '+cold+' of 25 logged. The full 60-minute block is also required; actual time is not verified by call count.':'25+ calls logged. Keep the protected 60-minute prospecting block; elapsed time is not inferred.';
  $('execMetrics').innerHTML=[
-  ['Cold calls today',offNow?'PTO':cold+' / 25','log'],
+  ['Cold calls today',offNow?'PTO':cold+' / 25+','log'],
   ['Prospecting minutes',dataOf(closeRecord(d))?.prospecting_minutes==null?'Not logged / 60':dataOf(closeRecord(d)).prospecting_minutes+' / 60','closeout'],
   ['Meetings logged',meetingFor(d),'log'],
-  ['Overdue since Nov 9',late.length,'overdue'],
+  ['Overdue from Nov 9',late.length,'overdue'],
   ['Due today',need.length,'today'],
-  ['Next workday',next?fmt(next):'Unverified','next']
+  ['Next workday',tmrw.length,'next'],
+  ['Next 7 days (later)',thisWeek.length,'week'],
+  ['Activities logged today',activeFor(d).length,'log']
  ].map(x=>'<div class="execMetric" role="button" tabindex="0" data-exec-target="'+safe(x[2])+'" aria-label="Open '+safe(x[0])+'"><strong>'+safe(x[1])+'</strong><span>'+safe(x[0])+' ↗</span></div>').join('');
- const sections=[['Carry forward · overdue',late,'No overdue commitments from the new baseline.'],['Due today & this week',need,'No due-now work in the verified lists.'],['Next workday · '+(next?fmt(next):'unknown'),tmrw,'No dated work queued for the next workday.']];
- $('execTaskSummary').innerHTML=sections.map(s=>taskList(s[0],s[1],s[2])).join('')+(fullVerified?'':'<p class="execNotice execWarn">Some workflow lists could not be verified. Numbers show only the assigned queue; open the original work lists for the full picture.</p>');
+ const sections=[
+  ['Carry forward · overdue',late,'No overdue commitments from the Nov 9 baseline'],
+  ['Due today',need,'No due-today work confirmed in the connected lists'],
+  ['Next workday · '+(next?fmt(next):'unknown'),tmrw,'No dated work queued for the next workday'],
+  ['Due in the next 7 days',thisWeek,'No other dated work found in the coming week']
+ ];
+ const categories=[
+ ['4-week campaigns',/4.week|campaign|conversion/i],
+ ['Relationship follow-ups',/follow.up|portfolio.*follow/i],
+ ['Weekly Realtor calls',/weekly realtor|weekly.*call/i],
+ ['Transaction and Tuesday updates',/transaction|contract|ctc|tuesday/i],
+ ['Meetings and missing plans',/meeting|business plan|growth.*plan/i],
+ ['C-agent growth and protection',/c.agent|growth|retention|protect|promotion/i],
+ ['Outreach and reconnect',/outreach|reconnect|cold call/i]
+ ];
+ const categoryRows=categories.map(([title,rx])=>[title,all.filter(q=>rx.test(String(q.Category||q.activity_type||q.reason||''))),'No currently open items found for this category']);
+ const known=all.filter(q=>!categories.some(([,rx])=>rx.test(String(q.Category||q.activity_type||q.reason||''))));
+ if(known.length)categoryRows.push(['Other assigned tasks',known,'']);
+ $('execTaskSummary').innerHTML='<h3>By due date</h3>'+sections.map(s=>taskList(s[0],s[1],s[2])).join('')+
+ '<h3>By workflow · all open work</h3>'+categoryRows.map(s=>taskList(s[0],s[1],s[2])).join('')+
+ '<p class="execNotice'+(fullVerified?'':' execWarn')+'">'+(fullVerified?'Work derived from the live RM morning queue plus Amanda’s assigned open tasks. Completing an activity does not automatically close unrelated commitments.':'Only some task sources could be verified. Counts above are incomplete; check the original portfolio and campaign lists before declaring a category clear.')+'</p>';
  $('execTaskSummary').querySelectorAll('.execTaskGo').forEach(button=>{
-  const group=sections.find(s=>s[0]===button.dataset.list);
+  const group=sections.concat(categoryRows).find(s=>s[0]===button.dataset.list);
   button.onclick=()=>{if(group)openTask(group[1][Number(button.dataset.index)])};
  });
  $('execMetrics').querySelectorAll('[data-exec-target]').forEach(tile=>{
@@ -152,7 +187,7 @@ function render(){
     if(kind==='log'){if(typeof switchTab==='function')switchTab('log');return}
     if(kind==='closeout'){$('execCloseout').open=true;$('execCloseout').scrollIntoView({behavior:'smooth',block:'center'});return}
     $('execTaskDetails').open=true;
-    const section={overdue:0,today:1,next:2}[kind];
+    const section={overdue:0,today:1,next:2,week:3}[kind];
     const cards=$('execTaskSummary').querySelectorAll('section');
     if(cards[section])cards[section].scrollIntoView({behavior:'smooth',block:'center'});
    };
