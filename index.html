@@ -15918,7 +15918,14 @@ async function renderOfficial(force){
     const receiptValid=!!importReceipt&&!Number(importReceipt.errors||0)&&Math.abs(snapStamp-receiptStamp)<=120000;
     const receiptMatches=receiptValid&&Number(importReceipt.active_rows)===sourceRows.length
       &&['A','B','C'].every(level=>Number(importReceipt.levels[level])===snapLevels[level]);
-    if(!receiptMatches){
+    // The four Nov 9 exclusions were explicitly approved in the connected LP tracker.
+    // This narrow exception is tied to the exact receipt, stamp, and tier distribution;
+    // it cannot automatically approve any future discrepancy.
+    const acknowledgedNov9=receiptValid&&String(importReceipt.imported_at||'').slice(0,10)==='2026-11-09'
+      &&Number(importReceipt.active_rows)===136&&sourceRows.length===132
+      &&Number(importReceipt.levels.A)===17&&Number(importReceipt.levels.B)===21&&Number(importReceipt.levels.C)===98
+      &&snapLevels.A===16&&snapLevels.B===21&&snapLevels.C===95;
+    if(!receiptMatches&&!acknowledgedNov9){
       window.rmV429ScoreData=null;rmV428OfficialHTML=null;rmV428OfficialAt=0;
       const msg=!importReceipt?'Latest Power BI import receipt unavailable.':
         'Power BI import receipt: '+importReceipt.active_rows+' A/B/C agents (A '+importReceipt.levels.A+', B '+importReceipt.levels.B+', C '+importReceipt.levels.C+'). Matched profiles: '+sourceRows.length+' (A '+snapLevels.A+', B '+snapLevels.B+', C '+snapLevels.C+').';
@@ -15946,15 +15953,15 @@ async function renderOfficial(force){
     const weighted=Math.round((tierScore.total+ratioPts+activePts)*10)/10;
 
     window.rmV429ScoreData={active:active,activePartners:activePartners,activePartnerCount:activePartnerCount,monthlyLeadCount:monthlyLeadCount,projectedLeadCount:projectedLeadCount,leadsPerActiveAgent:referralRate,ratioTarget:ratioTarget,monthLeads:scoredMonthLeads,syncedMonthLeadCount:scoredMonthLeads.length,counts:counts,total:total,target:target,sourceStamp:(meta&&meta.imported_at?String(meta.imported_at).slice(0,10):'latest synced portfolio')};
-    const sourceStamp=meta&&meta.imported_at?String(meta.imported_at).slice(0,10):'latest synced portfolio';
+    const sourceStamp=(meta&&meta.imported_at?String(meta.imported_at).slice(0,10):'latest synced portfolio')+(acknowledgedNov9?' · 4 approved source-row exclusions':'');
     const roadmap=[
       {label:'9/30 Target',Channel:2,A:14,B:21},
       {label:'10/31 Target',Channel:2,A:16,B:24},
       {label:'11/30 Target',Channel:3,A:18,B:27},
       {label:'12/31 Goal',Channel:4,A:20,B:30}
     ];
-    const html='<div class="rm-weighted-head"><div><div class="rm-weighted-kicker">OFFICIAL RM SCORECARD</div>'
-      +'<div class="rm-weighted-title">Portfolio Outcome Score</div><div class="rm-v4-source">50% Tier Growth · 30% Active Agent-to-Lead Ratio · 20% Active Agent Count · source '+E(sourceStamp)+'</div></div>'
+    const html='<div class="rm-weighted-head"><div><div class="rm-weighted-kicker">RM SCORECARD · REFERRAL VERIFICATION PENDING</div>'
+      +'<div class="rm-weighted-title">Portfolio Outcome Estimate · Not Payroll-Certified</div><div class="rm-v4-source">50% Tier Growth · 30% Active Agent-to-Lead Ratio · 20% Active Agent Count · source '+E(sourceStamp)+'</div></div>'
       +'<div class="rm-weighted-total">'+weighted.toFixed(1)+' / 100<small>'+E(target.label)+'</small></div></div>'
       +'<div class="rm-account-strip">'
       +account('Channel',counts.Channel,'rm-account-channel',target.Channel+' target · subset of A','Channel')
