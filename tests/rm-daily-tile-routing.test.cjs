@@ -50,3 +50,13 @@ assert(code.includes('execCategoryGrid'), 'Compact Today must show category butt
 assert(code.includes('showDetail(\'category:\''), 'Category buttons open focused drilldowns');
 assert(code.includes('execBack'), 'Focused work list needs Back to Today');
 assert(code.includes('execDetailArea') && code.includes('detail.hidden=true'), 'Detailed task list is hidden on home');
+
+assert(code.includes("['Cold calls today',offNow?'PTO':cold+' / 25+','cold']"),'Cold-call tile must open logged cold-call records');
+assert(code.includes("['Meetings logged',meetingFor(d),'meetings']"),'Meeting tile must open logged meeting records');
+assert(code.includes("if(kind==='cold')return showDetail('activity:cold')"),'Cold-call detail click must be wired');
+assert(code.includes("if(kind==='meetings')return showDetail('activity:meetings')"),'Meeting detail click must be wired');
+assert(code.includes("const rows=activeFor(d).filter(a=>kind==='cold'"),'Activity breakdown must use the identical source and date as its KPI');
+assert(code.includes("list.querySelectorAll('[data-activity-index]')"),'Specific logged activity rows must be actionable');
+assert(code.includes("id=\"execLogRelated\""),'Activity drilldown must provide a new logging action');
+assert(code.includes("activeDetail='activity:'+kind"),'Activity breakdown stays visible after refresh');
+console.log('PASS exact cold-call and meeting record drilldowns with agent and logging controls');
