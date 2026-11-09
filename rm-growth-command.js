@@ -90,7 +90,7 @@ return [...rows].sort((a,b)=>b.score-a.score||a.name.localeCompare(b.name));
 function cell(row,value){const el=document.createElement('td');el.textContent=String(value===null||value===undefined?'—':value);row.append(el);return el}
 function stats(){
 const owned=state.rows.filter(r=>r.rm==='Amanda'),grow=owned.filter(r=>r.tier==='C'&&(r.closings===1||r.high_potential_flag||r.leads>0)),protect=owned.filter(r=>r.daysNoLead===null||r.daysNoLead>=30||r.competitor_risk_flag),convert=owned.filter(r=>r.leads>0);
-return [['C → B focus',grow.length],['Retention attention',protect.length],['Referring C agents',convert.filter(r=>r.tier==='C').length],['Recent verified promotions',state.migrations.filter(m=>m.to_tier==='B'&&daysSince(m.migration_date)!==null&&daysSince(m.migration_date)<=30).length]];
+return [['C → B focus',grow.length],['Retention attention',protect.length],['Referring C agents',convert.filter(r=>r.tier==='C').length],['Recent B promotions (matched)',new Set(state.migrations.filter(m=>m.to_tier==='B'&&daysSince(m.migration_date)!==null&&daysSince(m.migration_date)<=30&&state.rows.some(r=>key(r.sourceName)===key(m.agent_name)&&r.tier==='B')).map(m=>key(m.agent_name))).size]];
 }
 function render(){
 const grid=document.getElementById('rmGrowStats'),tbody=document.getElementById('rmGrowRows'),subtitle=document.getElementById('rmGrowSubtitle'),brief=document.getElementById('rmGrowBrief'),meta=document.getElementById('rmGrowMeta');
