@@ -21616,46 +21616,49 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 </style>
 
 <!-- v502: shared-source refresh orchestrator. No hard-coded agent/lead totals. -->
-<script id="rm-v502-shared-live-sync">
+<script id="rm-v503-shared-data-health">
 (function(){
  'use strict';
- let last='',running=false,queued=false;
- const safe=async(fn)=>{try{if(typeof fn==='function')await fn();}catch(e){console.warn('RM shared refresh step',e);}};
- async function signature(){
-  if(typeof sbFetch!=='function')return '';
-  const d=new Date(),start=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-01';
-  const [p,imports,leads]=await Promise.all([
-   sbFetch('agent_profiles?select=agent_name,powerbi_last_seen_at,powerbi_level,retained,relationship_status,do_not_contact,closes_past_year&limit=5000'),
-   sbFetch('powerbi_import_log?select=imported_at&order=imported_at.desc&limit=1'),
-   sbFetch('velocify_leads?date_added=gte.'+start+'&select=lead_key,date_added,status,lp_user&limit=10000')
-  ]);
-  const leadSig=(leads||[]).map(x=>[x.lead_key,x.date_added,x.status,x.lp_user].join('~')).sort().join('|');
-  const profileSig=(p||[]).map(x=>[x.agent_name,x.powerbi_last_seen_at,x.powerbi_level,x.retained,x.relationship_status,x.do_not_contact,x.closes_past_year].join('~')).sort().join('|');return [profileSig,imports&&imports[0]&&imports[0].imported_at,leadSig].join('#');
+ let last='',busy=false,queued=false;
+ const date=v=>{const d=new Date(v);return Number.isFinite(d.getTime())?d.toLocaleString(undefined,{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}):'unavailable'};
+ function status(message,warn){
+   let x=document.getElementById('rm-v503-sync-indicator');
+   if(!x){x=document.createElement('div');x.id='rm-v503-sync-indicator';x.setAttribute('role','status');x.style.cssText='position:fixed;right:12px;bottom:12px;z-index:3000;max-width:min(450px,calc(100vw - 24px));padding:10px 12px;border:1px solid #d8cde9;border-radius:10px;box-shadow:0 5px 18px #0002;font:12px/1.4 Arial,sans-serif;color:#46345d;background:white';document.body.appendChild(x)}
+   x.style.borderColor=warn?'#e7ba7f':'#d8cde9';x.style.background=warn?'#fff8ed':'#fff';x.textContent=message;
  }
  async function refresh(force){
-  if(running){queued=true;return;}if(document.visibilityState==='hidden')return;
-  running=true;
-  try{
-   const next=await signature();if(!next)return;
-   if(!force&&next===last)return;last=next;
-   // Refresh source caches first, then all visible RM and director surfaces.
-   await safe(()=>window.rmV453RefreshPowerBi&&window.rmV453RefreshPowerBi(true));
-   await safe(()=>window.rmV428RenderOfficialScorecard&&window.rmV428RenderOfficialScorecard(true));
-   await safe(()=>window.rmV494RefreshLeads&&window.rmV494RefreshLeads(true));
-   await safe(()=>window.v23LoadAmandaSnapshot&&window.v23LoadAmandaSnapshot(true));
-   await safe(()=>window.rmV440RefreshToday&&window.rmV440RefreshToday());
-   if(document.getElementById('view-portfolio')?.classList.contains('active'))
-    await safe(()=>window.loadPortfolioReview&&window.loadPortfolioReview());
-  }catch(e){console.warn('RM live source check failed; previous values retained',e);}
-  finally{running=false;if(queued){queued=false;setTimeout(()=>refresh(false),1000);}}
+   if(busy){queued=true;return;}if(document.visibilityState==='hidden')return;busy=true;
+   try{
+     if(typeof sbFetch!=='function')throw Error('Shared database connection unavailable');
+     const d=new Date(),month=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-01';
+     const [profiles,imports,leads,velStamp]=await Promise.all([
+       sbFetch('agent_profiles?select=agent_name,powerbi_last_seen_at,powerbi_level,retained,relationship_status,do_not_contact,closes_past_year&limit=5000'),
+       sbFetch('powerbi_import_log?select=imported_at,source_app,rows_processed&source_app=like.core-team-tracker%25&order=imported_at.desc&limit=1'),
+       sbFetch('velocify_leads?date_added=gte.'+month+'&select=lead_key,date_added,status,lp_user&limit=10000'),
+       sbFetch('velocify_leads?select=created_at&order=created_at.desc&limit=1')
+     ]);
+     if(!Array.isArray(profiles)||!Array.isArray(imports)||!Array.isArray(leads))throw Error('Incomplete shared server response');
+     const latest=Math.max(0,...profiles.map(p=>Date.parse(p.powerbi_last_seen_at||'')||0));
+     if(!latest)throw Error('Current Power BI import unavailable');
+     const members=profiles.filter(p=>Math.abs((Date.parse(p.powerbi_last_seen_at)||0)-latest)<120000&&['A','B','C'].includes(String(p.powerbi_level||'').toUpperCase()));
+     const unique=new Set(members.map(p=>String(p.agent_name||'').trim().toLowerCase()));
+     const raw=Number((String(imports[0]?.source_app||'').match(/(?:^|;)raw=(\d+)/)||[])[1]||imports[0]?.rows_processed||0),gap=Math.max(0,raw-unique.size);
+     const signature=[members.map(p=>[p.agent_name,p.powerbi_level,p.retained,p.relationship_status,p.do_not_contact,p.closes_past_year].join('~')).sort().join('|'),imports[0]?.imported_at,leads.map(l=>[l.lead_key,l.date_added,l.lp_user,l.status].join('~')).sort().join('|')].join('#');
+     if(force||signature!==last){
+       if(typeof window.rmV453RefreshPowerBi==='function')await window.rmV453RefreshPowerBi(true);
+       if(typeof window.rmV428RenderOfficialScorecard==='function')await window.rmV428RenderOfficialScorecard(true);
+       if(typeof window.rmV494RefreshLeads==='function')await window.rmV494RefreshLeads(true);
+       if(typeof window.v23LoadAmandaSnapshot==='function')await window.v23LoadAmandaSnapshot(true);
+       if(typeof window.rmV440RefreshToday==='function')await window.rmV440RefreshToday();
+       if(document.getElementById('view-portfolio')?.classList.contains('active')&&typeof window.loadPortfolioReview==='function')await window.loadPortfolioReview();
+       last=signature;
+     }
+     status('Shared data: '+(gap?'review import difference':'synced')+' · Power BI '+date(latest)+' · '+unique.size+' agent profiles'+(gap?' / '+raw+' rows (+'+gap+' unmatched)':'')+' · Velocify '+date(velStamp?.[0]?.created_at)+' · checked '+date(Date.now()),gap>0);
+   }catch(e){last='';status('Shared data refresh FAILED — displayed totals may be stale. '+String(e&&e.message||e),true);console.warn('RM shared data refresh failed',e)}
+   finally{busy=false;if(queued){queued=false;setTimeout(()=>refresh(false),1000)}}
  }
- window.rmV502RefreshAll=()=>refresh(true);
- function boot(){
-  setTimeout(()=>refresh(true),2200);
-  setInterval(()=>refresh(false),30000);
-  window.addEventListener('focus',()=>refresh(true));
-  document.addEventListener('visibilitychange',()=>{if(!document.hidden)refresh(true);});
- }
+ window.rmV503RefreshAll=()=>refresh(true);
+ function boot(){setTimeout(()=>refresh(true),2200);setInterval(()=>refresh(false),30000);window.addEventListener('focus',()=>refresh(true));document.addEventListener('visibilitychange',()=>{if(!document.hidden)refresh(true)})}
  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
 })();
 </script>
