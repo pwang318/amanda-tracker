@@ -23,6 +23,17 @@ styles.textContent=[
 '#rmExecutionPlan .execTaskDetails>summary{cursor:pointer;color:#593b83;font-size:12px;font-weight:700;padding:9px 0}',
 '#rmExecutionPlan #execTaskSummary>h3{grid-column:1/-1;margin:16px 0 2px}',
 '#rmExecutionPlan #execTaskSummary>p{grid-column:1/-1}',
+'#rmExecutionPlan .execCategoryGrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;margin:12px 0}',
+'#rmExecutionPlan .execCategoryBtn{display:flex;align-items:center;justify-content:space-between;text-align:left;gap:8px;padding:14px!important;min-height:60px!important;font-size:13px!important}',
+'#rmExecutionPlan .execCategoryBtn strong{font-size:19px;color:#523784}',
+'#rmExecutionPlan .execDetailArea[hidden],#rmExecutionPlan .execHomeWork[hidden]{display:none!important}',
+'#rmExecutionPlan .execDetailArea{border-top:1px solid #eee7f5;padding-top:14px}',
+'#rmExecutionPlan .execDetailArea .execTasks{display:block}',
+'#rmExecutionPlan .execDetailArea .execTasks section{border:0;padding:0}',
+'#rmExecutionPlan .execDetailArea .execTasks ul{max-height:none;overflow:visible}',
+'#rmExecutionPlan .execBack{margin-bottom:12px;background:#f6f1fb!important}',
+'@media(max-width:750px){#rmExecutionPlan .execCategoryGrid{grid-template-columns:repeat(2,minmax(0,1fr))}}',
+'@media(max-width:420px){#rmExecutionPlan .execCategoryGrid{grid-template-columns:1fr}}',
 '#rmExecutionPlan .execTaskDetails{border-top:1px solid #eee7f5;margin:9px 0}',
 '#rmExecutionPlan .execMetric{background:#faf8fc;border:1px solid #ede8f1;border-radius:9px;padding:11px}',
 '#rmExecutionPlan .execMetric strong{display:block;font-size:23px;color:#523784}',
@@ -46,6 +57,7 @@ styles.textContent=[
 '@media(max-width:750px){#rmExecutionPlan .execMetrics{grid-template-columns:repeat(2,minmax(0,1fr))}#rmExecutionPlan .execTasks{grid-template-columns:1fr}}'
 ].join('\n');document.head.append(styles);
 let blocks=[],activities=[],queue=[],completedQueue=[],fullWork=[],fullVerified=false,loaded=false,working=false,selected=iso();
+let activeDetail=null,detailGroups=[];
 const off=b=>/^(out of office|pto|vacation|time off)$/i.test(String(b.block_type||'').trim());
 const close=b=>String(b.block_type||'')==='Daily Closeout'&&String(b.title||'').startsWith('Execution closeout');
 const outDates=()=>new Set(blocks.filter(off).map(b=>String(b.work_date).slice(0,10)));
@@ -66,7 +78,8 @@ function mount(){
  div.innerHTML='<div class="execRow"><div><h2>Today’s plan</h2><p>Your daily goals, open work, completed activity, and next steps.</p></div><button id="execReload" type="button">Refresh live activity</button></div>'+
  '<div id="execNotice" class="execNotice">Loading shared activity and schedule…</div>'+
  '<div id="execMetrics" class="execMetrics"></div>'+
- '<details class="execTaskDetails" id="execTaskDetails" open><summary>Outstanding work · open the actual task list</summary><div id="execTaskSummary" class="execTasks"></div></details>'+
+ '<div class="execHomeWork" id="execHomeWork"><h3>Open work by category</h3><p>Choose a worklist to see the assigned agents and next actions.</p><div id="execCategoryGrid" class="execCategoryGrid"></div></div>'+
+ '<div class="execDetailArea" id="execDetailArea" hidden><button type="button" id="execBack" class="execBack">← Back to Today</button><div class="execRow"><h3 id="execDetailTitle"></h3><button type="button" id="execDetailRefresh">Refresh worklist</button></div><div id="execTaskSummary" class="execTasks"></div></div>'+
  '<details id="execCloseout"><summary>End-of-day closeout · why goals were missed</summary>'+
  '<div class="execForm"><label>Review date<input type="date" id="execReviewDate"></label>'+
  '<label>Main reason<select id="execReason"><option value="">Select a reason</option><option value="meetings">Realtor or business meetings</option><option value="transactions">Urgent transactions or client needs</option><option value="relationships">Existing partner calls</option><option value="interruptions">Schedule changes or interruptions</option><option value="time">Other priorities / time management</option><option value="other">Other / coaching needed</option></select></label></div>'+
@@ -80,6 +93,8 @@ function mount(){
  // The RM workboard is the only visible direct child of Today: its siblings are intentionally hidden by the existing layout CSS.
  board.prepend(div);
  $('execReload').onclick=()=>refresh(true);
+ $('execDetailRefresh').onclick=()=>refresh(true);
+ $('execBack').onclick=()=>showDetail(null);
  $('execSaveCloseout').onclick=saveCloseout;
  $('execSaveOOO').onclick=saveOOO;
  $('execReviewDate').value=selected;
@@ -148,6 +163,31 @@ function taskList(title,rows,empty){
  const list=rows.map((q,i)=>'<li><button type="button" class="execTaskGo" data-list="'+safe(title)+'" data-index="'+i+'">'+safe(q.agent_name||q['Agent / Item']||'Assigned agent')+' · '+safe(q.activity_type||q.Category||q.reason||q['Next Action']||'Outstanding action')+(q.work_date||q['Due Date']?' ('+safe(q.work_date||q['Due Date'])+')':'')+' ↗</button></li>').join('');
  return '<section><strong>'+safe(title)+' · '+rows.length+'</strong>'+(rows.length?'<ul>'+list+'</ul>':'<p>'+safe(empty)+'</p>')+'</section>';
 }
+function showDetail(key,scroll=true){
+ activeDetail=key;
+ const detail=$('execDetailArea'),home=$('execHomeWork'),list=$('execTaskSummary');
+ if(!detail||!home||!list)return;
+ if(key===null){
+  detail.hidden=true;home.hidden=false;list.replaceChildren();
+  if(scroll)$('rmExecutionPlan')?.scrollIntoView({behavior:'smooth',block:'start'});
+  return;
+ }
+ const match=/^(section|category):(\\d+)$/.exec(key);
+ const index=match?(match[1]==='section'?Number(match[2]):6+Number(match[2])):-1;
+ const group=detailGroups[index];
+ if(!group){activeDetail=null;detail.hidden=true;home.hidden=false;return}
+ home.hidden=true;detail.hidden=false;
+ $('execDetailTitle').textContent=group[0]+' · '+group[1].length;
+ list.innerHTML=taskList(group[0],group[1],group[2])+
+  (!fullVerified?'<p class="execNotice execWarn">Some sources are unavailable. Check the original worklists before treating this category as clear.</p>':'');
+ list.querySelectorAll('.execTaskGo').forEach(button=>{
+  button.onclick=()=>{
+   if(group[0]==='Completed assigned tasks'){if(typeof window.switchTab==='function')window.switchTab('feed');return}
+   const q=group[1][Number(button.dataset.index)];if(q)openTask(q);
+  };
+ });
+ if(scroll)detail.scrollIntoView({behavior:'smooth',block:'start'});
+}
 function render(){
  if(!$('execNotice'))return;const d=iso(),offNow=isOff(d),cold=coldFor(d),next=nextWorkday(d);
  const cleanFull=fullWork.filter(r=>{const due=String(r['Due Date']||'').slice(0,10);return !due||due>=COACHING_START});
@@ -195,26 +235,23 @@ function render(){
  const categoryRows=categories.map(([title,rx])=>[title,all.filter(q=>rx.test(String(q.Category||q.activity_type||q.reason||''))),'No currently open items found for this category']);
  const known=all.filter(q=>!categories.some(([,rx])=>rx.test(String(q.Category||q.activity_type||q.reason||''))));
  if(known.length)categoryRows.push(['Other assigned tasks',known,'']);
- $('execTaskSummary').innerHTML='<h3>By due date</h3>'+sections.map(s=>taskList(s[0],s[1],s[2])).join('')+
- '<h3>By workflow · all open work</h3>'+categoryRows.map(s=>taskList(s[0],s[1],s[2])).join('')+
- '<p class="execNotice'+(fullVerified?'':' execWarn')+'">'+(fullVerified?'Open work uses the RM morning list and assigned queue. Future dates show known scheduled items only; recurring commitments may appear as they become due. Completed activity does not automatically close unrelated tasks.':'Only some task sources could be verified. Counts above are incomplete; check the original portfolio and campaign lists before declaring a category clear.')+'</p>';
- $('execTaskSummary').querySelectorAll('.execTaskGo').forEach(button=>{
-  const group=sections.concat(categoryRows).find(s=>s[0]===button.dataset.list);
-  button.onclick=()=>{if(!group)return;if(group[0].startsWith('Completed assigned tasks')){if(typeof window.switchTab==='function')window.switchTab('feed');return;}openTask(group[1][Number(button.dataset.index)])};
- });
+
+ detailGroups=sections.concat(categoryRows);
+ const grid=$('execCategoryGrid');
+ grid.innerHTML=categoryRows.map((group,i)=>'<button type="button" class="execCategoryBtn" data-category="'+i+'"><span>'+safe(group[0])+'</span><strong>'+group[1].length+' ↗</strong></button>').join('');
+ grid.querySelectorAll('[data-category]').forEach(b=>b.onclick=()=>showDetail('category:'+b.dataset.category));
  $('execMetrics').querySelectorAll('[data-exec-target]').forEach(tile=>{
-   const action=()=>{
-    const kind=tile.dataset.execTarget;
-    if(kind==='log'||kind==='feed'){if(typeof switchTab==='function')switchTab(kind==='feed'?'feed':'log');return}
-    if(kind==='closeout'){$('execCloseout').open=true;$('execCloseout').scrollIntoView({behavior:'smooth',block:'center'});return}
-    $('execTaskDetails').open=true;
-    const section={overdue:0,today:1,next:3,week:4,done:5,undated:2}[kind];
-    const cards=$('execTaskSummary').querySelectorAll('section');
-    if(cards[section])cards[section].scrollIntoView({behavior:'smooth',block:'center'});
-   };
-   tile.addEventListener('click',action);
-   tile.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();action()}});
+  const action=()=>{
+   const kind=tile.dataset.execTarget;
+   if(kind==='log'||kind==='feed'){if(typeof window.switchTab==='function')window.switchTab(kind==='feed'?'feed':'log');return}
+   if(kind==='closeout'){$('execCloseout').open=true;$('execCloseout').scrollIntoView({behavior:'smooth',block:'center'});return}
+   const map={overdue:0,today:1,undated:2,next:3,week:4,done:5};
+   if(map[kind]!==undefined)showDetail('section:'+map[kind]);
+  };
+  tile.addEventListener('click',action);
+  tile.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();action()}});
  });
+ showDetail(activeDetail,false);
  const dayEls=$('execDates');dayEls.replaceChildren();
  for(const b of blocks.filter(off).sort((a,b)=>a.work_date.localeCompare(b.work_date))){
   const span=document.createElement('span');span.className='execDate';span.append(document.createTextNode(fmt(b.work_date)+' · off'));
