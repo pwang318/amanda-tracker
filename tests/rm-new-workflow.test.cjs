@@ -4,7 +4,7 @@ const fs=require('node:fs');
 const vm=require('node:vm');
 const html=fs.readFileSync('index.html','utf8');
 for(const [path,signals] of [
-  ['ui/fast-activity-workflow.js',['Fast prospecting log','save.click()','Meeting Scheduled','Meetings held','rm_work_queue','rmDailyActivityBrief']],
+  ['ui/fast-activity-workflow.js',['Fast prospecting log','save.click()','Meeting Scheduled','Linked bookings held','rm_work_queue','rmDailyActivityBrief']],
   ['ui/outstanding-daily-checklist.js',['4-week campaigns','Weekly C-agent calls','Transaction calls','Outstanding work · daily checklist','rmV462LoadMorningRows','OVERDUE']],
 ]){
  const src=fs.readFileSync(path,'utf8');
