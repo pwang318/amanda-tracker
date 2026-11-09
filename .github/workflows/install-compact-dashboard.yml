@@ -20,12 +20,16 @@ jobs:
           from pathlib import Path
           p=Path('index.html')
           s=p.read_text(encoding='utf-8')
-          asset='<script defer src="./ui/compact-workspace.js?v=20261109"></script>'
-          if asset not in s:
+          import re
+          asset='<script defer src="./ui/compact-workspace.js?v=20261109-clean2"></script>'
+          old=r'<script defer src="\./ui/compact-workspace\.js\?v=[^"]+"></script>'
+          if re.search(old,s):
+              s=re.sub(old,asset,s,count=1)
+          else:
               if '</body>' not in s:
                   raise SystemExit('Missing closing body tag')
               s=s.replace('</body>',asset+'</body>',1)
-              p.write_text(s,encoding='utf-8')
+          p.write_text(s,encoding='utf-8')
           PY
       - name: Commit dashboard update
         run: |
