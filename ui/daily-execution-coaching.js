@@ -60,7 +60,7 @@ function mount(){
  '<details id="execCloseout"><summary>End-of-day closeout · why goals were missed</summary>'+
  '<div class="execForm"><label>Review date<input type="date" id="execReviewDate"></label>'+
  '<label>Main reason<select id="execReason"><option value="">Select a reason</option><option value="meetings">Realtor or business meetings</option><option value="transactions">Urgent transactions or client needs</option><option value="relationships">Existing partner calls</option><option value="interruptions">Schedule changes or interruptions</option><option value="time">Other priorities / time management</option><option value="other">Other / coaching needed</option></select></label></div>'+
- '<label style="font-size:12px;color:#56476b">What happened and what is the next workday plan?</label><textarea id="execNote" maxlength="2000" placeholder="Example: Two appointments ran long. Tomorrow I will block two 30-minute prospecting sessions."></textarea>'+
+ '<div class="execForm"><label>Prospecting minutes completed (self-reported)<input id="execMinutes" type="number" min="0" max="480" step="1" placeholder="0–480"></label></div><label style="font-size:12px;color:#56476b">What happened and what is the next workday plan?</label><textarea id="execNote" maxlength="2000" placeholder="Example: Two appointments ran long. Tomorrow I will block two 30-minute prospecting sessions."></textarea>'+
  '<div style="margin-top:9px"><button id="execSaveCloseout" type="button">Save coaching closeout</button> <span id="execSaveStatus" class="execStatus"></span></div>'+
  '<small>Reasons explain results; they do not mark outstanding follow-ups complete. No closeout needed on approved days off.</small></details>'+
  '<details id="execOOO"><summary>Out-of-office calendar & coverage plan</summary><p>Days off are excluded from prospecting-goal calculations, not treated as missed goals. Any due relationship work still requires coverage or rescheduling.</p>'+
@@ -132,13 +132,15 @@ function populateCloseout(){
  $('execSaveCloseout').disabled=isOff(d);
  $('execReason').value=record?.reason||'';
  $('execNote').value=record?.note||'';
+ $('execMinutes').value=record?.prospecting_minutes??'';
  $('execSaveStatus').textContent=isOff(d)?'Approved day off: no closeout required.':record?'Previously saved; you can update this explanation.':'';
 }
 async function saveCloseout(){
  const d=$('execReviewDate').value,reason=$('execReason').value,note=$('execNote').value.trim(),status=$('execSaveStatus');
  if(isOff(d)){status.textContent='Days off do not require a missed-goal closeout.';return}
  if(!reason||!note){status.textContent='Choose a reason and enter a practical next-workday plan.';return}
- const obj={reason,note,logged_cold_calls:coldFor(d),target:25,logged_meetings:meetingFor(d),saved_at:new Date().toISOString()};
+ const minutes=$('execMinutes').value.trim();if(minutes!==''&&(!Number.isInteger(Number(minutes))||Number(minutes)<0||Number(minutes)>480)){status.textContent='Enter 0–480 prospecting minutes, or leave blank if unknown.';return}
+ const obj={reason,note,prospecting_minutes:minutes===''?null:Number(minutes),logged_cold_calls:coldFor(d),target:25,logged_meetings:meetingFor(d),saved_at:new Date().toISOString()};
  const prev=closeRecord(d),record={work_date:d,owner:'Amanda',title:'Execution closeout · daily coaching',start_time:'17:58:00',end_time:'17:59:00',block_type:'Daily Closeout',notes:JSON.stringify(obj)};
  $('execSaveCloseout').disabled=true;status.textContent='Saving to shared tracker…';
  try{
@@ -173,11 +175,11 @@ async function removeOOO(b){
 function renderTrends(){
  const host=$('execTrends');if(!host)return;
  const dates=[];for(let d=iso(),n=0;n<10;d=addDays(d,-1)){if(workday(d)){dates.push(d);n++}}
- const rows=dates.map(d=>({date:d,cold:coldFor(d),meet:meetingFor(d),reason:dataOf(closeRecord(d))?.reason||'',note:dataOf(closeRecord(d))?.note||''}));
+ const rows=dates.map(d=>({date:d,cold:coldFor(d),meet:meetingFor(d),reason:dataOf(closeRecord(d))?.reason||'',note:dataOf(closeRecord(d))?.note||'',minutes:dataOf(closeRecord(d))?.prospecting_minutes??null}));
  const met=rows.filter(x=>x.cold>=25).length,short=rows.filter(x=>x.cold<25),withExplanation=short.filter(x=>x.reason).length;
  const counts={};for(const r of rows)if(r.reason)counts[r.reason]=(counts[r.reason]||0)+1;
  host.innerHTML='<p>Prospecting minimum met '+met+' of '+rows.length+' scheduled workdays. '+short.length+' below minimum; '+withExplanation+' of those have a saved explanation. This view uses logged cold-call entries only, not assumed time worked.</p>'+
- '<div style="overflow:auto"><table style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr><th align="left">Day</th><th align="left">Cold calls</th><th align="left">Meetings</th><th align="left">Closeout reason</th></tr></thead><tbody>'+
+ '<div style="overflow:auto"><table style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr><th align="left">Day</th><th align="left">Cold calls</th><th align="left">Meetings</th><th align="left">Prospecting minutes</th><th align="left">Closeout reason</th></tr></thead><tbody>'+
  rows.map(r=>'<tr><td style="padding:6px;border-bottom:1px solid #eee">'+safe(fmt(r.date))+'</td><td>'+r.cold+' / 25</td><td>'+r.meet+'</td><td>'+safe(reasons[r.reason]||(r.cold>=25?'Goal met':'Not documented'))+'</td></tr>').join('')+'</tbody></table></div>'+
  '<p><strong>Frequent explanations:</strong> '+(Object.keys(counts).length?Object.entries(counts).sort((a,b)=>b[1]-a[1]).map(x=>safe(reasons[x[0]]||x[0])+' ('+x[1]+')').join(' · '):'None saved yet')+'.</p><small>Interpret low-call days alongside partner service, calendar commitments, and lead results. A missed goal is a coaching prompt, not proof of inactivity.</small>';
 }
