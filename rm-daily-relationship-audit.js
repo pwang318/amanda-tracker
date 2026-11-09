@@ -68,7 +68,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 /* RM workspace visual clean-up. Presentation only; underlying data validation remains active. */
 (function compactAmandaWorkspace(){
  const style=document.createElement('style');style.id='rmCompactWorkspaceStyles';
- style.textContent=String.raw\`
+ style.textContent=String.raw`
  .rmCompactWorkOrder{padding:17px 20px!important;border:1px solid #e5dced!important;border-radius:14px!important;box-shadow:none!important;background:#fff!important}
  .rmCompactWorkOrder h2,.rmCompactWorkOrder h3{letter-spacing:-.02em!important}
  .rmCompactWorkOrder button,.rmCompactWorkOrder a[class*="btn"],.rmCompactWorkOrder [role="button"]{
@@ -91,7 +91,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
  .rmDailyRelationActions button+button{background:#fff!important;color:#58358c!important}
  #rmGrowAdminAudit{display:none!important}
  @media(max-width:760px){.rmCompactWorkOrder{padding:12px!important}.rmCompactWorkOrder .rmCompactTask{display:flex!important;flex-wrap:wrap!important;gap:8px!important}}
- \`;
+ `;
  document.head.append(style);
  function clean(){
   const week=document.getElementById('view-week')||document;
