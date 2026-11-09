@@ -68,11 +68,10 @@ function render(){
  const m=breakdown(cached),j=meetings(cached);
  const target=$('rmBusinessOutcomesBody');
  if(target)target.innerHTML='<div class="rmMetrics">'+[
- ['Cold-call attempts',m.cold+' / 25+'],['Live conversations',m.connections],['No answer / voicemail',m.missed],
- ['Meetings booked',m.booked],['Meetings held',m.held],['Connection rate',pct(m.connections,m.attempts)],
- ['Booking / connection',pct(m.booked,m.connections)],['Linked bookings held',j.linked+' / '+j.booked]
+ ['Cold calls today',m.cold+' / 25+'],['Connection rate',pct(m.connections,m.attempts)],
+ ['Booking per connection',pct(m.booked,m.connections)],['Linked bookings held',j.linked+' / '+j.booked]
  ].map(([a,b])=>metric(a,b)).join('')+'</div><p>25 attempts is a minimum, not a stopping point: use the full 60 minutes. Booked-to-held rate uses the same agent and a nearby meeting date; '+j.unmatched+' logged held meetings lack a matched booking. Retained partners must be verified through subsequent business; positive calls alone are not retention.</p>';
- const small=$('rmProspectProgress');if(small)small.textContent=m.cold+' / 25+ calls today · keep dialing for the full hour';
+
 }
 function mount(){
  const log=$('view-log'),home=$('view-week'),board=$('rm350Workboard');
@@ -86,16 +85,11 @@ function mount(){
   e.querySelectorAll('[data-fast]').forEach(b=>b.onclick=()=>quickSave(b.dataset.fast));
   loadNames();
  }
- if(board&&!$('rmProspectDailyStrip')){
-  const e=document.createElement('div');e.id='rmProspectDailyStrip';
-  e.innerHTML='<div><b>Prospecting minimum · 60 protected minutes</b><div><span id="rmProspectProgress">Loading calls…</span></div></div><button type="button" id="rmFastOpen">Log a cold call</button>';
-  const row=board.querySelector('.rm-daily-prospect-step');if(row)row.after(e);else board.prepend(e);
-  $('rmFastOpen').onclick=()=>{if(typeof switchTab==='function')switchTab('log');$('rmFastAgent')?.focus()};
- }
+ if($('rmBusinessOutcomes')&&$('rm358Pace')&&!$('rm358Pace').contains($('rmBusinessOutcomes')))$('rm358Pace').append($('rmBusinessOutcomes'));
  if(board&&!$('rmBusinessOutcomes')){
   const e=document.createElement('section');e.id='rmBusinessOutcomes';
-  e.innerHTML='<h3>Today’s progress · activity to results</h3><div id="rmBusinessOutcomesBody">Loading saved activity…</div><button type="button" id="rmBusinessRefresh">Refresh activity</button>';
-  board.after(e);$('rmBusinessRefresh').onclick=()=>refresh(true);
+  e.innerHTML='<h3>Conversion and follow-through</h3><div id="rmBusinessOutcomesBody">Loading saved activity…</div><button type="button" id="rmBusinessRefresh">Refresh activity</button>';
+  const host=$('rm358Pace');if(host)host.append(e);else board.after(e);$('rmBusinessRefresh').onclick=()=>refresh(true);
  }
 }
 async function loadNames(){
