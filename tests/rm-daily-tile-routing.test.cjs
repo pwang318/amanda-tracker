@@ -57,3 +57,8 @@ for(const path of ['ui/daily-execution-coaching.js','ui/outstanding-daily-checkl
 }
 assert(!code.includes('Fresh start ·'), 'Private wording must not appear in Amanda daily plan');
 console.log('PASS: mapped RM task destinations, visible workboard, portfolio source and daily metrics');
+
+assert(code.includes('execCategoryGrid'), 'Compact Today must show category buttons');
+assert(code.includes('showDetail(\'category:\''), 'Category buttons open focused drilldowns');
+assert(code.includes('execBack'), 'Focused work list needs Back to Today');
+assert(code.includes('execDetailArea') && code.includes('detail.hidden=true'), 'Detailed task list is hidden on home');
