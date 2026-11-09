@@ -74,8 +74,8 @@ sbFetch('tier_migrations?select=agent_name,from_tier,to_tier,migration_date&orde
 if(!Array.isArray(profiles)||!Array.isArray(owners)||!Array.isArray(migrations))throw Error('The shared source returned incomplete data.');
 state.importLog=null;try{const imports=await sbFetch('powerbi_import_log?select=imported_at,source_app,rows_processed,errors&order=imported_at.desc&limit=1');if(Array.isArray(imports)&&imports.length)state.importLog=imports[0];}catch(e){console.warn('Import reconciliation ledger unavailable',e)}
 state.profiles=profiles;state.ownerMap=Object.fromEntries(owners.filter(x=>x.agent_name).map(o=>[key(o.agent_name),o]));state.migrations=migrations;normalize();state.loaded=true;setStatus('');render();window.dispatchEvent(new Event('rm-growth-updated'));
-}catch(e){state.loaded=false;state.rows=[];state.profiles=[];state.lastSeen=null;state.importLog=null;setStatus('Could not verify live shared data. No saved totals are being shown. '+(e.message||'Retry refresh.'));render();window.dispatchEvent(new Event('rm-growth-updated'));}
-finally{state.loading=false;}
+}catch(e){state.loaded=false;state.rows=[];state.profiles=[];state.lastSeen=null;state.importLog=null;setStatus('Could not verify live shared data. No saved totals are being shown. '+(e.message||'Retry refresh.'));render();}
+finally{state.loading=false;if(!state.loaded)window.dispatchEvent(new Event('rm-growth-updated'));}
 }
 function setStatus(msg){const n=document.getElementById('rmGrowStatus');if(n)n.textContent=msg}
 function filtered(){
