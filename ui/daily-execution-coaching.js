@@ -311,6 +311,7 @@ function openProspectList(){
  if(list)reveal();else setTimeout(reveal,150);
  return true;
 }
+window.rmOpenProspectList=openProspectList;
 function showProspectRouteError(){
  let message=$('execProspectRouteStatus');
  if(!message){message=document.createElement('p');message.id='execProspectRouteStatus';message.className='execNotice execWarn';$('rmExecutionPlan')?.prepend(message)}
