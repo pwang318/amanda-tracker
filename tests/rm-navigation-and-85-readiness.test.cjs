@@ -50,9 +50,9 @@ const helpers=new Function('window','document','esc','console',score.slice(helpe
  helpers.renderPathTo85(live);
  assert(home.innerHTML.includes('113')&&scorePage.innerHTML.includes('113'),'Scenario must correctly calculate projected leads for 85%+');
  assert(home.innerHTML===scorePage.innerHTML,'Today and Scorecard must show the same roadmap');
- home.querySelector('#rm85Growth').onclick();
- scorePage.querySelector('#rm85Prospects').onclick();
- home.querySelector('#rm85Leads').onclick();
+ home.querySelector('[data-rm85-action="growth"]').onclick();
+ scorePage.querySelector('[data-rm85-action="prospects"]').onclick();
+ home.querySelector('[data-rm85-action="leads"]').onclick();
  assert.deepEqual(routes,['growth:near','prospects','score:leads'],'Roadmap buttons must open prioritized agents, prospect list, and referred leads');
  assert(score.includes("data-score-detail"),'Scorecard source tiles must be clickable');
  console.log('Navigation, language, source links and live 85% roadmap regression PASS');
