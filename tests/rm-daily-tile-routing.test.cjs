@@ -178,7 +178,7 @@ assert(code.includes("group[1].length>0||['New contract calls','CTC calls','Tues
 for(const marker of ['execWhatsAppCtc','execWhatsAppContract','execWaFiles','execWaFileList','TXN_ID','TXN_CLIENT','TXN_PROPERTY','TXN_BUYER_AGENT','TXN_LISTING_AGENT','TXN_CLOSE_DATE'])
  assert(code.includes(marker),'Missing imported WhatsApp transaction field: '+marker);
 assert(code.includes("window.v176OpenTransaction(isCtc?'CTC Call':'Under Contract Call',agent,role,file.id)"),'Selected import must open established transaction workbench');
-assert(code.includes("!found.has(id)"),'Imported files must be deduplicated by transaction ID');
+assert(code.includes("!allFiles.has(unique)"),'Imported files must be deduplicated per batch and transaction ID');
 assert(code.includes("String(modal.dataset.txnId||'')!==file.id"),'Prefill must not attach details to the wrong file');
 assert(code.includes('No client or Realtor information has been guessed.'),'Missing imports must never be silently invented');
 assert(!code.includes('navigator.clipboard.writeText(value)'),'Retire competing empty management composer; existing imported workbench owns copy action');
@@ -199,3 +199,7 @@ assert(code.includes("Open imported files"),'CTC and Contract tiles must not rep
 
 assert(code.includes("if(group[0]==='CTC calls'||group[0]==='New contract calls')"),'Old transaction detail views must route to original workbench');
 assert(code.includes("if(index>=0&&!['CTC calls','New contract calls'].includes(categories[index][0]))"),'Historical August catch-ups must not be counted as current imported CTC calls');
+
+assert(code.includes("const current=[...allFiles.values()].filter(x=>x.batch===newestBatch)"),'Current calls must use only most recent import batch');
+assert(code.includes("file.closeDate?'Est. close '"),'File picker displays estimated closing dates rather than activity dates');
+assert(code.includes("historical.length+' older imported record(s) hidden"),'Old files must be kept outside current transaction list');
