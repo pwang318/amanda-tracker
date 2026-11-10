@@ -208,7 +208,7 @@ styles.textContent=[
 '@media(max-width:560px){#rmExecutionPlan .execPriorityActions{gap:7px}#rmExecutionPlan .execPriorityActions button{padding:10px!important;min-height:78px}#rmExecutionPlan .execPriorityActions button strong{font-size:23px}#rmExecutionPlan .execPriorityIntro span{display:none}}',
 '@media(max-width:750px){#rmExecutionPlan .execMetrics{grid-template-columns:repeat(2,minmax(0,1fr))}#rmExecutionPlan .execTasks{grid-template-columns:1fr}}',
 '@media(max-width:420px){#rmExecutionPlan{padding:12px}#rmExecutionPlan .execMetrics{grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}#rmExecutionPlan .execMetric{padding:9px}#rmExecutionPlan .execMetric strong{font-size:19px}}'
-].join('\n');document.head.append(styles);
+].join('\n');styles.textContent += "\n#rmExecutionPlan #execMissedSummary{background:white!important;padding:18px!important;border:1px solid #e8e0f0!important;border-radius:14px!important}\n#rmExecutionPlan .execEodHeading{display:flex;flex-direction:column;gap:5px;margin:0 0 15px}\n#rmExecutionPlan .execEodHeading strong{font-size:17px;color:#36234e}\n#rmExecutionPlan .execEodMetrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-bottom:20px}\n#rmExecutionPlan .execEodMetric{display:flex;flex-direction:column;gap:5px;padding:14px;border:1px solid #ede6f3;border-radius:10px;background:#faf8fc}\n#rmExecutionPlan .execEodMetric span{font-size:11px;color:#655277;font-weight:700}\n#rmExecutionPlan .execEodMetric strong{font-size:22px;color:#483069}\n#rmExecutionPlan .execEodMetric small{font-size:11px;color:#756783}\n#rmExecutionPlan .execEodMetric.good strong{color:#27754b}\n#rmExecutionPlan .execEodWorkTitle{display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;padding:15px 0;border-top:1px solid #eae4f0}\n#rmExecutionPlan .execEodWorkTitle span{font-size:11px;color:#674a85;background:#f5f0fa;padding:6px 9px;border-radius:7px}\n#rmExecutionPlan .execEodTasks{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-bottom:12px}\n#rmExecutionPlan .execEodTask{display:flex;flex-wrap:wrap;align-items:center;gap:7px;padding:12px;background:white;border:1px solid #eae4f0;border-radius:9px}\n#rmExecutionPlan .execEodTask b{font-size:12px;color:#352449}\n#rmExecutionPlan .execEodTask span{font-size:11px;color:#6a5879}\n#rmExecutionPlan .execEodTask em{font-size:10px;font-style:normal;background:#f4eafb;color:#614383;padding:3px 6px;border-radius:6px}\n@media(max-width:700px){#rmExecutionPlan .execEodMetrics{grid-template-columns:repeat(2,minmax(0,1fr))}#rmExecutionPlan .execEodTasks{grid-template-columns:1fr}}\n@media(max-width:420px){#rmExecutionPlan .execEodMetrics{grid-template-columns:1fr}}";document.head.append(styles);
 let blocks=[],activities=[],queue=[],completedQueue=[],fullWork=[],fullVerified=false,loaded=false,working=false,selected=iso();
 let activeDetail=null,detailGroups=[];
 let sourceWarnings=[];
@@ -1107,17 +1107,23 @@ function renderMissedSummary(d){
  const unique=canonical.concat(queue.filter(q=>!canonical.some(r=>String(r.agent_name||'').trim().toLowerCase()===String(q.agent_name||'').trim().toLowerCase()&&String(r.activity_type||'').trim().toLowerCase()===String(q.activity_type||'').trim().toLowerCase()&&r.work_date===String(q.work_date||'').slice(0,10))));
  const due=unique.filter(q=>String(q.work_date||'').slice(0,10)===d);
  const past=unique.filter(q=>{const date=String(q.work_date||'').slice(0,10);return date>=COACHING_START&&date<d});
+ const weekly=weeklyGoals(d);
+ const nameCase=v=>String(v||'').trim().toLowerCase().replace(/(^|[\\s'-])([a-z])/g,(_,p,c)=>p+c.toUpperCase());
+ const metric=(label,value,note,good)=>'<div class="execEodMetric'+(good?' good':'')+'"><span>'+safe(label)+'</span><strong>'+safe(value)+'</strong><small>'+safe(note)+'</small></div>';
  const goals=[
-  '<li><strong>Cold calls:</strong> '+calls+' of 25 minimum logged'+(shortfall?' — '+shortfall+' below minimum':' — minimum met')+'</li>',
-  '<li><strong>Prospecting time:</strong> '+(minsKnown?Number(mins)+' of 60 minutes reported'+(minShort?' — '+minShort+' minutes short':' — minimum met'):'Not reported — cannot confirm whether the 60-minute goal was met')+'</li>',
-  '<li><strong>New Realtor meetings held:</strong> '+newMeetingFor(d)+' / 1 daily pacing target</li>',
-  '<li><strong>Break Breads held:</strong> '+breadFor(d)+' / 1 daily pacing target</li>',
-  '<li><strong>Weekly meetings:</strong> '+weeklyGoals(d).newHeld+' / '+weeklyGoals(d).target+' new; '+weeklyGoals(d).breads+' / '+weeklyGoals(d).target+' Break Breads</li>'
+  metric('Cold calls:',calls+' / 25',shortfall?shortfall+' below minimum':'Minimum met',!shortfall),
+  metric('Prospecting time:',minsKnown?Number(mins)+' / 60 min':'Not reported',minsKnown?(minShort?minShort+' minutes short':'Minimum met'):'Cannot confirm whether the 60-minute goal was met',minsKnown&&!minShort),
+  metric('New Realtor meetings held:',newMeetingFor(d)+' / 1','Daily pacing target',newMeetingFor(d)>=1),
+  metric('Break Breads held:',breadFor(d)+' / 1','Daily pacing target',breadFor(d)>=1),
+  metric('Weekly meetings:',weekly.newHeld+' / '+weekly.target+' new',weekly.breads+' / '+weekly.target+' Break Breads',weekly.newHeld>=weekly.target&&weekly.breads>=weekly.target)
  ];
- const taskLine=q=>safe(q.agent_name||q['Agent / Item']||'Unspecified agent')+' · '+safe(q.activity_type||q.Category||'Follow-up');
- el.innerHTML='<strong>Results for '+safe(fmt(d))+'</strong><ul>'+goals.join('')+'</ul>'+
-  '<strong>Open work still needing attention</strong><p>'+due.length+' due on this date; '+past.length+' earlier open item(s) carried forward.</p>'+
-  (due.length?'<ul>'+due.slice(0,15).map(q=>'<li>'+taskLine(q)+'</li>').join('')+(due.length>15?'<li>Plus '+(due.length-15)+' more — use the Due Today worklist.</li>':'')+'</ul>':'')+
+ const grouped=new Map();
+ due.forEach(q=>{const name=nameCase(q.agent_name||q['Agent / Item']||'Unspecified agent'),type=String(q.activity_type||q.Category||'Follow-up').trim(),key=(name+'|'+type).toLowerCase();const item=grouped.get(key)||{name,type,count:0};item.count++;grouped.set(key,item)});
+ const taskLine=q=>'<div class="execEodTask"><b>'+safe(q.name)+'</b><span>'+safe(q.type)+'</span>'+(q.count>1?'<em>'+q.count+' items</em>':'')+'</div>';
+ el.innerHTML='<div class="execEodHeading"><strong>Results for '+safe(fmt(d))+'</strong><small>Daily results and outstanding commitments</small></div>'+
+  '<div class="execEodMetrics">'+goals.join('')+'</div>'+
+  '<div class="execEodWorkTitle"><strong>Open work still needing attention</strong><span>'+due.length+' due · '+past.length+' carried forward</span></div>'+
+  (grouped.size?'<div class="execEodTasks">'+[...grouped.values()].map(taskLine).join('')+'</div>':'<p>No work due on this date.</p>')+
   (!fullVerified?'<p><strong>Partial worklist:</strong> some relationship sources could not be verified. Do not interpret an empty list as no outstanding work.</p>':'')+
   '<small>Open tasks are current, not a historical record of missed work. Meeting goals are weekly; daily goals show pace.</small>';
 }
