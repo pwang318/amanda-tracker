@@ -208,3 +208,6 @@ assert(code.includes('function paintImportedCallCounters()'),'Transaction workli
 assert(code.includes('refreshImportedCallCounters(true)'),'Transaction counters must refresh from shared imports');
 assert(code.includes("new Set(selected.filter(x=>x.batch===latest)"),'Latest import count must deduplicate exact transaction IDs');
 assert(code.includes("' imported file'"),'Imported count must be labeled as files, not completed calls');
+
+assert(!code.includes("?'Open imported files ↗'"),'Current CTC/contract tile may not fall back to a stale generic label');
+assert(code.includes("?'Checking latest import…'"),'Current transaction tiles should show a truthful pending state');
