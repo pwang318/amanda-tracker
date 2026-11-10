@@ -107,6 +107,8 @@ assert(compact.includes('content.length<450&&!meaningful'),'Only empty header sh
 assert(compact.includes('hideEmptyLegacyPriorities();'),'Cleanup must execute on Today page');
 
 assert.equal(html.split('<script defer src="./ui/compact-workspace.js?v=').length-1,1,'Compact workspace must be loaded exactly once');
+assert(code.includes("id=\"execMoreMetrics\""),'Secondary statistics should be collapsed into details');
+assert(code.includes("mainMetricKeys"),'Primary snapshot uses a focused metric subset');
 
 assert(code.includes('id="execProspecting"'),'Prospecting must be prominent in Today view');
 assert(code.includes('execProspectLog') && code.includes('execProspectTime'),'Prospecting needs logging and time entry actions');
