@@ -131,7 +131,7 @@ assert(code.includes('sourceWarnings.length===0&&fullVerified'), 'Last verified 
 assert(code.includes('observe(root,{childList:true,subtree:false})'), 'Daily dashboard must not observe all document subtree changes');
 
 assert(code.includes('New Realtor prospecting · view call list'),'The single prospecting section clearly names the call list');
-assert(code.includes('<strong>Open list ↗</strong>'),'New Realtor tile must show a clear action, not the queue count');
+assert(code.includes('<summary>New Realtor prospecting · view call list</summary>'),'Single prospecting list provides clear expand-to-view action');
 assert(!code.includes('New Realtor prospect list <small>Assigned outreach</small>'),'No misleading zero-review prospect tile');
 assert(code.includes("addEventListener('toggle',()=>{if($('execInlineProspects').open)showInlineProspects()})"),'Single Realtor call-list section loads on expansion');
 
