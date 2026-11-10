@@ -10,6 +10,7 @@ const reasons={'meetings':'Realtor or business meetings','transactions':'Urgent 
 const styles=document.createElement('style');styles.id='rmExecutionCoachingStyles';
 styles.textContent=[
 '#rmExecutionPlan{margin:12px 0;border:1px solid #e7deee;border-radius:12px;background:white;padding:17px 20px}',
+'#view-week #rm350Workboard:has(> #rmExecutionPlan)>:not(#rmExecutionPlan){display:none!important}',
 'body[data-rm-tab="week"] #view-week.rm350-board > #rmExecutionPlan{display:block!important}',
 '#rmExecutionPlan h2{margin:0 0 5px;font-size:20px;color:#211b35}',
 '#rmExecutionPlan h3{font-size:15px;margin:13px 0 8px;color:#302242}',
