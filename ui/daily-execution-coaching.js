@@ -32,6 +32,10 @@ styles.textContent=[
 '#rmExecutionPlan .execRow{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px}',
 '#rmExecutionPlan .execMetrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:12px 0}',
 '#rmExecutionPlan #execProspecting{background:#f5effb;border:1px solid #ddd0ed;padding:15px}',
+'#rmExecutionPlan #execTimedNudge{display:none;margin:10px 0;padding:12px 14px;background:#faf6ff;border:1px solid #d9c7ee;border-radius:10px;color:#38244e}',
+'#rmExecutionPlan #execTimedNudge.isVisible{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}',
+'#rmExecutionPlan #execTimedNudge strong{display:block;margin-bottom:3px}',
+'#rmExecutionPlan #execTimedNudge p{margin:0;color:#594b68}',
 '#rmExecutionPlan #execPriorities{background:#fff;border:1px solid #e7dff0;padding:14px}',
 '#rmExecutionPlan #execPriorities .execTasks{display:block;margin-top:7px}',
 '#rmExecutionPlan #execPriorities .execTasks section{border:0;padding:0}',
@@ -221,6 +225,7 @@ function mount(){
  const div=document.createElement('section');div.id='rmExecutionPlan';
  div.innerHTML='<div id="execQuickLog" class="execQuickLog"><div><strong>Log Activity</strong><span>Calls, new Realtor outreach, messages and meetings</span></div><button type="button" id="execQuickLogBtn">+ Log Activity</button></div><div class="execRow"><div><h2>Today’s workday</h2><p>Start with what is due, then work your prospecting and relationship lists.</p></div><button id="execReload" type="button">Refresh live activity</button></div>'+
  '<div id="execSourceStatus" class="execSourceStatus" role="status">Checking live data…</div><div id="execNotice" class="execNotice">Loading shared activity and schedule…</div>'+
+ '<div id="execTimedNudge" role="status" aria-live="polite"></div>'+
  '<div class="execSectionTitle"><span class="execStep">1</span><h3>Start here · Today’s priorities</h3></div><div id="execPriorities" class="execNotice" aria-live="polite"></div><div class="execSectionTitle"><span class="execStep">2</span><h3>Prospect and grow</h3></div><div id="execProspecting" class="execNotice" aria-live="polite"></div><details id="execInlineProspects" class="execInlineProspects"><summary>New Realtor prospecting · view call list</summary><div id="execInlineProspectContent" class="execNotice">Open this section to load Realtors from the Pipeline call list.</div></details><div class="execHomeWork" id="execHomeWork"><h3>Relationship worklists</h3><div id="execCategoryGrid" class="execCategoryGrid"></div></div><details id="execRecentDisclosure"><summary>Recent activity</summary><section id="execActivityTimeline" class="execTimeline"><div class="execRow"><h3>Activity log</h3><button type="button" id="execActivityAll">View all activity</button></div><div id="execTimelineRows">Loading activity…</div></section></details><div class="execSectionTitle execWeeklyTitle"><span class="execStep">3</span><h3>Weekly progress</h3></div><div id="execMetrics" class="execMetrics"></div><details id="execMoreMetrics"><summary>More work and activity details</summary><div id="execSecondaryMetrics" class="execMetrics"></div></details><details id="execWeeklyDisclosure" class="execTaskDetails"><summary>Weekly activity details</summary><div id="execWeeklyGoals" class="execNotice" aria-live="polite"></div></details>'+ '<details id="execBusinessDetails"><summary>Business results: meetings, referrals, and C-to-B growth</summary><div id="execBusinessResults" class="execNotice">Checking source records…</div></details>'+
  
  '<div class="execDetailArea" id="execDetailArea" hidden><button type="button" id="execBack" class="execBack">← Back to Today</button><div class="execRow"><h3 id="execDetailTitle"></h3><button type="button" id="execDetailRefresh">Refresh worklist</button></div><div id="execTaskSummary" class="execTasks"></div></div>'+
@@ -602,6 +607,31 @@ function render(){
 
  const timeline=$('execTimelineRows');if(timeline){const todayRows=activeFor(d).slice().sort((a,b)=>String(b.created_at||b.act_date||'').localeCompare(String(a.created_at||a.act_date||'')));$('execActivityTimeline').classList.toggle('execTimelineEmpty',todayRows.length===0);timeline.innerHTML=todayRows.length?todayRows.slice(0,3).map(a=>{const time=activityTime(a.created_at);return '<div class="execTimelineItem"><time>'+safe(time)+'</time><div><strong>'+safe(a.agent_name||'Agent not specified')+'</strong><span>'+safe([a.act_type,a.outcome].filter(Boolean).join(' · ')||'Activity logged')+'</span></div></div>'}).join(''):'<p>No activity yet today.</p>';const all=$('execActivityAll');if(all){all.textContent='View all activity ('+todayRows.length+')';all.onclick=()=>showDetail('activity:all')}}
 
+ // Contextual check-ins: no speculative zeroes, and no prompts on approved days off.
+ const nudge=$('execTimedNudge');
+ if(nudge){
+  const clock=new Intl.DateTimeFormat('en-US',{timeZone:'America/New_York',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).format(new Date());
+  const minute=Number(clock.slice(0,2))*60+Number(clock.slice(3,5));
+  const slot=minute>=960&&minute<1080?'4:00 PM':minute>=840&&minute<960?'2:00 PM':minute>=690&&minute<840?'11:30 AM':minute>=570&&minute<690?'9:30 AM':'';
+  const minutesReported=dataOf(closeRecord(d))?.prospecting_minutes;
+  const shortCalls=Math.max(0,25-cold);
+  const shortMinutes=minutesReported==null?null:Math.max(0,60-Number(minutesReported)||0);
+  const urgent=late.length+need.length;
+  const pending=shortCalls>0||shortMinutes===null||shortMinutes>0||urgent>0||undated.length>0;
+  const dismissed=slot&&sessionStorage.getItem('rm-nudge-dismissed-'+d+'-'+slot)==='1';
+  nudge.classList.toggle('isVisible',Boolean(slot&&pending&&!offNow&&loaded&&!sourceWarnings.length&&fullVerified&&!dismissed));
+  if(nudge.classList.contains('isVisible')){
+   const topics=[];
+   if(shortCalls)topics.push(shortCalls+' more cold calls to reach the 25-call minimum');
+   if(shortMinutes===null)topics.push('prospecting minutes still need to be reported');
+   else if(shortMinutes>0)topics.push(shortMinutes+' prospecting minutes remaining');
+   if(urgent)topics.push(urgent+' due or overdue assignments');
+   if(undated.length)topics.push(undated.length+' undated follow-ups to review');
+   nudge.innerHTML='<div><strong>'+slot+' check-in · Here’s what is still open</strong><p>'+safe(topics.slice(0,3).join(' · '))+'.</p><small>Based on the latest verified worklists, not a measure of effort or time on the phone.</small></div><div class="execRow"><button type="button" id="execNudgeOpen">View next actions</button><button type="button" id="execNudgeDismiss">Got it</button></div>';
+   $('execNudgeOpen').onclick=()=>{if(urgent)showDetail(late.length?'section:0':'section:1');else if(shortCalls)showDetail('activity:cold');else if(undated.length)showDetail('section:5');else{$('execCloseout').open=true;$('execCloseout').scrollIntoView({behavior:'smooth',block:'center'})}};
+   $('execNudgeDismiss').onclick=()=>{sessionStorage.setItem('rm-nudge-dismissed-'+d+'-'+slot,'1');nudge.classList.remove('isVisible')};
+  }else nudge.innerHTML='';
+ }
  const priorityBox=$('execPriorities');
  // One visible work order; unfinished assignments remain visible on later workdays as overdue.
  const focusRows=priorities.length?priorities:tmrw;
@@ -942,6 +972,8 @@ function init(){
  new MutationObserver(()=>{if(scheduled)return;scheduled=true;requestAnimationFrame(()=>{scheduled=false;try{mount()}catch(e){console.error('RM daily plan mount failed',e)}})}).observe(root,{childList:true,subtree:false});
  window.addEventListener('rm-growth-updated',mount);
  window.addEventListener('focus',()=>refresh(false));
+ // While the page is open, refresh source data and advance the checkpoint banner.
+ setInterval(()=>{if(!document.hidden&&!working)refresh(false)},15*60*1000);
  window.addEventListener('rm-work-queue-changed',()=>refresh(true));
  document.addEventListener('visibilitychange',()=>{if(!document.hidden)refresh(false)});
 }
