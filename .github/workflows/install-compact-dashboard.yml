@@ -69,6 +69,19 @@ jobs:
                   s=re.sub(old,lambda _:asset,s,count=1)
               else:
                   s=s.replace('</body>',asset+'</body>',1)
+          # A previous installation left duplicate defer tags. Normalize the tracked
+          # assets to exactly one tag each, including the daily execution plan.
+          for filename,version in [
+              ('compact-workspace.js','20261109-clean8'),
+              ('daily-execution-coaching.js','20261109-coaching8'),
+              ('outstanding-daily-checklist.js','20261109-check4'),
+              ('fast-activity-workflow.js','20261109-fast2'),
+              ('relationship-funnel.js','20261109-funnel2'),
+              ('scorecard-source-summary.js','20261109-source1')
+          ]:
+              pattern=r'<script\\s+defer\\s+src="\\./ui/'+re.escape(filename)+r'\\?v=[^"]+"\\s*></script>'
+              s=re.sub(pattern,'',s)
+              s=s.replace('</body>','<script defer src="./ui/'+filename+'?v='+version+'"></script></body>',1)
           p.write_text(s,encoding='utf-8')
           PY
       - name: Commit dashboard update
