@@ -57,7 +57,7 @@ assert(code.includes("['Cold calls today',offNow?'PTO':cold+' / 25+','cold']"),'
 assert(code.includes("['Meetings logged',meetingFor(d),'meetings']"),'Meeting tile must open logged meeting records');
 assert(code.includes("if(kind==='cold')return showDetail('activity:cold')"),'Cold-call detail click must be wired');
 assert(code.includes("if(kind==='meetings')return showDetail('activity:meetings')"),'Meeting detail click must be wired');
-assert(code.includes("const rows=activeFor(d).filter(a=>kind==='cold'"),'Activity breakdown must use the identical source and date as its KPI');
+assert(code.includes("const base=kind==='weeknew'||kind==='weekbread'?week.days.flatMap(x=>activeFor(x)):activeFor(d)"),'Daily and weekly drilldowns must match their relevant date ranges');
 assert(code.includes("list.querySelectorAll('[data-activity-index]')"),'Specific logged activity rows must be actionable');
 assert(code.includes("id=\"execLogRelated\""),'Activity drilldown must provide a new logging action');
 assert(code.includes("activeDetail='activity:'+kind"),'Activity breakdown stays visible after refresh');
