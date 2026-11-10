@@ -27,7 +27,11 @@ styles.textContent=[
 '#rmExecutionPlan #execMoreMetrics{margin:10px 0;border-bottom:1px solid #eee7f4;padding-bottom:8px}',
 '#rmExecutionPlan #execMoreMetrics>summary{font-size:12px}',
 '#rmExecutionPlan #execWeeklyGoals{background:#faf8fd}',
-'#rmExecutionPlan #execHomeWork{margin-top:12px}',
+'#rmExecutionPlan #execHomeWork{margin:10px 0 12px}',
+'#rmExecutionPlan #execHomeWork h3{margin:0 0 8px}',
+'#rmExecutionPlan #execPriorities{background:#faf9fc;padding:10px 12px}',
+'#rmExecutionPlan #execPriorities .execRow{gap:8px}',
+'#rmExecutionPlan #execPriorities button{white-space:normal}',
 '#rmExecutionPlan #execCloseout,#rmExecutionPlan #execOOO,#rmExecutionPlan #execCoaching,#rmExecutionPlan #execBusinessDetails{border-top:1px solid #f0eaf5;padding-top:7px;margin-top:8px}',
 '#rmExecutionPlan .execMetric strong{overflow-wrap:anywhere}',
 '#rmExecutionPlan .execMetric[role="button"]{cursor:pointer;transition:border-color .15s,background .15s}',
@@ -108,8 +112,8 @@ function mount(){
  const div=document.createElement('section');div.id='rmExecutionPlan';
  div.innerHTML='<div class="execRow"><div><h2>Today’s plan</h2><p>Your daily goals, open work, completed activity, and next steps.</p></div><button id="execReload" type="button">Refresh live activity</button></div>'+
  '<div id="execNotice" class="execNotice">Loading shared activity and schedule…</div>'+
- '<div id="execProspecting" class="execNotice" aria-live="polite"></div><div id="execPriorities" class="execNotice" aria-live="polite"></div><div id="execMetrics" class="execMetrics"></div><details id="execMoreMetrics"><summary>More activity details</summary><div id="execSecondaryMetrics" class="execMetrics"></div></details><div id="execWeeklyGoals" class="execNotice" aria-live="polite"></div>'+ '<details id="execBusinessDetails"><summary>Business results · meetings, referrals & C-to-B growth</summary><div id="execBusinessResults" class="execNotice">Checking source records…</div></details>'+
- '<div class="execHomeWork" id="execHomeWork"><h3>Open work by category</h3><p>Choose a worklist to see the assigned agents and next actions.</p><div id="execCategoryGrid" class="execCategoryGrid"></div></div>'+
+ '<div id="execProspecting" class="execNotice" aria-live="polite"></div><div class="execHomeWork" id="execHomeWork"><h3>Open work</h3><div id="execCategoryGrid" class="execCategoryGrid"></div></div><div id="execPriorities" class="execNotice" aria-live="polite"></div><div id="execMetrics" class="execMetrics"></div><details id="execMoreMetrics"><summary>More activity details</summary><div id="execSecondaryMetrics" class="execMetrics"></div></details><div id="execWeeklyGoals" class="execNotice" aria-live="polite"></div>'+ '<details id="execBusinessDetails"><summary>Business results · meetings, referrals & C-to-B growth</summary><div id="execBusinessResults" class="execNotice">Checking source records…</div></details>'+
+ 
  '<div class="execDetailArea" id="execDetailArea" hidden><button type="button" id="execBack" class="execBack">← Back to Today</button><div class="execRow"><h3 id="execDetailTitle"></h3><button type="button" id="execDetailRefresh">Refresh worklist</button></div><div id="execTaskSummary" class="execTasks"></div></div>'+
  '<details id="execCloseout"><summary>Daily results & closeout · what was missed</summary><div id="execMissedSummary" class="execNotice" aria-live="polite"></div>'+
  '<div class="execForm"><label>Review date<input type="date" id="execReviewDate"></label>'+
@@ -310,9 +314,9 @@ function render(){
  $('execProspectTime').onclick=()=>{$('execCloseout').open=true;$('execCloseout').scrollIntoView({behavior:'smooth',block:'center'});$('execMinutes').focus()};
 
  const priorityBox=$('execPriorities');
- priorityBox.innerHTML='<strong>Due today: '+need.length+' ('+todayCampaigns.length+' campaign + '+todayOther.length+' other) · Overdue: '+late.length+'</strong>'+(priorities.length?'<div class="execTasks"><section><ul>'+priorities.slice(0,6).map((q,i)=>'<li><button class="execTaskGo" type="button" data-priority="'+i+'"><b>'+safe(q.agent_name||'Agent')+'</b> · '+safe(q.activity_type||q.Category||'Follow-up')+' · '+(q.work_date<d?'Overdue':'Due today')+'</button></li>').join('')+'</ul></section></div>':'<p>'+(fullVerified?'No overdue or due-today agent tasks.':'Unable to verify all priorities — check original worklists.')+'</p>')+(priorities.length>6?'<button type="button" id="execSeeAllPriorities">View all '+priorities.length+' priorities</button>':'');
- priorityBox.querySelectorAll('[data-priority]').forEach(b=>b.onclick=()=>openTask(priorities[Number(b.dataset.priority)]));
- const allButton=$('execSeeAllPriorities');if(allButton)allButton.onclick=()=>showDetail(late.length?'section:0':'section:1');
+ priorityBox.innerHTML='<div class="execRow"><strong>Deadline check</strong><div><button type="button" id="execDueList">Due today · '+need.length+' ('+todayCampaigns.length+' campaigns, '+todayOther.length+' other)</button> <button type="button" id="execOverdueList">Overdue · '+late.length+'</button></div></div>';
+ $('execDueList').onclick=()=>showDetail('section:1');
+ $('execOverdueList').onclick=()=>showDetail('section:0');
  const wg=weeklyGoals(d),weekLabel=fmt(wg.start);
  $('execWeeklyGoals').innerHTML='<strong>This week · '+safe(weekLabel)+'</strong>'+
  '<p>New Realtor meetings <b>'+wg.newHeld+' / '+wg.target+'</b> held · Break Breads <b>'+wg.breads+' / '+wg.target+'</b> held · Calls <b>'+wg.calls+' / '+wg.goalCalls+'</b> logged · Prospecting <b>'+wg.minutes.total+' / '+wg.goalMinutes+'</b> minutes reported'+(wg.minutes.known<wg.days.length?' (incomplete reporting)':'')+'.</p>'+
@@ -332,7 +336,7 @@ function render(){
   ['Missing growth plans'+noticeMissing,missingPlans.length,'plans'],
   ['Activity logged today',activeFor(d).length,'feed']
  ];
- const mainMetricKeys=new Set(['cold','closeout','weeknew','weekbread','section:0','section:1']);
+ const mainMetricKeys=new Set(['weeknew','weekbread']);
  const metricMarkup=x=>'<div class="execMetric" role="button" tabindex="0" data-exec-target="'+safe(x[2])+'" aria-label="Open '+safe(x[0])+'"><strong>'+safe(x[1])+'</strong><span>'+safe(x[0])+' ↗</span></div>';
  $('execMetrics').innerHTML=metricRows.filter(x=>mainMetricKeys.has(x[2])).map(metricMarkup).join('');
  $('execSecondaryMetrics').innerHTML=metricRows.filter(x=>!mainMetricKeys.has(x[2])).map(metricMarkup).join('');
