@@ -58,7 +58,7 @@ function breakdown(rows){
 function meetings(rows){
  const scheduled=rows.filter(x=>booked(x)&&x.follow_up_date&&x.agent_name).sort((a,b)=>String(a.follow_up_date).localeCompare(String(b.follow_up_date)));
  const completed=rows.filter(x=>held(x)&&x.agent_name);
- const used=new Set();let linked=0;
+ const used=new Set(completedWithActivity.map(q=>String(q.completion_activity_id)).filter(Boolean));let linked=0;
  for(const a of scheduled){
   const found=completed.find(h=>{
    if(used.has(h.id)||nameKey(h.agent_name)!==nameKey(a.agent_name))return false;
@@ -141,7 +141,11 @@ async function reconcile(){
  // A logged outcome can resolve one matching assignment, never several.
  // Catch-up assignments may be completed early; their planned work_date is not a lock.
  const day=iso();
- const pending=await sbFetch('rm_work_queue?select=id,agent_name,activity_type,work_date,reason,status,owner&status=eq.open&owner=eq.Amanda&limit=2500');
+ const [pending,completedWithActivity]=await Promise.all([
+  sbFetch('rm_work_queue?select=id,agent_name,activity_type,work_date,reason,status,owner&status=eq.open&owner=eq.Amanda&limit=2500'),
+  sbFetch('rm_work_queue?select=completion_activity_id&owner=eq.Amanda&completion_activity_id=not.is.null&limit=2500')
+ ]);
+ if(!Array.isArray(pending)||!Array.isArray(completedWithActivity))throw Error('Unable to verify outstanding task and activity links');
  const eligible=cached.filter(a=>a.act_date===day&&/^(Cold Calls|Agent Talk-to|New Agent Follow-up|Reconnect Outreach)$/i.test(a.act_type||'')&&String(a.outcome||'').trim()&&(typeof window.isAmandaDailyActivity!=='function'||window.isAmandaDailyActivity(a)));
  const alias={'agent talk-to':['agent talk-to','talk-to (text/call)','active agent talk-to'],'cold calls':['cold calls'],'new agent follow-up':['new agent follow-up'],'reconnect outreach':['reconnect outreach']};
  const used=new Set();
@@ -152,8 +156,8 @@ async function reconcile(){
   if(t.work_date&&t.work_date>day&&!catchup)continue;
   const taskType=String(t.activity_type||'').toLowerCase();
   const matched=eligible.find(a=>{
-   const id=String(a.id||a.created_at||'')+'|'+String(a.agent_name||'');
-   if(used.has(id)||nameKey(a.agent_name)!==nameKey(t.agent_name))return false;
+   const id=String(a.id||'');
+   if(!id||used.has(id)||nameKey(a.agent_name)!==nameKey(t.agent_name))return false;
    if(!(alias[String(a.act_type).toLowerCase()]||[]).includes(taskType))return false;
    if(!catchup&&t.work_date&&a.act_date<t.work_date)return false;
    // A voicemail is an attempt, not a completed talk-to conversation.
@@ -162,8 +166,9 @@ async function reconcile(){
   });
   if(!matched)continue;
   try{
-   await sbFetch('rm_work_queue?id=eq.'+encodeURIComponent(t.id)+'&status=eq.open',{method:'PATCH',prefer:'return=minimal',body:JSON.stringify({status:'worked',completed_at:new Date().toISOString()})});
-   used.add(String(matched.id||matched.created_at||'')+'|'+String(matched.agent_name||''));
+   const result=await sbFetch('rm_work_queue?id=eq.'+encodeURIComponent(t.id)+'&status=eq.open&select=id,completion_activity_id',{method:'PATCH',prefer:'return=representation',body:JSON.stringify({status:'worked',completed_at:new Date().toISOString(),completion_activity_id:matched.id})});
+   if(!Array.isArray(result)||!result.some(row=>String(row.id)===String(t.id)&&String(row.completion_activity_id)===String(matched.id)))throw Error('Assignment completion not verified');
+   used.add(String(matched.id));
    changed++;
   }catch(err){console.warn('Could not verify assignment completion',t.id,err)}
  }
