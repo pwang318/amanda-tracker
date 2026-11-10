@@ -63,6 +63,11 @@ styles.textContent=[
 '#rmExecutionPlan .execCategoryBtn.execProspectTile strong{font-size:13px;white-space:nowrap}',
 '#rmExecutionPlan .execCategoryBtn.execProspectTile{border-color:#bda7dc;background:#faf7ff}',
 '#rmExecutionPlan .execProspectShortcut{margin:0 0 12px}',
+'#rmExecutionPlan .execInlineProspects{border:1px solid #d9c8ed;background:#fcfaff;border-radius:11px;padding:5px 14px;margin:0 0 15px}',
+'#rmExecutionPlan .execInlineProspects>summary{font-size:14px;font-weight:750;padding:11px 0}',
+'#rmExecutionPlan #execInlineProspectContent{background:white;padding:11px;max-height:520px;overflow:auto}',
+'#rmExecutionPlan #execInlineProspectContent button{min-height:38px;margin:6px 0}',
+'#rmExecutionPlan .execProspectHint{font-size:12px;line-height:1.45;color:#615474}',
 '#rmExecutionPlan .execProspectShortcut .execProspectTile{width:100%;min-height:58px!important;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 16px!important;border:1px solid #baa1dc!important;background:#f8f3ff!important;border-radius:11px!important;text-align:left}',
 '#rmExecutionPlan .execProspectShortcut .execProspectTile span{font-weight:700;color:#4f3274}',
 '#rmExecutionPlan .execProspectShortcut .execProspectTile small{display:block;font-size:11px;color:#706180;font-weight:500;margin-top:3px}',
@@ -221,7 +226,7 @@ function mount(){
  const div=document.createElement('section');div.id='rmExecutionPlan';
  div.innerHTML='<div id="execQuickLog" class="execQuickLog"><div><strong>Log Activity</strong><span>Calls, new Realtor outreach, messages and meetings</span></div><button type="button" id="execQuickLogBtn">+ Log Activity</button></div><div class="execRow"><div><h2>Today’s workday</h2><p>Start with what is due, then work your prospecting and relationship lists.</p></div><button id="execReload" type="button">Refresh live activity</button></div>'+
  '<div id="execSourceStatus" class="execSourceStatus" role="status">Checking live data…</div><div id="execNotice" class="execNotice">Loading shared activity and schedule…</div>'+
- '<div class="execSectionTitle"><span class="execStep">1</span><h3>Start here · Today’s priorities</h3></div><div id="execPriorities" class="execNotice" aria-live="polite"></div><div class="execSectionTitle"><span class="execStep">2</span><h3>Prospect and grow</h3></div><div id="execProspecting" class="execNotice" aria-live="polite"></div><div id="execProspectShortcut" class="execProspectShortcut"></div><div class="execHomeWork" id="execHomeWork"><h3>Relationship worklists</h3><div id="execCategoryGrid" class="execCategoryGrid"></div></div><details id="execRecentDisclosure"><summary>Recent activity</summary><section id="execActivityTimeline" class="execTimeline"><div class="execRow"><h3>Activity log</h3><button type="button" id="execActivityAll">View all activity</button></div><div id="execTimelineRows">Loading activity…</div></section></details><div class="execSectionTitle execWeeklyTitle"><span class="execStep">3</span><h3>Weekly progress</h3></div><div id="execMetrics" class="execMetrics"></div><details id="execMoreMetrics"><summary>More work and activity details</summary><div id="execSecondaryMetrics" class="execMetrics"></div></details><details id="execWeeklyDisclosure" class="execTaskDetails"><summary>Weekly activity details</summary><div id="execWeeklyGoals" class="execNotice" aria-live="polite"></div></details>'+ '<details id="execBusinessDetails"><summary>Business results: meetings, referrals, and C-to-B growth</summary><div id="execBusinessResults" class="execNotice">Checking source records…</div></details>'+
+ '<div class="execSectionTitle"><span class="execStep">1</span><h3>Start here · Today’s priorities</h3></div><div id="execPriorities" class="execNotice" aria-live="polite"></div><div class="execSectionTitle"><span class="execStep">2</span><h3>Prospect and grow</h3></div><div id="execProspecting" class="execNotice" aria-live="polite"></div><div id="execProspectShortcut" class="execProspectShortcut"></div><details id="execInlineProspects" class="execInlineProspects"><summary>Realtors to prospect · view the actual call list</summary><div id="execInlineProspectContent" class="execNotice">Open this section to load Realtors from the Pipeline call list.</div></details><div class="execHomeWork" id="execHomeWork"><h3>Relationship worklists</h3><div id="execCategoryGrid" class="execCategoryGrid"></div></div><details id="execRecentDisclosure"><summary>Recent activity</summary><section id="execActivityTimeline" class="execTimeline"><div class="execRow"><h3>Activity log</h3><button type="button" id="execActivityAll">View all activity</button></div><div id="execTimelineRows">Loading activity…</div></section></details><div class="execSectionTitle execWeeklyTitle"><span class="execStep">3</span><h3>Weekly progress</h3></div><div id="execMetrics" class="execMetrics"></div><details id="execMoreMetrics"><summary>More work and activity details</summary><div id="execSecondaryMetrics" class="execMetrics"></div></details><details id="execWeeklyDisclosure" class="execTaskDetails"><summary>Weekly activity details</summary><div id="execWeeklyGoals" class="execNotice" aria-live="polite"></div></details>'+ '<details id="execBusinessDetails"><summary>Business results: meetings, referrals, and C-to-B growth</summary><div id="execBusinessResults" class="execNotice">Checking source records…</div></details>'+
  
  '<div class="execDetailArea" id="execDetailArea" hidden><button type="button" id="execBack" class="execBack">← Back to Today</button><div class="execRow"><h3 id="execDetailTitle"></h3><button type="button" id="execDetailRefresh">Refresh worklist</button></div><div id="execTaskSummary" class="execTasks"></div></div>'+
  '<details id="execCloseout"><summary>End-of-day review</summary><div id="execMissedSummary" class="execNotice" aria-live="polite"></div>'+
@@ -395,6 +400,34 @@ async function openProspectList(){
  }
 }
 window.rmOpenProspectList=openProspectList;
+// Keep the actual Pipeline call-list data visible in Prospect & Grow.
+// This view mirrors the existing ranked list; the Pipeline remains the owner of call logging.
+async function showInlineProspects(){
+ const host=$('execInlineProspectContent');if(!host)return false;
+ host.textContent='Loading the live Realtor prospect list…';
+ try{
+  if(typeof window.loadPipeline==='function')await window.loadPipeline();
+  if(typeof window.rmRenderNewAgentCallList==='function')await window.rmRenderNewAgentCallList();
+  const list=document.getElementById('rmNewAgentCallList');
+  if(!list||!list.children.length)throw Error('The ranked list has not loaded in Pipeline.');
+  const preview=list.cloneNode(true);
+  preview.removeAttribute('id');
+  preview.querySelectorAll('[id]').forEach(el=>el.removeAttribute('id'));
+  host.replaceChildren();
+  const hint=document.createElement('p');hint.className='execProspectHint';hint.textContent='Live Pipeline call-list preview. Select a Realtor or action to open the full working list.';
+  const open=document.createElement('button');open.type='button';open.textContent='Open full working list ↗';open.onclick=openProspectList;
+  preview.addEventListener('click',event=>{const target=event.target.closest('button,a,[role="button"]');if(target){event.preventDefault();event.stopPropagation();openProspectList();}},true);
+  preview.querySelectorAll('input,select,textarea').forEach(el=>{el.disabled=true});
+  host.append(hint,open,preview);
+  return true;
+ }catch(err){
+  console.warn('Inline Realtor prospect list unavailable',err);
+  host.innerHTML='<p>The Pipeline call list could not be loaded in this section. The source list is still available in Pipeline.</p>';
+  const open=document.createElement('button');open.type='button';open.textContent='Open Pipeline call list ↗';open.onclick=openProspectList;host.append(open);
+  return false;
+ }
+}
+
 function showProspectRouteError(){
  let message=$('execProspectRouteStatus');
  if(!message){message=document.createElement('p');message.id='execProspectRouteStatus';message.className='execNotice execWarn';$('rmExecutionPlan')?.prepend(message)}
@@ -576,6 +609,7 @@ function render(){
  const shortcut=grid.querySelector('[data-outreach]');if(shortcut)$('execProspectShortcut').replaceChildren(shortcut);else $('execProspectShortcut').replaceChildren();
  grid.querySelectorAll('[data-category]').forEach(b=>b.onclick=()=>showDetail('category:'+b.dataset.category));
  $('execProspectShortcut').querySelector('[data-outreach]')?.addEventListener('click',openProspectList);
+ if(!$('execInlineProspects').dataset.wired){$('execInlineProspects').dataset.wired='1';$('execInlineProspects').addEventListener('toggle',()=>{if($('execInlineProspects').open)showInlineProspects()});}
  $('rmExecutionPlan').querySelectorAll('[data-exec-target]').forEach(tile=>{
   const action=()=>{
    const kind=tile.dataset.execTarget;
