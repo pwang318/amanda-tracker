@@ -1,0 +1,17 @@
+'use strict';
+const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/strict');
+const daily=fs.readFileSync('ui/daily-execution-coaching.js','utf8');
+const compact=fs.readFileSync('ui/compact-workspace.js','utf8');
+new vm.Script(daily,{filename:'daily-execution-coaching.js'});
+new vm.Script(compact,{filename:'compact-workspace.js'});
+const start=daily.indexOf('// Database created_at'),end=daily.indexOf('const reasons=',start);
+assert(start>=0&&end>start,'UTC timestamp formatter must exist');
+const time=new Function(daily.slice(start,end)+'return activityTime;')();
+assert.equal(time('2026-11-09 21:05:23.088979'),'4:05 PM','Winter UTC should convert to EST');
+assert.equal(time('2026-07-09 21:05:23.088979'),'5:05 PM','Summer UTC should convert to EDT');
+assert(daily.includes("function showOutreachDetail(scroll=true)"),'Outreach must open actionable prospecting detail');
+assert(daily.includes("if(key==='outreach')return showOutreachDetail(scroll)"),'Outreach route must be wired');
+assert(daily.indexOf('id="execPriorities"')<daily.indexOf('id="execActivityTimeline"'),'Outstanding work must appear before recent activity');
+assert(daily.includes("todayRows.slice(0,3)"),'Recent activity must remain compact');
+assert(compact.includes("const title=[...today.querySelectorAll('h1,h2,h3,h4')]"),'Duplicate bottom Today must be suppressed');
+console.log('RM outreach, work priority and Eastern timestamps regression PASS');
