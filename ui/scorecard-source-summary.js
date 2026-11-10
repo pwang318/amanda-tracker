@@ -3,6 +3,8 @@
 const css=document.createElement('style');css.id='rmSourceScorecardStyle';
 css.textContent=[
 '#rmActualScorecard{margin:8px 0 18px;padding:16px;border:1px solid #e6dfef;border-radius:12px;background:#fff;color:#241d3a}',
+// The daily page is a work queue, not a second scorecard. Hide native scorecard duplicate.
+'#view-week #rm490Score,#rm350Workboard #rm490Score,body[data-rm-tab="week"] #rm490Score{display:none!important}',
 '#rmActualScorecard h2{font-size:18px;margin:0 0 4px;color:#201734}',
 '#rmActualScorecard .rmActualSubtitle{font-size:12px;color:#6e637b;line-height:1.5;margin:0 0 12px}',
 '#rmActualScorecard .rmActualGrid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px}',
@@ -68,7 +70,7 @@ function liveScoreFromNative(){
 // No weighted score is inferred when the authoritative scorecard data is unavailable.
 // Practical scorecard planning is sourced from the same live model as the weighted score.
 function renderPathTo85(live){
- const hosts=['rm85Roadmap','rm85RoadmapScorecard'].map(id=>document.getElementById(id)).filter(Boolean);if(!hosts.length)return;
+ const hosts=['rm85RoadmapScorecard'].map(id=>document.getElementById(id)).filter(Boolean);if(!hosts.length)return;
  for(const host of hosts){
  const data=window.rmV429ScoreData;
  if(!live||!data||!data.counts||!data.target){
@@ -113,7 +115,7 @@ function renderPathTo85(live){
  }
 }
 function renderLiveScore(){
- const targets=[document.getElementById('rmCurrentWeighted'),document.getElementById('rmTodayWeighted')].filter(Boolean);if(!targets.length)return;
+ const targets=[document.getElementById('rmCurrentWeighted')].filter(Boolean);if(!targets.length)return;
  const live=liveScoreFromNative();
  if(live){
   for(const el of targets)el.innerHTML='Current weighted score<strong>'+live.total.toFixed(1)+' / 100</strong><small>Tier growth '+live.tierPts.toFixed(1)+'/50 · Lead pace '+live.ratioPts.toFixed(1)+'/30 · Active growth '+live.activePts.toFixed(1)+'/20 · Updates automatically</small>';
@@ -164,6 +166,10 @@ async function refreshNativeScore(){
 }
 
 function mountTodayScore(){
+ // Never recreate the duplicate Scorecard Progress section on Today's workday.
+ document.getElementById('rmTodayWeighted')?.remove();
+ document.getElementById('rm85Roadmap')?.remove();
+ return;
  const heading=[...document.querySelectorAll('h2,h3')].find(el=>/^scorecard progress$/i.test((el.textContent||'').trim()));
  if(!heading||document.getElementById('rmTodayWeighted'))return;
  const div=document.createElement('div');div.id='rmTodayWeighted';div.className='rmCurrentWeighted';div.setAttribute('role','status');div.textContent='Updating weighted score…';
