@@ -38,7 +38,7 @@ function findLegacyDrawer(today){
 }
 function findActivityCard(today){
  const heads=[...document.querySelectorAll('h2,h3,h4,strong')];
- const heading=heads.find(el=>/^(log an activity|log activity)$/i.test((el.textContent||'').trim()));
+ const heading=heads.find(el=>!el.closest('#execQuickLog')&&/^(log an activity|log activity)$/i.test((el.textContent||'').trim())&&el.parentElement&&/open activity log/i.test(el.parentElement.parentElement?.textContent||''));
  if(!heading)return null;
  let node=heading.parentElement;
  while(node&&node!==today){
