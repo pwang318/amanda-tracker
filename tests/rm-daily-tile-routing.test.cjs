@@ -170,3 +170,9 @@ assert(code.includes('Why here:')&&code.includes('Next action:'),'Each assignmen
 assert(code.includes("'4-week campaigns':")&&code.includes("'Weekly Realtor calls':")&&code.includes("'Portfolio attention reviews':"),'All key relationship categories have clear instructions');
 assert(!code.includes('id="execProspectShortcut"'),'Redundant Realtor prospect shortcut must not render');
 assert(code.includes("undated.length?'<div class="),'No empty Needs Scheduling tile on daily homepage');
+
+// Checkpoint reminders and separate transaction queues must remain discoverable.
+for(const label of ['New contract calls','CTC calls','Tuesday transaction updates','Other transaction calls']) assert(code.includes("['"+label+"',"),'Missing dedicated RM transaction worklist: '+label);
+for(const time of ['9:30 AM','11:30 AM','2:00 PM','4:00 PM']) assert(code.includes(time),'Missing workday reminder: '+time);
+assert(code.includes('execNudgeDismiss')&&code.includes('execNudgeOpen'),'Reminder must be actionable and dismissible');
+assert(code.includes('!offNow&&loaded&&!sourceWarnings.length&&fullVerified'),'Reminders must be suppressed for PTO and incomplete data');
