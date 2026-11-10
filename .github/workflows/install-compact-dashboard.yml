@@ -20,6 +20,24 @@ jobs:
           import re
           path=Path('index.html')
           page=path.read_text(encoding='utf-8')
+          # Prevent flash-of-legacy-content before the live RM dashboard initializes.
+          # The obsolete rm492 script used to recreate a duplicate Today template.
+          page=re.sub(r'<script[^>]*id="rm492-consolidate"[^>]*>.*?</script>','',page,flags=re.S)
+          guard_re=r'<style[^>]*id="rm-prepaint-legacy-guard"[^>]*>.*?</style>'
+          page=re.sub(guard_re,'',page,flags=re.S)
+          prepaint='''<style id="rm-prepaint-legacy-guard">
+          /* Hide retired workboard cards before first paint; retain a failure fallback. */
+          #view-week #rm350Workboard:not(.rmExecFallback) > .rm350-hero,
+          #view-week #rm350Workboard:not(.rmExecFallback) > .rm350-shell,
+          #view-week #rm350Workboard:not(.rmExecFallback) > .rm358-banner,
+          #view-week #rm350Workboard:not(.rmExecFallback) > .rm358-source-drawer,
+          #view-week #rm350Workboard #rm492Additional,
+          #view-week #rm350Workboard #rm490Bottom{display:none!important}
+          #view-week #rm350Workboard:not(.rmExecReady):not(.rmExecFallback) #rm490Score{visibility:hidden!important}
+          </style>'''
+          if '</head>' not in page:
+              raise SystemExit('Missing head close; cannot inject prepaint guard')
+          page=page.replace('</head>',prepaint+'</head>',1)
           # Obsolete checklist is superseded by the authoritative daily worklists.
           page=re.sub(r'<script[^>]*outstanding-daily-checklist[.]js[^>]*></script>','',page)
           # Preserve one copy of each in-use external asset and apply current revision.
