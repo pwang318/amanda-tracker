@@ -176,3 +176,5 @@ for(const label of ['New contract calls','CTC calls','Tuesday transaction update
 for(const time of ['9:30 AM','11:30 AM','2:00 PM','4:00 PM']) assert(code.includes(time),'Missing workday reminder: '+time);
 assert(code.includes('execNudgeDismiss')&&code.includes('execNudgeOpen'),'Reminder must be actionable and dismissible');
 assert(code.includes('!offNow&&loaded&&!sourceWarnings.length&&fullVerified'),'Reminders must be suppressed for PTO and incomplete data');
+
+assert(code.includes("group[1].length>0||['New contract calls','CTC calls','Tuesday transaction updates'].includes(group[0])"),'Contract and CTC worklist tiles must remain visible even with no matches');
