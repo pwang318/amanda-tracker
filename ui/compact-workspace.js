@@ -49,23 +49,15 @@ function findActivityCard(today){
  return null;
 }
 function moveTodayAboveScorecard(today){
- const board=document.getElementById('rm350Workboard')||document.getElementById('rmExecutionPlan');
- if(!board)return;
- const headings=[...document.querySelectorAll('h1,h2,h3')];
- const score=headings.find(el=>/^scorecard progress$/i.test((el.textContent||'').trim())&&today.contains(el))||
-   headings.find(el=>/^scorecard progress$/i.test((el.textContent||'').trim()));
- if(!score)return;
- // The Today heading and dashboard may be siblings inside the same card.
- const todayHeading=headings.find(el=>/^today$/i.test((el.textContent||'').trim())&&today.contains(el)&&!el.closest('#rmExecutionPlan'));
- const source=todayHeading||board;
- let common=source;while(common&&!common.contains(score))common=common.parentElement;
- if(!common)return;
- const branch=(node,ancestor)=>{let n=node;while(n&&n.parentElement!==ancestor)n=n.parentElement;return n};
- const todayCard=branch(source,common),scoreCard=branch(score,common);
- if(!todayCard||!scoreCard||todayCard===scoreCard)return;
- if(todayCard.parentElement!==scoreCard.parentElement)return;
- if((scoreCard.compareDocumentPosition(todayCard)&Node.DOCUMENT_POSITION_FOLLOWING)!==0)return;
- common.insertBefore(todayCard,scoreCard);
+ // Concrete layout: legacy rm492-consolidate wraps the actual Today workboard
+ // in #rm492Additional AFTER #rm490Score. Move that entire existing section.
+ const score=document.getElementById('rm490Score');
+ const host=document.getElementById('rm350Workboard');
+ const todayCard=document.getElementById('rm492Additional');
+ if(!score||!host||!todayCard||!host.contains(score)||!host.contains(todayCard))return;
+ if(score.contains(todayCard)||todayCard.contains(score))return;
+ if(todayCard.nextElementSibling===score)return;
+ score.before(todayCard);
 }
 
 function mount(){
@@ -124,6 +116,7 @@ window.addEventListener('focus',mount);
 setTimeout(mount,300);
 setTimeout(mount,1200);
 setTimeout(mount,3500);
+setTimeout(mount,7000);
 window.addEventListener('load',mount);
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)mount()});
 })();
