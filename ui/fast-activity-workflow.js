@@ -166,7 +166,7 @@ function start(){
  mount();refresh(true);
  let pending=false;new MutationObserver(()=>{if(pending)return;pending=true;requestAnimationFrame(()=>{pending=false;mount()})}).observe(document.body,{subtree:true,childList:true});
  window.addEventListener('focus',()=>refresh(false));
- setInterval(()=>{if($('view-week')?.classList.contains('active'))refresh(false)},60000);
+ // No fixed-interval polling: refresh on saved activity, explicit refresh, or focus.
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start);else start();
 })();
