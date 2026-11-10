@@ -21,7 +21,7 @@ jobs:
           path=Path('index.html')
           page=path.read_text(encoding='utf-8')
           # Obsolete checklist is superseded by the authoritative daily worklists.
-          page=re.sub(r'<script\\b[^>]*\\bsrc=["\\\'][^"\\\']*outstanding-daily-checklist\\.js[^"\\\']*["\\\'][^>]*>\\s*</script>','',page)
+          page=re.sub(r'<script[^>]*outstanding-daily-checklist[.]js[^>]*></script>','',page)
           # Preserve one copy of each in-use external asset and apply current revision.
           assets={
             'compact-workspace.js':'20261109-clean10',
@@ -31,15 +31,15 @@ jobs:
             'scorecard-source-summary.js':'20261109-source1',
           }
           for filename,revision in assets.items():
-              page=re.sub(r'<script\\b[^>]*\\bsrc=["\\\'][^"\\\']*'+re.escape(filename)+r'[^"\\\']*["\\\'][^>]*>\\s*</script>','',page)
+              page=re.sub(r'<script[^>]*'+re.escape(filename)+r'[^>]*></script>','',page)
               asset='<script defer src="./ui/'+filename+'?v='+revision+'"></script>'
               if '</body>' not in page:
                   raise SystemExit('Missing body close; not modifying homepage')
               page=page.replace('</body>',asset+'</body>',1)
           # Original installer added this identical rule repeatedly outside the body.
-          style_re=r'<style\\s+id=["\\\']rm-uniform-prospecting-row["\\\']>[\\s\\S]*?</style>'
-          blocks=re.findall(style_re,page)
-          page=re.sub(style_re,'',page)
+          style_re=r'<style[^>]*id="rm-uniform-prospecting-row"[^>]*>.*?</style>'
+          blocks=re.findall(style_re,page,flags=re.S)
+          page=re.sub(style_re,'',page,flags=re.S)
           if blocks:
               page=page.replace('</head>',blocks[-1]+'</head>',1)
           path.write_text(page,encoding='utf-8')
