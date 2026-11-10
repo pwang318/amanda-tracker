@@ -76,6 +76,8 @@ styles.textContent=[
 '#rmExecutionPlan .execAssignmentAction{background:#fbf8ff;border:1px solid #ceb9e9;border-radius:11px;padding:15px;margin:12px 0}',
 '#rmExecutionPlan .execAssignmentAction[hidden]{display:none!important}',
 '#rmExecutionPlan .execAssignmentAction textarea{display:block;width:100%;box-sizing:border-box;min-height:68px;margin:5px 0 9px;border:1px solid #d9cde7;border-radius:7px;padding:8px}',
+'#rmExecutionPlan #execWhatsAppTemplate{margin:15px 0;scroll-margin-top:20px}',
+'#rmExecutionPlan #execWhatsAppTemplate input,#rmExecutionPlan #execWhatsAppTemplate select{box-sizing:border-box;width:100%;padding:9px;border:1px solid #d9cde7;border-radius:7px}',
 '#rmExecutionPlan .execDetailArea .execTasks{display:block}',
 '#rmExecutionPlan .execDetailArea .execTasks section{border:0;padding:0}',
 '#rmExecutionPlan .execDetailArea .execTasks ul{max-height:none;overflow:visible}',
@@ -229,7 +231,7 @@ function mount(){
  div.innerHTML='<div id="execQuickLog" class="execQuickLog"><div><strong>Log Activity</strong><span>Calls, new Realtor outreach, messages and meetings</span></div><button type="button" id="execQuickLogBtn">+ Log Activity</button></div><div class="execRow"><div><h2>Today’s workday</h2><p>Start with what is due, then work your prospecting and relationship lists.</p></div><button id="execReload" type="button">Refresh live activity</button></div>'+
  '<div id="execSourceStatus" class="execSourceStatus" role="status">Checking live data…</div><div id="execNotice" class="execNotice">Loading shared activity and schedule…</div>'+
  '<div id="execTimedNudge" role="status" aria-live="polite"></div>'+
- '<div class="execSectionTitle"><span class="execStep">1</span><h3>Start here · Today’s priorities</h3></div><div id="execPriorities" class="execNotice" aria-live="polite"></div><div class="execSectionTitle"><span class="execStep">2</span><h3>Prospect and grow</h3></div><div id="execProspecting" class="execNotice" aria-live="polite"></div><details id="execInlineProspects" class="execInlineProspects"><summary>New Realtor prospecting · view call list</summary><div id="execInlineProspectContent" class="execNotice">Open this section to load Realtors from the Pipeline call list.</div></details><div class="execHomeWork" id="execHomeWork"><h3>Relationship worklists</h3><div id="execCategoryGrid" class="execCategoryGrid"></div></div><details id="execRecentDisclosure"><summary>Recent activity</summary><section id="execActivityTimeline" class="execTimeline"><div class="execRow"><h3>Activity log</h3><button type="button" id="execActivityAll">View all activity</button></div><div id="execTimelineRows">Loading activity…</div></section></details><div class="execSectionTitle execWeeklyTitle"><span class="execStep">3</span><h3>Weekly progress</h3></div><div id="execMetrics" class="execMetrics"></div><details id="execMoreMetrics"><summary>More work and activity details</summary><div id="execSecondaryMetrics" class="execMetrics"></div></details><details id="execWeeklyDisclosure" class="execTaskDetails"><summary>Weekly activity details</summary><div id="execWeeklyGoals" class="execNotice" aria-live="polite"></div></details>'+ '<details id="execBusinessDetails"><summary>Business results: meetings, referrals, and C-to-B growth</summary><div id="execBusinessResults" class="execNotice">Checking source records…</div></details>'+
+ '<div class="execSectionTitle"><span class="execStep">1</span><h3>Start here · Today’s priorities</h3></div><div id="execPriorities" class="execNotice" aria-live="polite"></div><div class="execSectionTitle"><span class="execStep">2</span><h3>Prospect and grow</h3></div><div id="execProspecting" class="execNotice" aria-live="polite"></div><details id="execInlineProspects" class="execInlineProspects"><summary>New Realtor prospecting · view call list</summary><div id="execInlineProspectContent" class="execNotice">Open this section to load Realtors from the Pipeline call list.</div></details><div class="execHomeWork" id="execHomeWork"><h3>Relationship worklists</h3><div class="execRow"><button type="button" id="execWhatsAppCtc">Copy-ready CTC update</button><button type="button" id="execWhatsAppContract">Copy-ready New Contract update</button></div><div id="execCategoryGrid" class="execCategoryGrid"></div></div><details id="execRecentDisclosure"><summary>Recent activity</summary><section id="execActivityTimeline" class="execTimeline"><div class="execRow"><h3>Activity log</h3><button type="button" id="execActivityAll">View all activity</button></div><div id="execTimelineRows">Loading activity…</div></section></details><div class="execSectionTitle execWeeklyTitle"><span class="execStep">3</span><h3>Weekly progress</h3></div><div id="execMetrics" class="execMetrics"></div><details id="execMoreMetrics"><summary>More work and activity details</summary><div id="execSecondaryMetrics" class="execMetrics"></div></details><details id="execWeeklyDisclosure" class="execTaskDetails"><summary>Weekly activity details</summary><div id="execWeeklyGoals" class="execNotice" aria-live="polite"></div></details>'+ '<details id="execBusinessDetails"><summary>Business results: meetings, referrals, and C-to-B growth</summary><div id="execBusinessResults" class="execNotice">Checking source records…</div></details>'+
  
  '<div class="execDetailArea" id="execDetailArea" hidden><button type="button" id="execBack" class="execBack">← Back to Today</button><div class="execRow"><h3 id="execDetailTitle"></h3><button type="button" id="execDetailRefresh">Refresh worklist</button></div><div id="execTaskSummary" class="execTasks"></div></div>'+
  '<details id="execCloseout"><summary>End-of-day review</summary><div id="execMissedSummary" class="execNotice" aria-live="polite"></div>'+
@@ -250,6 +252,8 @@ function mount(){
  };
  $('execReload').onclick=()=>refresh(true);
  $('execDetailRefresh').onclick=()=>refresh(true);
+ $('execWhatsAppCtc').onclick=()=>openManagementTemplate('ctc');
+ $('execWhatsAppContract').onclick=()=>openManagementTemplate('contract');
  $('execBack').onclick=()=>showDetail(null);
  $('execSaveCloseout').onclick=saveCloseout;
  $('execSaveOOO').onclick=saveOOO;
@@ -312,6 +316,44 @@ async function refresh(force=false){
   const el=$('execNotice');if(el){el.textContent='Unable to verify live work and daily goals. '+String(e.message||e)+'. Please refresh; no zero counts substituted.';el.className='execNotice execWarn'}
  }finally{working=false}
 }
+function openManagementTemplate(kind,assignment){
+ const isCtc=kind==='ctc',type=isCtc?'CLEAR TO CLOSE!':'NEW CONTRACT!';
+ let wrap=$('execWhatsAppTemplate');
+ if(!wrap){wrap=document.createElement('section');wrap.id='execWhatsAppTemplate';wrap.className='execAssignmentAction';$('rmExecutionPlan')?.append(wrap)}
+ if(!wrap)return;
+ wrap.innerHTML='<div class="execRow"><strong>'+safe(type)+' · Management WhatsApp update</strong><button type="button" id="execWaClose">Close</button></div>'+
+ '<p>Complete the details from the actual file and both Realtor conversations. Missing values remain blank or marked not worked; nothing is inferred from an unrelated record.</p>'+
+ '<div class="execForm"><label>Client<input id="execWaClient" placeholder="Client full name"></label><label>Property<input id="execWaProperty" placeholder="Property address"></label></div>'+
+ '<div class="execForm"><label>Buyer Agent<input id="execWaBuyer" placeholder="Buyer agent name"></label><label>Buyer phone<input id="execWaBuyerPhone" placeholder="Phone"></label></div>'+
+ '<div class="execForm"><label>Buyer contact<select id="execWaBuyerStatus"><option>Not worked yet</option><option>Connected</option><option>Voicemail</option><option>Text sent</option><option>No answer</option></select></label></div>'+
+ '<label>Buyer feedback<textarea id="execWaBuyerFeedback" rows="2" placeholder="What the buyer agent said"></textarea></label>'+
+ '<div class="execForm"><label>Listing Agent<input id="execWaListing" placeholder="Listing agent name"></label><label>Listing phone<input id="execWaListingPhone" placeholder="Phone"></label></div>'+
+ '<div class="execForm"><label>Listing contact<select id="execWaListingStatus"><option>Not worked yet</option><option>Connected</option><option>Voicemail</option><option>Text sent</option><option>No answer</option></select></label></div>'+
+ '<label>Listing feedback<textarea id="execWaListingFeedback" rows="2" placeholder="What the listing agent said"></textarea></label>'+
+ '<div class="execForm"><label>Estimated closing date<input type="date" id="execWaClosing"></label></div>'+
+ '<label>Additional note<textarea id="execWaNote" rows="2" placeholder="Milestone, next step, or other notes"></textarea></label>'+
+ '<div class="execRow"><button type="button" id="execWaCopy">Copy WhatsApp update</button><span id="execWaStatus" role="status"></span></div>'+
+ '<textarea id="execWaPreview" rows="14" readonly aria-label="WhatsApp message preview"></textarea>';
+ const val=id=>String($(id)?.value||'').trim();
+ const format=()=>{
+  const field=id=>val(id)||'—';
+  const date=val('execWaClosing');
+  const note=[date?'Est close '+date:'',val('execWaNote')].filter(Boolean).join(' | ')||'—';
+  return [type,'','Client: '+field('execWaClient'),'','Property: '+field('execWaProperty'),'','Buyer Agent: '+field('execWaBuyer')+' | '+field('execWaBuyerPhone'),'Contact: '+val('execWaBuyerStatus'),'Feedback: '+field('execWaBuyerFeedback'),'','Listing Agent: '+field('execWaListing')+' | '+field('execWaListingPhone'),'Contact: '+val('execWaListingStatus'),'Feedback: '+field('execWaListingFeedback'),'','Note: '+note].join('\n');
+ };
+ const update=()=>{$('execWaPreview').value=format()};
+ wrap.querySelectorAll('input,textarea,select').forEach(el=>{if(el.id!=='execWaPreview')el.addEventListener('input',update)});
+ $('execWaClose').onclick=()=>{wrap.hidden=true};
+ $('execWaCopy').onclick=async()=>{
+  const status=$('execWaStatus'),preview=$('execWaPreview'),value=format();
+  try{
+   if(!navigator.clipboard?.writeText)throw Error('Clipboard permission unavailable');
+   await navigator.clipboard.writeText(value);
+   status.textContent='Copied. Paste into the management WhatsApp group.';
+  }catch(err){preview.focus();preview.select();status.textContent='Automatic copy unavailable. Select and copy the preview below.'}
+ };
+ wrap.hidden=false;update();wrap.scrollIntoView({behavior:'smooth',block:'start'});
+}
 function openTask(q){
  const name=String(q.agent_name||q['Agent / Item']||'').trim();
  const type=String(q.Category||q.activity_type||'Assigned Follow-up').trim();
@@ -327,6 +369,9 @@ function openTask(q){
  (!q.id?'<small>This item came from a supplemental worklist; saving activity cannot automatically clear it without a matching queue record.</small>':'');
  panel.hidden=false;panel.scrollIntoView({behavior:'smooth',block:'nearest'});
  $('execAssignmentCancel').onclick=()=>{panel.hidden=true};
+ if(/\bctc\b|clear[ -]?to[ -]?close|new[ -]?contract|under contract/i.test(type)){
+  const button=document.createElement('button');button.type='button';button.textContent='Prepare WhatsApp management update';button.onclick=()=>openManagementTemplate(/\bctc\b|clear[ -]?to[ -]?close/i.test(type)?'ctc':'contract',q);panel.append(button);
+ }
  $('execAssignmentProfile').onclick=()=>{if(name&&typeof window.openContactModal==='function')window.openContactModal(name);else if(typeof window.switchTab==='function')window.switchTab('contacts')};
  $('execAssignmentSave').onclick=async()=>{
   const outcome=$('execAssignmentOutcome').value,notes=$('execAssignmentNotes').value.trim(),follow=$('execAssignmentFollowup').value,status=$('execAssignmentStatus'),button=$('execAssignmentSave');
