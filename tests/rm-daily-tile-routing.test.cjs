@@ -189,3 +189,10 @@ assert(!code.includes('navigator.clipboard.writeText(value)'),'Retire competing 
  assert(code.includes('holder.hidden=false;'),'Manager review clicks must reveal the task completion panel');
  assert(code.includes("if($('execHomeWork'))$('execHomeWork').hidden=true"),'Assignment action must be visible');
  assert(code.includes('data-carry-open')&&code.includes('Log activity / Complete ↗'),'Manager review must use same completion workflow');
+
+assert(code.includes("if(category==='CTC calls')return openManagementTemplate('ctc')"),'CTC tile must use original imported file workbench');
+assert(code.includes("if(category==='New contract calls')return openManagementTemplate('contract')"),'New Contract tile must use original imported file workbench');
+assert(code.includes("return openManagementTemplate('ctc',q)"),'CTC assignment cannot show generic completion form');
+assert(code.includes("return openManagementTemplate('contract',q)"),'New Contract assignment cannot show generic completion form');
+assert(code.includes("String(modal.dataset.txnId||'')!==file.id"),'Original workbench must verify exact transaction ID');
+assert(code.includes("Open imported files"),'CTC and Contract tiles must not report stale generic queue counts as active loans');
