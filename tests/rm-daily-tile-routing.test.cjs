@@ -155,5 +155,8 @@ assert(code.includes("group[0]!=='New Realtor outreach assignments'"), 'Do not d
 assert(code.includes("id=\"execCatchupList\""), 'Catch-up work remains available in primary work order');
 
 assert(code.includes('id="execInlineProspects"'),'One Realtor call-list section stays in Prospect & Grow');
+assert(code.includes('worklistExplanation(group[0],group[1])'),'Each category displays why its Realtors are listed and what to do');
+assert(code.includes('Why here:')&&code.includes('Next action:'),'Each assignment labels its reason and expected next action');
+assert(code.includes("'4-week campaigns':")&&code.includes("'Weekly Realtor calls':")&&code.includes("'Portfolio attention reviews':"),'All key relationship categories have clear instructions');
 assert(!code.includes('id="execProspectShortcut"'),'Redundant Realtor prospect shortcut must not render');
 assert(code.includes("undated.length?'<div class="),'No empty Needs Scheduling tile on daily homepage');
