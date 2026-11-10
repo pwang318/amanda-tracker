@@ -48,11 +48,14 @@ async function load(force){
  try{
   if(typeof sbFetch!=='function')throw Error('Shared report connection unavailable');
   const month=new Date(),start=month.getFullYear()+'-'+String(month.getMonth()+1).padStart(2,'0')+'-01';
-  const [imports,leads,history]=await Promise.all([
+  const results=await Promise.allSettled([
    sbFetch('powerbi_import_log?select=imported_at,source_app,rows_processed,errors&source_app=like.core-team-tracker%25&order=imported_at.desc&limit=1'),
    sbFetch('velocify_leads?date_added=gte.'+start+'&select=lead_key,referral_partner_name,date_added&limit=10000'),
    sbFetch('scorecard_history?select=weighted,month_key,saved_at,save_type&month_key=eq.'+start.slice(0,7)+'&order=saved_at.desc&limit=1')
   ]);
+  const imports=results[0].status==='fulfilled'?results[0].value:[];
+  const leads=results[1].status==='fulfilled'?results[1].value:[];
+  const history=results[2].status==='fulfilled'?results[2].value:[];
   if(!Array.isArray(imports)||!imports.length)throw Error('Power BI import receipt not available');
   if(String(imports[0].errors||'0')!=='0')throw Error('Latest import did not finish cleanly');
   const log=imports[0],text=String(log.source_app||'');
