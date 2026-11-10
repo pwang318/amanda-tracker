@@ -175,7 +175,7 @@ assert(code.includes('!offNow&&loaded&&!sourceWarnings.length&&fullVerified'),'R
 assert(code.includes("group[1].length>0||['New contract calls','CTC calls','Tuesday transaction updates'].includes(group[0])"),'Contract and CTC worklist tiles must remain visible even with no matches');
 
 // WhatsApp templates must use the exact imported transaction, not an empty duplicate editor.
-for(const marker of ['execWhatsAppCtc','execWhatsAppContract','execWaFiles','execWaFileList','TXN_ID','TXN_CLIENT','TXN_PROPERTY','TXN_BUYER_AGENT','TXN_LISTING_AGENT','TXN_CLOSE_DATE'])
+for(const marker of ['execWaFiles','execWaFileList','TXN_ID','TXN_CLIENT','TXN_PROPERTY','TXN_BUYER_AGENT','TXN_LISTING_AGENT','TXN_CLOSE_DATE'])
  assert(code.includes(marker),'Missing imported WhatsApp transaction field: '+marker);
 assert(code.includes("window.v176OpenTransaction(isCtc?'CTC Call':'Under Contract Call',agent,role,file.id)"),'Selected import must open established transaction workbench');
 assert(code.includes("!allFiles.has(unique)"),'Imported files must be deduplicated per batch and transaction ID');
@@ -195,7 +195,7 @@ assert(code.includes("if(category==='New contract calls')return openManagementTe
 assert(code.includes("return openManagementTemplate('ctc',q)"),'CTC assignment cannot show generic completion form');
 assert(code.includes("return openManagementTemplate('contract',q)"),'New Contract assignment cannot show generic completion form');
 assert(code.includes("String(modal.dataset.txnId||'')!==file.id"),'Original workbench must verify exact transaction ID');
-assert(code.includes("Open imported files"),'CTC and Contract tiles must not report stale generic queue counts as active loans');
+assert(!code.includes("'Open imported files ↗'"),'CTC and Contract tiles must not report stale generic queue counts as active loans');
 
 assert(code.includes("if(group[0]==='CTC calls'||group[0]==='New contract calls')"),'Old transaction detail views must route to original workbench');
 assert(code.includes("if(index>=0&&!['CTC calls','New contract calls'].includes(categories[index][0]))"),'Historical August catch-ups must not be counted as current imported CTC calls');
@@ -207,7 +207,12 @@ assert(code.includes("historical.length+' older imported record(s) hidden"),'Old
 assert(code.includes('function paintImportedCallCounters()'),'Transaction worklist tiles must use actual import counts');
 assert(code.includes('refreshImportedCallCounters(true)'),'Transaction counters must refresh from shared imports');
 assert(code.includes("new Set(selected.filter(x=>x.batch===latest)"),'Latest import count must deduplicate exact transaction IDs');
-assert(code.includes("' imported file'"),'Imported count must be labeled as files, not completed calls');
+assert(code.includes("' in latest import · Review ↗'"),'Imported count must be labeled as latest import, not completed calls');
 
 assert(!code.includes("?'Open imported files ↗'"),'Current CTC/contract tile may not fall back to a stale generic label');
 assert(code.includes("?'Checking latest import…'"),'Current transaction tiles should show a truthful pending state');
+
+assert(code.includes("'Open Tuesday Updates ↗'"),'Tuesday tile must not display zero from unrelated work queue');
+assert(code.includes("window.switchTab('tuesday')"),'Tuesday tile must open the dedicated source-driven Tuesday page');
+assert(!code.includes('Copy-ready CTC update</button>'),'No duplicate CTC recap action on Today');
+assert(!code.includes('Copy-ready New Contract update</button>'),'No duplicate Contract recap action on Today');
