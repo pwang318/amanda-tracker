@@ -143,3 +143,7 @@ assert(code.includes('data-carry-reason')&&code.includes('data-carry-next'),'Car
 assert(code.includes('carry_forward_logged_at:new Date().toISOString()'),'Saved carry-forward comments have timestamps');
 assert(code.includes('Save could not be verified'),'Carry-forward writes require response verification');
 assert(code.includes('Explanations never mark assignments completed'),'Carry-forward explanation does not close work');
+
+assert(code.includes('Other open portfolio work — managed in worklists'), 'Manager review includes supplemental worklist assignments');
+assert(code.includes('data-carry-open'), 'Manager review can open specific Realtor records');
+assert(code.includes('managerTasks[Number(button.getAttribute'), 'Manager-review navigation maps each tile to its own assignment');
