@@ -17603,7 +17603,7 @@ const roleOf=notes=>{const m=String(notes||'').match(/\[TXN_ROLE:([^\]]+)\]/i);r
 const idOf=notes=>{const m=String(notes||'').match(/\[TXN_ID:([^\]]+)\]/i);return m?m[1].trim():''};
 const todayS=()=>{try{return typeof today==='function'?today():new Date().toISOString().slice(0,10)}catch(e){return new Date().toISOString().slice(0,10)}};
 let state={kind:null,file:null,rows:[],raw:0,merged:0,importable:0,tasks:0,skipped:0,existing:0,verifyError:''};
-function placeholder(v){const s=norm(v).replace(/\s/g,'');return !s||['na','n/a','none','null','unknown','tbd','fsbo','noagent','notapplicable','unrepresented','000','0000'].includes(s)}
+function placeholder(v){const s=norm(v).replace(/\s/g,'');return !s||['na','n/a','none','nonenone','null','unknown','tbd','fsbo','noagent','notapplicable','unrepresented','000','0000','0000000000'].includes(s)}
 function cleanName(v){const s=token(v);return placeholder(s)?'':s}
 function cleanPhone(v){const s=token(v);if(!s)return'';const d=s.replace(/\D/g,'');if(d.length<7||/^0+$/.test(d)||/^(\d)\1+$/.test(d))return'';return s}
 function cleanEmail(v){const s=token(v).toLowerCase();if(!s||!s.includes('@')||/^(noagent|fsbo)@/i.test(s))return'';return s}
