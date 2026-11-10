@@ -15,6 +15,7 @@ style.textContent=[
  '#view-week h1,#view-week h2,#view-week h3,#view-week p,#view-week button,#view-week span,#view-scorecard h1,#view-scorecard h2,#view-scorecard p{overflow-wrap:break-word;word-break:normal;white-space:normal}',
  '#view-week [class*="tile"],#view-week [class*="card"],#view-week [class*="metric"]{min-width:0}',
  '#rmSharedPowerBiWarning{position:static!important;z-index:auto!important;white-space:normal!important;overflow-wrap:anywhere!important;line-height:1.45!important;max-width:100%!important}',
+ 'body:not([data-rm-tab="director"]) #rmSharedPowerBiWarning{display:none!important;visibility:hidden!important;pointer-events:none!important}',
  '#rmTopActivityShortcut{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin:12px 0;padding:14px 16px;border:1px solid #e5ddec;background:#faf8fd;border-radius:12px;color:#271c40}',
  '#rmTopActivityShortcut strong{font-size:16px}',
  '#rmTopActivityShortcut button{border:1px solid #a48ac6;background:#68429b;color:white;border-radius:9px;padding:10px 16px;cursor:pointer;font-weight:600}',
@@ -47,8 +48,23 @@ function findActivityCard(today){
  }
  return null;
 }
+function moveTodayAboveScorecard(today){
+ const headers=[...today.querySelectorAll('h1,h2,h3')];
+ const title=headers.find(el=>/^today$/i.test((el.textContent||'').trim())&&!el.closest('#rmExecutionPlan'));
+ const score=headers.find(el=>/^scorecard progress$/i.test((el.textContent||'').trim()));
+ if(!title||!score||title===score)return;
+ const ancestors=new Set();for(let n=title;n&&n!==today.parentElement;n=n.parentElement)ancestors.add(n);
+ let shared=score;while(shared&&!ancestors.has(shared))shared=shared.parentElement;
+ if(!shared||shared===title||shared===score||!today.contains(shared))return;
+ const branchUnder=(node,parent)=>{let n=node;while(n&&n.parentElement!==parent)n=n.parentElement;return n};
+ const todayCard=branchUnder(title,shared),scoreCard=branchUnder(score,shared);
+ if(!todayCard||!scoreCard||todayCard===scoreCard||todayCard.parentElement!==scoreCard.parentElement)return;
+ if((scoreCard.compareDocumentPosition(todayCard)&Node.DOCUMENT_POSITION_FOLLOWING)!==0)return;
+ shared.insertBefore(todayCard,scoreCard);
+}
 function mount(){
  const today=document.getElementById('view-week');if(!today)return;
+ moveTodayAboveScorecard(today);
  // Director diagnostics remain in the Director view; suppress RM floating alerts.
  const directorVisible=document.body.dataset.rmTab==='director';
  if(!directorVisible){
