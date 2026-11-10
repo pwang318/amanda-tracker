@@ -57,6 +57,13 @@ styles.textContent=[
 '#rmExecutionPlan .execMetric span{font-size:11px;color:#645674}',
 '#rmExecutionPlan .execNotice{border-radius:9px;padding:10px 12px;background:#f8f4fb;color:#573877;font-size:12px;line-height:1.5;margin:10px 0}',
 '#rmExecutionPlan .execWarn{background:#fff8ee;color:#795028}',
+ '#rmExecutionPlan .execQuickLog{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;padding:15px 17px;margin:0 0 14px;border:1px solid #d9c9ec;border-radius:12px;background:#f5f0fa}',
+ '#rmExecutionPlan .execQuickLog strong{display:block;font-size:17px;color:#311b50;margin-bottom:3px}',
+ '#rmExecutionPlan .execQuickLog span{display:block;font-size:12px;line-height:1.4;color:#715e86}',
+ '#rmExecutionPlan #execQuickLogBtn{background:#67419a;color:#fff;border-color:#67419a;font-size:14px;font-weight:750;padding:12px 20px;min-height:44px}',
+ '#rmExecutionPlan .execTimeline{margin:9px 0;padding:10px 14px}',
+ '#rmExecutionPlan .execTimelineItem{padding:7px 0;grid-template-columns:75px minmax(0,1fr)}',
+ '@media(max-width:540px){#rmExecutionPlan #execQuickLogBtn{width:100%}}',
  '#rmExecutionPlan #execMoreMetrics{display:none!important}',
  '#rmExecutionPlan #execOutreach{background:#f6f2fb;border:1px solid #e1d7ee}',
  '#rmExecutionPlan .execTimeline{border:1px solid #e8dff0;border-radius:11px;padding:14px;margin:12px 0;background:#fff}',
@@ -123,7 +130,7 @@ function mount(){
  const board=$('rm350Workboard')||$('view-week');if(!board)return;
  const existing=$('rmExecutionPlan');if(existing){if(existing.parentElement!==board)board.prepend(existing);if(loaded&&board.id==='rm350Workboard')board.classList.add('rmExecReady');return;}
  const div=document.createElement('section');div.id='rmExecutionPlan';
- div.innerHTML='<div class="execRow"><div><h2>Today’s plan</h2><p>Your daily goals, open work, completed activity, and next steps.</p></div><button id="execReload" type="button">Refresh live activity</button></div>'+
+ div.innerHTML='<div id="execQuickLog" class="execQuickLog"><div><strong>Log Activity</strong><span>Calls, new Realtor outreach, messages and meetings</span></div><button type="button" id="execQuickLogBtn">+ Log Activity</button></div><div class="execRow"><div><h2>Today’s plan</h2><p>Your daily goals, open work, completed activity, and next steps.</p></div><button id="execReload" type="button">Refresh live activity</button></div>'+
  '<div id="execNotice" class="execNotice">Loading shared activity and schedule…</div>'+
  '<div id="execProspecting" class="execNotice" aria-live="polite"></div><div id="execOutreach" class="execNotice"></div><section id="execActivityTimeline" class="execTimeline"><div class="execRow"><h3>Today’s activity</h3><button type="button" id="execActivityAll">View all activity</button></div><div id="execTimelineRows">Loading activity…</div></section><div class="execHomeWork" id="execHomeWork"><h3>Open work</h3><div id="execCategoryGrid" class="execCategoryGrid"></div></div><div id="execPriorities" class="execNotice" aria-live="polite"></div><div id="execMetrics" class="execMetrics"></div><details id="execMoreMetrics" hidden><summary>More activity details</summary><div id="execSecondaryMetrics" class="execMetrics"></div></details><div id="execWeeklyGoals" class="execNotice" aria-live="polite"></div>'+ '<details id="execBusinessDetails"><summary>Business results · meetings, referrals & C-to-B growth</summary><div id="execBusinessResults" class="execNotice">Checking source records…</div></details>'+
  
@@ -140,6 +147,10 @@ function mount(){
  '<details id="execCoaching"><summary>Director coaching</summary><div id="execTrends">Loading trend…</div></details>';
  // The RM workboard is the only visible direct child of Today: its siblings are intentionally hidden by the existing layout CSS.
  board.prepend(div);
+ $('execQuickLogBtn').onclick=()=>{
+  if(typeof window.switchTab==='function'){window.switchTab('log');return}
+  const log=$('view-log');if(log){log.scrollIntoView({behavior:'smooth',block:'start'});log.querySelector('input:not([type="hidden"])')?.focus({preventScroll:true})}
+ };
  $('execReload').onclick=()=>refresh(true);
  $('execDetailRefresh').onclick=()=>refresh(true);
  $('execBack').onclick=()=>showDetail(null);
@@ -339,7 +350,7 @@ function render(){
  $('execProspectLog').onclick=()=>{if(typeof window.switchTab==='function')window.switchTab('log');const agent=$('rmFastAgent')||$('agentInput');if(agent)agent.focus()};
  $('execProspectTime').onclick=()=>{$('execCloseout').open=true;$('execCloseout').scrollIntoView({behavior:'smooth',block:'center'});$('execMinutes').focus()};
  const outreach=$('execOutreach');if(outreach){outreach.innerHTML='<div class="execRow"><div><strong>New Realtor outreach</strong><p>'+cold+' cold calls logged today · Goal: at least 25 calls and 60 minutes</p></div><button type="button" id="execOutreachLog">Log outreach</button></div>';const b=$('execOutreachLog');if(b)b.onclick=()=>{if(typeof window.switchTab==='function')window.switchTab('log');($('rmFastAgent')||$('agentInput'))?.focus()}}
- const timeline=$('execTimelineRows');if(timeline){const todayRows=activeFor(d).slice().sort((a,b)=>String(b.created_at||b.act_date||'').localeCompare(String(a.created_at||a.act_date||'')));timeline.innerHTML=todayRows.length?todayRows.slice(0,30).map(a=>{const when=a.created_at?new Date(a.created_at):null;const time=when&&!Number.isNaN(when.valueOf())?when.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'}):'Time unavailable';return '<div class="execTimelineItem"><time>'+safe(time)+'</time><div><strong>'+safe(a.agent_name||'Agent not specified')+'</strong><span>'+safe([a.act_type,a.outcome].filter(Boolean).join(' · ')||'Activity logged')+'</span></div></div>'}).join(''):'<p>No activity recorded today yet.</p>';const all=$('execActivityAll');if(all)all.onclick=()=>showDetail('activity:all')}
+ const timeline=$('execTimelineRows');if(timeline){const todayRows=activeFor(d).slice().sort((a,b)=>String(b.created_at||b.act_date||'').localeCompare(String(a.created_at||a.act_date||'')));timeline.innerHTML=todayRows.length?todayRows.slice(0,3).map(a=>{const when=a.created_at?new Date(a.created_at):null;const time=when&&!Number.isNaN(when.valueOf())?when.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'}):'Time unavailable';return '<div class="execTimelineItem"><time>'+safe(time)+'</time><div><strong>'+safe(a.agent_name||'Agent not specified')+'</strong><span>'+safe([a.act_type,a.outcome].filter(Boolean).join(' · ')||'Activity logged')+'</span></div></div>'}).join(''):'<p>No activity recorded today yet.</p>';const all=$('execActivityAll');if(all){all.textContent='View all activity ('+todayRows.length+')';all.onclick=()=>showDetail('activity:all')}}
 
  const priorityBox=$('execPriorities');
  priorityBox.innerHTML='<div class="execRow"><strong>Deadline check</strong><div><button type="button" id="execDueList">Due today · '+need.length+' ('+todayCampaigns.length+' campaigns, '+todayOther.length+' other)</button> <button type="button" id="execOverdueList">Overdue · '+late.length+'</button></div></div>';
