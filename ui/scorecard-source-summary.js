@@ -53,6 +53,7 @@ function liveScoreFromNative(){
  if(!Number.isFinite(total))return null;
  return {total,tierPts,ratioPts,activePts,projected,denominator};
 }
+// No weighted score is inferred when the authoritative scorecard data is unavailable.
 // Practical scorecard planning is sourced from the same live model as the weighted score.
 function renderPathTo85(live){
  const hosts=['rm85Roadmap','rm85RoadmapScorecard'].map(id=>document.getElementById(id)).filter(Boolean);if(!hosts.length)return;
