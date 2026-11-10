@@ -139,20 +139,38 @@ async function quickSave(outcome){
  },500);
 }
 async function reconcile(){
- // Only identical activity types satisfy call tasks. Never automatically complete a growth plan or meeting task.
+ // A logged outcome can resolve one matching assignment, never several.
+ // Catch-up assignments may be completed early; their planned work_date is not a lock.
  const day=iso();
- const pending=await sbFetch('rm_work_queue?select=id,agent_name,activity_type,work_date,status,owner&status=eq.open&owner=eq.Amanda&limit=500');
- const eligible=cached.filter(a=>a.act_date===day&&/^(Cold Calls|Agent Talk-to|New Agent Follow-up|Reconnect Outreach)$/i.test(a.act_type||''));
+ const pending=await sbFetch('rm_work_queue?select=id,agent_name,activity_type,work_date,reason,status,owner&status=eq.open&owner=eq.Amanda&limit=2500');
+ const eligible=cached.filter(a=>a.act_date===day&&/^(Cold Calls|Agent Talk-to|New Agent Follow-up|Reconnect Outreach)$/i.test(a.act_type||'')&&String(a.outcome||'').trim());
  const alias={'agent talk-to':['agent talk-to','talk-to (text/call)','active agent talk-to'],'cold calls':['cold calls'],'new agent follow-up':['new agent follow-up'],'reconnect outreach':['reconnect outreach']};
- for(const t of (Array.isArray(pending)?pending:[])){
-  if(t.work_date&&t.work_date>day)continue;
-  const matched=eligible.some(a=>nameKey(a.agent_name)===nameKey(t.agent_name)&&
-   (alias[String(a.act_type).toLowerCase()]||[]).includes(String(t.activity_type||'').toLowerCase())&&
-   (!t.work_date||a.act_date>=t.work_date));
+ const used=new Set();
+ const ordered=(Array.isArray(pending)?pending:[]).slice().sort((a,b)=>String(a.work_date||'').localeCompare(String(b.work_date||'')));
+ let changed=0;
+ for(const t of ordered){
+  const catchup=/\\bCatch-up from\\b/i.test(String(t.reason||''));
+  if(t.work_date&&t.work_date>day&&!catchup)continue;
+  const taskType=String(t.activity_type||'').toLowerCase();
+  const matched=eligible.find(a=>{
+   const id=String(a.id||a.created_at||'')+'|'+String(a.agent_name||'');
+   if(used.has(id)||nameKey(a.agent_name)!==nameKey(t.agent_name))return false;
+   if(!(alias[String(a.act_type).toLowerCase()]||[]).includes(taskType))return false;
+   if(!catchup&&t.work_date&&a.act_date<t.work_date)return false;
+   // A voicemail is an attempt, not a completed talk-to conversation.
+   if(/talk-to/.test(taskType)&&/voicemail|no answer|not connected|left message/i.test(String(a.outcome||'')))return false;
+   return true;
+  });
   if(!matched)continue;
-  await sbFetch('rm_work_queue?id=eq.'+encodeURIComponent(t.id)+'&status=eq.open',{method:'PATCH',prefer:'return=minimal',body:JSON.stringify({status:'worked',completed_at:new Date().toISOString()})}).catch(()=>{});
+  try{
+   await sbFetch('rm_work_queue?id=eq.'+encodeURIComponent(t.id)+'&status=eq.open',{method:'PATCH',prefer:'return=minimal',body:JSON.stringify({status:'worked',completed_at:new Date().toISOString()})});
+   used.add(String(matched.id||matched.created_at||'')+'|'+String(matched.agent_name||''));
+   changed++;
+  }catch(err){console.warn('Could not verify assignment completion',t.id,err)}
  }
+ if(changed)window.dispatchEvent(new CustomEvent('rm-work-queue-changed',{detail:{count:changed}}));
 }
+
 async function refresh(force=false){
  mount();
  try{await load(force);render()}catch(e){const body=$('rmBusinessOutcomesBody');if(body)body.textContent='Unable to verify saved activity. Refresh to retry; no counts substituted.'}
