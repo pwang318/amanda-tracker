@@ -134,3 +134,12 @@ assert(code.includes('New Realtor prospecting <small>Open qualified call list</s
 assert(code.includes('<strong>Open list ↗</strong>'),'New Realtor tile must show a clear action, not the queue count');
 assert(!code.includes('New Realtor prospect list <small>Assigned outreach</small>'),'No misleading zero-review prospect tile');
 assert(code.includes("grid.querySelector('[data-outreach]')?.addEventListener('click',openProspectList)"),'Prospecting tile must navigate to the call list');
+
+assert(code.includes("group('Overdue — explanation required',overdue,true,true)"),'Manager review lists every overdue assignment');
+assert(code.includes("group('Due today — review or document a blocker',due,true,true)"),'Manager review lists every due-today assignment');
+assert(code.includes("group('Upcoming assignments',upcoming,false,false)"),'Manager review keeps future work separate');
+assert(code.includes("group('Needs scheduling',unscheduled,false,false)"),'Manager review includes undated assignments');
+assert(code.includes('data-carry-reason')&&code.includes('data-carry-next'),'Carry-forward requires both reason and next action');
+assert(code.includes('carry_forward_logged_at:new Date().toISOString()'),'Saved carry-forward comments have timestamps');
+assert(code.includes('Save could not be verified'),'Carry-forward writes require response verification');
+assert(code.includes('Explanations never mark assignments completed'),'Carry-forward explanation does not close work');
