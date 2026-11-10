@@ -73,6 +73,15 @@ styles.textContent=[
  '#rmExecutionPlan .execCatchupStatus strong{font-size:14px;color:#39205c}',
  '#rmExecutionPlan .execCatchupStatus span{font-size:12px;color:#665478;flex:1 1 210px}',
  '#rmExecutionPlan .execCatchupStatus button{min-height:40px;font-weight:700}',
+ '#rmExecutionPlan .execRegularWork{border:1px solid #ece4f4;border-radius:10px;background:#fff;padding:12px 14px;margin:12px 0}',
+ '#rmExecutionPlan .execRegularWork>.execRow>span{font-size:12px;color:#6b5d7b}',
+ '#rmExecutionPlan .execCatchupStatus{display:flex;flex-wrap:wrap;gap:10px;align-items:center}',
+ '#rmExecutionPlan .execCatchupStatus>div:first-child{flex:1 1 230px}',
+ '#rmExecutionPlan .execCatchupStatus p{margin:5px 0 0}',
+ '#rmExecutionPlan .execCatchupPreview{flex:1 1 100%;border-top:1px solid #e5d8f1;padding-top:10px}',
+ '#rmExecutionPlan .execCatchupPreview li{margin:4px 0}',
+ '#rmExecutionPlan .execCatchupPreview button{text-align:left}',
+
  '#rmExecutionPlan .execQuickLog{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;padding:15px 17px;margin:0 0 14px;border:1px solid #d9c9ec;border-radius:12px;background:#f5f0fa}',
  '#rmExecutionPlan .execQuickLog strong{display:block;font-size:17px;color:#311b50;margin-bottom:3px}',
  '#rmExecutionPlan .execQuickLog span{display:block;font-size:12px;line-height:1.4;color:#715e86}',
@@ -443,17 +452,25 @@ function render(){
  const dueCatchup=catchupRows.filter(q=>q.work_date&&q.work_date<=d).length;
  const nextCatchup=catchupRows.filter(q=>q.work_date===next).length;
  const agedOpen=late.filter(q=>{const n=(Date.parse(d+'T12:00:00')-Date.parse(q.work_date+'T12:00:00'))/86400000;return n>=3}).length;
- priorityBox.innerHTML='<div class="execRow"><div><strong>Outstanding work · '+all.length+'</strong><p>'+safe(focusTitle)+(catchupOpen?' · '+catchupOpen+' catch-up assignments still open':'')+'</p></div><div><button type="button" id="execOverdueList">Overdue · '+late.length+'</button> <button type="button" id="execDueList">Due today · '+need.length+'</button> <button type="button" id="execNextList">Next workday · '+tmrw.length+'</button></div></div>'+
- '<div class="execCatchupStatus"><strong>Catch-up progress · '+catchupDone+' / '+catchupTotal+' completed</strong><span>'+catchupOpen+' still outstanding · '+dueCatchup+' due/overdue today · '+nextCatchup+' scheduled next workday</span><button type="button" id="execCatchupList">Open all catch-up assignments ↗</button></div>'+
+ const regularFocusRows=focusRows.filter(q=>!/\\bCatch-up from\\b/i.test(String(q.reason||'')));
+ const currentRegular=regularFocusRows.filter(q=>q.work_date===d).length;
+ const regularPreview=regularFocusRows.slice(0,5);
+ const catchupPreview=catchupRows.filter(q=>q.work_date&&q.work_date<=d).sort((a,b)=>String(a.work_date).localeCompare(String(b.work_date))).slice(0,5);
+ priorityBox.innerHTML='<div class="execRow"><div><strong>Outstanding work · '+all.length+'</strong><p>Separate daily commitments and historical catch-up work below</p></div><div><button type="button" id="execOverdueList">Overdue · '+late.length+'</button> <button type="button" id="execDueList">Due today · '+need.length+'</button> <button type="button" id="execNextList">Next workday · '+tmrw.length+'</button></div></div>'+
+ '<section class="execRegularWork"><div class="execRow"><strong>Today’s regular assignments</strong><span>'+currentRegular+' due today · '+regularFocusRows.length+' due/overdue in focus</span></div>'+
+ (regularPreview.length?'<div class="execTasks"><section><ul>'+regularPreview.map((q,i)=>'<li><button type="button" class="execTaskGo" data-focus-row="'+i+'"><b>'+safe(q.agent_name||q['Agent / Item']||'Assigned agent')+'</b><span style="display:block;font-size:11px;color:#736482">'+safe(q.activity_type||q.Category||'Follow-up')+' · '+safe(q.work_date&&q.work_date<d?'Overdue':q.work_date===d?'Due today':'Due '+fmt(q.work_date||next||d))+'</span></button></li>').join('')+'</ul></section></div>':'<p>No regular assignments requiring attention in this focus window.</p>')+
+ '</section>'+
+ '<section class="execCatchupStatus"><div><strong>Historical catch-up · '+catchupDone+' / '+catchupTotal+' completed</strong><p>'+catchupOpen+' still outstanding · '+dueCatchup+' due/overdue today · '+nextCatchup+' scheduled next workday</p></div><button type="button" id="execCatchupList">Open all catch-up assignments ↗</button>'+
+ (catchupPreview.length?'<div class="execCatchupPreview"><strong>Catch-up assignments due now</strong><ul>'+catchupPreview.map((q,i)=>'<li><button type="button" class="execTaskGo" data-catchup-row="'+i+'">'+safe(q.agent_name||'Assigned agent')+' · '+safe(q.activity_type||'Follow-up')+'</button></li>').join('')+'</ul></div>':'')+'</section>'+
  (catchupSkipped?'<p class="execNotice execWarn">'+catchupSkipped+' catch-up assignments were skipped without verified completion. Director review required.</p>':'')+
  (agedOpen?'<p class="execNotice execWarn">'+agedOpen+' assignments are at least 3 days overdue. Review before taking on new optional work.</p>':'')+
- (focusRows.length?'<div class="execTasks"><section><ul>'+focusRows.slice(0,5).map((q,i)=>'<li><button type="button" class="execTaskGo" data-focus-row="'+i+'"><b>'+safe(q.agent_name||q['Agent / Item']||'Assigned agent')+'</b><span style="display:block;font-size:11px;color:#736482">'+safe(q.activity_type||q.Category||'Follow-up')+' · '+safe(q.work_date&&q.work_date<d?'Overdue':q.work_date===d?'Due today':'Due '+fmt(q.work_date||next||d))+'</span></button></li>').join('')+'</ul></section></div>':'<p>No assignments due now or on the next workday.</p>')+
- '<small>Unfinished work carries forward automatically. Log the completed outcome before marking an assignment done.</small>';
+ '<small>Incomplete assignments stay open and carry forward; a logged outcome must be reconciled before completion.</small>';
  $('execDueList').onclick=()=>showDetail('section:1');
  $('execOverdueList').onclick=()=>showDetail('section:0');
  $('execNextList').onclick=()=>showDetail('section:2');
  $('execCatchupList').onclick=()=>showDetail('category:'+(categoryRows.length-1));
- priorityBox.querySelectorAll('[data-focus-row]').forEach(b=>b.onclick=()=>{const q=focusRows[Number(b.dataset.focusRow)];if(q)openTask(q)});
+ priorityBox.querySelectorAll('[data-focus-row]').forEach(b=>b.onclick=()=>{const q=regularPreview[Number(b.dataset.focusRow)];if(q)openTask(q)});
+ priorityBox.querySelectorAll('[data-catchup-row]').forEach(b=>b.onclick=()=>{const q=catchupPreview[Number(b.dataset.catchupRow)];if(q)openTask(q)});
  priorityBox.dataset.authoritativeOpenCount=String(openQueue);
  const wg=weeklyGoals(d),weekLabel=fmt(wg.start);
  $('execWeeklyGoals').innerHTML='<strong>This week · '+safe(weekLabel)+'</strong>'+
