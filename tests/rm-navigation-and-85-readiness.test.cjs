@@ -10,8 +10,8 @@ assert(index.includes("['Must do','Get these done today',['schedule','calls','tu
 assert(!index.includes('Work Mack’s weekly listing-agent update list.'),'No stale employee name in Tuesday help');
 assert(index.includes("const level=String(r.powerbi_level||r.tier||'').trim().toUpperCase()"),'Tier drilldowns must match Power BI classification');
 assert(daily.includes("window.rmOpenProspectList=openProspectList"),'All prospect links share the verified opener');
-assert(daily.includes("data-outreach=\"true\""),'Prospect tile is actionable');
-assert(daily.includes('New Realtor prospecting <small>Open qualified call list</small>'), 'Prospect tile must describe the actual call list');
+assert(daily.includes('id="execInlineProspects"'),'In-page Realtor call-list is actionable');
+assert(daily.includes('New Realtor prospecting · view call list'), 'Single prospect section identifies actual call list');
 assert(daily.includes('<strong>Open list ↗</strong>'), 'Prospect shortcut must not show an unrelated assignment count');
 assert(!daily.includes('New Realtor prospect list <small>Assigned outreach</small>'), 'Legacy misleading zero-count label must be absent');
 assert(daily.includes('id="execMoreMetrics"><summary>'),'Supplementary metric tiles must be accessible');
