@@ -95,7 +95,7 @@ function mount(){
  const div=document.createElement('section');div.id='rmExecutionPlan';
  div.innerHTML='<div class="execRow"><div><h2>Today’s plan</h2><p>Your daily goals, open work, completed activity, and next steps.</p></div><button id="execReload" type="button">Refresh live activity</button></div>'+
  '<div id="execNotice" class="execNotice">Loading shared activity and schedule…</div>'+
- '<div id="execMetrics" class="execMetrics"></div><div id="execPriorities" class="execNotice" aria-live="polite"></div><div id="execWeeklyGoals" class="execNotice" aria-live="polite"></div>'+ '<details id="execBusinessDetails"><summary>Business results · meetings, referrals & C-to-B growth</summary><div id="execBusinessResults" class="execNotice">Checking source records…</div></details>'+
+ '<div id="execProspecting" class="execNotice" aria-live="polite"></div><div id="execMetrics" class="execMetrics"></div><div id="execPriorities" class="execNotice" aria-live="polite"></div><div id="execWeeklyGoals" class="execNotice" aria-live="polite"></div>'+ '<details id="execBusinessDetails"><summary>Business results · meetings, referrals & C-to-B growth</summary><div id="execBusinessResults" class="execNotice">Checking source records…</div></details>'+
  '<div class="execHomeWork" id="execHomeWork"><h3>Open work by category</h3><p>Choose a worklist to see the assigned agents and next actions.</p><div id="execCategoryGrid" class="execCategoryGrid"></div></div>'+
  '<div class="execDetailArea" id="execDetailArea" hidden><button type="button" id="execBack" class="execBack">← Back to Today</button><div class="execRow"><h3 id="execDetailTitle"></h3><button type="button" id="execDetailRefresh">Refresh worklist</button></div><div id="execTaskSummary" class="execTasks"></div></div>'+
  '<details id="execCloseout"><summary>Daily results & closeout · what was missed</summary><div id="execMissedSummary" class="execNotice" aria-live="polite"></div>'+
@@ -247,7 +247,9 @@ function render(){
  const cleanFull=fullWork.filter(r=>{const due=String(r['Due Date']||'').slice(0,10);return !due||due>=COACHING_START});
  const canonical=cleanFull.map(r=>({agent_name:r['Agent / Item'],activity_type:r.Category,work_date:String(r['Due Date']||'').slice(0,10),Category:r.Category,'Next Action':r['Next Action']}));
  const queueOnly=queue.filter(q=>!canonical.some(r=>String(r.agent_name||'').trim().toLowerCase()===String(q.agent_name||'').trim().toLowerCase()&&String(r.activity_type||'').toLowerCase()===String(q.activity_type||'').toLowerCase()));
- const all=fullVerified?canonical.concat(queueOnly):queue;
+ const allRaw=fullVerified?canonical.concat(queueOnly):queue;
+ const identity=q=>[String(q.agent_name||'').trim().toLowerCase(),String(q.activity_type||q.Category||'').trim().toLowerCase(),String(q.work_date||'').slice(0,10)].join('|');
+ const all=allRaw.filter((q,i,rows)=>rows.findIndex(x=>identity(x)===identity(q))===i);
  const late=all.filter(q=>q.work_date&&q.work_date>=COACHING_START&&q.work_date<d);
  const need=all.filter(q=>q.work_date===d);
  const priorities=[...late,...need].filter((q,i,arr)=>arr.findIndex(x=>String(x.agent_name||'').trim().toLowerCase()+'|'+String(x.activity_type||'').toLowerCase()+'|'+String(x.work_date||'')===String(q.agent_name||'').trim().toLowerCase()+'|'+String(q.activity_type||'').toLowerCase()+'|'+String(q.work_date||''))===i);
@@ -260,8 +262,8 @@ function render(){
  const notice=$('execNotice');notice.className='execNotice'+(offNow?'':' execWarn');
  notice.textContent=offNow?'Out of office today — no cold-call target or missed-day flag. Outstanding agent commitments still require coverage.':cold<25?'Prospecting below minimum: '+cold+' of 25 logged. The full 60-minute block is also required; actual time is not verified by call count.':'25+ calls logged. Keep the protected 60-minute prospecting block; elapsed time is not inferred.';
  const sections=[
-  ['Overdue work',late,'No overdue assigned work found in the available lists'],
-  ['Due today',need,'No dated tasks due today'],
+  ['Overdue before today',late,'No unfinished assignments dated before today'],
+  ['Due today · campaigns and other work',need,'No dated tasks due today'],
   ['Next workday · '+(next?fmt(next):'unknown'),tmrw,'No dated work scheduled for the next workday'],
   ['Upcoming dated work',thisWeek,'No other dated work scheduled in the next seven days'],
   ['Completed queue work',done,'No completed assigned queue entries verified']
@@ -288,8 +290,14 @@ function render(){
  const missingPlans=all.filter(q=>/missing growth plan/i.test(q.Category||q.activity_type||''));
  const noticeMissing=!fullVerified?' (partial)':'';
  const exactPlans=['Missing growth plans',missingPlans,'No agents with missing growth plans found in available worklists'];
+ const todayCampaigns=need.filter(q=>/4.week|campaign/i.test(q.Category||q.activity_type||''));
+ const todayOther=need.filter(q=>!/4.week|campaign/i.test(q.Category||q.activity_type||''));
+ $('execProspecting').innerHTML='<div class="execRow"><div><strong>Prospecting today</strong><p>Cold calls: <b>'+cold+' / 25 minimum</b> · Time: <b>'+(dataOf(closeRecord(d))?.prospecting_minutes==null?'Not reported':dataOf(closeRecord(d)).prospecting_minutes+' / 60 min')+'</b></p><small>Complete the full 60-minute block and report actual minutes, even if fewer than 25 calls were made.</small></div><div><button type="button" id="execProspectLog">Log cold call</button> <button type="button" id="execProspectTime">Report minutes</button></div></div>';
+ $('execProspectLog').onclick=()=>{if(typeof window.switchTab==='function')window.switchTab('log');const agent=$('rmFastAgent')||$('agentInput');if(agent)agent.focus()};
+ $('execProspectTime').onclick=()=>{$('execCloseout').open=true;$('execCloseout').scrollIntoView({behavior:'smooth',block:'center'});$('execMinutes').focus()};
+
  const priorityBox=$('execPriorities');
- priorityBox.innerHTML='<strong>Today’s priorities · '+priorities.length+' assigned</strong>'+(priorities.length?'<div class="execTasks"><section><ul>'+priorities.slice(0,6).map((q,i)=>'<li><button class="execTaskGo" type="button" data-priority="'+i+'"><b>'+safe(q.agent_name||'Agent')+'</b> · '+safe(q.activity_type||q.Category||'Follow-up')+' · '+(q.work_date<d?'Overdue':'Due today')+'</button></li>').join('')+'</ul></section></div>':'<p>'+(fullVerified?'No overdue or due-today agent tasks.':'Unable to verify all priorities — check original worklists.')+'</p>')+(priorities.length>6?'<button type="button" id="execSeeAllPriorities">View all '+priorities.length+' priorities</button>':'');
+ priorityBox.innerHTML='<strong>Due today: '+need.length+' ('+todayCampaigns.length+' campaign + '+todayOther.length+' other) · Overdue: '+late.length+'</strong>'+(priorities.length?'<div class="execTasks"><section><ul>'+priorities.slice(0,6).map((q,i)=>'<li><button class="execTaskGo" type="button" data-priority="'+i+'"><b>'+safe(q.agent_name||'Agent')+'</b> · '+safe(q.activity_type||q.Category||'Follow-up')+' · '+(q.work_date<d?'Overdue':'Due today')+'</button></li>').join('')+'</ul></section></div>':'<p>'+(fullVerified?'No overdue or due-today agent tasks.':'Unable to verify all priorities — check original worklists.')+'</p>')+(priorities.length>6?'<button type="button" id="execSeeAllPriorities">View all '+priorities.length+' priorities</button>':'');
  priorityBox.querySelectorAll('[data-priority]').forEach(b=>b.onclick=()=>openTask(priorities[Number(b.dataset.priority)]));
  const allButton=$('execSeeAllPriorities');if(allButton)allButton.onclick=()=>showDetail(late.length?'section:0':'section:1');
  const wg=weeklyGoals(d),weekLabel=fmt(wg.start);
@@ -304,10 +312,10 @@ function render(){
   ['Break Breads today',offNow?'PTO':breadFor(d)+' / 1','bread'],
   ['New meetings this week',wg.newHeld+' / '+wg.target,'weeknew'],
   ['Break Breads this week',wg.breads+' / '+wg.target,'weekbread'],
-  ['Overdue work'+noticeMissing,late.length,'section:0'],
-  ['Due today'+noticeMissing,need.length,'section:1'],
+  ['Overdue (before today)'+noticeMissing,late.length,'section:0'],
+  ['Due today · '+todayCampaigns.length+' campaigns + '+todayOther.length+' other'+noticeMissing,need.length,'section:1'],
   ['Weekly calls remaining'+noticeMissing,weekly.length,'category:2'],
-  ['4-week follow-ups'+noticeMissing,campaigns.length,'category:0'],
+  ['Open 4-week follow-ups'+noticeMissing,campaigns.length,'category:0'],
   ['Missing growth plans'+noticeMissing,missingPlans.length,'plans'],
   ['Activity logged today',activeFor(d).length,'feed']
  ].map(x=>'<div class="execMetric" role="button" tabindex="0" data-exec-target="'+safe(x[2])+'" aria-label="Open '+safe(x[0])+'"><strong>'+safe(x[1])+'</strong><span>'+safe(x[0])+' ↗</span></div>').join('');
