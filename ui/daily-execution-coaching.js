@@ -57,6 +57,13 @@ styles.textContent=[
 '#rmExecutionPlan .execMetric span{font-size:11px;color:#645674}',
 '#rmExecutionPlan .execNotice{border-radius:9px;padding:10px 12px;background:#f8f4fb;color:#573877;font-size:12px;line-height:1.5;margin:10px 0}',
 '#rmExecutionPlan .execWarn{background:#fff8ee;color:#795028}',
+ '#rmExecutionPlan #execMoreMetrics{display:none!important}',
+ '#rmExecutionPlan #execOutreach{background:#f6f2fb;border:1px solid #e1d7ee}',
+ '#rmExecutionPlan .execTimeline{border:1px solid #e8dff0;border-radius:11px;padding:14px;margin:12px 0;background:#fff}',
+ '#rmExecutionPlan .execTimelineItem{display:grid;grid-template-columns:85px minmax(0,1fr);gap:12px;border-top:1px solid #eee8f3;padding:10px 0;font-size:12px}',
+ '#rmExecutionPlan .execTimelineItem time{color:#6e5b81;white-space:nowrap}',
+ '#rmExecutionPlan .execTimelineItem strong{display:block;color:#2f2347;font-size:13px}',
+ '#rmExecutionPlan .execTimelineItem span{display:block;color:#655573;line-height:1.45;overflow-wrap:anywhere}',
  '#rmExecutionPlan .execOutcomeMetric{display:flex;flex-direction:column;align-items:flex-start;gap:5px;min-width:0;min-height:120px;white-space:normal}',
  '#rmExecutionPlan .execOutcomeMetric strong{display:block;margin:0;line-height:1.2}',
  '#rmExecutionPlan .execOutcomeMetric .execOutcomeLabel{display:block!important;position:static!important;line-height:1.35!important;margin:0!important;font-weight:650;overflow-wrap:anywhere}',
@@ -118,7 +125,7 @@ function mount(){
  const div=document.createElement('section');div.id='rmExecutionPlan';
  div.innerHTML='<div class="execRow"><div><h2>Today’s plan</h2><p>Your daily goals, open work, completed activity, and next steps.</p></div><button id="execReload" type="button">Refresh live activity</button></div>'+
  '<div id="execNotice" class="execNotice">Loading shared activity and schedule…</div>'+
- '<div id="execProspecting" class="execNotice" aria-live="polite"></div><div class="execHomeWork" id="execHomeWork"><h3>Open work</h3><div id="execCategoryGrid" class="execCategoryGrid"></div></div><div id="execPriorities" class="execNotice" aria-live="polite"></div><div id="execMetrics" class="execMetrics"></div><details id="execMoreMetrics"><summary>More activity details</summary><div id="execSecondaryMetrics" class="execMetrics"></div></details><div id="execWeeklyGoals" class="execNotice" aria-live="polite"></div>'+ '<details id="execBusinessDetails"><summary>Business results · meetings, referrals & C-to-B growth</summary><div id="execBusinessResults" class="execNotice">Checking source records…</div></details>'+
+ '<div id="execProspecting" class="execNotice" aria-live="polite"></div><div id="execOutreach" class="execNotice"></div><section id="execActivityTimeline" class="execTimeline"><div class="execRow"><h3>Today’s activity</h3><button type="button" id="execActivityAll">View all activity</button></div><div id="execTimelineRows">Loading activity…</div></section><div class="execHomeWork" id="execHomeWork"><h3>Open work</h3><div id="execCategoryGrid" class="execCategoryGrid"></div></div><div id="execPriorities" class="execNotice" aria-live="polite"></div><div id="execMetrics" class="execMetrics"></div><details id="execMoreMetrics" hidden><summary>More activity details</summary><div id="execSecondaryMetrics" class="execMetrics"></div></details><div id="execWeeklyGoals" class="execNotice" aria-live="polite"></div>'+ '<details id="execBusinessDetails"><summary>Business results · meetings, referrals & C-to-B growth</summary><div id="execBusinessResults" class="execNotice">Checking source records…</div></details>'+
  
  '<div class="execDetailArea" id="execDetailArea" hidden><button type="button" id="execBack" class="execBack">← Back to Today</button><div class="execRow"><h3 id="execDetailTitle"></h3><button type="button" id="execDetailRefresh">Refresh worklist</button></div><div id="execTaskSummary" class="execTasks"></div></div>'+
  '<details id="execCloseout"><summary>Daily results & closeout · what was missed</summary><div id="execMissedSummary" class="execNotice" aria-live="polite"></div>'+
@@ -311,7 +318,7 @@ function render(){
   ['Transaction and Tuesday updates',/transaction|contract|ctc|tuesday/i],
   ['Meetings and growth plans',/meeting|business plan|growth.*plan|growth next step/i],
   ['C-agent growth and protection',/c.agent|growth|retention|protect|promotion/i],
-  ['Outreach and reconnect',/outreach|reconnect|cold call/i]
+  ['New Realtor outreach',/outreach|reconnect|cold call/i]
  ];
  const categoryRows=categories.map(([title])=>[title,[],'No currently open items found for this category']);
  const otherRows=[];
@@ -331,6 +338,8 @@ function render(){
  $('execProspecting').innerHTML='<div class="execRow"><div><strong>Prospecting today</strong><p>Cold calls: <b>'+cold+' / 25 minimum</b> · Time: <b>'+(dataOf(closeRecord(d))?.prospecting_minutes==null?'Not reported':dataOf(closeRecord(d)).prospecting_minutes+' / 60 min')+'</b></p><small>Complete the full 60-minute block and report actual minutes, even if fewer than 25 calls were made.</small></div><div><button type="button" id="execProspectLog">Log cold call</button> <button type="button" id="execProspectTime">Report minutes</button></div></div>';
  $('execProspectLog').onclick=()=>{if(typeof window.switchTab==='function')window.switchTab('log');const agent=$('rmFastAgent')||$('agentInput');if(agent)agent.focus()};
  $('execProspectTime').onclick=()=>{$('execCloseout').open=true;$('execCloseout').scrollIntoView({behavior:'smooth',block:'center'});$('execMinutes').focus()};
+ const outreach=$('execOutreach');if(outreach){outreach.innerHTML='<div class="execRow"><div><strong>New Realtor outreach</strong><p>'+cold+' cold calls logged today · Goal: at least 25 calls and 60 minutes</p></div><button type="button" id="execOutreachLog">Log outreach</button></div>';const b=$('execOutreachLog');if(b)b.onclick=()=>{if(typeof window.switchTab==='function')window.switchTab('log');($('rmFastAgent')||$('agentInput'))?.focus()}}
+ const timeline=$('execTimelineRows');if(timeline){const todayRows=activeFor(d).slice().sort((a,b)=>String(b.created_at||b.act_date||'').localeCompare(String(a.created_at||a.act_date||'')));timeline.innerHTML=todayRows.length?todayRows.slice(0,30).map(a=>{const when=a.created_at?new Date(a.created_at):null;const time=when&&!Number.isNaN(when.valueOf())?when.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'}):'Time unavailable';return '<div class="execTimelineItem"><time>'+safe(time)+'</time><div><strong>'+safe(a.agent_name||'Agent not specified')+'</strong><span>'+safe([a.act_type,a.outcome].filter(Boolean).join(' · ')||'Activity logged')+'</span></div></div>'}).join(''):'<p>No activity recorded today yet.</p>';const all=$('execActivityAll');if(all)all.onclick=()=>showDetail('activity:all')}
 
  const priorityBox=$('execPriorities');
  priorityBox.innerHTML='<div class="execRow"><strong>Deadline check</strong><div><button type="button" id="execDueList">Due today · '+need.length+' ('+todayCampaigns.length+' campaigns, '+todayOther.length+' other)</button> <button type="button" id="execOverdueList">Overdue · '+late.length+'</button></div></div>';
