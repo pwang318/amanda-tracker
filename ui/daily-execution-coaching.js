@@ -369,7 +369,8 @@ function taskList(title,rows,empty,showHeading=true){
   const reason=String(q.reason||'').trim();
   const action=taskNextAction(q);
   const due=q.work_date||q['Due Date']||'';
-  return '<li><button type="button" class="execTaskGo" data-index="'+i+'"><b>'+safe(agent)+'</b><span style="display:block;font-size:11px;color:#736482">'+safe(type)+(due?' · Due '+safe(due):'')+'</span>'+(reason?'<span style="display:block;font-size:12px;color:#675477;margin-top:4px"><strong>Why here:</strong> '+safe(reason)+'</span>':'<span style="display:block;font-size:12px;color:#675477;margin-top:4px"><strong>Why here:</strong> Open assignment in this worklist</span>')+'<span style="display:block;font-size:12px;color:#453755;margin-top:4px"><strong>Next action:</strong> '+safe(action)+'</span><span style="display:block;font-size:11px;margin-top:4px">Open assignment ↗</span></button></li>';
+  const origin=q.source||'Amanda assigned work queue';
+  return '<li><button type="button" class="execTaskGo" data-index="'+i+'"><b>'+safe(agent)+'</b><span style="display:block;font-size:11px;color:#736482">'+safe(type)+(due?' · Due '+safe(due):'')+' · '+safe(origin)+'</span>'+(reason?'<span style="display:block;font-size:12px;color:#675477;margin-top:4px"><strong>Why here:</strong> '+safe(reason)+'</span>':'<span style="display:block;font-size:12px;color:#675477;margin-top:4px"><strong>Why here:</strong> Open assignment in this worklist</span>')+'<span style="display:block;font-size:12px;color:#453755;margin-top:4px"><strong>Next action:</strong> '+safe(action)+'</span><span style="display:block;font-size:11px;margin-top:4px">Open assignment ↗</span></button></li>';
  }).join('');
  return '<section>'+(showHeading?'<strong>'+safe(title)+' · '+rows.length+'</strong>':'')+(rows.length?'<ul>'+list+'</ul>':'<p>'+safe(empty)+'</p>')+'</section>';
 }
@@ -532,7 +533,7 @@ function showDetail(key,scroll=true){
 function render(){
  if(!$('execNotice'))return;const d=iso(),offNow=isOff(d),cold=coldFor(d),next=nextWorkday(d);
  const cleanFull=fullWork.filter(r=>{const due=String(r['Due Date']||'').slice(0,10);return !due||due>=COACHING_START});
- const canonical=cleanFull.map(r=>({agent_name:r['Agent / Item'],activity_type:r.Category,work_date:String(r['Due Date']||'').slice(0,10),Category:r.Category,'Next Action':r['Next Action']}));
+ const canonical=cleanFull.map(r=>({agent_name:String(r['Agent / Item']||'').trim(),activity_type:r.Category,work_date:String(r['Due Date']||'').slice(0,10),Category:r.Category,reason:r.Notes||r.Status||'',source:'Amanda-owned portfolio worklist','Next Action':r['Next Action']})).filter(r=>r.agent_name);
  // The persisted open queue is authoritative. Supplemental portfolio work cannot erase an
  // unfinished queue assignment simply because an agent appears elsewhere with the same category.
  const queueKeys=new Set(queue.map(q=>[String(q.agent_name||'').trim().toLowerCase(),String(q.activity_type||'').trim().toLowerCase(),String(q.work_date||'').slice(0,10)].join('|')));
