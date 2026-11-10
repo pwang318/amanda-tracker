@@ -859,8 +859,30 @@ function renderTrends(){
 window.rmRefreshExecutionCoaching=()=>refresh(true);
 window.rmAmandaIsOOO=d=>loaded?isOff(String(d||iso()).slice(0,10)):null;
 window.rmAmandaNextWorkday=d=>loaded?nextWorkday(String(d||iso()).slice(0,10)):null;
+function suppressFloatingSharedWarning(root){
+ if(document.body.dataset.rmTab==='director')return;
+ const base=root||document;
+ const nodes=base.querySelectorAll?base.querySelectorAll('#rmSharedPowerBiWarning,[role="alert"],[role="status"],[class*="toast"],[class*="warning"],[class*="Warning"]'):[];
+ const candidates=[...(base.nodeType===1?[base]:[]),...nodes];
+ for(const el of candidates){
+  if(el.closest?.('#rmExecutionPlan')||el.closest?.('#view-director'))continue;
+  const t=(el.textContent||'').trim();
+  if(t.length>900||!/^Shared data:\\s*reconciliation required\\b/i.test(t))continue;
+  if([...el.children].some(child=>(child.textContent||'').length<900&&/^Shared data:\\s*reconciliation required\\b/i.test((child.textContent||'').trim())))continue;
+  el.hidden=true;el.style.setProperty('display','none','important');el.setAttribute('aria-hidden','true');
+ }
+}
 function init(){
  mount();refresh(true);
+ suppressFloatingSharedWarning(document);
+ // Hide only newly inserted floating reconciliation notices; don't re-render the dashboard.
+ const warningObserver=new MutationObserver(records=>{
+  if(document.body.dataset.rmTab==='director')return;
+  for(const record of records)for(const node of record.addedNodes){
+   if(node.nodeType===1)suppressFloatingSharedWarning(node);
+  }
+ });
+ warningObserver.observe(document.body,{childList:true,subtree:true});
  // Watch only workboard child replacements, not every unrelated DOM mutation.
  let scheduled=false;
  const root=document.getElementById('view-week')||document.body;
