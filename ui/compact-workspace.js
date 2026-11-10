@@ -49,13 +49,17 @@ function findActivityCard(today){
 }
 function mount(){
  const today=document.getElementById('view-week');if(!today)return;
- // Director-only reconciliation diagnostics must not obscure Amanda's page.
- for(const node of document.querySelectorAll('div,section,aside')){
-  if(node.children.length>9||node.id==='rmExecutionPlan')continue;
-  const raw=(node.textContent||'').trim();
-  if(!/^Shared data:\s*reconciliation required\b/i.test(raw)||raw.length>600)continue;
-  if(node.querySelector('div,section,aside'))continue;
-  node.hidden=true;node.style.display='none';node.setAttribute('aria-hidden','true');
+ // Director diagnostics remain in the Director view; suppress RM floating alerts.
+ const directorVisible=document.body.dataset.rmTab==='director';
+ if(!directorVisible){
+  for(const node of document.querySelectorAll('div,section,aside,[role="status"],[role="alert"]')){
+   if(node.id==='rmExecutionPlan'||node.id==='view-week')continue;
+   const value=(node.textContent||'').trim();
+   if(!/^Shared data:\\s*reconciliation required\\b/i.test(value)||value.length>650)continue;
+   // Match the innermost warning card only, never the whole Today page.
+   if([...node.children].some(child=>/Shared data:\\s*reconciliation required/i.test(child.textContent||'')&&(child.textContent||'').length<650))continue;
+   node.hidden=true;node.style.setProperty('display','none','important');node.setAttribute('aria-hidden','true');
+  }
  }
 
  const legacy=findLegacyDrawer(today);
