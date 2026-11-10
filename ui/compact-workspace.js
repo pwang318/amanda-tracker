@@ -55,9 +55,9 @@ function mount(){
   for(const node of document.querySelectorAll('div,section,aside,[role="status"],[role="alert"]')){
    if(node.id==='rmExecutionPlan'||node.id==='view-week')continue;
    const value=(node.textContent||'').trim();
-   if(!/^Shared data:\\s*reconciliation required\\b/i.test(value)||value.length>650)continue;
+   if(!/^Shared data:\s*reconciliation required\b/i.test(value)||value.length>650)continue;
    // Match the innermost warning card only, never the whole Today page.
-   if([...node.children].some(child=>/Shared data:\\s*reconciliation required/i.test(child.textContent||'')&&(child.textContent||'').length<650))continue;
+   if([...node.children].some(child=>/Shared data:\s*reconciliation required/i.test(child.textContent||'')&&(child.textContent||'').length<650))continue;
    node.hidden=true;node.style.setProperty('display','none','important');node.setAttribute('aria-hidden','true');
   }
  }
