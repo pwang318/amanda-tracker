@@ -169,3 +169,9 @@ assert(code.includes('execNudgeDismiss')&&code.includes('execNudgeOpen'),'Remind
 assert(code.includes('!offNow&&loaded&&!sourceWarnings.length&&fullVerified'),'Reminders must be suppressed for PTO and incomplete data');
 
 assert(code.includes("group[1].length>0||['New contract calls','CTC calls','Tuesday transaction updates'].includes(group[0])"),'Contract and CTC worklist tiles must remain visible even with no matches');
+
+// Management communication must be available from the RM transaction worklists.
+for (const field of ['execWhatsAppCtc','execWhatsAppContract','execWaClient','execWaProperty','execWaBuyer','execWaListing','execWaBuyerStatus','execWaListingStatus','execWaBuyerFeedback','execWaListingFeedback','execWaClosing','execWaPreview','execWaCopy']) assert(code.includes(field),'Missing management WhatsApp field: '+field);
+assert(code.includes("navigator.clipboard.writeText(value)"),'WhatsApp message must have a working copy handler');
+assert(code.includes("panel.append(button)"),'Transaction assignments must offer management update composer');
+assert(code.includes("return [type,'','Client: '"),'WhatsApp message uses requested client/property/agent structure');
