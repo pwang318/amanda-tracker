@@ -91,9 +91,10 @@ assert(code.includes('No zero substituted.'), 'Unknown outcomes must not be show
 assert(code.includes('Open relationship follow-ups'), 'Open follow-ups visible in results panel');
 assert(code.includes('Follow-up completion rate cannot be confirmed'), 'Do not invent a due-date completion cohort');
 
-assert(code.includes('id="execPriorities"'), 'Today priorities must be visible on the snapshot');
+assert(code.includes('id="execPriorities"'), 'Today deadline summary must be visible on the snapshot');
+assert(code.indexOf('id="execHomeWork"') < code.indexOf('id="execPriorities"'),'Work category shortcuts must appear above deadline summary');
 assert(code.includes("const priorities=[...late,...need]"), 'Today priorities must use the same overdue and due-today records as tiles');
-assert(code.includes("data-priority="), 'Today priorities show clickable agent-specific items');
+assert(code.includes("id=\"execDueList\"") && code.includes("id=\"execOverdueList\""), 'Today deadlines have dedicated clickable worklist actions');
 assert(code.includes("taskList(group[0],group[1],group[2],false)"), 'Drilldown must not repeat relationship heading');
 assert(code.includes('Actual cold-call / prospecting minutes · required'), 'Actual prospecting minutes must be labeled as required');
 assert(code.includes("if(minutes===''||!Number.isInteger(Number(minutes))"), 'Closeout refuses to save without actual minutes');
