@@ -59,10 +59,11 @@ async function load(force){
   const tiers=Object.fromEntries([...text.matchAll(/(?:^|;)(Channel|A|B|C)=(\d+)/g)].map(m=>[m[1],Number(m[2])]));
   const total=Number(log.rows_processed);
   if(!Number.isFinite(total)||!Number.isFinite(tiers.A)||!Number.isFinite(tiers.B)||!Number.isFinite(tiers.C))throw Error('Tier figures missing in latest report');
-  const vals=[['Active agents',136],['A tier',17],['B tier',21],['C tier',98]];
+  const approvedSnapshot=Date.parse(log.imported_at)<=Date.parse('2026-11-10T04:59:59Z');
+  const vals=approvedSnapshot?[['Active agents',136],['A tier',17],['B tier',21],['C tier',98]]:[['Active agents',total],['A tier',tiers.A],['B tier',tiers.B],['C tier',tiers.C]];
   grid.innerHTML=vals.map(([label,value])=>'<div class="rmActualTile"><strong>'+esc(value)+'</strong><span>'+esc(label)+'</span></div>').join('');
   const distinct=new Set((Array.isArray(leads)?leads:[]).map((v,i)=>String(v.lead_key||'').trim()||('row:'+i)));
-  footer.textContent='Approved Power BI agent totals: 136 active · 17 A · 21 B · 98 C. Last source refresh: '+new Date(log.imported_at).toLocaleString()+'.';
+  footer.textContent=(approvedSnapshot?'Director-confirmed November 9 totals. ':'Latest Power BI import. ')+'Source updated '+new Date(log.imported_at).toLocaleString()+'.';
   lastFetch=Date.now();
  }catch(e){grid.innerHTML='<div class="rmActualTile" style="grid-column:1/-1">Scorecard data is unavailable. Select Refresh to try again.</div>';footer.textContent='The latest report could not be confirmed.'}
  finally{busy=false;tidy()}
