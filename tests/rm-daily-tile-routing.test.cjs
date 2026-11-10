@@ -196,3 +196,6 @@ assert(code.includes("return openManagementTemplate('ctc',q)"),'CTC assignment c
 assert(code.includes("return openManagementTemplate('contract',q)"),'New Contract assignment cannot show generic completion form');
 assert(code.includes("String(modal.dataset.txnId||'')!==file.id"),'Original workbench must verify exact transaction ID');
 assert(code.includes("Open imported files"),'CTC and Contract tiles must not report stale generic queue counts as active loans');
+
+assert(code.includes("if(group[0]==='CTC calls'||group[0]==='New contract calls')"),'Old transaction detail views must route to original workbench');
+assert(code.includes("if(index>=0&&!['CTC calls','New contract calls'].includes(categories[index][0]))"),'Historical August catch-ups must not be counted as current imported CTC calls');
