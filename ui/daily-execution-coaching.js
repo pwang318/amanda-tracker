@@ -622,7 +622,7 @@ function renderBusinessResults(){
   row('Held with a next step',nextStepHeld.length+' / '+held.length)+
   row('C-agent referrals',data?.referrals?data.referrals.length:'Unavailable')+
   row('C-to-B growth',data?.migrations?data.migrations.length:'Unavailable')+
-  '</div>';
+  '</div><p><strong>Open relationship follow-ups:</strong> '+open.length+' in the saved queue; '+completed.length+' completed records in the available history.</p><small>Follow-up completion rate cannot be confirmed without a verified due-date cohort. Missing outcome sources show Unavailable. No zero substituted.</small>';
 
 }
 
