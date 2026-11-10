@@ -17,13 +17,13 @@ css.textContent=[
 '#rmActualScorecard .rmCurrentWeighted strong{font-size:30px;display:block;margin:3px 0}',
 '#rmActualScorecard button{border:1px solid #d8cbe8;border-radius:7px;background:white;color:#50317f;padding:7px 12px;cursor:pointer;font-size:11px}',
 '#rmActualScorecard .rmActualHead{display:flex;justify-content:space-between;gap:10px;align-items:center}',
-'#rm85Roadmap{margin:14px 0;padding:15px 0;border-top:1px solid #e4dfea;color:#2c2143}',
-'#rm85Roadmap h3{font-size:17px;margin:0 0 5px;color:#2c2143}',
-'#rm85Roadmap p,#rm85Roadmap li{font-size:12px;line-height:1.55;color:#625574}',
-'#rm85Roadmap .rm85Gap{font-weight:800;color:#4b3174;font-size:14px;margin:8px 0}',
-'#rm85Roadmap .rm85Actions{display:flex;flex-wrap:wrap;gap:7px;margin:12px 0}',
-'#rm85Roadmap button{border:1px solid #d6c8e7;border-radius:8px;padding:9px 11px;background:#fff;color:#50317f;font-size:12px;font-weight:700;min-height:42px;cursor:pointer}',
-'#rm85Roadmap .rm85Scenario{font-size:12px;color:#5f5270;line-height:1.55}',
+'.rm85Roadmap{margin:14px 0;padding:15px 0;border-top:1px solid #e4dfea;color:#2c2143}',
+'.rm85Roadmap h3{font-size:17px;margin:0 0 5px;color:#2c2143}',
+'.rm85Roadmap p,.rm85Roadmap li{font-size:12px;line-height:1.55;color:#625574}',
+'.rm85Roadmap .rm85Gap{font-weight:800;color:#4b3174;font-size:14px;margin:8px 0}',
+'.rm85Roadmap .rm85Actions{display:flex;flex-wrap:wrap;gap:7px;margin:12px 0}',
+'.rm85Roadmap button{border:1px solid #d6c8e7;border-radius:8px;padding:9px 11px;background:#fff;color:#50317f;font-size:12px;font-weight:700;min-height:42px;cursor:pointer}',
+'.rm85Roadmap .rm85Scenario{font-size:12px;color:#5f5270;line-height:1.55}',
 '#rmFinalWeightedScore:has(h2){display:block}',
 '@media(max-width:850px){#rmActualScorecard .rmActualGrid{grid-template-columns:repeat(2,minmax(0,1fr))}}'
 ].join('\n');document.head.append(css);
@@ -48,7 +48,8 @@ function liveScoreFromNative(){
 }
 // Practical scorecard planning is sourced from the same live model as the weighted score.
 function renderPathTo85(live){
- const host=document.getElementById('rm85Roadmap');if(!host)return;
+ const hosts=['rm85Roadmap','rm85RoadmapScorecard'].map(id=>document.getElementById(id)).filter(Boolean);if(!hosts.length)return;
+ for(const host of hosts){
  const data=window.rmV429ScoreData;
  if(!live||!data||!data.counts||!data.target){
   host.innerHTML='<h3>Path to 85%+</h3><p>Scorecard data is unavailable. Refresh the scorecard to see the current targets; no goals have been estimated.</p>';
@@ -86,6 +87,7 @@ function renderPathTo85(live){
   document.getElementById('rmNewAgentCallList')?.scrollIntoView({behavior:'smooth',block:'start'});
  };
  host.querySelector('#rm85Leads').onclick=()=>{if(typeof window.rmV429OpenScoreDetail==='function')window.rmV429OpenScoreDetail('leads');else if(typeof window.switchTab==='function')window.switchTab('scorecard')};
+ }
 }
 function renderLiveScore(){
  const targets=[document.getElementById('rmCurrentWeighted'),document.getElementById('rmTodayWeighted')].filter(Boolean);if(!targets.length)return;
@@ -111,7 +113,7 @@ function mountTodayScore(){
  if(!heading||document.getElementById('rmTodayWeighted'))return;
  const div=document.createElement('div');div.id='rmTodayWeighted';div.className='rmCurrentWeighted';div.setAttribute('role','status');div.textContent='Updating weighted score…';
  heading.insertAdjacentElement('afterend',div);
- const roadmap=document.createElement('section');roadmap.id='rm85Roadmap';roadmap.setAttribute('aria-label','Plan for an 85 percent scorecard');div.insertAdjacentElement('afterend',roadmap);
+ const roadmap=document.createElement('section');roadmap.id='rm85Roadmap';roadmap.className='rm85Roadmap';roadmap.setAttribute('aria-label','Plan for an 85 percent scorecard');div.insertAdjacentElement('afterend',roadmap);
 }
 function mount(){
  mountTodayScore();
@@ -123,6 +125,9 @@ function mount(){
   const official=document.getElementById('rmFinalWeightedScore');
   if(official)official.before(panel);else score.prepend(panel);
   panel.querySelector('#rmActualRefresh').onclick=()=>load(true);
+ }
+ if(!document.getElementById('rm85RoadmapScorecard')){
+  const roadmap=document.createElement('section');roadmap.id='rm85RoadmapScorecard';roadmap.className='rm85Roadmap';roadmap.setAttribute('aria-label','Plan for an 85 percent scorecard');panel.querySelector('#rmCurrentWeighted')?.insertAdjacentElement('afterend',roadmap);
  }
  if(Date.now()-lastFetch>60000&&!busy)load(false);
  tidy();
