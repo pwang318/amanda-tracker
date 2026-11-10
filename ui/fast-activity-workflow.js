@@ -149,7 +149,7 @@ async function reconcile(){
  const ordered=(Array.isArray(pending)?pending:[]).slice().sort((a,b)=>String(a.work_date||'').localeCompare(String(b.work_date||'')));
  let changed=0;
  for(const t of ordered){
-  const catchup=/\\bCatch-up from\\b/i.test(String(t.reason||''));
+  const catchup=/\bCatch-up from\b/i.test(String(t.reason||''));
   if(t.work_date&&t.work_date>day&&!catchup)continue;
   const taskType=String(t.activity_type||'').toLowerCase();
   const matched=eligible.find(a=>{
