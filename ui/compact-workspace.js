@@ -9,6 +9,7 @@ style.textContent=[
  '#view-week *,#view-scorecard *{box-sizing:border-box;min-width:0}',
  '#view-week #rm350Workboard{border:1px solid #e7e0ef;border-radius:12px;box-shadow:none;padding:15px 18px}',
  '#view-week #rm350Workboard.rmExecReady>.rm350-hero,#view-week #rm350Workboard.rmExecReady>.rm350-shell,#view-week #rm350Workboard.rmExecReady>.rm358-banner,#view-week #rm350Workboard.rmExecReady>.rm358-source-drawer{display:none!important}',
+ '#view-week #rm350Workboard.rmExecReady #rm492Additional{display:none!important}',
  '#view-week #rm350Workboard:has(> #rmExecutionPlan){min-height:0!important;padding-bottom:18px!important}',
  '#view-week #rmExecutionPlan .execCategoryGrid{grid-template-columns:repeat(3,minmax(0,1fr))}',
  '#view-week #rmExecutionPlan .execCategoryBtn{min-width:0;white-space:normal;overflow-wrap:anywhere}',
@@ -49,15 +50,15 @@ function findActivityCard(today){
  return null;
 }
 function moveTodayAboveScorecard(today){
- // Concrete layout: legacy rm492-consolidate wraps the actual Today workboard
- // in #rm492Additional AFTER #rm490Score. Move that entire existing section.
- const score=document.getElementById('rm490Score');
+ // #rm492Additional is the legacy duplicate Today wrapper, not Amanda's live
+ // daily plan. Keep only the actual #rmExecutionPlan before the scorecard.
  const host=document.getElementById('rm350Workboard');
- const todayCard=document.getElementById('rm492Additional');
- if(!score||!host||!todayCard||!host.contains(score)||!host.contains(todayCard))return;
- if(score.contains(todayCard)||todayCard.contains(score))return;
- if(todayCard.nextElementSibling===score)return;
- score.before(todayCard);
+ const plan=document.getElementById('rmExecutionPlan');
+ const score=document.getElementById('rm490Score');
+ if(!host||!plan||!score||!host.contains(plan)||!host.contains(score))return;
+ if(plan.parentElement!==score.parentElement)return;
+ if((score.compareDocumentPosition(plan)&Node.DOCUMENT_POSITION_FOLLOWING)!==0)return;
+ score.before(plan);
 }
 
 function mount(){
