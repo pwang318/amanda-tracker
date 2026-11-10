@@ -32,6 +32,18 @@ css.textContent=[
 '.rm85Roadmap button{border:1px solid #d6c8e7;border-radius:8px;padding:9px 11px;background:#fff;color:#50317f;font-size:12px;font-weight:700;min-height:42px;cursor:pointer}',
 '.rm85Roadmap .rm85Scenario{font-size:12px;color:#5f5270;line-height:1.55}',
 '#rmFinalWeightedScore:has(h2){display:block}',
+'#rm490Score{padding:16px!important;border:1px solid #e5dfee!important;border-radius:12px!important;background:#fff!important;box-shadow:none!important}',
+'#rm490Score>h2{font-size:18px!important;margin:0 0 10px!important}',
+'#rm490Score .rm490-scoregrid{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px!important}',
+'#rm490Score .rm490-scoregrid button{padding:12px!important;border:1px solid #e5dfee!important;border-radius:9px!important;box-shadow:none!important;text-align:left!important;min-height:90px!important}',
+'#rm490Score .rm490-scoregrid button strong{font-size:23px!important;line-height:1.3!important}',
+'#rm490Score .rm490-scoregrid progress{display:none!important}',
+'#rm490Score .rm490-scoregrid small{font-size:11px!important;line-height:1.35!important;display:block!important}',
+'#rm490Score:has(#rmTodayWeighted) #rmTodayWeighted{margin:7px 0!important;padding:12px 14px!important;min-height:0!important;font-size:13px!important}',
+'#rm490Score:has(#rmTodayWeighted) #rmTodayWeighted strong{font-size:20px!important;line-height:1.35!important}',
+'#rm490Score #rm85Roadmap{margin:8px 0!important}',
+'#rm490Score #rm85Roadmap>details>summary{padding:10px 12px!important}',
+'@media(max-width:720px){#rm490Score .rm490-scoregrid{grid-template-columns:1fr!important}}',
 '@media(max-width:850px){#rmActualScorecard .rmActualGrid{grid-template-columns:repeat(2,minmax(0,1fr))}}'
 ].join('\n');document.head.append(css);
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -60,7 +72,7 @@ function renderPathTo85(live){
  for(const host of hosts){
  const data=window.rmV429ScoreData;
  if(!live||!data||!data.counts||!data.target){
-  host.innerHTML='<h3>Path to 85%+</h3><p>Scorecard data is unavailable. Refresh the scorecard to see current targets.</p>';
+  host.innerHTML='<details class="rm85Disclosure"><summary>Why the weighted score is pending</summary><div class="rm85DetailBody"><p>Power BI import totals must match the current stamped agent roster, and referred leads must be verified. A score will appear after reconciliation; no provisional points have been invented.</p></div></details>';
   continue;
  }
  const t=data.target,k=data.counts,percent=live.total;
@@ -108,8 +120,40 @@ function renderLiveScore(){
   renderPathTo85(live);
   return;
  }
- for(const el of targets)el.innerHTML='Current weighted score<strong>Unavailable</strong><small>Waiting for current Power BI and Velocify data.</small>';
+ for(const el of targets)el.innerHTML='Weighted score · verification pending<strong>Not yet reconciled</strong><small>The latest import and matched Realtor roster do not agree. Imported counts may be shown below for context, but no weighted score can be certified yet.</small>';
  renderPathTo85(null);
+}
+let receiptBusy=false,receiptStamp='',lastReceiptCheck=0;
+async function refreshTodayImportedCounts(force=false){
+ if(receiptBusy||(!force&&Date.now()-lastReceiptCheck<45000))return;
+ if(typeof sbFetch!=='function')return;
+ receiptBusy=true;
+ try{
+  const result=await sbFetch('powerbi_import_log?select=imported_at,source_app,rows_processed,errors&source_app=like.core-team-tracker%25&order=imported_at.desc&limit=1');
+  if(!Array.isArray(result)||!result.length||String(result[0].errors||'0')!=='0')throw Error('Latest report receipt missing or failed');
+  const row=result[0],source=String(row.source_app||'');
+  const vals=Object.fromEntries([...source.matchAll(/(?:^|;)(Channel|A|B|C)=(\d+)/g)].map(m=>[m[1],Number(m[2])]));
+  const total=Number(row.rows_processed);
+  if(!Number.isFinite(total)||!Number.isFinite(vals.B))throw Error('Tier totals missing in receipt');
+  receiptStamp=String(row.imported_at||'');
+  // Display read-only imported counts, explicitly not a substitute for reconciled scorecard.
+  if(!liveScoreFromNative()){
+   const mappings=[['rm490ValueB',String(vals.B),'rm490GapB','Imported B-tier total · roster validation pending'],
+     ['rm490Valueactive',String(total),'rm490Gapactive','Imported agent rows · roster validation pending'],
+     ['rm490Valueleads','Pending','rm490Gapleads','Referral lead reconciliation pending']];
+   for(const [valueId,value,noteId,note] of mappings){
+    const el=document.getElementById(valueId),sub=document.getElementById(noteId);
+    if(el)el.textContent=value;if(sub)sub.textContent=note;
+   }
+   const box=document.getElementById('rmTodayWeighted');
+   if(box)box.innerHTML='Weighted score · verification pending<strong>Not yet reconciled</strong><small>Power BI import: '+esc(total)+' rows · A '+esc(vals.A??'—')+' · B '+esc(vals.B)+' · C '+esc(vals.C??'—')+'. These counts are imported, not yet matched to the full agent roster. Referral and weighted results remain unverified.</small>';
+  }
+  lastReceiptCheck=Date.now();
+ }catch(e){
+  const mappings=[['rm490ValueB','Unavailable'],['rm490Valueactive','Unavailable'],['rm490Valueleads','Unavailable']];
+  if(!liveScoreFromNative())for(const [id,value] of mappings){const el=document.getElementById(id);if(el)el.textContent=value}
+  lastReceiptCheck=Date.now();
+ }finally{receiptBusy=false}
 }
 async function refreshNativeScore(){
  if(refreshing)return;
@@ -177,12 +221,15 @@ async function load(force){
 }
 function init(){
  mount();
+ refreshTodayImportedCounts(true);
+ [1200,3800,8000].forEach(ms=>setTimeout(()=>{mountTodayScore();renderLiveScore();refreshTodayImportedCounts(true)},ms));
  const root=document.getElementById('view-scorecard');
  if(root){let queued=false;new MutationObserver(()=>{if(queued)return;queued=true;requestAnimationFrame(()=>{queued=false;mount()})}).observe(root,{childList:true,subtree:true})}
  window.addEventListener('focus',()=>{if(!document.hidden)load(true)});
  document.addEventListener('visibilitychange',()=>{if(!document.hidden)load(true)});
  // Refresh the visible scorecard each minute; the native calculation uses current source records.
  setInterval(()=>{if(!document.hidden&&((root&&root.getClientRects().length)||(document.getElementById('rmTodayWeighted')?.getClientRects().length)))load(true)},60000);
+ setInterval(()=>{if(!document.hidden){mountTodayScore();refreshTodayImportedCounts(true)}},60000);
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
 })();
