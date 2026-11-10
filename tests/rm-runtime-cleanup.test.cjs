@@ -26,3 +26,8 @@ assert(daily.includes('Promise.allSettled(['),'Independent database sources must
 assert(daily.includes('sourceWarnings.join'),'Partial results must clearly warn rather than silently substitute zeros');
 assert(daily.includes("classList.remove('rmExecReady')"),'Failed execution must restore legacy fallback');
 assert(daily.includes("classList.add('rmExecReady')"),'Loaded execution can hide redundant legacy header');
+
+assert(!html.includes("e.textContent='⚠ Shared Power BI cannot be verified:"),'No blocking Power BI warning banner in daily workspace');
+assert(html.includes('unique_stamped_profiles:names.size'),'Power BI report and unique profile counts must remain separate');
+assert(html.includes('raw:expected,total:receipt.total'),'Source receipt totals must not silently become stamped-profile counts');
+assert(html.includes('reconciliation_gap:discrepancy'),'Agent-row reconciliation gap must remain auditable');
