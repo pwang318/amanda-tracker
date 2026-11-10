@@ -92,7 +92,7 @@ assert(code.includes('Open relationship follow-ups'), 'Open follow-ups visible i
 assert(code.includes('Follow-up completion rate cannot be confirmed'), 'Do not invent a due-date completion cohort');
 
 assert(code.includes('id="execPriorities"'), 'Today deadline summary must be visible on the snapshot');
-assert(code.indexOf('id="execHomeWork"') < code.indexOf('id="execPriorities"'),'Work category shortcuts must appear above deadline summary');
+assert(code.indexOf('id="execPriorities"') < code.indexOf('id="execHomeWork"'),'Deadline summary precedes secondary work category shortcuts');
 assert(code.includes("const priorities=[...late,...need]"), 'Today priorities must use the same overdue and due-today records as tiles');
 assert(code.includes("id=\"execDueList\"") && code.includes("id=\"execOverdueList\""), 'Today deadlines have dedicated clickable worklist actions');
 assert(code.includes("taskList(group[0],group[1],group[2],false)"), 'Drilldown must not repeat relationship heading');
@@ -102,7 +102,7 @@ assert(code.includes('85% coaching benchmark'), 'Compact weekly benchmark remain
 
 const compact=fs.readFileSync('ui/compact-workspace.js','utf8');
 new vm.Script(compact,{filename:'compact-workspace.js'});
-assert(compact.includes('rmTodayCleanV4'),'Compact styling must be loaded once');
+assert(compact.includes('rmTodayCleanV5'),'Compact styling must be loaded once');
 assert(!compact.includes('MutationObserver'),'Compact styling must not continuously re-render the entire Today page');
 assert(compact.includes('rmExecReady'),'Legacy board is only hidden once the live plan succeeds');
 
