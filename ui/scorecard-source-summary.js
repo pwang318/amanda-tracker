@@ -6,7 +6,7 @@ css.textContent=[
 '#rmActualScorecard h2{font-size:18px;margin:0 0 4px;color:#201734}',
 '#rmActualScorecard .rmActualSubtitle{font-size:12px;color:#6e637b;line-height:1.5;margin:0 0 12px}',
 '#rmActualScorecard .rmActualGrid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px}',
-'#rmActualScorecard .rmActualTile{padding:13px;border:1px solid #eee7f3;border-radius:9px;background:#faf9fc}',
+'#rmActualScorecard .rmActualTile{padding:13px;border:1px solid #eee7f3;border-radius:9px;background:#faf9fc;text-align:left;width:100%;cursor:pointer}',
 '#rmActualScorecard .rmActualTile strong{display:block;color:#523286;font-size:25px;line-height:1.3}',
 '#rmActualScorecard .rmActualTile span{font-size:11px;color:#665b76}',
 '#rmActualScorecard .rmActualFooter{font-size:11px;color:#6e647d;margin:12px 0 0}',
@@ -52,8 +52,8 @@ function renderPathTo85(live){
  for(const host of hosts){
  const data=window.rmV429ScoreData;
  if(!live||!data||!data.counts||!data.target){
-  host.innerHTML='<h3>Path to 85%+</h3><p>Scorecard data is unavailable. Refresh the scorecard to see the current targets; no goals have been estimated.</p>';
-  return;
+  host.innerHTML='<h3>Path to 85%+</h3><p>Scorecard data is unavailable. Refresh the scorecard to see current targets.</p>';
+  continue;
  }
  const t=data.target,k=data.counts,percent=live.total;
  const deficit=Math.max(0,85.1-percent);
@@ -61,7 +61,7 @@ function renderPathTo85(live){
  const channelGoal=num(t.Channel),aGoal=num(t.A),bGoal=num(t.B);
  const active=num(data.activePartnerCount),denom=num(data.total),ratio=num(data.ratioTarget),projected=num(data.projectedLeadCount);
  const valid=[channelNow,aNow,bNow,channelGoal,aGoal,bGoal,active,denom,ratio,projected].every(Number.isFinite)&&ratio>0&&denom>0;
- if(!valid){host.innerHTML='<h3>Path to 85%+</h3><p>Waiting for verified tier and referral data before calculating a plan.</p>';return}
+ if(!valid){host.innerHTML='<h3>Path to 85%+</h3><p>Waiting for current tier and referral data.</p>';continue}
  const tierGoal=points(channelGoal,channelGoal,15)+points(aGoal,aGoal,15)+points(bGoal,bGoal,20);
  const activePts=points(active,200,20);
  const neededLeadPoints=Math.max(0,85.11-tierGoal-activePts);
@@ -81,12 +81,11 @@ function renderPathTo85(live){
  '<p><strong>Ownership:</strong> Amanda drives C-to-B opportunities and C-agent referrals. Director-led Channel, A and existing B account results contribute to the same team scorecard.</p>'+
  '<div class="rm85Actions"><button type="button" id="rm85Growth">Open C-to-B opportunities</button><button type="button" id="rm85Prospects">Open prospect list</button><button type="button" id="rm85Leads">Review referred leads</button></div>';
  host.querySelector('#rm85Growth').onclick=()=>{if(typeof window.v350OpenLane==='function')window.v350OpenLane('growth');else if(typeof window.switchTab==='function')window.switchTab('growth')};
- host.querySelector('#rm85Prospects').onclick=async()=>{
-  if(typeof window.switchTab!=='function')return;
-  window.switchTab('pipeline');
-  try{if(typeof window.rmRenderNewAgentCallList==='function')await window.rmRenderNewAgentCallList()}catch(e){console.warn('Prospect list refresh unavailable',e)}
-  document.getElementById('rmNewAgentCallList')?.scrollIntoView({behavior:'smooth',block:'start'});
+ host.querySelector('#rm85Prospects').onclick=()=>{
+  if(typeof window.rmOpenProspectList==='function')return window.rmOpenProspectList();
+  if(typeof window.switchTab==='function')window.switchTab('pipeline');
  };
+
  host.querySelector('#rm85Leads').onclick=()=>{if(typeof window.rmV429OpenScoreDetail==='function')window.rmV429OpenScoreDetail('leads');else if(typeof window.switchTab==='function')window.switchTab('scorecard')};
  }
 }
@@ -158,7 +157,8 @@ async function load(force){
   if(!Number.isFinite(total)||!Number.isFinite(tiers.A)||!Number.isFinite(tiers.B)||!Number.isFinite(tiers.C))throw Error('Tier figures missing in latest report');
   const vals=[['Active agents',total],['A tier',tiers.A],['B tier',tiers.B],['C tier',tiers.C]];
   await refreshNativeScore();
-  grid.innerHTML=vals.map(([label,value])=>'<div class="rmActualTile"><strong>'+esc(value)+'</strong><span>'+esc(label)+'</span></div>').join('');
+  grid.innerHTML=vals.map(([label,value])=>'<button type="button" class="rmActualTile" data-score-detail="'+esc(label==='Active agents'?'active':label==='A tier'?'A':label==='B tier'?'B':'C')+'"><strong>'+esc(value)+'</strong><span>'+esc(label)+' · View agents ↗</span></button>').join('');
+  grid.querySelectorAll('[data-score-detail]').forEach(button=>button.onclick=()=>{const key=button.dataset.scoreDetail;if(typeof window.rmV429OpenScoreDetail==='function')window.rmV429OpenScoreDetail(key)});
   footer.textContent='Latest Power BI import: '+new Date(log.imported_at).toLocaleString()+'.';
   lastFetch=Date.now();
  }catch(e){grid.innerHTML='<div class="rmActualTile" style="grid-column:1/-1">Current totals could not be refreshed.</div>';footer.textContent='Select Refresh to try again.';renderLiveScore();}
