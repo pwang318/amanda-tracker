@@ -337,7 +337,7 @@ async function refresh(force=false){
 let rmImportSummary={ctc:null,contract:null,error:null,checked:0,busy:false};
 async function refreshImportedCallCounters(force=false){
  if(rmImportSummary.busy||(!force&&Date.now()-rmImportSummary.checked<45000))return;
- if(typeof sbFetch!=='function')return;
+ if(typeof sbFetch!=='function'){rmImportSummary.error='Shared report connection unavailable';paintImportedCallCounters();return}
  rmImportSummary.busy=true;
  try{
   const since=iso(new Date(Date.now()-120*86400000));
@@ -896,10 +896,11 @@ function render(){
  detailGroups=sections.concat(categoryRows);
  detailGroups.push(exactPlans);
  const grid=$('execCategoryGrid');
- grid.innerHTML=categoryRows.map((group,i)=>({group,i})).filter(({group})=>(group[1].length>0||['New contract calls','CTC calls','Tuesday transaction updates'].includes(group[0]))&&group[0]!=='Catch-up assignments'&&group[0]!=='New Realtor outreach assignments').map(({group,i})=>'<button type="button" class="execCategoryBtn" data-category="'+i+'" aria-label="Open '+safe(group[0])+': '+group[1].length+' assignments"><span>'+safe(group[0])+'</span><strong>'+(['CTC calls','New contract calls'].includes(group[0])?'Open imported files ↗':group[1].length?group[1].length+' open ↗':'No open calls · View ↗')+'</strong></button>').join('');
+ grid.innerHTML=categoryRows.map((group,i)=>({group,i})).filter(({group})=>(group[1].length>0||['New contract calls','CTC calls','Tuesday transaction updates'].includes(group[0]))&&group[0]!=='Catch-up assignments'&&group[0]!=='New Realtor outreach assignments').map(({group,i})=>'<button type="button" class="execCategoryBtn" data-category="'+i+'" aria-label="Open '+safe(group[0])+': '+group[1].length+' assignments"><span>'+safe(group[0])+'</span><strong>'+(['CTC calls','New contract calls'].includes(group[0])?'Checking latest import…':group[1].length?group[1].length+' open ↗':'No open calls · View ↗')+'</strong></button>').join('');
  grid.querySelectorAll('[data-category]').forEach(b=>b.onclick=()=>{const category=categoryRows[Number(b.dataset.category)]?.[0];if(category==='CTC calls')return openManagementTemplate('ctc');if(category==='New contract calls')return openManagementTemplate('contract');return showDetail('category:'+b.dataset.category)});
  paintImportedCallCounters();
  if(!rmImportSummary.checked&&!rmImportSummary.busy)refreshImportedCallCounters(true);
+ else if(Date.now()-rmImportSummary.checked>60000&&!rmImportSummary.busy)refreshImportedCallCounters(true);
  if(!$('execInlineProspects').dataset.wired){$('execInlineProspects').dataset.wired='1';$('execInlineProspects').addEventListener('toggle',()=>{if($('execInlineProspects').open)showInlineProspects()});}
  $('rmExecutionPlan').querySelectorAll('[data-exec-target]').forEach(tile=>{
   const action=()=>{
