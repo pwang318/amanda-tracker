@@ -67,6 +67,23 @@ function mount(){
  // The new Log Activity control is the first action inside Today's live plan.
  // Remove the old duplicate card at the bottom without removing its Log tab or saved records.
  const quick=document.getElementById('execQuickLogBtn');
+ // The old bottom Today card repeats the daily plan and pushes work beneath the scorecard.
+ // Hide that exact small card only, never the live execution plan or its worklists.
+ if(quick){
+  const title=[...today.querySelectorAll('h1,h2,h3,h4')].find(el=>/^today$/i.test((el.textContent||'').trim()));
+  if(title){
+   let node=title.parentElement;
+   while(node&&node!==today){
+    const copy=(node.textContent||'').trim();
+    if(copy.length>900||node.contains(document.getElementById('rmExecutionPlan'))||node.contains(document.getElementById('rmActualScorecard')))break;
+    if(/log an activity/i.test(copy)&&/open activity log/i.test(copy)){
+     node.hidden=true;node.style.setProperty('display','none','important');node.setAttribute('aria-hidden','true');break;
+    }
+    node=node.parentElement;
+   }
+  }
+ }
+
  const card=findActivityCard(today);
  if(quick&&card&&!card.contains(quick)){
   card.hidden=true;card.style.setProperty('display','none','important');
