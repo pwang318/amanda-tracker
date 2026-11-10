@@ -94,6 +94,11 @@ function mount(){
 
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',mount);else mount();
-let queued=false;
-new MutationObserver(()=>{if(queued)return;queued=true;requestAnimationFrame(()=>{queued=false;mount()})}).observe(document.body,{childList:true,subtree:true});
+// Refresh compact layout on meaningful work updates, not on every DOM change.
+window.addEventListener('rm-work-queue-changed',mount);
+window.addEventListener('rm-growth-updated',mount);
+window.addEventListener('focus',mount);
+// Allow the async daily dashboard to finish its initial mount.
+setTimeout(mount,300);
+setTimeout(mount,1200);
 })();
