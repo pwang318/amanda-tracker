@@ -367,12 +367,15 @@ async function openManagementTemplate(kind,assignment){
     closeDate:meta(notes,'TXN_CLOSE_DATE'),date:row.act_date,source
    });
   }
-  const files=[...found.values()];
+  const person=String(assignment?.agent_name||assignment?.['Agent / Item']||'').trim().toLowerCase();
+  const matchPerson=file=>[file.buyer,file.listing].some(n=>String(n||'').trim().toLowerCase()===person);
+  const matches=person?[...found.values()].filter(matchPerson):[];
+  const files=matches.length?matches:[...found.values()];
   if(!files.length){
    host.innerHTML='<p>No matching '+(isCtc?'CTC':'New Contract')+' files were found in the current shared import records. Upload the correct Encompass export first, then refresh. No client or Realtor information has been guessed.</p>';
    return;
   }
-  host.innerHTML='<p>'+files.length+' distinct imported files. Select the matching client and property:</p><div id="execWaFileList" style="display:grid;gap:7px;max-height:440px;overflow:auto"></div>';
+  host.innerHTML='<p>'+files.length+' imported transaction file(s). Select the correct client and property to open the original call workbench.</p>'+(person&&!matches.length?'<p>No exact transaction match was found for this Realtor. Select a file only after verifying its client and property; old catch-up calls are not necessarily current Encompass files.</p>':'')+'<div id="execWaFileList" style="display:grid;gap:7px;max-height:440px;overflow:auto"></div>';
   const list=$('execWaFileList');
   for(const file of files){
    const button=document.createElement('button');
@@ -413,6 +416,9 @@ function rmCompletedSupplementKeys(){
  return found;
 }
 function openTask(q){
+ const transactionType=String(q.Category||q.activity_type||'');
+ if(/\bctc\b|clear[ -]?to[ -]?close/i.test(transactionType))return openManagementTemplate('ctc',q);
+ if(/new[ -]?contract|under contract/i.test(transactionType))return openManagementTemplate('contract',q);
  const name=String(q.agent_name||q['Agent / Item']||'').trim();
  const type=String(q.Category||q.activity_type||'Assigned Follow-up').trim();
  const holder=$('execDetailArea'),list=$('execTaskSummary');
@@ -843,8 +849,8 @@ function render(){
  detailGroups=sections.concat(categoryRows);
  detailGroups.push(exactPlans);
  const grid=$('execCategoryGrid');
- grid.innerHTML=categoryRows.map((group,i)=>({group,i})).filter(({group})=>(group[1].length>0||['New contract calls','CTC calls','Tuesday transaction updates'].includes(group[0]))&&group[0]!=='Catch-up assignments'&&group[0]!=='New Realtor outreach assignments').map(({group,i})=>'<button type="button" class="execCategoryBtn" data-category="'+i+'" aria-label="Open '+safe(group[0])+': '+group[1].length+' assignments"><span>'+safe(group[0])+'</span><strong>'+(group[1].length?group[1].length+' open ↗':'No open calls · View ↗')+'</strong></button>').join('');
- grid.querySelectorAll('[data-category]').forEach(b=>b.onclick=()=>showDetail('category:'+b.dataset.category));
+ grid.innerHTML=categoryRows.map((group,i)=>({group,i})).filter(({group})=>(group[1].length>0||['New contract calls','CTC calls','Tuesday transaction updates'].includes(group[0]))&&group[0]!=='Catch-up assignments'&&group[0]!=='New Realtor outreach assignments').map(({group,i})=>'<button type="button" class="execCategoryBtn" data-category="'+i+'" aria-label="Open '+safe(group[0])+': '+group[1].length+' assignments"><span>'+safe(group[0])+'</span><strong>'+(['CTC calls','New contract calls'].includes(group[0])?'Open imported files ↗':group[1].length?group[1].length+' open ↗':'No open calls · View ↗')+'</strong></button>').join('');
+ grid.querySelectorAll('[data-category]').forEach(b=>b.onclick=()=>{const category=categoryRows[Number(b.dataset.category)]?.[0];if(category==='CTC calls')return openManagementTemplate('ctc');if(category==='New contract calls')return openManagementTemplate('contract');return showDetail('category:'+b.dataset.category)});
  if(!$('execInlineProspects').dataset.wired){$('execInlineProspects').dataset.wired='1';$('execInlineProspects').addEventListener('toggle',()=>{if($('execInlineProspects').open)showInlineProspects()});}
  $('rmExecutionPlan').querySelectorAll('[data-exec-target]').forEach(tile=>{
   const action=()=>{
