@@ -19,3 +19,10 @@ assert(!html.includes('setInterval(()=>refresh(false),30000)'),'No 30-second das
 assert(!html.includes('setInterval(function(){if(document.visibilityState===\'visible\')refreshLeadCounter(false);},30000)'),'No 30-second lead polling');
 for(const id of ['execHomeWork','execProspecting','execSaveCloseout'])assert(daily.includes('id="'+id+'"'),'Preserve live control '+id);
 console.log('PASS RM cleanup: unique scripts and styles, retired checklist, removed high-frequency polling');
+
+assert(compact.includes('rmExecReady'),'Legacy workboard must only be hidden once execution is ready');
+assert(!compact.includes(':has(> #rmExecutionPlan)>:not(#rmExecutionPlan)'),'Never hide every legacy workboard child unconditionally');
+assert(daily.includes('Promise.allSettled(['),'Independent database sources must permit partial recovery');
+assert(daily.includes('sourceWarnings.join'),'Partial results must clearly warn rather than silently substitute zeros');
+assert(daily.includes("classList.remove('rmExecReady')"),'Failed execution must restore legacy fallback');
+assert(daily.includes("classList.add('rmExecReady')"),'Loaded execution can hide redundant legacy header');
