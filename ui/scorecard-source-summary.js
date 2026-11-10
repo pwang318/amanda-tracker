@@ -17,6 +17,13 @@ css.textContent=[
 '#rmActualScorecard .rmCurrentWeighted strong{font-size:30px;display:block;margin:3px 0}',
 '#rmActualScorecard button{border:1px solid #d8cbe8;border-radius:7px;background:white;color:#50317f;padding:7px 12px;cursor:pointer;font-size:11px}',
 '#rmActualScorecard .rmActualHead{display:flex;justify-content:space-between;gap:10px;align-items:center}',
+'#rm85Roadmap{margin:14px 0;padding:15px 0;border-top:1px solid #e4dfea;color:#2c2143}',
+'#rm85Roadmap h3{font-size:17px;margin:0 0 5px;color:#2c2143}',
+'#rm85Roadmap p,#rm85Roadmap li{font-size:12px;line-height:1.55;color:#625574}',
+'#rm85Roadmap .rm85Gap{font-weight:800;color:#4b3174;font-size:14px;margin:8px 0}',
+'#rm85Roadmap .rm85Actions{display:flex;flex-wrap:wrap;gap:7px;margin:12px 0}',
+'#rm85Roadmap button{border:1px solid #d6c8e7;border-radius:8px;padding:9px 11px;background:#fff;color:#50317f;font-size:12px;font-weight:700;min-height:42px;cursor:pointer}',
+'#rm85Roadmap .rm85Scenario{font-size:12px;color:#5f5270;line-height:1.55}',
 '#rmFinalWeightedScore:has(h2){display:block}',
 '@media(max-width:850px){#rmActualScorecard .rmActualGrid{grid-template-columns:repeat(2,minmax(0,1fr))}}'
 ].join('\n');document.head.append(css);
@@ -39,14 +46,57 @@ function liveScoreFromNative(){
  if(!Number.isFinite(total))return null;
  return {total,tierPts,ratioPts,activePts,projected,denominator};
 }
+// Practical scorecard planning is sourced from the same live model as the weighted score.
+function renderPathTo85(live){
+ const host=document.getElementById('rm85Roadmap');if(!host)return;
+ const data=window.rmV429ScoreData;
+ if(!live||!data||!data.counts||!data.target){
+  host.innerHTML='<h3>Path to 85%+</h3><p>Scorecard data is unavailable. Refresh the scorecard to see the current targets; no goals have been estimated.</p>';
+  return;
+ }
+ const t=data.target,k=data.counts,percent=live.total;
+ const deficit=Math.max(0,85.1-percent);
+ const channelNow=Math.max(0,num(k.Channel)),aNow=Math.max(0,num(k.A)),bNow=Math.max(0,num(k.B));
+ const channelGoal=num(t.Channel),aGoal=num(t.A),bGoal=num(t.B);
+ const active=num(data.activePartnerCount),denom=num(data.total),ratio=num(data.ratioTarget),projected=num(data.projectedLeadCount);
+ const valid=[channelNow,aNow,bNow,channelGoal,aGoal,bGoal,active,denom,ratio,projected].every(Number.isFinite)&&ratio>0&&denom>0;
+ if(!valid){host.innerHTML='<h3>Path to 85%+</h3><p>Waiting for verified tier and referral data before calculating a plan.</p>';return}
+ const tierGoal=points(channelGoal,channelGoal,15)+points(aGoal,aGoal,15)+points(bGoal,bGoal,20);
+ const activePts=points(active,200,20);
+ const neededLeadPoints=Math.max(0,85.11-tierGoal-activePts);
+ const requiredProjection=Math.ceil(neededLeadPoints/30*ratio*denom);
+ const possible=neededLeadPoints<=30;
+ const referralsNeeded=Math.max(0,requiredProjection-Math.round(projected));
+ const leadGoal=Math.ceil(ratio*denom);
+ const gapText=deficit>0?deficit.toFixed(1)+' points to reach 85%+':'Target reached — protect the result and keep growing';
+ host.innerHTML='<h3>Path to 85%+</h3>'+
+ '<div class="rm85Gap">'+esc(gapText)+'</div>'+
+ '<p><strong>Amanda’s focus:</strong> Move C agents toward B, earn more agent referrals, protect active relationships, and complete scheduled follow-ups. Daily calls and meetings create opportunities; they do not earn points directly.</p>'+
+ '<p><strong>Daily:</strong> At least 25 cold calls in a full 60-minute prospecting block, plus assigned follow-ups. <strong>Weekly:</strong> 3 new Realtor meetings and 3 relationship meetings (Break Breads). Prioritize C agents near their next closing.</p>'+
+ '<p><strong>Current milestones:</strong> B '+esc(bNow)+' / '+esc(bGoal)+' ('+Math.max(0,bGoal-bNow)+' to go); A '+esc(aNow)+' / '+esc(aGoal)+'; Channel '+esc(channelNow)+' / '+esc(channelGoal)+'; active agents '+esc(active)+' / 200.</p>'+
+ (possible?'<p class="rm85Scenario"><strong>Illustrative team path:</strong> If Channel, A and B reach their current milestones, and active agents remain at '+esc(active)+', projected month-end referrals must reach approximately <strong>'+esc(requiredProjection)+'</strong> to exceed 85%. Current projection: '+esc(Math.round(projected))+'. This is '+esc(referralsNeeded)+' more projected referrals than today. The full referral-ratio target is '+esc(leadGoal)+' projected leads. These are planning scenarios, not guaranteed outcomes.</p>':
+ '<p class="rm85Scenario">Even full tier and referral points would not reach 85% at this active-agent count. Growing the active roster must be part of the plan.</p>')+
+ '<p><strong>Ownership:</strong> Amanda drives C-to-B opportunities and C-agent referrals. Director-led Channel, A and existing B account results contribute to the same team scorecard.</p>'+
+ '<div class="rm85Actions"><button type="button" id="rm85Growth">Open C-to-B opportunities</button><button type="button" id="rm85Prospects">Open prospect list</button><button type="button" id="rm85Leads">Review referred leads</button></div>';
+ host.querySelector('#rm85Growth').onclick=()=>{if(typeof window.v350OpenLane==='function')window.v350OpenLane('growth');else if(typeof window.switchTab==='function')window.switchTab('growth')};
+ host.querySelector('#rm85Prospects').onclick=async()=>{
+  if(typeof window.switchTab!=='function')return;
+  window.switchTab('pipeline');
+  try{if(typeof window.rmRenderNewAgentCallList==='function')await window.rmRenderNewAgentCallList()}catch(e){console.warn('Prospect list refresh unavailable',e)}
+  document.getElementById('rmNewAgentCallList')?.scrollIntoView({behavior:'smooth',block:'start'});
+ };
+ host.querySelector('#rm85Leads').onclick=()=>{if(typeof window.rmV429OpenScoreDetail==='function')window.rmV429OpenScoreDetail('leads');else if(typeof window.switchTab==='function')window.switchTab('scorecard')};
+}
 function renderLiveScore(){
  const targets=[document.getElementById('rmCurrentWeighted'),document.getElementById('rmTodayWeighted')].filter(Boolean);if(!targets.length)return;
  const live=liveScoreFromNative();
  if(live){
   for(const el of targets)el.innerHTML='Current weighted score<strong>'+live.total.toFixed(1)+' / 100</strong><small>Tier growth '+live.tierPts.toFixed(1)+'/50 · Lead pace '+live.ratioPts.toFixed(1)+'/30 · Active growth '+live.activePts.toFixed(1)+'/20 · Updates automatically</small>';
+  renderPathTo85(live);
   return;
  }
  for(const el of targets)el.innerHTML='Current weighted score<strong>Unavailable</strong><small>Waiting for current Power BI and Velocify data.</small>';
+ renderPathTo85(null);
 }
 async function refreshNativeScore(){
  if(refreshing)return;
@@ -61,6 +111,7 @@ function mountTodayScore(){
  if(!heading||document.getElementById('rmTodayWeighted'))return;
  const div=document.createElement('div');div.id='rmTodayWeighted';div.className='rmCurrentWeighted';div.setAttribute('role','status');div.textContent='Updating weighted score…';
  heading.insertAdjacentElement('afterend',div);
+ const roadmap=document.createElement('section');roadmap.id='rm85Roadmap';roadmap.setAttribute('aria-label','Plan for an 85 percent scorecard');div.insertAdjacentElement('afterend',roadmap);
 }
 function mount(){
  mountTodayScore();
@@ -99,11 +150,10 @@ async function load(force){
   const tiers=Object.fromEntries([...text.matchAll(/(?:^|;)(Channel|A|B|C)=(\d+)/g)].map(m=>[m[1],Number(m[2])]));
   const total=Number(log.rows_processed);
   if(!Number.isFinite(total)||!Number.isFinite(tiers.A)||!Number.isFinite(tiers.B)||!Number.isFinite(tiers.C))throw Error('Tier figures missing in latest report');
-  const approvedSnapshot=Date.parse(log.imported_at)<=Date.parse('2026-11-10T04:59:59Z');
-  const vals=approvedSnapshot?[['Active agents',136],['A tier',17],['B tier',21],['C tier',98]]:[['Active agents',total],['A tier',tiers.A],['B tier',tiers.B],['C tier',tiers.C]];
+  const vals=[['Active agents',total],['A tier',tiers.A],['B tier',tiers.B],['C tier',tiers.C]];
   await refreshNativeScore();
   grid.innerHTML=vals.map(([label,value])=>'<div class="rmActualTile"><strong>'+esc(value)+'</strong><span>'+esc(label)+'</span></div>').join('');
-  footer.textContent=(approvedSnapshot?'Director-confirmed November 9 totals. ':'Latest Power BI import. ')+'Source updated '+new Date(log.imported_at).toLocaleString()+'.';
+  footer.textContent='Latest Power BI import: '+new Date(log.imported_at).toLocaleString()+'.';
   lastFetch=Date.now();
  }catch(e){grid.innerHTML='<div class="rmActualTile" style="grid-column:1/-1">Current totals could not be refreshed.</div>';footer.textContent='Select Refresh to try again.';renderLiveScore();}
  finally{busy=false;tidy()}
