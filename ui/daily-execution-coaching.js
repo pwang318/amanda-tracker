@@ -734,6 +734,8 @@ function renderTrends(){
   const upcoming=open.filter(q=>String(q.work_date||'').slice(0,10)>today);
   const unscheduled=open.filter(q=>!q.work_date);
   const needsReason=overdue.filter(q=>!String(q.carry_forward_reason||'').trim()||!String(q.carry_forward_next_action||'').trim());
+  const queueKeys=new Set(open.map(q=>[String(q.agent_name||'').trim().toLowerCase(),String(q.activity_type||'').trim().toLowerCase(),String(q.work_date||'').slice(0,10)].join('|')));
+  const otherWork=fullVerified?fullWork.filter(q=>!queueKeys.has([String(q['Agent / Item']||'').trim().toLowerCase(),String(q.Category||'').trim().toLowerCase(),String(q['Due Date']||'').slice(0,10)].join('|'))).map(q=>({agent_name:q['Agent / Item'],activity_type:q.Category,work_date:String(q['Due Date']||'').slice(0,10),reason:q['Next Action']||'Open portfolio work'})):[];
   const taskRow=(q,needsExplanation)=>{
    const d=String(q.work_date||'').slice(0,10);
    const reason=String(q.carry_forward_reason||'').trim(),action=String(q.carry_forward_next_action||'').trim();
@@ -745,18 +747,20 @@ function renderTrends(){
       '<button type="button" data-carry-save="'+safe(q.id)+'">Save explanation</button><span data-carry-status="'+safe(q.id)+'" class="execStatus"></span></div>':
      '<p class="execManagerTaskReason">Why not completed: '+safe(reason||'Not documented')+' · Next action: '+safe(action||'Not documented')+'</p>';
    return '<article class="execManagerTask" data-carry-id="'+safe(q.id||'')+'">'+identity+
-     (needsExplanation?editor:'<p class="execManagerTaskReason">'+(d>today?'Scheduled for a future date; no missed-work explanation required.':'No due date recorded.')+'</p>')+'</article>';
+     (needsExplanation?editor:'<p class="execManagerTaskReason">'+(d>today?'Scheduled for a future date; no missed-work explanation required.':d?'Open item — manage in its worklist.':'No due date recorded.')+'</p>')+'</article>';
   };
   const group=(title,items,edit,initialOpen)=>'<details class="execManagerGroup"'+(initialOpen?' open':'')+'><summary>'+safe(title)+' · '+items.length+'</summary><div class="execManagerItems">'+(items.length?items.map(q=>taskRow(q,edit)).join(''):'<p class="execManagerEmpty">None</p>')+'</div></details>';
   accountability.innerHTML='<strong>Assigned-work accountability</strong>'+
-    '<p>'+completedToday.length+' verified completed today · '+due.length+' due today · '+overdue.length+' overdue/carried forward · '+upcoming.length+' future · '+unscheduled.length+' needs scheduling.</p>'+
+    '<p>'+completedToday.length+' verified completed today · '+due.length+' due today · '+overdue.length+' overdue/carried forward · '+upcoming.length+' future · '+unscheduled.length+' needs scheduling · '+otherWork.length+' additional portfolio items.</p>'+
     (needsReason.length?'<p class="execNotice execWarn">'+needsReason.length+' overdue assignment(s) still require a reason and a specific next action.</p>':'')+
     (sourceWarnings.length?'<p class="execNotice execWarn">Partial source data: '+safe(sourceWarnings.join(', '))+'.</p>':'')+
     '<small>Future-dated work is not considered missed. Explanations never mark assignments completed or change their due dates.</small>'+
     group('Overdue — explanation required',overdue,true,true)+
     group('Due today — review or document a blocker',due,true,true)+
     group('Upcoming assignments',upcoming,false,false)+
-    group('Needs scheduling',unscheduled,false,false);
+    group('Needs scheduling',unscheduled,false,false)+
+    group('Other open portfolio work — managed in worklists',otherWork,false,false)+
+    (fullVerified?'':'<p class="execNotice execWarn">Other portfolio worklists are still loading or could not be verified.</p>');
   accountability.querySelectorAll('[data-carry-save]').forEach(button=>{
    button.onclick=async()=>{
     const id=button.getAttribute('data-carry-save'),card=button.closest('[data-carry-id]');
