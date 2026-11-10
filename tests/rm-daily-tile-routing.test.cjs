@@ -114,7 +114,7 @@ assert(code.includes('id="execProspecting"'),'Prospecting must be prominent in T
 assert(code.includes('execProspectLog') && code.includes('execProspectTime'),'Prospecting needs logging and time entry actions');
 assert(code.includes('todayCampaigns=need.filter'),'Due today must show the four-week campaign breakdown');
 assert(code.includes('todayOther=need.filter'),'Due today must show non-campaign assigned work separately');
-assert(code.includes('const all=allRaw.filter'),'Snapshot status counts must deduplicate identical agent tasks');
+assert(code.includes('const all=allRaw.map'),'Snapshot normalizes assignment dates without merging distinct saved tasks');
 assert(code.includes('Overdue (before today)'),'Overdue tile must have an unambiguous time window');
 
 assert(!html.includes('outstanding-daily-checklist.js?v='),'Obsolete checklist must not load on the homepage');
