@@ -178,7 +178,7 @@ assert(code.includes("group[1].length>0||['New contract calls','CTC calls','Tues
 for(const marker of ['execWaFiles','execWaFileList','TXN_ID','TXN_CLIENT','TXN_PROPERTY','TXN_BUYER_AGENT','TXN_LISTING_AGENT','TXN_CLOSE_DATE'])
  assert(code.includes(marker),'Missing imported WhatsApp transaction field: '+marker);
 assert(code.includes("window.v176OpenTransaction(isCtc?'CTC Call':'Under Contract Call',agent,role,file.id)"),'Selected import must open established transaction workbench');
-assert(code.includes("!allFiles.has(unique)"),'Imported files must be deduplicated per batch and transaction ID');
+assert(code.includes('if(files.has(x.id))continue'),'Latest imported files must be deduplicated by transaction ID');
 assert(code.includes("String(modal.dataset.txnId||'')!==file.id"),'Prefill must not attach details to the wrong file');
 assert(code.includes('No client or Realtor information has been guessed.'),'Missing imports must never be silently invented');
 assert(!code.includes('navigator.clipboard.writeText(value)'),'Retire competing empty management composer; existing imported workbench owns copy action');
@@ -207,7 +207,7 @@ assert(code.includes("historical.length+' older imported record(s) hidden"),'Old
 assert(code.includes('function paintImportedCallCounters()'),'Transaction worklist tiles must use actual import counts');
 assert(code.includes('refreshImportedCallCounters(true)'),'Transaction counters must refresh from shared imports');
 assert(code.includes("new Set(selected.filter(x=>x.batch===latest)"),'Latest import count must deduplicate exact transaction IDs');
-assert(code.includes("' in latest import · Review ↗'"),'Imported count must be labeled as latest import, not completed calls');
+assert(code.includes("data.outstanding+' calls left · '+data.count+' files"),'CTC/New Contract tiles must show actual pending agent calls and file context');
 
 assert(!code.includes("?'Open imported files ↗'"),'Current CTC/contract tile may not fall back to a stale generic label');
 assert(code.includes("?'Checking latest import…'"),'Current transaction tiles should show a truthful pending state');
@@ -216,3 +216,10 @@ assert(code.includes("'Open Tuesday Updates ↗'"),'Tuesday tile must not displa
 assert(code.includes("window.switchTab('tuesday')"),'Tuesday tile must open the dedicated source-driven Tuesday page');
 assert(!code.includes('Copy-ready CTC update</button>'),'No duplicate CTC recap action on Today');
 assert(!code.includes('Copy-ready New Contract update</button>'),'No duplicate Contract recap action on Today');
+
+assert(code.includes("const key=id+'|'+role+'|'+person"),'Call completion must use transaction ID, agent role and agent identity');
+assert(code.includes("status==='COMPLETE'"),'Only verified completed activity clears a transaction call');
+assert(code.includes("!rmTxnValidName(agent)"),'Missing, placeholder or None None agents cannot create calls');
+assert(code.includes("status==='REMOVED'"),'Removed Realtor contacts may not remain outstanding');
+assert(code.includes("file.outstanding++"),'Count unresolved buyer and listing calls separately');
+assert(code.includes("watcher.observe(modal"),'Counter refreshes when original call workbench closes');
