@@ -11,6 +11,9 @@ assert(!index.includes('Work Mack’s weekly listing-agent update list.'),'No st
 assert(index.includes("const level=String(r.powerbi_level||r.tier||'').trim().toUpperCase()"),'Tier drilldowns must match Power BI classification');
 assert(daily.includes("window.rmOpenProspectList=openProspectList"),'All prospect links share the verified opener');
 assert(daily.includes("data-outreach=\"true\""),'Prospect tile is actionable');
+assert(daily.includes('New Realtor prospecting <small>Open qualified call list</small>'), 'Prospect tile must describe the actual call list');
+assert(daily.includes('<strong>Open list ↗</strong>'), 'Prospect shortcut must not show an unrelated assignment count');
+assert(!daily.includes('New Realtor prospect list <small>Assigned outreach</small>'), 'Legacy misleading zero-count label must be absent');
 assert(daily.includes('id="execMoreMetrics"><summary>'),'Supplementary metric tiles must be accessible');
 assert(daily.includes("categoryRows.push(['Catch-up assignments'"),'Catch-up list remains separate');
 const routes=[];
