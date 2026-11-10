@@ -16034,7 +16034,7 @@ window.rmV429OpenScoreDetail=async function(key){
   let rows=[],heading='',copy='';
   if(['Channel','A','B','C'].includes(key)){
     heading=key==='Channel'?'Channel Accounts':key+' Accounts';
-    rows=(data.active||[]).filter(r=>String(r.tier||'')===key);
+    rows=(data.active||[]).filter(r=>{const level=String(r.powerbi_level||r.tier||'').trim().toUpperCase();return key==='Channel'?level==='A'&&Number(r.closes_past_year||0)>=10:level===key});
     const official=Number((data.counts||{})[key]||0);
     copy=official+' in the official scorecard'+(rows.length!==official?' · '+rows.length+' underlying profile records available in this synced snapshot':'');
     body.innerHTML=rmV429AgentRows(rows);
