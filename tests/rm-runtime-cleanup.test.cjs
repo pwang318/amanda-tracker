@@ -39,7 +39,7 @@ assert(compact.includes('rmExecReady'),'Legacy workboard must only be hidden onc
 assert(!compact.includes(':has(> #rmExecutionPlan)>:not(#rmExecutionPlan)'),'Never hide every legacy workboard child unconditionally');
 assert(daily.includes('Promise.allSettled(['),'Independent database sources must permit partial recovery');
 assert(daily.includes('sourceWarnings.join'),'Partial results must clearly warn rather than silently substitute zeros');
-assert(daily.includes("classList.remove('rmExecReady')"),'Failed execution must restore legacy fallback');
+assert(daily.includes("$('rm350Workboard')?.classList.add('rmExecReady')"),'Failed execution must keep current dashboard and expose inline error');
 assert(daily.includes("classList.add('rmExecReady')"),'Loaded execution can hide redundant legacy header');
 
 assert(!html.includes("e.textContent='⚠ Shared Power BI cannot be verified:"),'No blocking Power BI warning banner in daily workspace');
