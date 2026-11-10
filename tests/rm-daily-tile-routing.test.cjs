@@ -143,10 +143,11 @@ assert(code.includes('managerTasks[Number(button.getAttribute'), 'Manager-review
 
 assert(!code.includes('id="execQuickGuide"'), 'RM Today must stay clear of the unwanted onboarding guide');
 assert(code.includes('id="execRecentDisclosure"'), 'Recent activity should be collapsed until needed');
-assert(code.includes("group[1].length>0||['New contract calls','CTC calls','Tuesday transaction updates'].includes(group[0])"), 'Transaction tiles remain visible when empty');
-assert(code.includes("group[0]!=='Catch-up assignments'"), 'Catch-up remains a separate explicit list, not an extra tile');
+assert(code.includes("const visibleWorklists=new Set(["), 'Every main relationship worklist remains visible when completed');
+assert(code.includes("visibleWorklists.has(group[0])"), 'Cleared categories remain visible, including transaction calls');
+assert(code.includes("!['Catch-up assignments','New Realtor outreach assignments'].includes(group[0])"), 'Catch-up remains a separate explicit list, not an extra tile');
 assert(code.includes('catchupRows.push(q);\n  }\n  const type='), 'Catch-up CTC calls must also appear in CTC list, without duplicating the underlying queue');
-assert(code.includes("group[0]!=='New Realtor outreach assignments'"), 'Do not duplicate prospecting in relationship tiles');
+assert(code.includes("!['Catch-up assignments','New Realtor outreach assignments'].includes(group[0])"), 'Do not duplicate prospecting in relationship tiles');
 assert(code.includes("id=\"execCatchupList\""), 'Catch-up work remains available in primary work order');
 
 assert(code.includes('id="execInlineProspects"'),'One Realtor call-list section stays in Prospect & Grow');
