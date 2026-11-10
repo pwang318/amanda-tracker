@@ -400,6 +400,7 @@ function renderBusinessResults(){
  const bookings=week.filter(scheduledActivity);
  const held=week.filter(a=>/^(New Realtor Meeting|Business Planning|Break Breads?|Team Meeting|Strategic Partner Meeting|Partner Meeting|Retention Meeting)$/i.test(a.act_type||'')&&heldMeeting(a));
  const linked=linkBookedToHeld(activities.filter(scheduledActivity),activities.filter(a=>/^(New Realtor Meeting|Business Planning|Break Breads?|Team Meeting|Strategic Partner Meeting|Partner Meeting|Retention Meeting)$/i.test(a.act_type||'')&&heldMeeting(a))).filter(pair=>String(pair.held.act_date||'').slice(0,10)>=from).length;
+ const nextStepHeld=held.filter(a=>/^\d{4}-\d{2}-\d{2}$/.test(String(a.follow_up_date||'').slice(0,10)));
  const open=queue.filter(q=>String(q.status||'').toLowerCase()==='open'&&/follow.up|campaign|weekly.*call|growth/i.test(String(q.activity_type||'')));
  const completed=completedQueue.filter(q=>/^(worked|complete|completed|done|closed|resolved)$/i.test(String(q.status||''))&&/follow.up|campaign|weekly.*call|growth/i.test(String(q.activity_type||'')));
  const row=(label,value,caption)=>'<div class="execMetric"><strong>'+safe(value)+'</strong><span>'+safe(label)+'</span><small>'+safe(caption)+'</small></div>';
@@ -408,6 +409,7 @@ function renderBusinessResults(){
   row('Meetings booked',bookings.length,'Explicit scheduled outcome in activity')+
   row('Meetings held',held.length,'Held/completed meeting outcomes')+
   row('Held linked to booking',linked,'Same agent and nearby scheduled date')+
+  row('Held with dated next step',nextStepHeld.length+' / '+held.length,'Follow-up date saved on meeting activity')+
   row('C-agent referrals since Nov 9',data?.referrals?data.referrals.length:'Not verified','Unique Velocify keys matched to latest C agents')+
   row('C → B transitions since Nov 9',data?.migrations?data.migrations.length:'Not verified','Recorded tier migrations, not projected')+
   row('Open relationship follow-ups',open.length,'Shared queue, not a historical completion rate')+
