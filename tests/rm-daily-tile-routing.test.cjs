@@ -130,10 +130,10 @@ assert(code.includes('historicalCatchupUnverified'), 'All historical catch-up re
 assert(code.includes('sourceWarnings.length===0&&fullVerified'), 'Last verified refresh requires every source to succeed');
 assert(code.includes('observe(root,{childList:true,subtree:false})'), 'Daily dashboard must not observe all document subtree changes');
 
-assert(code.includes('New Realtor prospecting <small>Open qualified call list</small>'),'New Realtor tile must identify the real call list');
+assert(code.includes('New Realtor prospecting · view call list'),'The single prospecting section clearly names the call list');
 assert(code.includes('<strong>Open list ↗</strong>'),'New Realtor tile must show a clear action, not the queue count');
 assert(!code.includes('New Realtor prospect list <small>Assigned outreach</small>'),'No misleading zero-review prospect tile');
-assert(code.includes("$('execProspectShortcut').querySelector('[data-outreach]')?.addEventListener('click',openProspectList)"),'Prospecting tile must navigate to the call list');
+assert(code.includes("addEventListener('toggle',()=>{if($('execInlineProspects').open)showInlineProspects()})"),'Single Realtor call-list section loads on expansion');
 
 assert(code.includes("group('Overdue — explanation required',overdue,true,true)"),'Manager review lists every overdue assignment');
 assert(code.includes("group('Due today — review or document a blocker',due,true,true)"),'Manager review lists every due-today assignment');
@@ -151,9 +151,9 @@ assert(code.includes('managerTasks[Number(button.getAttribute'), 'Manager-review
 assert(!code.includes('id="execQuickGuide"'), 'RM Today must stay clear of the unwanted onboarding guide');
 assert(code.includes('id="execRecentDisclosure"'), 'Recent activity should be collapsed until needed');
 assert(code.includes("group[1].length>0&&group[0]!=='Catch-up assignments'"), 'Do not show empty categories or duplicate catch-up tile');
-assert(code.includes("group[0]==='New Realtor outreach assignments'||"), 'Always keep prospect list shortcut accessible');
+assert(code.includes("group[0]!=='New Realtor outreach assignments'"), 'Do not duplicate prospecting in relationship tiles');
 assert(code.includes("id=\"execCatchupList\""), 'Catch-up work remains available in primary work order');
 
-assert(code.includes('id="execProspectShortcut"'),'Prospect list shortcut belongs inside Prospect & Grow section');
-assert(code.includes("$('execProspectShortcut').replaceChildren(shortcut)"),'Prospect tile moves into prominent prospecting section');
+assert(code.includes('id="execInlineProspects"'),'One Realtor call-list section stays in Prospect & Grow');
+assert(!code.includes('id="execProspectShortcut"'),'Redundant Realtor prospect shortcut must not render');
 assert(code.includes("undated.length?'<div class="),'No empty Needs Scheduling tile on daily homepage');
