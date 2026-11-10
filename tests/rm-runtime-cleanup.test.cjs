@@ -37,3 +37,8 @@ assert(!html.includes("e.textContent='⚠ Shared Power BI cannot be verified:"),
 assert(html.includes('unique_stamped_profiles:names.size'),'Power BI report and unique profile counts must remain separate');
 assert(html.includes('raw:expected,total:receipt.total'),'Source receipt totals must not silently become stamped-profile counts');
 assert(html.includes('reconciliation_gap:discrepancy'),'Agent-row reconciliation gap must remain auditable');
+
+assert(daily.includes("const preview=list.cloneNode(true)"), 'Realtor call-list content must render inside Prospect & Grow, not just navigate away');
+assert(daily.includes("id=\"execInlineProspects\""), 'Prospect & Grow includes its own expandable Realtor call list');
+assert(daily.includes(String.raw`/^Shared data:\s*reconciliation required\b/i`), 'Floating warning matcher must match actual notice text');
+assert(!daily.includes(String.raw`/^Shared data:\\s*reconciliation required\\b/i`), 'Do not double-escape the floating warning regex');
