@@ -49,19 +49,25 @@ function findActivityCard(today){
  return null;
 }
 function moveTodayAboveScorecard(today){
- const headers=[...today.querySelectorAll('h1,h2,h3')];
- const title=headers.find(el=>/^today$/i.test((el.textContent||'').trim())&&!el.closest('#rmExecutionPlan'));
- const score=headers.find(el=>/^scorecard progress$/i.test((el.textContent||'').trim()));
- if(!title||!score||title===score)return;
- const ancestors=new Set();for(let n=title;n&&n!==today.parentElement;n=n.parentElement)ancestors.add(n);
- let shared=score;while(shared&&!ancestors.has(shared))shared=shared.parentElement;
- if(!shared||shared===title||shared===score||!today.contains(shared))return;
- const branchUnder=(node,parent)=>{let n=node;while(n&&n.parentElement!==parent)n=n.parentElement;return n};
- const todayCard=branchUnder(title,shared),scoreCard=branchUnder(score,shared);
- if(!todayCard||!scoreCard||todayCard===scoreCard||todayCard.parentElement!==scoreCard.parentElement)return;
+ const board=document.getElementById('rm350Workboard')||document.getElementById('rmExecutionPlan');
+ if(!board)return;
+ const headings=[...document.querySelectorAll('h1,h2,h3')];
+ const score=headings.find(el=>/^scorecard progress$/i.test((el.textContent||'').trim())&&today.contains(el))||
+   headings.find(el=>/^scorecard progress$/i.test((el.textContent||'').trim()));
+ if(!score)return;
+ // The Today heading and dashboard may be siblings inside the same card.
+ const todayHeading=headings.find(el=>/^today$/i.test((el.textContent||'').trim())&&today.contains(el)&&!el.closest('#rmExecutionPlan'));
+ const source=todayHeading||board;
+ let common=source;while(common&&!common.contains(score))common=common.parentElement;
+ if(!common||common===document.body&&!today.contains(score))return;
+ const branch=(node,ancestor)=>{let n=node;while(n&&n.parentElement!==ancestor)n=n.parentElement;return n};
+ const todayCard=branch(source,common),scoreCard=branch(score,common);
+ if(!todayCard||!scoreCard||todayCard===scoreCard)return;
+ if(todayCard.parentElement!==scoreCard.parentElement)return;
  if((scoreCard.compareDocumentPosition(todayCard)&Node.DOCUMENT_POSITION_FOLLOWING)!==0)return;
- shared.insertBefore(todayCard,scoreCard);
+ common.insertBefore(todayCard,scoreCard);
 }
+
 function mount(){
  const today=document.getElementById('view-week');if(!today)return;
  moveTodayAboveScorecard(today);
