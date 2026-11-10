@@ -76,6 +76,17 @@ styles.textContent=[
 '#rmExecutionPlan .execMetric span{font-size:11px;color:#645674}',
 '#rmExecutionPlan .execNotice{border-radius:9px;padding:10px 12px;background:#f8f4fb;color:#573877;font-size:12px;line-height:1.5;margin:10px 0}',
 '#rmExecutionPlan .execSourceStatus{font-size:11px;color:#6e6178;margin:4px 0 8px;line-height:1.35}',
+'#rmExecutionPlan #execQuickGuide{background:#faf8fd;border:1px solid #ebe3f2;border-radius:10px;padding:4px 13px;margin:8px 0 12px}',
+'#rmExecutionPlan #execQuickGuide>summary{font-size:13px;line-height:1.4;padding:10px 0}',
+'#rmExecutionPlan #execQuickGuide ol{padding-left:22px;margin:6px 0 10px;font-size:13px;line-height:1.6}',
+'#rmExecutionPlan #execQuickGuide li{margin:6px 0}',
+'#rmExecutionPlan #execQuickGuide small{font-size:12px;color:#69577a}',
+'#rmExecutionPlan #execRecentDisclosure{border-top:1px solid #ece5f1;margin:12px 0;padding-top:4px}',
+'#rmExecutionPlan .execCategoryGrid{gap:8px}',
+'#rmExecutionPlan .execCategoryBtn{min-height:52px!important;padding:11px 13px!important;border-radius:10px!important}',
+'#rmExecutionPlan .execCategoryBtn strong{font-size:16px}',
+'#rmExecutionPlan .execCatchupStatus{padding:10px 12px;margin:8px 0}',
+'#rmExecutionPlan .execCatchupStatus p{font-size:12px}',
 '#rmExecutionPlan .execManagerGroup{border-top:1px solid #e6dceb;margin-top:11px;padding-top:5px}',
 '#rmExecutionPlan .execManagerGroup>summary{font-size:13px;padding:10px 3px}',
 '#rmExecutionPlan .execManagerTask{border:1px solid #e9e1f0;border-radius:9px;padding:12px;margin:8px 0;background:#fff}',
@@ -186,9 +197,9 @@ function mount(){
  const board=$('rm350Workboard')||$('view-week');if(!board)return;
  const existing=$('rmExecutionPlan');if(existing){if(existing.parentElement!==board)board.prepend(existing);if(loaded&&board.id==='rm350Workboard')board.classList.add('rmExecReady');return;}
  const div=document.createElement('section');div.id='rmExecutionPlan';
- div.innerHTML='<div id="execQuickLog" class="execQuickLog"><div><strong>Log Activity</strong><span>Calls, new Realtor outreach, messages and meetings</span></div><button type="button" id="execQuickLogBtn">+ Log Activity</button></div><div class="execRow"><div><h2>Today’s plan</h2><p>Daily priorities, follow-ups, and progress.</p></div><button id="execReload" type="button">Refresh live activity</button></div>'+
- '<div id="execSourceStatus" class="execSourceStatus" role="status">Checking live data…</div><div id="execNotice" class="execNotice">Loading shared activity and schedule…</div>'+
- '<div id="execPriorities" class="execNotice" aria-live="polite"></div><div id="execProspecting" class="execNotice" aria-live="polite"></div><div class="execHomeWork" id="execHomeWork"><h3>Assigned work · open the list to act</h3><div id="execCategoryGrid" class="execCategoryGrid"></div></div><section id="execActivityTimeline" class="execTimeline"><div class="execRow"><h3>Recent activity</h3><button type="button" id="execActivityAll">View all activity</button></div><div id="execTimelineRows">Loading activity…</div></section><div id="execMetrics" class="execMetrics"></div><details id="execMoreMetrics"><summary>More work and activity details</summary><div id="execSecondaryMetrics" class="execMetrics"></div></details><details id="execWeeklyDisclosure" class="execTaskDetails"><summary>Weekly activity details</summary><div id="execWeeklyGoals" class="execNotice" aria-live="polite"></div></details>'+ '<details id="execBusinessDetails"><summary>Business results: meetings, referrals, and C-to-B growth</summary><div id="execBusinessResults" class="execNotice">Checking source records…</div></details>'+
+ div.innerHTML='<div id="execQuickLog" class="execQuickLog"><div><strong>Log Activity</strong><span>Calls, new Realtor outreach, messages and meetings</span></div><button type="button" id="execQuickLogBtn">+ Log Activity</button></div><div class="execRow"><div><h2>Today's workday</h2><p>Start here. Open a worklist, complete the activity, and log the result.</p></div><button id="execReload" type="button">Refresh live activity</button></div>'+
+ '<details id="execQuickGuide"><summary>New here? See the 3-step daily routine</summary><ol><li><strong>Review:</strong> Open Overdue and Due Today. Work the highest-priority follow-ups first.</li><li><strong>Grow:</strong> Protect a full 60 minutes for at least 25 prospecting calls. Use New Realtor prospecting to open the call list.</li><li><strong>Close out:</strong> Log completed activity, record actual prospecting minutes, and document a reason and next action for unfinished work.</li></ol><small>When a task is not finished, it stays open. Record what happened; don't mark it done unless the activity was completed.</small></details><div id="execSourceStatus" class="execSourceStatus" role="status">Checking live data…</div><div id="execNotice" class="execNotice">Loading shared activity and schedule…</div>'+
+ '<div id="execPriorities" class="execNotice" aria-live="polite"></div><div id="execProspecting" class="execNotice" aria-live="polite"></div><div class="execHomeWork" id="execHomeWork"><h3>Worklists</h3><div id="execCategoryGrid" class="execCategoryGrid"></div></div><details id="execRecentDisclosure"><summary>Recent activity</summary><section id="execActivityTimeline" class="execTimeline"><div class="execRow"><h3>Activity log</h3><button type="button" id="execActivityAll">View all activity</button></div><div id="execTimelineRows">Loading activity…</div></section></details><div id="execMetrics" class="execMetrics"></div><details id="execMoreMetrics"><summary>More work and activity details</summary><div id="execSecondaryMetrics" class="execMetrics"></div></details><details id="execWeeklyDisclosure" class="execTaskDetails"><summary>Weekly activity details</summary><div id="execWeeklyGoals" class="execNotice" aria-live="polite"></div></details>'+ '<details id="execBusinessDetails"><summary>Business results: meetings, referrals, and C-to-B growth</summary><div id="execBusinessResults" class="execNotice">Checking source records…</div></details>'+
  
  '<div class="execDetailArea" id="execDetailArea" hidden><button type="button" id="execBack" class="execBack">← Back to Today</button><div class="execRow"><h3 id="execDetailTitle"></h3><button type="button" id="execDetailRefresh">Refresh worklist</button></div><div id="execTaskSummary" class="execTasks"></div></div>'+
  '<details id="execCloseout"><summary>End-of-day review</summary><div id="execMissedSummary" class="execNotice" aria-live="polite"></div>'+
@@ -501,12 +512,12 @@ function render(){
  const regularDue=need.filter(q=>!/\bCatch-up from\b/i.test(String(q.reason||''))).length;
  const refreshStatus=$('execSourceStatus');if(refreshStatus){refreshStatus.textContent=(sourceWarnings.length||!fullVerified?'Partial data · verify source connections':'Live worklists verified')+(lastVerifiedRefresh?' · Last fully verified '+lastVerifiedRefresh.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'}):' · No fully verified refresh yet');}
  priorityBox.innerHTML='<div class="execRow"><div><strong>Outstanding work · '+all.length+'</strong><p>'+regularDue+' regular tasks due today · '+catchupOpen+' historical catch-up tasks remaining</p></div><div><button type="button" id="execOverdueList">Overdue · '+late.length+'</button> <button type="button" id="execDueList">Due today · '+need.length+'</button> <button type="button" id="execNextList">Next workday · '+tmrw.length+'</button></div></div>'+
- '<section class="execCatchupStatus"><div><strong>Historical catch-up · '+catchupOpen+' remaining</strong><p>'+catchupDone+' verified complete of '+catchupTotal+' recorded · '+dueCatchup+' due/overdue · '+nextCatchup+' next workday</p></div><button type="button" id="execCatchupList">Work catch-up list ↗</button></section>'+
+ '<section class="execCatchupStatus"><div><strong>Catch-up work · '+catchupOpen+' remaining</strong><p>'+dueCatchup+' due or overdue · '+nextCatchup+' next workday</p></div><button type="button" id="execCatchupList">Open assignments ↗</button></section>'+
  (historicalCatchupUnverified?'<p class="execNotice execWarn">Historical catch-up reconciliation required: '+catchupTotal+' records found versus 77 originally assigned.</p>':'')+
  (catchupSkipped?'<p class="execNotice execWarn">'+catchupSkipped+' catch-up assignments were skipped without verified completion. Director review required.</p>':'')+
  (agedOpen?'<p class="execNotice execWarn">'+agedOpen+' assignments are at least 3 days overdue. Review before taking on new optional work.</p>':'')+
  '<div class="execRow execNeedsScheduling"><strong>Needs scheduling · '+undated.length+'</strong><button type="button" id="execUndatedList">Open unscheduled ↗</button></div>'+ 
- '<small>Unfinished assignments remain open and appear as overdue on later workdays. Nothing is marked completed by closing this page.</small>';
+ '<small>Unfinished work carries forward automatically. Only verified activity completes an assignment.</small>';
  $('execDueList').onclick=()=>showDetail('section:1');
  $('execOverdueList').onclick=()=>showDetail('section:0');
  $('execNextList').onclick=()=>showDetail('section:2');
@@ -539,7 +550,7 @@ function render(){
  detailGroups=sections.concat(categoryRows);
  detailGroups.push(exactPlans);
  const grid=$('execCategoryGrid');
- grid.innerHTML=categoryRows.map((group,i)=>group[0]==='New Realtor outreach assignments'?'<button type="button" class="execCategoryBtn execProspectTile" data-outreach="true"><span>New Realtor prospecting <small>Open qualified call list</small></span><strong>Open list ↗</strong></button>':'<button type="button" class="execCategoryBtn" data-category="'+i+'"><span>'+safe(group[0])+'</span><strong>'+group[1].length+' ↗</strong></button>').join('');
+ grid.innerHTML=categoryRows.map((group,i)=>({group,i})).filter(({group})=>group[0]==='New Realtor outreach assignments'||(group[1].length>0&&group[0]!=='Catch-up assignments')).map(({group,i})=>group[0]==='New Realtor outreach assignments'?'<button type="button" class="execCategoryBtn execProspectTile" data-outreach="true"><span>New Realtor prospecting <small>Open qualified call list</small></span><strong>Open list ↗</strong></button>':'<button type="button" class="execCategoryBtn" data-category="'+i+'"><span>'+safe(group[0])+'</span><strong>'+group[1].length+' ↗</strong></button>').join('');
  grid.querySelectorAll('[data-category]').forEach(b=>b.onclick=()=>showDetail('category:'+b.dataset.category));
  grid.querySelector('[data-outreach]')?.addEventListener('click',openProspectList);
  $('rmExecutionPlan').querySelectorAll('[data-exec-target]').forEach(tile=>{
