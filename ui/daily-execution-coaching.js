@@ -298,7 +298,7 @@ function showDetail(key,scroll=true){
   return;
  }
  const match=/^(section|category):(\d+)$/.exec(key);
- const index=key==='plans'?detailGroups.length-1:match?(match[1]==='section'?Number(match[2]):sections.length+Number(match[2])):-1;
+ const index=key==='plans'?detailGroups.length-1:match?(match[1]==='section'?Number(match[2]):5+Number(match[2])):-1;
  const group=detailGroups[index];
  if(!group){activeDetail=null;detail.hidden=true;home.hidden=false;return}
  home.hidden=true;detail.hidden=false;
