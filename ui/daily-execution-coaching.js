@@ -484,7 +484,7 @@ function render(){
  const wg=weeklyGoals(d),weekLabel=fmt(wg.start);
  $('execWeeklyGoals').innerHTML='<strong>Week of '+safe(weekLabel)+'</strong>'+
  '<p>Calls <b>'+wg.calls+' / '+wg.goalCalls+'</b> logged · Prospecting <b>'+wg.minutes.total+' / '+wg.goalMinutes+'</b> minutes reported'+(wg.minutes.known<wg.days.length?' (incomplete reporting)':'')+'.</p>'+
- '<p>Activity pace: <b>'+(wg.pct==null?'—':wg.pct+'%')+'</b> · Activity goals are separate from the weighted scorecard.</p>';
+ '<p>85% coaching benchmark: at least '+Math.ceil(wg.target*.85)+' held new meetings and '+Math.ceil(wg.target*.85)+' held Break Breads · Activity pace: <b>'+(wg.pct==null?'—':wg.pct+'%')+'</b>. This is separate from the weighted scorecard.</p>';
  const metricRows=[
   ['Cold calls today',offNow?'PTO':cold+' / 25+','cold'],
   ['Prospecting minutes',dataOf(closeRecord(d))?.prospecting_minutes==null?'Not logged / 60':dataOf(closeRecord(d)).prospecting_minutes+' / 60','closeout'],
