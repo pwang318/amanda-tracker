@@ -74,6 +74,8 @@ styles.textContent=[
 '#rmExecutionPlan .execMetric span{font-size:11px;color:#645674}',
 '#rmExecutionPlan .execNotice{border-radius:9px;padding:10px 12px;background:#f8f4fb;color:#573877;font-size:12px;line-height:1.5;margin:10px 0}',
 '#rmExecutionPlan .execSourceStatus{font-size:11px;color:#6e6178;margin:4px 0 8px;line-height:1.35}',
+'#rmExecutionPlan .execNeedsScheduling{margin-top:8px;padding-top:8px;border-top:1px solid #e6dcef}',
+'#rmExecutionPlan .execNeedsScheduling button{min-height:40px}',
 '#rmExecutionPlan #execPriorities>.execRow{align-items:flex-start;gap:10px}',
 '#rmExecutionPlan #execPriorities>.execRow>div:last-child{display:flex;flex-wrap:wrap;gap:6px}',
 '#rmExecutionPlan #execPriorities>.execRow button{flex:1 1 115px;padding:10px 8px;min-height:44px}',
@@ -242,7 +244,7 @@ async function refresh(force=false){
     }
    }catch(err){console.warn('Full RM work list not verified',err)}
   }
-  loaded=true;lastVerifiedRefresh=new Date();render();
+  loaded=true;if(sourceWarnings.length===0&&fullVerified)lastVerifiedRefresh=new Date();render();
   const warning=$('execNotice');
   if(sourceWarnings.length&&warning){warning.className='execNotice execWarn';warning.textContent='Partial data: '+sourceWarnings.join(', ')+' could not be verified. Previously loaded records are retained where available; refresh to retry.';}
   const board=$('rm350Workboard');
@@ -484,7 +486,7 @@ function render(){
  // Keep the dashboard concise: category tiles and due/overdue buttons contain normal
  // campaign and relationship details. Never repeat the normal campaign names beneath catch-up.
  const regularDue=need.filter(q=>!/\bCatch-up from\b/i.test(String(q.reason||''))).length;
- const refreshStatus=$('execSourceStatus');if(refreshStatus){refreshStatus.textContent=(sourceWarnings.length||!fullVerified?'Partial data · check source warnings':'Live worklists verified')+(lastVerifiedRefresh?' · Refreshed '+lastVerifiedRefresh.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'}):' · Refresh pending');}
+ const refreshStatus=$('execSourceStatus');if(refreshStatus){refreshStatus.textContent=(sourceWarnings.length||!fullVerified?'Partial data · verify source connections':'Live worklists verified')+(lastVerifiedRefresh?' · Last fully verified '+lastVerifiedRefresh.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'}):' · No fully verified refresh yet');}
  priorityBox.innerHTML='<div class="execRow"><div><strong>Outstanding work · '+all.length+'</strong><p>'+regularDue+' regular tasks due today · '+catchupOpen+' historical catch-up tasks remaining</p></div><div><button type="button" id="execOverdueList">Overdue · '+late.length+'</button> <button type="button" id="execDueList">Due today · '+need.length+'</button> <button type="button" id="execNextList">Next workday · '+tmrw.length+'</button></div></div>'+
  '<section class="execCatchupStatus"><div><strong>Historical catch-up · '+catchupOpen+' remaining</strong><p>'+catchupDone+' verified complete of '+catchupTotal+' recorded · '+dueCatchup+' due/overdue · '+nextCatchup+' next workday</p></div><button type="button" id="execCatchupList">Work catch-up list ↗</button></section>'+
  (historicalCatchupUnverified?'<p class="execNotice execWarn">Historical catch-up reconciliation required: '+catchupTotal+' records found versus 77 originally assigned.</p>':'')+
@@ -726,9 +728,11 @@ window.rmAmandaIsOOO=d=>loaded?isOff(String(d||iso()).slice(0,10)):null;
 window.rmAmandaNextWorkday=d=>loaded?nextWorkday(String(d||iso()).slice(0,10)):null;
 function init(){
  mount();refresh(true);
- // The app may replace the Today view after page initialization. Observe the document rather than a stale board node.
+ // Watch only workboard child replacements, not every unrelated DOM mutation.
  let scheduled=false;
- new MutationObserver(()=>{if(scheduled)return;scheduled=true;requestAnimationFrame(()=>{scheduled=false;try{mount()}catch(e){console.error('RM daily plan mount failed',e)}})}).observe(document.body,{childList:true,subtree:true});
+ const root=document.getElementById('view-week')||document.body;
+ new MutationObserver(()=>{if(scheduled)return;scheduled=true;requestAnimationFrame(()=>{scheduled=false;try{mount()}catch(e){console.error('RM daily plan mount failed',e)}})}).observe(root,{childList:true,subtree:false});
+ window.addEventListener('rm-growth-updated',mount);
  window.addEventListener('focus',()=>refresh(false));
  window.addEventListener('rm-work-queue-changed',()=>refresh(true));
  document.addEventListener('visibilitychange',()=>{if(!document.hidden)refresh(false)});
