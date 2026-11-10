@@ -41,7 +41,7 @@ assert(code.includes('window.rmV440GetPortfolioData'), 'Portfolio work must load
 assert(code.includes("rows.map((q,i)=>"), 'Every assigned item must be accessible');
 assert(!/Fresh start · November 9 onward/i.test(code), 'Internal reset wording not user facing');
 assert(html.includes('ui/daily-execution-coaching.js?v='), 'Daily script loaded');
-for(const path of ['ui/daily-execution-coaching.js','ui/outstanding-daily-checklist.js','ui/fast-activity-workflow.js']){
+for(const path of ['ui/daily-execution-coaching.js','ui/fast-activity-workflow.js']){
  const count=html.split('<script defer src="./'+path+'?v=').length-1;
  assert.equal(count,1,'Expected exactly one script load for '+path);
 }
@@ -102,10 +102,9 @@ assert(code.includes('85% coaching benchmark'), 'Compact weekly benchmark remain
 
 const compact=fs.readFileSync('ui/compact-workspace.js','utf8');
 new vm.Script(compact,{filename:'compact-workspace.js'});
-assert(compact.includes('function hideEmptyLegacyPriorities()'),'Empty legacy Today priorities shell must be handled');
-assert(compact.includes("heading.closest('#rmExecutionPlan,#rm350Workboard')"),'Live execution plan must never be hidden');
-assert(compact.includes('content.length<450&&!meaningful'),'Only empty header shells may be removed');
-assert(compact.includes('hideEmptyLegacyPriorities();'),'Cleanup must execute on Today page');
+assert(compact.includes('rmTodayCleanV4'),'Compact styling must be loaded once');
+assert(!compact.includes('MutationObserver'),'Compact styling must not continuously re-render the entire Today page');
+assert(compact.includes(':has(> #rmExecutionPlan)'),'Legacy workboard is hidden only when the new execution plan exists');
 
 assert.equal(html.split('<script defer src="./ui/compact-workspace.js?v=').length-1,1,'Compact workspace must be loaded exactly once');
 assert(code.includes("id=\"execMoreMetrics\""),'Secondary statistics should be collapsed into details');
@@ -117,3 +116,7 @@ assert(code.includes('todayCampaigns=need.filter'),'Due today must show the four
 assert(code.includes('todayOther=need.filter'),'Due today must show non-campaign assigned work separately');
 assert(code.includes('const all=allRaw.filter'),'Snapshot status counts must deduplicate identical agent tasks');
 assert(code.includes('Overdue (before today)'),'Overdue tile must have an unambiguous time window');
+
+assert(!html.includes('outstanding-daily-checklist.js?v='),'Obsolete checklist must not load on the homepage');
+const repeated=(html.match(/id="rm-uniform-prospecting-row"/g)||[]).length;
+assert.equal(repeated,1,'Legacy duplicate inline style blocks must be consolidated');
