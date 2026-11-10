@@ -178,3 +178,10 @@ assert(code.includes("!found.has(id)"),'Imported files must be deduplicated by t
 assert(code.includes("String(modal.dataset.txnId||'')!==file.id"),'Prefill must not attach details to the wrong file');
 assert(code.includes('No client or Realtor information has been guessed.'),'Missing imports must never be silently invented');
 assert(!code.includes('navigator.clipboard.writeText(value)'),'Retire competing empty management composer; existing imported workbench owns copy action');
+
+ // Consistent Realtor task cards and completion behavior.
+ for(const label of ['execWorkCardList','execWorkCardHeader','execWorkCardBody','execWorkCardFooter','Log CTC call','Log New Contract call','Log activity / Complete'])
+  assert(code.includes(label),'Missing shared worklist card: '+label);
+ assert(code.includes('holder.hidden=false;'),'Manager review clicks must reveal the task completion panel');
+ assert(code.includes("if($('execHomeWork'))$('execHomeWork').hidden=true"),'Assignment action must be visible');
+ assert(code.includes('data-carry-open')&&code.includes('Log activity / Complete ↗'),'Manager review must use same completion workflow');
