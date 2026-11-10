@@ -95,15 +95,15 @@ function mount(){
  const div=document.createElement('section');div.id='rmExecutionPlan';
  div.innerHTML='<div class="execRow"><div><h2>Today’s plan</h2><p>Your daily goals, open work, completed activity, and next steps.</p></div><button id="execReload" type="button">Refresh live activity</button></div>'+
  '<div id="execNotice" class="execNotice">Loading shared activity and schedule…</div>'+
- '<div id="execMetrics" class="execMetrics"></div><div id="execWeeklyGoals" class="execNotice" aria-live="polite"></div>'+ '<details id="execBusinessDetails"><summary>Business results · meetings, referrals & C-to-B growth</summary><div id="execBusinessResults" class="execNotice">Checking source records…</div></details>'+
+ '<div id="execMetrics" class="execMetrics"></div><div id="execPriorities" class="execNotice" aria-live="polite"></div><div id="execWeeklyGoals" class="execNotice" aria-live="polite"></div>'+ '<details id="execBusinessDetails"><summary>Business results · meetings, referrals & C-to-B growth</summary><div id="execBusinessResults" class="execNotice">Checking source records…</div></details>'+
  '<div class="execHomeWork" id="execHomeWork"><h3>Open work by category</h3><p>Choose a worklist to see the assigned agents and next actions.</p><div id="execCategoryGrid" class="execCategoryGrid"></div></div>'+
  '<div class="execDetailArea" id="execDetailArea" hidden><button type="button" id="execBack" class="execBack">← Back to Today</button><div class="execRow"><h3 id="execDetailTitle"></h3><button type="button" id="execDetailRefresh">Refresh worklist</button></div><div id="execTaskSummary" class="execTasks"></div></div>'+
  '<details id="execCloseout"><summary>Daily results & closeout · what was missed</summary><div id="execMissedSummary" class="execNotice" aria-live="polite"></div>'+
  '<div class="execForm"><label>Review date<input type="date" id="execReviewDate"></label>'+
  '<label>Main reason<select id="execReason"><option value="">Select a reason</option><option value="meetings">Realtor or business meetings</option><option value="transactions">Urgent transactions or client needs</option><option value="relationships">Existing partner calls</option><option value="interruptions">Schedule changes or interruptions</option><option value="time">Other priorities / time management</option><option value="other">Other / coaching needed</option></select></label></div>'+
- '<div class="execForm"><label>Prospecting minutes completed (self-reported)<input id="execMinutes" type="number" min="0" max="480" step="1" placeholder="0–480"></label></div><label style="font-size:12px;color:#56476b">What happened and what is the next workday plan?</label><textarea id="execNote" maxlength="2000" placeholder="Example: Two appointments ran long. Tomorrow I will block two 30-minute prospecting sessions."></textarea>'+
+ '<div class="execForm"><label>Actual cold-call / prospecting minutes · required<input id="execMinutes" type="number" min="0" max="480" step="1" required placeholder="Enter actual minutes"></label></div><label style="font-size:12px;color:#56476b">Reason for gaps and next workday plan</label><textarea id="execNote" maxlength="2000" placeholder="Example: Two appointments ran long. Tomorrow I will block two 30-minute prospecting sessions."></textarea>'+
  '<div style="margin-top:9px"><button id="execSaveCloseout" type="button">Save coaching closeout</button> <span id="execSaveStatus" class="execStatus"></span></div>'+
- '<small>Use the results above to explain any gap and record the next workday plan. Saving this explanation does not complete outstanding follow-ups. No closeout is needed on approved days off.</small></details>'+
+ '<small>Report actual minutes every scheduled workday, including zero. Saving a closeout does not complete open tasks.</small></details>'+
  '<details id="execOOO"><summary>Out-of-office calendar & coverage plan</summary><p>Days off are excluded from prospecting-goal calculations, not treated as missed goals. Any due relationship work still requires coverage or rescheduling.</p>'+
  '<div id="execDates" class="execDates"></div><div class="execForm"><label>First day off<input id="execOOOStart" type="date"></label><label>Last day off<input id="execOOOEnd" type="date"></label><button id="execSaveOOO" type="button">Save days off</button></div>'+
  '<div id="execOOOCoverage" class="execNotice"></div><div id="execOOOStatus" class="execStatus"></div></details>'+
@@ -173,7 +173,7 @@ function openTask(q){
  if(/transaction/.test(type)&&typeof window.v350OpenLane==='function')return window.v350OpenLane('calls');
  if(typeof window.switchTab==='function')return window.switchTab('portfolio');
 }
-function taskList(title,rows,empty){
+function taskList(title,rows,empty,showHeading=true){
  const list=rows.map((q,i)=>{
   const agent=q.agent_name||q['Agent / Item']||'Assigned agent';
   const type=q.Category||q.activity_type||'Assigned work';
@@ -181,7 +181,7 @@ function taskList(title,rows,empty){
   const due=q.work_date||q['Due Date']||'';
   return '<li><button type="button" class="execTaskGo" data-index="'+i+'"><b>'+safe(agent)+'</b><span style="display:block;font-size:11px;color:#736482">'+safe(type)+(due?' · Due '+safe(due):'')+'</span><span style="display:block;font-size:12px;color:#453755;margin-top:4px">'+safe(action)+'</span><span style="display:block;font-size:11px;margin-top:4px">Open agent record ↗</span></button></li>';
  }).join('');
- return '<section><strong>'+safe(title)+' · '+rows.length+'</strong>'+(rows.length?'<ul>'+list+'</ul>':'<p>'+safe(empty)+'</p>')+'</section>';
+ return '<section>'+(showHeading?'<strong>'+safe(title)+' · '+rows.length+'</strong>':'')+(rows.length?'<ul>'+list+'</ul>':'<p>'+safe(empty)+'</p>')+'</section>';
 }
 function openActivityDetail(kind,scroll=true){
  const d=iso();
@@ -232,7 +232,7 @@ function showDetail(key,scroll=true){
  if(!group){activeDetail=null;detail.hidden=true;home.hidden=false;return}
  home.hidden=true;detail.hidden=false;
  $('execDetailTitle').textContent=group[0]+' · '+group[1].length;
- list.innerHTML=taskList(group[0],group[1],group[2])+
+ list.innerHTML=taskList(group[0],group[1],group[2],false)+
   (!fullVerified?'<p class="execNotice execWarn">Some sources are unavailable. Check the original worklists before treating this category as clear.</p>':'');
  list.querySelectorAll('.execTaskGo').forEach(button=>{
   button.onclick=()=>{
@@ -250,6 +250,7 @@ function render(){
  const all=fullVerified?canonical.concat(queueOnly):queue;
  const late=all.filter(q=>q.work_date&&q.work_date>=COACHING_START&&q.work_date<d);
  const need=all.filter(q=>q.work_date===d);
+ const priorities=[...late,...need].filter((q,i,arr)=>arr.findIndex(x=>String(x.agent_name||'').trim().toLowerCase()+'|'+String(x.activity_type||'').toLowerCase()+'|'+String(x.work_date||'')===String(q.agent_name||'').trim().toLowerCase()+'|'+String(q.activity_type||'').toLowerCase()+'|'+String(q.work_date||''))===i);
  const undated=all.filter(q=>!q.work_date);
  const tmrw=next?all.filter(q=>q.work_date===next):[];
  const weekEnd=addDays(d,7);
@@ -287,10 +288,14 @@ function render(){
  const missingPlans=all.filter(q=>/missing growth plan/i.test(q.Category||q.activity_type||''));
  const noticeMissing=!fullVerified?' (partial)':'';
  const exactPlans=['Missing growth plans',missingPlans,'No agents with missing growth plans found in available worklists'];
+ const priorityBox=$('execPriorities');
+ priorityBox.innerHTML='<strong>Today’s priorities · '+priorities.length+' assigned</strong>'+(priorities.length?'<div class="execTasks"><section><ul>'+priorities.slice(0,6).map((q,i)=>'<li><button class="execTaskGo" type="button" data-priority="'+i+'"><b>'+safe(q.agent_name||'Agent')+'</b> · '+safe(q.activity_type||q.Category||'Follow-up')+' · '+(q.work_date<d?'Overdue':'Due today')+'</button></li>').join('')+'</ul></section></div>':'<p>'+(fullVerified?'No overdue or due-today agent tasks.':'Unable to verify all priorities — check original worklists.')+'</p>')+(priorities.length>6?'<button type="button" id="execSeeAllPriorities">View all '+priorities.length+' priorities</button>':'');
+ priorityBox.querySelectorAll('[data-priority]').forEach(b=>b.onclick=()=>openTask(priorities[Number(b.dataset.priority)]));
+ const allButton=$('execSeeAllPriorities');if(allButton)allButton.onclick=()=>showDetail(late.length?'section:0':'section:1');
  const wg=weeklyGoals(d),weekLabel=fmt(wg.start);
- $('execWeeklyGoals').innerHTML='<strong>Weekly activity goals · week of '+safe(weekLabel)+'</strong> · Aim for 100%; 85% is the coaching benchmark (not the official Power BI scorecard).'+
+ $('execWeeklyGoals').innerHTML='<strong>This week · '+safe(weekLabel)+'</strong>'+
  '<p>New Realtor meetings <b>'+wg.newHeld+' / '+wg.target+'</b> held · Break Breads <b>'+wg.breads+' / '+wg.target+'</b> held · Calls <b>'+wg.calls+' / '+wg.goalCalls+'</b> logged · Prospecting <b>'+wg.minutes.total+' / '+wg.goalMinutes+'</b> minutes reported'+(wg.minutes.known<wg.days.length?' (incomplete reporting)':'')+'.</p>'+
- '<p><strong>Activity benchmark '+(wg.pct==null?'N/A':wg.pct+'%')+'</strong> (calls + two meeting types, each capped at 100%). '+(wg.target?'To reach at least 85% on a '+wg.target+'-day week, each '+wg.target+'-meeting goal requires '+Math.ceil(wg.target*.85)+' held.':'No scheduled workdays in this week.')+' PTO-adjusted targets; only held meetings count. Prospecting time shown separately until all scheduled days are reported.</p>';
+ '<p><strong>Activity pace: '+(wg.pct==null?'—':wg.pct+'%')+'</strong> · 85% coaching benchmark · '+(wg.target?'Weekly meeting pace: '+Math.ceil(wg.target*.85)+' each for 85%.':'No scheduled workdays.')+'</p>';
  $('execMetrics').innerHTML=[
   ['Cold calls today',offNow?'PTO':cold+' / 25+','cold'],
   ['Prospecting minutes',dataOf(closeRecord(d))?.prospecting_minutes==null?'Not logged / 60':dataOf(closeRecord(d)).prospecting_minutes+' / 60','closeout'],
@@ -442,14 +447,14 @@ function renderMissedSummary(d){
   '<li><strong>Prospecting time:</strong> '+(minsKnown?Number(mins)+' of 60 minutes reported'+(minShort?' — '+minShort+' minutes short':' — minimum met'):'Not reported — cannot confirm whether the 60-minute goal was met')+'</li>',
   '<li><strong>New Realtor meetings held:</strong> '+newMeetingFor(d)+' / 1 daily pacing target</li>',
   '<li><strong>Break Breads held:</strong> '+breadFor(d)+' / 1 daily pacing target</li>',
-  '<li><strong>Weekly meetings:</strong> '+weeklyGoals(d).newHeld+' / '+weeklyGoals(d).target+' new Realtor meetings; '+weeklyGoals(d).breads+' / '+weeklyGoals(d).target+' Break Breads held (PTO adjusted)</li>'
+  '<li><strong>Weekly meetings:</strong> '+weeklyGoals(d).newHeld+' / '+weeklyGoals(d).target+' new; '+weeklyGoals(d).breads+' / '+weeklyGoals(d).target+' Break Breads</li>'
  ];
  const taskLine=q=>safe(q.agent_name||q['Agent / Item']||'Unspecified agent')+' · '+safe(q.activity_type||q.Category||'Follow-up');
  el.innerHTML='<strong>Results for '+safe(fmt(d))+'</strong><ul>'+goals.join('')+'</ul>'+
   '<strong>Open work still needing attention</strong><p>'+due.length+' due on this date; '+past.length+' earlier open item(s) carried forward.</p>'+
   (due.length?'<ul>'+due.slice(0,15).map(q=>'<li>'+taskLine(q)+'</li>').join('')+(due.length>15?'<li>Plus '+(due.length-15)+' more — use the Due Today worklist.</li>':'')+'</ul>':'')+
   (!fullVerified?'<p><strong>Partial worklist:</strong> some relationship sources could not be verified. Do not interpret an empty list as no outstanding work.</p>':'')+
-  '<small>Daily meeting goals are pacing targets; weekly totals determine attainment. These are currently open assignments, not proof they were missed or incomplete at the end of the selected date. Minutes are self-reported; calls and meetings come from saved activity.</small>';
+  '<small>Open tasks are current, not a historical record of missed work. Meeting goals are weekly; daily goals show pace.</small>';
 }
 function populateCloseout(){
  if(!$('execReviewDate'))return;const d=selected;const record=dataOf(closeRecord(d));
@@ -463,9 +468,10 @@ function populateCloseout(){
 async function saveCloseout(){
  const d=$('execReviewDate').value,reason=$('execReason').value,note=$('execNote').value.trim(),status=$('execSaveStatus');
  if(isOff(d)){status.textContent='Days off do not require a missed-goal closeout.';return}
- if(!reason||!note){status.textContent='Choose a reason and enter a practical next-workday plan.';return}
- const minutes=$('execMinutes').value.trim();if(minutes!==''&&(!Number.isInteger(Number(minutes))||Number(minutes)<0||Number(minutes)>480)){status.textContent='Enter 0–480 prospecting minutes, or leave blank if unknown.';return}
- const obj={reason,note,prospecting_minutes:minutes===''?null:Number(minutes),logged_cold_calls:coldFor(d),target:25,logged_meetings:meetingFor(d),saved_at:new Date().toISOString()};
+ const minutes=$('execMinutes').value.trim();if(minutes===''||!Number.isInteger(Number(minutes))||Number(minutes)<0||Number(minutes)>480){status.textContent='Enter actual cold-call/prospecting minutes (0–480). Required every scheduled workday.';$('execMinutes').focus();return}
+ const shortDay=Number(minutes)<60||coldFor(d)<25||newMeetingFor(d)<1||breadFor(d)<1;
+ if(shortDay&&(!reason||!note)){status.textContent='A daily pacing goal was missed. Select a reason and add a next-workday plan.';return}
+ const obj={reason,note,prospecting_minutes:Number(minutes),logged_cold_calls:coldFor(d),target:25,logged_meetings:meetingFor(d),saved_at:new Date().toISOString()};
  const prev=closeRecord(d),record={work_date:d,owner:'Amanda',title:'Execution closeout · daily coaching',start_time:'17:58:00',end_time:'17:59:00',block_type:'Daily Closeout',notes:JSON.stringify(obj)};
  $('execSaveCloseout').disabled=true;status.textContent='Saving to shared tracker…';
  try{
