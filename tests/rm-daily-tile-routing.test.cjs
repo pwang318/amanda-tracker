@@ -69,3 +69,15 @@ assert(code.includes('Prospecting time:</strong>'), 'Daily closeout shows prospe
 assert(code.includes('Open work still needing attention'), 'Closeout shows currently open assignments');
 assert(code.includes('Partial worklist:'), 'Closeout warns when full relationship sources are unverified');
 assert(code.includes('renderMissedSummary(d);'), 'Review date changes refresh missed-goal summary');
+
+assert(code.includes('const newMeetingFor=d=>'),'New meetings must be counted separately');
+assert(code.includes('const breadFor=d=>'),'Break Breads must be counted separately');
+assert(code.includes('heldMeeting(a)'),'Only held meetings count toward new targets');
+assert(code.includes('Math.ceil(wg.target*.85)'),'85% weekly benchmark must round to a whole held meeting');
+assert(code.includes("['New meetings today'"),'Daily new meeting tile visible');
+assert(code.includes("['Break Breads today'"),'Daily Break Bread tile visible');
+assert(code.includes("['New meetings this week'"),'Weekly new meeting tile visible');
+assert(code.includes("['Break Breads this week'"),'Weekly Break Bread tile visible');
+assert(code.includes("if(kind==='newmeet'||kind==='weeknew')"),'New meeting tiles must open their matching records');
+assert(code.includes("if(kind==='bread'||kind==='weekbread')"),'Break Bread tiles must open their matching records');
+assert(code.includes('PTO-adjusted targets'),'PTO must reduce weekly expectations');
