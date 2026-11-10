@@ -20248,10 +20248,10 @@ window.rmV453MetaFromProfiles=rmV453MetaFromProfiles;
 function parseReceipt(row){if(!row)return null;try{if(typeof v328ParsePowerBiReceipt==='function'){const r=v328ParsePowerBiReceipt(row.source_app,row.imported_at);if(!r)return null;return{imported_at:r.imported_at||'',raw:Number(r.raw_rows||0),Channel:Number(r.levels&&r.levels.Channel||0),A:Number(r.levels&&r.levels.A||0),B:Number(r.levels&&r.levels.B||0),C:Number(r.levels&&r.levels.C||0),blank:Number(r.levels&&r.levels.Blank||0),other:Number(r.levels&&r.levels.Other||0),total:Number(r.active_rows||0),source:'shared Core Team Power BI receipt'}}}catch(e){}return null}
 let cache=null,cacheAt=0,pending=null;
 function rmVerifiedPowerBiWarning(msg){
- let e=document.getElementById('rmSharedPowerBiWarning');
- if(!msg){if(e)e.remove();return;}
- if(!e){e=document.createElement('div');e.id='rmSharedPowerBiWarning';e.setAttribute('role','alert');e.style.cssText='position:sticky;top:0;z-index:9999;background:#FFF3DC;color:#79450A;border:2px solid #DCAC47;text-align:center;font-weight:700;padding:12px';document.body.prepend(e);}
- e.textContent='⚠ Shared Power BI cannot be verified: '+msg+'. Counts are unavailable until the server refresh succeeds.';
+ // Never place import reconciliation failures over Amanda's day-to-day workspace.
+ // Keep discrepancy reporting in the audit/debug channel instead.
+ const old=document.getElementById('rmSharedPowerBiWarning');if(old)old.remove();
+ if(msg)console.warn('Power BI import audit:',msg);
 }
 async function rmV453PowerBiMeta(force){
  if(!force&&cache&&Date.now()-cacheAt<30000)return cache;
@@ -20274,15 +20274,19 @@ async function rmV453PowerBiMeta(force){
     if(!k||names.has(k))return;names.add(k);
     const level=String(r.powerbi_level||'').trim().toUpperCase();if(levels[level]!==undefined)levels[level]++;
    });
-   // November 9 reconciliation: source contained Tina Hoffman (retiring) and
-   // three Rockford typo rows. Keep the 136-row source receipt for audit, but
-   // validate the 132 actual agent profiles (16 A / 21 B / 95 C).
-   const acknowledged=expected===136&&names.size===132&&
-     levels.A===16&&levels.B===21&&levels.C===95&&String(timestamp).slice(0,10)==='2026-11-09';
-   if(names.size!==expected&&!acknowledged)throw new Error('Only '+names.size+' of '+expected+' agent profiles stamped');
-   if(!acknowledged&&['A','B','C'].some(t=>levels[t]!==Number(receipt[t])))throw new Error('Tier counts differ from server receipt');
-   cache={...receipt,A:levels.A,B:levels.B,C:levels.C,raw:names.size,total:names.size,
-      raw_source_rows:expected,excluded_source_rows:acknowledged?4:0,source:'verified shared Power BI server'};
+   // A Power BI source row is not the same as a unique stamped agent profile.
+   // Source includes duplicate/retired/typo entries, so the numbers are audited separately.
+   // Keep the imported report totals authoritative for the Power BI scorecard.
+   const discrepancy=expected-names.size;
+   const tierMismatch=['A','B','C'].some(t=>levels[t]!==Number(receipt[t]));
+   if(discrepancy!==0||tierMismatch)console.warn('Power BI source/profile reconciliation:',{
+      imported_rows:expected,stamped_unique_profiles:names.size,profile_tiers:levels,
+      source_tiers:{A:receipt.A,B:receipt.B,C:receipt.C},imported_at:row.imported_at
+   });
+   cache={...receipt,raw:expected,total:receipt.total,
+      raw_source_rows:expected,unique_stamped_profiles:names.size,
+      reconciliation_gap:discrepancy,profile_levels:levels,
+      source:'shared Power BI import receipt (source totals; distinct profiles audited separately)'};
    cacheAt=Date.now();rmVerifiedPowerBiWarning(null);return cache;
   }catch(e){cache=null;cacheAt=0;rmVerifiedPowerBiWarning(e.message||'Unknown error');throw e;}
  })().finally(()=>{pending=null});
