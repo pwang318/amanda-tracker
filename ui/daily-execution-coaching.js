@@ -287,17 +287,36 @@ function openActivityDetail(kind,scroll=true){
 }
 // The prospect list is the established Cold Calls work lane, not the activity-summary drawer.
 function openProspectList(){
- if(typeof window.v350OpenLane==='function'){
-  window.v350OpenLane('cold');
-  return true;
+ // The real New Realtor prospect list lives in Pipeline, not the cold-call work lane.
+ if(typeof window.switchTab!=='function'){
+  showProspectRouteError();
+  return false;
  }
- const available=document.querySelector('[data-rm-lane="cold"],[data-lane="cold"]');
- if(available&&typeof available.click==='function'){available.click();return true}
- let message=$('execProspectRouteStatus');
- if(!message){message=document.createElement('p');message.id='execProspectRouteStatus';message.className='execNotice execWarn';const board=$('rmExecutionPlan');if(board)board.prepend(message)}
- message.textContent='The prospect list could not open. Refresh the tracker and try again.';
- return false;
+ window.switchTab('pipeline');
+ const list=document.getElementById('rmNewAgentCallList');
+ const pipeline=document.getElementById('view-pipeline');
+ if(!pipeline){showProspectRouteError();return false}
+ if(typeof window.loadPipeline==='function'){
+  try{Promise.resolve(window.loadPipeline()).catch(e=>console.warn('Prospect list refresh failed',e))}
+  catch(e){console.warn('Prospect list refresh failed',e)}
+ }
+ // The prospect-list component is populated asynchronously after Pipeline renders.
+ let attempts=0;
+ const reveal=()=>{
+  const target=document.getElementById('rmNewAgentCallList');
+  if(target){target.scrollIntoView({behavior:'smooth',block:'start'});return}
+  if(++attempts<8)setTimeout(reveal,150);
+  else showProspectRouteError();
+ };
+ if(list)reveal();else setTimeout(reveal,150);
+ return true;
 }
+function showProspectRouteError(){
+ let message=$('execProspectRouteStatus');
+ if(!message){message=document.createElement('p');message.id='execProspectRouteStatus';message.className='execNotice execWarn';$('rmExecutionPlan')?.prepend(message)}
+ message.textContent='The prospect list could not open. Open New Agents / Pipeline from the navigation or refresh the tracker.';
+}
+
 function showOutreachDetail(scroll=true){
  activeDetail='outreach';
  const home=$('execHomeWork'),detail=$('execDetailArea'),list=$('execTaskSummary');
