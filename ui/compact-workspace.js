@@ -23,32 +23,58 @@ style.textContent=[
  '@media(max-width:440px){#view-week #rm350Workboard{padding:10px!important}#view-week #rmExecutionPlan .execCategoryGrid{grid-template-columns:1fr}#rmTopActivityShortcut button{width:100%}}'
 ].join('\n');
 document.head.append(style);
+function findLegacyDrawer(today){
+ const nodes=[...today.querySelectorAll('summary,h2,h3,h4,button,div,span,p')];
+ const title=nodes.find(el=>el.children.length===0&&/^more (work )?tools$/i.test((el.textContent||'').trim()));
+ if(!title)return null;
+ // A self-contained legacy group contains its original MUST DO / BUILD NEW BUSINESS headings.
+ let parent=title.parentElement;
+ while(parent&&parent!==today){
+  const t=(parent.textContent||'').slice(0,12000);
+  if(/MUST DO/i.test(t)&&/BUILD NEW BUSINESS/i.test(t)&&/4.Week Campaigns/i.test(t))return parent;
+  parent=parent.parentElement;
+ }
+ return title.closest('details')||null;
+}
+function findActivityCard(today){
+ const heads=[...today.querySelectorAll('h2,h3,h4,strong')];
+ const heading=heads.find(el=>/^(log an activity|log activity)$/i.test((el.textContent||'').trim()));
+ if(!heading)return null;
+ let node=heading.parentElement;
+ while(node&&node!==today){
+  if(node.querySelector('button,a')&&/open activity log/i.test(node.textContent||'')&&(node.textContent||'').length<550)return node;
+  node=node.parentElement;
+ }
+ return null;
+}
 function mount(){
  const today=document.getElementById('view-week');if(!today)return;
- // The legacy More work tools disclosure contains duplicate tracker-era controls.
- // Only suppress that specific disclosure; never remove the actual logging forms.
- for(const summary of today.querySelectorAll('summary,button,[role="button"]')){
-  if(!/^more (work )?tools$/i.test((summary.textContent||'').trim()))continue;
-  const drawer=summary.closest('details')||summary.parentElement;
-  if(drawer&&drawer!==today&&drawer.querySelectorAll('button,a,input,select').length>0){
-   drawer.hidden=true;drawer.setAttribute('aria-hidden','true');
-  }
+ const legacy=findLegacyDrawer(today);
+ if(legacy&&!legacy.hidden){legacy.hidden=true;legacy.setAttribute('aria-hidden','true');legacy.style.display='none'}
+ // Move the real Log Activity card, preserving its original click handler.
+ const card=findActivityCard(today);
+ const first=document.getElementById('rm350Workboard')||today.firstElementChild;
+ if(card&&card.parentElement!==today){
+  today.insertBefore(card,first&&first.parentElement===today?first:today.firstChild);
+  card.id='rmTodayActivityCard';
+ }
+ if(card){
+  const duplicate=document.getElementById('rmTopActivityShortcut');
+  if(duplicate)duplicate.remove();
+  return;
  }
  if(document.getElementById('rmTopActivityShortcut'))return;
  const shortcut=document.createElement('div');shortcut.id='rmTopActivityShortcut';
  shortcut.innerHTML='<strong>Log activity</strong><button type="button">Open activity log</button>';
  shortcut.querySelector('button').addEventListener('click',function(){
-  const log=document.getElementById('view-log');
-  const buttons=[...document.querySelectorAll('button,[role="tab"],a')];
-  const nav=buttons.find(b=>b.closest('nav,[role="tablist"],.tabs,.tab-bar,.nav')&&(/^(log activity|activity log|log)$/i.test((b.textContent||'').trim())||b.getAttribute('href')==='#view-log'||b.dataset.tab==='log'));
+  const target=[...document.querySelectorAll('button,a')].find(el=>el!==this&&/open activity log/i.test((el.textContent||'').trim()));
+  if(target){target.click();return}
+  const nav=[...document.querySelectorAll('nav button,nav a,[role="tab"],.tab-bar button')].find(el=>/^(log activity|activity log|log)$/i.test((el.textContent||'').trim())||el.dataset.tab==='log');
   if(nav){nav.click();return}
-  const native=[...buttons].find(b=>b!==this&&b.getAttribute('onclick')&&/showTab\(['"]log['"]\)/.test(b.getAttribute('onclick')));
-  if(native){native.click();return}
-  if(log){log.scrollIntoView({behavior:'smooth',block:'start'});const first=log.querySelector('input:not([type="hidden"]),button');if(first)first.focus({preventScroll:true})}
+  const log=document.getElementById('view-log');
+  if(log){log.scrollIntoView({behavior:'smooth',block:'start'});log.querySelector('input:not([type="hidden"]),button')?.focus({preventScroll:true})}
  });
- const anchor=document.getElementById('rm350Workboard')||today.firstElementChild;
- if(anchor&&anchor.parentNode===today)today.insertBefore(shortcut,anchor);
- else today.prepend(shortcut);
+ today.insertBefore(shortcut,first&&first.parentElement===today?first:today.firstChild);
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',mount);else mount();
 let queued=false;
