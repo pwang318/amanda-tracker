@@ -98,3 +98,10 @@ assert(code.includes("taskList(group[0],group[1],group[2],false)"), 'Drilldown m
 assert(code.includes('Actual cold-call / prospecting minutes · required'), 'Actual prospecting minutes must be labeled as required');
 assert(code.includes("if(minutes===''||!Number.isInteger(Number(minutes))"), 'Closeout refuses to save without actual minutes');
 assert(code.includes('85% coaching benchmark'), 'Compact weekly benchmark remains visible');
+
+const compact=fs.readFileSync('ui/compact-workspace.js','utf8');
+new vm.Script(compact,{filename:'compact-workspace.js'});
+assert(compact.includes('function hideEmptyLegacyPriorities()'),'Empty legacy Today priorities shell must be handled');
+assert(compact.includes("heading.closest('#rmExecutionPlan,#rm350Workboard')"),'Live execution plan must never be hidden');
+assert(compact.includes('content.length<450&&!meaningful'),'Only empty header shells may be removed');
+assert(compact.includes('hideEmptyLegacyPriorities();'),'Cleanup must execute on Today page');
