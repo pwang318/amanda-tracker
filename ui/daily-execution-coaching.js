@@ -337,20 +337,37 @@ const worklistGuide={
  'Due today':['Assignments with a due date today.','Work the saved action and log its completion or document a blocker.'],
  'Next workday':['Open assignments scheduled for the next working day.','Review ahead of time and plan the contact or meeting.'],
  'Upcoming this week':['Open future-dated assignments later this week.','Prepare the required follow-up before its due date.'],
- 'Undated follow-ups':['Actionable follow-ups without a saved due date.','Verify the required work and assign an appropriate follow-up date.']
+ 'Undated follow-ups':['Actionable follow-ups without a saved due date.','Verify the required work and assign an appropriate follow-up date.'],
+ 'Completed queue work':['Previously closed assignment records; these are not outstanding actions.','Open the saved activity feed to review the result; do not repeat completed work.']
 };
 function worklistExplanation(title,rows){
- const guide=worklistGuide[title];
+ const key=title.startsWith('Due today')?'Due today':title.startsWith('Next workday')?'Next workday':title.startsWith('Upcoming dated work')?'Upcoming this week':title.startsWith('Completed queue work')?'Completed queue work':title;
+ const guide=worklistGuide[key];
  if(!guide)return '';
  const sample=rows&&rows.length?'<p><strong>Listed Realtors:</strong> '+rows.length+' open assignment(s) in this category. Select a Realtor to open their record.</p>':'';
  return '<div class="execListGuide"><p><strong>Why these Realtors appear:</strong> '+safe(guide[0])+'</p><p><strong>What to do:</strong> '+safe(guide[1])+'</p>'+sample+'</div>';
 }
+function taskNextAction(q){
+ const saved=String(q['Next Action']||'').trim();
+ if(saved)return saved;
+ const kind=String(q.Category||q.activity_type||'').toLowerCase();
+ if(/4.week|campaign/.test(kind))return 'Complete the scheduled campaign touch, log the outcome, and plan the next touchpoint.';
+ if(/weekly realtor|weekly.*call/.test(kind))return 'Call the Realtor, record the conversation or attempt, and identify the next business opportunity.';
+ if(/growth plan|business plan/.test(kind))return 'Review or complete the Realtor growth plan and record the next commitment.';
+ if(/meeting/.test(kind))return 'Check whether a meeting needs to be booked or followed up; record its status and next step.';
+ if(/portfolio.*attention|needs attention/.test(kind))return 'Review the flagged portfolio item, resolve missing details or contact the Realtor, and log what changed.';
+ if(/transaction|contract|ctc|tuesday/.test(kind))return 'Review the transaction status, contact the appropriate Realtor, and log the actual update.';
+ if(/c.agent|retention|protect|promotion/.test(kind))return 'Contact this C-tier Realtor about a specific referral opportunity and record the growth next step.';
+ if(/follow.up|partner touch/.test(kind))return 'Complete the promised relationship follow-up and record the result and next contact date.';
+ if(/outreach|reconnect|cold call/.test(kind))return 'Call or message the Realtor, document the real outcome, and schedule the next appropriate touch.';
+ return 'Review the saved reason, complete the assigned action, and log the outcome and next step.';
+}
 function taskList(title,rows,empty,showHeading=true){
  const list=rows.map((q,i)=>{
-  const agent=q.agent_name||q['Agent / Item']||'Assigned agent';
+  const agent=q.agent_name||q['Agent / Item']||'Realtor not recorded';
   const type=q.Category||q.activity_type||'Assigned work';
   const reason=String(q.reason||'').trim();
-  const action=String(q['Next Action']||'').trim()||(/\\bCatch-up from\\b/i.test(reason)?'Contact Realtor, log the actual result, and set the next action':'Review this assignment, complete the requested contact or plan, and log the outcome');
+  const action=taskNextAction(q);
   const due=q.work_date||q['Due Date']||'';
   return '<li><button type="button" class="execTaskGo" data-index="'+i+'"><b>'+safe(agent)+'</b><span style="display:block;font-size:11px;color:#736482">'+safe(type)+(due?' · Due '+safe(due):'')+'</span>'+(reason?'<span style="display:block;font-size:12px;color:#675477;margin-top:4px"><strong>Why here:</strong> '+safe(reason)+'</span>':'<span style="display:block;font-size:12px;color:#675477;margin-top:4px"><strong>Why here:</strong> Open assignment in this worklist</span>')+'<span style="display:block;font-size:12px;color:#453755;margin-top:4px"><strong>Next action:</strong> '+safe(action)+'</span><span style="display:block;font-size:11px;margin-top:4px">Open assignment ↗</span></button></li>';
  }).join('');
@@ -506,7 +523,7 @@ function showDetail(key,scroll=true){
   (!fullVerified?'<p class="execNotice execWarn">Some lists could not refresh. Check the source before treating this list as complete.</p>':'');
  list.querySelectorAll('.execTaskGo').forEach(button=>{
   button.onclick=()=>{
-   if(group[0]==='Completed assigned tasks'){if(typeof window.switchTab==='function')window.switchTab('feed');return}
+   if(group[0]==='Completed queue work'){if(typeof window.switchTab==='function')window.switchTab('feed');return}
    const q=group[1][Number(button.dataset.index)];if(q)openTask(q);
   };
  });
@@ -639,7 +656,7 @@ function render(){
  detailGroups=sections.concat(categoryRows);
  detailGroups.push(exactPlans);
  const grid=$('execCategoryGrid');
- grid.innerHTML=categoryRows.map((group,i)=>({group,i})).filter(({group})=>group[1].length>0&&group[0]!=='Catch-up assignments'&&group[0]!=='New Realtor outreach assignments').map(({group,i})=>'<button type="button" class="execCategoryBtn" data-category="'+i+'"><span>'+safe(group[0])+'</span><strong>'+group[1].length+' ↗</strong></button>').join('');
+ grid.innerHTML=categoryRows.map((group,i)=>({group,i})).filter(({group})=>group[1].length>0&&group[0]!=='Catch-up assignments'&&group[0]!=='New Realtor outreach assignments').map(({group,i})=>'<button type="button" class="execCategoryBtn" data-category="'+i+'" aria-label="Open '+safe(group[0])+': '+group[1].length+' assignments"><span>'+safe(group[0])+'</span><strong>'+group[1].length+' tasks ↗</strong></button>').join('');
  grid.querySelectorAll('[data-category]').forEach(b=>b.onclick=()=>showDetail('category:'+b.dataset.category));
  if(!$('execInlineProspects').dataset.wired){$('execInlineProspects').dataset.wired='1';$('execInlineProspects').addEventListener('toggle',()=>{if($('execInlineProspects').open)showInlineProspects()});}
  $('rmExecutionPlan').querySelectorAll('[data-exec-target]').forEach(tile=>{
@@ -655,8 +672,9 @@ function render(){
    if(kind==='plans')return showDetail('plans');
    if(kind.startsWith('section:')||kind.startsWith('category:'))return showDetail(kind);
   };
-  tile.addEventListener('click',action);
-  tile.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();action()}});
+  // Persistent tiles are rebound after each data refresh; never accumulate duplicate click handlers.
+  tile.onclick=action;
+  tile.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();action()}};
  });
  showDetail(activeDetail,false);
  renderBusinessResults();
