@@ -208,7 +208,7 @@ styles.textContent=[
 '@media(max-width:560px){#rmExecutionPlan .execPriorityActions{gap:7px}#rmExecutionPlan .execPriorityActions button{padding:10px!important;min-height:78px}#rmExecutionPlan .execPriorityActions button strong{font-size:23px}#rmExecutionPlan .execPriorityIntro span{display:none}}',
 '@media(max-width:750px){#rmExecutionPlan .execMetrics{grid-template-columns:repeat(2,minmax(0,1fr))}#rmExecutionPlan .execTasks{grid-template-columns:1fr}}',
 '@media(max-width:420px){#rmExecutionPlan{padding:12px}#rmExecutionPlan .execMetrics{grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}#rmExecutionPlan .execMetric{padding:9px}#rmExecutionPlan .execMetric strong{font-size:19px}}'
-].join('\n');styles.textContent += "\n#rmExecutionPlan #execMissedSummary{background:white!important;padding:18px!important;border:1px solid #e8e0f0!important;border-radius:14px!important}\n#rmExecutionPlan .execEodHeading{display:flex;flex-direction:column;gap:5px;margin:0 0 15px}\n#rmExecutionPlan .execEodHeading strong{font-size:17px;color:#36234e}\n#rmExecutionPlan .execEodMetrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-bottom:20px}\n#rmExecutionPlan .execEodMetric{display:flex;flex-direction:column;gap:5px;padding:14px;border:1px solid #ede6f3;border-radius:10px;background:#faf8fc}\n#rmExecutionPlan .execEodMetric span{font-size:11px;color:#655277;font-weight:700}\n#rmExecutionPlan .execEodMetric strong{font-size:22px;color:#483069}\n#rmExecutionPlan .execEodMetric small{font-size:11px;color:#756783}\n#rmExecutionPlan .execEodMetric.good strong{color:#27754b}\n#rmExecutionPlan .execEodWorkTitle{display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;padding:15px 0;border-top:1px solid #eae4f0}\n#rmExecutionPlan .execEodWorkTitle span{font-size:11px;color:#674a85;background:#f5f0fa;padding:6px 9px;border-radius:7px}\n#rmExecutionPlan .execEodTasks{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-bottom:12px}\n#rmExecutionPlan .execEodTask{display:flex;flex-wrap:wrap;align-items:center;gap:7px;padding:12px;background:white;border:1px solid #eae4f0;border-radius:9px}\n#rmExecutionPlan .execEodTask b{font-size:12px;color:#352449}\n#rmExecutionPlan .execEodTask span{font-size:11px;color:#6a5879}\n#rmExecutionPlan .execEodTask em{font-size:10px;font-style:normal;background:#f4eafb;color:#614383;padding:3px 6px;border-radius:6px}\n@media(max-width:700px){#rmExecutionPlan .execEodMetrics{grid-template-columns:repeat(2,minmax(0,1fr))}#rmExecutionPlan .execEodTasks{grid-template-columns:1fr}}\n@media(max-width:420px){#rmExecutionPlan .execEodMetrics{grid-template-columns:1fr}}";document.head.append(styles);
+].join('\n');styles.textContent += "\n#rmExecutionPlan button.execEodTask{width:100%;text-align:left;cursor:pointer;min-height:58px;box-shadow:none}\n#rmExecutionPlan button.execEodTask:hover,#rmExecutionPlan button.execEodTask:focus-visible{background:#f5effb!important;border-color:#9576bc!important;outline:2px solid #9576bc;outline-offset:1px}\n#rmExecutionPlan .execEodTask .execEodOpen{margin-left:auto;font-weight:750;color:#63418b}\n#rmExecutionPlan .execEodChoice{display:block;width:100%;text-align:left;padding:14px 15px;margin:8px 0;border:1px solid #ddd1ed;border-radius:9px;background:#fff;cursor:pointer}" + "\n#rmExecutionPlan #execMissedSummary{background:white!important;padding:18px!important;border:1px solid #e8e0f0!important;border-radius:14px!important}\n#rmExecutionPlan .execEodHeading{display:flex;flex-direction:column;gap:5px;margin:0 0 15px}\n#rmExecutionPlan .execEodHeading strong{font-size:17px;color:#36234e}\n#rmExecutionPlan .execEodMetrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-bottom:20px}\n#rmExecutionPlan .execEodMetric{display:flex;flex-direction:column;gap:5px;padding:14px;border:1px solid #ede6f3;border-radius:10px;background:#faf8fc}\n#rmExecutionPlan .execEodMetric span{font-size:11px;color:#655277;font-weight:700}\n#rmExecutionPlan .execEodMetric strong{font-size:22px;color:#483069}\n#rmExecutionPlan .execEodMetric small{font-size:11px;color:#756783}\n#rmExecutionPlan .execEodMetric.good strong{color:#27754b}\n#rmExecutionPlan .execEodWorkTitle{display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;padding:15px 0;border-top:1px solid #eae4f0}\n#rmExecutionPlan .execEodWorkTitle span{font-size:11px;color:#674a85;background:#f5f0fa;padding:6px 9px;border-radius:7px}\n#rmExecutionPlan .execEodTasks{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-bottom:12px}\n#rmExecutionPlan .execEodTask{display:flex;flex-wrap:wrap;align-items:center;gap:7px;padding:12px;background:white;border:1px solid #eae4f0;border-radius:9px}\n#rmExecutionPlan .execEodTask b{font-size:12px;color:#352449}\n#rmExecutionPlan .execEodTask span{font-size:11px;color:#6a5879}\n#rmExecutionPlan .execEodTask em{font-size:10px;font-style:normal;background:#f4eafb;color:#614383;padding:3px 6px;border-radius:6px}\n@media(max-width:700px){#rmExecutionPlan .execEodMetrics{grid-template-columns:repeat(2,minmax(0,1fr))}#rmExecutionPlan .execEodTasks{grid-template-columns:1fr}}\n@media(max-width:420px){#rmExecutionPlan .execEodMetrics{grid-template-columns:1fr}}";document.head.append(styles);
 let blocks=[],activities=[],queue=[],completedQueue=[],fullWork=[],fullVerified=false,loaded=false,working=false,selected=iso();
 let activeDetail=null,detailGroups=[];
 let sourceWarnings=[];
@@ -1118,14 +1118,39 @@ function renderMissedSummary(d){
   metric('Weekly meetings:',weekly.newHeld+' / '+weekly.target+' new',weekly.breads+' / '+weekly.target+' Break Breads',weekly.newHeld>=weekly.target&&weekly.breads>=weekly.target)
  ];
  const grouped=new Map();
- due.forEach(q=>{const name=nameCase(q.agent_name||q['Agent / Item']||'Unspecified agent'),type=String(q.activity_type||q.Category||'Follow-up').trim(),key=(name+'|'+type).toLowerCase();const item=grouped.get(key)||{name,type,count:0};item.count++;grouped.set(key,item)});
- const taskLine=q=>'<div class="execEodTask"><b>'+safe(q.name)+'</b><span>'+safe(q.type)+'</span>'+(q.count>1?'<em>'+q.count+' items</em>':'')+'</div>';
+ due.forEach(q=>{const name=nameCase(q.agent_name||q['Agent / Item']||'Unspecified agent'),type=String(q.activity_type||q.Category||'Follow-up').trim(),key=(name+'|'+type).toLowerCase();const item=grouped.get(key)||{name,type,count:0,rows:[]};item.count++;item.rows.push(q);grouped.set(key,item)});
+ const groups=[...grouped.values()];
+ const taskLine=(q,i)=>'<button type="button" class="execEodTask" data-eod-task="'+i+'" aria-label="Open '+safe(q.name)+' '+safe(q.type)+(q.count>1?' '+q.count+' assignments':'')+'"><b>'+safe(q.name)+'</b><span>'+safe(q.type)+'</span>'+(q.count>1?'<em>'+q.count+' items</em>':'')+'<span class="execEodOpen">Open ↗</span></button>';
  el.innerHTML='<div class="execEodHeading"><strong>Results for '+safe(fmt(d))+'</strong><small>Daily results and outstanding commitments</small></div>'+
   '<div class="execEodMetrics">'+goals.join('')+'</div>'+
   '<div class="execEodWorkTitle"><strong>Open work still needing attention</strong><span>'+due.length+' due · '+past.length+' carried forward</span></div>'+
-  (grouped.size?'<div class="execEodTasks">'+[...grouped.values()].map(taskLine).join('')+'</div>':'<p>No work due on this date.</p>')+
+  (groups.length?'<div class="execEodTasks">'+groups.map(taskLine).join('')+'</div>':'<p>No work due on this date.</p>')+
   (!fullVerified?'<p><strong>Partial worklist:</strong> some relationship sources could not be verified. Do not interpret an empty list as no outstanding work.</p>':'')+
   '<small>Open tasks are current, not a historical record of missed work. Meeting goals are weekly; daily goals show pace.</small>';
+ el.querySelectorAll('[data-eod-task]').forEach(button=>{
+  const group=groups[Number(button.dataset.eodTask)];
+  button.onclick=()=>{
+   if(!group)return;
+   const items=group.rows;
+   if(items.length===1){openEodAssignment(items[0]);return}
+   const detail=$('execDetailArea'),home=$('execHomeWork'),list=$('execTaskSummary');
+   if(!detail||!list)return;
+   activeDetail=null;
+   detail.hidden=false;if(home)home.hidden=true;
+   const oldPanel=$('execAssignmentAction');if(oldPanel)oldPanel.hidden=true;
+   $('execDetailTitle').textContent=group.name+' · '+group.type+' · '+items.length+' assignments';
+   list.innerHTML='<p class="execNotice">Choose the exact outstanding assignment to work. Each entry remains separate until completed.</p>'+
+    items.map((item,i)=>'<button type="button" class="execEodChoice" data-eod-choice="'+i+'"><b>'+safe(nameCase(item.agent_name||item['Agent / Item']||group.name))+'</b> · '+safe(item.activity_type||item.Category||group.type)+(item.work_date?' · Due '+safe(item.work_date):'')+(item.reason?' · '+safe(item.reason):'')+' ↗</button>').join('');
+   list.querySelectorAll('[data-eod-choice]').forEach(choice=>choice.onclick=()=>openEodAssignment(items[Number(choice.dataset.eodChoice)]));
+   detail.scrollIntoView({behavior:'smooth',block:'start'});
+  };
+ });
+}
+function openEodAssignment(q){
+ const type=String(q.activity_type||q.Category||'');
+ if(/listing agent update|tuesday transaction update/i.test(type)&&typeof window.switchTab==='function'){window.switchTab('tuesday');return}
+ openTask(q);
+ $('execDetailArea')?.scrollIntoView({behavior:'smooth',block:'start'});
 }
 function populateCloseout(){
  if(!$('execReviewDate'))return;const d=selected;const record=dataOf(closeRecord(d));
