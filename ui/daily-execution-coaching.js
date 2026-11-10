@@ -452,25 +452,18 @@ function render(){
  const dueCatchup=catchupRows.filter(q=>q.work_date&&q.work_date<=d).length;
  const nextCatchup=catchupRows.filter(q=>q.work_date===next).length;
  const agedOpen=late.filter(q=>{const n=(Date.parse(d+'T12:00:00')-Date.parse(q.work_date+'T12:00:00'))/86400000;return n>=3}).length;
- const regularFocusRows=focusRows.filter(q=>!/\\bCatch-up from\\b/i.test(String(q.reason||'')));
- const currentRegular=regularFocusRows.filter(q=>q.work_date===d).length;
- const regularPreview=regularFocusRows.slice(0,5);
- const catchupPreview=catchupRows.filter(q=>q.work_date&&q.work_date<=d).sort((a,b)=>String(a.work_date).localeCompare(String(b.work_date))).slice(0,5);
- priorityBox.innerHTML='<div class="execRow"><div><strong>Outstanding work · '+all.length+'</strong><p>Separate daily commitments and historical catch-up work below</p></div><div><button type="button" id="execOverdueList">Overdue · '+late.length+'</button> <button type="button" id="execDueList">Due today · '+need.length+'</button> <button type="button" id="execNextList">Next workday · '+tmrw.length+'</button></div></div>'+
- '<section class="execRegularWork"><div class="execRow"><strong>Today’s regular assignments</strong><span>'+currentRegular+' due today · '+regularFocusRows.length+' due/overdue in focus</span></div>'+
- (regularPreview.length?'<div class="execTasks"><section><ul>'+regularPreview.map((q,i)=>'<li><button type="button" class="execTaskGo" data-focus-row="'+i+'"><b>'+safe(q.agent_name||q['Agent / Item']||'Assigned agent')+'</b><span style="display:block;font-size:11px;color:#736482">'+safe(q.activity_type||q.Category||'Follow-up')+' · '+safe(q.work_date&&q.work_date<d?'Overdue':q.work_date===d?'Due today':'Due '+fmt(q.work_date||next||d))+'</span></button></li>').join('')+'</ul></section></div>':'<p>No regular assignments requiring attention in this focus window.</p>')+
- '</section>'+
- '<section class="execCatchupStatus"><div><strong>Historical catch-up · '+catchupDone+' / '+catchupTotal+' completed</strong><p>'+catchupOpen+' still outstanding · '+dueCatchup+' due/overdue today · '+nextCatchup+' scheduled next workday</p></div><button type="button" id="execCatchupList">Open all catch-up assignments ↗</button>'+
- (catchupPreview.length?'<div class="execCatchupPreview"><strong>Catch-up assignments due now</strong><ul>'+catchupPreview.map((q,i)=>'<li><button type="button" class="execTaskGo" data-catchup-row="'+i+'">'+safe(q.agent_name||'Assigned agent')+' · '+safe(q.activity_type||'Follow-up')+'</button></li>').join('')+'</ul></div>':'')+'</section>'+
+ // Keep the dashboard concise: category tiles and due/overdue buttons contain normal
+ // campaign and relationship details. Never repeat the normal campaign names beneath catch-up.
+ const regularDue=need.filter(q=>!/\bCatch-up from\b/i.test(String(q.reason||''))).length;
+ priorityBox.innerHTML='<div class="execRow"><div><strong>Outstanding work · '+all.length+'</strong><p>'+regularDue+' regular tasks due today · '+catchupOpen+' historical catch-up tasks remaining</p></div><div><button type="button" id="execOverdueList">Overdue · '+late.length+'</button> <button type="button" id="execDueList">Due today · '+need.length+'</button> <button type="button" id="execNextList">Next workday · '+tmrw.length+'</button></div></div>'+
+ '<section class="execCatchupStatus"><div><strong>Historical catch-up · '+catchupDone+' / '+catchupTotal+' completed</strong><p>'+catchupOpen+' still outstanding · '+dueCatchup+' due/overdue today · '+nextCatchup+' scheduled next workday</p></div><button type="button" id="execCatchupList">Open catch-up assignments ↗</button></section>'+
  (catchupSkipped?'<p class="execNotice execWarn">'+catchupSkipped+' catch-up assignments were skipped without verified completion. Director review required.</p>':'')+
  (agedOpen?'<p class="execNotice execWarn">'+agedOpen+' assignments are at least 3 days overdue. Review before taking on new optional work.</p>':'')+
- '<small>Incomplete assignments stay open and carry forward; a logged outcome must be reconciled before completion.</small>';
+ '<small>Regular 4-week campaign names are under the 4-week campaigns tile. Unfinished catch-up tasks remain open until resolved.</small>';
  $('execDueList').onclick=()=>showDetail('section:1');
  $('execOverdueList').onclick=()=>showDetail('section:0');
  $('execNextList').onclick=()=>showDetail('section:2');
  $('execCatchupList').onclick=()=>showDetail('category:'+(categoryRows.length-1));
- priorityBox.querySelectorAll('[data-focus-row]').forEach(b=>b.onclick=()=>{const q=regularPreview[Number(b.dataset.focusRow)];if(q)openTask(q)});
- priorityBox.querySelectorAll('[data-catchup-row]').forEach(b=>b.onclick=()=>{const q=catchupPreview[Number(b.dataset.catchupRow)];if(q)openTask(q)});
  priorityBox.dataset.authoritativeOpenCount=String(openQueue);
  const wg=weeklyGoals(d),weekLabel=fmt(wg.start);
  $('execWeeklyGoals').innerHTML='<strong>This week · '+safe(weekLabel)+'</strong>'+
