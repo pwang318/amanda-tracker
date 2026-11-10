@@ -24,7 +24,7 @@ const activities=[
 ];
 const ctx={
  iso:()=>today,activeFor:date=>activities.filter(x=>x.act_date===date),weeklyGoals:()=>({days:[today]}),heldMeeting:()=>true,
- $:id=>nodes[id],safe:x=>String(x??''),activeDetail:null,
+ $:id=>nodes[id],safe:x=>String(x??''),activityTime:()=> '9:30 AM',activeDetail:null,
  window:{switchTab:tab=>events.push('tab:'+tab)},
  openTask:task=>events.push('agent:'+task.agent_name)
 };
