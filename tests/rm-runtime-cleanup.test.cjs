@@ -14,7 +14,7 @@ assert(!html.includes('outstanding-daily-checklist.js'),'Obsolete checklist must
 assert(!fs.existsSync('ui/outstanding-daily-checklist.js'),'Obsolete checklist source must be deleted');
 assert(!compact.includes('MutationObserver'),'Compact style must not re-render on every DOM change');
 assert(compact.includes('moveTodayAboveScorecard(today)'), 'Today section should precede Scorecard Progress on the RM home screen');
-assert(compact.includes('shared.insertBefore(todayCard,scoreCard)'), 'DOM order should move Today above the scorecard without destroying either card');
+assert(compact.includes('common.insertBefore(todayCard,scoreCard)'), 'DOM order should move Today above the scorecard without destroying either card');
 assert(compact.includes('body:not([data-rm-tab="director"]) #rmSharedPowerBiWarning'), 'Floating Power BI warning is hidden for RM while retaining director diagnostics');
 assert(daily.includes('id="execProspectShortcut"'), 'Prospect shortcut must appear in the growth section');
 assert(daily.includes("$('execProspectShortcut').replaceChildren(shortcut)"), 'Prospect link must be physically moved from the other worklists');
