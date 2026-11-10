@@ -409,24 +409,33 @@ function render(){
   ['Upcoming dated work',thisWeek,'No other dated work scheduled in the next seven days'],
   ['Completed queue work',done,'No completed assigned queue entries verified']
  ];
+ // Categories are mutually exclusive. Catch-up assignments must never be presented
+ // as regular relationship follow-ups, even when their original activity type matches.
  const categories=[
   ['4-week campaigns',/4.week|campaign|conversion/i],
-  ['Relationship follow-ups',/follow.up|portfolio.*follow|partner touch|needs attention/i],
+  ['Relationship follow-ups',/follow.up|portfolio.*follow|partner touch/i],
   ['Weekly Realtor calls',/weekly realtor|weekly.*call/i],
   ['Transaction and Tuesday updates',/transaction|contract|ctc|tuesday/i],
   ['Meetings and growth plans',/meeting|business plan|growth.*plan|growth next step/i],
   ['C-agent growth and protection',/c.agent|growth|retention|protect|promotion/i],
-  ['New Realtor outreach assignments',/outreach|reconnect|cold call/i]
+  ['New Realtor outreach assignments',/outreach|reconnect|cold call/i],
+  ['Portfolio attention reviews',/portfolio.*needs attention|needs attention/i]
  ];
  const categoryRows=categories.map(([title])=>[title,[],'No currently open items found for this category']);
  const otherRows=[];
+ const catchupRows=[];
  for(const q of all){
-  const type=String(q.Category||q.activity_type||q.reason||'');
+  // Reconciled shared work queue rows have reason/source; a historical catch-up
+  // assignment remains in the catch-up list until the logged outcome resolves it.
+  if(/\bCatch-up from\b/i.test(String(q.reason||''))){
+   catchupRows.push(q);
+   continue;
+  }
+  const type=String(q.Category||q.activity_type||'');
   const index=categories.findIndex(([,rx])=>rx.test(type));
   if(index>=0)categoryRows[index][1].push(q);else otherRows.push(q);
  }
  if(otherRows.length)categoryRows.push(['Other assigned tasks',otherRows,'No other tasks verified']);
- const catchupRows=queue.filter(q=>/\bCatch-up from\b/i.test(String(q.reason||'')));
  categoryRows.push(['Catch-up assignments',catchupRows,'No historical catch-up assignments remain open']);
  const weekly=all.filter(q=>/weekly realtor|weekly.*call/i.test(q.Category||q.activity_type||''));
  const campaigns=all.filter(q=>/4.week|campaign/i.test(q.Category||q.activity_type||''));
