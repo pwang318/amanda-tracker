@@ -1108,7 +1108,7 @@ function renderMissedSummary(d){
  const due=unique.filter(q=>String(q.work_date||'').slice(0,10)===d);
  const past=unique.filter(q=>{const date=String(q.work_date||'').slice(0,10);return date>=COACHING_START&&date<d});
  const weekly=weeklyGoals(d);
- const nameCase=v=>String(v||'').trim().toLowerCase().replace(/(^|[\\s'-])([a-z])/g,(_,p,c)=>p+c.toUpperCase());
+ const nameCase=v=>String(v||'').trim().toLowerCase().replace(/(^|[\s'-])([a-z])/g,(_,p,c)=>p+c.toUpperCase());
  const metric=(label,value,note,good)=>'<div class="execEodMetric'+(good?' good':'')+'"><span>'+safe(label)+'</span><strong>'+safe(value)+'</strong><small>'+safe(note)+'</small></div>';
  const goals=[
   metric('Cold calls:',calls+' / 25',shortfall?shortfall+' below minimum':'Minimum met',!shortfall),
