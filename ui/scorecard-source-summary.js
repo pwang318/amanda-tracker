@@ -18,6 +18,13 @@ css.textContent=[
 '#rmActualScorecard button{border:1px solid #d8cbe8;border-radius:7px;background:white;color:#50317f;padding:7px 12px;cursor:pointer;font-size:11px}',
 '#rmActualScorecard .rmActualHead{display:flex;justify-content:space-between;gap:10px;align-items:center}',
 '.rm85Roadmap{margin:14px 0;padding:15px 0;border-top:1px solid #e4dfea;color:#2c2143}',
+'.rm85Roadmap{margin:8px 0;padding:0;border:1px solid #e5dced;border-radius:10px;background:#fcfafe;overflow:hidden}',
+'.rm85Disclosure summary{display:flex;align-items:center;gap:10px;flex-wrap:wrap;cursor:pointer;padding:13px 15px;font-size:13px;font-weight:750;color:#50377a;list-style-position:inside}',
+'.rm85Disclosure summary:focus-visible{outline:2px solid #7953a8;outline-offset:-2px}',
+'.rm85SummaryText{flex:1 1 190px}',
+'.rm85SummaryHint{font-weight:600;font-size:11px;color:#766289}',
+'.rm85DetailBody{padding:0 15px 15px;border-top:1px solid #ece4f3}',
+'.rm85Disclosure[open] .rm85SummaryHint{display:none}',
 '.rm85Roadmap h3{font-size:17px;margin:0 0 5px;color:#2c2143}',
 '.rm85Roadmap p,.rm85Roadmap li{font-size:12px;line-height:1.55;color:#625574}',
 '.rm85Roadmap .rm85Gap{font-weight:800;color:#4b3174;font-size:14px;margin:8px 0}',
@@ -70,7 +77,10 @@ function renderPathTo85(live){
  const referralsNeeded=Math.max(0,requiredProjection-Math.round(projected));
  const leadGoal=Math.ceil(ratio*denom);
  const gapText=deficit>0?deficit.toFixed(1)+' points to reach 85%+':'Target reached — protect the result and keep growing';
- host.innerHTML='<h3>Path to 85%+</h3>'+
+ const wasOpen=!!host.querySelector('details.rm85Disclosure[open]');
+ const summary=deficit>0?'Scorecard plan · '+deficit.toFixed(1)+' points to 85%+':'Scorecard plan · Target reached';
+ const overview='<span class="rm85SummaryText">'+esc(summary)+'</span><span class="rm85SummaryHint">View action plan</span>';
+ host.innerHTML='<details class="rm85Disclosure"'+(wasOpen?' open':'')+'><summary>'+overview+'</summary><div class="rm85DetailBody">'+ '<h3>Path to 85%+</h3>'+
  '<div class="rm85Gap">'+esc(gapText)+'</div>'+
  '<p><strong>Amanda’s focus:</strong> Move C agents toward B, earn more agent referrals, protect active relationships, and complete scheduled follow-ups. Daily calls and meetings create opportunities; they do not earn points directly.</p>'+
  '<p><strong>Daily:</strong> Complete due and overdue commitments first; protect a full 60-minute prospecting block with at least 25 new-agent calls. <strong>Weekly:</strong> Hold 3 new Realtor meetings and 3 Break Breads, review every C agent near B, and confirm which meetings produced referrals or next steps.</p>'+
@@ -79,7 +89,7 @@ function renderPathTo85(live){
  '<p class="rm85Scenario">Even full tier and referral points would not reach 85% at this active-agent count. Growing the active roster must be part of the plan.</p>')+
  '<p><strong>Friday scorecard review:</strong> Compare the actual weighted score with 85, verify newly referred leads, C-to-B conversions and active-agent growth, then set next week’s priority agent list. A call or meeting only counts as scorecard progress when it leads to a measurable result.</p>'+
  '<p><strong>Ownership:</strong> Amanda drives C-to-B opportunities and C-agent referrals. Director-led Channel, A and existing B account results contribute to the same team scorecard.</p>'+
- '<div class="rm85Actions"><button type="button" id="rm85Growth">Open C-to-B opportunities</button><button type="button" id="rm85Prospects">Open prospect list</button><button type="button" id="rm85Leads">Review referred leads</button></div>';
+ '<div class="rm85Actions"><button type="button" id="rm85Growth">Open C-to-B opportunities</button><button type="button" id="rm85Prospects">Open prospect list</button><button type="button" id="rm85Leads">Review referred leads</button></div></div></details>';
  host.querySelector('#rm85Growth').onclick=()=>{if(typeof window.rmOpenCWork==='function')window.rmOpenCWork('near');else if(typeof window.v350OpenLane==='function')window.v350OpenLane('growth');else if(typeof window.switchTab==='function')window.switchTab('growth')};
  host.querySelector('#rm85Prospects').onclick=()=>{
   if(typeof window.rmOpenProspectList==='function')return window.rmOpenProspectList();
