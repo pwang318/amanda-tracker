@@ -120,3 +120,12 @@ assert(code.includes('Overdue (before today)'),'Overdue tile must have an unambi
 assert(!html.includes('outstanding-daily-checklist.js?v='),'Obsolete checklist must not load on the homepage');
 const repeated=(html.match(/id="rm-uniform-prospecting-row"/g)||[]).length;
 assert.equal(repeated,1,'Legacy duplicate inline style blocks must be consolidated');
+
+// Manager accountability and outstanding-work regression safeguards.
+assert(code.includes('completed_at,completion_activity_id'), 'Assignment feed must include verification timestamps and activity IDs');
+assert(code.includes('q.completed_at&&'), 'Completed-today must not infer completion from original due dates');
+assert(code.includes("'Needs scheduling',undated"), 'Unscheduled work must have its own task drilldown');
+assert(code.includes("showDetail('section:5')"), 'Needs-scheduling action must open the undated list');
+assert(code.includes('historicalCatchupUnverified'), 'All historical catch-up records must be reconciled against the original cohort');
+assert(code.includes('sourceWarnings.length===0&&fullVerified'), 'Last verified refresh requires every source to succeed');
+assert(code.includes('observe(root,{childList:true,subtree:false})'), 'Daily dashboard must not observe all document subtree changes');
