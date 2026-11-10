@@ -67,6 +67,23 @@ const nextWorkday=d=>{for(let i=1;i<=45;i++){const s=addDays(d,i);if(workday(s))
 const activeFor=d=>activities.filter(x=>String(x.act_date||'').slice(0,10)===d);
 const coldFor=d=>activeFor(d).filter(x=>String(x.act_type||'').trim()==='Cold Calls').length;
 const meetingFor=d=>activeFor(d).filter(x=>/^(New Realtor Meeting|Business Planning|Break Breads?|Team Meeting|Strategic Partner Meeting|Partner Meeting|Retention Meeting)$/i.test(x.act_type||'')).length;
+// Only genuinely held meetings count; booked or cancelled items do not.
+const heldMeeting=a=>/held|completed|positive/i.test(String(a.outcome||''))&&!/cancel|no.show|reschedul/i.test(String(a.outcome||''));
+const newMeetingFor=d=>activeFor(d).filter(a=>/^New Realtor Meeting$/i.test(String(a.act_type||'').trim())&&heldMeeting(a)).length;
+const breadFor=d=>activeFor(d).filter(a=>/^Break Breads?$/i.test(String(a.act_type||'').trim())&&heldMeeting(a)).length;
+const weekStart=d=>{const x=new Date(d+'T12:00:00'),day=x.getDay();return addDays(d,-((day+6)%7))};
+function weeklyGoals(d){
+ const start=weekStart(d),days=Array.from({length:5},(_,i)=>addDays(start,i)).filter(x=>x>=COACHING_START&&workday(x));
+ const target=days.length,through=days.filter(x=>x<=d),weekRows=days.flatMap(x=>activeFor(x));
+ const unique=(rx)=>weekRows.filter(a=>rx.test(String(a.act_type||'').trim())&&heldMeeting(a)).length;
+ const newHeld=unique(/^New Realtor Meeting$/i),breads=unique(/^Break Breads?$/i);
+ const calls=days.reduce((n,x)=>n+coldFor(x),0);
+ const minutes=days.reduce((acc,x)=>{const m=dataOf(closeRecord(x))?.prospecting_minutes;if(m!=null&&Number.isFinite(Number(m))){acc.total+=Number(m);acc.known++}return acc},{total:0,known:0});
+ const goalCalls=target*25,goalMinutes=target*60;
+ const scoreRows=[{name:'Cold calls',done:calls,goal:goalCalls},{name:'New Realtor meetings held',done:newHeld,goal:target},{name:'Break Breads held',done:breads,goal:target}];
+ const measured=scoreRows.filter(x=>x.goal>0),pct=measured.length?Math.round(100*measured.reduce((n,x)=>n+Math.min(x.done/x.goal,1),0)/measured.length):null;
+ return {start,days,target,through,newHeld,breads,calls,minutes,goalCalls,goalMinutes,pct,scoreRows};
+}
 const closeRecord=d=>blocks.filter(b=>close(b)&&b.work_date===d).sort((a,b)=>String(b.updated_at).localeCompare(String(a.updated_at)))[0];
 function dataOf(b){if(!b)return null;try{return JSON.parse(b.notes||'{}')}catch(e){return null}}
 function planned(d){return queue.filter(q=>String(q.status||'').toLowerCase()==='open'&&String(q.work_date||'').slice(0,10)===d&&d>=COACHING_START)}
@@ -77,7 +94,7 @@ function mount(){
  const div=document.createElement('section');div.id='rmExecutionPlan';
  div.innerHTML='<div class="execRow"><div><h2>Today’s plan</h2><p>Your daily goals, open work, completed activity, and next steps.</p></div><button id="execReload" type="button">Refresh live activity</button></div>'+
  '<div id="execNotice" class="execNotice">Loading shared activity and schedule…</div>'+
- '<div id="execMetrics" class="execMetrics"></div>'+
+ '<div id="execMetrics" class="execMetrics"></div><div id="execWeeklyGoals" class="execNotice" aria-live="polite"></div>'+
  '<div class="execHomeWork" id="execHomeWork"><h3>Open work by category</h3><p>Choose a worklist to see the assigned agents and next actions.</p><div id="execCategoryGrid" class="execCategoryGrid"></div></div>'+
  '<div class="execDetailArea" id="execDetailArea" hidden><button type="button" id="execBack" class="execBack">← Back to Today</button><div class="execRow"><h3 id="execDetailTitle"></h3><button type="button" id="execDetailRefresh">Refresh worklist</button></div><div id="execTaskSummary" class="execTasks"></div></div>'+
  '<details id="execCloseout"><summary>Daily results & closeout · what was missed</summary><div id="execMissedSummary" class="execNotice" aria-live="polite"></div>'+
@@ -166,12 +183,14 @@ function taskList(title,rows,empty){
 }
 function openActivityDetail(kind,scroll=true){
  const d=iso();
- const rows=activeFor(d).filter(a=>kind==='cold'?String(a.act_type||'').trim()==='Cold Calls':kind==='meetings'?/^(New Realtor Meeting|Business Planning|Break Breads?|Team Meeting|Strategic Partner Meeting|Partner Meeting|Retention Meeting)$/i.test(a.act_type||''):true);
+ const week=weeklyGoals(d);
+ const base=kind==='weeknew'||kind==='weekbread'?week.days.flatMap(x=>activeFor(x)):activeFor(d);
+ const rows=base.filter(a=>kind==='cold'?String(a.act_type||'').trim()==='Cold Calls':kind==='meetings'?/^(New Realtor Meeting|Business Planning|Break Breads?|Team Meeting|Strategic Partner Meeting|Partner Meeting|Retention Meeting)$/i.test(a.act_type||''):kind==='newmeet'||kind==='weeknew'?/^New Realtor Meeting$/i.test(String(a.act_type||''))&&heldMeeting(a):kind==='bread'||kind==='weekbread'?/^Break Breads?$/i.test(String(a.act_type||''))&&heldMeeting(a):true);
  activeDetail='activity:'+kind;
  const home=$('execHomeWork'),detail=$('execDetailArea'),list=$('execTaskSummary');
  if(!home||!detail||!list)return;
  home.hidden=true;detail.hidden=false;
- const title=kind==='cold'?'Cold calls logged today':kind==='meetings'?'Meetings logged today':'Activity logged today';
+ const title=kind==='cold'?'Cold calls logged today':kind==='meetings'?'Meetings logged today':kind==='newmeet'?'New Realtor meetings held today':kind==='bread'?'Break Breads held today':kind==='weeknew'?'New Realtor meetings held this week':kind==='weekbread'?'Break Breads held this week':'Activity logged today';
  $('execDetailTitle').textContent=title+' · '+rows.length;
  const escapeDate=x=>String(x||'').slice(0,10);
  list.innerHTML='<section><p>These are the saved activity records counted in this tile. Select an agent to review their relationship, or log another activity below.</p>'+
@@ -266,10 +285,18 @@ function render(){
  const missingPlans=all.filter(q=>/missing growth plan/i.test(q.Category||q.activity_type||''));
  const noticeMissing=!fullVerified?' (partial)':'';
  const exactPlans=['Missing growth plans',missingPlans,'No agents with missing growth plans found in available worklists'];
+ const wg=weeklyGoals(d),weekLabel=fmt(wg.start);
+ $('execWeeklyGoals').innerHTML='<strong>Weekly activity goals · week of '+safe(weekLabel)+'</strong> · Aim for 100%; 85% is the coaching benchmark (not the official Power BI scorecard).'+
+ '<p>New Realtor meetings <b>'+wg.newHeld+' / '+wg.target+'</b> held · Break Breads <b>'+wg.breads+' / '+wg.target+'</b> held · Calls <b>'+wg.calls+' / '+wg.goalCalls+'</b> logged · Prospecting <b>'+wg.minutes.total+' / '+wg.goalMinutes+'</b> minutes reported'+(wg.minutes.known<wg.days.length?' (incomplete reporting)':'')+'.</p>'+
+ '<p><strong>Activity benchmark '+(wg.pct==null?'N/A':wg.pct+'%')+'</strong> (calls + two meeting types, each capped at 100%). '+(wg.target?'To reach at least 85% on a '+wg.target+'-day week, each '+wg.target+'-meeting goal requires '+Math.ceil(wg.target*.85)+' held.':'No scheduled workdays in this week.')+' PTO-adjusted targets; only held meetings count. Prospecting time shown separately until all scheduled days are reported.</p>';
  $('execMetrics').innerHTML=[
   ['Cold calls today',offNow?'PTO':cold+' / 25+','cold'],
   ['Prospecting minutes',dataOf(closeRecord(d))?.prospecting_minutes==null?'Not logged / 60':dataOf(closeRecord(d)).prospecting_minutes+' / 60','closeout'],
   ['Meetings logged',meetingFor(d),'meetings'],
+  ['New meetings today',offNow?'PTO':newMeetingFor(d)+' / 1','newmeet'],
+  ['Break Breads today',offNow?'PTO':breadFor(d)+' / 1','bread'],
+  ['New meetings this week',wg.newHeld+' / '+wg.target,'weeknew'],
+  ['Break Breads this week',wg.breads+' / '+wg.target,'weekbread'],
   ['Overdue work'+noticeMissing,late.length,'section:0'],
   ['Due today'+noticeMissing,need.length,'section:1'],
   ['Weekly calls remaining'+noticeMissing,weekly.length,'category:2'],
@@ -287,6 +314,8 @@ function render(){
    const kind=tile.dataset.execTarget;
    if(kind==='cold')return showDetail('activity:cold');
    if(kind==='meetings')return showDetail('activity:meetings');
+   if(kind==='newmeet'||kind==='weeknew')return showDetail('activity:'+kind);
+   if(kind==='bread'||kind==='weekbread')return showDetail('activity:'+kind);
    if(kind==='feed')return showDetail('activity:all');
    if(kind==='log'){if(typeof window.switchTab==='function')window.switchTab('log');return}
    if(kind==='closeout'){$('execCloseout').open=true;$('execCloseout').scrollIntoView({behavior:'smooth',block:'center'});return}
@@ -328,14 +357,16 @@ function renderMissedSummary(d){
  const goals=[
   '<li><strong>Cold calls:</strong> '+calls+' of 25 minimum logged'+(shortfall?' — '+shortfall+' below minimum':' — minimum met')+'</li>',
   '<li><strong>Prospecting time:</strong> '+(minsKnown?Number(mins)+' of 60 minutes reported'+(minShort?' — '+minShort+' minutes short':' — minimum met'):'Not reported — cannot confirm whether the 60-minute goal was met')+'</li>',
-  '<li><strong>Meetings:</strong> '+meetingFor(d)+' logged (no numeric meeting minimum set here)</li>'
+  '<li><strong>New Realtor meetings held:</strong> '+newMeetingFor(d)+' / 1 daily pacing target</li>',
+  '<li><strong>Break Breads held:</strong> '+breadFor(d)+' / 1 daily pacing target</li>',
+  '<li><strong>Weekly meetings:</strong> '+weeklyGoals(d).newHeld+' / '+weeklyGoals(d).target+' new Realtor meetings; '+weeklyGoals(d).breads+' / '+weeklyGoals(d).target+' Break Breads held (PTO adjusted)</li>'
  ];
  const taskLine=q=>safe(q.agent_name||q['Agent / Item']||'Unspecified agent')+' · '+safe(q.activity_type||q.Category||'Follow-up');
  el.innerHTML='<strong>Results for '+safe(fmt(d))+'</strong><ul>'+goals.join('')+'</ul>'+
   '<strong>Open work still needing attention</strong><p>'+due.length+' due on this date; '+past.length+' earlier open item(s) carried forward.</p>'+
   (due.length?'<ul>'+due.slice(0,15).map(q=>'<li>'+taskLine(q)+'</li>').join('')+(due.length>15?'<li>Plus '+(due.length-15)+' more — use the Due Today worklist.</li>':'')+'</ul>':'')+
   (!fullVerified?'<p><strong>Partial worklist:</strong> some relationship sources could not be verified. Do not interpret an empty list as no outstanding work.</p>':'')+
-  '<small>These are currently open assignments, not proof they were missed or incomplete at the end of the selected date. Minutes are self-reported; calls and meetings come from saved activity.</small>';
+  '<small>Daily meeting goals are pacing targets; weekly totals determine attainment. These are currently open assignments, not proof they were missed or incomplete at the end of the selected date. Minutes are self-reported; calls and meetings come from saved activity.</small>';
 }
 function populateCloseout(){
  if(!$('execReviewDate'))return;const d=selected;const record=dataOf(closeRecord(d));
