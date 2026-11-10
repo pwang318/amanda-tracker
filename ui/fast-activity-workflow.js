@@ -132,7 +132,6 @@ async function quickSave(outcome){
    status.textContent='Saved '+name+' · '+outcome+'. Ready for next agent.';
    input.value='';$('rmFastBooking').hidden=true;$('rmFastDate').value='';
    await refresh(true);
-   try{await reconcile()}catch(e){status.textContent+=' Outstanding work needs a refresh.'}
    input.focus();return;
   }
   if(retries>=40){clearInterval(p);buttons.forEach(b=>b.disabled=false);status.textContent='Check the standard activity form for validation errors before retrying.'}
@@ -143,7 +142,7 @@ async function reconcile(){
  // Catch-up assignments may be completed early; their planned work_date is not a lock.
  const day=iso();
  const pending=await sbFetch('rm_work_queue?select=id,agent_name,activity_type,work_date,reason,status,owner&status=eq.open&owner=eq.Amanda&limit=2500');
- const eligible=cached.filter(a=>a.act_date===day&&/^(Cold Calls|Agent Talk-to|New Agent Follow-up|Reconnect Outreach)$/i.test(a.act_type||'')&&String(a.outcome||'').trim());
+ const eligible=cached.filter(a=>a.act_date===day&&/^(Cold Calls|Agent Talk-to|New Agent Follow-up|Reconnect Outreach)$/i.test(a.act_type||'')&&String(a.outcome||'').trim()&&(typeof window.isAmandaDailyActivity!=='function'||window.isAmandaDailyActivity(a)));
  const alias={'agent talk-to':['agent talk-to','talk-to (text/call)','active agent talk-to'],'cold calls':['cold calls'],'new agent follow-up':['new agent follow-up'],'reconnect outreach':['reconnect outreach']};
  const used=new Set();
  const ordered=(Array.isArray(pending)?pending:[]).slice().sort((a,b)=>String(a.work_date||'').localeCompare(String(b.work_date||'')));
@@ -173,7 +172,7 @@ async function reconcile(){
 
 async function refresh(force=false){
  mount();
- try{await load(force);render()}catch(e){const body=$('rmBusinessOutcomesBody');if(body)body.textContent='Unable to verify saved activity. Refresh to retry; no counts substituted.'}
+ try{await load(force);render();try{await reconcile()}catch(e){console.warn('Outstanding work reconciliation unavailable',e)}}catch(e){const body=$('rmBusinessOutcomesBody');if(body)body.textContent='Unable to verify saved activity. Refresh to retry; no counts substituted.'}
 }
 window.rmDailyActivityBrief=async()=>{
  await load(true);
