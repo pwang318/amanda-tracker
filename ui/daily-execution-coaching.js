@@ -391,11 +391,12 @@ function render(){
  const queueKeys=new Set(queue.map(q=>[String(q.agent_name||'').trim().toLowerCase(),String(q.activity_type||'').trim().toLowerCase(),String(q.work_date||'').slice(0,10)].join('|')));
  const supplements=fullVerified?canonical.filter(r=>!queueKeys.has([String(r.agent_name||'').trim().toLowerCase(),String(r.activity_type||'').toLowerCase(),String(r.work_date||'').slice(0,10)].join('|'))):[];
  const allRaw=queue.concat(supplements);
- const identity=q=>[String(q.agent_name||'').trim().toLowerCase(),String(q.activity_type||q.Category||'').trim().toLowerCase(),String(q.work_date||'').slice(0,10)].join('|');
- const all=allRaw.filter((q,i,rows)=>rows.findIndex(x=>identity(x)===identity(q))===i);
+ // Never merge distinct saved assignments just because they share an agent, type and date.
+ // Only suppress a supplemental worklist row when it mirrors an authoritative queue row.
+ const all=allRaw;
  const late=all.filter(q=>q.work_date&&q.work_date<d);
  const need=all.filter(q=>q.work_date===d);
- const priorities=[...late,...need].filter((q,i,arr)=>arr.findIndex(x=>String(x.agent_name||'').trim().toLowerCase()+'|'+String(x.activity_type||'').toLowerCase()+'|'+String(x.work_date||'')===String(q.agent_name||'').trim().toLowerCase()+'|'+String(q.activity_type||'').toLowerCase()+'|'+String(q.work_date||''))===i);
+ const priorities=[...late,...need];
  const undated=all.filter(q=>!q.work_date);
  const tmrw=next?all.filter(q=>q.work_date===next):[];
  const weekEnd=addDays(d,7);
