@@ -19,6 +19,40 @@ css.textContent=[
 ].join('\n');document.head.append(css);
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 let busy=false, lastFetch=0,refreshing=false;
+const num=x=>{const n=Number(x);return Number.isFinite(n)?n:NaN};
+const points=(count,target,weight)=>Number.isFinite(count)&&Number.isFinite(target)&&target>0?Math.min(weight,Math.max(0,count)/target*weight):NaN;
+function liveScoreFromNative(){
+ const d=window.rmV429ScoreData;
+ if(!d||!d.target||!d.counts)return null;
+ const t=d.target,k=d.counts;
+ const tierA=num(k.A),tierB=num(k.B),channel=num(k.Channel);
+ const tierPts=points(channel,num(t.Channel),15)+points(tierA,num(t.A),15)+points(tierB,num(t.B),20);
+ const denominator=num(d.total),projected=num(d.projectedLeadCount);
+ const ratioTarget=num(d.ratioTarget);
+ const ratioPts=denominator>0&&ratioTarget>0&&Number.isFinite(projected)?Math.min(30,Math.max(0,projected/denominator)/ratioTarget*30):NaN;
+ const activeCount=num(d.activePartnerCount);
+ const activePts=points(activeCount,200,20);
+ const total=tierPts+ratioPts+activePts;
+ if(!Number.isFinite(total))return null;
+ return {total,tierPts,ratioPts,activePts,projected,denominator};
+}
+function renderLiveScore(){
+ const el=document.getElementById('rmCurrentWeighted');if(!el)return;
+ const live=liveScoreFromNative();
+ if(live){
+  el.innerHTML='Live weighted performance estimate<strong>'+live.total.toFixed(1)+' / 100</strong><small>Tier growth '+live.tierPts.toFixed(1)+'/50 · Lead pace '+live.ratioPts.toFixed(1)+'/30 · Active growth '+live.activePts.toFixed(1)+'/20</small>';
+  return;
+ }
+ el.innerHTML='Live weighted performance estimate<strong>Unavailable</strong><small>Waiting for current Power BI and Velocify scorecard data.</small>';
+}
+async function refreshNativeScore(){
+ if(refreshing)return;
+ refreshing=true;
+ try{if(typeof window.rmV428RenderOfficialScorecard==='function')await window.rmV428RenderOfficialScorecard(true)}
+ catch(e){console.warn('Live scorecard refresh failed',e)}
+ finally{refreshing=false;renderLiveScore()}
+}
+
 function mount(){
  const score=document.getElementById('view-scorecard');if(!score)return;
  let panel=document.getElementById('rmActualScorecard');
@@ -29,7 +63,7 @@ function mount(){
   if(official)official.before(panel);else score.prepend(panel);
   panel.querySelector('#rmActualRefresh').onclick=()=>load(true);
  }
- if(Date.now()-lastFetch>120000&&!busy)load(false);
+ if(Date.now()-lastFetch>60000&&!busy)load(false);
  tidy();
 }
 function tidy(){
@@ -64,15 +98,22 @@ async function load(force){
   if(!Number.isFinite(total)||!Number.isFinite(tiers.A)||!Number.isFinite(tiers.B)||!Number.isFinite(tiers.C))throw Error('Tier figures missing in latest report');
   const approvedSnapshot=Date.parse(log.imported_at)<=Date.parse('2026-11-10T04:59:59Z');
   const vals=approvedSnapshot?[['Active agents',136],['A tier',17],['B tier',21],['C tier',98]]:[['Active agents',total],['A tier',tiers.A],['B tier',tiers.B],['C tier',tiers.C]];
-  const weighted=document.getElementById('rmCurrentWeighted');
-  if(weighted){const item=Array.isArray(history)?history[0]:null;const score=Number(item?.weighted);weighted.innerHTML=item&&Number.isFinite(score)?'Current weighted score<strong>'+score.toFixed(2)+'%</strong><small>Saved '+esc(new Date(item.saved_at).toLocaleDateString())+'</small>':'Current weighted score<strong>Not saved</strong><small>No weighted score has been recorded for '+esc(start.slice(0,7))+'. Agent totals are confirmed.</small>';}
+  await refreshNativeScore();
   grid.innerHTML=vals.map(([label,value])=>'<div class="rmActualTile"><strong>'+esc(value)+'</strong><span>'+esc(label)+'</span></div>').join('');
   const distinct=new Set((Array.isArray(leads)?leads:[]).map((v,i)=>String(v.lead_key||'').trim()||('row:'+i)));
   footer.textContent=(approvedSnapshot?'Director-confirmed November 9 totals. ':'Latest Power BI import. ')+'Source updated '+new Date(log.imported_at).toLocaleString()+'.';
   lastFetch=Date.now();
- }catch(e){grid.innerHTML='<div class="rmActualTile" style="grid-column:1/-1">Current totals could not be refreshed.</div>';footer.textContent='Select Refresh to try again.';const weighted=document.getElementById('rmCurrentWeighted');if(weighted)weighted.textContent='Current weighted score unavailable — no verified current-month value loaded.';}
+ }catch(e){grid.innerHTML='<div class="rmActualTile" style="grid-column:1/-1">Current totals could not be refreshed.</div>';footer.textContent='Select Refresh to try again.';const weighted=document.getElementById('rmCurrentWeighted');if(weighted)renderLiveScore();}
  finally{busy=false;tidy()}
 }
-function init(){mount();const root=document.getElementById('view-scorecard');if(root){let queued=false;new MutationObserver(()=>{if(queued)return;queued=true;requestAnimationFrame(()=>{queued=false;mount()})}).observe(root,{childList:true,subtree:true})}}
+function init(){
+ mount();
+ const root=document.getElementById('view-scorecard');
+ if(root){let queued=false;new MutationObserver(()=>{if(queued)return;queued=true;requestAnimationFrame(()=>{queued=false;mount()})}).observe(root,{childList:true,subtree:true})}
+ window.addEventListener('focus',()=>{if(!document.hidden)load(true)});
+ document.addEventListener('visibilitychange',()=>{if(!document.hidden)load(true)});
+ // Refresh the visible scorecard each minute; the native calculation uses current source records.
+ setInterval(()=>{if(!document.hidden&&root&&root.getClientRects().length)load(true)},60000);
+}
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
 })();
