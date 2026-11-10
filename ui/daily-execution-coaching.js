@@ -73,6 +73,16 @@ styles.textContent=[
 '#rmExecutionPlan .execMetric strong{display:block;font-size:23px;color:#523784}',
 '#rmExecutionPlan .execMetric span{font-size:11px;color:#645674}',
 '#rmExecutionPlan .execNotice{border-radius:9px;padding:10px 12px;background:#f8f4fb;color:#573877;font-size:12px;line-height:1.5;margin:10px 0}',
+'#rmExecutionPlan .execSourceStatus{font-size:11px;color:#6e6178;margin:4px 0 8px;line-height:1.35}',
+'#rmExecutionPlan #execPriorities>.execRow{align-items:flex-start;gap:10px}',
+'#rmExecutionPlan #execPriorities>.execRow>div:last-child{display:flex;flex-wrap:wrap;gap:6px}',
+'#rmExecutionPlan #execPriorities>.execRow button{flex:1 1 115px;padding:10px 8px;min-height:44px}',
+'#rmExecutionPlan #execProspecting{margin:10px 0;padding:13px 14px;border:1px solid #dfd2ee}',
+'#rmExecutionPlan #execProspecting .execRow{align-items:center}',
+'#rmExecutionPlan #execHomeWork{margin:11px 0}',
+'#rmExecutionPlan #execHomeWork h3{font-size:14px;margin:4px 0}',
+'#rmExecutionPlan #execCoaching,#rmExecutionPlan #execWeeklyDisclosure{border-top:1px solid #ebe4f1;margin-top:8px}',
+'@media(max-width:540px){#rmExecutionPlan #execPriorities>.execRow{display:block}#rmExecutionPlan #execPriorities>.execRow>div:last-child{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));margin-top:10px}#rmExecutionPlan #execPriorities>.execRow button{min-width:0;font-size:11px!important;white-space:normal}#rmExecutionPlan #execProspecting .execRow{display:block}#rmExecutionPlan #execProspecting .execRow>div:last-child{display:flex;gap:7px;flex-wrap:wrap;margin-top:8px}}',
 '#rmExecutionPlan .execWarn{background:#fff8ee;color:#795028}',
  '#rmExecutionPlan .execCatchupStatus{display:flex;flex-wrap:wrap;gap:10px;align-items:center;border:1px solid #d9c8eb;background:#f7f3fc;border-radius:10px;padding:12px 14px;margin:12px 0}',
  '#rmExecutionPlan .execCatchupStatus strong{font-size:14px;color:#39205c}',
@@ -175,7 +185,7 @@ function mount(){
  '<details id="execOOO"><summary>Time off and coverage</summary><p>Days off are excluded from prospecting-goal calculations, not treated as missed goals. Any due relationship work still requires coverage or rescheduling.</p>'+
  '<div id="execDates" class="execDates"></div><div class="execForm"><label>First day off<input id="execOOOStart" type="date"></label><label>Last day off<input id="execOOOEnd" type="date"></label><button id="execSaveOOO" type="button">Save days off</button></div>'+
  '<div id="execOOOCoverage" class="execNotice"></div><div id="execOOOStatus" class="execStatus"></div></details>'+
- '<details id="execCoaching"><summary>Manager review</summary><div id="execTrends">Loading trend…</div></details>';
+ '<details id="execCoaching"><summary>Manager review · work completed, open, and carried forward</summary><div id="execManagerAccountability" class="execNotice"></div><div id="execTrends">Loading trend…</div></details>';
  // The RM workboard is the only visible direct child of Today: its siblings are intentionally hidden by the existing layout CSS.
  board.prepend(div);
  $('execQuickLogBtn').onclick=()=>{
@@ -698,6 +708,9 @@ function renderTrends(){
  const rows=dates.map(d=>({date:d,cold:coldFor(d),meet:meetingFor(d),reason:dataOf(closeRecord(d))?.reason||'',note:dataOf(closeRecord(d))?.note||'',minutes:dataOf(closeRecord(d))?.prospecting_minutes??null}));
  const met=rows.filter(x=>x.cold>=25).length,short=rows.filter(x=>x.cold<25),withExplanation=short.filter(x=>x.reason).length;
  const counts={};for(const r of rows)if(r.reason)counts[r.reason]=(counts[r.reason]||0)+1;
+ const today=iso();const open=queue.filter(q=>String(q.status||'').toLowerCase()==='open');const overdue=open.filter(q=>String(q.work_date||'').slice(0,10)&&String(q.work_date).slice(0,10)<today);const due=open.filter(q=>String(q.work_date||'').slice(0,10)===today);const completed=completedQueue.filter(q=>/^(worked|complete|completed|done|closed|resolved)$/i.test(String(q.status||'')));
+ const completedToday=completed.filter(q=>String(q.work_date||'').slice(0,10)===today);
+ const accountability=$('execManagerAccountability');if(accountability){accountability.innerHTML='<strong>Assigned-work accountability</strong><p>'+completedToday.length+' completed entries dated today · '+due.length+' still due today · '+overdue.length+' overdue/carried forward · '+open.length+' open assigned tasks in the shared queue.</p>'+(sourceWarnings.length?'<p>Partial data: '+safe(sourceWarnings.join(', '))+'. Counts may be incomplete.</p>':'')+'<small>Completion is counted from saved task statuses, not from page views. Completion dates may differ from assignment dates; the completed-today figure uses the task date, not a verified completion timestamp.</small>';}
  host.innerHTML='<p>Prospecting minimum met '+met+' of '+rows.length+' scheduled workdays. '+short.length+' below minimum; '+withExplanation+' of those have a saved explanation. This view uses logged cold-call entries only, not assumed time worked.</p>'+
  '<div style="overflow:auto"><table style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr><th align="left">Day</th><th align="left">Cold calls</th><th align="left">Meetings</th><th align="left">Prospecting minutes</th><th align="left">Closeout reason</th></tr></thead><tbody>'+
  rows.map(r=>'<tr><td style="padding:6px;border-bottom:1px solid #eee">'+safe(fmt(r.date))+'</td><td>'+r.cold+' / 25</td><td>'+r.meet+'</td><td>'+(r.minutes==null?'Not logged':r.minutes+' / 60')+'</td><td>'+safe(reasons[r.reason]||(r.cold>=25?'Goal met':'Not documented'))+'</td></tr>').join('')+'</tbody></table></div>'+
