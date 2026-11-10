@@ -79,7 +79,7 @@ jobs:
               ('relationship-funnel.js','20261109-funnel2'),
               ('scorecard-source-summary.js','20261109-source1')
           ]:
-              pattern=r'<script\\s+defer\\s+src="\\./ui/'+re.escape(filename)+r'\\?v=[^"]+"\\s*></script>'
+              pattern=r'<script\\b[^>]*\\bsrc\\s*=\\s*["\\\'](?:\\./)?ui/'+re.escape(filename)+r'(?:\\?[^"\\\']*)?["\\\'][^>]*>\\s*</script>'
               s=re.sub(pattern,'',s)
               s=s.replace('</body>','<script defer src="./ui/'+filename+'?v='+version+'"></script></body>',1)
           p.write_text(s,encoding='utf-8')
