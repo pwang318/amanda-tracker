@@ -37,7 +37,7 @@ function findLegacyDrawer(today){
  return title.closest('details')||null;
 }
 function findActivityCard(today){
- const heads=[...today.querySelectorAll('h2,h3,h4,strong')];
+ const heads=[...document.querySelectorAll('h2,h3,h4,strong')];
  const heading=heads.find(el=>/^(log an activity|log activity)$/i.test((el.textContent||'').trim()));
  if(!heading)return null;
  let node=heading.parentElement;
@@ -49,16 +49,27 @@ function findActivityCard(today){
 }
 function mount(){
  const today=document.getElementById('view-week');if(!today)return;
+ // Director-only reconciliation diagnostics must not obscure Amanda's page.
+ for(const node of document.querySelectorAll('div,section,aside')){
+  if(node.children.length>9||node.id==='rmExecutionPlan')continue;
+  const raw=(node.textContent||'').trim();
+  if(!/^Shared data:\s*reconciliation required\b/i.test(raw)||raw.length>600)continue;
+  if(node.querySelector('div,section,aside'))continue;
+  node.hidden=true;node.style.display='none';node.setAttribute('aria-hidden','true');
+ }
+
  const legacy=findLegacyDrawer(today);
  if(legacy&&!legacy.hidden){legacy.hidden=true;legacy.setAttribute('aria-hidden','true');legacy.style.display='none'}
  // Move the real Log Activity card, preserving its original click handler.
  const card=findActivityCard(today);
  const first=document.getElementById('rm350Workboard')||today.firstElementChild;
- if(card&&card.parentElement!==today){
-  today.insertBefore(card,first&&first.parentElement===today?first:today.firstChild);
+ const plan=document.getElementById('rmExecutionPlan');
+ if(card&&plan&&card.parentElement!==plan){
+  plan.insertBefore(card,plan.firstChild);
   card.id='rmTodayActivityCard';
  }
  if(card){
+  card.style.margin='0 0 14px';
   const duplicate=document.getElementById('rmTopActivityShortcut');
   if(duplicate)duplicate.remove();
   return;
