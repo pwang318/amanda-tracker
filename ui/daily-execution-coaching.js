@@ -299,10 +299,11 @@ async function refresh(force=false){
   const warning=$('execNotice');
   if(sourceWarnings.length&&warning){warning.className='execNotice execWarn';warning.textContent='Partial data: '+sourceWarnings.join(', ')+' could not be verified. Previously loaded records are retained where available; refresh to retry.';}
   const board=$('rm350Workboard');
-  if(board)board.classList.toggle('rmExecReady',fullVerified||!sourceWarnings.includes('Outstanding assignments'));
+  if(board){board.classList.toggle('rmExecReady',fullVerified||!sourceWarnings.includes('Outstanding assignments'));board.classList.toggle('rmExecFallback',!(fullVerified||!sourceWarnings.includes('Outstanding assignments')));}
   await refreshBusinessResults();
  }catch(e){
   $('rm350Workboard')?.classList.remove('rmExecReady');
+  $('rm350Workboard')?.classList.add('rmExecFallback');
   const el=$('execNotice');if(el){el.textContent='Unable to verify live work and daily goals. '+String(e.message||e)+'. Please refresh; no zero counts substituted.';el.className='execNotice execWarn'}
  }finally{working=false}
 }
