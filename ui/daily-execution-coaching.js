@@ -62,6 +62,7 @@ styles.textContent=[
 '#rmExecutionPlan #execTaskSummary>h3{grid-column:1/-1;margin:16px 0 2px}',
 '#rmExecutionPlan #execTaskSummary>p{grid-column:1/-1}',
 '#rmExecutionPlan .execCategoryGrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;margin:12px 0}',
+'#rmExecutionPlan .execCategoryBtn{min-height:66px!important}',
 '#rmExecutionPlan .execCategoryBtn{display:flex;align-items:center;justify-content:space-between;text-align:left;gap:8px;padding:14px!important;min-height:60px!important;font-size:13px!important}',
 '#rmExecutionPlan .execCategoryBtn strong{font-size:19px;color:#523784}',
 '#rmExecutionPlan .execInlineProspects{border:1px solid #d9c8ed;background:#fcfaff;border-radius:11px;padding:5px 14px;margin:0 0 15px}',
@@ -249,7 +250,7 @@ function mount(){
  div.innerHTML='<div id="execQuickLog" class="execQuickLog"><div><strong>Log Activity</strong><span>Calls, new Realtor outreach, messages and meetings</span></div><button type="button" id="execQuickLogBtn">+ Log Activity</button></div><div class="execRow"><div><h2>Today’s workday</h2><p>Start with what is due, then work your prospecting and relationship lists.</p></div><button id="execReload" type="button">Refresh live activity</button></div>'+
  '<div id="execSourceStatus" class="execSourceStatus" role="status">Checking live data…</div><div id="execNotice" class="execNotice">Loading shared activity and schedule…</div>'+
  '<div id="execTimedNudge" role="status" aria-live="polite"></div>'+
- '<div class="execSectionTitle"><span class="execStep">1</span><h3>Start here · Today’s priorities</h3></div><div id="execPriorities" class="execNotice" aria-live="polite"></div><div class="execSectionTitle"><span class="execStep">2</span><h3>Prospect and grow</h3></div><div id="execProspecting" class="execNotice" aria-live="polite"></div><details id="execInlineProspects" class="execInlineProspects"><summary>New Realtor prospecting · view call list</summary><div id="execInlineProspectContent" class="execNotice">Open this section to load Realtors from the Pipeline call list.</div></details><div class="execHomeWork" id="execHomeWork"><h3>Relationship worklists</h3><div class="execRow"><button type="button" id="execWhatsAppCtc">Copy-ready CTC update</button><button type="button" id="execWhatsAppContract">Copy-ready New Contract update</button></div><div id="execCategoryGrid" class="execCategoryGrid"></div></div><details id="execRecentDisclosure"><summary>Recent activity</summary><section id="execActivityTimeline" class="execTimeline"><div class="execRow"><h3>Activity log</h3><button type="button" id="execActivityAll">View all activity</button></div><div id="execTimelineRows">Loading activity…</div></section></details><div class="execSectionTitle execWeeklyTitle"><span class="execStep">3</span><h3>Weekly progress</h3></div><div id="execMetrics" class="execMetrics"></div><details id="execMoreMetrics"><summary>More work and activity details</summary><div id="execSecondaryMetrics" class="execMetrics"></div></details><details id="execWeeklyDisclosure" class="execTaskDetails"><summary>Weekly activity details</summary><div id="execWeeklyGoals" class="execNotice" aria-live="polite"></div></details>'+ '<details id="execBusinessDetails"><summary>Business results: meetings, referrals, and C-to-B growth</summary><div id="execBusinessResults" class="execNotice">Checking source records…</div></details>'+
+ '<div class="execSectionTitle"><span class="execStep">1</span><h3>Start here · Today’s priorities</h3></div><div id="execPriorities" class="execNotice" aria-live="polite"></div><div class="execSectionTitle"><span class="execStep">2</span><h3>Prospect and grow</h3></div><div id="execProspecting" class="execNotice" aria-live="polite"></div><details id="execInlineProspects" class="execInlineProspects"><summary>New Realtor prospecting · view call list</summary><div id="execInlineProspectContent" class="execNotice">Open this section to load Realtors from the Pipeline call list.</div></details><div class="execHomeWork" id="execHomeWork"><h3>Relationship worklists</h3><div id="execCategoryGrid" class="execCategoryGrid"></div></div><details id="execRecentDisclosure"><summary>Recent activity</summary><section id="execActivityTimeline" class="execTimeline"><div class="execRow"><h3>Activity log</h3><button type="button" id="execActivityAll">View all activity</button></div><div id="execTimelineRows">Loading activity…</div></section></details><div class="execSectionTitle execWeeklyTitle"><span class="execStep">3</span><h3>Weekly progress</h3></div><div id="execMetrics" class="execMetrics"></div><details id="execMoreMetrics"><summary>More work and activity details</summary><div id="execSecondaryMetrics" class="execMetrics"></div></details><details id="execWeeklyDisclosure" class="execTaskDetails"><summary>Weekly activity details</summary><div id="execWeeklyGoals" class="execNotice" aria-live="polite"></div></details>'+ '<details id="execBusinessDetails"><summary>Business results: meetings, referrals, and C-to-B growth</summary><div id="execBusinessResults" class="execNotice">Checking source records…</div></details>'+
  
  '<div class="execDetailArea" id="execDetailArea" hidden><button type="button" id="execBack" class="execBack">← Back to Today</button><div class="execRow"><h3 id="execDetailTitle"></h3><button type="button" id="execDetailRefresh">Refresh worklist</button></div><div id="execTaskSummary" class="execTasks"></div></div>'+
  '<details id="execCloseout"><summary>End-of-day review</summary><div id="execMissedSummary" class="execNotice" aria-live="polite"></div>'+
@@ -270,8 +271,6 @@ function mount(){
  };
  $('execReload').onclick=()=>refresh(true);
  $('execDetailRefresh').onclick=()=>refresh(true);
- $('execWhatsAppCtc').onclick=()=>openManagementTemplate('ctc');
- $('execWhatsAppContract').onclick=()=>openManagementTemplate('contract');
  $('execBack').onclick=()=>showDetail(null);
  $('execSaveCloseout').onclick=saveCloseout;
  $('execSaveOOO').onclick=saveOOO;
@@ -362,8 +361,8 @@ function paintImportedCallCounters(){
   if(!kind)continue;
   const text=button.querySelector('strong');if(!text)continue;
   const data=rmImportSummary[kind];
-  text.textContent=data?(data.count+' imported file'+(data.count===1?'':'s')+' · Open calls ↗'):(rmImportSummary.error?'Import count unavailable · Retry ↗':'Checking imports…');
-  button.setAttribute('aria-label',label+' · '+(data?data.count+' imported files':rmImportSummary.error?'Import unavailable':'Loading imports'));
+  text.textContent=data?(data.count+' in latest import · Review ↗'):(rmImportSummary.error?'Import count unavailable · Retry ↗':'Checking imports…');
+  button.setAttribute('aria-label',label+' · '+(data?data.count+' files in the latest import':rmImportSummary.error?'Import unavailable':'Loading imports'));
  }
 }
 async function openManagementTemplate(kind,assignment){
@@ -777,7 +776,7 @@ function render(){
   ['Weekly Realtor calls',/weekly realtor|weekly.*call/i],
   ['New contract calls',/new[ -]?contract|contract[ -]?call|contract received/i],
   ['CTC calls',/\bctc\b|clear[ -]?to[ -]?close/i],
-  ['Tuesday transaction updates',/tuesday/i],
+
   ['Other transaction calls',/transaction|contract/i],
   ['Meetings and growth plans',/meeting|business plan|growth.*plan|growth next step/i],
   ['C-agent growth and protection',/c.agent|growth|retention|protect|promotion/i],
@@ -896,7 +895,7 @@ function render(){
  detailGroups=sections.concat(categoryRows);
  detailGroups.push(exactPlans);
  const grid=$('execCategoryGrid');
- grid.innerHTML=categoryRows.map((group,i)=>({group,i})).filter(({group})=>(group[1].length>0||['New contract calls','CTC calls','Tuesday transaction updates'].includes(group[0]))&&group[0]!=='Catch-up assignments'&&group[0]!=='New Realtor outreach assignments').map(({group,i})=>'<button type="button" class="execCategoryBtn" data-category="'+i+'" aria-label="Open '+safe(group[0])+': '+group[1].length+' assignments"><span>'+safe(group[0])+'</span><strong>'+(['CTC calls','New contract calls'].includes(group[0])?'Checking latest import…':group[1].length?group[1].length+' open ↗':'No open calls · View ↗')+'</strong></button>').join('');
+ grid.innerHTML=categoryRows.map((group,i)=>({group,i})).filter(({group})=>(group[1].length>0||['New contract calls','CTC calls'].includes(group[0]))&&group[0]!=='Catch-up assignments'&&group[0]!=='New Realtor outreach assignments').map(({group,i})=>'<button type="button" class="execCategoryBtn" data-category="'+i+'" aria-label="Open '+safe(group[0])+': '+group[1].length+' assignments"><span>'+safe(group[0])+'</span><strong>'+(['CTC calls','New contract calls'].includes(group[0])?'Checking latest import…':group[1].length?group[1].length+' open ↗':'No open calls · View ↗')+'</strong></button>').join('');
  grid.querySelectorAll('[data-category]').forEach(b=>b.onclick=()=>{const category=categoryRows[Number(b.dataset.category)]?.[0];if(category==='CTC calls')return openManagementTemplate('ctc');if(category==='New contract calls')return openManagementTemplate('contract');return showDetail('category:'+b.dataset.category)});
  paintImportedCallCounters();
  if(!rmImportSummary.checked&&!rmImportSummary.busy)refreshImportedCallCounters(true);
