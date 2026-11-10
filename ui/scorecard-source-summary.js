@@ -11,6 +11,9 @@ css.textContent=[
 '#rmActualScorecard .rmActualTile span{font-size:11px;color:#665b76}',
 '#rmActualScorecard .rmActualFooter{font-size:11px;color:#6e647d;margin:12px 0 0}',
 '#rmActualScorecard .rmCurrentWeighted{padding:14px 16px;margin:12px 0;background:#f7f2fb;border:1px solid #e7ddee;border-radius:10px;font-size:15px;font-weight:650;color:#402465}',
+ '#rmTodayWeighted{padding:14px 16px;margin:12px 0;background:#f7f2fb;border:1px solid #e7ddee;border-radius:10px;font-size:15px;font-weight:650;color:#402465}',
+ '#rmTodayWeighted strong{display:block;font-size:30px;color:#462776;margin:4px 0}',
+ '#rmTodayWeighted small{display:block;font-size:12px;color:#665777;line-height:1.4}',
 '#rmActualScorecard .rmCurrentWeighted strong{font-size:30px;display:block;margin:3px 0}',
 '#rmActualScorecard button{border:1px solid #d8cbe8;border-radius:7px;background:white;color:#50317f;padding:7px 12px;cursor:pointer;font-size:11px}',
 '#rmActualScorecard .rmActualHead{display:flex;justify-content:space-between;gap:10px;align-items:center}',
@@ -37,13 +40,13 @@ function liveScoreFromNative(){
  return {total,tierPts,ratioPts,activePts,projected,denominator};
 }
 function renderLiveScore(){
- const el=document.getElementById('rmCurrentWeighted');if(!el)return;
+ const targets=[document.getElementById('rmCurrentWeighted'),document.getElementById('rmTodayWeighted')].filter(Boolean);if(!targets.length)return;
  const live=liveScoreFromNative();
  if(live){
-  el.innerHTML='Live weighted performance estimate<strong>'+live.total.toFixed(1)+' / 100</strong><small>Tier growth '+live.tierPts.toFixed(1)+'/50 · Lead pace '+live.ratioPts.toFixed(1)+'/30 · Active growth '+live.activePts.toFixed(1)+'/20</small>';
+  for(const el of targets)el.innerHTML='Current weighted score<strong>'+live.total.toFixed(1)+' / 100</strong><small>Tier growth '+live.tierPts.toFixed(1)+'/50 · Lead pace '+live.ratioPts.toFixed(1)+'/30 · Active growth '+live.activePts.toFixed(1)+'/20 · Updates automatically</small>';
   return;
  }
- el.innerHTML='Live weighted performance estimate<strong>Unavailable</strong><small>Waiting for current Power BI and Velocify scorecard data.</small>';
+ for(const el of targets)el.innerHTML='Current weighted score<strong>Unavailable</strong><small>Waiting for current Power BI and Velocify data.</small>';
 }
 async function refreshNativeScore(){
  if(refreshing)return;
@@ -53,7 +56,14 @@ async function refreshNativeScore(){
  finally{refreshing=false;renderLiveScore()}
 }
 
+function mountTodayScore(){
+ const heading=[...document.querySelectorAll('h2,h3')].find(el=>/^scorecard progress$/i.test((el.textContent||'').trim()));
+ if(!heading||document.getElementById('rmTodayWeighted'))return;
+ const div=document.createElement('div');div.id='rmTodayWeighted';div.className='rmCurrentWeighted';div.setAttribute('role','status');div.textContent='Updating weighted score…';
+ heading.insertAdjacentElement('afterend',div);
+}
 function mount(){
+ mountTodayScore();
  const score=document.getElementById('view-scorecard');if(!score)return;
  let panel=document.getElementById('rmActualScorecard');
  if(!panel){
@@ -82,14 +92,7 @@ async function load(force){
  try{
   if(typeof sbFetch!=='function')throw Error('Shared report connection unavailable');
   const month=new Date(),start=month.getFullYear()+'-'+String(month.getMonth()+1).padStart(2,'0')+'-01';
-  const results=await Promise.allSettled([
-   sbFetch('powerbi_import_log?select=imported_at,source_app,rows_processed,errors&source_app=like.core-team-tracker%25&order=imported_at.desc&limit=1'),
-   sbFetch('velocify_leads?date_added=gte.'+start+'&select=lead_key,referral_partner_name,date_added&limit=10000'),
-   sbFetch('scorecard_history?select=weighted,month_key,saved_at,save_type&month_key=eq.'+start.slice(0,7)+'&order=saved_at.desc&limit=1')
-  ]);
-  const imports=results[0].status==='fulfilled'?results[0].value:[];
-  const leads=results[1].status==='fulfilled'?results[1].value:[];
-  const history=results[2].status==='fulfilled'?results[2].value:[];
+  const imports=await sbFetch('powerbi_import_log?select=imported_at,source_app,rows_processed,errors&source_app=like.core-team-tracker%25&order=imported_at.desc&limit=1');
   if(!Array.isArray(imports)||!imports.length)throw Error('Power BI import receipt not available');
   if(String(imports[0].errors||'0')!=='0')throw Error('Latest import did not finish cleanly');
   const log=imports[0],text=String(log.source_app||'');
@@ -100,10 +103,9 @@ async function load(force){
   const vals=approvedSnapshot?[['Active agents',136],['A tier',17],['B tier',21],['C tier',98]]:[['Active agents',total],['A tier',tiers.A],['B tier',tiers.B],['C tier',tiers.C]];
   await refreshNativeScore();
   grid.innerHTML=vals.map(([label,value])=>'<div class="rmActualTile"><strong>'+esc(value)+'</strong><span>'+esc(label)+'</span></div>').join('');
-  const distinct=new Set((Array.isArray(leads)?leads:[]).map((v,i)=>String(v.lead_key||'').trim()||('row:'+i)));
   footer.textContent=(approvedSnapshot?'Director-confirmed November 9 totals. ':'Latest Power BI import. ')+'Source updated '+new Date(log.imported_at).toLocaleString()+'.';
   lastFetch=Date.now();
- }catch(e){grid.innerHTML='<div class="rmActualTile" style="grid-column:1/-1">Current totals could not be refreshed.</div>';footer.textContent='Select Refresh to try again.';const weighted=document.getElementById('rmCurrentWeighted');if(weighted)renderLiveScore();}
+ }catch(e){grid.innerHTML='<div class="rmActualTile" style="grid-column:1/-1">Current totals could not be refreshed.</div>';footer.textContent='Select Refresh to try again.';renderLiveScore();}
  finally{busy=false;tidy()}
 }
 function init(){
@@ -113,7 +115,7 @@ function init(){
  window.addEventListener('focus',()=>{if(!document.hidden)load(true)});
  document.addEventListener('visibilitychange',()=>{if(!document.hidden)load(true)});
  // Refresh the visible scorecard each minute; the native calculation uses current source records.
- setInterval(()=>{if(!document.hidden&&root&&root.getClientRects().length)load(true)},60000);
+ setInterval(()=>{if(!document.hidden&&((root&&root.getClientRects().length)||(document.getElementById('rmTodayWeighted')?.getClientRects().length)))load(true)},60000);
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
 })();
