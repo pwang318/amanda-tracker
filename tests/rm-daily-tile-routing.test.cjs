@@ -13,7 +13,11 @@ assert(code.includes("execAssignmentOutcome"), 'Amanda must select an actual con
 assert(code.includes("sbFetch('amanda_activities?select=id'"), 'Completion first persists actual activity');
 assert(code.includes("completion_activity_id:id"), 'Only recorded activity may complete an exact queue assignment');
 assert(code.includes("changed.some(row=>String(row.id)===String(q.id)"), 'Queue clearance must be confirmed from database result');
-assert(code.includes("if(!q.id){status.textContent="), 'Supplemental rows may not be silently cleared without a queue ID');
+assert(code.includes('function rmSupplementKey(q){'),'Supplemental assignments need stable record identifiers');
+assert(code.includes("'[RM_SUPPLEMENT_KEY:'+rmSupplementKey(q)+'] '"),'Saving supplemental activity must link it to the exact generated assignment');
+assert(code.includes('!resolvedSupplementKeys.has(rmSupplementKey(r))'),'Completed supplemental work must disappear from open worklists');
+assert(code.includes("if(!q.id){\n    status.textContent='Activity saved."),'Supplemental completion must be verified after saving');
+assert(!code.includes('cannot be cleared automatically. Opening Activity Log'),'No supplemental assignment should dead-end in the log screen');
 for(const label of [
  'Cold calls today','Prospecting minutes','Meetings logged','Overdue before today',
  'Due today','Weekly calls remaining','Open 4-week follow-ups',
