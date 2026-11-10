@@ -332,6 +332,7 @@ async function openProspectList(){
   return false;
  }
 }
+window.rmOpenProspectList=openProspectList;
 function showProspectRouteError(){
  let message=$('execProspectRouteStatus');
  if(!message){message=document.createElement('p');message.id='execProspectRouteStatus';message.className='execNotice execWarn';$('rmExecutionPlan')?.prepend(message)}
