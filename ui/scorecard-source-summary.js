@@ -80,7 +80,7 @@ function renderPathTo85(live){
  '<p><strong>Friday scorecard review:</strong> Compare the actual weighted score with 85, verify newly referred leads, C-to-B conversions and active-agent growth, then set next week’s priority agent list. A call or meeting only counts as scorecard progress when it leads to a measurable result.</p>'+
  '<p><strong>Ownership:</strong> Amanda drives C-to-B opportunities and C-agent referrals. Director-led Channel, A and existing B account results contribute to the same team scorecard.</p>'+
  '<div class="rm85Actions"><button type="button" id="rm85Growth">Open C-to-B opportunities</button><button type="button" id="rm85Prospects">Open prospect list</button><button type="button" id="rm85Leads">Review referred leads</button></div>';
- host.querySelector('#rm85Growth').onclick=()=>{if(typeof window.v350OpenLane==='function')window.v350OpenLane('growth');else if(typeof window.switchTab==='function')window.switchTab('growth')};
+ host.querySelector('#rm85Growth').onclick=()=>{if(typeof window.rmOpenCWork==='function')window.rmOpenCWork('near');else if(typeof window.v350OpenLane==='function')window.v350OpenLane('growth');else if(typeof window.switchTab==='function')window.switchTab('growth')};
  host.querySelector('#rm85Prospects').onclick=()=>{
   if(typeof window.rmOpenProspectList==='function')return window.rmOpenProspectList();
   if(typeof window.switchTab==='function')window.switchTab('pipeline');
