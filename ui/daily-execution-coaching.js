@@ -80,6 +80,7 @@ styles.textContent=[
 '#rmExecutionPlan .execManagerGroup>summary{font-size:13px;padding:10px 3px}',
 '#rmExecutionPlan .execManagerTask{border:1px solid #e9e1f0;border-radius:9px;padding:12px;margin:8px 0;background:#fff}',
 '#rmExecutionPlan .execManagerTaskMeta{font-size:11px;color:#6b5d7b;margin-top:3px}',
+'#rmExecutionPlan .execManagerOpen{padding:6px 10px;min-height:36px;font-size:12px;margin:3px 0}',
 '#rmExecutionPlan .execManagerTaskReason{font-size:12px;margin:6px 0;color:#554663}',
 '#rmExecutionPlan .execCarryEditor{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;margin-top:9px}',
 '#rmExecutionPlan .execCarryEditor label{font-size:12px;color:#554663;display:block}',
@@ -736,6 +737,7 @@ function renderTrends(){
   const needsReason=overdue.filter(q=>!String(q.carry_forward_reason||'').trim()||!String(q.carry_forward_next_action||'').trim());
   const queueKeys=new Set(open.map(q=>[String(q.agent_name||'').trim().toLowerCase(),String(q.activity_type||'').trim().toLowerCase(),String(q.work_date||'').slice(0,10)].join('|')));
   const otherWork=fullVerified?fullWork.filter(q=>!queueKeys.has([String(q['Agent / Item']||'').trim().toLowerCase(),String(q.Category||'').trim().toLowerCase(),String(q['Due Date']||'').slice(0,10)].join('|'))).map(q=>({agent_name:q['Agent / Item'],activity_type:q.Category,work_date:String(q['Due Date']||'').slice(0,10),reason:q['Next Action']||'Open portfolio work'})):[];
+  const managerTasks=[...overdue,...due,...upcoming,...unscheduled,...otherWork];
   const taskRow=(q,needsExplanation)=>{
    const d=String(q.work_date||'').slice(0,10);
    const reason=String(q.carry_forward_reason||'').trim(),action=String(q.carry_forward_next_action||'').trim();
@@ -746,7 +748,7 @@ function renderTrends(){
       '<label>What is the next action?<textarea data-carry-next placeholder="Concrete follow-up or recovery plan" maxlength="1200">'+safe(action)+'</textarea></label>'+
       '<button type="button" data-carry-save="'+safe(q.id)+'">Save explanation</button><span data-carry-status="'+safe(q.id)+'" class="execStatus"></span></div>':
      '<p class="execManagerTaskReason">Why not completed: '+safe(reason||'Not documented')+' · Next action: '+safe(action||'Not documented')+'</p>';
-   return '<article class="execManagerTask" data-carry-id="'+safe(q.id||'')+'">'+identity+
+   return '<article class="execManagerTask" data-carry-id="'+safe(q.id||'')+'">'+identity+'<button type="button" class="execManagerOpen" data-carry-open="'+managerTasks.indexOf(q)+'">Open Realtor ↗</button>'+
      (needsExplanation?editor:'<p class="execManagerTaskReason">'+(d>today?'Scheduled for a future date; no missed-work explanation required.':d?'Open item — manage in its worklist.':'No due date recorded.')+'</p>')+'</article>';
   };
   const group=(title,items,edit,initialOpen)=>'<details class="execManagerGroup"'+(initialOpen?' open':'')+'><summary>'+safe(title)+' · '+items.length+'</summary><div class="execManagerItems">'+(items.length?items.map(q=>taskRow(q,edit)).join(''):'<p class="execManagerEmpty">None</p>')+'</div></details>';
@@ -761,6 +763,7 @@ function renderTrends(){
     group('Needs scheduling',unscheduled,false,false)+
     group('Other open portfolio work — managed in worklists',otherWork,false,false)+
     (fullVerified?'':'<p class="execNotice execWarn">Other portfolio worklists are still loading or could not be verified.</p>');
+  accountability.querySelectorAll('[data-carry-open]').forEach(button=>{button.onclick=()=>{const q=managerTasks[Number(button.getAttribute('data-carry-open'))];if(q)openTask(q)}});
   accountability.querySelectorAll('[data-carry-save]').forEach(button=>{
    button.onclick=async()=>{
     const id=button.getAttribute('data-carry-save'),card=button.closest('[data-carry-id]');
