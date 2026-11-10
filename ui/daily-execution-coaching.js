@@ -132,7 +132,7 @@ function mount(){
  const div=document.createElement('section');div.id='rmExecutionPlan';
  div.innerHTML='<div id="execQuickLog" class="execQuickLog"><div><strong>Log Activity</strong><span>Calls, new Realtor outreach, messages and meetings</span></div><button type="button" id="execQuickLogBtn">+ Log Activity</button></div><div class="execRow"><div><h2>Today’s plan</h2><p>Your daily goals, open work, completed activity, and next steps.</p></div><button id="execReload" type="button">Refresh live activity</button></div>'+
  '<div id="execNotice" class="execNotice">Loading shared activity and schedule…</div>'+
- '<div id="execProspecting" class="execNotice" aria-live="polite"></div><div id="execOutreach" class="execNotice"></div><section id="execActivityTimeline" class="execTimeline"><div class="execRow"><h3>Today’s activity</h3><button type="button" id="execActivityAll">View all activity</button></div><div id="execTimelineRows">Loading activity…</div></section><div class="execHomeWork" id="execHomeWork"><h3>Open work</h3><div id="execCategoryGrid" class="execCategoryGrid"></div></div><div id="execPriorities" class="execNotice" aria-live="polite"></div><div id="execMetrics" class="execMetrics"></div><details id="execMoreMetrics" hidden><summary>More activity details</summary><div id="execSecondaryMetrics" class="execMetrics"></div></details><div id="execWeeklyGoals" class="execNotice" aria-live="polite"></div>'+ '<details id="execBusinessDetails"><summary>Business results · meetings, referrals & C-to-B growth</summary><div id="execBusinessResults" class="execNotice">Checking source records…</div></details>'+
+ '<div id="execPriorities" class="execNotice" aria-live="polite"></div><div class="execHomeWork" id="execHomeWork"><h3>Outstanding work</h3><div id="execCategoryGrid" class="execCategoryGrid"></div></div><div id="execProspecting" class="execNotice" aria-live="polite"></div><div id="execOutreach" class="execNotice"></div><section id="execActivityTimeline" class="execTimeline"><div class="execRow"><h3>Recent activity</h3><button type="button" id="execActivityAll">View all activity</button></div><div id="execTimelineRows">Loading activity…</div></section><div id="execMetrics" class="execMetrics"></div><details id="execMoreMetrics" hidden><summary>More activity details</summary><div id="execSecondaryMetrics" class="execMetrics"></div></details><div id="execWeeklyGoals" class="execNotice" aria-live="polite"></div>'+ '<details id="execBusinessDetails"><summary>Business results · meetings, referrals & C-to-B growth</summary><div id="execBusinessResults" class="execNotice">Checking source records…</div></details>'+
  
  '<div class="execDetailArea" id="execDetailArea" hidden><button type="button" id="execBack" class="execBack">← Back to Today</button><div class="execRow"><h3 id="execDetailTitle"></h3><button type="button" id="execDetailRefresh">Refresh worklist</button></div><div id="execTaskSummary" class="execTasks"></div></div>'+
  '<details id="execCloseout"><summary>Daily results & closeout · what was missed</summary><div id="execMissedSummary" class="execNotice" aria-live="polite"></div>'+
@@ -270,7 +270,24 @@ function openActivityDetail(kind,scroll=true){
  };
  if(scroll)detail.scrollIntoView({behavior:'smooth',block:'start'});
 }
+function showOutreachDetail(scroll=true){
+ activeDetail='outreach';
+ const home=$('execHomeWork'),detail=$('execDetailArea'),list=$('execTaskSummary');
+ if(!home||!detail||!list)return;
+ home.hidden=true;detail.hidden=false;
+ const d=iso(),saved=activeFor(d).filter(a=>/^(Cold Calls|New Agent Follow-up|New Realtor Outreach)$/i.test(String(a.act_type||'').trim()));
+ const calls=coldFor(d),minutes=dataOf(closeRecord(d))?.prospecting_minutes;
+ const assigned=detailGroups.find(g=>g[0]==='New Realtor outreach assignments')?.[1]||[];
+ $('execDetailTitle').textContent='New Realtor outreach · '+calls+' / 25 calls';
+ list.innerHTML='<section><strong>Daily prospecting target</strong><p>'+calls+' cold calls logged · '+Math.max(0,25-calls)+' remaining to minimum · 60 minutes required · Minutes: '+(minutes==null?'Not reported':safe(minutes))+'</p><button type="button" id="execOutreachStart">Log a call ↗</button></section>'+
+ '<section><strong>Assigned outreach · '+assigned.length+'</strong>'+taskList('Assignments',assigned,'No outreach assignments are pending. Continue the daily 60-minute prospecting block.',false)+'</section>'+
+ '<section><strong>Outreach activity today · '+saved.length+'</strong>'+(saved.length?'<ul>'+saved.slice().sort((a,b)=>Number(b.id||0)-Number(a.id||0)).slice(0,12).map(a=>'<li>'+safe(a.agent_name||'Agent not specified')+' · '+safe(a.act_type||'Activity')+' · '+safe(a.outcome||'')+'</li>').join('')+'</ul>':'<p>No outreach activity logged today.</p>')+'</section>';
+ $('execOutreachStart').onclick=()=>{if(typeof window.switchTab==='function')window.switchTab('log');($('rmFastAgent')||$('agentInput'))?.focus()};
+ list.querySelectorAll('.execTaskGo').forEach(button=>{button.onclick=()=>{const q=assigned[Number(button.dataset.index)];if(q)openTask(q)}});
+ if(scroll)detail.scrollIntoView({behavior:'smooth',block:'start'});
+}
 function showDetail(key,scroll=true){
+ if(key==='outreach')return showOutreachDetail(scroll);
  if(typeof key==='string'&&key.startsWith('activity:'))return openActivityDetail(key.slice(9),scroll);
  activeDetail=key;
  const detail=$('execDetailArea'),home=$('execHomeWork'),list=$('execTaskSummary');
@@ -281,7 +298,7 @@ function showDetail(key,scroll=true){
   return;
  }
  const match=/^(section|category):(\d+)$/.exec(key);
- const index=key==='plans'?detailGroups.length-1:match?(match[1]==='section'?Number(match[2]):5+Number(match[2])):-1;
+ const index=key==='plans'?detailGroups.length-1:match?(match[1]==='section'?Number(match[2]):sections.length+Number(match[2])):-1;
  const group=detailGroups[index];
  if(!group){activeDetail=null;detail.hidden=true;home.hidden=false;return}
  home.hidden=true;detail.hidden=false;
@@ -329,7 +346,7 @@ function render(){
   ['Transaction and Tuesday updates',/transaction|contract|ctc|tuesday/i],
   ['Meetings and growth plans',/meeting|business plan|growth.*plan|growth next step/i],
   ['C-agent growth and protection',/c.agent|growth|retention|protect|promotion/i],
-  ['New Realtor outreach',/outreach|reconnect|cold call/i]
+  ['New Realtor outreach assignments',/outreach|reconnect|cold call/i]
  ];
  const categoryRows=categories.map(([title])=>[title,[],'No currently open items found for this category']);
  const otherRows=[];
@@ -350,7 +367,7 @@ function render(){
  $('execProspectLog').onclick=()=>{if(typeof window.switchTab==='function')window.switchTab('log');const agent=$('rmFastAgent')||$('agentInput');if(agent)agent.focus()};
  $('execProspectTime').onclick=()=>{$('execCloseout').open=true;$('execCloseout').scrollIntoView({behavior:'smooth',block:'center'});$('execMinutes').focus()};
  const outreach=$('execOutreach');if(outreach){outreach.innerHTML='<div class="execRow"><div><strong>New Realtor outreach</strong><p>'+cold+' cold calls logged today · Goal: at least 25 calls and 60 minutes</p></div><button type="button" id="execOutreachLog">Log outreach</button></div>';const b=$('execOutreachLog');if(b)b.onclick=()=>{if(typeof window.switchTab==='function')window.switchTab('log');($('rmFastAgent')||$('agentInput'))?.focus()}}
- const timeline=$('execTimelineRows');if(timeline){const todayRows=activeFor(d).slice().sort((a,b)=>String(b.created_at||b.act_date||'').localeCompare(String(a.created_at||a.act_date||'')));timeline.innerHTML=todayRows.length?todayRows.slice(0,3).map(a=>{const when=a.created_at?new Date(a.created_at):null;const time=when&&!Number.isNaN(when.valueOf())?when.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'}):'Time unavailable';return '<div class="execTimelineItem"><time>'+safe(time)+'</time><div><strong>'+safe(a.agent_name||'Agent not specified')+'</strong><span>'+safe([a.act_type,a.outcome].filter(Boolean).join(' · ')||'Activity logged')+'</span></div></div>'}).join(''):'<p>No activity recorded today yet.</p>';const all=$('execActivityAll');if(all){all.textContent='View all activity ('+todayRows.length+')';all.onclick=()=>showDetail('activity:all')}}
+ const timeline=$('execTimelineRows');if(timeline){const todayRows=activeFor(d).slice().sort((a,b)=>String(b.created_at||b.act_date||'').localeCompare(String(a.created_at||a.act_date||'')));timeline.innerHTML=todayRows.length?todayRows.slice(0,3).map(a=>{const when=a.created_at?new Date(a.created_at):null;const time=when&&!Number.isNaN(when.valueOf())&&when.getTime()<=Date.now()+60000?when.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',timeZone:'America/New_York'}):'Time unverified';return '<div class="execTimelineItem"><time>'+safe(time)+'</time><div><strong>'+safe(a.agent_name||'Agent not specified')+'</strong><span>'+safe([a.act_type,a.outcome].filter(Boolean).join(' · ')||'Activity logged')+'</span></div></div>'}).join(''):'<p>No activity recorded today yet.</p>';const all=$('execActivityAll');if(all){all.textContent='View all activity ('+todayRows.length+')';all.onclick=()=>showDetail('activity:all')}}
 
  const priorityBox=$('execPriorities');
  priorityBox.innerHTML='<div class="execRow"><strong>Deadline check</strong><div><button type="button" id="execDueList">Due today · '+need.length+' ('+todayCampaigns.length+' campaigns, '+todayOther.length+' other)</button> <button type="button" id="execOverdueList">Overdue · '+late.length+'</button></div></div>';
@@ -382,8 +399,9 @@ function render(){
  detailGroups=sections.concat(categoryRows);
  detailGroups.push(exactPlans);
  const grid=$('execCategoryGrid');
- grid.innerHTML=categoryRows.map((group,i)=>'<button type="button" class="execCategoryBtn" data-category="'+i+'"><span>'+safe(group[0])+'</span><strong>'+group[1].length+' ↗</strong></button>').join('');
+ grid.innerHTML=categoryRows.map((group,i)=>i===6?'<button type="button" class="execCategoryBtn execProspectTile" data-outreach="true"><span>New Realtor outreach <small>Daily prospecting goal</small></span><strong>'+Math.max(0,25-cold)+' calls left ↗</strong></button>':'<button type="button" class="execCategoryBtn" data-category="'+i+'"><span>'+safe(group[0])+'</span><strong>'+group[1].length+' ↗</strong></button>').join('');
  grid.querySelectorAll('[data-category]').forEach(b=>b.onclick=()=>showDetail('category:'+b.dataset.category));
+ grid.querySelector('[data-outreach]')?.addEventListener('click',()=>showDetail('outreach'));
  $('rmExecutionPlan').querySelectorAll('[data-exec-target]').forEach(tile=>{
   const action=()=>{
    const kind=tile.dataset.execTarget;
