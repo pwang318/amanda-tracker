@@ -23,7 +23,7 @@ const activities=[
  {id:4,agent_name:'Other Date',act_type:'Cold Calls',act_date:'2026-11-08',outcome:'No answer'}
 ];
 const ctx={
- iso:()=>today,activeFor:date=>activities.filter(x=>x.act_date===date),
+ iso:()=>today,activeFor:date=>activities.filter(x=>x.act_date===date),weeklyGoals:()=>({days:[today]}),heldMeeting:()=>true,
  $:id=>nodes[id],safe:x=>String(x??''),activeDetail:null,
  window:{switchTab:tab=>events.push('tab:'+tab)},
  openTask:task=>events.push('agent:'+task.agent_name)
