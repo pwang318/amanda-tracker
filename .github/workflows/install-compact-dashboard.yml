@@ -54,11 +54,13 @@ jobs:
           # Preserve one copy of each in-use external asset and apply current revision.
           assets={
             'compact-workspace.js':'20261110-clean19',
-            'daily-execution-coaching.js':'20261110-coaching44',
+            'daily-execution-coaching-v45.js':'20261110-live45',
             'fast-activity-workflow.js':'20261110-fast5',
             'relationship-funnel.js':'20261110-funnel5',
             'scorecard-source-summary.js':'20261110-source6',
           }
+          # Remove older daily coaching script references before adding unique cache-busted path.
+          page=re.sub(r'<script[^>]*daily-execution-coaching(?:-v[0-9]+)?[.]js[^>]*></script>','',page)
           for filename,revision in assets.items():
               page=re.sub(r'<script[^>]*'+re.escape(filename)+r'[^>]*></script>','',page)
               asset='<script defer src="./ui/'+filename+'?v='+revision+'"></script>'
