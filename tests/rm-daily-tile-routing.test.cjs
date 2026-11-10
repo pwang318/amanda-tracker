@@ -81,3 +81,12 @@ assert(code.includes("['Break Breads this week'"),'Weekly Break Bread tile visib
 assert(code.includes("if(kind==='newmeet'||kind==='weeknew')"),'New meeting tiles must open their matching records');
 assert(code.includes("if(kind==='bread'||kind==='weekbread')"),'Break Bread tiles must open their matching records');
 assert(code.includes('PTO-adjusted targets'),'PTO must reduce weekly expectations');
+
+assert(code.includes('id="execBusinessDetails"'), 'Daily RM has an expandable outcomes view');
+assert(code.includes('function linkBookedToHeld(booked,held)'), 'Booked meetings must match held meetings by agent and date');
+assert(code.includes('function refreshBusinessResults()'), 'Outcome evidence must refresh from shared sources');
+assert(code.includes("sbFetch('velocify_leads?select=lead_key,referral_partner_name,date_added"), 'Referral outcome uses Velocify unique leads');
+assert(code.includes("sbFetch('tier_migrations?select=agent_name,from_tier,to_tier,migration_date"), 'C-to-B result uses tier transition records');
+assert(code.includes('No zero substituted.'), 'Unknown outcomes must not be shown as zero');
+assert(code.includes('Open relationship follow-ups'), 'Open follow-ups visible in results panel');
+assert(code.includes('Follow-up completion rate cannot be confirmed'), 'Do not invent a due-date completion cohort');
