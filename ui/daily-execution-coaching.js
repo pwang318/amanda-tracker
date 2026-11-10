@@ -76,6 +76,7 @@ styles.textContent=[
 ].join('\n');document.head.append(styles);
 let blocks=[],activities=[],queue=[],completedQueue=[],fullWork=[],fullVerified=false,loaded=false,working=false,selected=iso();
 let activeDetail=null,detailGroups=[];
+let sourceWarnings=[];
 let businessResults={loading:false,error:'Not loaded',data:null};
 const off=b=>/^(out of office|pto|vacation|time off)$/i.test(String(b.block_type||'').trim());
 const close=b=>String(b.block_type||'')==='Daily Closeout'&&String(b.title||'').startsWith('Execution closeout');
@@ -109,7 +110,7 @@ function planned(d){return queue.filter(q=>String(q.status||'').toLowerCase()===
 function pastDue(d){return queue.filter(q=>String(q.status||'').toLowerCase()==='open'&&q.work_date&&String(q.work_date).slice(0,10)>=COACHING_START&&String(q.work_date).slice(0,10)<d)}
 function mount(){
  const board=$('rm350Workboard')||$('view-week');if(!board)return;
- const existing=$('rmExecutionPlan');if(existing){if(existing.parentElement!==board)board.prepend(existing);return;}
+ const existing=$('rmExecutionPlan');if(existing){if(existing.parentElement!==board)board.prepend(existing);if(loaded&&board.id==='rm350Workboard')board.classList.add('rmExecReady');return;}
  const div=document.createElement('section');div.id='rmExecutionPlan';
  div.innerHTML='<div class="execRow"><div><h2>Today’s plan</h2><p>Your daily goals, open work, completed activity, and next steps.</p></div><button id="execReload" type="button">Refresh live activity</button></div>'+
  '<div id="execNotice" class="execNotice">Loading shared activity and schedule…</div>'+
@@ -145,13 +146,21 @@ async function refresh(force=false){
  try{
   if(typeof sbFetch!=='function')throw Error('Shared database connection unavailable');
   const from=COACHING_START,to=addDays(iso(),21);
-  const result=await Promise.all([
+  sourceWarnings=[];
+  const settled=await Promise.allSettled([
    sbFetch('rm_day_blocks?select=*&owner=eq.Amanda&work_date=gte.'+from+'&work_date=lte.'+to+'&limit=1200'),
    sbFetch('amanda_activities?select=*&act_date=gte.'+from+'&act_date=lte.'+to+'&limit=10000'),
    sbFetch('rm_work_queue?select=id,work_date,agent_name,activity_type,reason,status,owner&owner=eq.Amanda&status=eq.open&work_date=gte.'+COACHING_START+'&limit=2500'),
    sbFetch('rm_work_queue?select=id,work_date,agent_name,activity_type,reason,status,owner&owner=eq.Amanda&status=neq.open&work_date=gte.'+COACHING_START+'&limit=2500')
   ]);
-  if(result.some(r=>!Array.isArray(r)))throw Error('One of the live data lists is unavailable');
+  const names=['Schedule','Logged activities','Outstanding assignments','Completed assignments'];
+  const previous=[blocks,activities,queue,completedQueue];
+  const result=settled.map((entry,i)=>{
+   if(entry.status==='fulfilled'&&Array.isArray(entry.value))return entry.value;
+   sourceWarnings.push(names[i]);
+   return loaded?previous[i]:[];
+  });
+  if(sourceWarnings.length===4&&!loaded)throw Error('All shared data sources are temporarily unavailable');
   [blocks,activities,queue,completedQueue]=result;
   activities=activities.filter(a=>{try{return typeof window.isAmandaDailyActivity==='function'?window.isAmandaDailyActivity(a):(typeof window.activityCreditsPerson==='function'?window.activityCreditsPerson(a,'Amanda'):true)}catch(e){return true}});
   fullVerified=false;fullWork=[];
@@ -171,6 +180,8 @@ async function refresh(force=false){
    }catch(err){console.warn('Full RM work list not verified',err)}
   }
   loaded=true;render();
+  const warning=$('execNotice');
+  if(sourceWarnings.length&&warning){warning.className='execNotice execWarn';warning.textContent='Partial data: '+sourceWarnings.join(', ')+' could not be verified. Previously loaded records are retained where available; refresh to retry.';}
   $('rm350Workboard')?.classList.add('rmExecReady');
   await refreshBusinessResults();
  }catch(e){
