@@ -45,12 +45,16 @@ jobs:
           if '</head>' not in page:
               raise SystemExit('Missing head close; cannot inject prepaint guard')
           page=page.replace('</head>',prepaint+'</head>',1)
+          # Payroll language does not belong on Amanda's RM relationship dashboard.
+          # This changes display labels only, not score calculations or financial records.
+          page=page.replace('Portfolio scorecard diagnostic (not payroll-approved)','Portfolio scorecard diagnostic · pending Power BI verification')
+          page=page.replace('Portfolio Outcome Estimate · Not Payroll-Certified','Portfolio Scorecard Estimate · Awaiting Data Verification')
           # Obsolete checklist is superseded by the authoritative daily worklists.
           page=re.sub(r'<script[^>]*outstanding-daily-checklist[.]js[^>]*></script>','',page)
           # Preserve one copy of each in-use external asset and apply current revision.
           assets={
             'compact-workspace.js':'20261110-clean19',
-            'daily-execution-coaching.js':'20261110-coaching22',
+            'daily-execution-coaching.js':'20261110-coaching23',
             'fast-activity-workflow.js':'20261110-fast5',
             'relationship-funnel.js':'20261110-funnel5',
             'scorecard-source-summary.js':'20261110-source4',
