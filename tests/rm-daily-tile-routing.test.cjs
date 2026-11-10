@@ -203,3 +203,8 @@ assert(code.includes("if(index>=0&&!['CTC calls','New contract calls'].includes(
 assert(code.includes("const current=[...allFiles.values()].filter(x=>x.batch===newestBatch)"),'Current calls must use only most recent import batch');
 assert(code.includes("file.closeDate?'Est. close '"),'File picker displays estimated closing dates rather than activity dates');
 assert(code.includes("historical.length+' older imported record(s) hidden"),'Old files must be kept outside current transaction list');
+
+assert(code.includes('function paintImportedCallCounters()'),'Transaction worklist tiles must use actual import counts');
+assert(code.includes('refreshImportedCallCounters(true)'),'Transaction counters must refresh from shared imports');
+assert(code.includes("new Set(selected.filter(x=>x.batch===latest)"),'Latest import count must deduplicate exact transaction IDs');
+assert(code.includes("' imported file'"),'Imported count must be labeled as files, not completed calls');
