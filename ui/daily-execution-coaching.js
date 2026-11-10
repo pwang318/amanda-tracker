@@ -61,6 +61,11 @@ styles.textContent=[
 '#rmExecutionPlan .execTaskDetails>summary{cursor:pointer;color:#593b83;font-size:12px;font-weight:700;padding:9px 0}',
 '#rmExecutionPlan #execTaskSummary>h3{grid-column:1/-1;margin:16px 0 2px}',
 '#rmExecutionPlan #execTaskSummary>p{grid-column:1/-1}',
+'#rmExecutionPlan #execCampaignShortcut{display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;margin:10px 0 14px;min-height:62px;padding:14px 16px;text-align:left;border:1px solid #d7c5e9;border-radius:12px;background:#f8f3fc;color:#33204b}',
+'#rmExecutionPlan #execCampaignShortcut span{font-size:15px;font-weight:750}',
+'#rmExecutionPlan #execCampaignShortcut strong{font-size:13px;flex-shrink:0;color:#583883}',
+'#rmExecutionPlan #execCampaignShortcut:focus-visible{outline:3px solid #8d67bd;outline-offset:2px}',
+'@media(max-width:520px){#rmExecutionPlan #execCampaignShortcut{display:flex!important;flex-wrap:wrap;min-height:64px;gap:5px}#rmExecutionPlan #execCampaignShortcut strong{width:100%}}',
 '#rmExecutionPlan .execCategoryGrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;margin:12px 0}',
 '#rmExecutionPlan .execCategoryBtn{min-height:66px!important}',
 '#rmExecutionPlan .execCategoryBtn.execTransactionComplete strong{color:#31704e!important}',
@@ -249,6 +254,7 @@ function mount(){
  const existing=$('rmExecutionPlan');if(existing){if(existing.parentElement!==board)board.prepend(existing);if(board.id==='rm350Workboard')board.classList.add('rmExecReady');return;}
  const div=document.createElement('section');div.id='rmExecutionPlan';
  div.innerHTML='<div id="execQuickLog" class="execQuickLog"><div><strong>Log Activity</strong><span>Calls, new Realtor outreach, messages and meetings</span></div><button type="button" id="execQuickLogBtn">+ Log Activity</button></div><div class="execRow"><div><h2>Today’s workday</h2><p>Start with what is due, then work your prospecting and relationship lists.</p></div><button id="execReload" type="button">Refresh live activity</button></div>'+
+ '<button type="button" id="execCampaignShortcut" aria-label="Open 4-Week Campaign follow-ups"><span>4-Week Campaign ↗</span><strong id="execCampaignShortcutStatus">Checking follow-ups…</strong></button>'+ 
  '<div id="execSourceStatus" class="execSourceStatus" role="status">Checking live data…</div><div id="execNotice" class="execNotice">Loading shared activity and schedule…</div>'+
  '<div id="execTimedNudge" role="status" aria-live="polite"></div>'+
  '<div class="execSectionTitle"><span class="execStep">1</span><h3>Start here · Today’s priorities</h3></div><div id="execPriorities" class="execNotice" aria-live="polite"></div><div class="execSectionTitle"><span class="execStep">2</span><h3>Prospect and grow</h3></div><div id="execProspecting" class="execNotice" aria-live="polite"></div><details id="execInlineProspects" class="execInlineProspects"><summary>New Realtor prospecting · view call list</summary><div id="execInlineProspectContent" class="execNotice">Open this section to load Realtors from the Pipeline call list.</div></details><div class="execHomeWork" id="execHomeWork"><h3>Relationship worklists</h3><div id="execCategoryGrid" class="execCategoryGrid"></div></div><details id="execRecentDisclosure"><summary>Recent activity</summary><section id="execActivityTimeline" class="execTimeline"><div class="execRow"><h3>Activity log</h3><button type="button" id="execActivityAll">View all activity</button></div><div id="execTimelineRows">Loading activity…</div></section></details><div class="execSectionTitle execWeeklyTitle"><span class="execStep">3</span><h3>Weekly progress</h3></div><div id="execMetrics" class="execMetrics"></div><details id="execMoreMetrics"><summary>More work and activity details</summary><div id="execSecondaryMetrics" class="execMetrics"></div></details><details id="execWeeklyDisclosure" class="execTaskDetails"><summary>Weekly activity details</summary><div id="execWeeklyGoals" class="execNotice" aria-live="polite"></div></details>'+ '<details id="execBusinessDetails"><summary>Business results: meetings, referrals, and C-to-B growth</summary><div id="execBusinessResults" class="execNotice">Checking source records…</div></details>'+
@@ -967,6 +973,14 @@ function render(){
  $('execSecondaryMetrics').innerHTML=metricRows.filter(x=>!mainMetricKeys.has(x[2])).map(metricMarkup).join('');
  detailGroups=sections.concat(categoryRows);
  detailGroups.push(exactPlans);
+ const campaignShortcut=$('execCampaignShortcut');
+ const campaignShortcutStatus=$('execCampaignShortcutStatus');
+ if(campaignShortcut&&campaignShortcutStatus){
+  const campaignOpen=categoryRows[0][1].length;
+  campaignShortcutStatus.textContent=campaignOpen?campaignOpen+' open ↗':fullVerified&&sourceWarnings.length===0?'✓ Complete':'Unable to verify · View ↗';
+  campaignShortcut.setAttribute('aria-label','4-Week Campaign · '+campaignShortcutStatus.textContent+' · Open worklist');
+  campaignShortcut.onclick=()=>showDetail('category:0');
+ }
  const grid=$('execCategoryGrid');
  const visibleWorklists=new Set(['4-week campaigns','Relationship follow-ups','Weekly Realtor calls','New contract calls','CTC calls','Tuesday transaction updates','Meetings and growth plans','Portfolio attention reviews','Other assigned tasks']);
  grid.innerHTML=categoryRows.map((group,i)=>({group,i})).filter(({group})=>visibleWorklists.has(group[0])||group[1].length>0&&!['Catch-up assignments','New Realtor outreach assignments'].includes(group[0])).map(({group,i})=>'<button type="button" class="execCategoryBtn" data-category="'+i+'" aria-label="Open '+safe(group[0])+': '+group[1].length+' assignments"><span>'+safe(group[0])+'</span><strong>'+(['CTC calls','New contract calls'].includes(group[0])?'Checking latest import…':group[0]==='Tuesday transaction updates'?'Open Tuesday Updates ↗':group[1].length?group[1].length+' open ↗':fullVerified&&sourceWarnings.length===0?'✓ Complete':'Unable to verify · View ↗')+'</strong></button>').join('');
