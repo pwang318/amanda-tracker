@@ -60,6 +60,8 @@ styles.textContent=[
 '#rmExecutionPlan .execCategoryGrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;margin:12px 0}',
 '#rmExecutionPlan .execCategoryBtn{display:flex;align-items:center;justify-content:space-between;text-align:left;gap:8px;padding:14px!important;min-height:60px!important;font-size:13px!important}',
 '#rmExecutionPlan .execCategoryBtn strong{font-size:19px;color:#523784}',
+'#rmExecutionPlan .execCategoryBtn.execProspectTile strong{font-size:13px;white-space:nowrap}',
+'#rmExecutionPlan .execCategoryBtn.execProspectTile{border-color:#bda7dc;background:#faf7ff}',
 '#rmExecutionPlan .execDetailArea[hidden],#rmExecutionPlan .execHomeWork[hidden]{display:none!important}',
 '#rmExecutionPlan .execDetailArea{border-top:1px solid #eee7f5;padding-top:14px}',
 '#rmExecutionPlan .execDetailArea .execTasks{display:block}',
@@ -526,7 +528,7 @@ function render(){
  detailGroups=sections.concat(categoryRows);
  detailGroups.push(exactPlans);
  const grid=$('execCategoryGrid');
- grid.innerHTML=categoryRows.map((group,i)=>group[0]==='New Realtor outreach assignments'?'<button type="button" class="execCategoryBtn execProspectTile" data-outreach="true"><span>New Realtor prospect list <small>Assigned outreach</small></span><strong>'+group[1].length+' to review ↗</strong></button>':'<button type="button" class="execCategoryBtn" data-category="'+i+'"><span>'+safe(group[0])+'</span><strong>'+group[1].length+' ↗</strong></button>').join('');
+ grid.innerHTML=categoryRows.map((group,i)=>group[0]==='New Realtor outreach assignments'?'<button type="button" class="execCategoryBtn execProspectTile" data-outreach="true"><span>New Realtor prospecting <small>Open qualified call list</small></span><strong>Open list ↗</strong></button>':'<button type="button" class="execCategoryBtn" data-category="'+i+'"><span>'+safe(group[0])+'</span><strong>'+group[1].length+' ↗</strong></button>').join('');
  grid.querySelectorAll('[data-category]').forEach(b=>b.onclick=()=>showDetail('category:'+b.dataset.category));
  grid.querySelector('[data-outreach]')?.addEventListener('click',openProspectList);
  $('rmExecutionPlan').querySelectorAll('[data-exec-target]').forEach(tile=>{
