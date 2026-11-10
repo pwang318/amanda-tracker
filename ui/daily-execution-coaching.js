@@ -69,6 +69,10 @@ styles.textContent=[
 '#rmExecutionPlan .execMetric span{font-size:11px;color:#645674}',
 '#rmExecutionPlan .execNotice{border-radius:9px;padding:10px 12px;background:#f8f4fb;color:#573877;font-size:12px;line-height:1.5;margin:10px 0}',
 '#rmExecutionPlan .execWarn{background:#fff8ee;color:#795028}',
+ '#rmExecutionPlan .execCatchupStatus{display:flex;flex-wrap:wrap;gap:10px;align-items:center;border:1px solid #d9c8eb;background:#f7f3fc;border-radius:10px;padding:12px 14px;margin:12px 0}',
+ '#rmExecutionPlan .execCatchupStatus strong{font-size:14px;color:#39205c}',
+ '#rmExecutionPlan .execCatchupStatus span{font-size:12px;color:#665478;flex:1 1 210px}',
+ '#rmExecutionPlan .execCatchupStatus button{min-height:40px;font-weight:700}',
  '#rmExecutionPlan .execQuickLog{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;padding:15px 17px;margin:0 0 14px;border:1px solid #d9c9ec;border-radius:12px;background:#f5f0fa}',
  '#rmExecutionPlan .execQuickLog strong{display:block;font-size:17px;color:#311b50;margin-bottom:3px}',
  '#rmExecutionPlan .execQuickLog span{display:block;font-size:12px;line-height:1.4;color:#715e86}',
@@ -413,6 +417,8 @@ function render(){
   if(index>=0)categoryRows[index][1].push(q);else otherRows.push(q);
  }
  if(otherRows.length)categoryRows.push(['Other assigned tasks',otherRows,'No other tasks verified']);
+ const catchupRows=queue.filter(q=>/\\bCatch-up from\\b/i.test(String(q.reason||'')));
+ categoryRows.push(['Catch-up assignments',catchupRows,'No historical catch-up assignments remain open']);
  const weekly=all.filter(q=>/weekly realtor|weekly.*call/i.test(q.Category||q.activity_type||''));
  const campaigns=all.filter(q=>/4.week|campaign/i.test(q.Category||q.activity_type||''));
  const missingPlans=all.filter(q=>/missing growth plan/i.test(q.Category||q.activity_type||''));
@@ -430,13 +436,23 @@ function render(){
  // One visible work order; unfinished assignments remain visible on later workdays as overdue.
  const focusRows=priorities.length?priorities:tmrw;
  const focusTitle=priorities.length?'Do first · '+priorities.length+' due or overdue':next?'Next workday · '+fmt(next):'Upcoming work';
- const openQueue=queue.length,catchupOpen=queue.filter(q=>/\bCatch-up from\b/i.test(String(q.reason||''))).length;
+ const openQueue=queue.length,catchupOpen=catchupRows.length;
+ const catchupDone=completedQueue.filter(q=>/\\bCatch-up from\\b/i.test(String(q.reason||''))&&/^(worked|complete|completed|done|closed|resolved)$/i.test(String(q.status||''))).length;
+ const catchupSkipped=completedQueue.filter(q=>/\\bCatch-up from\\b/i.test(String(q.reason||''))&&/^(skipped|dismissed)$/i.test(String(q.status||''))).length;
+ const catchupTotal=Math.max(77,catchupOpen+catchupDone+catchupSkipped);
+ const dueCatchup=catchupRows.filter(q=>q.work_date&&q.work_date<=d).length;
+ const nextCatchup=catchupRows.filter(q=>q.work_date===next).length;
+ const agedOpen=late.filter(q=>{const n=(Date.parse(d+'T12:00:00')-Date.parse(q.work_date+'T12:00:00'))/86400000;return n>=3}).length;
  priorityBox.innerHTML='<div class="execRow"><div><strong>Outstanding work · '+all.length+'</strong><p>'+safe(focusTitle)+(catchupOpen?' · '+catchupOpen+' catch-up assignments still open':'')+'</p></div><div><button type="button" id="execOverdueList">Overdue · '+late.length+'</button> <button type="button" id="execDueList">Due today · '+need.length+'</button> <button type="button" id="execNextList">Next workday · '+tmrw.length+'</button></div></div>'+
+ '<div class="execCatchupStatus"><strong>Catch-up progress · '+catchupDone+' / '+catchupTotal+' completed</strong><span>'+catchupOpen+' still outstanding · '+dueCatchup+' due/overdue today · '+nextCatchup+' scheduled next workday</span><button type="button" id="execCatchupList">Open all catch-up assignments ↗</button></div>'+
+ (catchupSkipped?'<p class="execNotice execWarn">'+catchupSkipped+' catch-up assignments were skipped without verified completion. Director review required.</p>':'')+
+ (agedOpen?'<p class="execNotice execWarn">'+agedOpen+' assignments are at least 3 days overdue. Review before taking on new optional work.</p>':'')+
  (focusRows.length?'<div class="execTasks"><section><ul>'+focusRows.slice(0,5).map((q,i)=>'<li><button type="button" class="execTaskGo" data-focus-row="'+i+'"><b>'+safe(q.agent_name||q['Agent / Item']||'Assigned agent')+'</b><span style="display:block;font-size:11px;color:#736482">'+safe(q.activity_type||q.Category||'Follow-up')+' · '+safe(q.work_date&&q.work_date<d?'Overdue':q.work_date===d?'Due today':'Due '+fmt(q.work_date||next||d))+'</span></button></li>').join('')+'</ul></section></div>':'<p>No assignments due now or on the next workday.</p>')+
  '<small>Unfinished work carries forward automatically. Log the completed outcome before marking an assignment done.</small>';
  $('execDueList').onclick=()=>showDetail('section:1');
  $('execOverdueList').onclick=()=>showDetail('section:0');
  $('execNextList').onclick=()=>showDetail('section:2');
+ $('execCatchupList').onclick=()=>showDetail('category:'+(categoryRows.length-1));
  priorityBox.querySelectorAll('[data-focus-row]').forEach(b=>b.onclick=()=>{const q=focusRows[Number(b.dataset.focusRow)];if(q)openTask(q)});
  priorityBox.dataset.authoritativeOpenCount=String(openQueue);
  const wg=weeklyGoals(d),weekLabel=fmt(wg.start);
