@@ -104,7 +104,7 @@ const compact=fs.readFileSync('ui/compact-workspace.js','utf8');
 new vm.Script(compact,{filename:'compact-workspace.js'});
 assert(compact.includes('rmTodayCleanV4'),'Compact styling must be loaded once');
 assert(!compact.includes('MutationObserver'),'Compact styling must not continuously re-render the entire Today page');
-assert(compact.includes(':has(> #rmExecutionPlan)'),'Legacy workboard is hidden only when the new execution plan exists');
+assert(compact.includes('rmExecReady'),'Legacy board is only hidden once the live plan succeeds');
 
 assert.equal(html.split('<script defer src="./ui/compact-workspace.js?v=').length-1,1,'Compact workspace must be loaded exactly once');
 assert(code.includes("id=\"execMoreMetrics\""),'Secondary statistics should be collapsed into details');
