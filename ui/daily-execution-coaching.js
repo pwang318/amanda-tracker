@@ -67,6 +67,8 @@ styles.textContent=[
 '#rmExecutionPlan .execProspectHint{font-size:12px;line-height:1.45;color:#615474}',
 '#rmExecutionPlan .execDetailArea[hidden],#rmExecutionPlan .execHomeWork[hidden]{display:none!important}',
 '#rmExecutionPlan .execDetailArea{border-top:1px solid #eee7f5;padding-top:14px}',
+'#rmExecutionPlan .execListGuide{border:1px solid #e9dff4;border-radius:10px;background:#faf7fd;padding:12px 14px;margin:0 0 13px}',
+'#rmExecutionPlan .execListGuide p{font-size:13px;line-height:1.5;margin:4px 0}',
 '#rmExecutionPlan .execDetailArea .execTasks{display:block}',
 '#rmExecutionPlan .execDetailArea .execTasks section{border:0;padding:0}',
 '#rmExecutionPlan .execDetailArea .execTasks ul{max-height:none;overflow:visible}',
@@ -320,13 +322,37 @@ function openTask(q){
  if(/transaction|contract|ctc/i.test(type)&&typeof window.v350OpenLane==='function')return window.v350OpenLane('calls');
  if(typeof window.switchTab==='function')return window.switchTab('portfolio');
 }
+const worklistGuide={
+ '4-week campaigns':['Active four-week Realtor follow-up assignments.','Complete the assigned touchpoint, log the actual outcome, and set the next follow-up.'],
+ 'Relationship follow-ups':['Outstanding relationship commitments requiring follow-through.','Review the saved reason, contact the Realtor, and document the outcome and next step.'],
+ 'Weekly Realtor calls':['Open weekly relationship calls, not completed conversations.','Call the Realtor, record the result, and identify the next business opportunity.'],
+ 'Transaction and Tuesday updates':['Pending contract, transaction, or Tuesday update activity.','Check the relevant transaction, make the required update and log the contact outcome.'],
+ 'Meetings and growth plans':['Open meeting-related actions or unfinished growth plans; a meeting is not automatically booked.','Review the reason, arrange the appropriate meeting when needed, and complete the growth-plan action.'],
+ 'C-agent growth and protection':['C-tier relationship opportunities intended to generate referrals and grow toward B.','Review the opportunity, discuss a specific business-generating action, and record the next commitment.'],
+ 'Portfolio attention reviews':['Realtors with a flagged portfolio item needing review.','Verify the reason, correct the missing item or follow up, and document the result.'],
+ 'Other assigned tasks':['Open tasks that do not match the standard worklist categories.','Read the saved assignment reason and complete the specific requested action.'],
+ 'Catch-up assignments':['Historical unfinished assignments retained until verified completion.','Complete the actual contact or follow-up and log the result; age alone never closes a task.'],
+ 'Missing growth plans':['Realtors lacking a recorded growth plan.','Complete the plan with the Realtor and document the next action.'],
+ 'Overdue before today':['Assignments past their due date and still open.','Complete the original task or document why it remains open and the next action.'],
+ 'Due today':['Assignments with a due date today.','Work the saved action and log its completion or document a blocker.'],
+ 'Next workday':['Open assignments scheduled for the next working day.','Review ahead of time and plan the contact or meeting.'],
+ 'Upcoming this week':['Open future-dated assignments later this week.','Prepare the required follow-up before its due date.'],
+ 'Undated follow-ups':['Actionable follow-ups without a saved due date.','Verify the required work and assign an appropriate follow-up date.']
+};
+function worklistExplanation(title,rows){
+ const guide=worklistGuide[title];
+ if(!guide)return '';
+ const sample=rows&&rows.length?'<p><strong>Listed Realtors:</strong> '+rows.length+' open assignment(s) in this category. Select a Realtor to open their record.</p>':'';
+ return '<div class="execListGuide"><p><strong>Why these Realtors appear:</strong> '+safe(guide[0])+'</p><p><strong>What to do:</strong> '+safe(guide[1])+'</p>'+sample+'</div>';
+}
 function taskList(title,rows,empty,showHeading=true){
  const list=rows.map((q,i)=>{
   const agent=q.agent_name||q['Agent / Item']||'Assigned agent';
   const type=q.Category||q.activity_type||'Assigned work';
-  const action=q['Next Action']||q.reason||'Open relationship to review and log the next step';
+  const reason=String(q.reason||'').trim();
+  const action=String(q['Next Action']||'').trim()||(/\\bCatch-up from\\b/i.test(reason)?'Contact Realtor, log the actual result, and set the next action':'Review this assignment, complete the requested contact or plan, and log the outcome');
   const due=q.work_date||q['Due Date']||'';
-  return '<li><button type="button" class="execTaskGo" data-index="'+i+'"><b>'+safe(agent)+'</b><span style="display:block;font-size:11px;color:#736482">'+safe(type)+(due?' · Due '+safe(due):'')+'</span><span style="display:block;font-size:12px;color:#453755;margin-top:4px">'+safe(action)+'</span><span style="display:block;font-size:11px;margin-top:4px">Open assignment ↗</span></button></li>';
+  return '<li><button type="button" class="execTaskGo" data-index="'+i+'"><b>'+safe(agent)+'</b><span style="display:block;font-size:11px;color:#736482">'+safe(type)+(due?' · Due '+safe(due):'')+'</span>'+(reason?'<span style="display:block;font-size:12px;color:#675477;margin-top:4px"><strong>Why here:</strong> '+safe(reason)+'</span>':'<span style="display:block;font-size:12px;color:#675477;margin-top:4px"><strong>Why here:</strong> Open assignment in this worklist</span>')+'<span style="display:block;font-size:12px;color:#453755;margin-top:4px"><strong>Next action:</strong> '+safe(action)+'</span><span style="display:block;font-size:11px;margin-top:4px">Open assignment ↗</span></button></li>';
  }).join('');
  return '<section>'+(showHeading?'<strong>'+safe(title)+' · '+rows.length+'</strong>':'')+(rows.length?'<ul>'+list+'</ul>':'<p>'+safe(empty)+'</p>')+'</section>';
 }
@@ -476,7 +502,7 @@ function showDetail(key,scroll=true){
  if(!group){activeDetail=null;detail.hidden=true;home.hidden=false;return}
  home.hidden=true;detail.hidden=false;
  $('execDetailTitle').textContent=group[0]+' · '+group[1].length;
- list.innerHTML=taskList(group[0],group[1],group[2],false)+
+ list.innerHTML=worklistExplanation(group[0],group[1])+taskList(group[0],group[1],group[2],false)+
   (!fullVerified?'<p class="execNotice execWarn">Some lists could not refresh. Check the source before treating this list as complete.</p>':'');
  list.querySelectorAll('.execTaskGo').forEach(button=>{
   button.onclick=()=>{
