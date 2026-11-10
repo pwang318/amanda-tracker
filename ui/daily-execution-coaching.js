@@ -913,13 +913,15 @@ window.rmAmandaNextWorkday=d=>loaded?nextWorkday(String(d||iso()).slice(0,10)):n
 function suppressFloatingSharedWarning(root){
  if(document.body.dataset.rmTab==='director')return;
  const base=root||document;
- const nodes=base.querySelectorAll?base.querySelectorAll('#rmSharedPowerBiWarning,[role="alert"],[role="status"],[class*="toast"],[class*="warning"],[class*="Warning"]'):[];
+ const nodes=base.querySelectorAll?base.querySelectorAll('#rmSharedPowerBiWarning,[role="alert"],[role="status"],[class*="toast"],[class*="warning"],[class*="Warning"],[class*="banner"]'):[];
  const candidates=[...(base.nodeType===1?[base]:[]),...nodes];
+ const pattern=/(?:^Shared data:\s*reconciliation required\b|shared data refresh failed|authoritative power bi validation failed|withheld until profile and referral checks pass)/i;
  for(const el of candidates){
-  if(el.closest?.('#rmExecutionPlan')||el.closest?.('#view-director'))continue;
+  if(el.closest?.('#rmExecutionPlan')||el.closest?.('#view-director')||el.closest?.('#view-data-hub'))continue;
   const t=(el.textContent||'').trim();
-  if(t.length>900||!/^Shared data:\s*reconciliation required\b/i.test(t))continue;
-  if([...el.children].some(child=>(child.textContent||'').length<900&&/^Shared data:\s*reconciliation required\b/i.test((child.textContent||'').trim())))continue;
+  if(t.length>900||!pattern.test(t))continue;
+  if([...el.children].some(child=>(child.textContent||'').length<900&&pattern.test((child.textContent||'').trim())))continue;
+  if(el.querySelector('button[type="submit"],input,textarea'))continue;
   el.hidden=true;el.style.setProperty('display','none','important');el.setAttribute('aria-hidden','true');
  }
 }
