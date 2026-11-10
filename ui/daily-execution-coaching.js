@@ -407,7 +407,29 @@ async function refreshImportedCallCounters(force=false){
  }catch(err){rmImportSummary.error=String(err.message||err)}
  finally{rmImportSummary.checked=Date.now();rmImportSummary.busy=false;paintImportedCallCounters()}
 }
+// Tuesday is owned by its transaction-update workflow, not the generic RM queue.
+// Reading its existing live outstanding counter prevents a completed Tuesday from
+// permanently displaying a navigation prompt on the Today dashboard.
+function readTuesdayOutstanding(){
+ try{
+  if(typeof tuesdayDue!=='function')return null;
+  const count=tuesdayDue();
+  return typeof count==='number'&&Number.isInteger(count)&&count>=0?count:null;
+ }catch(e){console.warn('Tuesday calls could not be verified',e);return null}
+}
+function paintTuesdayCompletion(){
+ const grid=$('execCategoryGrid');if(!grid)return;
+ const button=[...grid.querySelectorAll('[data-category]')].find(b=>b.querySelector('span')?.textContent?.trim()==='Tuesday transaction updates');
+ if(!button)return;
+ const status=button.querySelector('strong');if(!status)return;
+ const count=readTuesdayOutstanding();
+ const done=count===0;
+ status.textContent=count===null?'Check Tuesday Updates ↗':done?'✓ Complete':count+' outstanding ↗';
+ button.classList.toggle('execTransactionComplete',done);
+ button.setAttribute('aria-label','Tuesday transaction updates · '+(count===null?'Unable to verify; open Tuesday Updates':done?'Complete; view completed Tuesday updates':count+' calls outstanding'));
+}
 function paintImportedCallCounters(){
+ paintTuesdayCompletion();
  const grid=$('execCategoryGrid');if(!grid)return;
  for(const button of grid.querySelectorAll('[data-category]')){
   const label=button.querySelector('span')?.textContent?.trim();
@@ -946,7 +968,8 @@ function render(){
  detailGroups=sections.concat(categoryRows);
  detailGroups.push(exactPlans);
  const grid=$('execCategoryGrid');
- grid.innerHTML=categoryRows.map((group,i)=>({group,i})).filter(({group})=>(group[1].length>0||['New contract calls','CTC calls','Tuesday transaction updates'].includes(group[0]))&&group[0]!=='Catch-up assignments'&&group[0]!=='New Realtor outreach assignments').map(({group,i})=>'<button type="button" class="execCategoryBtn" data-category="'+i+'" aria-label="Open '+safe(group[0])+': '+group[1].length+' assignments"><span>'+safe(group[0])+'</span><strong>'+(['CTC calls','New contract calls'].includes(group[0])?'Checking latest import…':group[0]==='Tuesday transaction updates'?'Open Tuesday Updates ↗':group[1].length?group[1].length+' open ↗':fullVerified&&sourceWarnings.length===0?'✓ Complete':'Unable to verify · View ↗')+'</strong></button>').join('');
+ const visibleWorklists=new Set(['Relationship follow-ups','Weekly Realtor calls','New contract calls','CTC calls','Tuesday transaction updates','Meetings and growth plans','Portfolio attention reviews','Other assigned tasks']);
+ grid.innerHTML=categoryRows.map((group,i)=>({group,i})).filter(({group})=>visibleWorklists.has(group[0])||group[1].length>0&&!['Catch-up assignments','New Realtor outreach assignments'].includes(group[0])).map(({group,i})=>'<button type="button" class="execCategoryBtn" data-category="'+i+'" aria-label="Open '+safe(group[0])+': '+group[1].length+' assignments"><span>'+safe(group[0])+'</span><strong>'+(['CTC calls','New contract calls'].includes(group[0])?'Checking latest import…':group[0]==='Tuesday transaction updates'?'Open Tuesday Updates ↗':group[1].length?group[1].length+' open ↗':fullVerified&&sourceWarnings.length===0?'✓ Complete':'Unable to verify · View ↗')+'</strong></button>').join('');
  grid.querySelectorAll('[data-category]').forEach(b=>b.onclick=()=>{const category=categoryRows[Number(b.dataset.category)]?.[0];if(category==='CTC calls')return openManagementTemplate('ctc');if(category==='New contract calls')return openManagementTemplate('contract');if(category==='Tuesday transaction updates')return typeof window.switchTab==='function'?window.switchTab('tuesday'):showDetail('category:'+b.dataset.category);return showDetail('category:'+b.dataset.category)});
  // Only show a completed state for queue-backed categories when the current
  // shared source was successfully verified. Completed tiles remain clickable.
@@ -1250,6 +1273,9 @@ function init(){
  setInterval(()=>{if(!document.hidden&&!working)refresh(false)},15*60*1000);
  window.addEventListener('rm-work-queue-changed',()=>refresh(true));
  window.addEventListener('focus',()=>refreshImportedCallCounters(true));
+ window.addEventListener('rm-tuesday-updated',paintTuesdayCompletion);
+ window.addEventListener('rm-work-queue-changed',paintTuesdayCompletion);
+ setInterval(()=>{if(!document.hidden)paintTuesdayCompletion()},15000);
  setInterval(()=>{if(!document.hidden)refreshImportedCallCounters(true)},60000);
  document.addEventListener('visibilitychange',()=>{if(!document.hidden)refresh(false)});
 }
