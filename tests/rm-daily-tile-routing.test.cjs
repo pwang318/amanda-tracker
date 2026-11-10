@@ -80,7 +80,7 @@ assert(code.includes("['New meetings this week'"),'Weekly new meeting tile visib
 assert(code.includes("['Break Breads this week'"),'Weekly Break Bread tile visible');
 assert(code.includes("if(kind==='newmeet'||kind==='weeknew')"),'New meeting tiles must open their matching records');
 assert(code.includes("if(kind==='bread'||kind==='weekbread')"),'Break Bread tiles must open their matching records');
-assert(code.includes('PTO-adjusted targets'),'PTO must reduce weekly expectations');
+assert(code.includes('filter(x=>x>=COACHING_START&&workday(x))'),'PTO must reduce weekly expectations');
 
 assert(code.includes('id="execBusinessDetails"'), 'Daily RM has an expandable outcomes view');
 assert(code.includes('function linkBookedToHeld(booked,held)'), 'Booked meetings must match held meetings by agent and date');
