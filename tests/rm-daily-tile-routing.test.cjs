@@ -124,7 +124,7 @@ assert.equal(repeated,1,'Legacy duplicate inline style blocks must be consolidat
 // Manager accountability and outstanding-work regression safeguards.
 assert(code.includes('completed_at,completion_activity_id'), 'Assignment feed must include verification timestamps and activity IDs');
 assert(code.includes('q.completed_at&&'), 'Completed-today must not infer completion from original due dates');
-assert(code.includes("'Needs scheduling',undated"), 'Unscheduled work must have its own task drilldown');
+assert(code.includes("'Undated follow-ups',undated"), 'Unscheduled work must have its own task drilldown');
 assert(code.includes("showDetail('section:5')"), 'Needs-scheduling action must open the undated list');
 assert(code.includes('historicalCatchupUnverified'), 'All historical catch-up records must be reconciled against the original cohort');
 assert(code.includes('sourceWarnings.length===0&&fullVerified'), 'Last verified refresh requires every source to succeed');
@@ -133,12 +133,12 @@ assert(code.includes('observe(root,{childList:true,subtree:false})'), 'Daily das
 assert(code.includes('New Realtor prospecting <small>Open qualified call list</small>'),'New Realtor tile must identify the real call list');
 assert(code.includes('<strong>Open list ↗</strong>'),'New Realtor tile must show a clear action, not the queue count');
 assert(!code.includes('New Realtor prospect list <small>Assigned outreach</small>'),'No misleading zero-review prospect tile');
-assert(code.includes("grid.querySelector('[data-outreach]')?.addEventListener('click',openProspectList)"),'Prospecting tile must navigate to the call list');
+assert(code.includes("$('execProspectShortcut').querySelector('[data-outreach]')?.addEventListener('click',openProspectList)"),'Prospecting tile must navigate to the call list');
 
 assert(code.includes("group('Overdue — explanation required',overdue,true,true)"),'Manager review lists every overdue assignment');
 assert(code.includes("group('Due today — review or document a blocker',due,true,true)"),'Manager review lists every due-today assignment');
 assert(code.includes("group('Upcoming assignments',upcoming,false,false)"),'Manager review keeps future work separate');
-assert(code.includes("group('Needs scheduling',unscheduled,false,false)"),'Manager review includes undated assignments');
+assert(code.includes("group('Undated follow-ups',unscheduled,false,false)"),'Manager review includes undated assignments');
 assert(code.includes('data-carry-reason')&&code.includes('data-carry-next'),'Carry-forward requires both reason and next action');
 assert(code.includes('carry_forward_logged_at:new Date().toISOString()'),'Saved carry-forward comments have timestamps');
 assert(code.includes('Save could not be verified'),'Carry-forward writes require response verification');
@@ -153,3 +153,7 @@ assert(code.includes('id="execRecentDisclosure"'), 'Recent activity should be co
 assert(code.includes("group[1].length>0&&group[0]!=='Catch-up assignments'"), 'Do not show empty categories or duplicate catch-up tile');
 assert(code.includes("group[0]==='New Realtor outreach assignments'||"), 'Always keep prospect list shortcut accessible');
 assert(code.includes("id=\"execCatchupList\""), 'Catch-up work remains available in primary work order');
+
+assert(code.includes('id="execProspectShortcut"'),'Prospect list shortcut belongs inside Prospect & Grow section');
+assert(code.includes("$('execProspectShortcut').replaceChildren(shortcut)"),'Prospect tile moves into prominent prospecting section');
+assert(code.includes("undated.length?'<div class="),'No empty Needs Scheduling tile on daily homepage');
