@@ -411,11 +411,11 @@ async function refreshImportedCallCounters(force=false){
 // Reading its existing live outstanding counter prevents a completed Tuesday from
 // permanently displaying a navigation prompt on the Today dashboard.
 function readTuesdayOutstanding(){
- try{
-  if(typeof tuesdayDue!=='function')return null;
-  const count=tuesdayDue();
-  return typeof count==='number'&&Number.isInteger(count)&&count>=0?count:null;
- }catch(e){console.warn('Tuesday calls could not be verified',e);return null}
+ // The Tuesday workflow publishes the verified outstanding count to this badge
+ // after reconciling its active-file snapshot and logged contact outcomes.
+ const badge=$('rmV1TuesdayBadge');
+ const raw=String(badge?.textContent||'').trim();
+ return /^\\d+$/.test(raw)?Number(raw):null;
 }
 function paintTuesdayCompletion(){
  const grid=$('execCategoryGrid');if(!grid)return;
