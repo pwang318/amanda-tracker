@@ -156,6 +156,13 @@ assert(code.includes("id=\"execCatchupList\""), 'Catch-up work remains available
 
 assert(code.includes('id="execInlineProspects"'),'One Realtor call-list section stays in Prospect & Grow');
 assert(code.includes('worklistExplanation(group[0],group[1])'),'Each category displays why its Realtors are listed and what to do');
+assert(code.includes("const key=title.startsWith('Due today')"), 'Date-varying sections must still show their guidance');
+assert(code.includes('const action=taskNextAction(q);'),'Every task must use its own type and saved next action');
+assert(code.includes('Why here:')&&code.includes('Next action:'),'Individual Realtor rows distinguish reason from action');
+assert(code.includes('aria-label="Open '), 'Each category names the actual assignment count');
+assert(code.includes('tile.onclick=action;')&&code.includes('tile.onkeydown='),'Re-render must replace rather than duplicate tile handlers');
+assert(code.includes("if(group[0]==='Completed queue work')"), 'Completed queue opens completed activity, not open Realtor work');
+
 assert(code.includes('Why here:')&&code.includes('Next action:'),'Each assignment labels its reason and expected next action');
 assert(code.includes("'4-week campaigns':")&&code.includes("'Weekly Realtor calls':")&&code.includes("'Portfolio attention reviews':"),'All key relationship categories have clear instructions');
 assert(!code.includes('id="execProspectShortcut"'),'Redundant Realtor prospect shortcut must not render');
