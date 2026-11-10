@@ -227,7 +227,10 @@ async function refresh(force=false){
 function openTask(q){
  const name=String(q.agent_name||q['Agent / Item']||'').trim();
  const type=String(q.Category||q.activity_type||'').toLowerCase();
- // Take Amanda to the selected relationship rather than an unrelated workflow landing page.
+ // Workflow-specific assignments must open their actual work lane, not an unrelated agent modal.
+ if(/tuesday/i.test(type)&&typeof window.v350OpenLane==='function')return window.v350OpenLane('tuesday');
+ if(/transaction|contract|ctc/i.test(type)&&typeof window.v350OpenLane==='function')return window.v350OpenLane('calls');
+ // Relationship, weekly-call and growth-plan items open the selected agent record.
  if(name&&typeof window.openContactModal==='function'){
   Promise.resolve(window.openContactModal(name)).catch(err=>{
    console.warn('Could not open agent profile',name,err);
