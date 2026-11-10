@@ -465,22 +465,16 @@ function renderBusinessResults(){
  const nextStepHeld=held.filter(a=>/^\d{4}-\d{2}-\d{2}$/.test(String(a.follow_up_date||'').slice(0,10)));
  const open=queue.filter(q=>String(q.status||'').toLowerCase()==='open'&&/follow.up|campaign|weekly.*call|growth/i.test(String(q.activity_type||'')));
  const completed=completedQueue.filter(q=>/^(worked|complete|completed|done|closed|resolved)$/i.test(String(q.status||''))&&/follow.up|campaign|weekly.*call|growth/i.test(String(q.activity_type||'')));
- const row=(label,value,caption)=>'<div class="execMetric execOutcomeMetric"><strong>'+safe(value)+'</strong><span class="execOutcomeLabel">'+safe(label)+'</span><small class="execOutcomeCaption">'+safe(caption)+'</small></div>';
- host.innerHTML='<p><strong>Activity → actual results</strong> · Current week ('+safe(fmt(from))+' onward), unless stated otherwise.</p>'+
-  '<div class="execMetrics">'+
-  row('Meetings booked',bookings.length,'Explicit scheduled outcome in activity')+
-  row('Meetings held',held.length,'Held/completed meeting outcomes')+
-  row('Held linked to booking',linked,'Same agent and nearby scheduled date')+
-  row('Held with dated next step',nextStepHeld.length+' / '+held.length,'Follow-up date saved on meeting activity')+
-  row('C-agent referrals since Nov 9',data?.referrals?data.referrals.length:'Not verified','Unique Velocify keys matched to latest C agents')+
-  row('C → B transitions since Nov 9',data?.migrations?data.migrations.length:'Not verified','Recorded tier migrations, not projected')+
-  '</div>'+
-  '<p><strong>Completed queue follow-ups:</strong> '+completed.length+' logged since November 9. Follow-up completion rate cannot be confirmed without a consistent due-date cohort.</p>'+
-  (data?.referrals?.length?'<p><strong>Referral agents:</strong> '+safe([...new Set(data.referrals.map(r=>r.referral_partner_name))].join(' · '))+'</p>':'')+
-  (data?.migrations?.length?'<p><strong>C → B agents:</strong> '+safe(data.migrations.map(r=>r.agent_name).join(' · '))+'</p>':'')+
-  (data?.detailsMissing?.length?'<p><strong>Unverified sources:</strong> '+safe(data.detailsMissing.join(', '))+'. No zero substituted.</p>':'')+
-  (businessResults.error?'<p><strong>Unable to refresh business sources:</strong> '+safe(businessResults.error)+'</p>':'')+
-  '<small>Referral counts are provisional and only include unique Velocify lead keys matched by name to agents currently classified C in the latest available Power BI profiles. They are not official RM-attributed referral credits or a historical C-agent cohort. Meeting bookings and held counts may cross weeks; linked meetings are matched by agent and scheduled date. A good meeting alone is not proof of retained business.</small>';
+ const row=(label,value)=>'<div class="execMetric execOutcomeMetric" style="display:flex!important;flex-direction:column!important;align-items:flex-start!important;gap:12px!important"><strong style="display:block!important">'+safe(value)+'</strong><div style="display:block!important;line-height:1.5!important;font-size:13px!important;white-space:normal!important">'+safe(label)+'</div></div>';
+ host.innerHTML='<div class="execMetrics">'+
+  row('Meetings booked',bookings.length)+
+  row('Meetings held',held.length)+
+  row('Meetings matched to bookings',linked)+
+  row('Held with a next step',nextStepHeld.length+' / '+held.length)+
+  row('C-agent referrals',data?.referrals?data.referrals.length:'Unavailable')+
+  row('C-to-B growth',data?.migrations?data.migrations.length:'Unavailable')+
+  '</div>';
+
 }
 
 function renderMissedSummary(d){
