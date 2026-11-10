@@ -105,3 +105,5 @@ assert(compact.includes('function hideEmptyLegacyPriorities()'),'Empty legacy To
 assert(compact.includes("heading.closest('#rmExecutionPlan,#rm350Workboard')"),'Live execution plan must never be hidden');
 assert(compact.includes('content.length<450&&!meaningful'),'Only empty header shells may be removed');
 assert(compact.includes('hideEmptyLegacyPriorities();'),'Cleanup must execute on Today page');
+
+assert.equal(html.split('<script defer src="./ui/compact-workspace.js?v=').length-1,1,'Compact workspace must be loaded exactly once');
