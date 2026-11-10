@@ -57,6 +57,10 @@ styles.textContent=[
 '#rmExecutionPlan .execMetric span{font-size:11px;color:#645674}',
 '#rmExecutionPlan .execNotice{border-radius:9px;padding:10px 12px;background:#f8f4fb;color:#573877;font-size:12px;line-height:1.5;margin:10px 0}',
 '#rmExecutionPlan .execWarn{background:#fff8ee;color:#795028}',
+ '#rmExecutionPlan .execOutcomeMetric{display:flex;flex-direction:column;align-items:flex-start;gap:5px;min-width:0;min-height:120px;white-space:normal}',
+ '#rmExecutionPlan .execOutcomeMetric strong{display:block;margin:0;line-height:1.2}',
+ '#rmExecutionPlan .execOutcomeMetric .execOutcomeLabel{display:block!important;position:static!important;line-height:1.35!important;margin:0!important;font-weight:650;overflow-wrap:anywhere}',
+ '#rmExecutionPlan .execOutcomeMetric .execOutcomeCaption{display:block!important;position:static!important;line-height:1.45!important;margin:0!important;color:#675d75;overflow-wrap:anywhere}',
 '#rmExecutionPlan .execTasks{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}',
 '#rmExecutionPlan .execTasks section{border:1px solid #ece5f1;border-radius:9px;padding:11px;min-width:0}',
 '#rmExecutionPlan .execTasks ul{margin:7px 0;padding-left:19px;max-height:320px;overflow-y:auto;font-size:12px;color:#3d3151}',
@@ -452,7 +456,7 @@ function renderBusinessResults(){
  const nextStepHeld=held.filter(a=>/^\d{4}-\d{2}-\d{2}$/.test(String(a.follow_up_date||'').slice(0,10)));
  const open=queue.filter(q=>String(q.status||'').toLowerCase()==='open'&&/follow.up|campaign|weekly.*call|growth/i.test(String(q.activity_type||'')));
  const completed=completedQueue.filter(q=>/^(worked|complete|completed|done|closed|resolved)$/i.test(String(q.status||''))&&/follow.up|campaign|weekly.*call|growth/i.test(String(q.activity_type||'')));
- const row=(label,value,caption)=>'<div class="execMetric"><strong>'+safe(value)+'</strong><span>'+safe(label)+'</span><small>'+safe(caption)+'</small></div>';
+ const row=(label,value,caption)=>'<div class="execMetric execOutcomeMetric"><strong>'+safe(value)+'</strong><span class="execOutcomeLabel">'+safe(label)+'</span><small class="execOutcomeCaption">'+safe(caption)+'</small></div>';
  host.innerHTML='<p><strong>Activity → actual results</strong> · Current week ('+safe(fmt(from))+' onward), unless stated otherwise.</p>'+
   '<div class="execMetrics">'+
   row('Meetings booked',bookings.length,'Explicit scheduled outcome in activity')+
