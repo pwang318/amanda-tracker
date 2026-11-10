@@ -182,7 +182,8 @@ async function refresh(force=false){
   loaded=true;render();
   const warning=$('execNotice');
   if(sourceWarnings.length&&warning){warning.className='execNotice execWarn';warning.textContent='Partial data: '+sourceWarnings.join(', ')+' could not be verified. Previously loaded records are retained where available; refresh to retry.';}
-  $('rm350Workboard')?.classList.add('rmExecReady');
+  const board=$('rm350Workboard');
+  if(board)board.classList.toggle('rmExecReady',fullVerified||!sourceWarnings.includes('Outstanding assignments'));
   await refreshBusinessResults();
  }catch(e){
   $('rm350Workboard')?.classList.remove('rmExecReady');
