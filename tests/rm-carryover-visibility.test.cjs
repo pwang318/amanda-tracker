@@ -1,0 +1,13 @@
+'use strict';
+const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/strict');
+const s=fs.readFileSync('ui/daily-execution-coaching.js','utf8');
+new vm.Script(s,{filename:'ui/daily-execution-coaching.js'});
+assert(s.includes('const allRaw=queue.concat(supplements)'), 'Open queue must be authoritative over supplemental work');
+assert(s.includes("status=eq.open&work_date=gte."), 'Rescheduled open tasks must load in current daily plan');
+assert(s.includes("const late=all.filter(q=>q.work_date&&q.work_date>=COACHING_START&&q.work_date<d)"), 'Past-due unfinished tasks must remain visible');
+assert(s.includes("const focusRows=priorities.length?priorities:tmrw"), 'Today must preview next workday when nothing is due today');
+assert(s.includes("showDetail('section:2')"), 'Next workday must open its assigned agent list');
+assert(s.includes("catchupOpen=queue.filter"), 'Old catch-up queue must remain countable');
+assert(s.includes("data-focus-row"), 'Focus tasks must open individual agent records');
+assert(s.includes("Log the completed outcome"),'Do not auto-mark old work as done');
+console.log('RM unfinished-work carry-forward contract PASS');
