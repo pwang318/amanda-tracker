@@ -58,6 +58,7 @@ styles.textContent=[
 ].join('\n');document.head.append(styles);
 let blocks=[],activities=[],queue=[],completedQueue=[],fullWork=[],fullVerified=false,loaded=false,working=false,selected=iso();
 let activeDetail=null,detailGroups=[];
+let businessResults={loading:false,error:'Not loaded',data:null};
 const off=b=>/^(out of office|pto|vacation|time off)$/i.test(String(b.block_type||'').trim());
 const close=b=>String(b.block_type||'')==='Daily Closeout'&&String(b.title||'').startsWith('Execution closeout');
 const outDates=()=>new Set(blocks.filter(off).map(b=>String(b.work_date).slice(0,10)));
@@ -94,7 +95,7 @@ function mount(){
  const div=document.createElement('section');div.id='rmExecutionPlan';
  div.innerHTML='<div class="execRow"><div><h2>Today’s plan</h2><p>Your daily goals, open work, completed activity, and next steps.</p></div><button id="execReload" type="button">Refresh live activity</button></div>'+
  '<div id="execNotice" class="execNotice">Loading shared activity and schedule…</div>'+
- '<div id="execMetrics" class="execMetrics"></div><div id="execWeeklyGoals" class="execNotice" aria-live="polite"></div>'+
+ '<div id="execMetrics" class="execMetrics"></div><div id="execWeeklyGoals" class="execNotice" aria-live="polite"></div>'+ '<details id="execBusinessDetails"><summary>Business results · meetings, referrals & C-to-B growth</summary><div id="execBusinessResults" class="execNotice">Checking source records…</div></details>'+
  '<div class="execHomeWork" id="execHomeWork"><h3>Open work by category</h3><p>Choose a worklist to see the assigned agents and next actions.</p><div id="execCategoryGrid" class="execCategoryGrid"></div></div>'+
  '<div class="execDetailArea" id="execDetailArea" hidden><button type="button" id="execBack" class="execBack">← Back to Today</button><div class="execRow"><h3 id="execDetailTitle"></h3><button type="button" id="execDetailRefresh">Refresh worklist</button></div><div id="execTaskSummary" class="execTasks"></div></div>'+
  '<details id="execCloseout"><summary>Daily results & closeout · what was missed</summary><div id="execMissedSummary" class="execNotice" aria-live="polite"></div>'+
@@ -152,6 +153,7 @@ async function refresh(force=false){
    }catch(err){console.warn('Full RM work list not verified',err)}
   }
   loaded=true;render();
+  await refreshBusinessResults();
  }catch(e){
   const el=$('execNotice');if(el){el.textContent='Unable to verify live work and daily goals. '+String(e.message||e)+'. Please refresh; no zero counts substituted.';el.className='execNotice execWarn'}
  }finally{working=false}
@@ -326,6 +328,7 @@ function render(){
   tile.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();action()}});
  });
  showDetail(activeDetail,false);
+ renderBusinessResults();
  const dayEls=$('execDates');dayEls.replaceChildren();
  for(const b of blocks.filter(off).sort((a,b)=>a.work_date.localeCompare(b.work_date))){
   const span=document.createElement('span');span.className='execDate';span.append(document.createTextNode(fmt(b.work_date)+' · off'));
@@ -339,6 +342,84 @@ function render(){
  }else cover.textContent='Add time off so those days are excluded from daily prospecting coaching. Date-specific work must still be reviewed.';
  populateCloseout();renderTrends();
 }
+
+const nameKey=s=>String(s||'').normalize('NFKD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,'');
+const scheduledActivity=a=>/meeting scheduled|meeting booked|appointment scheduled/i.test(String(a.outcome||''))&&!!String(a.agent_name||'').trim();
+function linkBookedToHeld(booked,held){
+ const used=new Set(),matched=[];
+ for(const b of booked){
+  const target=String(b.follow_up_date||'').slice(0,10);
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(target))continue;
+  const h=held.find(x=>{
+   if(used.has(x.id)||nameKey(x.agent_name)!==nameKey(b.agent_name))return false;
+   const delta=(Date.parse(String(x.act_date).slice(0,10)+'T12:00:00')-Date.parse(target+'T12:00:00'))/86400000;
+   return delta>=-7&&delta<=14&&String(x.act_date).slice(0,10)>=String(b.act_date).slice(0,10);
+  });
+  if(h){used.add(h.id);matched.push({booked:b,held:h})}
+ }
+ return matched;
+}
+async function refreshBusinessResults(){
+ const host=$('execBusinessResults');if(!host||businessResults.loading)return;
+ businessResults.loading=true;host.textContent='Reconciling activity, referrals and growth records…';
+ try{
+  if(typeof sbFetch!=='function')throw Error('Shared database unavailable');
+  // Business outcomes are provisional; do not substitute this for the Director weighted scorecard.
+  const [leadRows,migrations,profiles]=await Promise.allSettled([
+   sbFetch('velocify_leads?select=lead_key,referral_partner_name,date_added&date_added=gte.'+COACHING_START+'&order=date_added.desc&limit=10000'),
+   sbFetch('tier_migrations?select=agent_name,from_tier,to_tier,migration_date&migration_date=gte.'+COACHING_START+'&order=migration_date.desc&limit=1000'),
+   typeof window.rm470LoadAllProfiles==='function'?window.rm470LoadAllProfiles():Promise.reject(Error('Power BI agent profiles not available'))
+  ]);
+  const ok=r=>r.status==='fulfilled'&&Array.isArray(r.value);
+  const profileList=ok(profiles)?profiles.value:null;
+  const latest=profileList?.map(p=>String(p.powerbi_last_seen_at||'').slice(0,10)).filter(Boolean).sort().at(-1);
+  const cNames=new Set((profileList||[]).filter(p=>String(p.powerbi_last_seen_at||'').slice(0,10)===latest&&String(p.powerbi_level||p.tier||'').trim().toUpperCase()==='C'&&p.relationship_status!=='inactive'&&p.do_not_contact!==true&&p.display_name!=='__HIDDEN__'&&p.relationship_type!=='strategic_partner').map(p=>nameKey(p.agent_name)));
+  const seenKeys=new Set(),referrals=[];
+  if(ok(leadRows)&&latest){
+   for(const row of leadRows.value){
+    const k=nameKey(row.referral_partner_name),id=String(row.lead_key||'').trim();
+    if(!k||!cNames.has(k)||!id||seenKeys.has(id))continue;
+    seenKeys.add(id);referrals.push(row);
+   }
+  }
+  const moved=ok(migrations)?[...new Map(migrations.value.filter(r=>String(r.from_tier||'').toUpperCase()==='C'&&String(r.to_tier||'').toUpperCase()==='B'&&r.agent_name).map(r=>[nameKey(r.agent_name),r])).values()]:null;
+  businessResults={loading:false,error:null,data:{
+   referrals:ok(leadRows)&&latest?referrals:null,migrations:moved,
+   detailsMissing:[!ok(leadRows)?'Velocify leads':null,!latest?'Power BI profile dates':null,!ok(migrations)?'tier migrations':null].filter(Boolean),
+   sourceDate:latest
+  }};
+ }catch(e){businessResults={loading:false,error:String(e.message||e),data:null}}
+ renderBusinessResults();
+}
+function renderBusinessResults(){
+ const host=$('execBusinessResults');if(!host)return;
+ if(businessResults.loading){host.textContent='Loading business outcomes…';return}
+ const data=businessResults.data;
+ const now=iso(),start=weekStart(now),from=start>COACHING_START?start:COACHING_START;
+ const week=activities.filter(a=>String(a.act_date||'').slice(0,10)>=from&&String(a.act_date||'').slice(0,10)<=now);
+ const bookings=week.filter(scheduledActivity);
+ const held=week.filter(a=>/^(New Realtor Meeting|Business Planning|Break Breads?|Team Meeting|Strategic Partner Meeting|Partner Meeting|Retention Meeting)$/i.test(a.act_type||'')&&heldMeeting(a));
+ const linked=linkBookedToHeld(activities.filter(scheduledActivity),activities.filter(a=>/^(New Realtor Meeting|Business Planning|Break Breads?|Team Meeting|Strategic Partner Meeting|Partner Meeting|Retention Meeting)$/i.test(a.act_type||'')&&heldMeeting(a))).filter(pair=>String(pair.held.act_date||'').slice(0,10)>=from).length;
+ const open=queue.filter(q=>String(q.status||'').toLowerCase()==='open'&&/follow.up|campaign|weekly.*call|growth/i.test(String(q.activity_type||'')));
+ const completed=completedQueue.filter(q=>/^(worked|complete|completed|done|closed|resolved)$/i.test(String(q.status||''))&&/follow.up|campaign|weekly.*call|growth/i.test(String(q.activity_type||'')));
+ const row=(label,value,caption)=>'<div class="execMetric"><strong>'+safe(value)+'</strong><span>'+safe(label)+'</span><small>'+safe(caption)+'</small></div>';
+ host.innerHTML='<p><strong>Activity → actual results</strong> · Current week ('+safe(fmt(from))+' onward), unless stated otherwise.</p>'+
+  '<div class="execMetrics">'+
+  row('Meetings booked',bookings.length,'Explicit scheduled outcome in activity')+
+  row('Meetings held',held.length,'Held/completed meeting outcomes')+
+  row('Held linked to booking',linked,'Same agent and nearby scheduled date')+
+  row('C-agent referrals since Nov 9',data?.referrals?data.referrals.length:'Not verified','Unique Velocify keys matched to latest C agents')+
+  row('C → B transitions since Nov 9',data?.migrations?data.migrations.length:'Not verified','Recorded tier migrations, not projected')+
+  row('Open relationship follow-ups',open.length,'Shared queue, not a historical completion rate')+
+  '</div>'+
+  '<p><strong>Completed queue follow-ups:</strong> '+completed.length+' logged since November 9. Follow-up completion rate cannot be confirmed without a consistent due-date cohort.</p>'+
+  (data?.referrals?.length?'<p><strong>Referral agents:</strong> '+safe([...new Set(data.referrals.map(r=>r.referral_partner_name))].join(' · '))+'</p>':'')+
+  (data?.migrations?.length?'<p><strong>C → B agents:</strong> '+safe(data.migrations.map(r=>r.agent_name).join(' · '))+'</p>':'')+
+  (data?.detailsMissing?.length?'<p><strong>Unverified sources:</strong> '+safe(data.detailsMissing.join(', '))+'. No zero substituted.</p>':'')+
+  (businessResults.error?'<p><strong>Unable to refresh business sources:</strong> '+safe(businessResults.error)+'</p>':'')+
+  '<small>Referral counts are provisional and only include unique Velocify lead keys matched by name to agents currently classified C in the latest available Power BI profiles. They are not official RM-attributed referral credits or a historical C-agent cohort. Meeting bookings and held counts may cross weeks; linked meetings are matched by agent and scheduled date. A good meeting alone is not proof of retained business.</small>';
+}
+
 function renderMissedSummary(d){
  const el=$('execMissedSummary');if(!el)return;
  if(!loaded){el.textContent='Daily results are not yet verified. Refresh live activity before reviewing missed goals.';return}
