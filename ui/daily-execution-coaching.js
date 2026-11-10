@@ -245,12 +245,7 @@ async function refresh(force=false){
 function openTask(q){
  const name=String(q.agent_name||q['Agent / Item']||'').trim();
  const type=String(q.Category||q.activity_type||'').toLowerCase();
- // Open the correct work lane rather than a generic agent profile.
- if(/4.week|campaign|conversion/i.test(type)&&typeof window.v350OpenLane==='function')return window.v350OpenLane('conversion');
- if(/weekly realtor|weekly.*call/i.test(type)&&typeof window.v350OpenLane==='function')return window.v350OpenLane('smart');
- if(/tuesday/i.test(type)&&typeof window.v350OpenLane==='function')return window.v350OpenLane('tuesday');
- if(/transaction|contract|ctc/i.test(type)&&typeof window.v350OpenLane==='function')return window.v350OpenLane('calls');
- // Relationship, weekly-call and growth-plan items open the selected agent record.
+ // Open the exact agent's profile first so the assignment stays actionable.
  if(name&&typeof window.openContactModal==='function'){
   Promise.resolve(window.openContactModal(name)).catch(err=>{
    console.warn('Could not open agent profile',name,err);
@@ -258,8 +253,11 @@ function openTask(q){
   });
   return;
  }
- if(/tuesday/.test(type)&&typeof window.switchTab==='function')return window.switchTab('tuesday');
- if(/transaction/.test(type)&&typeof window.v350OpenLane==='function')return window.v350OpenLane('calls');
+ // Use a relevant lane only when a record-level destination is unavailable.
+ if(/4.week|campaign|conversion/i.test(type)&&typeof window.v350OpenLane==='function')return window.v350OpenLane('conversion');
+ if(/weekly realtor|weekly.*call/i.test(type)&&typeof window.v350OpenLane==='function')return window.v350OpenLane('smart');
+ if(/tuesday/i.test(type)&&typeof window.v350OpenLane==='function')return window.v350OpenLane('tuesday');
+ if(/transaction|contract|ctc/i.test(type)&&typeof window.v350OpenLane==='function')return window.v350OpenLane('calls');
  if(typeof window.switchTab==='function')return window.switchTab('portfolio');
 }
 function taskList(title,rows,empty,showHeading=true){
