@@ -416,9 +416,21 @@ async function showInlineProspects(){
   host.replaceChildren();
   const hint=document.createElement('p');hint.className='execProspectHint';hint.textContent='Live Pipeline call-list preview. Select a Realtor or action to open the full working list.';
   const open=document.createElement('button');open.type='button';open.textContent='Open full working list ↗';open.onclick=openProspectList;
-  preview.addEventListener('click',event=>{const target=event.target.closest('button,a,[role="button"]');if(target){event.preventDefault();event.stopPropagation();openProspectList();}},true);
+  preview.addEventListener('click',event=>{
+   const target=event.target.closest('button,a,[role="button"]');if(!target)return;
+   event.preventDefault();event.stopPropagation();
+   // Forward the click to the original Pipeline control so the live list's actual
+   // agent and activity handlers work without making the preview a second data source.
+   const indices=[];for(let el=target;el&&el!==preview;el=el.parentElement){
+    if(!el.parentElement)break;
+    indices.unshift(Array.prototype.indexOf.call(el.parentElement.children,el));
+   }
+   let original=list;for(const index of indices)original=original?.children?.[index];
+   if(original&&typeof original.click==='function')original.click();else openProspectList();
+  },true);
   preview.querySelectorAll('input,select,textarea').forEach(el=>{el.disabled=true});
-  host.append(hint,open,preview);
+  const refresh=document.createElement('button');refresh.type='button';refresh.textContent='Refresh prospects';refresh.onclick=showInlineProspects;
+  host.append(hint,open,refresh,preview);
   return true;
  }catch(err){
   console.warn('Inline Realtor prospect list unavailable',err);
