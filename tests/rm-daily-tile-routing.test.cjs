@@ -158,6 +158,9 @@ assert(code.includes('id="execInlineProspects"'),'One Realtor call-list section 
 assert(code.includes('worklistExplanation(group[0],group[1])'),'Each category displays why its Realtors are listed and what to do');
 assert(code.includes("const key=title.startsWith('Due today')"), 'Date-varying sections must still show their guidance');
 assert(code.includes('const action=taskNextAction(q);'),'Every task must use its own type and saved next action');
+assert(code.includes("reason:r.Notes||r.Status||''"),'Portfolio-specific notes are retained as the reason Realtor appears');
+assert(code.includes("source:'Amanda-owned portfolio worklist'"),'Portfolio assignments identify their source');
+assert(code.includes(".filter(r=>r.agent_name)"),'Unidentified people are not displayed as named Realtors');
 assert(code.includes('Why here:')&&code.includes('Next action:'),'Individual Realtor rows distinguish reason from action');
 assert(code.includes('aria-label="Open '), 'Each category names the actual assignment count');
 assert(code.includes('tile.onclick=action;')&&code.includes('tile.onkeydown='),'Re-render must replace rather than duplicate tile handlers');
