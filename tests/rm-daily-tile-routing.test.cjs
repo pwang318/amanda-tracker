@@ -170,8 +170,11 @@ assert(code.includes('!offNow&&loaded&&!sourceWarnings.length&&fullVerified'),'R
 
 assert(code.includes("group[1].length>0||['New contract calls','CTC calls','Tuesday transaction updates'].includes(group[0])"),'Contract and CTC worklist tiles must remain visible even with no matches');
 
-// Management communication must be available from the RM transaction worklists.
-for (const field of ['execWhatsAppCtc','execWhatsAppContract','execWaClient','execWaProperty','execWaBuyer','execWaListing','execWaBuyerStatus','execWaListingStatus','execWaBuyerFeedback','execWaListingFeedback','execWaClosing','execWaPreview','execWaCopy']) assert(code.includes(field),'Missing management WhatsApp field: '+field);
-assert(code.includes("navigator.clipboard.writeText(value)"),'WhatsApp message must have a working copy handler');
-assert(code.includes("panel.append(button)"),'Transaction assignments must offer management update composer');
-assert(code.includes("return [type,'','Client: '"),'WhatsApp message uses requested client/property/agent structure');
+// WhatsApp templates must use the exact imported transaction, not an empty duplicate editor.
+for(const marker of ['execWhatsAppCtc','execWhatsAppContract','execWaFiles','execWaFileList','TXN_ID','TXN_CLIENT','TXN_PROPERTY','TXN_BUYER_AGENT','TXN_LISTING_AGENT','TXN_CLOSE_DATE'])
+ assert(code.includes(marker),'Missing imported WhatsApp transaction field: '+marker);
+assert(code.includes("window.v176OpenTransaction(isCtc?'CTC Call':'Under Contract Call',agent,role,file.id)"),'Selected import must open established transaction workbench');
+assert(code.includes("!found.has(id)"),'Imported files must be deduplicated by transaction ID');
+assert(code.includes("String(modal.dataset.txnId||'')!==file.id"),'Prefill must not attach details to the wrong file');
+assert(code.includes('No client or Realtor information has been guessed.'),'Missing imports must never be silently invented');
+assert(!code.includes('navigator.clipboard.writeText(value)'),'Retire competing empty management composer; existing imported workbench owns copy action');
