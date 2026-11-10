@@ -115,6 +115,8 @@ styles.textContent=[
 '#rmExecutionPlan .execManagerGroup{border-top:1px solid #e6dceb;margin-top:11px;padding-top:5px}',
 '#rmExecutionPlan .execManagerGroup>summary{font-size:13px;padding:10px 3px}',
 '#rmExecutionPlan .execManagerTask{border:1px solid #e9e1f0;border-radius:9px;padding:12px;margin:8px 0;background:#fff}',
+'#rmExecutionPlan .execManagerTask{border-radius:11px;padding:14px;box-shadow:0 1px 2px rgba(40,25,60,.04)}',
+'#rmExecutionPlan .execManagerOpen{background:#654196!important;color:#fff!important;border-color:#654196!important;font-weight:700!important;border-radius:8px!important}',
 '#rmExecutionPlan .execManagerTaskMeta{font-size:11px;color:#6b5d7b;margin-top:3px}',
 '#rmExecutionPlan .execManagerOpen{padding:6px 10px;min-height:36px;font-size:12px;margin:3px 0}',
 '#rmExecutionPlan .execManagerTaskReason{font-size:12px;margin:6px 0;color:#554663}',
@@ -402,13 +404,17 @@ function openTask(q){
  const type=String(q.Category||q.activity_type||'Assigned Follow-up').trim();
  const holder=$('execDetailArea'),list=$('execTaskSummary');
  if(!holder||!list)return;
+ // Every worklist, including manager review, routes to the same visible action panel.
+ holder.hidden=false;
+ if($('execHomeWork'))$('execHomeWork').hidden=true;
+ const heading=$('execDetailTitle');if(heading)heading.textContent='Work this assignment · '+name;
  let panel=$('execAssignmentAction');
  if(!panel){panel=document.createElement('section');panel.id='execAssignmentAction';panel.className='execAssignmentAction';list.before(panel)}
  panel.innerHTML='<div class="execRow"><div><strong>Complete assignment · '+safe(name||'Unassigned Realtor')+'</strong><p>'+safe(type)+'</p></div><button type="button" id="execAssignmentProfile">View Realtor profile</button></div>'+
  '<p><strong>Why here:</strong> '+safe(q.reason||'Saved outstanding assignment')+'</p>'+
  '<div class="execForm"><label>Contact outcome<select id="execAssignmentOutcome"><option value="">Choose actual outcome</option><option>Talked</option><option>Voicemail</option><option>Text sent</option><option>No answer</option><option>Meeting scheduled</option><option>Completed non-call task</option></select></label><label>Next follow-up (optional)<input type="date" id="execAssignmentFollowup"></label></div>'+
  '<label>Notes / next steps<textarea id="execAssignmentNotes" rows="3" maxlength="2000" placeholder="What happened and what needs to happen next?"></textarea></label>'+
- '<div class="execRow"><button type="button" id="execAssignmentSave">Save activity and complete this assignment</button><button type="button" id="execAssignmentCancel">Cancel</button></div><p role="status" id="execAssignmentStatus"></p>'+
+ '<div class="execRow"><button type="button" id="execAssignmentSave">'+(q.id?'Save activity and complete this assignment':'Open activity log')+'</button><button type="button" id="execAssignmentCancel">Cancel</button></div><p role="status" id="execAssignmentStatus"></p>'+
  (!q.id?'<small>This item came from a supplemental worklist; saving activity cannot automatically clear it without a matching queue record.</small>':'');
  panel.hidden=false;panel.scrollIntoView({behavior:'smooth',block:'nearest'});
  $('execAssignmentCancel').onclick=()=>{panel.hidden=true};
@@ -490,13 +496,14 @@ function taskList(title,rows,empty,showHeading=true){
   const action=taskNextAction(q);
   const due=q.work_date||q['Due Date']||'';
   const origin=q.source||'Amanda assigned work queue';
-  const isTxn=/\bctc\b|clear[ -]?to[ -]?close|new[ -]?contract|under contract/i.test(type);
+  const isCtc=/\bctc\b|clear[ -]?to[ -]?close/i.test(type);
+  const isContract=/new[ -]?contract|under contract/i.test(type);
   const isCatchup=/\bCatch-up from\b/i.test(reason);
   const readableName=String(agent).toLowerCase()===String(agent).toUpperCase()?String(agent).toLowerCase().replace(/\b\w/g,c=>c.toUpperCase()):agent;
   return '<li class="execWorkCard">'+
    '<div class="execWorkCardHeader"><div><b>'+safe(readableName)+'</b><span>'+safe(type)+'</span></div><div class="execWorkBadges">'+(due?'<small>Due '+safe(due)+'</small>':'')+(isCatchup?'<small class="execCatchupBadge">Catch-up</small>':'')+'</div></div>'+
    '<div class="execWorkCardBody"><p><strong>Why here:</strong> '+safe(reason||'Open assignment in this worklist')+'</p><p><strong>Next action:</strong> '+safe(action)+'</p></div>'+
-   '<div class="execWorkCardFooter"><span>'+safe(origin)+'</span><button type="button" class="execTaskGo" data-index="'+i+'">'+(isTxn?'Log CTC / Contract call':'Log activity / Complete')+' ↗</button></div></li>';
+   '<div class="execWorkCardFooter"><span>'+safe(origin)+'</span><button type="button" class="execTaskGo" data-index="'+i+'">'+(isCtc?'Log CTC call':isContract?'Log New Contract call':q.id?'Log activity / Complete':'Open activity log')+' ↗</button></div></li>';
  }).join('');
  return '<section class="execWorkCardSection">'+(showHeading?'<strong>'+safe(title)+' · '+rows.length+'</strong>':'')+(rows.length?'<ul class="execWorkCardList">'+list+'</ul>':'<p>'+safe(empty)+'</p>')+'</section>';
 }
@@ -1024,7 +1031,7 @@ function renderTrends(){
       '<label>What is the next action?<textarea data-carry-next placeholder="Concrete follow-up or recovery plan" maxlength="1200">'+safe(action)+'</textarea></label>'+
       '<button type="button" data-carry-save="'+safe(q.id)+'">Save explanation</button><span data-carry-status="'+safe(q.id)+'" class="execStatus"></span></div>':
      '<p class="execManagerTaskReason">Why not completed: '+safe(reason||'Not documented')+' · Next action: '+safe(action||'Not documented')+'</p>';
-   return '<article class="execManagerTask" data-carry-id="'+safe(q.id||'')+'">'+identity+'<button type="button" class="execManagerOpen" data-carry-open="'+managerTasks.indexOf(q)+'">Open Realtor ↗</button>'+
+   return '<article class="execManagerTask" data-carry-id="'+safe(q.id||'')+'">'+identity+'<button type="button" class="execManagerOpen" data-carry-open="'+managerTasks.indexOf(q)+'">Log activity / Complete ↗</button>'+
      (needsExplanation?editor:'<p class="execManagerTaskReason">'+(d>today?'Scheduled for a future date; no missed-work explanation required.':d?'Open item — manage in its worklist.':'No due date recorded.')+'</p>')+'</article>';
   };
   const group=(title,items,edit,initialOpen)=>'<details class="execManagerGroup"'+(initialOpen?' open':'')+'><summary>'+safe(title)+' · '+items.length+'</summary><div class="execManagerItems">'+(items.length?items.map(q=>taskRow(q,edit)).join(''):'<p class="execManagerEmpty">None</p>')+'</div></details>';
