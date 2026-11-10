@@ -465,7 +465,6 @@ function renderBusinessResults(){
   row('Held with dated next step',nextStepHeld.length+' / '+held.length,'Follow-up date saved on meeting activity')+
   row('C-agent referrals since Nov 9',data?.referrals?data.referrals.length:'Not verified','Unique Velocify keys matched to latest C agents')+
   row('C → B transitions since Nov 9',data?.migrations?data.migrations.length:'Not verified','Recorded tier migrations, not projected')+
-  row('Open relationship follow-ups',open.length,'Shared queue, not a historical completion rate')+
   '</div>'+
   '<p><strong>Completed queue follow-ups:</strong> '+completed.length+' logged since November 9. Follow-up completion rate cannot be confirmed without a consistent due-date cohort.</p>'+
   (data?.referrals?.length?'<p><strong>Referral agents:</strong> '+safe([...new Set(data.referrals.map(r=>r.referral_partner_name))].join(' · '))+'</p>':'')+
