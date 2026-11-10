@@ -371,8 +371,11 @@ function render(){
  if(!$('execNotice'))return;const d=iso(),offNow=isOff(d),cold=coldFor(d),next=nextWorkday(d);
  const cleanFull=fullWork.filter(r=>{const due=String(r['Due Date']||'').slice(0,10);return !due||due>=COACHING_START});
  const canonical=cleanFull.map(r=>({agent_name:r['Agent / Item'],activity_type:r.Category,work_date:String(r['Due Date']||'').slice(0,10),Category:r.Category,'Next Action':r['Next Action']}));
- const queueOnly=queue.filter(q=>!canonical.some(r=>String(r.agent_name||'').trim().toLowerCase()===String(q.agent_name||'').trim().toLowerCase()&&String(r.activity_type||'').toLowerCase()===String(q.activity_type||'').toLowerCase()));
- const allRaw=fullVerified?canonical.concat(queueOnly):queue;
+ // The persisted open queue is authoritative. Supplemental portfolio work cannot erase an
+ // unfinished queue assignment simply because an agent appears elsewhere with the same category.
+ const queueKeys=new Set(queue.map(q=>[String(q.agent_name||'').trim().toLowerCase(),String(q.activity_type||'').trim().toLowerCase(),String(q.work_date||'').slice(0,10)].join('|')));
+ const supplements=fullVerified?canonical.filter(r=>!queueKeys.has([String(r.agent_name||'').trim().toLowerCase(),String(r.activity_type||'').toLowerCase(),String(r.work_date||'').slice(0,10)].join('|'))):[];
+ const allRaw=queue.concat(supplements);
  const identity=q=>[String(q.agent_name||'').trim().toLowerCase(),String(q.activity_type||q.Category||'').trim().toLowerCase(),String(q.work_date||'').slice(0,10)].join('|');
  const all=allRaw.filter((q,i,rows)=>rows.findIndex(x=>identity(x)===identity(q))===i);
  const late=all.filter(q=>q.work_date&&q.work_date>=COACHING_START&&q.work_date<d);
@@ -424,9 +427,18 @@ function render(){
  const timeline=$('execTimelineRows');if(timeline){const todayRows=activeFor(d).slice().sort((a,b)=>String(b.created_at||b.act_date||'').localeCompare(String(a.created_at||a.act_date||'')));timeline.innerHTML=todayRows.length?todayRows.slice(0,3).map(a=>{const time=activityTime(a.created_at);return '<div class="execTimelineItem"><time>'+safe(time)+'</time><div><strong>'+safe(a.agent_name||'Agent not specified')+'</strong><span>'+safe([a.act_type,a.outcome].filter(Boolean).join(' · ')||'Activity logged')+'</span></div></div>'}).join(''):'<p>No activity recorded today yet.</p>';const all=$('execActivityAll');if(all){all.textContent='View all activity ('+todayRows.length+')';all.onclick=()=>showDetail('activity:all')}}
 
  const priorityBox=$('execPriorities');
- priorityBox.innerHTML='<div class="execRow"><strong>Deadline check</strong><div><button type="button" id="execDueList">Due today · '+need.length+' ('+todayCampaigns.length+' campaigns, '+todayOther.length+' other)</button> <button type="button" id="execOverdueList">Overdue · '+late.length+'</button></div></div>';
+ // One visible work order; unfinished assignments remain visible on later workdays as overdue.
+ const focusRows=priorities.length?priorities:tmrw;
+ const focusTitle=priorities.length?'Do first · '+priorities.length+' due or overdue':next?'Next workday · '+fmt(next):'Upcoming work';
+ const openQueue=queue.length,catchupOpen=queue.filter(q=>/\bCatch-up from\b/i.test(String(q.reason||''))).length;
+ priorityBox.innerHTML='<div class="execRow"><div><strong>Outstanding work · '+all.length+'</strong><p>'+safe(focusTitle)+(catchupOpen?' · '+catchupOpen+' catch-up assignments still open':'')+'</p></div><div><button type="button" id="execOverdueList">Overdue · '+late.length+'</button> <button type="button" id="execDueList">Due today · '+need.length+'</button> <button type="button" id="execNextList">Next workday · '+tmrw.length+'</button></div></div>'+
+ (focusRows.length?'<div class="execTasks"><section><ul>'+focusRows.slice(0,5).map((q,i)=>'<li><button type="button" class="execTaskGo" data-focus-row="'+i+'"><b>'+safe(q.agent_name||q['Agent / Item']||'Assigned agent')+'</b><span style="display:block;font-size:11px;color:#736482">'+safe(q.activity_type||q.Category||'Follow-up')+' · '+safe(q.work_date&&q.work_date<d?'Overdue':q.work_date===d?'Due today':'Due '+fmt(q.work_date||next||d))+'</span></button></li>').join('')+'</ul></section></div>':'<p>No assignments due now or on the next workday.</p>')+
+ '<small>Unfinished work carries forward automatically. Log the completed outcome before marking an assignment done.</small>';
  $('execDueList').onclick=()=>showDetail('section:1');
  $('execOverdueList').onclick=()=>showDetail('section:0');
+ $('execNextList').onclick=()=>showDetail('section:2');
+ priorityBox.querySelectorAll('[data-focus-row]').forEach(b=>b.onclick=()=>{const q=focusRows[Number(b.dataset.focusRow)];if(q)openTask(q)});
+ priorityBox.dataset.authoritativeOpenCount=String(openQueue);
  const wg=weeklyGoals(d),weekLabel=fmt(wg.start);
  $('execWeeklyGoals').innerHTML='<strong>This week · '+safe(weekLabel)+'</strong>'+
  '<p>New Realtor meetings <b>'+wg.newHeld+' / '+wg.target+'</b> held · Break Breads <b>'+wg.breads+' / '+wg.target+'</b> held · Calls <b>'+wg.calls+' / '+wg.goalCalls+'</b> logged · Prospecting <b>'+wg.minutes.total+' / '+wg.goalMinutes+'</b> minutes reported'+(wg.minutes.known<wg.days.length?' (incomplete reporting)':'')+'.</p>'+
