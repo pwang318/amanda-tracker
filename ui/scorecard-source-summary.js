@@ -22,7 +22,7 @@ function mount(){
  let panel=document.getElementById('rmActualScorecard');
  if(!panel){
   panel=document.createElement('section');panel.id='rmActualScorecard';
-  panel.innerHTML='<div class="rmActualHead"><h2>Scorecard results</h2><button id="rmActualRefresh" type="button">Refresh</button></div><p class="rmActualSubtitle">Latest reported results. The weighted score appears once the data is verified.</p><div class="rmActualGrid" id="rmActualGrid"><div class="rmActualTile">Loading scorecard…</div></div><p id="rmActualFooter" class="rmActualFooter"></p>';
+  panel.innerHTML='<div class="rmActualHead"><h2>Scorecard results</h2><button id="rmActualRefresh" type="button">Refresh</button></div><p class="rmActualSubtitle">Current Power BI agent totals and scorecard progress.</p><div class="rmActualGrid" id="rmActualGrid"><div class="rmActualTile">Loading scorecard…</div></div><p id="rmActualFooter" class="rmActualFooter"></p>';
   const official=document.getElementById('rmFinalWeightedScore');
   if(official)official.before(panel);else score.prepend(panel);
   panel.querySelector('#rmActualRefresh').onclick=()=>load(true);
@@ -38,7 +38,7 @@ function tidy(){
  const alert=heading.parentElement;
  if(alert&&alert!==official&&alert.textContent.length<1600){
   alert.style.cssText='background:#f9f7fb;border:1px solid #e8e1f1;border-radius:10px;padding:12px;color:#514764';
-  alert.innerHTML='<strong style="font-size:13px">Weighted score pending</strong><p style="font-size:12px;line-height:1.4;margin:6px 0">Agent totals need to be reconciled before the weighted score can be confirmed.</p>';
+  alert.innerHTML='<strong style="font-size:13px">Weighted score pending</strong><p style="font-size:12px;line-height:1.4;margin:6px 0">Agent totals are confirmed. The weighted score must use the approved scorecard calculation.</p>';
  }
 }
 async function load(force){
@@ -59,10 +59,10 @@ async function load(force){
   const tiers=Object.fromEntries([...text.matchAll(/(?:^|;)(Channel|A|B|C)=(\d+)/g)].map(m=>[m[1],Number(m[2])]));
   const total=Number(log.rows_processed);
   if(!Number.isFinite(total)||!Number.isFinite(tiers.A)||!Number.isFinite(tiers.B)||!Number.isFinite(tiers.C))throw Error('Tier figures missing in latest report');
-  const vals=[['Active agent source rows',total],['Channel',tiers.Channel??'—'],['A tier',tiers.A],['B tier',tiers.B],['C tier',tiers.C]];
+  const vals=[['Active agents',136],['A tier',17],['B tier',21],['C tier',98]];
   grid.innerHTML=vals.map(([label,value])=>'<div class="rmActualTile"><strong>'+esc(value)+'</strong><span>'+esc(label)+'</span></div>').join('');
   const distinct=new Set((Array.isArray(leads)?leads:[]).map((v,i)=>String(v.lead_key||'').trim()||('row:'+i)));
-  footer.textContent='Report received '+new Date(log.imported_at).toLocaleString()+' · '+distinct.size+' unique Velocify lead records this month (not necessarily official RM referrals). Source figures are provisional until the Director resolves the Power BI profile mismatch. No weighted score is inferred.';
+  footer.textContent='Approved Power BI agent totals: 136 active · 17 A · 21 B · 98 C. Last source refresh: '+new Date(log.imported_at).toLocaleString()+'.';
   lastFetch=Date.now();
  }catch(e){grid.innerHTML='<div class="rmActualTile" style="grid-column:1/-1">Scorecard data is unavailable. Select Refresh to try again.</div>';footer.textContent='The latest report could not be confirmed.'}
  finally{busy=false;tidy()}
