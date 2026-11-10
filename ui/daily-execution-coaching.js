@@ -290,9 +290,9 @@ function openProspectList(){
  }
  const available=document.querySelector('[data-rm-lane="cold"],[data-lane="cold"]');
  if(available&&typeof available.click==='function'){available.click();return true}
- const message=$('execProspectRouteStatus');
- if(message)message.textContent='The prospect list is unavailable. Refresh the tracker and try again.';
- else console.error('New Realtor prospect list navigation unavailable');
+ let message=$('execProspectRouteStatus');
+ if(!message){message=document.createElement('p');message.id='execProspectRouteStatus';message.className='execNotice execWarn';const board=$('rmExecutionPlan');if(board)board.prepend(message)}
+ message.textContent='The prospect list could not open. Refresh the tracker and try again.';
  return false;
 }
 function showOutreachDetail(scroll=true){
