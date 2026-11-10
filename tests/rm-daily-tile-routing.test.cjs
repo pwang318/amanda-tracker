@@ -173,7 +173,7 @@ for(const time of ['9:30 AM','11:30 AM','2:00 PM','4:00 PM']) assert(code.includ
 assert(code.includes('execNudgeDismiss')&&code.includes('execNudgeOpen'),'Reminder must be actionable and dismissible');
 assert(code.includes('!offNow&&loaded&&!sourceWarnings.length&&fullVerified'),'Reminders must be suppressed for PTO and incomplete data');
 
-assert(code.includes("group[1].length>0||['New contract calls','CTC calls','Tuesday transaction updates'].includes(group[0])"),'Contract and CTC worklist tiles must remain visible even with no matches');
+assert(code.includes("const visibleWorklists=new Set([")&&code.includes("'New contract calls','CTC calls','Tuesday transaction updates'"),'Contract, CTC, and Tuesday tiles remain visible when complete');
 
 // WhatsApp templates must use the exact imported transaction, not an empty duplicate editor.
 for(const marker of ['execWaFiles','execWaFileList','TXN_ID','TXN_CLIENT','TXN_PROPERTY','TXN_BUYER_AGENT','TXN_LISTING_AGENT','TXN_CLOSE_DATE'])
