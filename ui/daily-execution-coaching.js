@@ -282,6 +282,19 @@ function openActivityDetail(kind,scroll=true){
  };
  if(scroll)detail.scrollIntoView({behavior:'smooth',block:'start'});
 }
+// The prospect list is the established Cold Calls work lane, not the activity-summary drawer.
+function openProspectList(){
+ if(typeof window.v350OpenLane==='function'){
+  window.v350OpenLane('cold');
+  return true;
+ }
+ const available=document.querySelector('[data-rm-lane="cold"],[data-lane="cold"]');
+ if(available&&typeof available.click==='function'){available.click();return true}
+ const message=$('execProspectRouteStatus');
+ if(message)message.textContent='The prospect list is unavailable. Refresh the tracker and try again.';
+ else console.error('New Realtor prospect list navigation unavailable');
+ return false;
+}
 function showOutreachDetail(scroll=true){
  activeDetail='outreach';
  const home=$('execHomeWork'),detail=$('execDetailArea'),list=$('execTaskSummary');
@@ -299,7 +312,7 @@ function showOutreachDetail(scroll=true){
  if(scroll)detail.scrollIntoView({behavior:'smooth',block:'start'});
 }
 function showDetail(key,scroll=true){
- if(key==='outreach')return showOutreachDetail(scroll);
+ if(key==='outreach')return openProspectList();
  if(typeof key==='string'&&key.startsWith('activity:'))return openActivityDetail(key.slice(9),scroll);
  activeDetail=key;
  const detail=$('execDetailArea'),home=$('execHomeWork'),list=$('execTaskSummary');
@@ -310,7 +323,8 @@ function showDetail(key,scroll=true){
   return;
  }
  const match=/^(section|category):(\d+)$/.exec(key);
- const index=key==='plans'?detailGroups.length-1:match?(match[1]==='section'?Number(match[2]):5+Number(match[2])):-1;
+ const categoryStart=detailGroups.findIndex(g=>g[0]==='4-week campaigns');
+ const index=key==='plans'?detailGroups.length-1:match?(match[1]==='section'?Number(match[2]):categoryStart+Number(match[2])):-1;
  const group=detailGroups[index];
  if(!group){activeDetail=null;detail.hidden=true;home.hidden=false;return}
  home.hidden=true;detail.hidden=false;
@@ -411,9 +425,9 @@ function render(){
  detailGroups=sections.concat(categoryRows);
  detailGroups.push(exactPlans);
  const grid=$('execCategoryGrid');
- grid.innerHTML=categoryRows.map((group,i)=>i===6?'<button type="button" class="execCategoryBtn execProspectTile" data-outreach="true"><span>New Realtor outreach <small>Daily prospecting goal</small></span><strong>'+Math.max(0,25-cold)+' calls left ↗</strong></button>':'<button type="button" class="execCategoryBtn" data-category="'+i+'"><span>'+safe(group[0])+'</span><strong>'+group[1].length+' ↗</strong></button>').join('');
+ grid.innerHTML=categoryRows.map((group,i)=>group[0]==='New Realtor outreach assignments'?'<button type="button" class="execCategoryBtn execProspectTile" data-outreach="true"><span>New Realtor outreach <small>Daily prospecting goal</small></span><strong>'+Math.max(0,25-cold)+' calls left ↗</strong></button>':'<button type="button" class="execCategoryBtn" data-category="'+i+'"><span>'+safe(group[0])+'</span><strong>'+group[1].length+' ↗</strong></button>').join('');
  grid.querySelectorAll('[data-category]').forEach(b=>b.onclick=()=>showDetail('category:'+b.dataset.category));
- grid.querySelector('[data-outreach]')?.addEventListener('click',()=>showDetail('outreach'));
+ grid.querySelector('[data-outreach]')?.addEventListener('click',openProspectList);
  $('rmExecutionPlan').querySelectorAll('[data-exec-target]').forEach(tile=>{
   const action=()=>{
    const kind=tile.dataset.execTarget;
