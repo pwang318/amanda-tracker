@@ -693,7 +693,7 @@ function render(){
  detailGroups=sections.concat(categoryRows);
  detailGroups.push(exactPlans);
  const grid=$('execCategoryGrid');
- grid.innerHTML=categoryRows.map((group,i)=>({group,i})).filter(({group})=>group[1].length>0&&group[0]!=='Catch-up assignments'&&group[0]!=='New Realtor outreach assignments').map(({group,i})=>'<button type="button" class="execCategoryBtn" data-category="'+i+'" aria-label="Open '+safe(group[0])+': '+group[1].length+' assignments"><span>'+safe(group[0])+'</span><strong>'+group[1].length+' tasks ↗</strong></button>').join('');
+ grid.innerHTML=categoryRows.map((group,i)=>({group,i})).filter(({group})=>(group[1].length>0||['New contract calls','CTC calls','Tuesday transaction updates'].includes(group[0]))&&group[0]!=='Catch-up assignments'&&group[0]!=='New Realtor outreach assignments').map(({group,i})=>'<button type="button" class="execCategoryBtn" data-category="'+i+'" aria-label="Open '+safe(group[0])+': '+group[1].length+' assignments"><span>'+safe(group[0])+'</span><strong>'+(group[1].length?group[1].length+' open ↗':'No open calls · View ↗')+'</strong></button>').join('');
  grid.querySelectorAll('[data-category]').forEach(b=>b.onclick=()=>showDetail('category:'+b.dataset.category));
  if(!$('execInlineProspects').dataset.wired){$('execInlineProspects').dataset.wired='1';$('execInlineProspects').addEventListener('toggle',()=>{if($('execInlineProspects').open)showInlineProspects()});}
  $('rmExecutionPlan').querySelectorAll('[data-exec-target]').forEach(tile=>{
