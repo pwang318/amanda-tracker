@@ -684,6 +684,7 @@ function init(){
  let scheduled=false;
  new MutationObserver(()=>{if(scheduled)return;scheduled=true;requestAnimationFrame(()=>{scheduled=false;try{mount()}catch(e){console.error('RM daily plan mount failed',e)}})}).observe(document.body,{childList:true,subtree:true});
  window.addEventListener('focus',()=>refresh(false));
+ window.addEventListener('rm-work-queue-changed',()=>refresh(true));
  document.addEventListener('visibilitychange',()=>{if(!document.hidden)refresh(false)});
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
