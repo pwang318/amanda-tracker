@@ -946,8 +946,20 @@ function render(){
  detailGroups=sections.concat(categoryRows);
  detailGroups.push(exactPlans);
  const grid=$('execCategoryGrid');
- grid.innerHTML=categoryRows.map((group,i)=>({group,i})).filter(({group})=>(group[1].length>0||['New contract calls','CTC calls','Tuesday transaction updates'].includes(group[0]))&&group[0]!=='Catch-up assignments'&&group[0]!=='New Realtor outreach assignments').map(({group,i})=>'<button type="button" class="execCategoryBtn" data-category="'+i+'" aria-label="Open '+safe(group[0])+': '+group[1].length+' assignments"><span>'+safe(group[0])+'</span><strong>'+(['CTC calls','New contract calls'].includes(group[0])?'Checking latest import…':group[0]==='Tuesday transaction updates'?'Open Tuesday Updates ↗':group[1].length?group[1].length+' open ↗':'No open tasks · View ↗')+'</strong></button>').join('');
+ grid.innerHTML=categoryRows.map((group,i)=>({group,i})).filter(({group})=>(group[1].length>0||['New contract calls','CTC calls','Tuesday transaction updates'].includes(group[0]))&&group[0]!=='Catch-up assignments'&&group[0]!=='New Realtor outreach assignments').map(({group,i})=>'<button type="button" class="execCategoryBtn" data-category="'+i+'" aria-label="Open '+safe(group[0])+': '+group[1].length+' assignments"><span>'+safe(group[0])+'</span><strong>'+(['CTC calls','New contract calls'].includes(group[0])?'Checking latest import…':group[0]==='Tuesday transaction updates'?'Open Tuesday Updates ↗':group[1].length?group[1].length+' open ↗':fullVerified&&sourceWarnings.length===0?'✓ Complete':'Unable to verify · View ↗')+'</strong></button>').join('');
  grid.querySelectorAll('[data-category]').forEach(b=>b.onclick=()=>{const category=categoryRows[Number(b.dataset.category)]?.[0];if(category==='CTC calls')return openManagementTemplate('ctc');if(category==='New contract calls')return openManagementTemplate('contract');if(category==='Tuesday transaction updates')return typeof window.switchTab==='function'?window.switchTab('tuesday'):showDetail('category:'+b.dataset.category);return showDetail('category:'+b.dataset.category)});
+ // Only show a completed state for queue-backed categories when the current
+ // shared source was successfully verified. Completed tiles remain clickable.
+ if(fullVerified&&sourceWarnings.length===0){
+  for(const button of grid.querySelectorAll('[data-category]')){
+   const label=button.querySelector('span')?.textContent?.trim();
+   if(label==='New contract calls'||label==='CTC calls'||label==='Tuesday transaction updates')continue;
+   const status=button.querySelector('strong');
+   const done=status?.textContent?.includes('Complete');
+   button.classList.toggle('execTransactionComplete',Boolean(done));
+   if(done)button.setAttribute('aria-label',label+' · Complete; view worklist');
+  }
+ }
  paintImportedCallCounters();
  if(!rmImportSummary.checked&&!rmImportSummary.busy)refreshImportedCallCounters(true);
  else if(Date.now()-rmImportSummary.checked>60000&&!rmImportSummary.busy)refreshImportedCallCounters(true);
