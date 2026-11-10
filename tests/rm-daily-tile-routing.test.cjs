@@ -207,7 +207,9 @@ assert(code.includes("historical.length+' older imported record(s) hidden"),'Old
 assert(code.includes('function paintImportedCallCounters()'),'Transaction worklist tiles must use actual import counts');
 assert(code.includes('refreshImportedCallCounters(true)'),'Transaction counters must refresh from shared imports');
 assert(code.includes("new Set(selected.filter(x=>x.batch===latest)"),'Latest import count must deduplicate exact transaction IDs');
-assert(code.includes("data.outstanding+' calls left · '+data.count+' files"),'CTC/New Contract tiles must show actual pending agent calls and file context');
+assert(code.includes("data.outstanding+' calls outstanding ↗'"),'Incomplete transactions show true outstanding contacts');
+assert(code.includes("done?'Complete'"),'Completed transaction tiles show only Complete');
+assert(code.includes("data.count>0&&data.outstanding===0"),'Never mark an empty or unverified import complete');
 
 assert(!code.includes("?'Open imported files ↗'"),'Current CTC/contract tile may not fall back to a stale generic label');
 assert(code.includes("?'Checking latest import…'"),'Current transaction tiles should show a truthful pending state');
