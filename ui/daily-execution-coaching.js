@@ -76,6 +76,16 @@ styles.textContent=[
 '#rmExecutionPlan .execMetric span{font-size:11px;color:#645674}',
 '#rmExecutionPlan .execNotice{border-radius:9px;padding:10px 12px;background:#f8f4fb;color:#573877;font-size:12px;line-height:1.5;margin:10px 0}',
 '#rmExecutionPlan .execSourceStatus{font-size:11px;color:#6e6178;margin:4px 0 8px;line-height:1.35}',
+'#rmExecutionPlan .execManagerGroup{border-top:1px solid #e6dceb;margin-top:11px;padding-top:5px}',
+'#rmExecutionPlan .execManagerGroup>summary{font-size:13px;padding:10px 3px}',
+'#rmExecutionPlan .execManagerTask{border:1px solid #e9e1f0;border-radius:9px;padding:12px;margin:8px 0;background:#fff}',
+'#rmExecutionPlan .execManagerTaskMeta{font-size:11px;color:#6b5d7b;margin-top:3px}',
+'#rmExecutionPlan .execManagerTaskReason{font-size:12px;margin:6px 0;color:#554663}',
+'#rmExecutionPlan .execCarryEditor{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;margin-top:9px}',
+'#rmExecutionPlan .execCarryEditor label{font-size:12px;color:#554663;display:block}',
+'#rmExecutionPlan .execCarryEditor textarea{display:block;width:100%;min-height:56px;margin-top:4px;box-sizing:border-box}',
+'#rmExecutionPlan .execCarryEditor button{justify-self:start;min-height:40px}',
+'@media(max-width:600px){#rmExecutionPlan .execCarryEditor{grid-template-columns:1fr}}',
 '#rmExecutionPlan .execNeedsScheduling{margin-top:8px;padding-top:8px;border-top:1px solid #e6dcef}',
 '#rmExecutionPlan .execNeedsScheduling button{min-height:40px}',
 '#rmExecutionPlan #execPriorities>.execRow{align-items:flex-start;gap:10px}',
@@ -217,8 +227,8 @@ async function refresh(force=false){
   const settled=await Promise.allSettled([
    sbFetch('rm_day_blocks?select=*&owner=eq.Amanda&work_date=gte.'+from+'&work_date=lte.'+to+'&limit=1200'),
    sbFetch('amanda_activities?select=*&act_date=gte.'+from+'&act_date=lte.'+to+'&limit=10000'),
-   sbFetch('rm_work_queue?select=id,work_date,agent_name,activity_type,reason,status,owner,completed_at,completion_activity_id&owner=eq.Amanda&status=eq.open&limit=2500'),
-   sbFetch('rm_work_queue?select=id,work_date,agent_name,activity_type,reason,status,owner,completed_at,completion_activity_id&owner=eq.Amanda&status=neq.open&limit=2500')
+   sbFetch('rm_work_queue?select=id,work_date,agent_name,activity_type,reason,status,owner,completed_at,completion_activity_id,carry_forward_reason,carry_forward_next_action,carry_forward_logged_at&owner=eq.Amanda&status=eq.open&limit=2500'),
+   sbFetch('rm_work_queue?select=id,work_date,agent_name,activity_type,reason,status,owner,completed_at,completion_activity_id,carry_forward_reason,carry_forward_next_action,carry_forward_logged_at&owner=eq.Amanda&status=neq.open&limit=2500')
   ]);
   const names=['Schedule','Logged activities','Outstanding assignments','Completed assignments'];
   const previous=[blocks,activities,queue,completedQueue];
@@ -719,7 +729,53 @@ function renderTrends(){
  const counts={};for(const r of rows)if(r.reason)counts[r.reason]=(counts[r.reason]||0)+1;
  const today=iso();const open=queue.filter(q=>String(q.status||'').toLowerCase()==='open');const overdue=open.filter(q=>String(q.work_date||'').slice(0,10)&&String(q.work_date).slice(0,10)<today);const due=open.filter(q=>String(q.work_date||'').slice(0,10)===today);const completed=completedQueue.filter(q=>/^(worked|complete|completed|done|closed|resolved)$/i.test(String(q.status||'')));
  const completedToday=completed.filter(q=>q.completed_at&&new Intl.DateTimeFormat('en-CA',{timeZone:'America/New_York',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date(q.completed_at))===today);
- const accountability=$('execManagerAccountability');if(accountability){accountability.innerHTML='<strong>Assigned-work accountability</strong><p>'+completedToday.length+' verified completed today · '+due.length+' still due today · '+overdue.length+' overdue/carried forward · '+open.length+' open assigned tasks in the shared queue.</p>'+(sourceWarnings.length?'<p>Partial data: '+safe(sourceWarnings.join(', '))+'. Counts may be incomplete.</p>':'')+'<small>Completion is counted from saved task statuses, not from page views. Completed today uses the saved completed_at timestamp in Eastern time. Items without verified completion times are excluded.</small>';}
+  const accountability=$('execManagerAccountability');
+ if(accountability) {
+  const upcoming=open.filter(q=>String(q.work_date||'').slice(0,10)>today);
+  const unscheduled=open.filter(q=>!q.work_date);
+  const needsReason=overdue.filter(q=>!String(q.carry_forward_reason||'').trim()||!String(q.carry_forward_next_action||'').trim());
+  const taskRow=(q,needsExplanation)=>{
+   const d=String(q.work_date||'').slice(0,10);
+   const reason=String(q.carry_forward_reason||'').trim(),action=String(q.carry_forward_next_action||'').trim();
+   const context='<div class="execManagerTaskMeta">'+safe(q.activity_type||'Assigned follow-up')+' · '+(d?'Due '+safe(d):'Unscheduled')+'</div>';
+   const identity='<strong>'+safe(q.agent_name||'Unspecified Realtor')+'</strong>'+context+
+     '<p class="execManagerTaskReason">'+safe(q.reason||'Open assigned work')+'</p>';
+   const editor=needsExplanation&&q.id?'<div class="execCarryEditor"><label>Why was this not completed?<textarea data-carry-reason placeholder="Briefly explain the blocker, not a generic excuse" maxlength="1200">'+safe(reason)+'</textarea></label>'+
+      '<label>What is the next action?<textarea data-carry-next placeholder="Concrete follow-up or recovery plan" maxlength="1200">'+safe(action)+'</textarea></label>'+
+      '<button type="button" data-carry-save="'+safe(q.id)+'">Save explanation</button><span data-carry-status="'+safe(q.id)+'" class="execStatus"></span></div>':
+     '<p class="execManagerTaskReason">Why not completed: '+safe(reason||'Not documented')+' · Next action: '+safe(action||'Not documented')+'</p>';
+   return '<article class="execManagerTask" data-carry-id="'+safe(q.id||'')+'">'+identity+
+     (needsExplanation?editor:'<p class="execManagerTaskReason">'+(d>today?'Scheduled for a future date; no missed-work explanation required.':'No due date recorded.')+'</p>')+'</article>';
+  };
+  const group=(title,items,edit,initialOpen)=>'<details class="execManagerGroup"'+(initialOpen?' open':'')+'><summary>'+safe(title)+' · '+items.length+'</summary><div class="execManagerItems">'+(items.length?items.map(q=>taskRow(q,edit)).join(''):'<p class="execManagerEmpty">None</p>')+'</div></details>';
+  accountability.innerHTML='<strong>Assigned-work accountability</strong>'+
+    '<p>'+completedToday.length+' verified completed today · '+due.length+' due today · '+overdue.length+' overdue/carried forward · '+upcoming.length+' future · '+unscheduled.length+' needs scheduling.</p>'+
+    (needsReason.length?'<p class="execNotice execWarn">'+needsReason.length+' overdue assignment(s) still require a reason and a specific next action.</p>':'')+
+    (sourceWarnings.length?'<p class="execNotice execWarn">Partial source data: '+safe(sourceWarnings.join(', '))+'.</p>':'')+
+    '<small>Future-dated work is not considered missed. Explanations never mark assignments completed or change their due dates.</small>'+
+    group('Overdue — explanation required',overdue,true,true)+
+    group('Due today — review or document a blocker',due,true,true)+
+    group('Upcoming assignments',upcoming,false,false)+
+    group('Needs scheduling',unscheduled,false,false);
+  accountability.querySelectorAll('[data-carry-save]').forEach(button=>{
+   button.onclick=async()=>{
+    const id=button.getAttribute('data-carry-save'),card=button.closest('[data-carry-id]');
+    const reason=card?.querySelector('[data-carry-reason]')?.value.trim()||'';
+    const next=card?.querySelector('[data-carry-next]')?.value.trim()||'';
+    const status=card?.querySelector('[data-carry-status]');
+    if(!reason||!next){if(status)status.textContent='Please enter both the reason and the next action.';return;}
+    button.disabled=true;if(status)status.textContent='Saving…';
+    try{
+     const changed=await sbFetch('rm_work_queue?id=eq.'+encodeURIComponent(id)+'&owner=eq.Amanda&status=eq.open&select=id,carry_forward_reason,carry_forward_next_action',{method:'PATCH',prefer:'return=representation',body:JSON.stringify({carry_forward_reason:reason,carry_forward_next_action:next,carry_forward_logged_at:new Date().toISOString()})});
+     if(!Array.isArray(changed)||!changed.some(x=>String(x.id)===id&&String(x.carry_forward_reason)===reason&&String(x.carry_forward_next_action)===next))throw Error('Save could not be verified');
+     const saved=queue.find(q=>String(q.id)===id);if(saved){saved.carry_forward_reason=reason;saved.carry_forward_next_action=next;}
+     if(status)status.textContent='Saved to shared work queue';
+    }catch(err){if(status)status.textContent='Not saved: '+String(err.message||err)}
+    finally{button.disabled=false;}
+   };
+  });
+ }
+
  host.innerHTML='<p>Prospecting minimum met '+met+' of '+rows.length+' scheduled workdays. '+short.length+' below minimum; '+withExplanation+' of those have a saved explanation. This view uses logged cold-call entries only, not assumed time worked.</p>'+
  '<div style="overflow:auto"><table style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr><th align="left">Day</th><th align="left">Cold calls</th><th align="left">Meetings</th><th align="left">Prospecting minutes</th><th align="left">Closeout reason</th></tr></thead><tbody>'+
  rows.map(r=>'<tr><td style="padding:6px;border-bottom:1px solid #eee">'+safe(fmt(r.date))+'</td><td>'+r.cold+' / 25</td><td>'+r.meet+'</td><td>'+(r.minutes==null?'Not logged':r.minutes+' / 60')+'</td><td>'+safe(reasons[r.reason]||(r.cold>=25?'Goal met':'Not documented'))+'</td></tr>').join('')+'</tbody></table></div>'+
