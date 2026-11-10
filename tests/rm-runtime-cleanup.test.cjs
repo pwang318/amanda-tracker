@@ -13,6 +13,12 @@ assert.equal(html.split('id="rm-uniform-prospecting-row"').length-1,1,'Old repea
 assert(!html.includes('outstanding-daily-checklist.js'),'Obsolete checklist must not load');
 assert(!fs.existsSync('ui/outstanding-daily-checklist.js'),'Obsolete checklist source must be deleted');
 assert(!compact.includes('MutationObserver'),'Compact style must not re-render on every DOM change');
+assert(compact.includes('moveTodayAboveScorecard(today)'), 'Today section should precede Scorecard Progress on the RM home screen');
+assert(compact.includes('shared.insertBefore(todayCard,scoreCard)'), 'DOM order should move Today above the scorecard without destroying either card');
+assert(compact.includes('body:not([data-rm-tab="director"]) #rmSharedPowerBiWarning'), 'Floating Power BI warning is hidden for RM while retaining director diagnostics');
+assert(daily.includes('id="execProspectShortcut"'), 'Prospect shortcut must appear in the growth section');
+assert(daily.includes("$('execProspectShortcut').replaceChildren(shortcut)"), 'Prospect link must be physically moved from the other worklists');
+assert(daily.includes("['Undated follow-ups',undated"), 'Undated items should not be misrepresented as meetings to schedule');
 assert(!fast.includes("setInterval(()=>{if($('view-week')"),'Fast logger should not poll the Today view continuously');
 assert(!html.includes('setInterval(function(){iconifyNav()'),'No 1.5-second whole-page restyling');
 assert(!html.includes('setInterval(()=>refresh(false),30000)'),'No 30-second dashboard polling');
