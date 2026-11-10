@@ -73,6 +73,9 @@ styles.textContent=[
 '#rmExecutionPlan .execDetailArea{border-top:1px solid #eee7f5;padding-top:14px}',
 '#rmExecutionPlan .execListGuide{border:1px solid #e9dff4;border-radius:10px;background:#faf7fd;padding:12px 14px;margin:0 0 13px}',
 '#rmExecutionPlan .execListGuide p{font-size:13px;line-height:1.5;margin:4px 0}',
+'#rmExecutionPlan .execAssignmentAction{background:#fbf8ff;border:1px solid #ceb9e9;border-radius:11px;padding:15px;margin:12px 0}',
+'#rmExecutionPlan .execAssignmentAction[hidden]{display:none!important}',
+'#rmExecutionPlan .execAssignmentAction textarea{display:block;width:100%;box-sizing:border-box;min-height:68px;margin:5px 0 9px;border:1px solid #d9cde7;border-radius:7px;padding:8px}',
 '#rmExecutionPlan .execDetailArea .execTasks{display:block}',
 '#rmExecutionPlan .execDetailArea .execTasks section{border:0;padding:0}',
 '#rmExecutionPlan .execDetailArea .execTasks ul{max-height:none;overflow:visible}',
@@ -311,21 +314,42 @@ async function refresh(force=false){
 }
 function openTask(q){
  const name=String(q.agent_name||q['Agent / Item']||'').trim();
- const type=String(q.Category||q.activity_type||'').toLowerCase();
- // Open the exact agent's profile first so the assignment stays actionable.
- if(name&&typeof window.openContactModal==='function'){
-  Promise.resolve(window.openContactModal(name)).catch(err=>{
-   console.warn('Could not open agent profile',name,err);
-   if(typeof window.switchTab==='function')window.switchTab('contacts');
-  });
-  return;
- }
- // Use a relevant lane only when a record-level destination is unavailable.
- if(/4.week|campaign|conversion/i.test(type)&&typeof window.v350OpenLane==='function')return window.v350OpenLane('conversion');
- if(/weekly realtor|weekly.*call/i.test(type)&&typeof window.v350OpenLane==='function')return window.v350OpenLane('smart');
- if(/tuesday/i.test(type)&&typeof window.v350OpenLane==='function')return window.v350OpenLane('tuesday');
- if(/transaction|contract|ctc/i.test(type)&&typeof window.v350OpenLane==='function')return window.v350OpenLane('calls');
- if(typeof window.switchTab==='function')return window.switchTab('portfolio');
+ const type=String(q.Category||q.activity_type||'Assigned Follow-up').trim();
+ const holder=$('execDetailArea'),list=$('execTaskSummary');
+ if(!holder||!list)return;
+ let panel=$('execAssignmentAction');
+ if(!panel){panel=document.createElement('section');panel.id='execAssignmentAction';panel.className='execAssignmentAction';list.before(panel)}
+ panel.innerHTML='<div class="execRow"><div><strong>Complete assignment · '+safe(name||'Unassigned Realtor')+'</strong><p>'+safe(type)+'</p></div><button type="button" id="execAssignmentProfile">View Realtor profile</button></div>'+
+ '<p><strong>Why here:</strong> '+safe(q.reason||'Saved outstanding assignment')+'</p>'+
+ '<div class="execForm"><label>Contact outcome<select id="execAssignmentOutcome"><option value="">Choose actual outcome</option><option>Talked</option><option>Voicemail</option><option>Text sent</option><option>No answer</option><option>Meeting scheduled</option><option>Completed non-call task</option></select></label><label>Next follow-up (optional)<input type="date" id="execAssignmentFollowup"></label></div>'+
+ '<label>Notes / next steps<textarea id="execAssignmentNotes" rows="3" maxlength="2000" placeholder="What happened and what needs to happen next?"></textarea></label>'+
+ '<div class="execRow"><button type="button" id="execAssignmentSave">Save activity and complete this assignment</button><button type="button" id="execAssignmentCancel">Cancel</button></div><p role="status" id="execAssignmentStatus"></p>'+
+ (!q.id?'<small>This item came from a supplemental worklist; saving activity cannot automatically clear it without a matching queue record.</small>':'');
+ panel.hidden=false;panel.scrollIntoView({behavior:'smooth',block:'nearest'});
+ $('execAssignmentCancel').onclick=()=>{panel.hidden=true};
+ $('execAssignmentProfile').onclick=()=>{if(name&&typeof window.openContactModal==='function')window.openContactModal(name);else if(typeof window.switchTab==='function')window.switchTab('contacts')};
+ $('execAssignmentSave').onclick=async()=>{
+  const outcome=$('execAssignmentOutcome').value,notes=$('execAssignmentNotes').value.trim(),follow=$('execAssignmentFollowup').value,status=$('execAssignmentStatus'),button=$('execAssignmentSave');
+  if(!name||!outcome){status.textContent='Choose a contact outcome and verify the Realtor name.';return}
+  if(!q.id){status.textContent='This supplemental item cannot be safely cleared from the assignment queue. Open the original worklist to complete it; no activity was saved here.';return}
+  if(!notes&&outcome==='Completed non-call task'){status.textContent='Describe the completed task before saving.';return}
+  button.disabled=true;status.textContent='Saving activity to the shared tracker…';
+  try{
+   const activityType=/\bctc\b|clear[ -]?to[ -]?close/i.test(type)?'CTC Call':/new[ -]?contract|under contract/i.test(type)?'New Contract':/tuesday/i.test(type)?'Listing Agent Update':type;
+   const activity={agent_name:name,act_type:activityType,act_date:iso(),outcome,notes:'RM assignment: '+type+'. '+notes+(q.reason?' | Assignment reason: '+String(q.reason):''),follow_up_date:follow||null};
+   const written=await sbFetch('amanda_activities?select=id',{method:'POST',prefer:'return=representation',body:JSON.stringify(activity)});
+   const id=Array.isArray(written)&&written[0]?.id;
+   if(!id)throw Error('Activity save could not be verified; assignment has not been cleared');
+   status.textContent='Activity saved. Updating this assignment…';
+   const changed=await sbFetch('rm_work_queue?id=eq.'+encodeURIComponent(q.id)+'&owner=eq.Amanda&status=eq.open&select=id,completion_activity_id',{method:'PATCH',prefer:'return=representation',body:JSON.stringify({status:'worked',completed_at:new Date().toISOString(),completion_activity_id:id})});
+   if(!Array.isArray(changed)||!changed.some(row=>String(row.id)===String(q.id)&&String(row.completion_activity_id)===String(id)))throw Error('Activity saved, but queue completion was not confirmed. Refresh before trying again to avoid a duplicate log');
+   status.textContent='Activity saved and assignment cleared.';
+   panel.hidden=true;
+   await refresh(true);
+   if(activeDetail)showDetail(activeDetail,false);
+  }catch(err){status.textContent='Could not verify completion: '+String(err.message||err)}
+  finally{button.disabled=false}
+ };
 }
 const worklistGuide={
  '4-week campaigns':['Active four-week Realtor follow-up assignments.','Complete the assigned touchpoint, log the actual outcome, and set the next follow-up.'],
@@ -517,6 +541,7 @@ function showDetail(key,scroll=true){
  const detail=$('execDetailArea'),home=$('execHomeWork'),list=$('execTaskSummary');
  if(!detail||!home||!list)return;
  if(key===null){
+  if($('execAssignmentAction'))$('execAssignmentAction').hidden=true;
   detail.hidden=true;home.hidden=false;list.replaceChildren();
   if(scroll)$('rmExecutionPlan')?.scrollIntoView({behavior:'smooth',block:'start'});
   return;
@@ -527,6 +552,7 @@ function showDetail(key,scroll=true){
  const group=detailGroups[index];
  if(!group){activeDetail=null;detail.hidden=true;home.hidden=false;return}
  home.hidden=true;detail.hidden=false;
+ if($('execAssignmentAction'))$('execAssignmentAction').hidden=true;
  $('execDetailTitle').textContent=group[0]+' · '+group[1].length;
  list.innerHTML=worklistExplanation(group[0],group[1])+taskList(group[0],group[1],group[2],false)+
   (!fullVerified?'<p class="execNotice execWarn">Some lists could not refresh. Check the source before treating this list as complete.</p>':'');
