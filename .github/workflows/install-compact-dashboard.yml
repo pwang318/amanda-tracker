@@ -65,6 +65,9 @@ jobs:
               if '</body>' not in page:
                   raise SystemExit('Missing body close; not modifying homepage')
               page=page.replace('</body>',asset+'</body>',1)
+          # Keep the original compact Transaction Imports presentation without changing importer logic.
+          page=re.sub(r'<link[^>]*transaction-imports-classic[.]css[^>]*>','',page)
+          page=page.replace('</head>','<link rel="stylesheet" href="./ui/transaction-imports-classic.css?v=20261110-classic1"></head>',1)
           # Original installer added this identical rule repeatedly outside the body.
           style_re=r'<style[^>]*id="rm-uniform-prospecting-row"[^>]*>.*?</style>'
           blocks=re.findall(style_re,page,flags=re.S)
