@@ -31,7 +31,7 @@ function findLegacyDrawer(today){
  let parent=title.parentElement;
  while(parent&&parent!==today){
   const t=(parent.textContent||'').slice(0,12000);
-  if(/MUST DO/i.test(t)&&/BUILD NEW BUSINESS/i.test(t)&&/4.Week Campaigns/i.test(t))return parent;
+  if(/MUST DO/i.test(t)&&/BUILD NEW BUSINESS/i.test(t)&&/4.Week Campaigns/i.test(t)&&!parent.querySelector('#rmExecutionPlan')&&!parent.querySelector('#rm350Workboard'))return parent;
   parent=parent.parentElement;
  }
  return title.closest('details')||null;
