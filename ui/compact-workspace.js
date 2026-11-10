@@ -83,6 +83,25 @@ function hideWarnings(){
  }
 }
 
+
+// The legacy lower "Today's Priorities" card is an empty shell.
+// Only hide the compact shell; never hide a populated task list or the actual execution plan.
+function hideEmptyLegacyPriorities(){
+ const home=document.getElementById('view-week');if(!home)return;
+ for(const heading of home.querySelectorAll('h1,h2,h3,h4')){
+  if(!/^today[’']s priorities$/i.test(String(heading.textContent||'').trim()))continue;
+  if(heading.closest('#rmExecutionPlan,#rm350Workboard'))continue;
+  let panel=null,p=heading.parentElement;
+  for(let depth=0;p&&p!==home&&depth<5;depth++,p=p.parentElement){
+   if(p.querySelector('#rmExecutionPlan,#rm350Workboard'))break;
+   const content=String(p.textContent||'').trim();
+   const hasImport=/import new contacts|ctcs/i.test(content);
+   const meaningful=p.querySelector('li,[data-priority],[data-agent],.rm-daily-step,.rmCheckItem,table tbody tr');
+   if(hasImport&&content.length<450&&!meaningful){panel=p;break}
+  }
+  if(panel)panel.classList.add('rmTodayHideSecondary');
+ }
+}
 function prospectingExpectation(){
  const board=getWorkboard();if(!board)return;
  const row=board.querySelector('.rm-daily-prospect-step');if(!row)return;
@@ -103,7 +122,7 @@ function render(){
   const desc=[...board.querySelectorAll('p')].find(x=>/one clear route through your day/i.test(x.textContent||''));
   if(desc&&desc.textContent!=='Your focused worklist: transactions, follow-ups, prospecting, and agent growth.')desc.textContent='Your focused worklist: transactions, follow-ups, prospecting, and agent growth.';
  }
- prospectingExpectation();hideSecondary();hideWarnings();
+ prospectingExpectation();hideSecondary();hideEmptyLegacyPriorities();hideWarnings();
 }
 let queued=false;function schedule(){if(queued)return;queued=true;requestAnimationFrame(()=>{queued=false;render()})}
 function start(){
