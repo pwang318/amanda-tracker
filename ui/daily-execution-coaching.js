@@ -40,6 +40,11 @@ styles.textContent=[
 '#rmExecutionPlan #execMoreMetrics{margin:10px 0;border-bottom:1px solid #eee7f4;padding-bottom:8px}',
 '#rmExecutionPlan #execMoreMetrics>summary{font-size:12px}',
 '#rmExecutionPlan #execWeeklyGoals{background:#faf8fd}',
+'#rmExecutionPlan #execWeeklyDisclosure{margin:8px 0}',
+'#rmExecutionPlan .execTimelineEmpty{padding:8px 12px;margin:8px 0}',
+'#rmExecutionPlan .execTimelineEmpty #execTimelineRows{display:none}',
+'#rmExecutionPlan .execTimelineEmpty .execRow{margin:0}',
+'#rmExecutionPlan .execTimelineEmpty h3{font-size:13px;margin:0}',
 '#rmExecutionPlan #execHomeWork{margin:10px 0 12px}',
 '#rmExecutionPlan #execHomeWork h3{margin:0 0 8px}',
 '#rmExecutionPlan #execPriorities{background:#faf9fc;padding:10px 12px}',
@@ -157,7 +162,7 @@ function mount(){
  const div=document.createElement('section');div.id='rmExecutionPlan';
  div.innerHTML='<div id="execQuickLog" class="execQuickLog"><div><strong>Log Activity</strong><span>Calls, new Realtor outreach, messages and meetings</span></div><button type="button" id="execQuickLogBtn">+ Log Activity</button></div><div class="execRow"><div><h2>Today’s plan</h2><p>Daily priorities, follow-ups, and progress.</p></div><button id="execReload" type="button">Refresh live activity</button></div>'+
  '<div id="execNotice" class="execNotice">Loading shared activity and schedule…</div>'+
- '<div id="execPriorities" class="execNotice" aria-live="polite"></div><div class="execHomeWork" id="execHomeWork"><h3>Outstanding work</h3><div id="execCategoryGrid" class="execCategoryGrid"></div></div><div id="execProspecting" class="execNotice" aria-live="polite"></div><div id="execOutreach" class="execNotice"></div><section id="execActivityTimeline" class="execTimeline"><div class="execRow"><h3>Recent activity</h3><button type="button" id="execActivityAll">View all activity</button></div><div id="execTimelineRows">Loading activity…</div></section><div id="execMetrics" class="execMetrics"></div><details id="execMoreMetrics"><summary>More work and activity details</summary><div id="execSecondaryMetrics" class="execMetrics"></div></details><div id="execWeeklyGoals" class="execNotice" aria-live="polite"></div>'+ '<details id="execBusinessDetails"><summary>Business results: meetings, referrals, and C-to-B growth</summary><div id="execBusinessResults" class="execNotice">Checking source records…</div></details>'+
+ '<div id="execPriorities" class="execNotice" aria-live="polite"></div><div class="execHomeWork" id="execHomeWork"><h3>Outstanding work</h3><div id="execCategoryGrid" class="execCategoryGrid"></div></div><div id="execProspecting" class="execNotice" aria-live="polite"></div><section id="execActivityTimeline" class="execTimeline"><div class="execRow"><h3>Recent activity</h3><button type="button" id="execActivityAll">View all activity</button></div><div id="execTimelineRows">Loading activity…</div></section><div id="execMetrics" class="execMetrics"></div><details id="execMoreMetrics"><summary>More work and activity details</summary><div id="execSecondaryMetrics" class="execMetrics"></div></details><details id="execWeeklyDisclosure" class="execTaskDetails"><summary>Weekly activity details</summary><div id="execWeeklyGoals" class="execNotice" aria-live="polite"></div></details>'+ '<details id="execBusinessDetails"><summary>Business results: meetings, referrals, and C-to-B growth</summary><div id="execBusinessResults" class="execNotice">Checking source records…</div></details>'+
  
  '<div class="execDetailArea" id="execDetailArea" hidden><button type="button" id="execBack" class="execBack">← Back to Today</button><div class="execRow"><h3 id="execDetailTitle"></h3><button type="button" id="execDetailRefresh">Refresh worklist</button></div><div id="execTaskSummary" class="execTasks"></div></div>'+
  '<details id="execCloseout"><summary>End-of-day review</summary><div id="execMissedSummary" class="execNotice" aria-live="polite"></div>'+
@@ -451,8 +456,8 @@ function render(){
  $('execProspecting').innerHTML='<div class="execRow"><div><strong>Prospecting today</strong><p>Cold calls: <b>'+cold+' / 25 minimum</b> · Time: <b>'+(dataOf(closeRecord(d))?.prospecting_minutes==null?'Not reported':dataOf(closeRecord(d)).prospecting_minutes+' / 60 min')+'</b></p><small>Complete the full 60-minute block and report actual minutes, even if fewer than 25 calls were made.</small></div><div><button type="button" id="execProspectLog">Log cold call</button> <button type="button" id="execProspectTime">Report minutes</button></div></div>';
  $('execProspectLog').onclick=()=>{if(typeof window.switchTab==='function')window.switchTab('log');const agent=$('rmFastAgent')||$('agentInput');if(agent)agent.focus()};
  $('execProspectTime').onclick=()=>{$('execCloseout').open=true;$('execCloseout').scrollIntoView({behavior:'smooth',block:'center'});$('execMinutes').focus()};
- const outreach=$('execOutreach');if(outreach){outreach.innerHTML='<div class="execRow"><div><strong>New Realtor outreach</strong><p>'+cold+' cold calls logged today · Goal: at least 25 calls and 60 minutes</p></div><button type="button" id="execOutreachLog">Log outreach</button></div>';const b=$('execOutreachLog');if(b)b.onclick=()=>{if(typeof window.switchTab==='function')window.switchTab('log');($('rmFastAgent')||$('agentInput'))?.focus()}}
- const timeline=$('execTimelineRows');if(timeline){const todayRows=activeFor(d).slice().sort((a,b)=>String(b.created_at||b.act_date||'').localeCompare(String(a.created_at||a.act_date||'')));timeline.innerHTML=todayRows.length?todayRows.slice(0,3).map(a=>{const time=activityTime(a.created_at);return '<div class="execTimelineItem"><time>'+safe(time)+'</time><div><strong>'+safe(a.agent_name||'Agent not specified')+'</strong><span>'+safe([a.act_type,a.outcome].filter(Boolean).join(' · ')||'Activity logged')+'</span></div></div>'}).join(''):'<p>No activity recorded today yet.</p>';const all=$('execActivityAll');if(all){all.textContent='View all activity ('+todayRows.length+')';all.onclick=()=>showDetail('activity:all')}}
+
+ const timeline=$('execTimelineRows');if(timeline){const todayRows=activeFor(d).slice().sort((a,b)=>String(b.created_at||b.act_date||'').localeCompare(String(a.created_at||a.act_date||'')));$('execActivityTimeline').classList.toggle('execTimelineEmpty',todayRows.length===0);timeline.innerHTML=todayRows.length?todayRows.slice(0,3).map(a=>{const time=activityTime(a.created_at);return '<div class="execTimelineItem"><time>'+safe(time)+'</time><div><strong>'+safe(a.agent_name||'Agent not specified')+'</strong><span>'+safe([a.act_type,a.outcome].filter(Boolean).join(' · ')||'Activity logged')+'</span></div></div>'}).join(''):'<p>No activity yet today.</p>';const all=$('execActivityAll');if(all){all.textContent='View all activity ('+todayRows.length+')';all.onclick=()=>showDetail('activity:all')}}
 
  const priorityBox=$('execPriorities');
  // One visible work order; unfinished assignments remain visible on later workdays as overdue.
@@ -479,9 +484,9 @@ function render(){
  $('execCatchupList').onclick=()=>showDetail('category:'+(categoryRows.length-1));
  priorityBox.dataset.authoritativeOpenCount=String(openQueue);
  const wg=weeklyGoals(d),weekLabel=fmt(wg.start);
- $('execWeeklyGoals').innerHTML='<strong>This week · '+safe(weekLabel)+'</strong>'+
- '<p>New Realtor meetings <b>'+wg.newHeld+' / '+wg.target+'</b> held · Break Breads <b>'+wg.breads+' / '+wg.target+'</b> held · Calls <b>'+wg.calls+' / '+wg.goalCalls+'</b> logged · Prospecting <b>'+wg.minutes.total+' / '+wg.goalMinutes+'</b> minutes reported'+(wg.minutes.known<wg.days.length?' (incomplete reporting)':'')+'.</p>'+
- '<p><strong>Activity pace: '+(wg.pct==null?'—':wg.pct+'%')+'</strong> · Activity goals are separate from the weighted scorecard · '+(wg.target?'Weekly meeting goal: '+wg.target+' new meetings and '+wg.target+' Break Breads.':'No scheduled workdays.')+'</p>';
+ $('execWeeklyGoals').innerHTML='<strong>Week of '+safe(weekLabel)+'</strong>'+
+ '<p>Calls <b>'+wg.calls+' / '+wg.goalCalls+'</b> logged · Prospecting <b>'+wg.minutes.total+' / '+wg.goalMinutes+'</b> minutes reported'+(wg.minutes.known<wg.days.length?' (incomplete reporting)':'')+'.</p>'+
+ '<p>Activity pace: <b>'+(wg.pct==null?'—':wg.pct+'%')+'</b> · Activity goals are separate from the weighted scorecard.</p>';
  const metricRows=[
   ['Cold calls today',offNow?'PTO':cold+' / 25+','cold'],
   ['Prospecting minutes',dataOf(closeRecord(d))?.prospecting_minutes==null?'Not logged / 60':dataOf(closeRecord(d)).prospecting_minutes+' / 60','closeout'],
@@ -504,7 +509,7 @@ function render(){
  detailGroups=sections.concat(categoryRows);
  detailGroups.push(exactPlans);
  const grid=$('execCategoryGrid');
- grid.innerHTML=categoryRows.map((group,i)=>group[0]==='New Realtor outreach assignments'?'<button type="button" class="execCategoryBtn execProspectTile" data-outreach="true"><span>New Realtor outreach <small>Daily prospecting goal</small></span><strong>'+Math.max(0,25-cold)+' calls left ↗</strong></button>':'<button type="button" class="execCategoryBtn" data-category="'+i+'"><span>'+safe(group[0])+'</span><strong>'+group[1].length+' ↗</strong></button>').join('');
+ grid.innerHTML=categoryRows.map((group,i)=>group[0]==='New Realtor outreach assignments'?'<button type="button" class="execCategoryBtn execProspectTile" data-outreach="true"><span>New Realtor prospect list <small>Assigned outreach</small></span><strong>'+group[1].length+' to review ↗</strong></button>':'<button type="button" class="execCategoryBtn" data-category="'+i+'"><span>'+safe(group[0])+'</span><strong>'+group[1].length+' ↗</strong></button>').join('');
  grid.querySelectorAll('[data-category]').forEach(b=>b.onclick=()=>showDetail('category:'+b.dataset.category));
  grid.querySelector('[data-outreach]')?.addEventListener('click',openProspectList);
  $('rmExecutionPlan').querySelectorAll('[data-exec-target]').forEach(tile=>{
