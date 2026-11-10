@@ -58,7 +58,7 @@ function breakdown(rows){
 function meetings(rows){
  const scheduled=rows.filter(x=>booked(x)&&x.follow_up_date&&x.agent_name).sort((a,b)=>String(a.follow_up_date).localeCompare(String(b.follow_up_date)));
  const completed=rows.filter(x=>held(x)&&x.agent_name);
- const used=new Set(completedWithActivity.map(q=>String(q.completion_activity_id)).filter(Boolean));let linked=0;
+ const used=new Set();let linked=0;
  for(const a of scheduled){
   const found=completed.find(h=>{
    if(used.has(h.id)||nameKey(h.agent_name)!==nameKey(a.agent_name))return false;
@@ -148,7 +148,7 @@ async function reconcile(){
  if(!Array.isArray(pending)||!Array.isArray(completedWithActivity))throw Error('Unable to verify outstanding task and activity links');
  const eligible=cached.filter(a=>a.act_date===day&&/^(Cold Calls|Agent Talk-to|New Agent Follow-up|Reconnect Outreach)$/i.test(a.act_type||'')&&String(a.outcome||'').trim()&&(typeof window.isAmandaDailyActivity!=='function'||window.isAmandaDailyActivity(a)));
  const alias={'agent talk-to':['agent talk-to','talk-to (text/call)','active agent talk-to'],'cold calls':['cold calls'],'new agent follow-up':['new agent follow-up'],'reconnect outreach':['reconnect outreach']};
- const used=new Set();
+ const used=new Set(completedWithActivity.map(q=>String(q.completion_activity_id)).filter(Boolean));
  const ordered=(Array.isArray(pending)?pending:[]).slice().sort((a,b)=>String(a.work_date||'').localeCompare(String(b.work_date||'')));
  let changed=0;
  for(const t of ordered){
