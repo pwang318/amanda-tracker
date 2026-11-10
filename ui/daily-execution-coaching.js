@@ -334,21 +334,74 @@ async function refresh(force=false){
  }finally{working=false}
 }
 let rmImportSummary={ctc:null,contract:null,error:null,checked:0,busy:false};
+let rmTxnCache=null,rmTxnCacheTime=0,rmTxnFetch=null;
+const rmTxnTag=(notes,key)=>{const match=String(notes||'').match(new RegExp('\\['+key+':([^\\]]*)\\]','i'));return match?match[1].trim():''};
+const rmTxnKey=val=>String(val||'').trim().toLowerCase().replace(/\s+/g,' ');
+const rmTxnValidName=val=>{const n=rmTxnKey(val).replace(/[^a-z0-9]/g,'');return Boolean(n)&&!['none','nonenone','na','null','unknown','tbd','fsbo','unrepresented','noagent'].includes(n)};
+async function rmReadLatestTransactions(force=false){
+ if(rmTxnFetch)return rmTxnFetch;
+ if(!force&&rmTxnCache&&Date.now()-rmTxnCacheTime<45000)return rmTxnCache;
+ if(typeof sbFetch!=='function')throw Error('Shared transaction data unavailable');
+ rmTxnFetch=(async()=>{
+  const since=iso(new Date(Date.now()-120*86400000));
+  const [snapshots,activity]=await Promise.all([
+   sbFetch('amanda_activities?select=id,act_date,notes,created_at&act_type=eq.Transaction%20Snapshot&act_date=gte.'+since+'&order=created_at.desc&limit=2500'),
+   sbFetch('amanda_activities?select=id,act_type,agent_name,outcome,notes,created_at&act_type=in.(CTC%20Call,Under%20Contract%20Call,Clear%20to%20Close,New%20Contract)&order=created_at.desc&limit=10000')
+  ]);
+  if(!Array.isArray(snapshots)||!Array.isArray(activity))throw Error('Transaction snapshots or saved call outcomes unavailable');
+  const output={};
+  for(const [kind,prefix,triggerType,callType,source] of [
+   ['ctc','RM-CTC-','Clear to Close','CTC Call','RM Excel Import · CTC'],
+   ['contract','RM-CONTRACT-','New Contract','Under Contract Call','RM Excel Import · New Contract']
+  ]){
+   const list=snapshots.map(row=>({row,id:rmTxnTag(row.notes,'TXN_ID'),batch:rmTxnTag(row.notes,'TXN_BATCH'),source:rmTxnTag(row.notes,'TXN_SOURCE')}))
+    .filter(x=>x.id&&x.batch.startsWith(prefix)&&/^RM-(CTC|CONTRACT)-\d{14}$/.test(x.batch)&&x.source===source);
+   const batch=list.reduce((latest,x)=>x.batch>latest?x.batch:latest,'');
+   const files=new Map();
+   for(const x of list.filter(v=>v.batch===batch)){
+    if(files.has(x.id))continue;
+    const n=x.row.notes;
+    files.set(x.id,{id:x.id,client:rmTxnTag(n,'TXN_CLIENT'),property:rmTxnTag(n,'TXN_PROPERTY'),
+      buyer:rmTxnTag(n,'TXN_BUYER_AGENT'),buyerPhone:rmTxnTag(n,'TXN_BUYER_PHONE'),
+      listing:rmTxnTag(n,'TXN_LISTING_AGENT'),listingPhone:rmTxnTag(n,'TXN_LISTING_PHONE'),
+      closeDate:rmTxnTag(n,'TXN_CLOSE_DATE'),batch,roles:[],outstanding:0});
+   }
+   const triggers=new Map(),completed=new Set();
+   for(const x of activity){
+    const id=rmTxnTag(x.notes,'TXN_ID'),role=rmTxnTag(x.notes,'TXN_ROLE').toLowerCase(),person=rmTxnKey(x.agent_name);
+    if(!files.has(id)||!['buyer','listing'].includes(role)||!person)continue;
+    const key=id+'|'+role+'|'+person,status=rmTxnTag(x.notes,'TXN_STATUS').toUpperCase();
+    if(x.act_type===triggerType&&rmTxnTag(x.notes,'TXN_BATCH')===batch){
+     if(!triggers.has(key))triggers.set(key,status);
+    }else if(x.act_type===callType&&status==='COMPLETE'&&String(x.outcome||'').trim()&&!/^pending$/i.test(x.outcome)){
+     completed.add(key);
+    }
+   }
+   let outstanding=0,completedCount=0;
+   for(const file of files.values()){
+    for(const [role,agent] of [['buyer',file.buyer],['listing',file.listing]]){
+     if(!rmTxnValidName(agent))continue;
+     const key=file.id+'|'+role+'|'+rmTxnKey(agent);
+     const status=triggers.get(key);
+     if(status==='REMOVED'||status==='WITHDRAWN'||status==='CANCELLED')continue;
+     const done=completed.has(key);
+     file.roles.push({role,agent,done});
+     if(done)completedCount++;else{outstanding++;file.outstanding++}
+    }
+   }
+   output[kind]={batch,files:[...files.values()],count:files.size,outstanding,completed:completedCount};
+  }
+  rmTxnCache=output;rmTxnCacheTime=Date.now();return output;
+ })();
+ try{return await rmTxnFetch}finally{rmTxnFetch=null}
+}
 async function refreshImportedCallCounters(force=false){
  if(rmImportSummary.busy||(!force&&Date.now()-rmImportSummary.checked<45000))return;
- if(typeof sbFetch!=='function'){rmImportSummary.error='Shared report connection unavailable';paintImportedCallCounters();return}
  rmImportSummary.busy=true;
  try{
-  const since=iso(new Date(Date.now()-120*86400000));
-  const rows=await sbFetch('amanda_activities?select=notes,act_date,created_at&act_type=eq.Transaction%20Snapshot&act_date=gte.'+since+'&order=created_at.desc&limit=2500');
-  if(!Array.isArray(rows))throw Error('Transaction imports unavailable');
-  const meta=(notes,key)=>{const m=String(notes||'').match(new RegExp('\\['+key+':([^\\]]*)\\]','i'));return m?m[1].trim():''};
-  for(const [kind,prefix] of [['ctc','RM-CTC-'],['contract','RM-CONTRACT-']]){
-   const selected=rows.map(r=>({id:meta(r.notes,'TXN_ID'),batch:meta(r.notes,'TXN_BATCH'),source:meta(r.notes,'TXN_SOURCE')}))
-    .filter(x=>x.id&&x.batch.startsWith(prefix)&&/^RM-(CTC|CONTRACT)-\d{14}$/.test(x.batch)&&x.source===(kind==='ctc'?'RM Excel Import · CTC':'RM Excel Import · New Contract'));
-   const latest=selected.reduce((max,x)=>x.batch>max?x.batch:max,'');
-   rmImportSummary[kind]={count:new Set(selected.filter(x=>x.batch===latest).map(x=>x.id)).size,batch:latest};
-  }
+  const state=await rmReadLatestTransactions(force);
+  rmImportSummary.ctc=state.ctc;
+  rmImportSummary.contract=state.contract;
   rmImportSummary.error=null;
  }catch(err){rmImportSummary.error=String(err.message||err)}
  finally{rmImportSummary.checked=Date.now();rmImportSummary.busy=false;paintImportedCallCounters()}
@@ -361,8 +414,8 @@ function paintImportedCallCounters(){
   if(!kind)continue;
   const text=button.querySelector('strong');if(!text)continue;
   const data=rmImportSummary[kind];
-  text.textContent=data?(data.count+' in latest import · Review ↗'):(rmImportSummary.error?'Import count unavailable · Retry ↗':'Checking imports…');
-  button.setAttribute('aria-label',label+' · '+(data?data.count+' files in the latest import':rmImportSummary.error?'Import unavailable':'Loading imports'));
+  text.textContent=data?(data.outstanding+' calls left · '+data.count+' files ↗'):(rmImportSummary.error?'Unable to verify · Retry ↗':'Checking call outcomes…');
+  button.setAttribute('aria-label',label+' · '+(data?data.outstanding+' calls left across '+data.count+' imported files':rmImportSummary.error?'Call outcomes unavailable':'Loading call outcomes'));
  }
 }
 async function openManagementTemplate(kind,assignment){
@@ -379,30 +432,10 @@ async function openManagementTemplate(kind,assignment){
  const host=$('execWaFiles');
  try{
   if(typeof sbFetch!=='function')throw Error('Shared database connection unavailable');
-  const since=iso(new Date(Date.now()-120*86400000));
-  const rows=await sbFetch('amanda_activities?select=id,act_date,notes,agent_name,created_at&act_type=eq.Transaction%20Snapshot&act_date=gte.'+since+'&order=created_at.desc&limit=2500');
-  if(!Array.isArray(rows))throw Error('Imported transaction records could not be verified');
-  const meta=(notes,key)=>{const match=String(notes||'').match(new RegExp('\\['+key+':([^\\]]*)\\]','i'));return match?match[1].trim():''};
-  // Recent import batches are authoritative for this call view. Never present
-  // historical snapshots merely because their underlying activity date is recent.
-  const allFiles=new Map();
-  let newestBatch='';
-  const batchPrefix=isCtc?'RM-CTC-':'RM-CONTRACT-';
-  for(const row of rows){
-   const notes=String(row.notes||''),id=meta(notes,'TXN_ID'),source=meta(notes,'TXN_SOURCE'),batch=meta(notes,'TXN_BATCH');
-   if(!id||!batch.startsWith(batchPrefix)||!/^RM-(CTC|CONTRACT)-\d{14}$/.test(batch))continue;
-   if(!String(source).startsWith(isCtc?'RM Excel Import · CTC':'RM Excel Import · New Contract'))continue;
-   if(batch>newestBatch)newestBatch=batch;
-   const unique=batch+'|'+id;
-   if(!allFiles.has(unique))allFiles.set(unique,{
-    id,batch,client:meta(notes,'TXN_CLIENT'),property:meta(notes,'TXN_PROPERTY'),
-    buyer:meta(notes,'TXN_BUYER_AGENT'),buyerPhone:meta(notes,'TXN_BUYER_PHONE'),
-    listing:meta(notes,'TXN_LISTING_AGENT'),listingPhone:meta(notes,'TXN_LISTING_PHONE'),
-    closeDate:meta(notes,'TXN_CLOSE_DATE'),date:row.act_date,source
-   });
-  }
-  const current=[...allFiles.values()].filter(x=>x.batch===newestBatch);
-  const historical=[...allFiles.values()].filter(x=>x.batch!==newestBatch);
+  const state=(await rmReadLatestTransactions(true))[isCtc?'ctc':'contract'];
+  const current=state.files;
+  const newestBatch=state.batch;
+  const historical=[];
   const latestStamp=newestBatch?newestBatch.slice(-14):'';
   const batchDate=latestStamp?latestStamp.slice(0,4)+'-'+latestStamp.slice(4,6)+'-'+latestStamp.slice(6,8):'';
   const person=String(assignment?.agent_name||assignment?.['Agent / Item']||'').trim().toLowerCase();
@@ -413,12 +446,12 @@ async function openManagementTemplate(kind,assignment){
    host.innerHTML='<p>No matching '+(isCtc?'CTC':'New Contract')+' files were found in the current shared import records. Upload the correct Encompass export first, then refresh. No client or Realtor information has been guessed.</p>';
    return;
   }
-  host.innerHTML='<p><strong>Latest '+(isCtc?'CTC':'New Contract')+' import · '+safe(batchDate||'unknown date')+'</strong> · '+files.length+' file(s). '+(historical.length?historical.length+' older imported record(s) hidden from today’s call list.':'')+'</p>'+(person&&!matches.length?'<p>This Realtor is not in the latest import. Historical follow-ups are separate from current loan calls.</p>':'')+'<div id="execWaFileList" style="display:grid;gap:7px;max-height:440px;overflow:auto"></div>';
+  host.innerHTML='<p><strong>Latest '+(isCtc?'CTC':'New Contract')+' import · '+safe(batchDate||'unknown date')+'</strong> · '+state.outstanding+' agent calls outstanding across '+state.count+' file(s).</p>'+(person&&!matches.length?'<p>This Realtor is not in the latest import. Historical follow-ups are separate from current loan calls.</p>':'')+'<div id="execWaFileList" style="display:grid;gap:7px;max-height:440px;overflow:auto"></div>';
   const list=$('execWaFileList');
   for(const file of files){
    const button=document.createElement('button');
    button.type='button';
-   button.textContent=[file.client||'Client not supplied',file.property||'Property not supplied',file.closeDate?'Est. close '+file.closeDate:'Closing date not supplied'].join(' · ');
+   button.textContent=[file.client||'Client not supplied',file.property||'Property not supplied',file.closeDate?'Est. close '+file.closeDate:'Closing date not supplied',file.outstanding+' calls left'].join(' · ');
    button.onclick=()=>{
     if(typeof window.v176OpenTransaction!=='function'){host.textContent='Transaction workbench unavailable. Refresh the tracker and retry.';return}
     const agent=file.buyer||file.listing||'',role=file.buyer?'Buyer':'Listing';
