@@ -718,6 +718,7 @@ function showDetail(key,scroll=true){
  const group=detailGroups[index];
  if(!group){activeDetail=null;detail.hidden=true;home.hidden=false;return}
  // Transaction files must never render the old historical CTC assignment list.
+ if(group[0]==='Tuesday transaction updates'&&typeof window.switchTab==='function')return window.switchTab('tuesday');
  if(group[0]==='CTC calls'||group[0]==='New contract calls'){
   activeDetail=null;detail.hidden=true;home.hidden=false;
   if($('execAssignmentAction'))$('execAssignmentAction').hidden=true;
@@ -776,6 +777,7 @@ function render(){
   ['Weekly Realtor calls',/weekly realtor|weekly.*call/i],
   ['New contract calls',/new[ -]?contract|contract[ -]?call|contract received/i],
   ['CTC calls',/\bctc\b|clear[ -]?to[ -]?close/i],
+  ['Tuesday transaction updates',/tuesday/i],
 
   ['Other transaction calls',/transaction|contract/i],
   ['Meetings and growth plans',/meeting|business plan|growth.*plan|growth next step/i],
@@ -895,8 +897,8 @@ function render(){
  detailGroups=sections.concat(categoryRows);
  detailGroups.push(exactPlans);
  const grid=$('execCategoryGrid');
- grid.innerHTML=categoryRows.map((group,i)=>({group,i})).filter(({group})=>(group[1].length>0||['New contract calls','CTC calls'].includes(group[0]))&&group[0]!=='Catch-up assignments'&&group[0]!=='New Realtor outreach assignments').map(({group,i})=>'<button type="button" class="execCategoryBtn" data-category="'+i+'" aria-label="Open '+safe(group[0])+': '+group[1].length+' assignments"><span>'+safe(group[0])+'</span><strong>'+(['CTC calls','New contract calls'].includes(group[0])?'Checking latest import…':group[1].length?group[1].length+' open ↗':'No open calls · View ↗')+'</strong></button>').join('');
- grid.querySelectorAll('[data-category]').forEach(b=>b.onclick=()=>{const category=categoryRows[Number(b.dataset.category)]?.[0];if(category==='CTC calls')return openManagementTemplate('ctc');if(category==='New contract calls')return openManagementTemplate('contract');return showDetail('category:'+b.dataset.category)});
+ grid.innerHTML=categoryRows.map((group,i)=>({group,i})).filter(({group})=>(group[1].length>0||['New contract calls','CTC calls','Tuesday transaction updates'].includes(group[0]))&&group[0]!=='Catch-up assignments'&&group[0]!=='New Realtor outreach assignments').map(({group,i})=>'<button type="button" class="execCategoryBtn" data-category="'+i+'" aria-label="Open '+safe(group[0])+': '+group[1].length+' assignments"><span>'+safe(group[0])+'</span><strong>'+(['CTC calls','New contract calls'].includes(group[0])?'Checking latest import…':group[0]==='Tuesday transaction updates'?'Open Tuesday Updates ↗':group[1].length?group[1].length+' open ↗':'No open tasks · View ↗')+'</strong></button>').join('');
+ grid.querySelectorAll('[data-category]').forEach(b=>b.onclick=()=>{const category=categoryRows[Number(b.dataset.category)]?.[0];if(category==='CTC calls')return openManagementTemplate('ctc');if(category==='New contract calls')return openManagementTemplate('contract');if(category==='Tuesday transaction updates')return typeof window.switchTab==='function'?window.switchTab('tuesday'):showDetail('category:'+b.dataset.category);return showDetail('category:'+b.dataset.category)});
  paintImportedCallCounters();
  if(!rmImportSummary.checked&&!rmImportSummary.busy)refreshImportedCallCounters(true);
  else if(Date.now()-rmImportSummary.checked>60000&&!rmImportSummary.busy)refreshImportedCallCounters(true);
