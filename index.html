@@ -1136,7 +1136,30 @@ body[data-rm-tab="week"] #view-week .v95-amanda-greeting{
 #view-week #secondaryWorkQueues#secondaryWorkQueues,
 #view-week #v134LoadNotice#v134LoadNotice{display:none!important}
 #view-week #rm350Workboard:not(.rmExecReady):not(.rmExecFallback) #rm490Score{visibility:hidden!important}
-</style><link rel="stylesheet" href="./ui/transaction-imports-classic.css?v=20261110-classic1"><style id="rm-uniform-prospecting-row">#rm350Workboard .rm-daily-steps li.rm-daily-prospect-step{background:#fff!important;background-image:none!important;border:0!important;border-bottom:1px solid #eee8f3!important;border-radius:0!important;box-shadow:none!important;padding:12px 0!important;margin:0!important}#rm350Workboard .rm-daily-steps li.rm-daily-prospect-step .rm-daily-step-num{background:#f1e8fa!important;color:#67468e!important}#rm350Workboard .rm-daily-steps li.rm-daily-prospect-step .rm-daily-step-copy b{color:inherit!important}</style></head>
+</style><link rel="stylesheet" href="./ui/transaction-imports-classic.css?v=20261110-classic1"><style id="rm-uniform-prospecting-row">#rm350Workboard .rm-daily-steps li.rm-daily-prospect-step{background:#fff!important;background-image:none!important;border:0!important;border-bottom:1px solid #eee8f3!important;border-radius:0!important;box-shadow:none!important;padding:12px 0!important;margin:0!important}#rm350Workboard .rm-daily-steps li.rm-daily-prospect-step .rm-daily-step-num{background:#f1e8fa!important;color:#67468e!important}#rm350Workboard .rm-daily-steps li.rm-daily-prospect-step .rm-daily-step-copy b{color:inherit!important}</style><style id="rm-v312-uniform-tuesday-20261110">
+/* Presentational only: consistent casing, spacing and tap targets for Tuesday. */
+#view-tuesday .rm-v312-card{border:1px solid #e4dced;border-left:4px solid #7651b0;border-radius:14px;box-shadow:0 4px 18px rgba(40,24,62,.045)}
+#view-tuesday .rm-v312-head{background:#faf8fd;padding:17px 19px;gap:16px}
+#view-tuesday .rm-v312-head h3{font-size:16px;font-weight:750;letter-spacing:-.025em}
+#view-tuesday .rm-v312-row{grid-template-columns:minmax(240px,1.65fr) minmax(155px,.85fr) 112px minmax(270px,1.35fr);gap:16px;padding:17px 18px;min-height:96px}
+#view-tuesday .rm-v312-row:nth-child(even){background:#fdfcff}
+#view-tuesday .rm-v312-row:hover{background:#faf7ff}
+#view-tuesday .rm-v312-name{font-size:14px;font-weight:750;letter-spacing:-.012em;line-height:1.4;color:#35264f;overflow-wrap:anywhere}
+#view-tuesday .rm-v312-file{font-size:11px;line-height:1.55;margin-top:4px;color:#726780;overflow-wrap:anywhere}
+#view-tuesday .rm-v312-contact{font-size:11px;line-height:1.65;color:#62586c;overflow-wrap:anywhere}
+#view-tuesday .rm-v312-state{font-size:11px;line-height:1.4;white-space:normal}
+#view-tuesday .rm-v312-actions{gap:8px;justify-content:flex-end}
+#view-tuesday .rm-v312-actions button,#view-tuesday .rm-v312-class{min-height:36px;border-radius:9px;font-size:11px;font-weight:650;padding:8px 11px}
+#view-tuesday .rm-v312-class{max-width:180px;width:auto;min-width:145px}
+#view-tuesday .rm-v312-summary{font-size:11px;line-height:1.5}
+#rmV312Modal .rm-v312-modal{width:min(710px,96vw);padding:24px;border-radius:18px}
+#rmV312Modal .rm-v312-modal-head h3{font-size:20px}
+#rmV312Modal .rm-v312-field label{font-size:11px;letter-spacing:.02em}
+#rmV312Modal .rm-v312-field input,#rmV312Modal .rm-v312-field select,#rmV312Modal .rm-v312-field textarea{font-size:14px;padding:12px;min-height:44px}
+#rmV312Modal .rm-v312-field textarea{min-height:120px}
+@media(max-width:1120px){#view-tuesday .rm-v312-row{grid-template-columns:minmax(210px,1.25fr) minmax(140px,.8fr);gap:9px 16px}#view-tuesday .rm-v312-state{grid-column:1}#view-tuesday .rm-v312-actions{grid-column:2}}
+@media(max-width:690px){#view-tuesday .rm-v312-row{grid-template-columns:1fr;padding:16px}#view-tuesday .rm-v312-state,#view-tuesday .rm-v312-actions{grid-column:1}#view-tuesday .rm-v312-actions{justify-content:flex-start}#view-tuesday .rm-v312-head{flex-wrap:wrap}#rmV312Modal .rm-v312-modal{padding:17px}#rmV312Modal .rm-v312-fields{grid-template-columns:1fr}}
+</style></head>
 <body>
 <input accept="image/*" id="v95ProfilePhotoInput" onchange="v95HandlePhotoUpload(event)" style="display:none" type="file"/>
 <style>
@@ -16741,6 +16764,13 @@ function rmApplyCoverage(person,save){person=person==='Nyny'?'Nyny':'Amanda';con
 window.rmV318SetOperator=function(v){const p=rmApplyCoverage(v,true);try{if(typeof toast==='function')toast('RM calls will be credited to '+p+' this week ✓','success',2800)}catch(e){}};
 const norm=v=>String(v==null?'':v).trim().toLowerCase().replace(/\s+/g,' '), clean=(v,n)=>String(v==null?'':v).replace(/[\]\r\n]/g,' ').replace(/\s+/g,' ').trim().slice(0,n||220);
 const esc=v=>String(v==null?'':v).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+// Display formatting only: source names and exact transaction matching remain unchanged.
+const rmV312DisplayName=value=>String(value||'').trim().replace(/\s+/g,' ').split(/(\s+|-)/).map(part=>{
+ if(!part||/^\s+$|^-$/.test(part))return part;
+ if(/^(LLC|LP|NFM|USA|OH)$/i.test(part))return part.toUpperCase();
+ return part.toLowerCase().replace(/(^|['’])([a-z])/g,(_,prefix,ch)=>prefix+ch.toUpperCase()).replace(/^Mc([a-z])/,(all,ch)=>'Mc'+ch.toUpperCase());
+}).join('');
+
 const meta=(s,k)=>{const m=String(s||'').match(new RegExp('\\['+k+':([^\\]]*)\\]','i'));return m?String(m[1]||'').trim():''};
 const tag=(k,v)=>{v=clean(v,220);return v?'['+k+':'+v+']':''};
 const weekStart=v=>{const d=new Date((v||new Date().toISOString().slice(0,10))+'T12:00:00');if(isNaN(d))return'';d.setDate(d.getDate()+(d.getDay()===0?-6:1-d.getDay()));return d.toISOString().slice(0,10)},weekEnd=v=>{const d=new Date(weekStart(v)+'T12:00:00');d.setDate(d.getDate()+6);return d.toISOString().slice(0,10)};
@@ -16826,7 +16856,7 @@ function renderCurrent(){
     const saved=!!explicit,saveButton='<button class="rm-v313-save-class'+(saved?' saved':'')+'" type="button" '+(saved?'disabled ':'')+'onclick="rmV313SaveListingClass(\''+encodeURIComponent(tx)+'\',this)">'+(saved?'Saved ✓':'Save status')+'</button>';
     const addContact=!usableAgent(name)||(!ph&&!em);
     const addButton=addContact?'<button class="rm-v312-add-contact" type="button" onclick="rmV312AddListingAgent(\''+encodeURIComponent(tx)+'\')">'+(!usableAgent(name)?'+ Add listing agent':'+ Add contact info')+'</button>':'';
-    return '<div class="rm-v312-row '+rowClass+'"><div><div class="rm-v312-name">'+esc(name||'Listing contact missing')+'</div><div class="rm-v312-file">'+esc(client)+(property?' · '+esc(property):'')+(close?' · close '+esc(close):'')+(mile?' · '+esc(mile):'')+(lp?' · LP: '+esc(lp):'')+'</div></div><div class="rm-v312-contact">'+esc(ph||'No phone')+'<br>'+esc(em||'No email')+'</div><div class="rm-v312-state '+stateClass+'">'+esc(status)+'</div><div class="rm-v312-actions">'+select(tx,cls)+saveButton+addButton+(!nc&&!issue?'<button class="rm-v312-call" onclick="rmV312Open(\''+encodeURIComponent(tx)+'\')">'+(finished?'Add note':'Log update')+'</button>':'')+'</div></div>'
+    return '<div class="rm-v312-row '+rowClass+'"><div><div class="rm-v312-name">'+esc(rmV312DisplayName(name)||'Listing contact missing')+'</div><div class="rm-v312-file">'+esc(rmV312DisplayName(client))+(property?' · '+esc(property):'')+(close?' · close '+esc(close):'')+(mile?' · '+esc(mile):'')+(lp?' · LP: '+esc(rmV312DisplayName(lp)):'')+'</div></div><div class="rm-v312-contact">'+esc(ph||'No phone')+'<br>'+esc(em||'No email')+'</div><div class="rm-v312-state '+stateClass+'">'+esc(status)+'</div><div class="rm-v312-actions">'+select(tx,cls)+saveButton+addButton+(!nc&&!issue?'<button class="rm-v312-call" onclick="rmV312Open(\''+encodeURIComponent(tx)+'\')">'+(finished?'Add note':'Log update')+'</button>':'')+'</div></div>'
   }).join('');
   complete=displayRows.filter(r=>!noCall(listingClass(r))&&done(r,S)).length;
   cleared=displayRows.filter(r=>noCall(listingClass(r))).length;
@@ -16901,7 +16931,7 @@ window.rmV312SaveListingAgent=async function(){
   finally{if(btn){btn.disabled=false;btn.textContent='Save listing agent'}}
 };
 function modal(){if(document.getElementById('rmV312Modal'))return;const m=document.createElement('div');m.id='rmV312Modal';m.innerHTML='<div class="rm-v312-modal"><div class="rm-v312-modal-head"><div><h3>Tuesday listing-agent update</h3><div id="rmV312Meta" class="rm-v312-file"></div></div><button class="rm-v312-close" onclick="rmV312Close()">×</button></div><div class="rm-v312-fields"><div class="rm-v312-field"><label>Contact outcome</label><select id="rmV312Outcome"><option value="Reached / talked">Reached / talked</option><option value="Left voicemail + text sent">Left voicemail + text sent</option><option value="No answer + text sent">No answer + text sent</option><option value="Follow-up needed">Follow-up needed</option></select></div><div class="rm-v312-field"><label>Useful update</label><select id="rmV312Update"><option>File remains on track</option><option>Processing status</option><option>Underwriting / conditions</option><option>Appraisal status</option><option>CTC / closing status</option></select></div><div class="rm-v312-field"><label>Next follow-up (optional unless another call is needed)</label><input id="rmV312Follow" type="date"></div><div class="rm-v312-field full"><label>What did you communicate / learn?</label><textarea id="rmV312Notes" placeholder="Short file-level update, response, and any next step."></textarea></div></div><div id="rmV312Err" class="rm-v312-error"></div><div class="rm-v312-actions2"><button class="rm-v312-class" onclick="rmV312Close()">Cancel</button><button id="rmV312Save" class="rm-v312-call" onclick="rmV312Save()">Save listing update</button></div></div>';document.body.appendChild(m)}
-window.rmV312Open=function(enc){const tx=decodeURIComponent(enc||''),r=S.rows.find(x=>rowClassKey(x)===tx);if(!r)return;S.current=r;modal();document.getElementById('rmV312Meta').textContent=[meta(r.notes,'TUE_CONTACT_NAME'),meta(r.notes,'TXN_CLIENT'),meta(r.notes,'TXN_PROPERTY'),meta(r.notes,'TXN_CLOSE_DATE')?'Close '+meta(r.notes,'TXN_CLOSE_DATE'):''].filter(Boolean).join(' · ');document.getElementById('rmV312Notes').value='';document.getElementById('rmV312Follow').value='';document.getElementById('rmV312Err').style.display='none';document.getElementById('rmV312Modal').classList.add('open')};
+window.rmV312Open=function(enc){const tx=decodeURIComponent(enc||''),r=S.rows.find(x=>rowClassKey(x)===tx);if(!r)return;S.current=r;modal();document.getElementById('rmV312Meta').textContent=[rmV312DisplayName(meta(r.notes,'TUE_CONTACT_NAME')),rmV312DisplayName(meta(r.notes,'TXN_CLIENT')),meta(r.notes,'TXN_PROPERTY'),meta(r.notes,'TXN_CLOSE_DATE')?'Close '+meta(r.notes,'TXN_CLOSE_DATE'):''].filter(Boolean).join(' · ');document.getElementById('rmV312Notes').value='';document.getElementById('rmV312Follow').value='';document.getElementById('rmV312Err').style.display='none';document.getElementById('rmV312Modal').classList.add('open')};
 window.rmV312Close=()=>{document.getElementById('rmV312Modal')?.classList.remove('open');S.current=null};
 window.rmV312Save=async function(){
  const r=S.current;if(!r)return;
