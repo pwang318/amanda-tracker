@@ -18,6 +18,18 @@ styles.textContent=[
 '#rmExecutionPlan button:disabled{opacity:.5}',
 '#rmExecutionPlan .execRow{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px}',
 '#rmExecutionPlan .execMetrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:12px 0}',
+'#rmExecutionPlan #execProspecting{background:#f5effb;border:1px solid #ddd0ed;padding:15px}',
+'#rmExecutionPlan #execPriorities{background:#fff;border:1px solid #e7dff0;padding:14px}',
+'#rmExecutionPlan #execPriorities .execTasks{display:block;margin-top:7px}',
+'#rmExecutionPlan #execPriorities .execTasks section{border:0;padding:0}',
+'#rmExecutionPlan #execPriorities .execTasks li{margin-bottom:4px}',
+'#rmExecutionPlan .execMetric{min-width:0}',
+'#rmExecutionPlan #execMoreMetrics{margin:10px 0;border-bottom:1px solid #eee7f4;padding-bottom:8px}',
+'#rmExecutionPlan #execMoreMetrics>summary{font-size:12px}',
+'#rmExecutionPlan #execWeeklyGoals{background:#faf8fd}',
+'#rmExecutionPlan #execHomeWork{margin-top:12px}',
+'#rmExecutionPlan #execCloseout,#rmExecutionPlan #execOOO,#rmExecutionPlan #execCoaching,#rmExecutionPlan #execBusinessDetails{border-top:1px solid #f0eaf5;padding-top:7px;margin-top:8px}',
+'#rmExecutionPlan .execMetric strong{overflow-wrap:anywhere}',
 '#rmExecutionPlan .execMetric[role="button"]{cursor:pointer;transition:border-color .15s,background .15s}',
 '#rmExecutionPlan .execMetric[role="button"]:hover,#rmExecutionPlan .execMetric[role="button"]:focus-visible{border-color:#9871c5;background:#f2eafa;outline:2px solid #7351a5;outline-offset:2px}',
 '#rmExecutionPlan .execTaskDetails>summary{cursor:pointer;color:#593b83;font-size:12px;font-weight:700;padding:9px 0}',
@@ -54,7 +66,8 @@ styles.textContent=[
 '#rmExecutionPlan .execDate{background:#f1eaf8;border-radius:7px;padding:6px 8px;color:#583887;font-size:11px}',
 '#rmExecutionPlan .execDate button{border:0;background:transparent;padding:0 3px 0 8px}',
 '#rmExecutionPlan summary{cursor:pointer;color:#56387f;font-weight:750;font-size:13px;padding:8px 0}',
-'@media(max-width:750px){#rmExecutionPlan .execMetrics{grid-template-columns:repeat(2,minmax(0,1fr))}#rmExecutionPlan .execTasks{grid-template-columns:1fr}}'
+'@media(max-width:750px){#rmExecutionPlan .execMetrics{grid-template-columns:repeat(2,minmax(0,1fr))}#rmExecutionPlan .execTasks{grid-template-columns:1fr}}',
+'@media(max-width:420px){#rmExecutionPlan{padding:12px}#rmExecutionPlan .execMetrics{grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}#rmExecutionPlan .execMetric{padding:9px}#rmExecutionPlan .execMetric strong{font-size:19px}}'
 ].join('\n');document.head.append(styles);
 let blocks=[],activities=[],queue=[],completedQueue=[],fullWork=[],fullVerified=false,loaded=false,working=false,selected=iso();
 let activeDetail=null,detailGroups=[];
@@ -95,7 +108,7 @@ function mount(){
  const div=document.createElement('section');div.id='rmExecutionPlan';
  div.innerHTML='<div class="execRow"><div><h2>Today’s plan</h2><p>Your daily goals, open work, completed activity, and next steps.</p></div><button id="execReload" type="button">Refresh live activity</button></div>'+
  '<div id="execNotice" class="execNotice">Loading shared activity and schedule…</div>'+
- '<div id="execProspecting" class="execNotice" aria-live="polite"></div><div id="execMetrics" class="execMetrics"></div><div id="execPriorities" class="execNotice" aria-live="polite"></div><div id="execWeeklyGoals" class="execNotice" aria-live="polite"></div>'+ '<details id="execBusinessDetails"><summary>Business results · meetings, referrals & C-to-B growth</summary><div id="execBusinessResults" class="execNotice">Checking source records…</div></details>'+
+ '<div id="execProspecting" class="execNotice" aria-live="polite"></div><div id="execPriorities" class="execNotice" aria-live="polite"></div><div id="execMetrics" class="execMetrics"></div><details id="execMoreMetrics"><summary>More activity details</summary><div id="execSecondaryMetrics" class="execMetrics"></div></details><div id="execWeeklyGoals" class="execNotice" aria-live="polite"></div>'+ '<details id="execBusinessDetails"><summary>Business results · meetings, referrals & C-to-B growth</summary><div id="execBusinessResults" class="execNotice">Checking source records…</div></details>'+
  '<div class="execHomeWork" id="execHomeWork"><h3>Open work by category</h3><p>Choose a worklist to see the assigned agents and next actions.</p><div id="execCategoryGrid" class="execCategoryGrid"></div></div>'+
  '<div class="execDetailArea" id="execDetailArea" hidden><button type="button" id="execBack" class="execBack">← Back to Today</button><div class="execRow"><h3 id="execDetailTitle"></h3><button type="button" id="execDetailRefresh">Refresh worklist</button></div><div id="execTaskSummary" class="execTasks"></div></div>'+
  '<details id="execCloseout"><summary>Daily results & closeout · what was missed</summary><div id="execMissedSummary" class="execNotice" aria-live="polite"></div>'+
@@ -304,7 +317,7 @@ function render(){
  $('execWeeklyGoals').innerHTML='<strong>This week · '+safe(weekLabel)+'</strong>'+
  '<p>New Realtor meetings <b>'+wg.newHeld+' / '+wg.target+'</b> held · Break Breads <b>'+wg.breads+' / '+wg.target+'</b> held · Calls <b>'+wg.calls+' / '+wg.goalCalls+'</b> logged · Prospecting <b>'+wg.minutes.total+' / '+wg.goalMinutes+'</b> minutes reported'+(wg.minutes.known<wg.days.length?' (incomplete reporting)':'')+'.</p>'+
  '<p><strong>Activity pace: '+(wg.pct==null?'—':wg.pct+'%')+'</strong> · 85% coaching benchmark · '+(wg.target?'Weekly meeting pace: '+Math.ceil(wg.target*.85)+' each for 85%.':'No scheduled workdays.')+'</p>';
- $('execMetrics').innerHTML=[
+ const metricRows=[
   ['Cold calls today',offNow?'PTO':cold+' / 25+','cold'],
   ['Prospecting minutes',dataOf(closeRecord(d))?.prospecting_minutes==null?'Not logged / 60':dataOf(closeRecord(d)).prospecting_minutes+' / 60','closeout'],
   ['Meetings logged',meetingFor(d),'meetings'],
@@ -318,13 +331,17 @@ function render(){
   ['Open 4-week follow-ups'+noticeMissing,campaigns.length,'category:0'],
   ['Missing growth plans'+noticeMissing,missingPlans.length,'plans'],
   ['Activity logged today',activeFor(d).length,'feed']
- ].map(x=>'<div class="execMetric" role="button" tabindex="0" data-exec-target="'+safe(x[2])+'" aria-label="Open '+safe(x[0])+'"><strong>'+safe(x[1])+'</strong><span>'+safe(x[0])+' ↗</span></div>').join('');
+ ];
+ const mainMetricKeys=new Set(['cold','closeout','weeknew','weekbread','section:0','section:1']);
+ const metricMarkup=x=>'<div class="execMetric" role="button" tabindex="0" data-exec-target="'+safe(x[2])+'" aria-label="Open '+safe(x[0])+'"><strong>'+safe(x[1])+'</strong><span>'+safe(x[0])+' ↗</span></div>';
+ $('execMetrics').innerHTML=metricRows.filter(x=>mainMetricKeys.has(x[2])).map(metricMarkup).join('');
+ $('execSecondaryMetrics').innerHTML=metricRows.filter(x=>!mainMetricKeys.has(x[2])).map(metricMarkup).join('');
  detailGroups=sections.concat(categoryRows);
  detailGroups.push(exactPlans);
  const grid=$('execCategoryGrid');
  grid.innerHTML=categoryRows.map((group,i)=>'<button type="button" class="execCategoryBtn" data-category="'+i+'"><span>'+safe(group[0])+'</span><strong>'+group[1].length+' ↗</strong></button>').join('');
  grid.querySelectorAll('[data-category]').forEach(b=>b.onclick=()=>showDetail('category:'+b.dataset.category));
- $('execMetrics').querySelectorAll('[data-exec-target]').forEach(tile=>{
+ $('rmExecutionPlan').querySelectorAll('[data-exec-target]').forEach(tile=>{
   const action=()=>{
    const kind=tile.dataset.execTarget;
    if(kind==='cold')return showDetail('activity:cold');
