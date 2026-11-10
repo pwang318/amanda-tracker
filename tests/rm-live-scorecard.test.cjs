@@ -1,0 +1,17 @@
+'use strict';
+const assert=require('node:assert/strict');
+const fs=require('node:fs');
+const vm=require('node:vm');
+const src=fs.readFileSync('ui/scorecard-source-summary.js','utf8');
+new vm.Script(src,{filename:'scorecard-source-summary.js'});
+const start=src.indexOf('const num=x=>'),end=src.indexOf('function renderLiveScore()',start);
+assert(start>=0&&end>start,'live score helper must exist');
+const get=new Function('window',src.slice(start,end)+'return liveScoreFromNative();');
+const old={rmV429ScoreData:{counts:{Channel:2,A:15,B:18},target:{Channel:2,A:14,B:21},total:110,activePartnerCount:110,projectedLeadCount:80,ratioTarget:1.15}};
+const score=get(old);
+assert(Math.abs(score.total-77.1152)<.001,'100-point formula must match historical 77.12 checkpoint');
+assert.equal(get({}),null,'must not fabricate a score if live data is missing');
+assert(src.includes('setInterval('),'visible score must periodically refresh');
+assert(src.includes('window.addEventListener(\'focus\''),'focus must trigger live refresh');
+assert(!src.includes('scorecard_history?'),'current score must not depend on monthly checkpoint');
+console.log('RM live scorecard formula and refresh contract PASS');
