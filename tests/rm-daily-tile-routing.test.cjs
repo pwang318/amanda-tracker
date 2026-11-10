@@ -5,26 +5,15 @@ const vm = require('node:vm');
 const code = fs.readFileSync('ui/daily-execution-coaching.js', 'utf8');
 const html = fs.readFileSync('index.html','utf8');
 new vm.Script(code,{filename:'daily-execution-coaching.js'});
-const m = code.match(/function openTask\(q\)\{[\s\S]*?\n\}\nfunction taskList\(/);
-assert(m, 'openTask handler is present');
-const events = [];
-const win = {
- openContactModal: name => events.push('agent:'+name),
- v350OpenLane: name => events.push('lane:' + name),
- switchTab: name => events.push('tab:' + name)
-};
-const ctx = { window: win, Promise, console };
-vm.createContext(ctx);
-vm.runInContext(m[0].replace(/\nfunction taskList\($/, '') + '\nthis.open = openTask;',ctx);
-for(const type of [
- '4-Week Campaign','Tuesday Updates','Transaction Call','Weekly Realtor Call',
- 'Cold Calls','Reconnect Outreach','C-agent growth','Portfolio · Meeting Due',
- 'Missing Growth Plan','Portfolio · Growth Next Step','Portfolio · Partner Touch Due','Follow-up'
-]){
- events.length = 0;
- ctx.open({Category:type,agent_name:'Sample Agent'});
- assert.equal(events[0],'agent:Sample Agent','Must open exact agent record for ' + type);
-}
+// Assignment clicks must open an actionable log-and-complete panel, never just a Realtor profile.
+assert(code.includes('function openTask(q){'), 'Assignment handler required');
+assert(code.includes("panel.id='execAssignmentAction'"), 'Assignment detail must contain an inline completion form');
+assert(code.includes("execAssignmentProfile"), 'Realtor profile must remain an optional secondary action');
+assert(code.includes("execAssignmentOutcome"), 'Amanda must select an actual contact outcome');
+assert(code.includes("sbFetch('amanda_activities?select=id'"), 'Completion first persists actual activity');
+assert(code.includes("completion_activity_id:id"), 'Only recorded activity may complete an exact queue assignment');
+assert(code.includes("changed.some(row=>String(row.id)===String(q.id)"), 'Queue clearance must be confirmed from database result');
+assert(code.includes("if(!q.id){status.textContent="), 'Supplemental rows may not be silently cleared without a queue ID');
 for(const label of [
  'Cold calls today','Prospecting minutes','Meetings logged','Overdue before today',
  'Due today','Weekly calls remaining','Open 4-week follow-ups',
