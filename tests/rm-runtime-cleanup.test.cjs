@@ -14,7 +14,7 @@ assert(!html.includes('outstanding-daily-checklist.js'),'Obsolete checklist must
 assert(html.includes('<style id="rm-prepaint-legacy-guard">'),'Retired home template must be suppressed before first paint');
 assert(!html.includes('id="rm492-consolidate"'),'Obsolete Today template renderer must not run');
 assert(html.indexOf('id="rm-prepaint-legacy-guard"')<html.indexOf('id="view-week"'),'Legacy prepaint suppression must load before Today DOM');
-assert(daily.includes("board.classList.add('rmExecFallback')"),'Live dashboard failure must restore legacy controls');
+assert(daily.includes("$('rm350Workboard')?.classList.add('rmExecFallback')"),'Live dashboard failure must restore legacy controls');
 assert(!fs.existsSync('ui/outstanding-daily-checklist.js'),'Obsolete checklist source must be deleted');
 assert(!compact.includes('MutationObserver'),'Compact style must not re-render on every DOM change');
 assert(compact.includes('moveTodayAboveScorecard(today)'), 'Today section should precede Scorecard Progress on the RM home screen');
