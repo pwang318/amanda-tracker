@@ -64,32 +64,17 @@ function mount(){
 
  const legacy=findLegacyDrawer(today);
  if(legacy&&!legacy.hidden){legacy.hidden=true;legacy.setAttribute('aria-hidden','true');legacy.style.display='none'}
- // Move the real Log Activity card, preserving its original click handler.
+ // The new Log Activity control is the first action inside Today's live plan.
+ // Remove the old duplicate card at the bottom without removing its Log tab or saved records.
+ const quick=document.getElementById('execQuickLogBtn');
  const card=findActivityCard(today);
- const first=document.getElementById('rm350Workboard')||today.firstElementChild;
- const plan=document.getElementById('rmExecutionPlan');
- if(card&&plan&&card.parentElement!==plan){
-  plan.insertBefore(card,plan.firstChild);
-  card.id='rmTodayActivityCard';
+ if(quick&&card&&!card.contains(quick)){
+  card.hidden=true;card.style.setProperty('display','none','important');
+  card.setAttribute('aria-hidden','true');
  }
- if(card){
-  card.style.margin='0 0 14px';
-  const duplicate=document.getElementById('rmTopActivityShortcut');
-  if(duplicate)duplicate.remove();
-  return;
- }
- if(document.getElementById('rmTopActivityShortcut'))return;
- const shortcut=document.createElement('div');shortcut.id='rmTopActivityShortcut';
- shortcut.innerHTML='<strong>Log activity</strong><button type="button">Open activity log</button>';
- shortcut.querySelector('button').addEventListener('click',function(){
-  const target=[...document.querySelectorAll('button,a')].find(el=>el!==this&&/open activity log/i.test((el.textContent||'').trim()));
-  if(target){target.click();return}
-  const nav=[...document.querySelectorAll('nav button,nav a,[role="tab"],.tab-bar button')].find(el=>/^(log activity|activity log|log)$/i.test((el.textContent||'').trim())||el.dataset.tab==='log');
-  if(nav){nav.click();return}
-  const log=document.getElementById('view-log');
-  if(log){log.scrollIntoView({behavior:'smooth',block:'start'});log.querySelector('input:not([type="hidden"]),button')?.focus({preventScroll:true})}
- });
- today.insertBefore(shortcut,first&&first.parentElement===today?first:today.firstChild);
+ const duplicate=document.getElementById('rmTopActivityShortcut');
+ if(quick&&duplicate)duplicate.remove();
+
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',mount);else mount();
 let queued=false;
