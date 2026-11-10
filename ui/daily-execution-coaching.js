@@ -867,8 +867,8 @@ function suppressFloatingSharedWarning(root){
  for(const el of candidates){
   if(el.closest?.('#rmExecutionPlan')||el.closest?.('#view-director'))continue;
   const t=(el.textContent||'').trim();
-  if(t.length>900||!/^Shared data:\\s*reconciliation required\\b/i.test(t))continue;
-  if([...el.children].some(child=>(child.textContent||'').length<900&&/^Shared data:\\s*reconciliation required\\b/i.test((child.textContent||'').trim())))continue;
+  if(t.length>900||!/^Shared data:\s*reconciliation required\b/i.test(t))continue;
+  if([...el.children].some(child=>(child.textContent||'').length<900&&/^Shared data:\s*reconciliation required\b/i.test((child.textContent||'').trim())))continue;
   el.hidden=true;el.style.setProperty('display','none','important');el.setAttribute('aria-hidden','true');
  }
 }
