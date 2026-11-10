@@ -16900,10 +16900,44 @@ window.rmV312SaveListingAgent=async function(){
   }catch(e){console.error('Tuesday listing contact save failed',e);if(error){error.textContent=e.message||'Could not save the listing agent.';error.style.display='block'}}
   finally{if(btn){btn.disabled=false;btn.textContent='Save listing agent'}}
 };
-function modal(){if(document.getElementById('rmV312Modal'))return;const m=document.createElement('div');m.id='rmV312Modal';m.innerHTML='<div class="rm-v312-modal"><div class="rm-v312-modal-head"><div><h3>Tuesday listing-agent update</h3><div id="rmV312Meta" class="rm-v312-file"></div></div><button class="rm-v312-close" onclick="rmV312Close()">×</button></div><div class="rm-v312-fields"><div class="rm-v312-field"><label>Contact outcome</label><select id="rmV312Outcome"><option value="Reached / talked">Reached / talked</option><option value="Left voicemail + text sent">Left voicemail + text sent</option><option value="No answer + text sent">No answer + text sent</option><option value="Follow-up needed">Follow-up needed</option></select></div><div class="rm-v312-field"><label>Useful update</label><select id="rmV312Update"><option>File remains on track</option><option>Processing status</option><option>Underwriting / conditions</option><option>Appraisal status</option><option>CTC / closing status</option></select></div><div class="rm-v312-field"><label>Next follow-up</label><input id="rmV312Follow" type="date"></div><div class="rm-v312-field full"><label>What did you communicate / learn?</label><textarea id="rmV312Notes" placeholder="Short file-level update, response, and any next step."></textarea></div></div><div id="rmV312Err" class="rm-v312-error"></div><div class="rm-v312-actions2"><button class="rm-v312-class" onclick="rmV312Close()">Cancel</button><button id="rmV312Save" class="rm-v312-call" onclick="rmV312Save()">Save listing update</button></div></div>';document.body.appendChild(m)}
+function modal(){if(document.getElementById('rmV312Modal'))return;const m=document.createElement('div');m.id='rmV312Modal';m.innerHTML='<div class="rm-v312-modal"><div class="rm-v312-modal-head"><div><h3>Tuesday listing-agent update</h3><div id="rmV312Meta" class="rm-v312-file"></div></div><button class="rm-v312-close" onclick="rmV312Close()">×</button></div><div class="rm-v312-fields"><div class="rm-v312-field"><label>Contact outcome</label><select id="rmV312Outcome"><option value="Reached / talked">Reached / talked</option><option value="Left voicemail + text sent">Left voicemail + text sent</option><option value="No answer + text sent">No answer + text sent</option><option value="Follow-up needed">Follow-up needed</option></select></div><div class="rm-v312-field"><label>Useful update</label><select id="rmV312Update"><option>File remains on track</option><option>Processing status</option><option>Underwriting / conditions</option><option>Appraisal status</option><option>CTC / closing status</option></select></div><div class="rm-v312-field"><label>Next follow-up (optional unless another call is needed)</label><input id="rmV312Follow" type="date"></div><div class="rm-v312-field full"><label>What did you communicate / learn?</label><textarea id="rmV312Notes" placeholder="Short file-level update, response, and any next step."></textarea></div></div><div id="rmV312Err" class="rm-v312-error"></div><div class="rm-v312-actions2"><button class="rm-v312-class" onclick="rmV312Close()">Cancel</button><button id="rmV312Save" class="rm-v312-call" onclick="rmV312Save()">Save listing update</button></div></div>';document.body.appendChild(m)}
 window.rmV312Open=function(enc){const tx=decodeURIComponent(enc||''),r=S.rows.find(x=>rowClassKey(x)===tx);if(!r)return;S.current=r;modal();document.getElementById('rmV312Meta').textContent=[meta(r.notes,'TUE_CONTACT_NAME'),meta(r.notes,'TXN_CLIENT'),meta(r.notes,'TXN_PROPERTY'),meta(r.notes,'TXN_CLOSE_DATE')?'Close '+meta(r.notes,'TXN_CLOSE_DATE'):''].filter(Boolean).join(' · ');document.getElementById('rmV312Notes').value='';document.getElementById('rmV312Follow').value='';document.getElementById('rmV312Err').style.display='none';document.getElementById('rmV312Modal').classList.add('open')};
 window.rmV312Close=()=>{document.getElementById('rmV312Modal')?.classList.remove('open');S.current=null};
-window.rmV312Save=async function(){const r=S.current;if(!r)return;const notes=clean(document.getElementById('rmV312Notes').value,900),out=document.getElementById('rmV312Outcome').value,kind=document.getElementById('rmV312Update').value,fu=document.getElementById('rmV312Follow').value||null,err=document.getElementById('rmV312Err'),btn=document.getElementById('rmV312Save');if(notes.split(/\s+/).filter(Boolean).length<3){err.textContent='Add a short note with what you communicated or learned.';err.style.display='block';return}btn.disabled=true;btn.textContent='Saving…';try{let n='[TUESDAY_LISTING]'+tag('TXN_KEY',meta(r.notes,'TXN_KEY'))+tag('TUE_PLAN_KEY',meta(r.notes,'TUE_PLAN_KEY'))+tag('TUE_PLAN_DATE',S.w)+tag('TXN_CLIENT',meta(r.notes,'TXN_CLIENT'))+tag('TXN_PROPERTY',meta(r.notes,'TXN_PROPERTY'))+tag('UPDATE_KIND',kind)+' '+notes;const person=rmCoveragePerson();n+=tag('RM_OWNER',person)+tag('RM_ATTENDEES',person);try{if(typeof appendRmMeta==='function')n=appendRmMeta(n,person,'Tuesday Listing Update','',[person],[],'')}catch(e){}const workDate=typeof localDateStr==='function'?localDateStr(new Date()):new Date().toISOString().slice(0,10);await sbFetch('amanda_activities',{method:'POST',prefer:'return=minimal',body:JSON.stringify({agent_name:meta(r.notes,'TUE_CONTACT_NAME')||meta(r.notes,'TXN_CLIENT'),act_type:LOG,act_date:workDate,outcome:out,notes:n,follow_up_date:fu})});rmV312Close();await render();try{if(typeof window.v350RefreshBoard==='function')window.v350RefreshBoard()}catch(e){}try{if(typeof loadFeed==='function')await loadFeed()}catch(e){} }catch(e){console.error(e);err.textContent='Could not save. Please retry.';err.style.display='block'}finally{btn.disabled=false;btn.textContent='Save listing update'}};
+window.rmV312Save=async function(){
+ const r=S.current;if(!r)return;
+ const notes=clean(document.getElementById('rmV312Notes').value,900);
+ const out=document.getElementById('rmV312Outcome').value;
+ const kind=document.getElementById('rmV312Update').value;
+ const fu=document.getElementById('rmV312Follow').value||null;
+ const err=document.getElementById('rmV312Err'),btn=document.getElementById('rmV312Save');
+ err.textContent='';err.style.display='none';
+ if(notes.split(/\s+/).filter(Boolean).length<3){err.textContent='Add a short note with what you communicated or learned.';err.style.display='block';return}
+ // A voicemail or text is a completed Tuesday contact attempt, not a promise
+ // to make another call. Only explicit follow-up commitments need a date.
+ if(out==='Follow-up needed'&&!fu){err.textContent='Choose a follow-up date when the outcome is Follow-up needed.';err.style.display='block';return}
+ btn.disabled=true;btn.textContent='Saving…';
+ let saved=false;
+ try{
+  let n='[TUESDAY_LISTING]'+tag('TXN_KEY',meta(r.notes,'TXN_KEY'))+tag('TUE_PLAN_KEY',meta(r.notes,'TUE_PLAN_KEY'))+tag('TUE_PLAN_DATE',S.w)+tag('TXN_CLIENT',meta(r.notes,'TXN_CLIENT'))+tag('TXN_PROPERTY',meta(r.notes,'TXN_PROPERTY'))+tag('UPDATE_KIND',kind)+' '+notes;
+  const person=rmCoveragePerson();n+=tag('RM_OWNER',person)+tag('RM_ATTENDEES',person);
+  try{if(typeof appendRmMeta==='function')n=appendRmMeta(n,person,'Tuesday Listing Update','',[person],[],'')}catch(e){}
+  const workDate=typeof localDateStr==='function'?localDateStr(new Date()):new Date().toISOString().slice(0,10);
+  const contactName=meta(r.notes,'TUE_CONTACT_NAME')||meta(r.notes,'TXN_CLIENT');
+  if(!contactName)throw Error('The listing contact is missing. Add the listing agent before saving.');
+  await sbFetch('amanda_activities',{method:'POST',prefer:'return=minimal',body:JSON.stringify({agent_name:contactName,act_type:LOG,act_date:workDate,outcome:out,notes:n,follow_up_date:fu})});
+  saved=true;
+ }catch(e){
+  console.error('Tuesday listing update save failed',e);
+  err.textContent='Update was not saved: '+String(e?.message||'Connection or permission error. Please retry.');
+  err.style.display='block';
+ }finally{btn.disabled=false;btn.textContent='Save listing update'}
+ if(!saved)return;
+ rmV312Close();
+ try{await render()}catch(e){console.warn('Tuesday update saved but refresh failed',e);try{toast('Update saved. Refresh the page to see the completed status.','success',4500)}catch(_){}}
+ try{if(typeof window.v350RefreshBoard==='function')window.v350RefreshBoard()}catch(e){}
+ try{if(typeof loadFeed==='function')await loadFeed()}catch(e){}
+ window.dispatchEvent(new Event('rm-tuesday-updated'));
+};
 window.rmV318ExportCalls=async function(){
   const w=weekStart(),we=weekEnd(w);let acts=[];try{acts=await sbFetch('amanda_activities?act_date=gte.'+w+'&act_date=lte.'+we+'&select=id,agent_name,act_type,act_date,outcome,notes,follow_up_date,created_at&order=act_date.desc&limit=9000')}catch(e){alert('Could not load RM calls for export: '+e.message);return}
   const internal=new Set(['Tuesday Call Plan Snapshot','Tuesday Contact Classification','Transaction Contact Override','Data Sync','Power BI Sync','Funded Unit Snapshot','LP Tuesday File Update']);
