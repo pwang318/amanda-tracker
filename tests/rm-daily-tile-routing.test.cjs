@@ -129,3 +129,8 @@ assert(code.includes("showDetail('section:5')"), 'Needs-scheduling action must o
 assert(code.includes('historicalCatchupUnverified'), 'All historical catch-up records must be reconciled against the original cohort');
 assert(code.includes('sourceWarnings.length===0&&fullVerified'), 'Last verified refresh requires every source to succeed');
 assert(code.includes('observe(root,{childList:true,subtree:false})'), 'Daily dashboard must not observe all document subtree changes');
+
+assert(code.includes('New Realtor prospecting <small>Open qualified call list</small>'),'New Realtor tile must identify the real call list');
+assert(code.includes('<strong>Open list ↗</strong>'),'New Realtor tile must show a clear action, not the queue count');
+assert(!code.includes('New Realtor prospect list <small>Assigned outreach</small>'),'No misleading zero-review prospect tile');
+assert(code.includes("grid.querySelector('[data-outreach]')?.addEventListener('click',openProspectList)"),'Prospecting tile must navigate to the call list');
