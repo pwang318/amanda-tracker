@@ -26,8 +26,8 @@ for(const type of [
  assert.equal(events[0],'agent:Sample Agent','Must open exact agent record for ' + type);
 }
 for(const label of [
- 'Cold calls today','Prospecting minutes','Meetings logged','Overdue work',
- 'Due today','Weekly calls remaining','4-week follow-ups',
+ 'Cold calls today','Prospecting minutes','Meetings logged','Overdue before today',
+ 'Due today','Weekly calls remaining','Open 4-week follow-ups',
  'Missing growth plans','Activity logged today'
 ]){
  assert(code.includes(label),'Missing daily tile '+label);
@@ -108,3 +108,10 @@ assert(compact.includes('content.length<450&&!meaningful'),'Only empty header sh
 assert(compact.includes('hideEmptyLegacyPriorities();'),'Cleanup must execute on Today page');
 
 assert.equal(html.split('<script defer src="./ui/compact-workspace.js?v=').length-1,1,'Compact workspace must be loaded exactly once');
+
+assert(code.includes('id="execProspecting"'),'Prospecting must be prominent in Today view');
+assert(code.includes('execProspectLog') && code.includes('execProspectTime'),'Prospecting needs logging and time entry actions');
+assert(code.includes('todayCampaigns=need.filter'),'Due today must show the four-week campaign breakdown');
+assert(code.includes('todayOther=need.filter'),'Due today must show non-campaign assigned work separately');
+assert(code.includes('const all=allRaw.filter'),'Snapshot status counts must deduplicate identical agent tasks');
+assert(code.includes('Overdue (before today)'),'Overdue tile must have an unambiguous time window');
