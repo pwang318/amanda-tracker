@@ -125,6 +125,7 @@ styles.textContent=[
 let blocks=[],activities=[],queue=[],completedQueue=[],fullWork=[],fullVerified=false,loaded=false,working=false,selected=iso();
 let activeDetail=null,detailGroups=[];
 let sourceWarnings=[];
+let lastVerifiedRefresh=null;
 let businessResults={loading:false,error:'Not loaded',data:null};
 const off=b=>/^(out of office|pto|vacation|time off)$/i.test(String(b.block_type||'').trim());
 const close=b=>String(b.block_type||'')==='Daily Closeout'&&String(b.title||'').startsWith('Execution closeout');
@@ -161,8 +162,8 @@ function mount(){
  const existing=$('rmExecutionPlan');if(existing){if(existing.parentElement!==board)board.prepend(existing);if(loaded&&board.id==='rm350Workboard')board.classList.add('rmExecReady');return;}
  const div=document.createElement('section');div.id='rmExecutionPlan';
  div.innerHTML='<div id="execQuickLog" class="execQuickLog"><div><strong>Log Activity</strong><span>Calls, new Realtor outreach, messages and meetings</span></div><button type="button" id="execQuickLogBtn">+ Log Activity</button></div><div class="execRow"><div><h2>Today’s plan</h2><p>Daily priorities, follow-ups, and progress.</p></div><button id="execReload" type="button">Refresh live activity</button></div>'+
- '<div id="execNotice" class="execNotice">Loading shared activity and schedule…</div>'+
- '<div id="execPriorities" class="execNotice" aria-live="polite"></div><div class="execHomeWork" id="execHomeWork"><h3>Outstanding work</h3><div id="execCategoryGrid" class="execCategoryGrid"></div></div><div id="execProspecting" class="execNotice" aria-live="polite"></div><section id="execActivityTimeline" class="execTimeline"><div class="execRow"><h3>Recent activity</h3><button type="button" id="execActivityAll">View all activity</button></div><div id="execTimelineRows">Loading activity…</div></section><div id="execMetrics" class="execMetrics"></div><details id="execMoreMetrics"><summary>More work and activity details</summary><div id="execSecondaryMetrics" class="execMetrics"></div></details><details id="execWeeklyDisclosure" class="execTaskDetails"><summary>Weekly activity details</summary><div id="execWeeklyGoals" class="execNotice" aria-live="polite"></div></details>'+ '<details id="execBusinessDetails"><summary>Business results: meetings, referrals, and C-to-B growth</summary><div id="execBusinessResults" class="execNotice">Checking source records…</div></details>'+
+ '<div id="execSourceStatus" class="execSourceStatus" role="status">Checking live data…</div><div id="execNotice" class="execNotice">Loading shared activity and schedule…</div>'+
+ '<div id="execPriorities" class="execNotice" aria-live="polite"></div><div id="execProspecting" class="execNotice" aria-live="polite"></div><div class="execHomeWork" id="execHomeWork"><h3>Assigned work · open the list to act</h3><div id="execCategoryGrid" class="execCategoryGrid"></div></div><section id="execActivityTimeline" class="execTimeline"><div class="execRow"><h3>Recent activity</h3><button type="button" id="execActivityAll">View all activity</button></div><div id="execTimelineRows">Loading activity…</div></section><div id="execMetrics" class="execMetrics"></div><details id="execMoreMetrics"><summary>More work and activity details</summary><div id="execSecondaryMetrics" class="execMetrics"></div></details><details id="execWeeklyDisclosure" class="execTaskDetails"><summary>Weekly activity details</summary><div id="execWeeklyGoals" class="execNotice" aria-live="polite"></div></details>'+ '<details id="execBusinessDetails"><summary>Business results: meetings, referrals, and C-to-B growth</summary><div id="execBusinessResults" class="execNotice">Checking source records…</div></details>'+
  
  '<div class="execDetailArea" id="execDetailArea" hidden><button type="button" id="execBack" class="execBack">← Back to Today</button><div class="execRow"><h3 id="execDetailTitle"></h3><button type="button" id="execDetailRefresh">Refresh worklist</button></div><div id="execTaskSummary" class="execTasks"></div></div>'+
  '<details id="execCloseout"><summary>End-of-day review</summary><div id="execMissedSummary" class="execNotice" aria-live="polite"></div>'+
@@ -231,7 +232,7 @@ async function refresh(force=false){
     }
    }catch(err){console.warn('Full RM work list not verified',err)}
   }
-  loaded=true;render();
+  loaded=true;lastVerifiedRefresh=new Date();render();
   const warning=$('execNotice');
   if(sourceWarnings.length&&warning){warning.className='execNotice execWarn';warning.textContent='Partial data: '+sourceWarnings.join(', ')+' could not be verified. Previously loaded records are retained where available; refresh to retry.';}
   const board=$('rm350Workboard');
@@ -397,7 +398,7 @@ function render(){
  const allRaw=queue.concat(supplements);
  // Never merge distinct saved assignments just because they share an agent, type and date.
  // Only suppress a supplemental worklist row when it mirrors an authoritative queue row.
- const all=allRaw;
+ const all=allRaw.map(q=>({...q,work_date:String(q.work_date||'').slice(0,10)}));
  const late=all.filter(q=>q.work_date&&q.work_date<d);
  const need=all.filter(q=>q.work_date===d);
  const priorities=[...late,...need];
@@ -464,18 +465,19 @@ function render(){
  const openQueue=queue.length,catchupOpen=catchupRows.length;
  const catchupDone=completedQueue.filter(q=>/\bCatch-up from\b/i.test(String(q.reason||''))&&/^(worked|complete|completed|done|closed|resolved)$/i.test(String(q.status||''))).length;
  const catchupSkipped=completedQueue.filter(q=>/\bCatch-up from\b/i.test(String(q.reason||''))&&/^(skipped|dismissed)$/i.test(String(q.status||''))).length;
- const catchupTotal=Math.max(77,catchupOpen+catchupDone+catchupSkipped);
+ const catchupTotal=catchupOpen+catchupDone+catchupSkipped;
  const dueCatchup=catchupRows.filter(q=>q.work_date&&q.work_date<=d).length;
  const nextCatchup=catchupRows.filter(q=>q.work_date===next).length;
  const agedOpen=late.filter(q=>{const n=(Date.parse(d+'T12:00:00')-Date.parse(q.work_date+'T12:00:00'))/86400000;return n>=3}).length;
  // Keep the dashboard concise: category tiles and due/overdue buttons contain normal
  // campaign and relationship details. Never repeat the normal campaign names beneath catch-up.
  const regularDue=need.filter(q=>!/\bCatch-up from\b/i.test(String(q.reason||''))).length;
+ const refreshStatus=$('execSourceStatus');if(refreshStatus){refreshStatus.textContent=(sourceWarnings.length||!fullVerified?'Partial data · check source warnings':'Live worklists verified')+(lastVerifiedRefresh?' · Refreshed '+lastVerifiedRefresh.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'}):' · Refresh pending');}
  priorityBox.innerHTML='<div class="execRow"><div><strong>Outstanding work · '+all.length+'</strong><p>'+regularDue+' regular tasks due today · '+catchupOpen+' historical catch-up tasks remaining</p></div><div><button type="button" id="execOverdueList">Overdue · '+late.length+'</button> <button type="button" id="execDueList">Due today · '+need.length+'</button> <button type="button" id="execNextList">Next workday · '+tmrw.length+'</button></div></div>'+
- '<section class="execCatchupStatus"><div><strong>Historical catch-up · '+catchupDone+' / '+catchupTotal+' completed</strong><p>'+catchupOpen+' still outstanding · '+dueCatchup+' due/overdue today · '+nextCatchup+' scheduled next workday</p></div><button type="button" id="execCatchupList">Open catch-up assignments ↗</button></section>'+
+ '<section class="execCatchupStatus"><div><strong>Historical catch-up · '+catchupOpen+' remaining</strong><p>'+catchupDone+' verified complete of '+catchupTotal+' recorded · '+dueCatchup+' due/overdue · '+nextCatchup+' next workday</p></div><button type="button" id="execCatchupList">Work catch-up list ↗</button></section>'+
  (catchupSkipped?'<p class="execNotice execWarn">'+catchupSkipped+' catch-up assignments were skipped without verified completion. Director review required.</p>':'')+
  (agedOpen?'<p class="execNotice execWarn">'+agedOpen+' assignments are at least 3 days overdue. Review before taking on new optional work.</p>':'')+
- '<small>Open 4-week campaigns for regular follow-ups. Catch-up items stay open until completed.</small>';
+ '<small>Unfinished assignments remain open and appear as overdue on later workdays. Nothing is marked completed by closing this page.</small>';
  $('execDueList').onclick=()=>showDetail('section:1');
  $('execOverdueList').onclick=()=>showDetail('section:0');
  $('execNextList').onclick=()=>showDetail('section:2');
