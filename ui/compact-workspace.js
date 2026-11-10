@@ -4,6 +4,8 @@ const css=document.createElement('style');css.id='rmTodayCleanV3';
 css.textContent=[
 '#view-week{max-width:1180px;margin:0 auto}',
 '#view-week #rm350Workboard{padding:15px 18px!important;border:1px solid #e7e0ef!important;box-shadow:none!important;border-radius:12px!important}',
+'#view-week #rm350Workboard:has(> #rmExecutionPlan)>:not(#rmExecutionPlan){display:none!important}',
+'#view-week #rm350Workboard:has(> #rmExecutionPlan){min-height:0!important;padding-bottom:18px!important}',
 '#view-week #rm350Workboard .rm-daily-step{padding:10px 5px!important;min-height:0!important}',
 '#view-week #rm350Workboard .rm-daily-step-title{font-size:14px!important}',
 '#view-week #rm350Workboard .rm-daily-step-description{font-size:12px!important;line-height:1.35!important}',
