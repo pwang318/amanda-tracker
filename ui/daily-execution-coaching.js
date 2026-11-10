@@ -81,6 +81,22 @@ styles.textContent=[
 '#rmExecutionPlan .execDetailArea .execTasks{display:block}',
 '#rmExecutionPlan .execDetailArea .execTasks section{border:0;padding:0}',
 '#rmExecutionPlan .execDetailArea .execTasks ul{max-height:none;overflow:visible}',
+'#rmExecutionPlan .execWorkCardList{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px!important;list-style:none!important;margin:10px 0!important;padding:0!important}',
+'#rmExecutionPlan .execWorkCard{display:flex;flex-direction:column;min-width:0;margin:0!important;padding:14px!important;background:#fff;border:1px solid #e2dbea;border-radius:11px;box-shadow:0 1px 2px rgba(40,25,60,.04)}',
+'#rmExecutionPlan .execWorkCardHeader{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}',
+'#rmExecutionPlan .execWorkCardHeader b{display:block;font-size:15px;color:#292044;line-height:1.35}',
+'#rmExecutionPlan .execWorkCardHeader span{display:block;font-size:12px;color:#77698a;margin-top:3px}',
+'#rmExecutionPlan .execWorkBadges{display:flex;flex-wrap:wrap;gap:5px;justify-content:flex-end}',
+'#rmExecutionPlan .execWorkBadges small{padding:4px 7px;border-radius:6px;font-size:10px;white-space:nowrap;background:#f6f2fa;color:#67517e}',
+'#rmExecutionPlan .execWorkBadges .execCatchupBadge{background:#f5f2ea;color:#84652a}',
+'#rmExecutionPlan .execWorkCardBody{margin:11px 0;flex:1}',
+'#rmExecutionPlan .execWorkCardBody p{font-size:12px!important;line-height:1.5!important;margin:5px 0!important;color:#5b506b}',
+'#rmExecutionPlan .execWorkCardBody strong{color:#362650}',
+'#rmExecutionPlan .execWorkCardFooter{display:flex;align-items:center;justify-content:space-between;gap:8px;padding-top:11px;border-top:1px solid #eee9f3}',
+'#rmExecutionPlan .execWorkCardFooter>span{font-size:10px;color:#8a8094;min-width:0}',
+'#rmExecutionPlan .execWorkCardFooter .execTaskGo{font-size:12px!important;font-weight:700!important;white-space:nowrap;background:#654196!important;color:#fff!important;border:1px solid #654196!important;border-radius:8px!important;padding:9px 12px!important}',
+'@media(max-width:900px){#rmExecutionPlan .execWorkCardList{grid-template-columns:1fr}}',
+'@media(max-width:520px){#rmExecutionPlan .execWorkCardHeader{flex-wrap:wrap}#rmExecutionPlan .execWorkCardFooter{flex-wrap:wrap}#rmExecutionPlan .execWorkCardFooter .execTaskGo{width:100%}}',
 '#rmExecutionPlan .execBack{margin-bottom:12px;background:#f6f1fb!important}',
 '@media(max-width:750px){#rmExecutionPlan .execCategoryGrid{grid-template-columns:repeat(2,minmax(0,1fr))}}',
 '@media(max-width:420px){#rmExecutionPlan .execCategoryGrid{grid-template-columns:1fr}}',
@@ -474,9 +490,15 @@ function taskList(title,rows,empty,showHeading=true){
   const action=taskNextAction(q);
   const due=q.work_date||q['Due Date']||'';
   const origin=q.source||'Amanda assigned work queue';
-  return '<li><button type="button" class="execTaskGo" data-index="'+i+'"><b>'+safe(agent)+'</b><span style="display:block;font-size:11px;color:#736482">'+safe(type)+(due?' · Due '+safe(due):'')+' · '+safe(origin)+'</span>'+(reason?'<span style="display:block;font-size:12px;color:#675477;margin-top:4px"><strong>Why here:</strong> '+safe(reason)+'</span>':'<span style="display:block;font-size:12px;color:#675477;margin-top:4px"><strong>Why here:</strong> Open assignment in this worklist</span>')+'<span style="display:block;font-size:12px;color:#453755;margin-top:4px"><strong>Next action:</strong> '+safe(action)+'</span><span style="display:block;font-size:11px;margin-top:4px">Open assignment ↗</span></button></li>';
+  const isTxn=/\bctc\b|clear[ -]?to[ -]?close|new[ -]?contract|under contract/i.test(type);
+  const isCatchup=/\bCatch-up from\b/i.test(reason);
+  const readableName=String(agent).toLowerCase()===String(agent).toUpperCase()?String(agent).toLowerCase().replace(/\b\w/g,c=>c.toUpperCase()):agent;
+  return '<li class="execWorkCard">'+
+   '<div class="execWorkCardHeader"><div><b>'+safe(readableName)+'</b><span>'+safe(type)+'</span></div><div class="execWorkBadges">'+(due?'<small>Due '+safe(due)+'</small>':'')+(isCatchup?'<small class="execCatchupBadge">Catch-up</small>':'')+'</div></div>'+
+   '<div class="execWorkCardBody"><p><strong>Why here:</strong> '+safe(reason||'Open assignment in this worklist')+'</p><p><strong>Next action:</strong> '+safe(action)+'</p></div>'+
+   '<div class="execWorkCardFooter"><span>'+safe(origin)+'</span><button type="button" class="execTaskGo" data-index="'+i+'">'+(isTxn?'Log CTC / Contract call':'Log activity / Complete')+' ↗</button></div></li>';
  }).join('');
- return '<section>'+(showHeading?'<strong>'+safe(title)+' · '+rows.length+'</strong>':'')+(rows.length?'<ul>'+list+'</ul>':'<p>'+safe(empty)+'</p>')+'</section>';
+ return '<section class="execWorkCardSection">'+(showHeading?'<strong>'+safe(title)+' · '+rows.length+'</strong>':'')+(rows.length?'<ul class="execWorkCardList">'+list+'</ul>':'<p>'+safe(empty)+'</p>')+'</section>';
 }
 function openActivityDetail(kind,scroll=true){
  const d=iso();
