@@ -399,6 +399,19 @@ async function openManagementTemplate(kind,assignment){
   }
  }catch(err){if(host)host.textContent='Unable to load imported files: '+String(err.message||err)+'. The template was not prefilled from unverified data.'}
 }
+function rmSupplementKey(q){
+ // Stable identity for a generated portfolio assignment (never match just the Realtor name).
+ const fields=[q.agent_name||q['Agent / Item'],q.activity_type||q.Category,q.work_date||q['Due Date'],q.reason||q.Notes||q.Status,q['Next Action']];
+ return encodeURIComponent(JSON.stringify(fields.map(v=>String(v||'').trim().toLowerCase())));
+}
+function rmCompletedSupplementKeys(){
+ const found=new Set();
+ for(const a of activities){
+  const matches=String(a.notes||'').match(/\[RM_SUPPLEMENT_KEY:([^\]]+)\]/g)||[];
+  for(const tag of matches){const key=tag.slice('[RM_SUPPLEMENT_KEY:'.length,-1);if(key)found.add(key)}
+ }
+ return found;
+}
 function openTask(q){
  const name=String(q.agent_name||q['Agent / Item']||'').trim();
  const type=String(q.Category||q.activity_type||'Assigned Follow-up').trim();
@@ -414,8 +427,8 @@ function openTask(q){
  '<p><strong>Why here:</strong> '+safe(q.reason||'Saved outstanding assignment')+'</p>'+
  '<div class="execForm"><label>Contact outcome<select id="execAssignmentOutcome"><option value="">Choose actual outcome</option><option>Talked</option><option>Voicemail</option><option>Text sent</option><option>No answer</option><option>Meeting scheduled</option><option>Completed non-call task</option></select></label><label>Next follow-up (optional)<input type="date" id="execAssignmentFollowup"></label></div>'+
  '<label>Notes / next steps<textarea id="execAssignmentNotes" rows="3" maxlength="2000" placeholder="What happened and what needs to happen next?"></textarea></label>'+
- '<div class="execRow"><button type="button" id="execAssignmentSave">'+(q.id?'Save activity and complete this assignment':'Open activity log')+'</button><button type="button" id="execAssignmentCancel">Cancel</button></div><p role="status" id="execAssignmentStatus"></p>'+
- (!q.id?'<small>This item came from a supplemental worklist; saving activity cannot automatically clear it without a matching queue record.</small>':'');
+ '<div class="execRow"><button type="button" id="execAssignmentSave">'+'Save activity and complete this assignment'+'</button><button type="button" id="execAssignmentCancel">Cancel</button></div><p role="status" id="execAssignmentStatus"></p>'+
+ (!q.id?'<small>This item comes from the portfolio worklist. After saving, its completed activity will be used to clear this exact generated assignment.</small>':'');
  panel.hidden=false;panel.scrollIntoView({behavior:'smooth',block:'nearest'});
  $('execAssignmentCancel').onclick=()=>{panel.hidden=true};
  if(/\bctc\b|clear[ -]?to[ -]?close|new[ -]?contract|under contract/i.test(type)){
@@ -425,15 +438,23 @@ function openTask(q){
  $('execAssignmentSave').onclick=async()=>{
   const outcome=$('execAssignmentOutcome').value,notes=$('execAssignmentNotes').value.trim(),follow=$('execAssignmentFollowup').value,status=$('execAssignmentStatus'),button=$('execAssignmentSave');
   if(!name||!outcome){status.textContent='Choose a contact outcome and verify the Realtor name.';return}
-  if(!q.id){status.textContent='This supplemental item has no shared queue ID, so it cannot be cleared automatically. Opening Activity Log to record the action.';if(typeof window.switchTab==='function')window.switchTab('log');const agent=$('rmFastAgent')||$('agentInput');if(agent){agent.value=name;agent.dispatchEvent(new Event('input',{bubbles:true}));agent.focus()}return}
+ 
   if(!notes&&outcome==='Completed non-call task'){status.textContent='Describe the completed task before saving.';return}
   button.disabled=true;status.textContent='Saving activity to the shared tracker…';
   try{
    const activityType=/\bctc\b|clear[ -]?to[ -]?close/i.test(type)?'CTC Call':/new[ -]?contract|under contract/i.test(type)?'New Contract':/tuesday/i.test(type)?'Listing Agent Update':type;
-   const activity={agent_name:name,act_type:activityType,act_date:iso(),outcome,notes:'RM assignment: '+type+'. '+notes+(q.reason?' | Assignment reason: '+String(q.reason):''),follow_up_date:follow||null};
+   const activity={agent_name:name,act_type:activityType,act_date:iso(),outcome,notes:(q.id?'':'[RM_SUPPLEMENT_KEY:'+rmSupplementKey(q)+'] ')+'RM assignment: '+type+'. '+notes+(q.reason?' | Assignment reason: '+String(q.reason):''),follow_up_date:follow||null};
    const written=await sbFetch('amanda_activities?select=id',{method:'POST',prefer:'return=representation',body:JSON.stringify(activity)});
    const id=Array.isArray(written)&&written[0]?.id;
    if(!id)throw Error('Activity save could not be verified; assignment has not been cleared');
+   if(!q.id){
+    status.textContent='Activity saved. Verifying this supplemental assignment is cleared…';
+    panel.hidden=true;
+    await refresh(true);
+    if(!rmCompletedSupplementKeys().has(rmSupplementKey(q)))throw Error('Activity saved, but the completed supplemental item was not verified. Refresh before retrying');
+    if(activeDetail)showDetail(activeDetail,false);
+    return;
+   }
    status.textContent='Activity saved. Updating this assignment…';
    const changed=await sbFetch('rm_work_queue?id=eq.'+encodeURIComponent(q.id)+'&owner=eq.Amanda&status=eq.open&select=id,completion_activity_id',{method:'PATCH',prefer:'return=representation',body:JSON.stringify({status:'worked',completed_at:new Date().toISOString(),completion_activity_id:id})});
    if(!Array.isArray(changed)||!changed.some(row=>String(row.id)===String(q.id)&&String(row.completion_activity_id)===String(id)))throw Error('Activity saved, but queue completion was not confirmed. Refresh before trying again to avoid a duplicate log');
@@ -672,7 +693,8 @@ function render(){
  // The persisted open queue is authoritative. Supplemental portfolio work cannot erase an
  // unfinished queue assignment simply because an agent appears elsewhere with the same category.
  const queueKeys=new Set(queue.map(q=>[String(q.agent_name||'').trim().toLowerCase(),String(q.activity_type||'').trim().toLowerCase(),String(q.work_date||'').slice(0,10)].join('|')));
- const supplements=fullVerified?canonical.filter(r=>!queueKeys.has([String(r.agent_name||'').trim().toLowerCase(),String(r.activity_type||'').toLowerCase(),String(r.work_date||'').slice(0,10)].join('|'))):[];
+ const resolvedSupplementKeys=rmCompletedSupplementKeys();
+ const supplements=fullVerified?canonical.filter(r=>!queueKeys.has([String(r.agent_name||'').trim().toLowerCase(),String(r.activity_type||'').toLowerCase(),String(r.work_date||'').slice(0,10)].join('|'))&&!resolvedSupplementKeys.has(rmSupplementKey(r))):[];
  const allRaw=queue.concat(supplements);
  // Never merge distinct saved assignments just because they share an agent, type and date.
  // Only suppress a supplemental worklist row when it mirrors an authoritative queue row.
