@@ -334,6 +334,38 @@ async function refresh(force=false){
   const el=$('execNotice');if(el){el.textContent='Unable to verify live work and daily goals. '+String(e.message||e)+'. Please refresh; no zero counts substituted.';el.className='execNotice execWarn'}
  }finally{working=false}
 }
+let rmImportSummary={ctc:null,contract:null,error:null,checked:0,busy:false};
+async function refreshImportedCallCounters(force=false){
+ if(rmImportSummary.busy||(!force&&Date.now()-rmImportSummary.checked<45000))return;
+ if(typeof sbFetch!=='function')return;
+ rmImportSummary.busy=true;
+ try{
+  const since=iso(new Date(Date.now()-120*86400000));
+  const rows=await sbFetch('amanda_activities?select=notes,act_date,created_at&act_type=eq.Transaction%20Snapshot&act_date=gte.'+since+'&order=created_at.desc&limit=2500');
+  if(!Array.isArray(rows))throw Error('Transaction imports unavailable');
+  const meta=(notes,key)=>{const m=String(notes||'').match(new RegExp('\\['+key+':([^\\]]*)\\]','i'));return m?m[1].trim():''};
+  for(const [kind,prefix] of [['ctc','RM-CTC-'],['contract','RM-CONTRACT-']]){
+   const selected=rows.map(r=>({id:meta(r.notes,'TXN_ID'),batch:meta(r.notes,'TXN_BATCH'),source:meta(r.notes,'TXN_SOURCE')}))
+    .filter(x=>x.id&&x.batch.startsWith(prefix)&&/^RM-(CTC|CONTRACT)-\d{14}$/.test(x.batch)&&x.source===(kind==='ctc'?'RM Excel Import · CTC':'RM Excel Import · New Contract'));
+   const latest=selected.reduce((max,x)=>x.batch>max?x.batch:max,'');
+   rmImportSummary[kind]={count:new Set(selected.filter(x=>x.batch===latest).map(x=>x.id)).size,batch:latest};
+  }
+  rmImportSummary.error=null;
+ }catch(err){rmImportSummary.error=String(err.message||err)}
+ finally{rmImportSummary.checked=Date.now();rmImportSummary.busy=false;paintImportedCallCounters()}
+}
+function paintImportedCallCounters(){
+ const grid=$('execCategoryGrid');if(!grid)return;
+ for(const button of grid.querySelectorAll('[data-category]')){
+  const label=button.querySelector('span')?.textContent?.trim();
+  const kind=label==='CTC calls'?'ctc':label==='New contract calls'?'contract':null;
+  if(!kind)continue;
+  const text=button.querySelector('strong');if(!text)continue;
+  const data=rmImportSummary[kind];
+  text.textContent=data?(data.count+' imported file'+(data.count===1?'':'s')+' · Open calls ↗'):(rmImportSummary.error?'Import count unavailable · Retry ↗':'Checking imports…');
+  button.setAttribute('aria-label',label+' · '+(data?data.count+' imported files':rmImportSummary.error?'Import unavailable':'Loading imports'));
+ }
+}
 async function openManagementTemplate(kind,assignment){
  const isCtc=kind==='ctc',label=isCtc?'CLEAR TO CLOSE!':'NEW CONTRACT!';
  let wrap=$('execWhatsAppTemplate');
@@ -866,6 +898,8 @@ function render(){
  const grid=$('execCategoryGrid');
  grid.innerHTML=categoryRows.map((group,i)=>({group,i})).filter(({group})=>(group[1].length>0||['New contract calls','CTC calls','Tuesday transaction updates'].includes(group[0]))&&group[0]!=='Catch-up assignments'&&group[0]!=='New Realtor outreach assignments').map(({group,i})=>'<button type="button" class="execCategoryBtn" data-category="'+i+'" aria-label="Open '+safe(group[0])+': '+group[1].length+' assignments"><span>'+safe(group[0])+'</span><strong>'+(['CTC calls','New contract calls'].includes(group[0])?'Open imported files ↗':group[1].length?group[1].length+' open ↗':'No open calls · View ↗')+'</strong></button>').join('');
  grid.querySelectorAll('[data-category]').forEach(b=>b.onclick=()=>{const category=categoryRows[Number(b.dataset.category)]?.[0];if(category==='CTC calls')return openManagementTemplate('ctc');if(category==='New contract calls')return openManagementTemplate('contract');return showDetail('category:'+b.dataset.category)});
+ paintImportedCallCounters();
+ if(!rmImportSummary.checked&&!rmImportSummary.busy)refreshImportedCallCounters(true);
  if(!$('execInlineProspects').dataset.wired){$('execInlineProspects').dataset.wired='1';$('execInlineProspects').addEventListener('toggle',()=>{if($('execInlineProspects').open)showInlineProspects()});}
  $('rmExecutionPlan').querySelectorAll('[data-exec-target]').forEach(tile=>{
   const action=()=>{
@@ -1152,6 +1186,8 @@ function init(){
  // While the page is open, refresh source data and advance the checkpoint banner.
  setInterval(()=>{if(!document.hidden&&!working)refresh(false)},15*60*1000);
  window.addEventListener('rm-work-queue-changed',()=>refresh(true));
+ window.addEventListener('focus',()=>refreshImportedCallCounters(true));
+ setInterval(()=>{if(!document.hidden)refreshImportedCallCounters(true)},60000);
  document.addEventListener('visibilitychange',()=>{if(!document.hidden)refresh(false)});
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
