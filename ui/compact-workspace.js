@@ -59,7 +59,7 @@ function moveTodayAboveScorecard(today){
  const todayHeading=headings.find(el=>/^today$/i.test((el.textContent||'').trim())&&today.contains(el)&&!el.closest('#rmExecutionPlan'));
  const source=todayHeading||board;
  let common=source;while(common&&!common.contains(score))common=common.parentElement;
- if(!common||common===document.body&&!today.contains(score))return;
+ if(!common)return;
  const branch=(node,ancestor)=>{let n=node;while(n&&n.parentElement!==ancestor)n=n.parentElement;return n};
  const todayCard=branch(source,common),scoreCard=branch(score,common);
  if(!todayCard||!scoreCard||todayCard===scoreCard)return;
@@ -123,4 +123,7 @@ window.addEventListener('focus',mount);
 // Allow the async daily dashboard to finish its initial mount.
 setTimeout(mount,300);
 setTimeout(mount,1200);
+setTimeout(mount,3500);
+window.addEventListener('load',mount);
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)mount()});
 })();
