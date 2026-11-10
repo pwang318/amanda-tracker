@@ -63,6 +63,7 @@ styles.textContent=[
 '#rmExecutionPlan #execTaskSummary>p{grid-column:1/-1}',
 '#rmExecutionPlan .execCategoryGrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;margin:12px 0}',
 '#rmExecutionPlan .execCategoryBtn{min-height:66px!important}',
+'#rmExecutionPlan .execCategoryBtn.execTransactionComplete strong{color:#31704e!important}',
 '#rmExecutionPlan .execCategoryBtn{display:flex;align-items:center;justify-content:space-between;text-align:left;gap:8px;padding:14px!important;min-height:60px!important;font-size:13px!important}',
 '#rmExecutionPlan .execCategoryBtn strong{font-size:19px;color:#523784}',
 '#rmExecutionPlan .execInlineProspects{border:1px solid #d9c8ed;background:#fcfaff;border-radius:11px;padding:5px 14px;margin:0 0 15px}',
@@ -414,8 +415,10 @@ function paintImportedCallCounters(){
   if(!kind)continue;
   const text=button.querySelector('strong');if(!text)continue;
   const data=rmImportSummary[kind];
-  text.textContent=data?(data.outstanding+' calls left · '+data.count+' files ↗'):(rmImportSummary.error?'Unable to verify · Retry ↗':'Checking call outcomes…');
-  button.setAttribute('aria-label',label+' · '+(data?data.outstanding+' calls left across '+data.count+' imported files':rmImportSummary.error?'Call outcomes unavailable':'Loading call outcomes'));
+  const done=Boolean(data&&data.count>0&&data.outstanding===0);
+  text.textContent=done?'Complete':data?(data.count===0?'No files imported':data.outstanding+' calls outstanding ↗'):(rmImportSummary.error?'Unable to verify · Retry ↗':'Checking call outcomes…');
+  button.setAttribute('aria-label',label+' · '+(done?'Complete; open transaction history':data?data.outstanding+' outstanding calls':rmImportSummary.error?'Call outcomes unavailable':'Loading call outcomes'));
+  button.classList.toggle('execTransactionComplete',done);
  }
 }
 async function openManagementTemplate(kind,assignment){
