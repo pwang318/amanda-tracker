@@ -155,21 +155,21 @@ function mount(){
  const board=$('rm350Workboard')||$('view-week');if(!board)return;
  const existing=$('rmExecutionPlan');if(existing){if(existing.parentElement!==board)board.prepend(existing);if(loaded&&board.id==='rm350Workboard')board.classList.add('rmExecReady');return;}
  const div=document.createElement('section');div.id='rmExecutionPlan';
- div.innerHTML='<div id="execQuickLog" class="execQuickLog"><div><strong>Log Activity</strong><span>Calls, new Realtor outreach, messages and meetings</span></div><button type="button" id="execQuickLogBtn">+ Log Activity</button></div><div class="execRow"><div><h2>Today’s plan</h2><p>Your daily goals, open work, completed activity, and next steps.</p></div><button id="execReload" type="button">Refresh live activity</button></div>'+
+ div.innerHTML='<div id="execQuickLog" class="execQuickLog"><div><strong>Log Activity</strong><span>Calls, new Realtor outreach, messages and meetings</span></div><button type="button" id="execQuickLogBtn">+ Log Activity</button></div><div class="execRow"><div><h2>Today’s plan</h2><p>Daily priorities, follow-ups, and progress.</p></div><button id="execReload" type="button">Refresh live activity</button></div>'+
  '<div id="execNotice" class="execNotice">Loading shared activity and schedule…</div>'+
- '<div id="execPriorities" class="execNotice" aria-live="polite"></div><div class="execHomeWork" id="execHomeWork"><h3>Outstanding work</h3><div id="execCategoryGrid" class="execCategoryGrid"></div></div><div id="execProspecting" class="execNotice" aria-live="polite"></div><div id="execOutreach" class="execNotice"></div><section id="execActivityTimeline" class="execTimeline"><div class="execRow"><h3>Recent activity</h3><button type="button" id="execActivityAll">View all activity</button></div><div id="execTimelineRows">Loading activity…</div></section><div id="execMetrics" class="execMetrics"></div><details id="execMoreMetrics" hidden><summary>More activity details</summary><div id="execSecondaryMetrics" class="execMetrics"></div></details><div id="execWeeklyGoals" class="execNotice" aria-live="polite"></div>'+ '<details id="execBusinessDetails"><summary>Business results · meetings, referrals & C-to-B growth</summary><div id="execBusinessResults" class="execNotice">Checking source records…</div></details>'+
+ '<div id="execPriorities" class="execNotice" aria-live="polite"></div><div class="execHomeWork" id="execHomeWork"><h3>Outstanding work</h3><div id="execCategoryGrid" class="execCategoryGrid"></div></div><div id="execProspecting" class="execNotice" aria-live="polite"></div><div id="execOutreach" class="execNotice"></div><section id="execActivityTimeline" class="execTimeline"><div class="execRow"><h3>Recent activity</h3><button type="button" id="execActivityAll">View all activity</button></div><div id="execTimelineRows">Loading activity…</div></section><div id="execMetrics" class="execMetrics"></div><details id="execMoreMetrics"><summary>More work and activity details</summary><div id="execSecondaryMetrics" class="execMetrics"></div></details><div id="execWeeklyGoals" class="execNotice" aria-live="polite"></div>'+ '<details id="execBusinessDetails"><summary>Business results: meetings, referrals, and C-to-B growth</summary><div id="execBusinessResults" class="execNotice">Checking source records…</div></details>'+
  
  '<div class="execDetailArea" id="execDetailArea" hidden><button type="button" id="execBack" class="execBack">← Back to Today</button><div class="execRow"><h3 id="execDetailTitle"></h3><button type="button" id="execDetailRefresh">Refresh worklist</button></div><div id="execTaskSummary" class="execTasks"></div></div>'+
- '<details id="execCloseout"><summary>Daily results & closeout · what was missed</summary><div id="execMissedSummary" class="execNotice" aria-live="polite"></div>'+
+ '<details id="execCloseout"><summary>End-of-day review</summary><div id="execMissedSummary" class="execNotice" aria-live="polite"></div>'+
  '<div class="execForm"><label>Review date<input type="date" id="execReviewDate"></label>'+
  '<label>Main reason<select id="execReason"><option value="">Select a reason</option><option value="meetings">Realtor or business meetings</option><option value="transactions">Urgent transactions or client needs</option><option value="relationships">Existing partner calls</option><option value="interruptions">Schedule changes or interruptions</option><option value="time">Other priorities / time management</option><option value="other">Other / coaching needed</option></select></label></div>'+
  '<div class="execForm"><label>Actual cold-call / prospecting minutes · required<input id="execMinutes" type="number" min="0" max="480" step="1" required placeholder="Enter actual minutes"></label></div><label style="font-size:12px;color:#56476b">Reason for gaps and next workday plan</label><textarea id="execNote" maxlength="2000" placeholder="Example: Two appointments ran long. Tomorrow I will block two 30-minute prospecting sessions."></textarea>'+
  '<div style="margin-top:9px"><button id="execSaveCloseout" type="button">Save coaching closeout</button> <span id="execSaveStatus" class="execStatus"></span></div>'+
  '<small>Report actual minutes every scheduled workday, including zero. Saving a closeout does not complete open tasks.</small></details>'+
- '<details id="execOOO"><summary>Out-of-office calendar & coverage plan</summary><p>Days off are excluded from prospecting-goal calculations, not treated as missed goals. Any due relationship work still requires coverage or rescheduling.</p>'+
+ '<details id="execOOO"><summary>Time off and coverage</summary><p>Days off are excluded from prospecting-goal calculations, not treated as missed goals. Any due relationship work still requires coverage or rescheduling.</p>'+
  '<div id="execDates" class="execDates"></div><div class="execForm"><label>First day off<input id="execOOOStart" type="date"></label><label>Last day off<input id="execOOOEnd" type="date"></label><button id="execSaveOOO" type="button">Save days off</button></div>'+
  '<div id="execOOOCoverage" class="execNotice"></div><div id="execOOOStatus" class="execStatus"></div></details>'+
- '<details id="execCoaching"><summary>Director coaching</summary><div id="execTrends">Loading trend…</div></details>';
+ '<details id="execCoaching"><summary>Manager review</summary><div id="execTrends">Loading trend…</div></details>';
  // The RM workboard is the only visible direct child of Today: its siblings are intentionally hidden by the existing layout CSS.
  board.prepend(div);
  $('execQuickLogBtn').onclick=()=>{
@@ -240,7 +240,9 @@ async function refresh(force=false){
 function openTask(q){
  const name=String(q.agent_name||q['Agent / Item']||'').trim();
  const type=String(q.Category||q.activity_type||'').toLowerCase();
- // Workflow-specific assignments must open their actual work lane, not an unrelated agent modal.
+ // Open the correct work lane rather than a generic agent profile.
+ if(/4.week|campaign|conversion/i.test(type)&&typeof window.v350OpenLane==='function')return window.v350OpenLane('conversion');
+ if(/weekly realtor|weekly.*call/i.test(type)&&typeof window.v350OpenLane==='function')return window.v350OpenLane('smart');
  if(/tuesday/i.test(type)&&typeof window.v350OpenLane==='function')return window.v350OpenLane('tuesday');
  if(/transaction|contract|ctc/i.test(type)&&typeof window.v350OpenLane==='function')return window.v350OpenLane('calls');
  // Relationship, weekly-call and growth-plan items open the selected agent record.
@@ -261,7 +263,7 @@ function taskList(title,rows,empty,showHeading=true){
   const type=q.Category||q.activity_type||'Assigned work';
   const action=q['Next Action']||q.reason||'Open relationship to review and log the next step';
   const due=q.work_date||q['Due Date']||'';
-  return '<li><button type="button" class="execTaskGo" data-index="'+i+'"><b>'+safe(agent)+'</b><span style="display:block;font-size:11px;color:#736482">'+safe(type)+(due?' · Due '+safe(due):'')+'</span><span style="display:block;font-size:12px;color:#453755;margin-top:4px">'+safe(action)+'</span><span style="display:block;font-size:11px;margin-top:4px">Open agent record ↗</span></button></li>';
+  return '<li><button type="button" class="execTaskGo" data-index="'+i+'"><b>'+safe(agent)+'</b><span style="display:block;font-size:11px;color:#736482">'+safe(type)+(due?' · Due '+safe(due):'')+'</span><span style="display:block;font-size:12px;color:#453755;margin-top:4px">'+safe(action)+'</span><span style="display:block;font-size:11px;margin-top:4px">Open assignment ↗</span></button></li>';
  }).join('');
  return '<section>'+(showHeading?'<strong>'+safe(title)+' · '+rows.length+'</strong>':'')+(rows.length?'<ul>'+list+'</ul>':'<p>'+safe(empty)+'</p>')+'</section>';
 }
@@ -282,7 +284,7 @@ function openActivityDetail(kind,scroll=true){
   const detailText=[a.act_type,a.outcome].filter(Boolean).join(' · ');
   const date=escapeDate(a.act_date);
   const timestamp=activityTime(a.created_at);
-  return '<li><button type="button" class="execTaskGo" data-activity-index="'+i+'"><b>'+safe(a.agent_name||'Agent not recorded')+'</b><span style="display:block;font-size:12px;color:#625373">'+safe(detailText)+'</span><span style="display:block;font-size:11px;color:#756886">'+safe(date)+(a.created_at?' · Logged '+safe(timestamp)+' ET':'')+'</span><span style="display:block">Open agent record ↗</span></button></li>';
+  return '<li><button type="button" class="execTaskGo" data-activity-index="'+i+'"><b>'+safe(a.agent_name||'Agent not recorded')+'</b><span style="display:block;font-size:12px;color:#625373">'+safe(detailText)+'</span><span style="display:block;font-size:11px;color:#756886">'+safe(date)+(a.created_at?' · Logged '+safe(timestamp)+' ET':'')+'</span><span style="display:block">Open assignment ↗</span></button></li>';
  }).join('')+'</ul>':'<p>No saved activity records match this tile.</p>')+
  '<button type="button" id="execLogRelated">'+(kind==='cold'?'Log next cold call':kind==='meetings'?'Log a meeting':'Log activity')+' ↗</button></section>';
  list.querySelectorAll('[data-activity-index]').forEach(button=>button.onclick=()=>{
@@ -333,7 +335,7 @@ async function openProspectList(){
 function showProspectRouteError(){
  let message=$('execProspectRouteStatus');
  if(!message){message=document.createElement('p');message.id='execProspectRouteStatus';message.className='execNotice execWarn';$('rmExecutionPlan')?.prepend(message)}
- message.textContent='The prospect list could not open. Open New Agents / Pipeline from the navigation or refresh the tracker.';
+ message.textContent='Prospect list unavailable. Try the New Agents tab or Refresh.';
 }
 
 function showOutreachDetail(scroll=true){
@@ -371,7 +373,7 @@ function showDetail(key,scroll=true){
  home.hidden=true;detail.hidden=false;
  $('execDetailTitle').textContent=group[0]+' · '+group[1].length;
  list.innerHTML=taskList(group[0],group[1],group[2],false)+
-  (!fullVerified?'<p class="execNotice execWarn">Some sources are unavailable. Check the original worklists before treating this category as clear.</p>':'');
+  (!fullVerified?'<p class="execNotice execWarn">Some lists could not refresh. Check the source before treating this list as complete.</p>':'');
  list.querySelectorAll('.execTaskGo').forEach(button=>{
   button.onclick=()=>{
    if(group[0]==='Completed assigned tasks'){if(typeof window.switchTab==='function')window.switchTab('feed');return}
@@ -421,7 +423,7 @@ function render(){
   ['New Realtor outreach assignments',/outreach|reconnect|cold call/i],
   ['Portfolio attention reviews',/portfolio.*needs attention|needs attention/i]
  ];
- const categoryRows=categories.map(([title])=>[title,[],'No currently open items found for this category']);
+ const categoryRows=categories.map(([title])=>[title,[],'No open items in this worklist']);
  const otherRows=[];
  const catchupRows=[];
  for(const q of all){
@@ -435,8 +437,8 @@ function render(){
   const index=categories.findIndex(([,rx])=>rx.test(type));
   if(index>=0)categoryRows[index][1].push(q);else otherRows.push(q);
  }
- if(otherRows.length)categoryRows.push(['Other assigned tasks',otherRows,'No other tasks verified']);
- categoryRows.push(['Catch-up assignments',catchupRows,'No historical catch-up assignments remain open']);
+ if(otherRows.length)categoryRows.push(['Other assigned tasks',otherRows,'No other open assignments']);
+ categoryRows.push(['Catch-up assignments',catchupRows,'All historical catch-up assignments have been completed']);
  const weekly=all.filter(q=>/weekly realtor|weekly.*call/i.test(q.Category||q.activity_type||''));
  const campaigns=all.filter(q=>/4.week|campaign/i.test(q.Category||q.activity_type||''));
  const missingPlans=all.filter(q=>/missing growth plan/i.test(q.Category||q.activity_type||''));
@@ -468,7 +470,7 @@ function render(){
  '<section class="execCatchupStatus"><div><strong>Historical catch-up · '+catchupDone+' / '+catchupTotal+' completed</strong><p>'+catchupOpen+' still outstanding · '+dueCatchup+' due/overdue today · '+nextCatchup+' scheduled next workday</p></div><button type="button" id="execCatchupList">Open catch-up assignments ↗</button></section>'+
  (catchupSkipped?'<p class="execNotice execWarn">'+catchupSkipped+' catch-up assignments were skipped without verified completion. Director review required.</p>':'')+
  (agedOpen?'<p class="execNotice execWarn">'+agedOpen+' assignments are at least 3 days overdue. Review before taking on new optional work.</p>':'')+
- '<small>Regular 4-week campaign names are under the 4-week campaigns tile. Unfinished catch-up tasks remain open until resolved.</small>';
+ '<small>Open 4-week campaigns for regular follow-ups. Catch-up items stay open until completed.</small>';
  $('execDueList').onclick=()=>showDetail('section:1');
  $('execOverdueList').onclick=()=>showDetail('section:0');
  $('execNextList').onclick=()=>showDetail('section:2');
