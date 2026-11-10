@@ -33,7 +33,7 @@ for(const label of [
  assert(code.includes(label),'Missing daily tile '+label);
 }
 assert(!code.includes("['Needs a due date'"),'Weekly calls and growth plans are not missing deadlines');
-assert(code.includes("const index=key==='plans'?detailGroups.length-1:match?(match[1]==='section'?Number(match[2]):5+Number(match[2]))"),'Category indexes match the section offset, with exact missing-plan destination');
+assert(code.includes("const index=key==='plans'?detailGroups.length-1:match?(match[1]==='section'?Number(match[2]):categoryStart+Number(match[2]))"),'Category indexes derive from their actual section offset, with exact missing-plan destination');
 assert(code.includes("if(kind==='plans')return showDetail('plans')"),'Missing growth plans tile opens only missing growth plans');
 assert(code.includes("detailGroups.push(exactPlans)"),'Exact missing growth plans group is independently addressable');
 assert(code.includes("const board=$('rm350Workboard')||$('view-week')"), 'Daily plan mounts inside the visible board');
