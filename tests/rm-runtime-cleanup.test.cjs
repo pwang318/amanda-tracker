@@ -14,7 +14,11 @@ assert(!html.includes('outstanding-daily-checklist.js'),'Obsolete checklist must
 assert(html.includes('<style id="rm-prepaint-legacy-guard">'),'Retired home template must be suppressed before first paint');
 assert(!html.includes('id="rm492-consolidate"'),'Obsolete Today template renderer must not run');
 assert(html.indexOf('id="rm-prepaint-legacy-guard"')<html.indexOf('id="view-week"'),'Legacy prepaint suppression must load before Today DOM');
-assert(daily.includes("$('rm350Workboard')?.classList.add('rmExecFallback')"),'Live dashboard failure must restore legacy controls');
+assert(!daily.includes("classList.add('rmExecFallback')"),'Partial failures must not reveal an obsolete tracker');
+assert(daily.includes("board.classList.add('rmExecReady')"),'Current Today dashboard stays visible during partial refresh');
+assert(html.includes('#view-week #weeklyCallPlanCard#weeklyCallPlanCard'),'Obsolete weekly Today renderer is hidden before first paint');
+assert(html.includes('#view-week #v113AmandaDashboard#v113AmandaDashboard'),'Obsolete v113 Today template must remain hidden');
+assert(html.includes('#view-week #secondaryWorkQueues#secondaryWorkQueues'),'Old mobile fallback work queues must not override current Today');
 assert(!fs.existsSync('ui/outstanding-daily-checklist.js'),'Obsolete checklist source must be deleted');
 assert(!compact.includes('MutationObserver'),'Compact style must not re-render on every DOM change');
 assert(compact.includes('moveTodayAboveScorecard(today)'), 'Today section should precede Scorecard Progress on the RM home screen');
