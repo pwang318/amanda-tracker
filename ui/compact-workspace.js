@@ -7,7 +7,7 @@ style.id='rmTodayCleanV4';
 style.textContent=[
  '#view-week{max-width:1180px;margin:0 auto}',
  '#view-week #rm350Workboard{border:1px solid #e7e0ef;border-radius:12px;box-shadow:none;padding:15px 18px}',
- '#view-week #rm350Workboard:has(> #rmExecutionPlan)>:not(#rmExecutionPlan){display:none!important}',
+ '#view-week #rm350Workboard.rmExecReady>.rm350-hero,#view-week #rm350Workboard.rmExecReady>.rm350-shell,#view-week #rm350Workboard.rmExecReady>.rm358-banner,#view-week #rm350Workboard.rmExecReady>.rm358-source-drawer{display:none!important}',
  '#view-week #rm350Workboard:has(> #rmExecutionPlan){min-height:0!important;padding-bottom:18px!important}',
  '#view-week #rmExecutionPlan .execCategoryGrid{grid-template-columns:repeat(3,minmax(0,1fr))}',
  '#view-week #rmExecutionPlan .execCategoryBtn{min-width:0}',
