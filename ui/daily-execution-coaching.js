@@ -213,8 +213,8 @@ async function refresh(force=false){
   const settled=await Promise.allSettled([
    sbFetch('rm_day_blocks?select=*&owner=eq.Amanda&work_date=gte.'+from+'&work_date=lte.'+to+'&limit=1200'),
    sbFetch('amanda_activities?select=*&act_date=gte.'+from+'&act_date=lte.'+to+'&limit=10000'),
-   sbFetch('rm_work_queue?select=id,work_date,agent_name,activity_type,reason,status,owner&owner=eq.Amanda&status=eq.open&limit=2500'),
-   sbFetch('rm_work_queue?select=id,work_date,agent_name,activity_type,reason,status,owner&owner=eq.Amanda&status=neq.open&work_date=gte.'+COACHING_START+'&limit=2500')
+   sbFetch('rm_work_queue?select=id,work_date,agent_name,activity_type,reason,status,owner,completed_at,completion_activity_id&owner=eq.Amanda&status=eq.open&limit=2500'),
+   sbFetch('rm_work_queue?select=id,work_date,agent_name,activity_type,reason,status,owner,completed_at,completion_activity_id&owner=eq.Amanda&status=neq.open&limit=2500')
   ]);
   const names=['Schedule','Logged activities','Outstanding assignments','Completed assignments'];
   const previous=[blocks,activities,queue,completedQueue];
@@ -425,7 +425,8 @@ function render(){
   ['Due today · campaigns and other work',need,'No dated tasks due today'],
   ['Next workday · '+(next?fmt(next):'unknown'),tmrw,'No dated work scheduled for the next workday'],
   ['Upcoming dated work',thisWeek,'No other dated work scheduled in the next seven days'],
-  ['Completed queue work',done,'No completed assigned queue entries verified']
+  ['Completed queue work',done,'No completed assigned queue entries verified'],
+  ['Needs scheduling',undated,'All assignments have a due date']
  ];
  // Categories are mutually exclusive. Catch-up assignments must never be presented
  // as regular relationship follow-ups, even when their original activity type matches.
@@ -476,6 +477,7 @@ function render(){
  const catchupDone=completedQueue.filter(q=>/\bCatch-up from\b/i.test(String(q.reason||''))&&/^(worked|complete|completed|done|closed|resolved)$/i.test(String(q.status||''))).length;
  const catchupSkipped=completedQueue.filter(q=>/\bCatch-up from\b/i.test(String(q.reason||''))&&/^(skipped|dismissed)$/i.test(String(q.status||''))).length;
  const catchupTotal=catchupOpen+catchupDone+catchupSkipped;
+ const historicalCatchupUnverified=catchupTotal!==77;
  const dueCatchup=catchupRows.filter(q=>q.work_date&&q.work_date<=d).length;
  const nextCatchup=catchupRows.filter(q=>q.work_date===next).length;
  const agedOpen=late.filter(q=>{const n=(Date.parse(d+'T12:00:00')-Date.parse(q.work_date+'T12:00:00'))/86400000;return n>=3}).length;
@@ -485,12 +487,15 @@ function render(){
  const refreshStatus=$('execSourceStatus');if(refreshStatus){refreshStatus.textContent=(sourceWarnings.length||!fullVerified?'Partial data · check source warnings':'Live worklists verified')+(lastVerifiedRefresh?' · Refreshed '+lastVerifiedRefresh.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'}):' · Refresh pending');}
  priorityBox.innerHTML='<div class="execRow"><div><strong>Outstanding work · '+all.length+'</strong><p>'+regularDue+' regular tasks due today · '+catchupOpen+' historical catch-up tasks remaining</p></div><div><button type="button" id="execOverdueList">Overdue · '+late.length+'</button> <button type="button" id="execDueList">Due today · '+need.length+'</button> <button type="button" id="execNextList">Next workday · '+tmrw.length+'</button></div></div>'+
  '<section class="execCatchupStatus"><div><strong>Historical catch-up · '+catchupOpen+' remaining</strong><p>'+catchupDone+' verified complete of '+catchupTotal+' recorded · '+dueCatchup+' due/overdue · '+nextCatchup+' next workday</p></div><button type="button" id="execCatchupList">Work catch-up list ↗</button></section>'+
+ (historicalCatchupUnverified?'<p class="execNotice execWarn">Historical catch-up reconciliation required: '+catchupTotal+' records found versus 77 originally assigned.</p>':'')+
  (catchupSkipped?'<p class="execNotice execWarn">'+catchupSkipped+' catch-up assignments were skipped without verified completion. Director review required.</p>':'')+
  (agedOpen?'<p class="execNotice execWarn">'+agedOpen+' assignments are at least 3 days overdue. Review before taking on new optional work.</p>':'')+
+ '<div class="execRow execNeedsScheduling"><strong>Needs scheduling · '+undated.length+'</strong><button type="button" id="execUndatedList">Open unscheduled ↗</button></div>'+ 
  '<small>Unfinished assignments remain open and appear as overdue on later workdays. Nothing is marked completed by closing this page.</small>';
  $('execDueList').onclick=()=>showDetail('section:1');
  $('execOverdueList').onclick=()=>showDetail('section:0');
  $('execNextList').onclick=()=>showDetail('section:2');
+ $('execUndatedList').onclick=()=>showDetail('section:5');
  $('execCatchupList').onclick=()=>showDetail('category:'+(categoryRows.length-1));
  priorityBox.dataset.authoritativeOpenCount=String(openQueue);
  const wg=weeklyGoals(d),weekLabel=fmt(wg.start);
@@ -709,8 +714,8 @@ function renderTrends(){
  const met=rows.filter(x=>x.cold>=25).length,short=rows.filter(x=>x.cold<25),withExplanation=short.filter(x=>x.reason).length;
  const counts={};for(const r of rows)if(r.reason)counts[r.reason]=(counts[r.reason]||0)+1;
  const today=iso();const open=queue.filter(q=>String(q.status||'').toLowerCase()==='open');const overdue=open.filter(q=>String(q.work_date||'').slice(0,10)&&String(q.work_date).slice(0,10)<today);const due=open.filter(q=>String(q.work_date||'').slice(0,10)===today);const completed=completedQueue.filter(q=>/^(worked|complete|completed|done|closed|resolved)$/i.test(String(q.status||'')));
- const completedToday=completed.filter(q=>String(q.work_date||'').slice(0,10)===today);
- const accountability=$('execManagerAccountability');if(accountability){accountability.innerHTML='<strong>Assigned-work accountability</strong><p>'+completedToday.length+' completed entries dated today · '+due.length+' still due today · '+overdue.length+' overdue/carried forward · '+open.length+' open assigned tasks in the shared queue.</p>'+(sourceWarnings.length?'<p>Partial data: '+safe(sourceWarnings.join(', '))+'. Counts may be incomplete.</p>':'')+'<small>Completion is counted from saved task statuses, not from page views. Completion dates may differ from assignment dates; the completed-today figure uses the task date, not a verified completion timestamp.</small>';}
+ const completedToday=completed.filter(q=>q.completed_at&&new Date(q.completed_at).toLocaleDateString('en-CA',{timeZone:'America/New_York'})===today);
+ const accountability=$('execManagerAccountability');if(accountability){accountability.innerHTML='<strong>Assigned-work accountability</strong><p>'+completedToday.length+' verified completed today · '+due.length+' still due today · '+overdue.length+' overdue/carried forward · '+open.length+' open assigned tasks in the shared queue.</p>'+(sourceWarnings.length?'<p>Partial data: '+safe(sourceWarnings.join(', '))+'. Counts may be incomplete.</p>':'')+'<small>Completion is counted from saved task statuses, not from page views. Completed today uses the saved completed_at timestamp in Eastern time. Items without verified completion times are excluded.</small>';}
  host.innerHTML='<p>Prospecting minimum met '+met+' of '+rows.length+' scheduled workdays. '+short.length+' below minimum; '+withExplanation+' of those have a saved explanation. This view uses logged cold-call entries only, not assumed time worked.</p>'+
  '<div style="overflow:auto"><table style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr><th align="left">Day</th><th align="left">Cold calls</th><th align="left">Meetings</th><th align="left">Prospecting minutes</th><th align="left">Closeout reason</th></tr></thead><tbody>'+
  rows.map(r=>'<tr><td style="padding:6px;border-bottom:1px solid #eee">'+safe(fmt(r.date))+'</td><td>'+r.cold+' / 25</td><td>'+r.meet+'</td><td>'+(r.minutes==null?'Not logged':r.minutes+' / 60')+'</td><td>'+safe(reasons[r.reason]||(r.cold>=25?'Goal met':'Not documented'))+'</td></tr>').join('')+'</tbody></table></div>'+
