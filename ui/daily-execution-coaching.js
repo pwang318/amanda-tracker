@@ -222,7 +222,7 @@ function planned(d){return queue.filter(q=>String(q.status||'').toLowerCase()===
 function pastDue(d){return queue.filter(q=>String(q.status||'').toLowerCase()==='open'&&q.work_date&&String(q.work_date).slice(0,10)>=COACHING_START&&String(q.work_date).slice(0,10)<d)}
 function mount(){
  const board=$('rm350Workboard')||$('view-week');if(!board)return;
- const existing=$('rmExecutionPlan');if(existing){if(existing.parentElement!==board)board.prepend(existing);if(loaded&&board.id==='rm350Workboard')board.classList.add('rmExecReady');return;}
+ const existing=$('rmExecutionPlan');if(existing){if(existing.parentElement!==board)board.prepend(existing);if(board.id==='rm350Workboard')board.classList.add('rmExecReady');return;}
  const div=document.createElement('section');div.id='rmExecutionPlan';
  div.innerHTML='<div id="execQuickLog" class="execQuickLog"><div><strong>Log Activity</strong><span>Calls, new Realtor outreach, messages and meetings</span></div><button type="button" id="execQuickLogBtn">+ Log Activity</button></div><div class="execRow"><div><h2>Today’s workday</h2><p>Start with what is due, then work your prospecting and relationship lists.</p></div><button id="execReload" type="button">Refresh live activity</button></div>'+
  '<div id="execSourceStatus" class="execSourceStatus" role="status">Checking live data…</div><div id="execNotice" class="execNotice">Loading shared activity and schedule…</div>'+
@@ -299,11 +299,13 @@ async function refresh(force=false){
   const warning=$('execNotice');
   if(sourceWarnings.length&&warning){warning.className='execNotice execWarn';warning.textContent='Partial data: '+sourceWarnings.join(', ')+' could not be verified. Previously loaded records are retained where available; refresh to retry.';}
   const board=$('rm350Workboard');
-  if(board){board.classList.toggle('rmExecReady',fullVerified||!sourceWarnings.includes('Outstanding assignments'));board.classList.toggle('rmExecFallback',!(fullVerified||!sourceWarnings.includes('Outstanding assignments')));}
+  // Never revive the obsolete workboard when a source is slow or incomplete.
+  // Keep the current dashboard visible with its partial-data warning and retry.
+  if(board){board.classList.add('rmExecReady');board.classList.remove('rmExecFallback');}
   await refreshBusinessResults();
  }catch(e){
-  $('rm350Workboard')?.classList.remove('rmExecReady');
-  $('rm350Workboard')?.classList.add('rmExecFallback');
+  $('rm350Workboard')?.classList.add('rmExecReady');
+  $('rm350Workboard')?.classList.remove('rmExecFallback');
   const el=$('execNotice');if(el){el.textContent='Unable to verify live work and daily goals. '+String(e.message||e)+'. Please refresh; no zero counts substituted.';el.className='execNotice execWarn'}
  }finally{working=false}
 }
