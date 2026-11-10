@@ -341,7 +341,7 @@ async function openManagementTemplate(kind,assignment){
  if(!wrap)return;
  wrap.hidden=false;
  wrap.innerHTML='<div class="execRow"><strong>'+safe(label)+' · Imported Encompass files</strong><button type="button" id="execWaClose">Close</button></div>'+
- '<p>Select the actual imported file. The existing transaction workbench fills client, property, both agents, phone numbers and closing details from that exact record. Enter the real call outcomes and feedback, then copy its WhatsApp recap.</p>'+
+ '<p>Showing the most recent '+(isCtc?'CTC':'New Contract')+' import only. Select the correct client and property; record both calls and copy the management WhatsApp recap.</p>'+
  '<div id="execWaFiles" role="status">Loading imported transaction records…</div>';
  $('execWaClose').onclick=()=>{wrap.hidden=true};
  wrap.scrollIntoView({behavior:'smooth',block:'start'});
@@ -352,35 +352,42 @@ async function openManagementTemplate(kind,assignment){
   const rows=await sbFetch('amanda_activities?select=id,act_date,notes,agent_name,created_at&act_type=eq.Transaction%20Snapshot&act_date=gte.'+since+'&order=created_at.desc&limit=2500');
   if(!Array.isArray(rows))throw Error('Imported transaction records could not be verified');
   const meta=(notes,key)=>{const match=String(notes||'').match(new RegExp('\\['+key+':([^\\]]*)\\]','i'));return match?match[1].trim():''};
-  const found=new Map();
+  // Recent import batches are authoritative for this call view. Never present
+  // historical snapshots merely because their underlying activity date is recent.
+  const allFiles=new Map();
+  let newestBatch='';
+  const batchPrefix=isCtc?'RM-CTC-':'RM-CONTRACT-';
   for(const row of rows){
-   const notes=String(row.notes||''),id=meta(notes,'TXN_ID'),source=meta(notes,'TXN_SOURCE'),milestone=meta(notes,'TXN_MILESTONE'),group=meta(notes,'TXN_MILESTONE_GROUP');
-   if(!id||!/(Encompass Excel|RM Excel Import|RM Manual Entry)/i.test(source))continue;
-   const designatedCtc=/\bctc\b|clear to close/i.test(source+' '+group+' '+milestone);
-   const designatedContract=/new contract|under contract/i.test(source+' '+group);
-   // Only explicitly classified import rows can enter a specific call list.
-   if(isCtc?!designatedCtc:!designatedContract)continue;
-   if(!found.has(id))found.set(id,{
-    id,client:meta(notes,'TXN_CLIENT'),property:meta(notes,'TXN_PROPERTY'),
+   const notes=String(row.notes||''),id=meta(notes,'TXN_ID'),source=meta(notes,'TXN_SOURCE'),batch=meta(notes,'TXN_BATCH');
+   if(!id||!batch.startsWith(batchPrefix)||!/^RM-(CTC|CONTRACT)-\d{14}$/.test(batch))continue;
+   if(!String(source).startsWith(isCtc?'RM Excel Import · CTC':'RM Excel Import · New Contract'))continue;
+   if(batch>newestBatch)newestBatch=batch;
+   const unique=batch+'|'+id;
+   if(!allFiles.has(unique))allFiles.set(unique,{
+    id,batch,client:meta(notes,'TXN_CLIENT'),property:meta(notes,'TXN_PROPERTY'),
     buyer:meta(notes,'TXN_BUYER_AGENT'),buyerPhone:meta(notes,'TXN_BUYER_PHONE'),
     listing:meta(notes,'TXN_LISTING_AGENT'),listingPhone:meta(notes,'TXN_LISTING_PHONE'),
     closeDate:meta(notes,'TXN_CLOSE_DATE'),date:row.act_date,source
    });
   }
+  const current=[...allFiles.values()].filter(x=>x.batch===newestBatch);
+  const historical=[...allFiles.values()].filter(x=>x.batch!==newestBatch);
+  const latestStamp=newestBatch?newestBatch.slice(-14):'';
+  const batchDate=latestStamp?latestStamp.slice(0,4)+'-'+latestStamp.slice(4,6)+'-'+latestStamp.slice(6,8):'';
   const person=String(assignment?.agent_name||assignment?.['Agent / Item']||'').trim().toLowerCase();
   const matchPerson=file=>[file.buyer,file.listing].some(n=>String(n||'').trim().toLowerCase()===person);
-  const matches=person?[...found.values()].filter(matchPerson):[];
-  const files=matches.length?matches:[...found.values()];
+  const matches=person?current.filter(matchPerson):[];
+  const files=person&&matches.length?matches:current;
   if(!files.length){
    host.innerHTML='<p>No matching '+(isCtc?'CTC':'New Contract')+' files were found in the current shared import records. Upload the correct Encompass export first, then refresh. No client or Realtor information has been guessed.</p>';
    return;
   }
-  host.innerHTML='<p>'+files.length+' imported transaction file(s). Select the correct client and property to open the original call workbench.</p>'+(person&&!matches.length?'<p>No exact transaction match was found for this Realtor. Select a file only after verifying its client and property; old catch-up calls are not necessarily current Encompass files.</p>':'')+'<div id="execWaFileList" style="display:grid;gap:7px;max-height:440px;overflow:auto"></div>';
+  host.innerHTML='<p><strong>Latest '+(isCtc?'CTC':'New Contract')+' import · '+safe(batchDate||'unknown date')+'</strong> · '+files.length+' file(s). '+(historical.length?historical.length+' older imported record(s) hidden from today’s call list.':'')+'</p>'+(person&&!matches.length?'<p>This Realtor is not in the latest import. Historical follow-ups are separate from current loan calls.</p>':'')+'<div id="execWaFileList" style="display:grid;gap:7px;max-height:440px;overflow:auto"></div>';
   const list=$('execWaFileList');
   for(const file of files){
    const button=document.createElement('button');
    button.type='button';
-   button.textContent=[file.client||'Client not supplied',file.property||'Property not supplied',file.date||''].filter(Boolean).join(' · ');
+   button.textContent=[file.client||'Client not supplied',file.property||'Property not supplied',file.closeDate?'Est. close '+file.closeDate:'Closing date not supplied'].join(' · ');
    button.onclick=()=>{
     if(typeof window.v176OpenTransaction!=='function'){host.textContent='Transaction workbench unavailable. Refresh the tracker and retry.';return}
     const agent=file.buyer||file.listing||'',role=file.buyer?'Buyer':'Listing';
