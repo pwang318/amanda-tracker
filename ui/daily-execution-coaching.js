@@ -316,43 +316,70 @@ async function refresh(force=false){
   const el=$('execNotice');if(el){el.textContent='Unable to verify live work and daily goals. '+String(e.message||e)+'. Please refresh; no zero counts substituted.';el.className='execNotice execWarn'}
  }finally{working=false}
 }
-function openManagementTemplate(kind,assignment){
- const isCtc=kind==='ctc',type=isCtc?'CLEAR TO CLOSE!':'NEW CONTRACT!';
+async function openManagementTemplate(kind,assignment){
+ const isCtc=kind==='ctc',label=isCtc?'CLEAR TO CLOSE!':'NEW CONTRACT!';
  let wrap=$('execWhatsAppTemplate');
  if(!wrap){wrap=document.createElement('section');wrap.id='execWhatsAppTemplate';wrap.className='execAssignmentAction';$('rmExecutionPlan')?.append(wrap)}
  if(!wrap)return;
- wrap.innerHTML='<div class="execRow"><strong>'+safe(type)+' · Management WhatsApp update</strong><button type="button" id="execWaClose">Close</button></div>'+
- '<p>Complete the details from the actual file and both Realtor conversations. Missing values remain blank or marked not worked; nothing is inferred from an unrelated record.</p>'+
- '<div class="execForm"><label>Client<input id="execWaClient" placeholder="Client full name"></label><label>Property<input id="execWaProperty" placeholder="Property address"></label></div>'+
- '<div class="execForm"><label>Buyer Agent<input id="execWaBuyer" placeholder="Buyer agent name"></label><label>Buyer phone<input id="execWaBuyerPhone" placeholder="Phone"></label></div>'+
- '<div class="execForm"><label>Buyer contact<select id="execWaBuyerStatus"><option>Not worked yet</option><option>Connected</option><option>Voicemail</option><option>Text sent</option><option>No answer</option></select></label></div>'+
- '<label>Buyer feedback<textarea id="execWaBuyerFeedback" rows="2" placeholder="What the buyer agent said"></textarea></label>'+
- '<div class="execForm"><label>Listing Agent<input id="execWaListing" placeholder="Listing agent name"></label><label>Listing phone<input id="execWaListingPhone" placeholder="Phone"></label></div>'+
- '<div class="execForm"><label>Listing contact<select id="execWaListingStatus"><option>Not worked yet</option><option>Connected</option><option>Voicemail</option><option>Text sent</option><option>No answer</option></select></label></div>'+
- '<label>Listing feedback<textarea id="execWaListingFeedback" rows="2" placeholder="What the listing agent said"></textarea></label>'+
- '<div class="execForm"><label>Estimated closing date<input type="date" id="execWaClosing"></label></div>'+
- '<label>Additional note<textarea id="execWaNote" rows="2" placeholder="Milestone, next step, or other notes"></textarea></label>'+
- '<div class="execRow"><button type="button" id="execWaCopy">Copy WhatsApp update</button><span id="execWaStatus" role="status"></span></div>'+
- '<textarea id="execWaPreview" rows="14" readonly aria-label="WhatsApp message preview"></textarea>';
- const val=id=>String($(id)?.value||'').trim();
- const format=()=>{
-  const field=id=>val(id)||'—';
-  const date=val('execWaClosing');
-  const note=[date?'Est close '+date:'',val('execWaNote')].filter(Boolean).join(' | ')||'—';
-  return [type,'','Client: '+field('execWaClient'),'','Property: '+field('execWaProperty'),'','Buyer Agent: '+field('execWaBuyer')+' | '+field('execWaBuyerPhone'),'Contact: '+val('execWaBuyerStatus'),'Feedback: '+field('execWaBuyerFeedback'),'','Listing Agent: '+field('execWaListing')+' | '+field('execWaListingPhone'),'Contact: '+val('execWaListingStatus'),'Feedback: '+field('execWaListingFeedback'),'','Note: '+note].join('\n');
- };
- const update=()=>{$('execWaPreview').value=format()};
- wrap.querySelectorAll('input,textarea,select').forEach(el=>{if(el.id!=='execWaPreview')el.addEventListener('input',update)});
+ wrap.hidden=false;
+ wrap.innerHTML='<div class="execRow"><strong>'+safe(label)+' · Imported Encompass files</strong><button type="button" id="execWaClose">Close</button></div>'+
+ '<p>Select the actual imported file. The existing transaction workbench fills client, property, both agents, phone numbers and closing details from that exact record. Enter the real call outcomes and feedback, then copy its WhatsApp recap.</p>'+
+ '<div id="execWaFiles" role="status">Loading imported transaction records…</div>';
  $('execWaClose').onclick=()=>{wrap.hidden=true};
- $('execWaCopy').onclick=async()=>{
-  const status=$('execWaStatus'),preview=$('execWaPreview'),value=format();
-  try{
-   if(!navigator.clipboard?.writeText)throw Error('Clipboard permission unavailable');
-   await navigator.clipboard.writeText(value);
-   status.textContent='Copied. Paste into the management WhatsApp group.';
-  }catch(err){preview.focus();preview.select();status.textContent='Automatic copy unavailable. Select and copy the preview below.'}
- };
- wrap.hidden=false;update();wrap.scrollIntoView({behavior:'smooth',block:'start'});
+ wrap.scrollIntoView({behavior:'smooth',block:'start'});
+ const host=$('execWaFiles');
+ try{
+  if(typeof sbFetch!=='function')throw Error('Shared database connection unavailable');
+  const since=iso(new Date(Date.now()-120*86400000));
+  const rows=await sbFetch('amanda_activities?select=id,act_date,notes,agent_name,created_at&act_type=eq.Transaction%20Snapshot&act_date=gte.'+since+'&order=created_at.desc&limit=2500');
+  if(!Array.isArray(rows))throw Error('Imported transaction records could not be verified');
+  const meta=(notes,key)=>{const match=String(notes||'').match(new RegExp('\\['+key+':([^\\]]*)\\]','i'));return match?match[1].trim():''};
+  const found=new Map();
+  for(const row of rows){
+   const notes=String(row.notes||''),id=meta(notes,'TXN_ID'),source=meta(notes,'TXN_SOURCE'),milestone=meta(notes,'TXN_MILESTONE'),group=meta(notes,'TXN_MILESTONE_GROUP');
+   if(!id||!/(Encompass Excel|RM Excel Import|RM Manual Entry)/i.test(source))continue;
+   const designatedCtc=/\bctc\b|clear to close/i.test(source+' '+group+' '+milestone);
+   const designatedContract=/new contract|under contract/i.test(source+' '+group);
+   // Only explicitly classified import rows can enter a specific call list.
+   if(isCtc?!designatedCtc:!designatedContract)continue;
+   if(!found.has(id))found.set(id,{
+    id,client:meta(notes,'TXN_CLIENT'),property:meta(notes,'TXN_PROPERTY'),
+    buyer:meta(notes,'TXN_BUYER_AGENT'),buyerPhone:meta(notes,'TXN_BUYER_PHONE'),
+    listing:meta(notes,'TXN_LISTING_AGENT'),listingPhone:meta(notes,'TXN_LISTING_PHONE'),
+    closeDate:meta(notes,'TXN_CLOSE_DATE'),date:row.act_date,source
+   });
+  }
+  const files=[...found.values()];
+  if(!files.length){
+   host.innerHTML='<p>No matching '+(isCtc?'CTC':'New Contract')+' files were found in the current shared import records. Upload the correct Encompass export first, then refresh. No client or Realtor information has been guessed.</p>';
+   return;
+  }
+  host.innerHTML='<p>'+files.length+' distinct imported files. Select the matching client and property:</p><div id="execWaFileList" style="display:grid;gap:7px;max-height:440px;overflow:auto"></div>';
+  const list=$('execWaFileList');
+  for(const file of files){
+   const button=document.createElement('button');
+   button.type='button';
+   button.textContent=[file.client||'Client not supplied',file.property||'Property not supplied',file.date||''].filter(Boolean).join(' · ');
+   button.onclick=()=>{
+    if(typeof window.v176OpenTransaction!=='function'){host.textContent='Transaction workbench unavailable. Refresh the tracker and retry.';return}
+    const agent=file.buyer||file.listing||'',role=file.buyer?'Buyer':'Listing';
+    window.v176OpenTransaction(isCtc?'CTC Call':'Under Contract Call',agent,role,file.id);
+    // Import details belong to the selected exact transaction ID, never an agent-name search.
+    setTimeout(()=>{
+     const modal=$('v175TransactionModal');
+     if(!modal||!modal.classList.contains('open')||String(modal.dataset.txnId||'')!==file.id)return;
+     const set=(key,value)=>{const el=$(key);if(el&&value&&!String(el.value||'').trim())el.value=value};
+     set('v175TxBuyerName',file.client);set('v175TxProperty',file.property);
+     set('v175TxBuyerAgent',file.buyer);set('v175TxBuyerPhone',file.buyerPhone);
+     set('v175TxListingAgent',file.listing);set('v175TxListingPhone',file.listingPhone);
+     if(file.closeDate)set('v175TxFileNote','Est close '+file.closeDate);
+     if(typeof window.v176UpdateWhatsApp==='function')window.v176UpdateWhatsApp();
+    },180);
+    wrap.hidden=true;
+   };
+   list.append(button);
+  }
+ }catch(err){if(host)host.textContent='Unable to load imported files: '+String(err.message||err)+'. The template was not prefilled from unverified data.'}
 }
 function openTask(q){
  const name=String(q.agent_name||q['Agent / Item']||'').trim();
