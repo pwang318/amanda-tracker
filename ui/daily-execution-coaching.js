@@ -610,15 +610,16 @@ function render(){
   ['New Realtor outreach assignments',/outreach|reconnect|cold call/i],
   ['Portfolio attention reviews',/portfolio.*needs attention|needs attention/i]
  ];
- const categoryRows=categories.map(([title])=>[title,[],'No assignments currently due in this worklist']);
+ const categoryRows=categories.map(([title])=>[title,[],title==='CTC calls'?'No open CTC calls in the verified RM work queue':title==='New contract calls'?'No open new-contract calls in the verified RM work queue':'No assignments currently due in this worklist']);
  const otherRows=[];
  const catchupRows=[];
  for(const q of all){
   // Reconciled shared work queue rows have reason/source; a historical catch-up
   // assignment remains in the catch-up list until the logged outcome resolves it.
   if(/\bCatch-up from\b/i.test(String(q.reason||''))){
+   // Catch-up is an additional filter, never a reason to hide CTC/new-contract calls.
+   // The assignment remains a single queue row and is not duplicated in totals.
    catchupRows.push(q);
-   continue;
   }
   const type=String(q.Category||q.activity_type||'');
   const index=categories.findIndex(([,rx])=>rx.test(type));
