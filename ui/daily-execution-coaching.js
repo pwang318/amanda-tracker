@@ -446,12 +446,12 @@ async function openManagementTemplate(kind,assignment){
    host.innerHTML='<p>No matching '+(isCtc?'CTC':'New Contract')+' files were found in the current shared import records. Upload the correct Encompass export first, then refresh. No client or Realtor information has been guessed.</p>';
    return;
   }
-  host.innerHTML='<p><strong>Latest '+(isCtc?'CTC':'New Contract')+' import · '+safe(batchDate||'unknown date')+'</strong> · '+state.outstanding+' agent calls outstanding across '+state.count+' file(s).</p>'+(person&&!matches.length?'<p>This Realtor is not in the latest import. Historical follow-ups are separate from current loan calls.</p>':'')+'<div id="execWaFileList" style="display:grid;gap:7px;max-height:440px;overflow:auto"></div>';
+  host.innerHTML='<p><strong>Latest '+(isCtc?'CTC':'New Contract')+' import · '+safe(batchDate||'unknown date')+'</strong> · '+state.outstanding+' agent calls remaining across '+state.count+' imported files. '+(state.completed?state.completed+' completed agent contacts on record. ':'')+'Completed transactions are retained for review and WhatsApp recap.</p>'+(person&&!matches.length?'<p>This Realtor is not in the latest import. Historical follow-ups are separate from current loan calls.</p>':'')+'<div id="execWaFileList" style="display:grid;gap:7px;max-height:440px;overflow:auto"></div>';
   const list=$('execWaFileList');
   for(const file of files){
    const button=document.createElement('button');
    button.type='button';
-   button.textContent=[file.client||'Client not supplied',file.property||'Property not supplied',file.closeDate?'Est. close '+file.closeDate:'Closing date not supplied',file.outstanding+' calls left'].join(' · ');
+   button.textContent=[file.client||'Client not supplied',file.property||'Property not supplied',file.closeDate?'Est. close '+file.closeDate:'Closing date not supplied',file.outstanding?file.outstanding+' calls left':'No calls outstanding'].join(' · ');
    button.onclick=()=>{
     if(typeof window.v176OpenTransaction!=='function'){host.textContent='Transaction workbench unavailable. Refresh the tracker and retry.';return}
     const agent=file.buyer||file.listing||'',role=file.buyer?'Buyer':'Listing';
@@ -468,6 +468,19 @@ async function openManagementTemplate(kind,assignment){
      if(typeof window.v176UpdateWhatsApp==='function')window.v176UpdateWhatsApp();
     },180);
     wrap.hidden=true;
+    // Reconcile outstanding calls when the transaction workbench closes.
+    setTimeout(()=>{
+     const modal=$('v175TransactionModal');
+     if(!modal)return;
+     const watcher=new MutationObserver(()=>{
+      if(!modal.classList.contains('open')){
+       watcher.disconnect();
+       rmTxnCache=null;rmImportSummary.checked=0;
+       refreshImportedCallCounters(true);
+      }
+     });
+     watcher.observe(modal,{attributes:true,attributeFilter:['class']});
+    },240);
    };
    list.append(button);
   }
