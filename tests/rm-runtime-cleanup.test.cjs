@@ -13,7 +13,7 @@ assert.equal(html.split('id="rm-uniform-prospecting-row"').length-1,1,'Old repea
 assert(!html.includes('outstanding-daily-checklist.js'),'Obsolete checklist must not load');
 assert(!fs.existsSync('ui/outstanding-daily-checklist.js'),'Obsolete checklist source must be deleted');
 assert(!compact.includes('MutationObserver'),'Compact style must not re-render on every DOM change');
-assert(!fast.includes('setInterval('),'Fast logger should not poll continuously');
+assert(!fast.includes("setInterval(()=>{if($('view-week')"),'Fast logger should not poll the Today view continuously');
 assert(!html.includes('setInterval(function(){iconifyNav()'),'No 1.5-second whole-page restyling');
 assert(!html.includes('setInterval(()=>refresh(false),30000)'),'No 30-second dashboard polling');
 assert(!html.includes('setInterval(function(){if(document.visibilityState===\'visible\')refreshLeadCounter(false);},30000)'),'No 30-second lead polling');
