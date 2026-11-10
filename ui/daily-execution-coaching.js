@@ -424,7 +424,7 @@ function render(){
   ['New Realtor outreach assignments',/outreach|reconnect|cold call/i],
   ['Portfolio attention reviews',/portfolio.*needs attention|needs attention/i]
  ];
- const categoryRows=categories.map(([title])=>[title,[],'No open items in this worklist']);
+ const categoryRows=categories.map(([title])=>[title,[],'No assignments currently due in this worklist']);
  const otherRows=[];
  const catchupRows=[];
  for(const q of all){
@@ -480,7 +480,7 @@ function render(){
  const wg=weeklyGoals(d),weekLabel=fmt(wg.start);
  $('execWeeklyGoals').innerHTML='<strong>This week · '+safe(weekLabel)+'</strong>'+
  '<p>New Realtor meetings <b>'+wg.newHeld+' / '+wg.target+'</b> held · Break Breads <b>'+wg.breads+' / '+wg.target+'</b> held · Calls <b>'+wg.calls+' / '+wg.goalCalls+'</b> logged · Prospecting <b>'+wg.minutes.total+' / '+wg.goalMinutes+'</b> minutes reported'+(wg.minutes.known<wg.days.length?' (incomplete reporting)':'')+'.</p>'+
- '<p><strong>Activity pace: '+(wg.pct==null?'—':wg.pct+'%')+'</strong> · 85% coaching benchmark · '+(wg.target?'Weekly meeting pace: '+Math.ceil(wg.target*.85)+' each for 85%.':'No scheduled workdays.')+'</p>';
+ '<p><strong>Activity pace: '+(wg.pct==null?'—':wg.pct+'%')+'</strong> · Activity goals are separate from the weighted scorecard · '+(wg.target?'Weekly meeting pace: '+Math.ceil(wg.target*.85)+' each for 85%.':'No scheduled workdays.')+'</p>';
  const metricRows=[
   ['Cold calls today',offNow?'PTO':cold+' / 25+','cold'],
   ['Prospecting minutes',dataOf(closeRecord(d))?.prospecting_minutes==null?'Not logged / 60':dataOf(closeRecord(d)).prospecting_minutes+' / 60','closeout'],
