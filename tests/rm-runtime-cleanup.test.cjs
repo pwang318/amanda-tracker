@@ -25,8 +25,8 @@ assert(compact.includes('moveTodayAboveScorecard(today)'), 'Today section should
 assert(compact.includes('score.before(plan)'), 'Actual daily work plan belongs above the scorecard');
 assert(compact.includes('#rm350Workboard.rmExecReady #rm492Additional{display:none!important}'), 'Remove obsolete bottom Today wrapper when real execution dashboard is ready');
 assert(compact.includes('body:not([data-rm-tab="director"]) #rmSharedPowerBiWarning'), 'Floating Power BI warning is hidden for RM while retaining director diagnostics');
-assert(daily.includes('id="execProspectShortcut"'), 'Prospect shortcut must appear in the growth section');
-assert(daily.includes("$('execProspectShortcut').replaceChildren(shortcut)"), 'Prospect link must be physically moved from the other worklists');
+assert(daily.includes('id="execInlineProspects"'), 'Actual prospect list belongs inside Prospect & Grow');
+assert(!daily.includes('id="execProspectShortcut"'), 'Do not duplicate the ranked prospect list with another tile');
 assert(daily.includes("['Undated follow-ups',undated"), 'Undated items should not be misrepresented as meetings to schedule');
 assert(!fast.includes("setInterval(()=>{if($('view-week')"),'Fast logger should not poll the Today view continuously');
 assert(!html.includes('setInterval(function(){iconifyNav()'),'No 1.5-second whole-page restyling');
