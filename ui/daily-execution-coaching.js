@@ -331,7 +331,7 @@ function openTask(q){
  $('execAssignmentSave').onclick=async()=>{
   const outcome=$('execAssignmentOutcome').value,notes=$('execAssignmentNotes').value.trim(),follow=$('execAssignmentFollowup').value,status=$('execAssignmentStatus'),button=$('execAssignmentSave');
   if(!name||!outcome){status.textContent='Choose a contact outcome and verify the Realtor name.';return}
-  if(!q.id){status.textContent='This supplemental item cannot be safely cleared from the assignment queue. Open the original worklist to complete it; no activity was saved here.';return}
+  if(!q.id){status.textContent='This supplemental item has no shared queue ID, so it cannot be cleared automatically. Opening Activity Log to record the action.';if(typeof window.switchTab==='function')window.switchTab('log');const agent=$('rmFastAgent')||$('agentInput');if(agent){agent.value=name;agent.dispatchEvent(new Event('input',{bubbles:true}));agent.focus()}return}
   if(!notes&&outcome==='Completed non-call task'){status.textContent='Describe the completed task before saving.';return}
   button.disabled=true;status.textContent='Saving activity to the shared tracker…';
   try{
