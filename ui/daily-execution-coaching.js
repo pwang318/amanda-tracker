@@ -184,7 +184,7 @@ async function refresh(force=false){
   const settled=await Promise.allSettled([
    sbFetch('rm_day_blocks?select=*&owner=eq.Amanda&work_date=gte.'+from+'&work_date=lte.'+to+'&limit=1200'),
    sbFetch('amanda_activities?select=*&act_date=gte.'+from+'&act_date=lte.'+to+'&limit=10000'),
-   sbFetch('rm_work_queue?select=id,work_date,agent_name,activity_type,reason,status,owner&owner=eq.Amanda&status=eq.open&work_date=gte.'+COACHING_START+'&limit=2500'),
+   sbFetch('rm_work_queue?select=id,work_date,agent_name,activity_type,reason,status,owner&owner=eq.Amanda&status=eq.open&limit=2500'),
    sbFetch('rm_work_queue?select=id,work_date,agent_name,activity_type,reason,status,owner&owner=eq.Amanda&status=neq.open&work_date=gte.'+COACHING_START+'&limit=2500')
   ]);
   const names=['Schedule','Logged activities','Outstanding assignments','Completed assignments'];
@@ -378,7 +378,7 @@ function render(){
  const allRaw=queue.concat(supplements);
  const identity=q=>[String(q.agent_name||'').trim().toLowerCase(),String(q.activity_type||q.Category||'').trim().toLowerCase(),String(q.work_date||'').slice(0,10)].join('|');
  const all=allRaw.filter((q,i,rows)=>rows.findIndex(x=>identity(x)===identity(q))===i);
- const late=all.filter(q=>q.work_date&&q.work_date>=COACHING_START&&q.work_date<d);
+ const late=all.filter(q=>q.work_date&&q.work_date<d);
  const need=all.filter(q=>q.work_date===d);
  const priorities=[...late,...need].filter((q,i,arr)=>arr.findIndex(x=>String(x.agent_name||'').trim().toLowerCase()+'|'+String(x.activity_type||'').toLowerCase()+'|'+String(x.work_date||'')===String(q.agent_name||'').trim().toLowerCase()+'|'+String(q.activity_type||'').toLowerCase()+'|'+String(q.work_date||''))===i);
  const undated=all.filter(q=>!q.work_date);
