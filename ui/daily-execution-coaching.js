@@ -417,7 +417,7 @@ function render(){
   if(index>=0)categoryRows[index][1].push(q);else otherRows.push(q);
  }
  if(otherRows.length)categoryRows.push(['Other assigned tasks',otherRows,'No other tasks verified']);
- const catchupRows=queue.filter(q=>/\\bCatch-up from\\b/i.test(String(q.reason||'')));
+ const catchupRows=queue.filter(q=>/\bCatch-up from\b/i.test(String(q.reason||'')));
  categoryRows.push(['Catch-up assignments',catchupRows,'No historical catch-up assignments remain open']);
  const weekly=all.filter(q=>/weekly realtor|weekly.*call/i.test(q.Category||q.activity_type||''));
  const campaigns=all.filter(q=>/4.week|campaign/i.test(q.Category||q.activity_type||''));
@@ -437,8 +437,8 @@ function render(){
  const focusRows=priorities.length?priorities:tmrw;
  const focusTitle=priorities.length?'Do first · '+priorities.length+' due or overdue':next?'Next workday · '+fmt(next):'Upcoming work';
  const openQueue=queue.length,catchupOpen=catchupRows.length;
- const catchupDone=completedQueue.filter(q=>/\\bCatch-up from\\b/i.test(String(q.reason||''))&&/^(worked|complete|completed|done|closed|resolved)$/i.test(String(q.status||''))).length;
- const catchupSkipped=completedQueue.filter(q=>/\\bCatch-up from\\b/i.test(String(q.reason||''))&&/^(skipped|dismissed)$/i.test(String(q.status||''))).length;
+ const catchupDone=completedQueue.filter(q=>/\bCatch-up from\b/i.test(String(q.reason||''))&&/^(worked|complete|completed|done|closed|resolved)$/i.test(String(q.status||''))).length;
+ const catchupSkipped=completedQueue.filter(q=>/\bCatch-up from\b/i.test(String(q.reason||''))&&/^(skipped|dismissed)$/i.test(String(q.status||''))).length;
  const catchupTotal=Math.max(77,catchupOpen+catchupDone+catchupSkipped);
  const dueCatchup=catchupRows.filter(q=>q.work_date&&q.work_date<=d).length;
  const nextCatchup=catchupRows.filter(q=>q.work_date===next).length;
