@@ -22,7 +22,7 @@ function mount(){
  let panel=document.getElementById('rmActualScorecard');
  if(!panel){
   panel=document.createElement('section');panel.id='rmActualScorecard';
-  panel.innerHTML='<div class="rmActualHead"><h2>Power BI scorecard · latest reported results</h2><button id="rmActualRefresh" type="button">Refresh</button></div><p class="rmActualSubtitle">Current source-reported agent tiers and referred leads. Weighted performance requires complete source verification.</p><div class="rmActualGrid" id="rmActualGrid"><div class="rmActualTile">Retrieving shared report…</div></div><p id="rmActualFooter" class="rmActualFooter"></p>';
+  panel.innerHTML='<div class="rmActualHead"><h2>Scorecard results</h2><button id="rmActualRefresh" type="button">Refresh</button></div><p class="rmActualSubtitle">Latest reported results. The weighted score appears once the data is verified.</p><div class="rmActualGrid" id="rmActualGrid"><div class="rmActualTile">Loading scorecard…</div></div><p id="rmActualFooter" class="rmActualFooter"></p>';
   const official=document.getElementById('rmFinalWeightedScore');
   if(official)official.before(panel);else score.prepend(panel);
   panel.querySelector('#rmActualRefresh').onclick=()=>load(true);
@@ -38,14 +38,14 @@ function tidy(){
  const alert=heading.parentElement;
  if(alert&&alert!==official&&alert.textContent.length<1600){
   alert.style.cssText='background:#f9f7fb;border:1px solid #e8e1f1;border-radius:10px;padding:12px;color:#514764';
-  alert.innerHTML='<strong style="font-size:13px">Official weighted score pending reconciliation</strong><p style="font-size:12px;line-height:1.4;margin:6px 0">The source report and linked profiles have not reconciled, so a verified weighted score cannot be displayed. Details are available in the Director tracker.</p>';
+  alert.innerHTML='<strong style="font-size:13px">Weighted score pending</strong><p style="font-size:12px;line-height:1.4;margin:6px 0">Agent totals need to be reconciled before the weighted score can be confirmed.</p>';
  }
 }
 async function load(force){
  if(busy)return;busy=true;
  const grid=document.getElementById('rmActualGrid'),footer=document.getElementById('rmActualFooter');
  if(!grid){busy=false;return}
- grid.innerHTML='<div class="rmActualTile">Checking reported Power BI results…</div>';
+ grid.innerHTML='<div class="rmActualTile">Loading scorecard…</div>';
  try{
   if(typeof sbFetch!=='function')throw Error('Shared report connection unavailable');
   const month=new Date(),start=month.getFullYear()+'-'+String(month.getMonth()+1).padStart(2,'0')+'-01';
@@ -64,7 +64,7 @@ async function load(force){
   const distinct=new Set((Array.isArray(leads)?leads:[]).map((v,i)=>String(v.lead_key||'').trim()||('row:'+i)));
   footer.textContent='Report received '+new Date(log.imported_at).toLocaleString()+' · '+distinct.size+' unique Velocify lead records this month (not necessarily official RM referrals). Source figures are provisional until the Director resolves the Power BI profile mismatch. No weighted score is inferred.';
   lastFetch=Date.now();
- }catch(e){grid.innerHTML='<div class="rmActualTile" style="grid-column:1/-1">Shared scorecard data could not be loaded. Use Refresh; no figures have been substituted.</div>';footer.textContent=String(e.message||e)}
+ }catch(e){grid.innerHTML='<div class="rmActualTile" style="grid-column:1/-1">Scorecard data is unavailable. Select Refresh to try again.</div>';footer.textContent='The latest report could not be confirmed.'}
  finally{busy=false;tidy()}
 }
 function init(){mount();const root=document.getElementById('view-scorecard');if(root){let queued=false;new MutationObserver(()=>{if(queued)return;queued=true;requestAnimationFrame(()=>{queued=false;mount()})}).observe(root,{childList:true,subtree:true})}}
