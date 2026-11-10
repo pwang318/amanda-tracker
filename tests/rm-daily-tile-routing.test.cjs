@@ -148,7 +148,7 @@ assert(code.includes('Other open portfolio work — managed in worklists'), 'Man
 assert(code.includes('data-carry-open'), 'Manager review can open specific Realtor records');
 assert(code.includes('managerTasks[Number(button.getAttribute'), 'Manager-review navigation maps each tile to its own assignment');
 
-assert(code.includes('id="execQuickGuide"'), 'New RM onboarding guide should be available without taking over homepage');
+assert(!code.includes('id="execQuickGuide"'), 'RM Today must stay clear of the unwanted onboarding guide');
 assert(code.includes('id="execRecentDisclosure"'), 'Recent activity should be collapsed until needed');
 assert(code.includes("group[1].length>0&&group[0]!=='Catch-up assignments'"), 'Do not show empty categories or duplicate catch-up tile');
 assert(code.includes("group[0]==='New Realtor outreach assignments'||"), 'Always keep prospect list shortcut accessible');
