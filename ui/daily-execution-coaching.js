@@ -10,7 +10,7 @@ const reasons={'meetings':'Realtor or business meetings','transactions':'Urgent 
 const styles=document.createElement('style');styles.id='rmExecutionCoachingStyles';
 styles.textContent=[
 '#rmExecutionPlan{margin:12px 0;border:1px solid #e7deee;border-radius:12px;background:white;padding:17px 20px}',
-'#view-week #rm350Workboard:has(> #rmExecutionPlan)>:not(#rmExecutionPlan){display:none!important}',
+'#view-week #rm350Workboard.rmExecReady>.rm350-hero,#view-week #rm350Workboard.rmExecReady>.rm350-shell{display:none!important}',
 'body[data-rm-tab="week"] #view-week.rm350-board > #rmExecutionPlan{display:block!important}',
 '#rmExecutionPlan h2{margin:0 0 5px;font-size:20px;color:#211b35}',
 '#rmExecutionPlan h3{font-size:15px;margin:13px 0 8px;color:#302242}',
@@ -171,8 +171,10 @@ async function refresh(force=false){
    }catch(err){console.warn('Full RM work list not verified',err)}
   }
   loaded=true;render();
+  $('rm350Workboard')?.classList.add('rmExecReady');
   await refreshBusinessResults();
  }catch(e){
+  $('rm350Workboard')?.classList.remove('rmExecReady');
   const el=$('execNotice');if(el){el.textContent='Unable to verify live work and daily goals. '+String(e.message||e)+'. Please refresh; no zero counts substituted.';el.className='execNotice execWarn'}
  }finally{working=false}
 }
