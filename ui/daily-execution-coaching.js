@@ -679,6 +679,12 @@ function showDetail(key,scroll=true){
  const index=key==='plans'?detailGroups.length-1:match?(match[1]==='section'?Number(match[2]):categoryStart+Number(match[2])):-1;
  const group=detailGroups[index];
  if(!group){activeDetail=null;detail.hidden=true;home.hidden=false;return}
+ // Transaction files must never render the old historical CTC assignment list.
+ if(group[0]==='CTC calls'||group[0]==='New contract calls'){
+  activeDetail=null;detail.hidden=true;home.hidden=false;
+  if($('execAssignmentAction'))$('execAssignmentAction').hidden=true;
+  return openManagementTemplate(group[0]==='CTC calls'?'ctc':'contract');
+ }
  home.hidden=true;detail.hidden=false;
  if($('execAssignmentAction'))$('execAssignmentAction').hidden=true;
  $('execDetailTitle').textContent=group[0]+' · '+group[1].length;
@@ -752,7 +758,9 @@ function render(){
   }
   const type=String(q.Category||q.activity_type||'');
   const index=categories.findIndex(([,rx])=>rx.test(type));
-  if(index>=0)categoryRows[index][1].push(q);else otherRows.push(q);
+  // Historical transaction follow-ups remain in catch-up, not the current imported-file workbench.
+  if(index>=0&&!['CTC calls','New contract calls'].includes(categories[index][0]))categoryRows[index][1].push(q);
+  else if(index<0)otherRows.push(q);
  }
  if(otherRows.length)categoryRows.push(['Other assigned tasks',otherRows,'No other open assignments']);
  categoryRows.push(['Catch-up assignments',catchupRows,'All historical catch-up assignments have been completed']);
