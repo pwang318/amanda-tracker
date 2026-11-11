@@ -246,11 +246,27 @@ function rmActivityCardCreate(){
  `;document.head.appendChild(css);
  const card=document.createElement('section');card.id='rmActivityTodayCard';card.setAttribute('aria-label',"Amanda's activity today");
  card.innerHTML='<div class="rmActHead"><div><h2>Amanda’s Activity Today</h2><div class="rmActMeta" id="rmActDate"></div></div><button type="button" class="rmActRefresh" id="rmActRefresh">Refresh activity</button></div><div class="rmActStats" id="rmActStats"></div><div class="rmActMeta" style="margin-bottom:6px">Most recent logged activity</div><ul class="rmActItems" id="rmActItems"><li>Loading today’s activity…</li></ul><div class="rmActMeta" id="rmActUpdated"></div>';
- home.insertBefore(card,home.firstChild);card.querySelector('#rmActRefresh').addEventListener('click',rmActivityCardLoad);
+ home.insertBefore(card,home.firstChild);rmActivityMountInWorkday();card.querySelector('#rmActRefresh').addEventListener('click',rmActivityCardLoad);
+ const visit=document.createElement('button');visit.type='button';visit.className='rmActRefresh';visit.textContent='Face Time · C Accounts ↗';
+ visit.addEventListener('click',()=>window.rmGrowthCommand?.openFaceTime());
+ card.querySelector('.rmActHead')?.append(visit);
+
  rmActivityCardLoad();
  document.addEventListener('visibilitychange',()=>{if(!document.hidden)rmActivityCardLoad()});
  window.addEventListener('focus',rmActivityCardLoad);
 }
+function rmActivityMountInWorkday(){
+ const card=document.getElementById('rmActivityTodayCard');
+ const plan=document.getElementById('rmExecutionPlan');
+ if(!card||!plan)return;
+ // Activity belongs in the real Today snapshot, not the hidden legacy view root.
+ const quick=plan.querySelector('#execQuickLog');
+ if(quick&&card.previousElementSibling!==quick)quick.after(card);
+ else if(!quick&&card.parentElement!==plan)plan.prepend(card);
+ card.hidden=false;card.style.removeProperty('display');
+}
+window.addEventListener('rm-execution-plan-ready',rmActivityMountInWorkday);
+window.addEventListener('rm-work-queue-changed',rmActivityMountInWorkday);
 let rmActivityBusy=false;
 async function rmActivityCardLoad(){
  const card=document.getElementById('rmActivityTodayCard');if(!card||rmActivityBusy)return;
@@ -287,8 +303,15 @@ let nav=document.querySelector('.tab[data-tab="growth"]');if(nav){const newnav=d
 const target=document.getElementById('view-growth');if(!target)return;
 const page=document.createElement('div');page.className='view';page.id='view-growth-command';page.innerHTML='<div class="rmGrowTop"><h2>Grow & Protect · C-Agent Work Order</h2><p>One place to grow existing C relationships, protect referrals and track business results.</p></div><div class="rmGrowthHomeActions"><button id="rmGrowRefresh" class="rmGrowBtn">↻ Refresh shared data</button><button id="rmGrowPortfolio" class="rmGrowBtn alt">Portfolio health</button><button id="rmGrowExistingGrowth" class="rmGrowBtn alt">Tier results</button></div><p class="rmGrowSmall" id="rmGrowStatus" role="status"></p><p id="rmGrowCleanSummary" class="rmGrowHelp">Loading live C-agent priorities…</p><details id="rmGrowAdminAudit"><summary>Data verification · admin details</summary><div class="rmGrowNotice" id="rmGrowMeta">Checking live data…</div></details><div id="rmGrowStats" class="rmGrowStatGrid"></div><div class="rmGrowNav"><button data-view="grow" class="active">All C Accounts · Growth</button><button data-view="protect">Need Attention</button><button data-view="convert">Referral Opportunities</button><button data-view="near">Close to B</button><button data-view="missing">Missing Next Step</button></div><p id="rmGrowViewExplain" class="rmGrowHelp" role="status">All C accounts: review each agent’s leads, closings and next growth action.</p><p id="rmGrowViewCount" class="rmGrowHelp" aria-live="polite">Showing all active C agents.</p><section class="rmGrowList"><h3>Priority relationships</h3><p id="rmGrowSubtitle" class="rmGrowSmall">Refresh to load.</p><div class="rmGrowFilters"><input id="rmGrowSearch" type="search" placeholder="Search agent names…" aria-label="Search growth agents"><select id="rmGrowSort" aria-label="Sort C-agent relationships"><option value="priority">Sort: Recommended priority</option><option value="closings-desc">Closings: most first</option><option value="closings-asc">Closings: fewest first</option><option value="leads-desc">Leads: most first</option><option value="leads-asc">Leads: fewest first</option><option value="lastlead-desc">Days since lead: longest</option><option value="lastlead-asc">Days since lead: shortest</option><option value="name">Agent name: A to Z</option></select><button class="rmGrowBtn alt" id="rmGrowExport">Export visible CSV</button></div><div class="rmGrowTableWrap"><table class="rmGrowTable"><thead><tr><th>Agent / tier</th><th>RM</th><th>12m leads</th><th>12m closings</th><th>To B</th><th>Last lead</th><th>Why this agent / next action</th><th>Actions</th></tr></thead><tbody id="rmGrowRows"></tbody></table></div></section><section class="rmGrowList"><h3>Today’s Top Priorities</h3><div id="rmGrowBrief" class="rmGrowSmall">Loads with shared source.</div></section><section class="rmGrowList"><h3>30 / 60 / 90 growth framework</h3><div class="rmGrowSteps"><div><b>30 days — discover</b><p>Confirm buyer demand, identify service and conversion blockers, and set a dated referral commitment.</p></div><div><b>60 days — convert</b><p>Follow qualified referrals through preapproval and contracts. Coordinate with the correct LP on barriers.</p></div><div><b>90 days — measure</b><p>Review actual referrals, closings, retained activity, and verified tier movement; reset the plan.</p></div></div><p class="rmGrowSmall">Production and last-lead figures reflect shared agent profiles, not a complete loan-level conversion funnel. Review LP Tracker for individual buyer status. Contact history and outreach reasons must be logged through the existing RM workflow.</p></section>';
 target.after(page);
-const invite=document.createElement('section');invite.id='rmInvitePlanner';invite.className='rmGrowList';invite.innerHTML='<h3>Break Bread & Office Visit Invitations</h3><p class="rmGrowHelp">Who should Amanda invite next? Shows active C agents, prior Break Breads and upcoming meetings from shared records. Click a name to open their plan. No calls are automatically assigned.</p><p class="rmInviteCount rmGrowSmall">Loading current relationships…</p><div class="rmGrowFilters"><input id="rmInviteSearch" type="search" placeholder="Search agents…" aria-label="Search C-agent Face Time"><select id="rmInviteFilter"><option value="all">All C accounts</option><option value="unscheduled">Needs scheduling</option><option value="scheduled">Already scheduled</option></select><select id="rmInviteSort"><option value="urgent">Sort: most urgent</option><option value="scheduled">Next booked date</option><option value="az">Agent A–Z</option></select></div><div class="rmGrowTableWrap"><table class="rmGrowTable"><thead><tr><th>Agent</th><th>Last visit</th><th>Next meeting</th><th>Last meaningful contact</th><th>Why prioritize</th><th>Action</th></tr></thead><tbody></tbody></table></div><p class="rmGrowSmall">Missing meeting history means not recorded, not necessarily never met. Confirm invitations before scheduling.</p>';
+const invite=document.createElement('section');invite.id='rmInvitePlanner';invite.className='rmGrowList';invite.innerHTML='<h3>Face Time · Break Breads & Office Visits</h3><p class="rmGrowHelp">Who should Amanda invite next? Shows active C agents, prior Break Breads and upcoming meetings from shared records. Click a name to open their plan. No calls are automatically assigned.</p><p class="rmInviteCount rmGrowSmall">Loading current relationships…</p><div class="rmGrowFilters"><input id="rmInviteSearch" type="search" placeholder="Search agents…" aria-label="Search C-agent Face Time"><select id="rmInviteFilter"><option value="all">All C accounts</option><option value="unscheduled">Needs scheduling</option><option value="scheduled">Already scheduled</option></select><select id="rmInviteSort"><option value="urgent">Sort: most urgent</option><option value="scheduled">Next booked date</option><option value="az">Agent A–Z</option></select></div><div class="rmGrowTableWrap"><table class="rmGrowTable"><thead><tr><th>Agent</th><th>Last visit</th><th>Next meeting</th><th>Last meaningful contact</th><th>Why prioritize</th><th>Action</th></tr></thead><tbody></tbody></table></div><p class="rmGrowSmall">Missing meeting history means not recorded, not necessarily never met. Confirm invitations before scheduling.</p>';
 page.querySelector('.rmGrowTop')?.after(invite);
+const top=page.querySelector('.rmGrowTop');
+const faceNav=document.createElement('button');faceNav.type='button';faceNav.id='rmFaceTimeJump';
+faceNav.className='rmGrowBtn';faceNav.textContent='Face Time · C Accounts';
+faceNav.setAttribute('aria-label','Open Face Time scheduling for C accounts');
+faceNav.onclick=()=>{invite.scrollIntoView({behavior:'smooth',block:'start'});const search=invite.querySelector('#rmInviteSearch');if(search)search.focus({preventScroll:true})};
+top?.after(faceNav);
+
 const visitForm=document.createElement('section');visitForm.id='rmInviteForm';visitForm.className='rmGrowList';visitForm.hidden=true;
 visitForm.innerHTML='<h3 id="rmInviteAgent">Visit</h3><div class="rmGrowFilters"><label>Date <input id="rmInviteDate" type="date" required></label><label>Visit type <select id="rmInviteType"><option>Break Bread</option><option>Office Visit</option><option>Agent Lunch</option></select></label></div><label>Notes / visit outcome <textarea id="rmInviteNotes" rows="2" style="width:100%;min-height:75px" placeholder="Purpose, outcome, or next step"></textarea></label><div class="rmGrowthHomeActions"><button class="rmGrowBtn" type="button" id="rmInviteSave">Save</button><button class="rmGrowBtn alt" type="button" id="rmInviteCancel">Cancel</button></div><p id="rmInviteResult" role="status" class="rmGrowHelp"></p>';
 invite.after(visitForm);
@@ -310,5 +333,11 @@ document.getElementById('rmGrowExport').addEventListener('click',()=>{const rows
 refresh();
 }
 function open(){if(typeof switchTab==='function'){switchTab('growth-command');if(!state.loaded)refresh();}else location.href='./c-to-b-opportunities.html'}
-window.rmGrowthCommand={refresh,open,view,state};if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',create);else create();
+function openFaceTime(){
+ open();
+ const tryFocus=()=>{const el=document.getElementById('rmInvitePlanner');if(el){el.scrollIntoView({behavior:'smooth',block:'start'});document.getElementById('rmInviteSearch')?.focus({preventScroll:true})}};
+ tryFocus();
+ setTimeout(tryFocus,250);
+}
+window.rmGrowthCommand={refresh,open,openFaceTime,mountActivityCard:rmActivityMountInWorkday,view,state};if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',create);else create();
 })();
