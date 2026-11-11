@@ -62,12 +62,14 @@ function mount(){
   const topics=all('rmRelTopics'),asks=all('rmRelAsks'),support=all('rmRelSupport');
   const result=$('rmRelAskResult').value,summary=$('rmRelSummary').value.trim(),next=$('rmRelNext').value;
   const error=$('rmRelError');error.hidden=true;error.textContent='';
-  let message='';
-  if(conversation&&!asks.length)message='Select what you asked for, including a lead or meeting opportunity.';
-  else if(conversation&&!result)message='Record what came of the opportunity request.';
-  else if(conversation&&!summary)message='Add a brief note on what you learned or what the agent shared.';
-  else if(next&&next!=='No further action'&&!nativeFollow?.value)message='Choose a follow-up date for this next step.';
-  if(message){event.stopImmediatePropagation();event.preventDefault();error.textContent=message;error.hidden=false;error.scrollIntoView({block:'nearest'});return}
+  // Never trap an assignment behind additional optional fields. Preserve missing
+  // conversation details explicitly for director review instead of inventing an ask.
+  const gaps=[];
+  if(conversation&&!asks.length)gaps.push('opportunity request');
+  if(conversation&&!result)gaps.push('request result');
+  if(conversation&&!summary)gaps.push('conversation summary');
+  if(next&&next!=='No further action'&&!nativeFollow?.value)gaps.push('follow-up date');
+  if(gaps.length){error.textContent='Saved record will flag missing: '+gaps.join(', ')+'. Add these now for better coaching notes.';error.hidden=false;}
   const outcomeMap={'call-spoke':'Talked','call-vm':'Voicemail','call-no':'No answer','text-pending':'Text sent','text-reply':'Talked','text-ack':'Text sent','meeting-held':'Completed non-call task','meeting-missed':'No answer'};
   nativeOutcome.value=outcomeMap[val]||'No answer';
   const detail=[
@@ -75,10 +77,10 @@ function mount(){
    'Actual outcome: '+$('rmRelOutcome').selectedOptions[0].textContent,
    ...(conversation?[
      'Discussed: '+(topics.join(', ')||'Not specified'),
-     'Asked for: '+asks.join(', '),
-     'Opportunity result: '+result,
+     'Asked for: '+(asks.join(', ')||'Not documented'),
+     'Opportunity result: '+(result||'Not documented'),
      'How we can help: '+(support.join(', ')||'Not specified'),
-     'What we learned: '+summary
+     'What we learned: '+(summary||'Not documented')
    ]:[]),
    'Next step: '+(next||'Not specified')
   ];
