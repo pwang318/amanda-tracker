@@ -49,5 +49,5 @@ assert(html.includes('reconciliation_gap:discrepancy'),'Agent-row reconciliation
 
 assert(daily.includes("const preview=list.cloneNode(true)"), 'Realtor call-list content must render inside Prospect & Grow, not just navigate away');
 assert(daily.includes("id=\"execInlineProspects\""), 'Prospect & Grow includes its own expandable Realtor call list');
-assert(daily.includes(String.raw`/^Shared data:\s*reconciliation required\b/i`), 'Floating warning matcher must match actual notice text');
-assert(!daily.includes(String.raw`/^Shared data:\\s*reconciliation required\\b/i`), 'Do not double-escape the floating warning regex');
+assert(compact.includes(String.raw`/^Shared data:\s*reconciliation required\b/i`), 'Floating warning matcher must match actual notice text in compact warning cleanup');
+assert(!compact.includes(String.raw`/^Shared data:\\s*reconciliation required\\b/i`), 'Do not double-escape the floating warning regex');
