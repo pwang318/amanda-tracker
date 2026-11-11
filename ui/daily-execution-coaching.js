@@ -631,23 +631,37 @@ function taskNextAction(q){
  return 'Review the saved reason, complete the assigned action, and log the outcome and next step.';
 }
 function taskList(title,rows,empty,showHeading=true){
- const list=rows.map((q,i)=>{
-  const agent=q.agent_name||q['Agent / Item']||'Realtor not recorded';
-  const type=q.Category||q.activity_type||'Assigned work';
-  const reason=String(q.reason||'').trim();
-  const action=taskNextAction(q);
-  const due=q.work_date||q['Due Date']||'';
-  const origin=q.source||'Amanda assigned work queue';
-  const isCtc=/\bctc\b|clear[ -]?to[ -]?close/i.test(type);
-  const isContract=/new[ -]?contract|under contract/i.test(type);
-  const isCatchup=/\bCatch-up from\b/i.test(reason);
-  const readableName=String(agent).toLowerCase()===String(agent).toUpperCase()?String(agent).toLowerCase().replace(/\b\w/g,c=>c.toUpperCase()):agent;
-  return '<li class="execWorkCard">'+
-   '<div class="execWorkCardHeader"><div><b>'+safe(readableName)+'</b><span>'+safe(type)+'</span></div><div class="execWorkBadges">'+(due?'<small>Due '+safe(due)+'</small>':'')+(isCatchup?'<small class="execCatchupBadge">Catch-up</small>':'')+'</div></div>'+
-   '<div class="execWorkCardBody"><p><strong>Why here:</strong> '+safe(reason||'Open assignment in this worklist')+'</p><p><strong>Next action:</strong> '+safe(action)+'</p></div>'+
-   '<div class="execWorkCardFooter"><span>'+safe(origin)+'</span><button type="button" class="execTaskGo" data-index="'+i+'">'+(isCtc?'Log CTC call':isContract?'Log New Contract call':q.id?'Log activity / Complete':'Open activity log')+' ↗</button></div></li>';
+ // One visible Realtor card, with individually actionable work items beneath it.
+ // Never collapse separate activities in the database or lose their original row indexes.
+ const grouped=new Map();
+ rows.forEach((q,i)=>{
+  const agent=String(q.agent_name||q['Agent / Item']||'Realtor not recorded').trim();
+  const k=agent.toLocaleLowerCase();
+  if(!grouped.has(k))grouped.set(k,{agent,items:[]});
+  grouped.get(k).items.push({q,i});
+ });
+ const cards=[...grouped.values()].map(group=>{
+  const readableName=typeof nameCase==='function'?nameCase(group.agent):group.agent.toLowerCase().replace(/\b\w/g,x=>x.toUpperCase());
+  const tasks=group.items.map(({q,i})=>{
+   const type=String(q.Category||q.activity_type||'Assigned work');
+   const rawReason=String(q.reason||'').trim();
+   // Old source dates belong in audit history, not in today's action instructions.
+   const reason=rawReason.replace(/\s*\|\s*Catch-up from\s+\d{4}-\d{2}-\d{2};?\s*log actual outcome/gi,'').trim();
+   const due=q.work_date||q['Due Date']||'';
+   const isCtc=/\bctc\b|clear[ -]?to[ -]?close/i.test(type),isContract=/new[ -]?contract|under contract/i.test(type);
+   const button=isCtc?'Log CTC call':isContract?'Log New Contract call':q.id?'Log activity / Complete':'Open activity log';
+   return '<div class="execGroupedAction"><div class="execGroupedActionInfo"><strong>'+safe(type)+'</strong>'+
+    (due?'<span class="execGroupedDue">Due '+safe(due)+'</span>':'')+
+    '<p>'+safe(reason||'Outstanding relationship action')+'</p>'+
+    '<small>'+safe(taskNextAction(q))+'</small></div>'+
+    '<button type="button" class="execTaskGo" data-index="'+i+'" aria-label="'+safe(button+' for '+group.agent+' — '+type)+'">'+safe(button)+' ↗</button></div>';
+  }).join('');
+  return '<li class="execWorkCard execGroupedCard"><div class="execWorkCardHeader"><div><b>'+safe(readableName)+'</b>'+
+    '<span>'+group.items.length+' outstanding '+(group.items.length===1?'action':'actions')+'</span></div></div>'+
+    '<div class="execGroupedActions">'+tasks+'</div></li>';
  }).join('');
- return '<section class="execWorkCardSection">'+(showHeading?'<strong>'+safe(title)+' · '+rows.length+'</strong>':'')+(rows.length?'<ul class="execWorkCardList">'+list+'</ul>':'<p>'+safe(empty)+'</p>')+'</section>';
+ return '<section class="execWorkCardSection">'+(showHeading?'<strong>'+safe(title)+' · '+rows.length+' assignments · '+grouped.size+' Realtors</strong>':'')+
+  (rows.length?'<ul class="execWorkCardList">'+cards+'</ul>':'<p>'+safe(empty)+'</p>')+'</section>';
 }
 function openActivityDetail(kind,scroll=true){
  const d=iso();
@@ -1151,7 +1165,7 @@ function renderMissedSummary(d){
   metric('Weekly meetings:',weekly.newHeld+' / '+weekly.target+' new',weekly.breads+' / '+weekly.target+' Break Breads',weekly.newHeld>=weekly.target&&weekly.breads>=weekly.target)
  ];
  const grouped=new Map();
- due.forEach(q=>{const name=nameCase(q.agent_name||q['Agent / Item']||'Unspecified agent'),type=String(q.activity_type||q.Category||'Follow-up').trim(),key=(name+'|'+type).toLowerCase();const item=grouped.get(key)||{name,type,count:0,rows:[]};item.count++;item.rows.push(q);grouped.set(key,item)});
+ due.forEach(q=>{const name=nameCase(q.agent_name||q['Agent / Item']||'Unspecified agent'),type=String(q.activity_type||q.Category||'Follow-up').trim(),key=name.toLowerCase();const item=grouped.get(key)||{name,type:'',count:0,types:new Set(),rows:[]};item.count++;item.types.add(type);item.type=[...item.types].join(' · ');item.rows.push(q);grouped.set(key,item)});
  const groups=[...grouped.values()];
  const taskLine=(q,i)=>'<button type="button" class="execEodTask" data-eod-task="'+i+'" aria-label="Open '+safe(q.name)+' '+safe(q.type)+(q.count>1?' '+q.count+' assignments':'')+'"><b>'+safe(q.name)+'</b><span>'+safe(q.type)+'</span>'+(q.count>1?'<em>'+q.count+' items</em>':'')+'<span class="execEodOpen">Open ↗</span></button>';
  el.innerHTML='<div class="execEodHeading"><strong>Results for '+safe(fmt(d))+'</strong><small>Daily results and outstanding commitments</small></div>'+
