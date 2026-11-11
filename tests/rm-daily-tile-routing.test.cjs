@@ -153,7 +153,7 @@ assert(code.includes("id=\"execCatchupList\""), 'Catch-up work remains available
 assert(code.includes('id="execInlineProspects"'),'One Realtor call-list section stays in Prospect & Grow');
 assert(code.includes('worklistExplanation(group[0],group[1])'),'Each category displays why its Realtors are listed and what to do');
 assert(code.includes("const key=title.startsWith('Due today')"), 'Date-varying sections must still show their guidance');
-assert(code.includes('const action=taskNextAction(q);'),'Every task must use its own type and saved next action');
+assert(code.includes("const type=String(q.Category||q.activity_type||'Assigned work');") && code.includes("safe(taskNextAction(q))"),'Every grouped action retains its own type and next action');
 assert(code.includes("reason:r.Notes||r.Status||''"),'Portfolio-specific notes are retained as the reason Realtor appears');
 assert(code.includes("source:'Amanda-owned portfolio worklist'"),'Portfolio assignments identify their source');
 assert(code.includes(".filter(r=>validAssignedAgent(r.agent_name))") && code.includes("const validAssignedAgent=name=>"),'Placeholder names like None None must not become Realtor tasks');
