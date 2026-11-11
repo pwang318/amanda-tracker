@@ -201,7 +201,7 @@ assert(!code.includes("'Open imported files ↗'"),'CTC and Contract tiles must 
 assert(code.includes("if(group[0]==='CTC calls'||group[0]==='New contract calls')"),'Old transaction detail views must route to original workbench');
 assert(code.includes("if(index>=0&&!['CTC calls','New contract calls'].includes(categories[index][0]))"),'Historical August catch-ups must not be counted as current imported CTC calls');
 
-assert(code.includes("const current=[...allFiles.values()].filter(x=>x.batch===newestBatch)"),'Current calls must use only most recent import batch');
+assert(code.includes("const state=(await rmReadLatestTransactions(true))[isCtc?'ctc':'contract'];") && code.includes("const current=state.files;") && code.includes("const newestBatch=state.batch;"),'Current calls must use only most recent import batch as resolved by the shared import reconciler');
 assert(code.includes("file.closeDate?'Est. close '"),'File picker displays estimated closing dates rather than activity dates');
 assert(code.includes("historical.length+' older imported record(s) hidden"),'Old files must be kept outside current transaction list');
 
