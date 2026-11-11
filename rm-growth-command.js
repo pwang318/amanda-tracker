@@ -343,7 +343,7 @@ async function rmActivityCardLoad(){
    const a=items[Number(button.dataset.activityIndex)];
    if(!a||!detailPanel)return;
    const label=typeof rmNameLabel==='function'?rmNameLabel(a.agent_name||'Agent'):(a.agent_name||'Agent');
-   const formatDate=d=>/^\\d{4}-\\d{2}-\\d{2}$/.test(String(d||''))?new Date(d+'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}):'Not scheduled';
+   const formatDate=d=>/^\d{4}-\d{2}-\d{2}$/.test(String(d||''))?new Date(d+'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}):'Not scheduled';
    const notes=String(a.notes||'').trim();
    detailPanel.innerHTML='<button type="button" class="rmActDetailClose" aria-label="Close activity details">Close ×</button>'+
      '<h3 class="rmActDetailTitle">'+rmActivityEscape(label)+'</h3>'+
