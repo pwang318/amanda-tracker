@@ -142,7 +142,7 @@ assert(code.includes('data-carry-open'), 'Manager review can open specific Realt
 assert(code.includes('managerTasks[Number(button.getAttribute'), 'Manager-review navigation maps each tile to its own assignment');
 
 assert(!code.includes('id="execQuickGuide"'), 'RM Today must stay clear of the unwanted onboarding guide');
-assert(code.includes('id="execRecentDisclosure"'), 'Recent activity should be collapsed until needed');
+assert(!code.includes('<details id="execRecentDisclosure">'), 'Do not duplicate the Activity Today summary with another activity log below Prospect and grow');
 assert(code.includes("const visibleWorklists=new Set(["), 'Every main relationship worklist remains visible when completed');
 assert(code.includes("visibleWorklists.has(group[0])"), 'Cleared categories remain visible, including transaction calls');
 assert(code.includes("!['Catch-up assignments','New Realtor outreach assignments'].includes(group[0])"), 'Catch-up remains a separate explicit list, not an extra tile');
