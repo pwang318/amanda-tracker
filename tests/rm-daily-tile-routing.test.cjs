@@ -203,11 +203,11 @@ assert(code.includes("if(index>=0&&!['CTC calls','New contract calls'].includes(
 
 assert(code.includes("const state=(await rmReadLatestTransactions(true))[isCtc?'ctc':'contract'];") && code.includes("const current=state.files;") && code.includes("const newestBatch=state.batch;"),'Current calls must use only most recent import batch as resolved by the shared import reconciler');
 assert(code.includes("file.closeDate?'Est. close '"),'File picker displays estimated closing dates rather than activity dates');
-assert(code.includes("historical.length+' older imported record(s) hidden"),'Old files must be kept outside current transaction list');
+assert(code.includes("const historical=[];") && code.includes("const current=state.files;"),'Old files must be excluded from current transaction picker by the shared reconciler');
 
 assert(code.includes('function paintImportedCallCounters()'),'Transaction worklist tiles must use actual import counts');
 assert(code.includes('refreshImportedCallCounters(true)'),'Transaction counters must refresh from shared imports');
-assert(code.includes("new Set(selected.filter(x=>x.batch===latest)"),'Latest import count must deduplicate exact transaction IDs');
+assert(code.includes("for(const x of list.filter(v=>v.batch===batch))") && code.includes("if(files.has(x.id))continue;"),'Latest import deduplicates exact transaction IDs');
 assert(code.includes("data.outstanding+' calls outstanding ↗'"),'Incomplete transactions show true outstanding contacts');
 assert(code.includes("done?'Complete'"),'Completed transaction tiles show only Complete');
 assert(code.includes("data.count>0&&data.outstanding===0"),'Never mark an empty or unverified import complete');
