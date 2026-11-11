@@ -251,7 +251,7 @@ function planned(d){return queue.filter(q=>String(q.status||'').toLowerCase()===
 function pastDue(d){return queue.filter(q=>String(q.status||'').toLowerCase()==='open'&&q.work_date&&String(q.work_date).slice(0,10)>=COACHING_START&&String(q.work_date).slice(0,10)<d)}
 function mount(){
  const board=$('rm350Workboard')||$('view-week');if(!board)return;
- const existing=$('rmExecutionPlan');if(existing){if(existing.parentElement!==board)board.prepend(existing);if(board.id==='rm350Workboard')board.classList.add('rmExecReady');return;}
+ const existing=$('rmExecutionPlan');if(existing){if(existing.parentElement!==board)board.prepend(existing);if(board.id==='rm350Workboard')board.classList.add('rmExecReady');window.rmGrowthCommand?.mountActivityCard?.();return;}
  const div=document.createElement('section');div.id='rmExecutionPlan';
  div.innerHTML='<div id="execQuickLog" class="execQuickLog"><div><strong>Log Activity</strong><span>Calls, new Realtor outreach, messages and meetings</span></div><button type="button" id="execQuickLogBtn">+ Log Activity</button></div><div class="execRow"><div><h2>Today’s workday</h2><p>Start with what is due, then work your prospecting and relationship lists.</p></div><button id="execReload" type="button">Refresh live activity</button></div>'+
  '<button type="button" id="execCampaignShortcut" aria-label="Open 4-Week Campaign follow-ups"><span>4-Week Campaign ↗</span><strong id="execCampaignShortcutStatus">Checking follow-ups…</strong></button>'+ 
@@ -272,6 +272,8 @@ function mount(){
  '<details id="execCoaching"><summary>Manager review · work completed, open, and carried forward</summary><div id="execManagerAccountability" class="execNotice"></div><div id="execTrends">Loading trend…</div></details>';
  // The RM workboard is the only visible direct child of Today: its siblings are intentionally hidden by the existing layout CSS.
  board.prepend(div);
+ window.rmGrowthCommand?.mountActivityCard?.();
+ window.dispatchEvent(new Event('rm-execution-plan-ready'));
  $('execQuickLogBtn').onclick=()=>{
   if(typeof window.switchTab==='function'){window.switchTab('log');return}
   const log=$('view-log');if(log){log.scrollIntoView({behavior:'smooth',block:'start'});log.querySelector('input:not([type="hidden"])')?.focus({preventScroll:true})}
