@@ -301,7 +301,7 @@ async function rmActivityCardLoad(){
   const raw=String(value||'').trim().replace(' ','T');
   if(!raw)return 'Time unavailable';
   // Database created_at is stored as a UTC timestamp without a timezone suffix.
-  const stamped=/Z$|[+-]\\d{2}:?\\d{2}$/.test(raw)?raw:raw+'Z';
+  const stamped=/Z$|[+-]\d{2}:?\d{2}$/.test(raw)?raw:raw+'Z';
   const timestamp=new Date(stamped);
   if(Number.isNaN(timestamp.getTime()))return 'Time unavailable';
   return timestamp.toLocaleString('en-US',{timeZone:'America/New_York',month:'short',day:'numeric',year:'numeric',hour:'numeric',minute:'2-digit'});
