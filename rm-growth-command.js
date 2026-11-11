@@ -151,10 +151,61 @@ const note=document.createElement('p');note.className='rmGrowSmall';note.textCon
 const home=document.getElementById('rmGrowHomeHint');if(home)home.textContent=owned.filter(r=>r.tier==='C'&&r.closings===1).length+' C agents with 1 close · '+owned.filter(r=>r.daysNoLead!==null&&r.daysNoLead>=30).length+' with 30+ days since last lead. Open the work order →';
 }
 function view(v){state.view=v;document.querySelectorAll('.rmGrowNav button').forEach(b=>b.classList.toggle('active',b.dataset.view===v));const desc={grow:'All C Accounts: grow relationships with a clear referral goal and a dated next step.',protect:'Need Attention: agents with 30+ days without a recorded lead, unknown lead date, or a competitor risk flag. Call to understand their buyer pipeline, resolve service issues, agree on a referral opportunity, and schedule follow-up.',convert:'Referral Opportunities: C agents who have referred at least one lead in the past year. Coordinate with their loan partner to move qualified buyers forward and ask for the next referral.',near:'Close to B: C agents with one annual closing. One additional verified closing would meet the two-closing B threshold, subject to official tier rules.',missing:'Missing Next Step: C agents without a saved next growth opportunity. Set a specific buyer/referral action and due date.'};const expl=document.getElementById('rmGrowViewExplain');if(expl)expl.textContent=desc[v]||desc.grow;render();}
+
+/* Compact daily activity overview. Independent of work queue: only real activity, not imported transaction triggers. */
+const rmActivityEscape=s=>String(s??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','"':'&quot;'}[ch]));
+const rmActivityToday=()=>{const d=new Date();return [d.getFullYear(),String(d.getMonth()+1).padStart(2,'0'),String(d.getDate()).padStart(2,'0')].join('-')};
+function rmActivityCardCreate(){
+ const home=document.getElementById('view-week');
+ if(!home||document.getElementById('rmActivityTodayCard'))return;
+ const css=document.createElement('style');css.textContent=`
+ #rmActivityTodayCard{background:white;border:1px solid #e5dfed;border-radius:14px;margin:12px 0;padding:15px;color:#211b32;box-shadow:0 2px 8px rgba(32,23,55,.04)}
+ #rmActivityTodayCard .rmActHead{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
+ #rmActivityTodayCard h2{font-size:17px;margin:0;font-weight:750}#rmActivityTodayCard .rmActMeta{font-size:12px;color:#716781}
+ #rmActivityTodayCard .rmActRefresh{border:1px solid #d8cde7;border-radius:8px;padding:7px 12px;color:#573981;background:white;cursor:pointer;font-weight:600}
+ #rmActivityTodayCard .rmActStats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin:13px 0}
+ #rmActivityTodayCard .rmActStat{background:#faf8fd;border-radius:9px;padding:10px}#rmActivityTodayCard .rmActStat strong{display:block;font-size:21px;color:#52367c}#rmActivityTodayCard .rmActStat span{font-size:11px;color:#655b71}
+ #rmActivityTodayCard .rmActItems{margin:0;padding:0;list-style:none}#rmActivityTodayCard .rmActItems li{display:flex;gap:10px;justify-content:space-between;border-top:1px solid #eeeaf3;padding:9px 0;font-size:12px;line-height:1.45}
+ #rmActivityTodayCard .rmActItems small{color:#716781}#rmActivityTodayCard .rmActEmpty{font-size:12px;color:#716781}
+ @media(max-width:620px){#rmActivityTodayCard .rmActStats{grid-template-columns:repeat(2,minmax(0,1fr))}#rmActivityTodayCard .rmActItems li{display:block}}
+ `;document.head.appendChild(css);
+ const card=document.createElement('section');card.id='rmActivityTodayCard';card.setAttribute('aria-label',"Amanda's activity today");
+ card.innerHTML='<div class="rmActHead"><div><h2>Amanda’s Activity Today</h2><div class="rmActMeta" id="rmActDate"></div></div><button type="button" class="rmActRefresh" id="rmActRefresh">Refresh activity</button></div><div class="rmActStats" id="rmActStats"></div><div class="rmActMeta" style="margin-bottom:6px">Most recent logged activity</div><ul class="rmActItems" id="rmActItems"><li>Loading today’s activity…</li></ul><div class="rmActMeta" id="rmActUpdated"></div>';
+ home.insertBefore(card,home.firstChild);card.querySelector('#rmActRefresh').addEventListener('click',rmActivityCardLoad);
+ rmActivityCardLoad();
+ document.addEventListener('visibilitychange',()=>{if(!document.hidden)rmActivityCardLoad()});
+ window.addEventListener('focus',rmActivityCardLoad);
+}
+let rmActivityBusy=false;
+async function rmActivityCardLoad(){
+ const card=document.getElementById('rmActivityTodayCard');if(!card||rmActivityBusy)return;
+ const today=rmActivityToday();card.querySelector('#rmActDate').textContent=today;
+ const list=card.querySelector('#rmActItems'),stats=card.querySelector('#rmActStats');
+ if(typeof sbFetch!=='function'){list.innerHTML='<li>Shared activity data is unavailable.</li>';return}
+ rmActivityBusy=true;
+ try{
+ const rows=await sbFetch('amanda_activities?select=id,agent_name,act_type,act_date,outcome,created_at,notes&act_date=eq.'+today+'&order=created_at.desc&limit=1000');
+ if(!Array.isArray(rows))throw Error('The shared activity service did not return a list.');
+ const items=rows.filter(a=>{
+  const t=String(a.act_type||'').toLowerCase(),n=String(a.notes||'');
+  return !/transaction snapshot|clear to close|new contract/.test(t)&&!n.includes('[TXN_TRIGGER]')&&!n.includes('[TXN_SNAPSHOT]')&&!n.includes('[TXN_SUPPRESSED]');
+ });
+ const calls=items.filter(a=>/call|talk.to|outreach|check.in|listing agent update/.test(String(a.act_type||'').toLowerCase()));
+ const conversations=items.filter(a=>/connected|talked|positive|spoke|conversation|reached/.test(String(a.outcome||'').toLowerCase()));
+ const meetings=items.filter(a=>/meeting|break bread|business planning/.test(String(a.act_type||'').toLowerCase()));
+ const followups=items.filter(a=>/follow.up|check.in|reconnect/.test(String(a.act_type||'').toLowerCase()));
+ stats.innerHTML=[['Calls logged',calls.length],['Conversations',conversations.length],['Meetings',meetings.length],['Follow-ups',followups.length]].map(([label,n])=>'<div class="rmActStat"><strong>'+n+'</strong><span>'+label+'</span></div>').join('');
+ list.innerHTML=items.length?items.slice(0,5).map(a=>'<li><span><strong>'+rmActivityEscape(a.agent_name||'Agent')+'</strong> · '+rmActivityEscape(a.act_type||'Activity')+'<br><small>'+rmActivityEscape(a.outcome||'Logged')+'</small></span></li>').join(''):'<li class="rmActEmpty">No activity logged today yet.</li>';
+ card.querySelector('#rmActUpdated').textContent='From shared activity log · '+items.length+' logged activities today';
+ }catch(e){list.innerHTML='<li>Could not load today’s activity. Use Refresh activity to try again.</li>';stats.innerHTML='';}
+ finally{rmActivityBusy=false;}
+}
+
 function create(){
 if(document.getElementById('rmGrowthHome'))return;
 const style=document.createElement('style');style.textContent=STYLE;document.head.append(style);
 const home=document.getElementById('view-week');if(!home)return;
+rmActivityCardCreate();
 const box=document.createElement('section');box.id='rmGrowthHome';box.innerHTML='<h2>📈 Grow & Protect Agent Business</h2><p>All active C accounts only. Grow C → B opportunities, protect existing C relationships, and convert referrals into business. Meetings are activities—not the outcome.</p><p id="rmGrowHomeHint">Open the growth work order for live priorities →</p><div class="rmGrowthHomeActions"><button class="rmGrowBtn" id="rmGrowHomeOpen">Open Growth Work Order</button><button class="rmGrowBtn alt" id="rmGrowHomePortfolio">Portfolio Health</button><button class="rmGrowBtn alt" id="rmGrowHomeRefresh">Refresh priorities</button></div>';
 box.hidden=true;home.insertBefore(box,home.firstChild); // Avoid duplicating the daily relationship reminder
 let nav=document.querySelector('.tab[data-tab="growth"]');if(nav){const newnav=document.createElement('div');newnav.className='tab';newnav.dataset.tab='growth-command';newnav.title='Live growth, retention, conversion and weekly action plan';newnav.innerHTML='<span class="nav-num">↑</span><span>Grow + Protect</span>';nav.before(newnav);nav.hidden=true;nav.setAttribute('aria-hidden','true');nav.style.display='none';newnav.addEventListener('click',()=>open())}
