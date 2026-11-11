@@ -830,7 +830,19 @@ function render(){
  const queueKeys=new Set(queue.map(q=>[String(q.agent_name||'').trim().toLowerCase(),String(q.activity_type||'').trim().toLowerCase(),String(q.work_date||'').slice(0,10)].join('|')));
  const resolvedSupplementKeys=rmCompletedSupplementKeys();
  const supplements=fullVerified?canonical.filter(r=>!queueKeys.has([String(r.agent_name||'').trim().toLowerCase(),String(r.activity_type||'').toLowerCase(),String(r.work_date||'').slice(0,10)].join('|'))&&!resolvedSupplementKeys.has(rmSupplementKey(r))):[];
- const allRaw=queue.concat(supplements).filter(q=>validAssignedAgent(q.agent_name));
+ // Collapse only duplicate catch-up tasks that describe the same agent, action, and date.
+ // Retain distinct records when the action or substantive saved reason differs.
+ const seenCatchup=new Set();
+ const allRaw=queue.concat(supplements).filter(q=>{
+  if(!validAssignedAgent(q.agent_name))return false;
+  const reason=String(q.reason||q.Notes||'');
+  if(!/\bCatch-up from\b/i.test(reason))return true;
+  const baseReason=reason.split(/\s*\|\s*Catch-up from\s*/i)[0].trim().toLowerCase();
+  const duplicateKey=[String(q.agent_name||'').trim().toLowerCase(),String(q.activity_type||q.Category||'').trim().toLowerCase(),String(q.work_date||q['Due Date']||'').slice(0,10),String(q.source||'').toLowerCase(),baseReason].join('|');
+  if(seenCatchup.has(duplicateKey))return false;
+  seenCatchup.add(duplicateKey);
+  return true;
+ });
  // Never merge distinct saved assignments just because they share an agent, type and date.
  // Only suppress a supplemental worklist row when it mirrors an authoritative queue row.
  const all=allRaw.map(q=>({...q,work_date:String(q.work_date||'').slice(0,10)}));
