@@ -949,7 +949,7 @@ function render(){
    else if(shortMinutes>0)topics.push(shortMinutes+' prospecting minutes remaining');
    if(urgent)topics.push(urgent+' due or overdue assignments');
    if(undated.length)topics.push(undated.length+' undated follow-ups to review');
-   nudge.innerHTML='<div><strong>'+slot+' check-in · Here’s what is still open</strong><p>'+safe(topics.slice(0,3).join(' · '))+'.</p><small>Based on the latest verified worklists, not a measure of effort or time on the phone.</small></div><div class="execRow"><button type="button" id="execNudgeOpen">View next actions</button><button type="button" id="execNudgeDismiss">Got it</button></div>';
+   nudge.innerHTML='<div><strong>'+slot+' check-in · Here’s what is still open</strong><p>'+safe(topics.slice(0,3).join(' · '))+'.</p></div><div class="execRow"><button type="button" id="execNudgeOpen">View next actions</button><button type="button" id="execNudgeDismiss">Got it</button></div>';
    $('execNudgeOpen').onclick=()=>{if(urgent)showDetail(late.length?'section:0':'section:1');else if(shortCalls)showDetail('activity:cold');else if(undated.length)showDetail('section:5');else{$('execCloseout').open=true;$('execCloseout').scrollIntoView({behavior:'smooth',block:'center'})}};
    $('execNudgeDismiss').onclick=()=>{sessionStorage.setItem('rm-nudge-dismissed-'+d+'-'+slot,'1');nudge.classList.remove('isVisible')};
   }else nudge.innerHTML='';
