@@ -817,13 +817,20 @@ function showDetail(key,scroll=true){
 function render(){
  if(!$('execNotice'))return;const d=iso(),offNow=isOff(d),cold=coldFor(d),next=nextWorkday(d);
  const cleanFull=fullWork.filter(r=>{const due=String(r['Due Date']||'').slice(0,10);return !due||due>=COACHING_START});
- const canonical=cleanFull.map(r=>({agent_name:String(r['Agent / Item']||'').trim(),activity_type:r.Category,work_date:String(r['Due Date']||'').slice(0,10),Category:r.Category,reason:r.Notes||r.Status||'',source:'Amanda-owned portfolio worklist','Next Action':r['Next Action']})).filter(r=>r.agent_name);
+ // Imported transaction snapshots with placeholders (e.g. "None None") are not Realtor calls.
+ // Keep the loan metadata in the transaction history, but never create an actionable RM card without a real agent.
+ const validAssignedAgent=name=>{
+  const normalized=String(name||'').trim().toLowerCase().replace(/[^a-z0-9]/g,'');
+  return Boolean(normalized)&&!['none','nonenone','null','nullnull','unknown','unknownunknown','na','nana','tbd','noagent','unassigned','undefined'].includes(normalized);
+ };
+ const canonical=cleanFull.map(r=>({agent_name:String(r['Agent / Item']||'').trim(),activity_type:r.Category,work_date:String(r['Due Date']||'').slice(0,10),Category:r.Category,reason:r.Notes||r.Status||'',source:'Amanda-owned portfolio worklist','Next Action':r['Next Action']})).filter(r=>validAssignedAgent(r.agent_name));
+
  // The persisted open queue is authoritative. Supplemental portfolio work cannot erase an
  // unfinished queue assignment simply because an agent appears elsewhere with the same category.
  const queueKeys=new Set(queue.map(q=>[String(q.agent_name||'').trim().toLowerCase(),String(q.activity_type||'').trim().toLowerCase(),String(q.work_date||'').slice(0,10)].join('|')));
  const resolvedSupplementKeys=rmCompletedSupplementKeys();
  const supplements=fullVerified?canonical.filter(r=>!queueKeys.has([String(r.agent_name||'').trim().toLowerCase(),String(r.activity_type||'').toLowerCase(),String(r.work_date||'').slice(0,10)].join('|'))&&!resolvedSupplementKeys.has(rmSupplementKey(r))):[];
- const allRaw=queue.concat(supplements);
+ const allRaw=queue.concat(supplements).filter(q=>validAssignedAgent(q.agent_name));
  // Never merge distinct saved assignments just because they share an agent, type and date.
  // Only suppress a supplemental worklist row when it mirrors an authoritative queue row.
  const all=allRaw.map(q=>({...q,work_date:String(q.work_date||'').slice(0,10)}));
