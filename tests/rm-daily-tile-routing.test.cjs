@@ -31,7 +31,7 @@ assert(code.includes("if(kind==='plans')return showDetail('plans')"),'Missing gr
 assert(code.includes("detailGroups.push(exactPlans)"),'Exact missing growth plans group is independently addressable');
 assert(code.includes("const board=$('rm350Workboard')||$('view-week')"), 'Daily plan mounts inside the visible board');
 assert(code.includes('window.rmV440GetPortfolioData'), 'Portfolio work must load into the daily task list');
-assert(code.includes("rows.map((q,i)=>"), 'Every assigned item must be accessible');
+assert(code.includes("rows.forEach((q,i)=>") && code.includes("data-index") && code.includes("group.items.map(({q,i})=>"), 'Every individual assigned action stays clickable within its Realtor group');
 assert(!/Fresh start · November 9 onward/i.test(code), 'Internal reset wording not user facing');
 assert(html.includes('ui/daily-execution-coaching.js?v='), 'Daily script loaded');
 for(const path of ['ui/daily-execution-coaching.js','ui/fast-activity-workflow.js']){
