@@ -35,6 +35,19 @@ const STYLE = `
 `;
 const escape=(s)=>String(s===null||s===undefined?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const key=s=>String(s||'').trim().toLowerCase().replace(/\s+/g,' ');
+const rmNameLabel=value=>{
+ const original=String(value||'').trim();
+ // Change presentation only: never alter IDs, source names or matching keys.
+ return original.split(/(\s+|-|')/).map(part=>{
+  if(!part||/^\s+$/.test(part)||part==='-'||part==="'")return part;
+  if(/^(II|III|IV|Jr\.?|Sr\.?)$/i.test(part))return part.toUpperCase().replace('JR.','Jr.').replace('SR.','Sr.');
+  if(part===part.toUpperCase()||part===part.toLowerCase()){
+   const lower=part.toLocaleLowerCase('en-US');
+   return lower.charAt(0).toLocaleUpperCase('en-US')+lower.slice(1);
+  }
+  return part;
+ }).join('');
+};
 const date=s=>String(s||'').slice(0,10);
 const todayKey=()=>{const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')};
 const validDay=v=>/^\d{4}-\d{2}-\d{2}$/.test(date(v))&&Number.isFinite(Date.parse(date(v)+'T12:00:00'));
@@ -66,7 +79,7 @@ if(!k||seen.has(k)||k.startsWith('__')||p.display_name==='__HIDDEN__'||p.do_not_
 if(tier!=='C')continue;
 seen.add(k);
 const rm=getOwner(p,tier),closes=safeNumber(p.closes_past_year),leads=safeNumber(p.total_leads_past_year),daysNoLead=daysSince(p.latest_lead_date);
-const r={name:typeof resolvedDisplayName==='function'?resolvedDisplayName(p.agent_name):(typeof displayName==='function'?displayName(p.display_name||p.agent_name):(p.display_name||p.agent_name)),sourceName:p.agent_name,tier,rm,closings:closes,leads,daysNoLead,latestLead:date(p.latest_lead_date),latestClose:date(p.latest_close_date),competitor_risk_flag:!!p.competitor_risk_flag,high_potential_flag:!!p.high_potential_flag,next_growth_opportunity:p.next_growth_opportunity||'',growth_opportunity_deadline:p.growth_opportunity_deadline||'',partner_pain_points:p.partner_pain_points||'',referral_leakage_notes:p.referral_leakage_notes||'',recovery_plan:p.recovery_plan||'',last_contact:date(p.last_meaningful_contact_date),followup:date(p.next_rm_followup),migration:state.migrations.find(m=>key(m.agent_name)===k)};
+const r={name:rmNameLabel(typeof resolvedDisplayName==='function'?resolvedDisplayName(p.agent_name):(typeof displayName==='function'?displayName(p.display_name||p.agent_name):(p.display_name||p.agent_name))),sourceName:p.agent_name,tier,rm,closings:closes,leads,daysNoLead,latestLead:date(p.latest_lead_date),latestClose:date(p.latest_close_date),competitor_risk_flag:!!p.competitor_risk_flag,high_potential_flag:!!p.high_potential_flag,next_growth_opportunity:p.next_growth_opportunity||'',growth_opportunity_deadline:p.growth_opportunity_deadline||'',partner_pain_points:p.partner_pain_points||'',referral_leakage_notes:p.referral_leakage_notes||'',recovery_plan:p.recovery_plan||'',last_contact:date(p.last_meaningful_contact_date),followup:date(p.next_rm_followup),migration:state.migrations.find(m=>key(m.agent_name)===k)};
 r.score=score(r);r.action=action(r);out.push(r);
 }
 state.rows=out;state.lastSeen=state.profiles.map(p=>p.powerbi_last_seen_at).filter(Boolean).sort().at(-1)||null;
@@ -142,7 +155,7 @@ function rmInvitePlannerRender(){
   seen.add(k);return true;
  }).map(p=>{const k=key(p.agent_name),last=history.get(k)||'',next=scheduled.get(k)||date(p.next_meeting_date),contact=date(p.last_meaningful_contact_date);
  const nextContact=[date(p.next_rm_followup),contactDates.get(k)||''].filter(x=>validDay(x)&&x>=today).sort()[0]||'';
-  return {p,name:p.display_name||p.agent_name,last,next:next>=today?next:'',nextContact,contact,days:last?daysSince(last):null,leads:Number(p.total_leads_past_year)||0,closes:Number(p.closes_past_year)||0};
+  return {p,name:rmNameLabel(p.display_name||p.agent_name),last,next:next>=today?next:'',nextContact,contact,days:last?daysSince(last):null,leads:Number(p.total_leads_past_year)||0,closes:Number(p.closes_past_year)||0};
  });
  const search=key(panel.querySelector('#rmInviteSearch')?.value),status=panel.querySelector('#rmInviteFilter')?.value||'all',sort=panel.querySelector('#rmInviteSort')?.value||'urgent';
  const candidates=rmInviteRows.filter(x=>(!search||key(x.name).includes(search))&&(status==='all'||(status==='unscheduled'?!x.next:!!x.next)));
