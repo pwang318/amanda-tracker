@@ -1,0 +1,46 @@
+name: Install compact relationship activity fields
+on:
+  push:
+    paths:
+      - 'ui/relationship-activity-fields.js'
+      - '.github/workflows/install-relationship-activity-fields.yml'
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  install:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Include structured RM fields in current assignment form
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          path=Path('index.html')
+          html=path.read_text(encoding='utf-8')
+          script='<script defer src="./ui/relationship-activity-fields.js?v=20261111-1"></script>'
+          html=re.sub(r'<script[^>]*relationship-activity-fields[.]js[^>]*></script>','',html)
+          if '</body>' not in html:
+              raise SystemExit('Cannot locate closing body tag')
+          html=html.replace('</body>',script+'\n</body>',1)
+          path.write_text(html,encoding='utf-8')
+          PY
+      - name: Validate tracker JavaScript
+        run: |
+          node --check ui/relationship-activity-fields.js
+          test -s index.html
+      - name: Commit updated page
+        run: |
+          if ! git diff --quiet -- index.html; then
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add index.html
+            git commit -m "Load RM relationship activity choices in assignment form"
+            for attempt in 1 2 3; do
+              git pull --rebase origin main
+              if git push origin main; then exit 0; fi
+              sleep 2
+            done
+            exit 1
+          fi
