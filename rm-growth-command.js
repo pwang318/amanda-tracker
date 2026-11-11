@@ -43,7 +43,7 @@ const dueDate=p=>[date(p.growth_opportunity_deadline),date(p.followup)].filter(v
 const attentionReason=p=>{const reasons=[];const due=dueType(p);if(due==='overdue')reasons.push('Overdue commitment or follow-up');else if(due==='today')reasons.push('Due today');if(p.competitor_risk_flag)reasons.push('Competitor/retention risk');if(p.daysNoLead===null)reasons.push('Last lead needs verification');else if(p.daysNoLead>=30)reasons.push('No recorded lead in '+p.daysNoLead+' days');if(p.closings===1)reasons.push('One closing away from B threshold');if(!String(p.next_growth_opportunity||'').trim())reasons.push('No growth action saved');return reasons.join(' · ')||'Maintain referral relationship'};
 const todayRank=p=>{const due=dueType(p);return (due==='overdue'?10000:due==='today'?8000:0)+(p.competitor_risk_flag?1800:0)+(p.closings===1?1200:0)+(p.daysNoLead!==null&&p.daysNoLead>=30?700:0)+(p.daysNoLead===null?300:0)+(!String(p.next_growth_opportunity||'').trim()?200:0)+p.score};
 const safeNumber=n=>n===null||n===undefined||n===''?null:Math.max(0,Number(n)||0);
-const state={profiles:[],rows:[],ownerMap:{},migrations:[],view:'grow',search:'',sort:'priority',tier:'all',loading:false,loaded:false,lastSeen:null,importLog:null};
+const state={breadHistory:[],faceEvents:[],profiles:[],rows:[],ownerMap:{},migrations:[],view:'grow',search:'',sort:'priority',tier:'all',loading:false,loaded:false,lastSeen:null,importLog:null};
 const getTier=p=>{const t=String(p.powerbi_level||p.tier||'').trim().toUpperCase();return ['C','B','A','CHANNEL'].includes(t)?(t==='CHANNEL'?'Channel':t):null};
 const getOwner=(p,tier)=>tier==='C'?'Amanda':'Director';
 function daysSince(value){const v=date(value);if(!/^\d{4}-\d{2}-\d{2}$/.test(v))return null;const t=Date.parse(v+'T12:00:00');return Number.isFinite(t)?Math.max(0,Math.floor((Date.now()-t)/86400000)):null}
@@ -82,7 +82,12 @@ sbFetch('tier_migrations?select=agent_name,from_tier,to_tier,migration_date&orde
 ]);
 if(!Array.isArray(profiles)||!Array.isArray(owners)||!Array.isArray(migrations))throw Error('The shared source returned incomplete data.');
 state.importLog=null;try{const imports=await sbFetch('powerbi_import_log?select=imported_at,source_app,rows_processed,errors&order=imported_at.desc&limit=1');if(Array.isArray(imports)&&imports.length)state.importLog=imports[0];}catch(e){console.warn('Import reconciliation ledger unavailable',e)}
-state.profiles=profiles;state.ownerMap=Object.fromEntries(owners.filter(x=>x.agent_name).map(o=>[key(o.agent_name),o]));state.migrations=migrations;normalize();state.loaded=true;setStatus('');render();window.dispatchEvent(new Event('rm-growth-updated'));
+try { const [breads,events]=await Promise.all([
+ sbFetch('break_breads?select=agent_name,date,logged_by&order=date.desc&limit=2000'),
+ sbFetch('face_time_events?select=agent_name,event_date,status,rm&order=event_date.desc&limit=2000')
+ ]);state.breadHistory=Array.isArray(breads)?breads:[];state.faceEvents=Array.isArray(events)?events:[];}
+ catch(e){state.breadHistory=[];state.faceEvents=[];console.warn('Meeting history unavailable',e)}
+ state.profiles=profiles;state.ownerMap=Object.fromEntries(owners.filter(x=>x.agent_name).map(o=>[key(o.agent_name),o]));state.migrations=migrations;normalize();state.loaded=true;setStatus('');render();window.dispatchEvent(new Event('rm-growth-updated'));
 }catch(e){state.loaded=false;state.rows=[];state.profiles=[];state.lastSeen=null;state.importLog=null;setStatus('Could not verify live shared data. No saved totals are being shown. '+(e.message||'Retry refresh.'));render();}
 finally{state.loading=false;if(!state.loaded)window.dispatchEvent(new Event('rm-growth-updated'));}
 }
@@ -115,7 +120,36 @@ function stats(){
 const all=state.rows,near=all.filter(r=>r.closings===1),protect=all.filter(r=>r.daysNoLead===null||r.daysNoLead>=30||r.competitor_risk_flag),missing=all.filter(r=>!String(r.next_growth_opportunity||'').trim());
 return [['All active C agents',all.length,'grow'],['Need attention',protect.length,'protect'],['Close to B',near.length,'near'],['Missing next step',missing.length,'missing']];
 }
+
+function rmInvitePlannerRender(){
+ const panel=document.getElementById('rmInvitePlanner');if(!panel)return;
+ const tbody=panel.querySelector('tbody'),caption=panel.querySelector('.rmInviteCount');if(!tbody||!caption)return;
+ tbody.replaceChildren();
+ if(!state.loaded){caption.textContent='Load current profiles to see invitations.';return;}
+ const today=todayKey(),latest=date(state.lastSeen),seen=new Set();
+ const history=new Map();
+ for(const b of state.breadHistory){const k=key(b.agent_name),d=date(b.date);if(k&&d&&(!history.has(k)||d>history.get(k)))history.set(k,d)}
+ const scheduled=new Map();
+ for(const e of state.faceEvents){const k=key(e.agent_name),d=date(e.event_date),s=String(e.status||'').toLowerCase();if(k&&d>=today&&!/cancel|complete|held|done/.test(s)&&(!scheduled.has(k)||d<scheduled.get(k)))scheduled.set(k,d)}
+ const candidates=state.profiles.filter(p=>{
+ const k=key(p.agent_name);
+ if(!k||seen.has(k)||date(p.powerbi_last_seen_at)!==latest||getTier(p)!=='C'||p.do_not_contact===true||p.relationship_status==='inactive'||p.display_name==='__HIDDEN__'||p.relationship_type==='strategic_partner')return false;
+ seen.add(k);return true;
+ }).map(p=>{const k=key(p.agent_name),last=history.get(k)||'',next=scheduled.get(k)||date(p.next_meeting_date),contact=date(p.last_meaningful_contact_date),days=last?daysSince(last):null;
+ return {p,name:p.display_name||p.agent_name,last,next:next>=today?next:'',contact,days,leads:Number(p.total_leads_past_year)||0,closes:Number(p.closes_past_year)||0};});
+ candidates.sort((a,b)=>Number(!!a.next)-Number(!!b.next)||(b.days??9999)-(a.days??9999)||b.leads-a.leads||a.name.localeCompare(b.name));
+ const unscheduled=candidates.filter(x=>!x.next).length;
+ caption.textContent=unscheduled+' C agents without a future meeting recorded · '+candidates.length+' active C accounts. Sort prioritizes no upcoming meeting and longest time since Break Bread.';
+ for(const x of candidates.slice(0,20)){
+ const tr=document.createElement('tr');const name=document.createElement('td'),btn=document.createElement('button');btn.className='rmGrowAgentLink';btn.type='button';btn.textContent=x.name;btn.onclick=()=>{if(window.rmGrowthDeepDive?.edit)window.rmGrowthDeepDive.edit(x.p.agent_name);else setStatus('Open the agent plan to schedule an invitation.')};name.append(btn);tr.append(name);
+ for(const v of [x.last||'Not recorded',x.next||'Not scheduled',x.contact||'Not recorded',x.closes===1?'Close to B':x.leads>0?'Existing referral partner':'Build relationship']){const td=document.createElement('td');td.textContent=v;tr.append(td)}
+ tbody.append(tr);
+ }
+ if(!candidates.length)caption.textContent='No current C-agent profiles available for this view.';
+}
+
 function render(){
+rmInvitePlannerRender();
 const grid=document.getElementById('rmGrowStats'),tbody=document.getElementById('rmGrowRows'),subtitle=document.getElementById('rmGrowSubtitle'),brief=document.getElementById('rmGrowBrief'),meta=document.getElementById('rmGrowMeta');
 if(!grid||!tbody)return;grid.replaceChildren();tbody.replaceChildren();
 if(!state.loaded){const count=document.getElementById('rmGrowViewCount');if(count)count.textContent='Live C-agent count unavailable.';meta.textContent='Live data unavailable. Refresh to retry.';const clean=document.getElementById('rmGrowCleanSummary');if(clean)clean.textContent='Unable to verify current C-agent counts. Refresh shared data.';subtitle.textContent='No unverified production counts displayed.';brief.textContent='Today’s priorities require current shared data.';return}
@@ -212,6 +246,9 @@ let nav=document.querySelector('.tab[data-tab="growth"]');if(nav){const newnav=d
 const target=document.getElementById('view-growth');if(!target)return;
 const page=document.createElement('div');page.className='view';page.id='view-growth-command';page.innerHTML='<div class="rmGrowTop"><h2>Grow & Protect · C-Agent Work Order</h2><p>One place to grow existing C relationships, protect referrals and track business results.</p></div><div class="rmGrowthHomeActions"><button id="rmGrowRefresh" class="rmGrowBtn">↻ Refresh shared data</button><button id="rmGrowPortfolio" class="rmGrowBtn alt">Portfolio health</button><button id="rmGrowExistingGrowth" class="rmGrowBtn alt">Tier results</button></div><p class="rmGrowSmall" id="rmGrowStatus" role="status"></p><p id="rmGrowCleanSummary" class="rmGrowHelp">Loading live C-agent priorities…</p><details id="rmGrowAdminAudit"><summary>Data verification · admin details</summary><div class="rmGrowNotice" id="rmGrowMeta">Checking live data…</div></details><div id="rmGrowStats" class="rmGrowStatGrid"></div><div class="rmGrowNav"><button data-view="grow" class="active">All C Accounts · Growth</button><button data-view="protect">Need Attention</button><button data-view="convert">Referral Opportunities</button><button data-view="near">Close to B</button><button data-view="missing">Missing Next Step</button></div><p id="rmGrowViewExplain" class="rmGrowHelp" role="status">All C accounts: review each agent’s leads, closings and next growth action.</p><p id="rmGrowViewCount" class="rmGrowHelp" aria-live="polite">Showing all active C agents.</p><section class="rmGrowList"><h3>Priority relationships</h3><p id="rmGrowSubtitle" class="rmGrowSmall">Refresh to load.</p><div class="rmGrowFilters"><input id="rmGrowSearch" type="search" placeholder="Search agent names…" aria-label="Search growth agents"><select id="rmGrowSort" aria-label="Sort C-agent relationships"><option value="priority">Sort: Recommended priority</option><option value="closings-desc">Closings: most first</option><option value="closings-asc">Closings: fewest first</option><option value="leads-desc">Leads: most first</option><option value="leads-asc">Leads: fewest first</option><option value="lastlead-desc">Days since lead: longest</option><option value="lastlead-asc">Days since lead: shortest</option><option value="name">Agent name: A to Z</option></select><button class="rmGrowBtn alt" id="rmGrowExport">Export visible CSV</button></div><div class="rmGrowTableWrap"><table class="rmGrowTable"><thead><tr><th>Agent / tier</th><th>RM</th><th>12m leads</th><th>12m closings</th><th>To B</th><th>Last lead</th><th>Why this agent / next action</th><th>Actions</th></tr></thead><tbody id="rmGrowRows"></tbody></table></div></section><section class="rmGrowList"><h3>Today’s Top Priorities</h3><div id="rmGrowBrief" class="rmGrowSmall">Loads with shared source.</div></section><section class="rmGrowList"><h3>30 / 60 / 90 growth framework</h3><div class="rmGrowSteps"><div><b>30 days — discover</b><p>Confirm buyer demand, identify service and conversion blockers, and set a dated referral commitment.</p></div><div><b>60 days — convert</b><p>Follow qualified referrals through preapproval and contracts. Coordinate with the correct LP on barriers.</p></div><div><b>90 days — measure</b><p>Review actual referrals, closings, retained activity, and verified tier movement; reset the plan.</p></div></div><p class="rmGrowSmall">Production and last-lead figures reflect shared agent profiles, not a complete loan-level conversion funnel. Review LP Tracker for individual buyer status. Contact history and outreach reasons must be logged through the existing RM workflow.</p></section>';
 target.after(page);
+const invite=document.createElement('section');invite.id='rmInvitePlanner';invite.className='rmGrowList';invite.innerHTML='<h3>Break Bread & Office Visit Invitations</h3><p class="rmGrowHelp">Who should Amanda invite next? Shows active C agents, prior Break Breads and upcoming meetings from shared records. Click a name to open their plan. No calls are automatically assigned.</p><p class="rmInviteCount rmGrowSmall">Loading current relationships…</p><div class="rmGrowTableWrap"><table class="rmGrowTable"><thead><tr><th>Agent</th><th>Last Break Bread</th><th>Next meeting</th><th>Last meaningful contact</th><th>Why prioritize</th></tr></thead><tbody></tbody></table></div><p class="rmGrowSmall">Missing meeting history means not recorded, not necessarily never met. Confirm invitations before scheduling.</p>';
+page.querySelector('.rmGrowTop')?.after(invite);
+
 document.getElementById('rmGrowHomeOpen').onclick=open;
 document.getElementById('rmGrowHomePortfolio').onclick=()=>switchTab('portfolio');
 document.getElementById('rmGrowHomeRefresh').onclick=()=>refresh();
