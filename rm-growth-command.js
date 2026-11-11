@@ -230,31 +230,41 @@ function view(v){state.view=v;document.querySelectorAll('.rmGrowNav button').for
 /* Compact daily activity overview. Independent of work queue: only real activity, not imported transaction triggers. */
 const rmActivityEscape=s=>String(s??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','"':'&quot;'}[ch]));
 const rmActivityToday=()=>{const d=new Date();return [d.getFullYear(),String(d.getMonth()+1).padStart(2,'0'),String(d.getDate()).padStart(2,'0')].join('-')};
+
 function rmActivityCardCreate(){
  const home=document.getElementById('view-week');
  if(!home||document.getElementById('rmActivityTodayCard'))return;
- const css=document.createElement('style');css.textContent=`
- #rmActivityTodayCard{background:white;border:1px solid #e5dfed;border-radius:14px;margin:12px 0;padding:15px;color:#211b32;box-shadow:0 2px 8px rgba(32,23,55,.04)}
- #rmActivityTodayCard .rmActHead{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
- #rmActivityTodayCard h2{font-size:17px;margin:0;font-weight:750}#rmActivityTodayCard .rmActMeta{font-size:12px;color:#716781}
- #rmActivityTodayCard .rmActRefresh{border:1px solid #d8cde7;border-radius:8px;padding:7px 12px;color:#573981;background:white;cursor:pointer;font-weight:600}
- #rmActivityTodayCard .rmActStats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin:13px 0}
- #rmActivityTodayCard .rmActStat{background:#faf8fd;border-radius:9px;padding:10px}#rmActivityTodayCard .rmActStat strong{display:block;font-size:21px;color:#52367c}#rmActivityTodayCard .rmActStat span{font-size:11px;color:#655b71}
- #rmActivityTodayCard .rmActItems{margin:0;padding:0;list-style:none}#rmActivityTodayCard .rmActItems li{display:flex;gap:10px;justify-content:space-between;border-top:1px solid #eeeaf3;padding:9px 0;font-size:12px;line-height:1.45}
- #rmActivityTodayCard .rmActItems small{color:#716781}#rmActivityTodayCard .rmActEmpty{font-size:12px;color:#716781}
- @media(max-width:620px){#rmActivityTodayCard .rmActStats{grid-template-columns:repeat(2,minmax(0,1fr))}#rmActivityTodayCard .rmActItems li{display:block}}
+ const css=document.createElement('style');css.id='rmCompactActivityStyles';css.textContent=`
+ #rmActivityTodayCard{background:#fff;border:1px solid #e7e7eb;border-radius:12px;margin:9px 0;padding:11px 13px;color:#24252e;box-shadow:none}
+ #rmActivityTodayCard .rmActHead{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+ #rmActivityTodayCard h2{font-size:14px;margin:0;font-weight:700;letter-spacing:-.02em}
+ #rmActivityTodayCard .rmActMeta{font-size:11px;color:#747780}
+ #rmActivityTodayCard .rmActActions{display:flex;gap:6px;flex-wrap:wrap}
+ #rmActivityTodayCard .rmActRefresh{border:1px solid #e3e1e9;border-radius:8px;padding:6px 9px;color:#57466e;background:white;cursor:pointer;font-size:11px;font-weight:600}
+ #rmActivityTodayCard .rmActStats{display:flex;align-items:center;gap:5px 13px;flex-wrap:wrap;margin:9px 0 2px}
+ #rmActivityTodayCard .rmActStat{display:inline-flex;align-items:baseline;gap:4px;padding:0;border:0;background:none}
+ #rmActivityTodayCard .rmActStat strong{font-size:16px;color:#383042}
+ #rmActivityTodayCard .rmActStat span{font-size:11px;color:#70717c}
+ #rmActivityTodayCard .rmActDetails{border-top:1px solid #eeeef1;margin-top:9px;padding-top:2px}
+ #rmActivityTodayCard .rmActDetails summary{cursor:pointer;font-size:11px;font-weight:650;padding:7px 1px;color:#66537b}
+ #rmActivityTodayCard .rmActItems{margin:0;padding:0;list-style:none;max-height:270px;overflow:auto}
+ #rmActivityTodayCard .rmActItems li{display:flex;gap:12px;align-items:baseline;justify-content:space-between;border-top:1px solid #f0f0f2;padding:8px 0;font-size:12px;line-height:1.4}
+ #rmActivityTodayCard .rmActItems time{white-space:nowrap;color:#777984;font-size:11px;font-variant-numeric:tabular-nums}
+ #rmActivityTodayCard .rmActItems small{color:#747580;font-size:11px}
+ #rmActivityTodayCard #rmActUpdated{padding:8px 0 2px}
+ @media(max-width:620px){#rmActivityTodayCard .rmActHead{align-items:flex-start}#rmActivityTodayCard .rmActStats{gap:6px 11px}#rmActivityTodayCard .rmActItems li{display:block}#rmActivityTodayCard .rmActItems time{display:block;margin-top:3px}}
  `;document.head.appendChild(css);
  const card=document.createElement('section');card.id='rmActivityTodayCard';card.setAttribute('aria-label',"Amanda's activity today");
- card.innerHTML='<div class="rmActHead"><div><h2>Amanda’s Activity Today</h2><div class="rmActMeta" id="rmActDate"></div></div><button type="button" class="rmActRefresh" id="rmActRefresh">Refresh activity</button></div><div class="rmActStats" id="rmActStats"></div><div class="rmActMeta" style="margin-bottom:6px">Most recent logged activity</div><ul class="rmActItems" id="rmActItems"><li>Loading today’s activity…</li></ul><div class="rmActMeta" id="rmActUpdated"></div>';
- home.insertBefore(card,home.firstChild);rmActivityMountInWorkday();card.querySelector('#rmActRefresh').addEventListener('click',rmActivityCardLoad);
- const visit=document.createElement('button');visit.type='button';visit.className='rmActRefresh';visit.textContent='Face Time · C Accounts ↗';
- visit.addEventListener('click',()=>window.rmGrowthCommand?.openFaceTime());
- card.querySelector('.rmActHead')?.append(visit);
-
+ card.innerHTML='<div class="rmActHead"><div><h2>Amanda’s Activity Today</h2><div class="rmActMeta" id="rmActDate"></div></div><div class="rmActActions"><button type="button" class="rmActRefresh" id="rmActRefresh">Refresh</button><button type="button" class="rmActRefresh" id="rmActFaceTime">Face Time · C Accounts ↗</button></div></div><div class="rmActStats" id="rmActStats"></div><details class="rmActDetails" id="rmActDetails"><summary id="rmActDetailsLabel">View recent activity</summary><ul class="rmActItems" id="rmActItems"><li>Loading today’s activity…</li></ul><div class="rmActMeta" id="rmActUpdated"></div></details>';
+ home.insertBefore(card,home.firstChild);
+ rmActivityMountInWorkday();
+ card.querySelector('#rmActRefresh').addEventListener('click',rmActivityCardLoad);
+ card.querySelector('#rmActFaceTime').addEventListener('click',()=>window.rmGrowthCommand?.openFaceTime());
  rmActivityCardLoad();
  document.addEventListener('visibilitychange',()=>{if(!document.hidden)rmActivityCardLoad()});
  window.addEventListener('focus',rmActivityCardLoad);
 }
+
 function rmActivityMountInWorkday(){
  const card=document.getElementById('rmActivityTodayCard');
  const plan=document.getElementById('rmExecutionPlan');
@@ -286,7 +296,18 @@ async function rmActivityCardLoad(){
  const meetings=items.filter(a=>/meeting|break bread|business planning/.test(String(a.act_type||'').toLowerCase()));
  const followups=items.filter(a=>/follow.up|check.in|reconnect/.test(String(a.act_type||'').toLowerCase()));
  stats.innerHTML=[['Calls logged',calls.length],['Conversations',conversations.length],['Meetings',meetings.length],['Follow-ups',followups.length]].map(([label,n])=>'<div class="rmActStat"><strong>'+n+'</strong><span>'+label+'</span></div>').join('');
- list.innerHTML=items.length?items.slice(0,5).map(a=>'<li><span><strong>'+rmActivityEscape(a.agent_name||'Agent')+'</strong> · '+rmActivityEscape(a.act_type||'Activity')+'<br><small>'+rmActivityEscape(a.outcome||'Logged')+'</small></span></li>').join(''):'<li class="rmActEmpty">No activity logged today yet.</li>';
+ 
+ const formatLoggedTime=value=>{
+  const raw=String(value||'').trim().replace(' ','T');
+  if(!raw)return 'Time unavailable';
+  // Database created_at is stored as a UTC timestamp without a timezone suffix.
+  const stamped=/Z$|[+-]\\d{2}:?\\d{2}$/.test(raw)?raw:raw+'Z';
+  const timestamp=new Date(stamped);
+  if(Number.isNaN(timestamp.getTime()))return 'Time unavailable';
+  return timestamp.toLocaleString('en-US',{timeZone:'America/New_York',month:'short',day:'numeric',year:'numeric',hour:'numeric',minute:'2-digit'});
+ };
+ list.innerHTML=items.length?items.slice(0,8).map(a=>'<li><span><strong>'+rmActivityEscape(a.agent_name||'Agent')+'</strong> · '+rmActivityEscape(a.act_type||'Activity')+'<div><small>'+rmActivityEscape(a.outcome||'Logged')+'</small></div></span><time>'+rmActivityEscape(formatLoggedTime(a.created_at))+'</time></li>').join(''):'<li class="rmActEmpty">No activity logged today yet.</li>';
+ card.querySelector('#rmActDetailsLabel').textContent='View recent activity ('+Math.min(items.length,8)+')';
  card.querySelector('#rmActUpdated').textContent='From shared activity log · '+items.length+' logged activities today';
  }catch(e){list.innerHTML='<li>Could not load today’s activity. Use Refresh activity to try again.</li>';stats.innerHTML='';}
  finally{rmActivityBusy=false;}
