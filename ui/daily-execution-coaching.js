@@ -466,7 +466,9 @@ async function openManagementTemplate(kind,assignment){
  try{
   if(typeof sbFetch!=='function')throw Error('Shared database connection unavailable');
   const state=(await rmReadLatestTransactions(true))[isCtc?'ctc':'contract'];
-  const current=state.files;
+  // The worklist shows only transactions with a call still outstanding.
+  // Keep completed records in the shared import/history and summary counters.
+  const current=state.files.filter(file=>file.outstanding>0);
   const newestBatch=state.batch;
   const historical=[];
   const latestStamp=newestBatch?newestBatch.slice(-14):'';
@@ -476,10 +478,12 @@ async function openManagementTemplate(kind,assignment){
   const matches=person?current.filter(matchPerson):[];
   const files=person&&matches.length?matches:current;
   if(!files.length){
-   host.innerHTML='<p>No matching '+(isCtc?'CTC':'New Contract')+' files were found in the current shared import records. Upload the correct Encompass export first, then refresh. No client or Realtor information has been guessed.</p>';
+   host.innerHTML=state.count&&state.outstanding===0
+    ?'<p><strong>Complete</strong> · All calls from the latest '+(isCtc?'CTC':'New Contract')+' import are completed. Completed records remain saved for management review and WhatsApp recap.</p>'
+    :'<p>No outstanding '+(isCtc?'CTC':'New Contract')+' calls were found in the latest shared import'+(person?' for this Realtor':'')+'. '+(state.count?'Completed files are hidden from this worklist.':'Upload the correct Encompass export first, then refresh.')+'</p>';
    return;
   }
-  host.innerHTML='<p><strong>Latest '+(isCtc?'CTC':'New Contract')+' import · '+safe(batchDate||'unknown date')+'</strong> · '+state.outstanding+' agent calls remaining across '+state.count+' imported files. '+(state.completed?state.completed+' completed agent contacts on record. ':'')+'Completed transactions are retained for review and WhatsApp recap.</p>'+(person&&!matches.length?'<p>This Realtor is not in the latest import. Historical follow-ups are separate from current loan calls.</p>':'')+'<div id="execWaFileList" style="display:grid;gap:7px;max-height:440px;overflow:auto"></div>';
+  host.innerHTML='<p><strong>Latest '+(isCtc?'CTC':'New Contract')+' import · '+safe(batchDate||'unknown date')+'</strong> · '+state.outstanding+' agent calls remaining across '+current.length+' active files'+(state.count>current.length?' ('+(state.count-current.length)+' completed files hidden)':'')+'. '+(state.completed?state.completed+' completed agent contacts on record. ':'')+'Completed transactions remain saved for review and WhatsApp recap.</p>'+(person&&!matches.length?'<p>This Realtor is not in the latest import. Historical follow-ups are separate from current loan calls.</p>':'')+'<div id="execWaFileList" style="display:grid;gap:7px;max-height:440px;overflow:auto"></div>';
   const list=$('execWaFileList');
   for(const file of files){
    const button=document.createElement('button');
