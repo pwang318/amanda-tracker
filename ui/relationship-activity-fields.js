@@ -157,19 +157,36 @@ function install(){
    finally{if(notes&&notes.isConnected&&notes.value.includes('AE Review:'))notes.value=originalNotes;}
   };wrapped.__rmAeWrapped=true;window.logActivity=wrapped;
  }
+
+ // A resolved LP task is NOT a resolved RM agent follow-up. Read the full
+ // activity note; the visible follow-up list truncates that note.
  if(typeof window.confirmMarkHandled==='function'&&!window.confirmMarkHandled.__rmAeWrapped){
   const original=window.confirmMarkHandled;
   const wrapped=async function(id,agentName){
-   const note=$('fu-handled-notes-'+id);const box=$('fu-'+id);
-   const isAe=(box?.textContent||'').includes('AE FOLLOW-UP OPEN');
-   if(isAe){
-    if(!note||!/\bagent\b/i.test(note.value)||!/\b(updated|contacted|spoke|confirmed|followed up|reached)\b/i.test(note.value)){
-      if(typeof window.toast==='function')window.toast('Before closing, document how the agent was updated and confirm the outcome.','error');return;
+   const note=$('fu-handled-notes-'+id);
+   let previous='';
+   try{
+    const rows=await window.sbFetch('amanda_activities?id=eq.'+encodeURIComponent(id)+'&select=notes&limit=1');
+    previous=String(rows?.[0]?.notes||'');
+   }catch(e){
+    if(typeof window.toast==='function')window.toast('Unable to verify follow-up details. Try again before closing.','error');
+    return;
+   }
+   if(previous.includes('AE FOLLOW-UP OPEN')){
+    const input=note?.value?.trim()||'';
+    const agentUpdated=/agent\s+(updated|contacted|informed|notified|called)|(?:updated|contacted|informed|notified|called|spoke with|followed up with)\s+(?:the\s+)?agent/i.test(input);
+    const satisfaction=/(?:agent\s+(?:confirmed|satisfied|happy|all good)|confirmed\s+(?:with\s+)?(?:the\s+)?agent|agent\s+understands|agent\s+is\s+aware|agent\s+acknowledged)/i.test(input);
+    const lpNeeded=previous.includes('LP action and verification needed');
+    const lpVerified=!lpNeeded||/(?:LP\s+(?:confirmed|completed|handled|resolved)|verified\s+(?:with\s+)?(?:the\s+)?LP)/i.test(input);
+    if(!agentUpdated||!satisfaction||!lpVerified){
+     if(typeof window.toast==='function')window.toast('Keep open until LP action is verified (if needed), agent is updated, and agent confirms the outcome. Record these in the notes.','error');
+     return;
     }
    }
    return original.apply(this,arguments);
   };wrapped.__rmAeWrapped=true;window.confirmMarkHandled=wrapped;
  }
+
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',install);else install();
 })();
