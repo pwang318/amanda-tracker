@@ -92,3 +92,84 @@ function schedule(){if(queued)return;queued=true;queueMicrotask(()=>{queued=fals
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start);else start();
 function start(){mount();new MutationObserver(schedule).observe(document.body,{childList:true,subtree:true})}
 })();
+
+
+/* RM Account Executive approach: every agent conversation; no buyer data stored. */
+(function(){
+'use strict';
+const $=id=>document.getElementById(id);
+const style=document.createElement('style');style.textContent=String.raw\`
+.rmAeReminder{border:1px solid #dfd6eb;border-left:3px solid #7651ae;background:#fbfafe;border-radius:11px;padding:12px 14px;margin:0 0 12px;color:#322b3d;font:13px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+.rmAeReminder strong{font-weight:700}.rmAeReminder p{margin:3px 0 8px;color:#666075;font-size:12px}
+.rmAeReminder details{margin-top:9px;border-top:1px solid #ebe5f1;padding-top:9px}
+.rmAeReminder summary{cursor:pointer;color:#62448b;font-weight:700}
+.rmAeReminder ol,.rmAeReminder ul{padding-left:20px;margin:8px 0}
+.rmAeReminder li{margin:6px 0}.rmAeReminder label{display:block;margin:8px 0 4px;font-weight:650;font-size:12px}
+.rmAeReminder select,.rmAeReminder textarea{width:100%;max-width:100%;box-sizing:border-box;background:white;border:1px solid #ddd4e7;border-radius:8px;padding:9px;color:#28232e;font:13px inherit}
+.rmAeReminder textarea{min-height:60px;resize:vertical}.rmAeReminder .rmAeFine{font-size:11px;color:#6c6277}
+@media(max-width:620px){.rmAeReminder{padding:11px;margin-bottom:10px}}
+\`;document.head.appendChild(style);
+const guide='<details><summary>Open Account Executive Guide</summary>'+
+'<ol><li><b>Prepare:</b> Open the authorized pipeline separately. Review recent leads, pre-approvals and contracts, discussing each actual buyer individually with the agent. Do not enter buyer details here.</li>'+
+'<li><b>Ask for feedback:</b> What did the agent hear from each buyer? How was LP communication and buyer experience? What could we improve? What is the next step?</li>'+
+'<li><b>Find opportunities:</b> Any unhappy buyers or deals going sideways with another lender? Need a purchase-power review? Buyers unable to win offers (10 Ways to Win)? Need down-payment/closing-cost assistance (NFM FLEX if eligible)? Contingent buyers who may benefit from bridge/equity options? Financing is subject to qualification.</li>'+
+'<li><b>Own the handoff:</b> Decide if Amanda can resolve it or needs the LP. If LP involvement is needed, confirm they received it and verify action taken.</li>'+
+'<li><b>Close the gap:</b> Always circle back with the agent, confirm they understand and are satisfied; if unresolved, give a status update and keep the follow-up open.</li>'+
+'<li><b>Document:</b> Save meaningful relationship notes, who owns the next action and when it is due. Never store buyer names or financial details in this tracker.</li></ol></details>';
+function mount(){
+ const log=$('view-log'),form=$('logNormalFields');if(form&&!$('rmAeLog')){
+  const panel=document.createElement('section');panel.className='rmAeReminder';panel.id='rmAeLog';
+  panel.innerHTML='<strong>Every agent conversation · Account Executive approach</strong><p>Before: review the pipeline. During: ask about each buyer and business opportunities. After: log what you learned and close the loop.</p>'+guide+
+  '<label for="rmAeLearning">What did we learn or uncover? (agent-level information only)</label><textarea id="rmAeLearning" placeholder="Agent feedback, experience themes, opportunities; no buyer details"></textarea>'+
+  '<label for="rmAeOwner">Follow-up needed?</label><select id="rmAeOwner"><option value="none">No follow-up needed</option><option value="rm">Amanda / RM follow-up</option><option value="lp">LP action needed, then agent update</option></select>'+
+  '<div id="rmAeFollowFields" hidden><label for="rmAeNext">Action to take / agent update plan</label><textarea id="rmAeNext" placeholder="What needs doing, and when will you update the agent?"></textarea><p class="rmAeFine">Set the existing Follow-up date and Next Step Owner below. This remains open until LP action (if required) is verified AND the agent has been updated.</p></div>'+
+  '<p class="rmAeFine">Quick guide only. Buyer-specific pipeline stays in its authorized system.</p>';
+  form.prepend(panel);
+  $('rmAeOwner').addEventListener('change',function(){const need=this.value!=='none';$('rmAeFollowFields').hidden=!need;if(need){const out=$('activityOutcome');if(out){out.value='Requires follow-up';out.dispatchEvent(new Event('change',{bubbles:true}))}const step=$('activityNextStepOwner');if(step&&this.value==='rm')step.value='Amanda';} });
+ }
+ const week=$('view-week');if(week&&!$('rmAeToday')){
+  const panel=document.createElement('div');panel.id='rmAeToday';panel.className='rmAeReminder';
+  panel.innerHTML='<strong>Every agent call: Account Executive approach</strong><p>Review their actual pipeline → discuss experience and opportunities → act → update the agent → document. Not just a general check-in.</p><button type="button" class="btn-sm" id="rmAeOpenLog">Open guide &amp; Log Activity</button>';
+  const anchor=week.querySelector('.v95-amanda-greeting');if(anchor)anchor.after(panel);else week.prepend(panel);
+  $('rmAeOpenLog').addEventListener('click',()=>{if(typeof window.switchTab==='function')window.switchTab('log');$('rmAeLog')?.scrollIntoView({block:'start',behavior:'smooth'})});
+ }
+}
+function install(){
+ mount();
+ if(typeof window.logActivity==='function'&&!window.logActivity.__rmAeWrapped){
+  const original=window.logActivity;
+  const wrapped=async function(){
+   const kind=$('rmAeOwner')?.value||'none',learning=($('rmAeLearning')?.value||'').trim(),next=($('rmAeNext')?.value||'').trim();
+   if(kind!=='none'){
+    if(!learning||!next){if(typeof window.toast==='function')window.toast('Record the relationship feedback and next step before saving.','error');return;}
+    if(!$('followupDate')?.value){if(typeof window.toast==='function')window.toast('Set an agent follow-up date so the loop stays open.','error');return;}
+    const o=$('activityOutcome');if(o&&o.value!=='Requires follow-up'){o.value='Requires follow-up';o.dispatchEvent(new Event('change',{bubbles:true}))}
+    const owner=$('activityNextStepOwner');if(owner&&!owner.value){if(kind==='rm')owner.value='Amanda';else{if(typeof window.toast==='function')window.toast('Select the responsible LP as Next Step Owner.','error');return;}}
+    if(kind==='lp'&&owner&&['Amanda','Nyny',''].includes(owner.value)){if(typeof window.toast==='function')window.toast('Choose the LP responsible for action. Amanda still owns the agent update.','error');return;}
+   }
+   const notes=$('activityNotes');let originalNotes=notes?.value||'';
+   if(notes&&(learning||kind!=='none')){
+    const extra=['AE Review: '+(learning||'No new issue documented')];
+    if(kind!=='none')extra.push('AE FOLLOW-UP OPEN | '+(kind==='lp'?'LP action and verification needed; ':'RM action needed; ')+'Amanda to update agent and confirm satisfaction | Next: '+next);
+    notes.value=[originalNotes,...extra].filter(Boolean).join('\n');
+   }
+   try{const result=await original.apply(this,arguments);return result}
+   finally{if(notes&&notes.isConnected&&notes.value.includes('AE Review:'))notes.value=originalNotes;}
+  };wrapped.__rmAeWrapped=true;window.logActivity=wrapped;
+ }
+ if(typeof window.confirmMarkHandled==='function'&&!window.confirmMarkHandled.__rmAeWrapped){
+  const original=window.confirmMarkHandled;
+  const wrapped=async function(id,agentName){
+   const note=$('fu-handled-notes-'+id);const box=$('fu-'+id);
+   const isAe=(box?.textContent||'').includes('AE FOLLOW-UP OPEN');
+   if(isAe){
+    if(!note||!/\bagent\b/i.test(note.value)||!/\b(updated|contacted|spoke|confirmed|followed up|reached)\b/i.test(note.value)){
+      if(typeof window.toast==='function')window.toast('Before closing, document how the agent was updated and confirm the outcome.','error');return;
+    }
+   }
+   return original.apply(this,arguments);
+  };wrapped.__rmAeWrapped=true;window.confirmMarkHandled=wrapped;
+ }
+}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',install);else install();
+})();
