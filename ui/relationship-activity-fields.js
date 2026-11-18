@@ -98,7 +98,7 @@ function start(){mount();new MutationObserver(schedule).observe(document.body,{c
 (function(){
 'use strict';
 const $=id=>document.getElementById(id);
-const style=document.createElement('style');style.textContent=String.raw\`
+const style=document.createElement('style');style.textContent=String.raw`
 .rmAeReminder{border:1px solid #dfd6eb;border-left:3px solid #7651ae;background:#fbfafe;border-radius:11px;padding:12px 14px;margin:0 0 12px;color:#322b3d;font:13px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
 .rmAeReminder strong{font-weight:700}.rmAeReminder p{margin:3px 0 8px;color:#666075;font-size:12px}
 .rmAeReminder details{margin-top:9px;border-top:1px solid #ebe5f1;padding-top:9px}
