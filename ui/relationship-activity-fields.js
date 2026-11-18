@@ -108,7 +108,7 @@ const style=document.createElement('style');style.textContent=String.raw`
 .rmAeReminder select,.rmAeReminder textarea{width:100%;max-width:100%;box-sizing:border-box;background:white;border:1px solid #ddd4e7;border-radius:8px;padding:9px;color:#28232e;font:13px inherit}
 .rmAeReminder textarea{min-height:60px;resize:vertical}.rmAeReminder .rmAeFine{font-size:11px;color:#6c6277}
 @media(max-width:620px){.rmAeReminder{padding:11px;margin-bottom:10px}}
-\`;document.head.appendChild(style);
+`;document.head.appendChild(style);
 const guide='<details><summary>Open Account Executive Guide</summary>'+
 '<ol><li><b>Prepare:</b> Open the authorized pipeline separately. Review recent leads, pre-approvals and contracts, discussing each actual buyer individually with the agent. Do not enter buyer details here.</li>'+
 '<li><b>Ask for feedback:</b> What did the agent hear from each buyer? How was LP communication and buyer experience? What could we improve? What is the next step?</li>'+
