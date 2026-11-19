@@ -9430,7 +9430,7 @@ async function loadContacts(){
   try{
     const[profiles,agentList,ownershipRows,activityRows,prospectRows,lpCallRows]=await Promise.all([
       rm470LoadAllProfiles(),
-      sbFetch("agent_profiles?select=agent_name&order=agent_name.asc&limit=5000"),
+      rm470LoadAllProfiles().then(rows=>rows.map(p=>({agent_name:p.agent_name}))),
       sbFetch("agent_assignments?select=*&limit=5000").catch(()=>[]),
       sbFetch("amanda_activities?select=agent_name&order=created_at.desc&limit=5000").catch(()=>[]),
       sbFetch("outreach_prospects?select=id,agent_name,phone,email,brokerage,status&limit=5000").catch(()=>[]),
@@ -21395,25 +21395,51 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
    if(type){type.value='New Realtor Meeting';type.dispatchEvent(new Event('change',{bubbles:true}));}
    if(typeof toast==='function')toast('Contact ready. Review the meeting date, participants and details, then save the meeting.','success',6000);
  };
- function exportRows(scope){
-   if(window.rmContactLoadState!=='ready'){toast('Wait for contacts to finish loading before exporting.','warning');return;}
-   let rows=scope==='all'?profileRows():current;
-   if(scope==='selected'){
-     const names=new Set(Array.from(document.querySelectorAll('#contacts-list .rmV468RowSelect:checked')).map(b=>b.dataset.profileName));
-     rows=current.filter(c=>names.has(String(c.agent_name||'')));
-   }
-   if(!rows.length){toast('No contacts in this export. Adjust your filters or select contacts.','error');return;}
-   const header=['Name','Record name','Email','Phone','Birthday (MM/DD)','Home address','Brokerage / team','Tier','RM owner','LP owner','Relationship type','Status','Do not contact','Contact profile saved','Missing email','Missing phone','Missing birthday','Missing home address','Missing details','Personal notes'];
-   const data=rows.map(c=>{const o=typeof getAgentOwnership==='function'?getAgentOwnership(c.agent_name):{},m=missing(c);return [c.display_name||c.agent_name,c.agent_name,c.email,c.phone,c.birthday,c.address,c.brokerage,c.tier,o.rm,o.lp,c.relationship_type,c.relationship_status,c.do_not_contact?'Yes':'No',c._activityOnly?'No':'Yes',...fields.map(([key])=>m.includes(key)?'Yes':'No'),fields.filter(([key])=>m.includes(key)).map(([,label])=>label).join('; '),c.personal_notes];});
-   const csv='\uFEFF'+[header,...data].map(r=>r.map(csvCell).join(',')).join('\r\n');
-   const url=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8;'})),a=document.createElement('a');a.href=url;a.download='RM-contacts-'+scope+'-'+new Date().toISOString().slice(0,10)+'.csv';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);toast(rows.length+' contacts exported. Open the CSV in Excel.','success');
+ async function exportRows(scope){
+   const buttons=Array.from(document.querySelectorAll('#rm470Tools [data-export]'));
+   buttons.forEach(b=>b.disabled=true);
+   try{
+     // Fetch profiles directly so an unrelated dashboard/roster load error cannot block the export.
+     const profiles=await rm470LoadAllProfiles();
+     const stored=(profiles||[]).filter(c=>c && c.agent_name && c.display_name!==HIDDEN_PROFILE_MARKER);
+     const enriched=new Map((allContacts||[]).filter(Boolean).map(c=>[String(c.agent_name||'').trim().toLowerCase(),c]));
+     const rowsAll=stored.map(c=>Object.assign({},c,enriched.get(String(c.agent_name).trim().toLowerCase())||{},{
+       agent_name:c.agent_name,display_name:c.display_name||'',
+       phone:c.phone||enriched.get(String(c.agent_name).trim().toLowerCase())?.phone||'',
+       email:c.email||enriched.get(String(c.agent_name).trim().toLowerCase())?.email||''
+     }));
+     // The saved-contact export always includes inactive contacts as well.
+     let rows=rowsAll;
+     if(scope!=='all'){
+       const shown=new Set((current||[]).map(c=>String(c.agent_name||'').trim().toLowerCase()));
+       rows=rowsAll.filter(c=>shown.has(String(c.agent_name||'').trim().toLowerCase()));
+     }
+     if(scope==='selected'){
+       const selected=new Set(Array.from(document.querySelectorAll('#contacts-list .rmV468RowSelect:checked')).map(b=>String(b.dataset.profileName||'').trim().toLowerCase()));
+       rows=rows.filter(c=>selected.has(String(c.agent_name||'').trim().toLowerCase()));
+     }
+     if(!rows.length)throw Error('No saved contacts match this export. Try Export all saved contacts.');
+     const header=['Agent Name','Phone Number','Email Address','Brokerage / Team','Tier','RM Owner','LP Owner','Status','Birthday','Home Address'];
+     const data=rows.map(c=>{
+       let o={};try{if(typeof getAgentOwnership==='function')o=getAgentOwnership(c.agent_name)||{};}catch(_){}
+       return [c.display_name||c.agent_name,c.phone||'',c.email||'',c.brokerage||c.team||'',c.tier||'',o.rm||'',o.lp||'',c.relationship_status||'',c.birthday||'',c.address||''];
+     });
+     const csv='\\uFEFF'+[header,...data].map(r=>r.map(csvCell).join(',')).join('\\r\\n');
+     const url=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8;'}));
+     const link=document.createElement('a');link.href=url;link.download='RM-Agent-Contacts-'+scope+'-'+new Date().toISOString().slice(0,10)+'.csv';
+     document.body.appendChild(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),30000);
+     toast(rows.length+' agent contacts exported with phone numbers and emails.','success',6000);
+   }catch(err){
+     console.error('RM contact export failed',err);
+     toast('Contact export failed: '+String(err?.message||err),'error',8000);
+   }finally{buttons.forEach(b=>b.disabled=false);}
  }
  function mount(){
    const list=$('contacts-list');if(!list||$('rm470Tools'))return;
    const tools=document.createElement('div');tools.id='rm470Tools';tools.className='rm470-tools';
    tools.innerHTML='<label>Contact details <select id="rm470Missing" aria-label="Filter missing contact details"><option value="">All details</option><option value="any">Missing any detail</option><option value="email">Missing email</option><option value="phone">Missing phone</option><option value="birthday">Missing birthday</option><option value="address">Missing home address</option><option value="complete">Complete contact details</option><option value="profile">Needs saved contact profile</option></select></label><button type="button" data-export="filtered">Export filtered contacts</button><button type="button" data-export="all">Export all saved contacts</button><button type="button" data-export="selected">Export selected shown</button>';
    list.parentNode.insertBefore(tools,$('contactsDupeBanner'));
-   const help=document.createElement('div');help.className='rm470-help';help.textContent='Choose a roster or owner above, then filter missing details. CSV exports open in Excel and include email, phone, birthday, home address and missing-detail flags. Select rows to delete in bulk. Hidden contacts are excluded.';tools.after(help);
+   const help=document.createElement('div');help.className='rm470-help';help.textContent='Choose a roster or owner above, then filter missing details. CSV exports open in Excel and include agent names, phone numbers, emails and additional contact fields. Select rows to delete in bulk. Hidden contacts are excluded.';tools.after(help);
    const summary=document.createElement('div');summary.id='rm470Summary';summary.setAttribute('aria-live','polite');help.after(summary);
    $('rm470Missing').onchange=()=>{if(typeof rmV468ClearSelection==='function')rmV468ClearSelection();filterContacts();};
    tools.querySelectorAll('[data-export]').forEach(b=>b.onclick=()=>exportRows(b.dataset.export));
