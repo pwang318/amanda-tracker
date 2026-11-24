@@ -20,9 +20,116 @@
   function read() {
     return JSON.parse(localStorage.getItem(storageKey) || '[]');
   }
+  let candidates = [];
+  const partnerKey = name => String(name || '').trim().toLowerCase().replace(/\s+/g, ' ');
+  function renderPriorities(saved) {
+    const host = panel.querySelector('[data-weekly-priorities]');
+    host.replaceChildren();
+    const now = new Date();
+    const today = dateKey(now);
+    const easternClock = new Intl.DateTimeFormat('en-GB', {
+      timeZone: 'America/New_York', hour: '2-digit', minute: '2-digit', hourCycle: 'h23'
+    }).format(now);
+    const nowKey = today + 'T' + easternClock;
+    const pending = saved.map((entry, index) => ({entry, index})).filter(({entry}) => !entry.completedAt);
+    const tracked = new Set(pending.map(({entry}) => partnerKey(entry.partner)));
+    pending.sort((a, b) => {
+      const priority = row => row.entry.due < nowKey ? 0 : row.entry.listingReferral ? 1 : 2;
+      return priority(a) - priority(b) || a.entry.due.localeCompare(b.entry.due);
+    });
+    for (const {entry, index} of pending) {
+      const item = document.createElement('li');
+      const bucket = entry.due < nowKey ? 'Overdue' : entry.listingReferral ? 'Listing-agent referral follow-up' : 'Upcoming';
+      item.textContent = [bucket, entry.partner, entry.reference, entry.next, entry.owner, entry.due.replace('T', ' ')].filter(Boolean).join(' · ');
+      const done = document.createElement('button');
+      done.type = 'button';
+      done.className = 'btn-sm';
+      done.textContent = 'Mark follow-up done';
+      done.onclick = () => {
+        try {
+          const latest = read();
+          if (JSON.stringify(latest[index]) !== JSON.stringify(entry)) {
+            render();
+            status.textContent = 'This entry changed. Review the latest list.';
+            return;
+          }
+          latest[index].completedAt = new Date().toISOString();
+          localStorage.setItem(storageKey, JSON.stringify(latest));
+          render();
+          status.textContent = 'Follow-up marked done.';
+        } catch {
+          status.textContent = 'Could not save the follow-up status.';
+        }
+      };
+      item.append(' ', done);
+      host.append(item);
+    }
+    for (const row of candidates) {
+      if (tracked.has(partnerKey(row.name))) continue;
+      const item = document.createElement('li');
+      item.textContent = row.name + ' · ' + row.reason + ' · ' + row.action;
+      const plan = document.createElement('button');
+      plan.type = 'button';
+      plan.className = 'btn-sm';
+      plan.textContent = 'Record next action';
+      plan.onclick = () => {
+        form.elements.partner.value = row.name;
+        form.elements.kind.value = 'goto';
+        form.elements.next.value = row.action;
+        form.elements.response.focus();
+      };
+      item.append(' ', plan);
+      host.append(item);
+    }
+    if (!host.childElementCount) {
+      const empty = document.createElement('li');
+      empty.textContent = 'No open follow-ups or verified partner alerts.';
+      host.append(empty);
+    }
+  }
+  async function loadPartnerAlerts(eligible) {
+    const hint = panel.querySelector('[data-weekly-priority-status]');
+    try {
+      const profiles = await rm470LoadAllProfiles();
+      const eligibleNames = new Map(eligible.map(row => [partnerKey(row.name), row.name]));
+      const today = Date.parse(dateKey(new Date()));
+      const byName = new Map();
+      for (const profile of profiles) {
+        const key = partnerKey(profile.agent_name);
+        if (!eligibleNames.has(key) || profile.do_not_contact || profile.display_name === '__HIDDEN__') continue;
+        const previous = byName.get(key);
+        if (!previous || String(profile.updated_at || '') > String(previous.updated_at || '')) byName.set(key, profile);
+      }
+      candidates = [];
+      for (const [key, profile] of byName) {
+        const dates = [profile.latest_lead_date, profile.latest_close_date]
+          .map(value => Date.parse(String(value || '').slice(0, 10))).filter(value => Number.isFinite(value) && value <= today);
+        const age = dates.length ? (today - Math.max(...dates)) / 86400000 : null;
+        const count = profile.closes_past_year ?? profile.closed_past_year;
+        const tier = {1:'B', 3:'A', 9:'Channel'}[count];
+        const signals = [];
+        if (age !== null && age >= 60) signals.push(age + ' days since last qualifying lead or closing');
+        if (tier) signals.push('One rolling funding from ' + tier);
+        if (signals.length) candidates.push({
+          name:eligibleNames.get(key), rank:age >= 90 ? 0 : age >= 60 ? 1 : 2,
+          reason:signals.join(' · '),
+          action:age >= 60 ? 'Reconnect and ask about a named buyer opportunity' : 'Confirm the next supported buyer opportunity'
+        });
+      }
+      candidates.sort((a,b) => a.rank - b.rank || a.name.localeCompare(b.name));
+      hint.textContent = 'Partner alerts use shared profiles for eligible Amanda partners. Follow-up completion saves in this browser.';
+    } catch {
+      candidates = [];
+      hint.textContent = 'Could not verify partner alerts. Saved follow-ups are still available.';
+    }
+    render();
+  }
   function render() {
     try {
-      const rows = read().filter(row => weekOf(row.date) === weekOf(form.elements.date.value));
+      const saved = read();
+      const selection = form.elements.date.value;
+      const rows = selection ? saved.filter(row => weekOf(row.date) === weekOf(selection)) : [];
+      renderPriorities(saved);
       const counts = Object.keys(kinds).map(kind => kinds[kind] + ': ' + rows.filter(row => row.kind === kind).length);
       counts.push('Listing-agent referrals received: ' + rows.filter(row => row.listingReferral).length);
       panel.querySelector('[data-weekly-counts]').textContent = counts.join(' · ');
@@ -30,7 +137,7 @@
       for (const row of rows.sort((a, b) => a.due.localeCompare(b.due))) {
         const item = document.createElement('li');
         item.textContent = [row.date, row.partner, kinds[row.kind], row.listingReferral ? 'Listing-agent referral' : '', row.reference, row.response,
-          row.next, row.owner, row.due.replace('T', ' ')].filter(Boolean).join(' · ');
+          row.next, row.owner, row.due.replace('T', ' '), row.completedAt ? 'Follow-up done' : ''].filter(Boolean).join(' · ');
         list.append(item);
       }
     } catch {
@@ -60,11 +167,15 @@
         item.textContent = row.name + ' · ' + (row.connected ? 'Connected' : row.attempts ? 'Attempted' : 'Call due');
         roster.append(item);
       }
+      void loadPartnerAlerts(eligible);
       hint.textContent = eligible.length + ' eligible Amanda partners for the week of ' + state.week +
         ' · ' + eligible.filter(row => row.connected).length + ' connected in the existing call log.';
     } catch {
       partners.replaceChildren();
       panel.querySelector('[data-weekly-roster]').replaceChildren();
+      candidates = [];
+      panel.querySelector('[data-weekly-priority-status]').textContent = 'Partner alerts are unavailable. Saved follow-ups are still available.';
+      render();
       hint.textContent = 'Could not verify eligibility from the shared contract snapshot.';
     }
   }
