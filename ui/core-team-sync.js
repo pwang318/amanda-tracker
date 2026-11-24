@@ -1,5 +1,6 @@
 (() => {
   const root = document.getElementById('coreTeamSync');
+  document.getElementById('rmOpenCoreTeamSync')?.addEventListener('click', () => { root.open = true; });
   const find = selector => root.querySelector(selector);
   const status = find('[data-sync-status]');
   const source = find('[data-sync-sources]');
