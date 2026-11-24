@@ -375,7 +375,7 @@ async function rmReadLatestTransactions(force=false){
       listing:rmTxnTag(n,'TXN_LISTING_AGENT'),listingPhone:rmTxnTag(n,'TXN_LISTING_PHONE'),
       closeDate:rmTxnTag(n,'TXN_CLOSE_DATE'),batch,roles:[],outstanding:0});
    }
-   const listingOnly=typeof rmCoreListingOnly==='function'&&rmCoreListingOnly();
+   const listingOnly=typeof rmCoreListingOnly==='function'&&rmCoreListingOnly(callType);
    const triggers=new Map(),completed=new Set();
    for(const x of activity){
     const id=rmTxnTag(x.notes,'TXN_ID'),role=rmTxnTag(x.notes,'TXN_ROLE').toLowerCase().replace(/ agent$/,''),person=rmTxnKey(x.agent_name);
@@ -476,7 +476,7 @@ async function openManagementTemplate(kind,assignment){
   const state=(await rmReadLatestTransactions(true))[isCtc?'ctc':'contract'];
   // The worklist shows only transactions with a call still outstanding.
   // Keep completed records in the shared import/history and summary counters.
-  const listingOnly=typeof rmCoreListingOnly==='function'&&rmCoreListingOnly();
+  const listingOnly=typeof rmCoreListingOnly==='function'&&rmCoreListingOnly(isCtc?'CTC Call':'Under Contract Call');
   const missingNotice=state.missingListing?'<p>'+state.missingListing+' imported files are missing a listing agent. Use Add missing listing agent in Transaction Calls or correct the source import.</p>':'';
   const current=state.files.filter(file=>file.outstanding>0);
   const newestBatch=state.batch;
