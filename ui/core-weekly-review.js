@@ -214,6 +214,7 @@
       status.textContent = 'Could not save the outcome in this browser.';
     }
   });
+  window.addEventListener('core-team-sync-updated', render);
   panel.addEventListener('toggle', () => { if (panel.open) void refreshEligible(); });
   render();
 })();
