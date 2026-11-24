@@ -208,7 +208,7 @@ assert(code.includes("const historical=[];") && code.includes("const current=sta
 assert(code.includes('function paintImportedCallCounters()'),'Transaction worklist tiles must use actual import counts');
 assert(code.includes('refreshImportedCallCounters(true)'),'Transaction counters must refresh from shared imports');
 assert(code.includes("for(const x of list.filter(v=>v.batch===batch))") && code.includes("if(files.has(x.id))continue;"),'Latest import deduplicates exact transaction IDs');
-assert(code.includes("data.outstanding+' calls outstanding'"),'Incomplete transactions show true outstanding contacts');
+assert(code.includes("data.outstanding+' calls outstanding ↗'"),'Incomplete transactions show true outstanding contacts');
 assert(code.includes("done?'Complete'"),'Completed transaction tiles show only Complete');
 assert(code.includes("data.count>0&&data.outstanding===0"),'Never mark an empty or unverified import complete');
 
