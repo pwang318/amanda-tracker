@@ -317,8 +317,8 @@ async function rmActivityCardLoad(){
  const rows=await sbFetch('amanda_activities?select=id,agent_name,act_type,act_date,outcome,created_at,notes,follow_up_date&act_date=eq.'+today+'&order=created_at.desc&limit=1000');
  if(!Array.isArray(rows))throw Error('The shared activity service did not return a list.');
  const items=rows.filter(a=>{
-  const t=String(a.act_type||'').toLowerCase(),n=String(a.notes||'');
-  return !/transaction snapshot|clear to close|new contract/.test(t)&&!n.includes('[TXN_TRIGGER]')&&!n.includes('[TXN_SNAPSHOT]')&&!n.includes('[TXN_SUPPRESSED]');
+  const t=String(a.act_type||'').trim().toLowerCase(),n=String(a.notes||'');
+  return t!=='funded unit snapshot'&&!/transaction snapshot|clear to close|new contract/.test(t)&&!n.includes('[TXN_TRIGGER]')&&!n.includes('[TXN_SNAPSHOT]')&&!n.includes('[TXN_SUPPRESSED]');
  });
  const calls=items.filter(a=>/call|talk.to|outreach|check.in|listing agent update/.test(String(a.act_type||'').toLowerCase()));
  const conversations=items.filter(a=>/connected|talked|positive|spoke|conversation|reached/.test(String(a.outcome||'').toLowerCase()));
