@@ -7,7 +7,7 @@ assert(s.includes("status=eq.open&limit=2500"), 'All open tasks must load withou
 assert(s.includes("const late=all.filter(q=>q.work_date&&q.work_date<d)"), 'Past-due unfinished tasks must remain visible');
 assert(s.includes("const focusRows=priorities.length?priorities:tmrw"), 'Today must preview next workday when nothing is due today');
 assert(s.includes("showDetail('section:2')"), 'Next workday must open its assigned agent list');
-assert(s.includes("catchupOpen=queue.filter"), 'Old catch-up queue must remain countable');
-assert(s.includes("data-focus-row"), 'Focus tasks must open individual agent records');
-assert(s.includes("Log the completed outcome"),'Do not auto-mark old work as done');
+assert(s.includes("catchupOpen=catchupRows.length"), 'Old catch-up queue must remain countable');
+assert(s.includes("data-index"), 'Focus tasks must open individual agent records');
+assert(s.includes("Save activity and complete this assignment"),'Do not auto-mark old work as done');
 console.log('RM unfinished-work carry-forward contract PASS');

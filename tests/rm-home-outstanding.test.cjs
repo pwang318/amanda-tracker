@@ -11,7 +11,7 @@ const v440 = html.slice(v440Start, v440End);
 
 test('Today dashboard surfaces outstanding calls, campaigns, plans, and portfolio counts', () => {
   assert.match(v440, /tile\('transactions',transactionDue\(\),'Transaction Calls'/);
-  assert.match(v440, /tile\('tuesday',tuesdayDue\(\),'Tuesday Updates'/);
+  assert.match(v440, /tile\('tuesday',tuesdayDue\(\)===null\?'Loading…':tuesdayDue\(\),'Tuesday Updates'/);
   assert.match(v440, /tile\('weekly',weekly===null\?'Loading…':weekly,'Weekly Realtor Calls'/);
   assert.match(v440, /tile\('campaigns',conversionDue\(\),'4-Week Campaigns'/);
   assert.match(v440, /tile\('missing-growth',missingPlans,'Missing Growth Plans'/);
@@ -21,10 +21,10 @@ test('Today dashboard surfaces outstanding calls, campaigns, plans, and portfoli
 });
 
 test('weekly call count excludes waiting agents and preserves unknown as loading', () => {
-  const weeklyFn = v440.match(/function weeklyCallsDue\(\)\{[^}]+\}/)?.[0];
+  const weeklyFn = v440.match(/function weeklyCallsDue\(\)\{[^\n]+\}/)?.[0];
   assert.ok(weeklyFn);
-  const context = { window: { _rmV267BuyerAgentState: { rows: [
-    { due: true, waiting: false }, { due: true, waiting: true }, { due: false, waiting: false },
+  const context = { norm: value => String(value || '').trim().toLowerCase(), window: { _rmV267BuyerAgentState: { rows: [
+    { name: 'A', owner: 'Amanda', due: true, waiting: false }, { name: 'B', owner: 'Amanda', due: true, waiting: true }, { name: 'C', owner: 'Amanda', due: false, waiting: false }, { name: 'D', owner: 'Nyny', due: true, waiting: false },
   ] } } };
   vm.createContext(context);
   vm.runInContext(`${weeklyFn};this.count=weeklyCallsDue;`, context);
@@ -34,15 +34,15 @@ test('weekly call count excludes waiting agents and preserves unknown as loading
 });
 
 test('missing-plan count is based on saved next-growth-opportunity fields', () => {
-  const fn = v440.match(/function missingGrowthPlansDue\(data\)\{[^}]+\}/)?.[0];
+  const fn = v440.match(/function missingGrowthPlansDue\(data\)\{[^\n]+\}/)?.[0];
   assert.ok(fn);
-  const context = {};
+  const context = { norm: value => String(value || '').trim().toLowerCase() };
   vm.createContext(context);
   vm.runInContext(`${fn};this.count=missingGrowthPlansDue;`, context);
   assert.equal(context.count({ rows: [
-    { next_growth_opportunity: 'Add an assistant' },
-    { next_growth_opportunity: '' },
-    { next_growth_opportunity: '   ' },
+    { name: 'A', next_growth_opportunity: 'Add an assistant' },
+    { name: 'B', next_growth_opportunity: '' },
+    { name: 'C', next_growth_opportunity: '   ' },
   ] }), 2);
 });
 

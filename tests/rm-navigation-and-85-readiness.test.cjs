@@ -12,18 +12,18 @@ assert(index.includes("const level=String(r.powerbi_level||r.tier||'').trim().to
 assert(daily.includes("window.rmOpenProspectList=openProspectList"),'All prospect links share the verified opener');
 assert(daily.includes('id="execInlineProspects"'),'In-page Realtor call-list is actionable');
 assert(daily.includes('New Realtor prospecting · view call list'), 'Single prospect section identifies actual call list');
-assert(daily.includes('<strong>Open list ↗</strong>'), 'Prospect shortcut must not show an unrelated assignment count');
+assert(daily.includes('<summary>New Realtor prospecting · view call list</summary>'), 'Prospect shortcut must not show an unrelated assignment count');
 assert(!daily.includes('New Realtor prospect list <small>Assigned outreach</small>'), 'Legacy misleading zero-count label must be absent');
 assert(daily.includes('id="execMoreMetrics"><summary>'),'Supplementary metric tiles must be accessible');
 assert(daily.includes("categoryRows.push(['Catch-up assignments'"),'Catch-up list remains separate');
 const routes=[];
 const start=daily.indexOf('function openTask(q){'),end=daily.indexOf('function taskList(',start);
 assert(start>=0&&end>start,'Task routing must exist');
-const openTask=new Function('window','Promise','console',daily.slice(start,end)+'return openTask;')({
- v350OpenLane:key=>routes.push('lane:'+key),
- openContactModal:name=>{routes.push('agent:'+name);return Promise.resolve()},
- switchTab:tab=>routes.push('tab:'+tab)
-},Promise,{warn:()=>{}});
+const elements={};
+const element=id=>elements[id]??={hidden:true,before(){},scrollIntoView(){}};
+const openTask=new Function('window','$','safe','openManagementTemplate',daily.slice(start,end)+'return openTask;')({
+ openContactModal:name=>routes.push('agent:'+name),
+},element,String,(type,q)=>routes.push(type+':'+q.agent_name));
 const makeHost=()=>{const controls={};return {innerHTML:'',querySelector:id=>(controls[id]||={onclick:null})}};
 const home=makeHost(),scorePage=makeHost();
 const model={
@@ -42,20 +42,22 @@ const helperStart=score.indexOf('const num=x=>'),helperEnd=score.indexOf('functi
 assert(helperStart>=0&&helperEnd>helperStart,'Dynamic score/roadmap helpers must exist');
 const helpers=new Function('window','document','esc','console',score.slice(helperStart,helperEnd)+'return {liveScoreFromNative,renderPathTo85};')(browser,doc,String,{warn:()=>{}});
 (async()=>{
- await openTask({agent_name:'Calvin',activity_type:'4-Week Campaign'});
- await openTask({agent_name:'Heather',activity_type:'Weekly Realtor Call'});
- await openTask({agent_name:'Jack',activity_type:'Tuesday Listing Update'});
- await openTask({agent_name:'Kelly',activity_type:'CTC Call'});
- await openTask({agent_name:'Mingtao',activity_type:'Follow-up'});
- assert.deepEqual(routes.splice(0),['lane:conversion','lane:smart','lane:tuesday','lane:calls','agent:Mingtao'],'Every assignment must open the appropriate lane or named agent');
+ for (const [name,type] of [['Calvin','4-Week Campaign'],['Heather','Weekly Realtor Call'],['Jack','Tuesday Listing Update'],['Mingtao','Follow-up']]) {
+  openTask({agent_name:name,activity_type:type});
+  assert.equal(element('execDetailArea').hidden,false);
+  assert.match(element('execAssignmentAction').innerHTML,new RegExp(name));
+  element('execAssignmentProfile').onclick();
+ }
+ openTask({agent_name:'Kelly',activity_type:'CTC Call'});
+ assert.deepEqual(routes.splice(0),['agent:Calvin','agent:Heather','agent:Jack','agent:Mingtao','ctc:Kelly']);
  const live=helpers.liveScoreFromNative();
  assert(Math.abs(live.total-62.325)<0.02,'Roadmap must use the actual weighted score formula');
  helpers.renderPathTo85(live);
- assert(home.innerHTML.includes('113')&&scorePage.innerHTML.includes('113'),'Scenario must correctly calculate projected leads for 85%+');
- assert(home.innerHTML===scorePage.innerHTML,'Today and Scorecard must show the same roadmap');
- home.querySelector('[data-rm85-action="growth"]').onclick();
+ assert(scorePage.innerHTML.includes('113'),'Scenario must correctly calculate projected leads for 85%+');
+ assert.equal(home.innerHTML,'','The roadmap appears on Scorecard only');
+ scorePage.querySelector('[data-rm85-action="growth"]').onclick();
  scorePage.querySelector('[data-rm85-action="prospects"]').onclick();
- home.querySelector('[data-rm85-action="leads"]').onclick();
+ scorePage.querySelector('[data-rm85-action="leads"]').onclick();
  assert.deepEqual(routes,['growth:near','prospects','score:leads'],'Roadmap buttons must open prioritized agents, prospect list, and referred leads');
  assert(score.includes("data-score-detail"),'Scorecard source tiles must be clickable');
  console.log('Navigation, language, source links and live 85% roadmap regression PASS');

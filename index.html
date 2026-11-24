@@ -1741,6 +1741,7 @@ body[data-rm-tab="week"] #view-week .v95-amanda-greeting{
 <section class="rms-card" id="rmCore2027" style="margin:12px 0">
 <h2>2027 Realtor portfolio and referrals</h2>
 <p>Team goal: 192 Realtor-funded loans across existing and new partners. Nyny owns portfolio health. Amanda develops C accounts and listing-side opportunities.</p>
+<p id="rmCorePortfolio" aria-live="polite">Loading dated partner activity and rolling-year fundings…</p>
 <div class="rms-grid">
 <div><h3>Q1 portfolio checkpoint</h3><p>21 including 2 Channel at A-level, plus 24 B (45 combined). Verify rolling activity weekly.</p></div>
 <div><h3>Year-end portfolio targets</h3><p>200 active partners, 25 including 5 Channel at A-level, and 35 B (60 combined).</p></div>
@@ -4619,7 +4620,69 @@ async function loadRmNurtureToday(){
   }catch(e){card.style.display="none";}
 }
 function directorMode(){try{return location.hash==="#director"||new URLSearchParams(location.search).get("director")==="1"}catch(e){return false;}}
+function renderCorePortfolioProgress(host, profiles, asOf) {
+  const cutoff = new Date(asOf + 'T00:00:00Z');
+  cutoff.setUTCDate(cutoff.getUTCDate() - 89);
+  const firstDay = cutoff.toISOString().slice(0, 10);
+  const partners = new Map();
+  for (const row of profiles) {
+    const key = String(row.agent_name || '').normalize('NFKC').trim().toLowerCase().replace(/\s+/g, ' ');
+    const type = String(row.relationship_type || '').trim().toLowerCase();
+    if (!key || key.startsWith('__') || row.display_name === '__HIDDEN__' ||
+        row.do_not_contact === true || String(row.relationship_status || '').toLowerCase() === 'inactive' ||
+        ['strategic_partner', 'builder', 'builder_rep'].includes(type)) continue;
+    const current = partners.get(key) || {active: false, closes: null, stamp: ''};
+    const active = [row.latest_lead_date, row.latest_close_date].some(value => {
+      const date = String(value || '').slice(0, 10);
+      return date >= firstDay && date <= asOf;
+    });
+    const count = row.closes_past_year ?? row.closed_past_year;
+    const stamp = String(row.powerbi_last_seen_at || row.updated_at || '');
+    if (count != null && count !== '' && Number.isFinite(Number(count)) &&
+        (current.closes === null || stamp > current.stamp)) {
+      current.closes = Number(count);
+      current.stamp = stamp;
+    }
+    current.hasDates ||= Boolean(row.latest_lead_date || row.latest_close_date);
+    current.active ||= active;
+    partners.set(key, current);
+  }
+  const rows = [...partners.values()];
+  const count = predicate => rows.filter(predicate).length;
+  const metrics = [
+    ['90-day active', count(row => row.active), 'verify activity', 200],
+    ['A-level including Channel', count(row => row.closes >= 4), 21, 25],
+    ['Channel within A-level', count(row => row.closes >= 10), 2, 5],
+    ['B', count(row => row.closes >= 2 && row.closes < 4), 24, 35],
+    ['A-level plus B', count(row => row.closes >= 2), 45, 60]
+  ];
+  const hasCloses = rows.some(row => row.closes !== null);
+  const hasDates = rows.some(row => row.hasDates);
+  host.textContent = 'Profile records checked ' + asOf + ' · ' + metrics.map(([label, actual, q1, annual], index) =>
+    label + ': ' + ((index === 0 ? hasDates : hasCloses) ? actual : 'unavailable') +
+    ' (Q1 ' + q1 + ', year end ' + annual + ')').join(' · ');
+}
+
+async function loadRmCorePortfolio() {
+  const host = document.getElementById('rmCorePortfolio');
+  try {
+    const profiles = await rm470LoadAllProfiles();
+    const asOf = new Intl.DateTimeFormat('en-CA', {timeZone: 'America/New_York', year: 'numeric', month: '2-digit', day: '2-digit'}).format(new Date());
+    renderCorePortfolioProgress(host, profiles.filter(row => row.display_name !== HIDDEN_PROFILE_MARKER), asOf);
+  } catch {
+    host.textContent = 'Partner activity and fundings could not be loaded.';
+  }
+}
+function rmCoreAgentRole(role) {
+  return String(role || '').trim().toLowerCase().replace(/ agent$/, '');
+}
+function rmCoreListingOnly(date = new Intl.DateTimeFormat('en-CA', {
+  timeZone: 'America/New_York', year: 'numeric', month: '2-digit', day: '2-digit'
+}).format(new Date())) {
+  return date >= '2027-01-01';
+}
 function switchTab(name){
+  if (name === 'standard') void loadRmCorePortfolio();
   if(name==="newagents")name="pipeline";
   if(name==="tiergrowth")name="growth";
   if(name==="skillset")name="learn";
@@ -13205,7 +13268,7 @@ window.rmAuditVisibleButtons=function(){
   function v176FeedbackSaysTextSent(text){return /(?:sent|texted)(?:\s+(?:a|the))?\s+(?:follow[- ]?up\s+)?text|follow[- ]?up\s+text\s+(?:was\s+)?sent/i.test(String(text||''))}
   window.v176UpdateCompleteState=function(){
     const missing=[];
-    ['Buyer','Listing'].forEach(side=>{
+    (rmCoreListingOnly()?['Listing']:['Buyer','Listing']).forEach(side=>{
       const out=val('v175Tx'+side+'Outcome'),needsText=out==='Left voicemail'||out==='No answer';
       const cb=document.getElementById('v175Tx'+side+'TextSent'),feedback=document.getElementById('v175Tx'+side+'Feedback');
       const wrap=document.getElementById('v175Tx'+side+'TextWrap'),status=document.getElementById('v175Tx'+side+'TextStatus');
@@ -14383,7 +14446,7 @@ window.rmAuditVisibleButtons=function(){
     const existing=(rows||[]).find(r=>{
       const rid=typeof wp33TxnId==='function'?wp33TxnId(r.notes):'';
       const rr=typeof wp30TxnRole==='function'?wp30TxnRole(r.notes):'Agent';
-      return (!!txnId&&rid===txnId&&norm(rr)===norm(s.role));
+      return (!!txnId&&rid===txnId&&rmCoreAgentRole(rr)===rmCoreAgentRole(s.role));
     });
     const body={agent_name:s.name,act_type:type,act_date:td(),outcome:s.outcome,notes:buildNotes(type,s,txnId,status),follow_up_date:follow||null};
     if(existing){
@@ -14400,15 +14463,16 @@ window.rmAuditVisibleButtons=function(){
     const type=modal.dataset.activityType||'CTC Call';
     let txnId=modal.dataset.txnId||'';
     const err=msg=>{const e=document.getElementById('v175TxError');if(e){e.textContent=msg||'';e.classList.toggle('show',!!msg)}};
-    const sides=['Buyer','Listing'].map(side=>{const feedback=val('v175Tx'+side+'Feedback');return{role:side,name:val('v175Tx'+side+'Agent'),outcome:val('v175Tx'+side+'Outcome'),feedback,textSent:chk('v175Tx'+side+'TextSent')||textSentEvidence(feedback),phone:val('v175Tx'+side+'Phone')}}).filter(s=>s.name);
+    const listingOnly=rmCoreListingOnly();
+    const sides=(listingOnly?['Listing']:['Buyer','Listing']).map(side=>{const feedback=val('v175Tx'+side+'Feedback');return{role:side,name:val('v175Tx'+side+'Agent'),outcome:val('v175Tx'+side+'Outcome'),feedback,textSent:chk('v175Tx'+side+'TextSent')||textSentEvidence(feedback),phone:val('v175Tx'+side+'Phone')}}).filter(s=>s.name);
     if(!val('v175TxBuyerName')&&!val('v175TxProperty'))return err('Buyer/client name or property address is required.');
-    if(!sides.length)return err('At least one buyer or listing agent is required.');
+    if(!sides.length)return err(listingOnly?'Add the listing agent before saving.':'At least one buyer or listing agent is required.');
     if(!txnId&&typeof wp33MakeTxnId==='function')txnId=wp33MakeTxnId(type==='CTC Call'?'Clear to Close':'New Contract',[val('v175TxBuyerName'),val('v175TxProperty')].filter(Boolean).join(' · '),val('v175TxBuyerAgent'),val('v175TxListingAgent'),td());
     let openSides=[];try{openSides=JSON.parse(modal.dataset.v231OpenSides||'[]')}catch(e){}
-    const isOpen=s=>!openSides.length||openSides.some(o=>norm(o.role)===norm(s.role)&&(!o.name||key(o.name)===key(s.name)));
+    const isOpen=s=>!openSides.length||openSides.some(o=>rmCoreAgentRole(o.role)===rmCoreAgentRole(s.role)&&(!o.name||key(o.name)===key(s.name)));
     const worked=sides.filter(s=>s.outcome);
     if(!worked.length)return err('Choose an outcome for the call you worked.');
-    const saveSides=complete?sides.filter(isOpen):worked;
+    const saveSides=complete?(listingOnly?sides:sides.filter(isOpen)):worked;
     const follow=val('v175TxFollowup')||null;
     for(const s of saveSides){
       if(!s.outcome)return err('Choose an outcome for '+s.role.toLowerCase()+' agent '+s.name+'.');
@@ -16330,7 +16394,7 @@ if(typeof baseOpen==='function'&&!baseOpen.__rmTxnV9){
 function copy(){
   const hub=document.getElementById('wp230TxnHub');if(!hub)return;
   const sub=hub.querySelector('.wp230-sub');
-  if(sub)sub.textContent='New Contract: Amanda calls buyer agent + listing agent. During the file, LP2 owns buyer/buyer-agent Tuesday updates and Amanda owns listing-agent updates. CTC: Amanda calls both agents again.';
+  if(sub)sub.textContent=rmCoreListingOnly()?'New Contract and CTC: log the listing-agent outcome. LP2 owns buyer and buyer-agent communication.':'New Contract: Amanda calls buyer agent + listing agent. During the file, LP2 owns buyer/buyer-agent Tuesday updates and Amanda owns listing-agent updates. CTC: Amanda calls both agents again.';
 }
 window.rmTxnCopyV9=copy;
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(copy,700),{once:true});else setTimeout(copy,350);
@@ -16411,6 +16475,8 @@ async function save(kind){
         la=val('rmManual'+kind+'ListingAgent'),lp=val('rmManual'+kind+'ListingPhone'),
         btn=document.getElementById('rmManual'+kind+'Save');
   if(!client&&!property)return fail(kind,'Add the buyer/client name or property so the transaction can be identified.');
+  const listingOnly=rmCoreListingOnly();
+  if(listingOnly&&!la)return fail(kind,'Add the listing agent to create an RM call.');
   if(!ba&&!la)return fail(kind,'Add the buyer agent and/or listing agent. Both should be entered when available.');
   const er=document.getElementById('rmManual'+kind+'Error');if(er){er.textContent='';er.style.display='none'}
   if(btn){btn.disabled=true;btn.textContent='Adding…'}
@@ -16435,7 +16501,7 @@ async function save(kind){
       }catch(e){return false}
     });
     const posts=[];
-    if(ba&&!exists('Buyer',ba)){
+    if(!listingOnly&&ba&&!exists('Buyer',ba)){
       let notes=common+'[TXN_ROLE:Buyer]';
       try{if(typeof appendRmMeta==='function')notes=appendRmMeta(notes,'Amanda','Current Relationship')}catch(e){}
       posts.push(sbFetch('amanda_activities',{method:'POST',prefer:'return=minimal',body:JSON.stringify({
@@ -16466,7 +16532,7 @@ async function save(kind){
     try{if(typeof window.v231RefreshTransactionWork==='function')await window.v231RefreshTransactionWork(true)}catch(e){}
     try{window.v231RenderTransactionWork&&window.v231RenderTransactionWork()}catch(e){}
     close(kind);
-    if(typeof window.v176OpenTransaction==='function')window.v176OpenTransaction(callType,ba||la,ba?'Buyer':'Listing',txnId);
+    if(typeof window.v176OpenTransaction==='function')window.v176OpenTransaction(callType,listingOnly?la:ba||la,listingOnly||!ba?'Listing':'Buyer',txnId);
     setTimeout(()=>{
       const set=(id,v)=>{const e=document.getElementById(id);if(e)e.value=v||''};
       set('v175TxBuyerName',client);set('v175TxProperty',property);
@@ -16474,7 +16540,7 @@ async function save(kind){
       set('v175TxListingAgent',la);set('v175TxListingPhone',lp);
       try{window.v176UpdateWhatsApp&&window.v176UpdateWhatsApp()}catch(e){}
     },40);
-    try{toast(label+' added — both-agent workbench opened ✓','success',3500)}catch(e){}
+    try{toast(label+' added · workbench opened','success',3500)}catch(e){}
   }catch(e){
     console.warn('manual '+label,e);fail(kind,'Could not add the '+label+'. Refresh once and try again.');
   }finally{
@@ -16522,8 +16588,8 @@ window.v176BuildWhatsApp=function(){
 const oldPrefill=window.prefillActivityLog;
 if(typeof oldPrefill==='function'&&!oldPrefill.__twoSideV10){
   const w=function(agent,type){
-    if(type==='CTC Call')return window.v176OpenTransaction&&window.v176OpenTransaction('CTC Call',agent||'','Buyer','');
-    if(type==='Under Contract Call')return window.v176OpenTransaction&&window.v176OpenTransaction('Under Contract Call',agent||'','Buyer','');
+    if(type==='CTC Call')return window.v176OpenTransaction&&window.v176OpenTransaction('CTC Call',agent||'',rmCoreListingOnly()?'Listing':'Buyer','');
+    if(type==='Under Contract Call')return window.v176OpenTransaction&&window.v176OpenTransaction('Under Contract Call',agent||'',rmCoreListingOnly()?'Listing':'Buyer','');
     return oldPrefill.apply(this,arguments);
   };w.__twoSideV10=true;window.prefillActivityLog=w;
 }
@@ -16556,9 +16622,11 @@ ensure('Ctc');ensure('NewContract');
 'use strict';
 function ensureBothVisible(){
   const modal=document.getElementById('v175TransactionModal');if(!modal)return;
+  const listingOnly=rmCoreListingOnly();
+  modal.classList.toggle('rm-core-listing-only',listingOnly);
   const grid=modal.querySelector('.v176-agent-grid');if(grid){
     grid.style.display='grid';
-    grid.style.gridTemplateColumns='1fr 1fr';
+    grid.style.gridTemplateColumns=listingOnly?'1fr':'1fr 1fr';
   }
   const cards=modal.querySelectorAll('.v176-agent-card');
   cards.forEach(c=>{c.style.display='block';c.style.visibility='visible';c.style.opacity='1'});
@@ -16631,7 +16699,7 @@ window.v176BuildWhatsApp=function(){
     lines.push('Contact: '+(out||'Not worked yet'));
     lines.push('Feedback: '+(fb||'—'));
   }
-  block('Buyer','Buyer Agent');
+  if(!rmCoreListingOnly())block('Buyer','Buyer Agent');
   block('Listing','Listing Agent');
   const f=val('v175TxFollowup'),note=val('v175TxFileNote');
   if(f){lines.push('');lines.push('Next Follow-Up: '+f)}
@@ -18379,14 +18447,14 @@ function groups(d,rows){
   });
   return Array.from(map.values()).sort((a,b)=>(a.callType==='CTC Call'?0:1)-(b.callType==='CTC Call'?0:1)||String(a.bundle.client||a.bundle.property||'').localeCompare(String(b.bundle.client||b.bundle.property||'')));
 }
-function isOpen(g,role,name){return (g.tasks||[]).some(t=>norm((t.txn||{}).role)===norm(role)&&(!name||key(t.name)===key(name)));}
+function isOpen(g,role,name){return (g.tasks||[]).some(t=>rmCoreAgentRole((t.txn||{}).role)===rmCoreAgentRole(role)&&(!name||key(t.name)===key(name)));}
 function person(g,role){
   const b=g.bundle||{},buyer=role==='Buyer',name=buyer?b.buyer:b.listing,p=buyer?(b.buyerPhone||phone(name)):(b.listingPhone||phone(name)),email=buyer?b.buyerEmail:b.listingEmail,open=isOpen(g,role,name);
-  if(!name)return '';
+  if(!name||(rmCoreListingOnly()&&buyer))return '';
   return '<div class="wp386-person"><div><div class="wp386-role">'+role+' agent</div><div class="wp386-name">'+esc(name)+'</div>'+([p,email].filter(Boolean).length?'<div class="wp386-contact">'+esc([p,email].filter(Boolean).join(' · '))+'</div>':'')+'</div><span class="wp386-callstate '+(open?'todo':'done')+'">'+(open?'Needs call':'Done')+'</span></div>';
 }
 function file(g){
-  const b=g.bundle||{},isCtc=g.callType==='CTC Call',title=b.client||b.property||b.ref||'Transaction',total=(b.buyer?1:0)+(b.listing?1:0)||g.tasks.length,open=g.tasks.length,done=Math.max(0,total-open),meta=[];
+  const b=g.bundle||{},isCtc=g.callType==='CTC Call',title=b.client||b.property||b.ref||'Transaction',total=rmCoreListingOnly()?1:(b.buyer?1:0)+(b.listing?1:0)||g.tasks.length,open=g.tasks.length,done=Math.max(0,total-open),meta=[];
   if(b.property&&b.property!==title)meta.push(b.property);if(b.closeDate)meta.push('Est. close '+b.closeDate);
   const first=g.tasks[0]||{},fx=first.txn||{},agent=first.name||b.buyer||b.listing||'',role=fx.role||((b.buyer&&isOpen(g,'Buyer',b.buyer))?'Buyer':'Listing');
   const state=done>0&&open>0?'partial':'open',label=open===1?'1 call left':open+' calls left';
@@ -18415,13 +18483,13 @@ window.rm386OpenTransactionFile=function(type,agent,role,txnId){
     const title=document.getElementById('v175TransactionTitle');if(title)title.textContent=(type==='CTC Call'?'CTC':'New Contract')+' File';
     const p=m.querySelector('.v175-head p');if(p){p.textContent='';p.style.display='none';}
     const prog=document.getElementById('v176SaveProgressBtn');if(prog)prog.textContent='Save partial file';
-    const complete=document.getElementById('v176SaveCompleteBtn');if(complete)complete.textContent='Complete file';
+    const complete=document.getElementById('v176SaveCompleteBtn');if(complete)complete.textContent=rmCoreListingOnly()?'Complete listing-agent call':'Complete file';
     let open=[];try{open=JSON.parse(m.dataset.v231OpenSides||'[]')}catch(e){}
     ['Buyer','Listing'].forEach(side=>{
       const card=document.getElementById('v175Tx'+side+'Agent')?.closest('.v176-agent-card');if(!card)return;
       card.querySelectorAll('.wp386-agent-done,.v901-force-open-btn').forEach(el=>el.remove());
       const name=(document.getElementById('v175Tx'+side+'Agent')?.value||'').trim();
-      const still=side!=='Listing'||open.some(o=>norm(o.role)===norm(side)&&(!o.name||key(o.name)===key(name)));
+      const still=side!=='Listing'||open.some(o=>rmCoreAgentRole(o.role)===rmCoreAgentRole(side)&&(!o.name||key(o.name)===key(name)));
       const outcome=document.getElementById('v175Tx'+side+'Outcome'),feedback=document.getElementById('v175Tx'+side+'Feedback'),phoneEl=document.getElementById('v175Tx'+side+'Phone');
       if(name&&!still&&card.dataset.v901ForceOpen!=='1'){
         const b=document.createElement('span');b.className='wp386-agent-done';b.textContent='Already done';card.appendChild(b);
@@ -18444,6 +18512,10 @@ function boot(){setTimeout(render,250)}
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
 })();
 </script>
+<style>
+#v175TransactionModal.rm-core-listing-only .v176-agent-grid{grid-template-columns:1fr!important}
+#v175TransactionModal.rm-core-listing-only .v176-agent-card:has(#v175TxBuyerAgent){display:none!important}
+</style>
 <style id="rm-v388-transaction-clean-css">
 #wp230TxnHub #v233TxnScriptReminder,
 #wp230TxnHub .v234-rule,
@@ -18478,7 +18550,7 @@ function paintDoneSides(modal){
     card.querySelectorAll('.wp386-agent-done,.v901-force-open-btn').forEach(el=>el.remove());
     const name=(agent.value||'').trim();
     const requested=norm(side)===requestedRole&&(!requestedAgent||key(requestedAgent)===key(name));
-    const still=side!=='Listing'||requested||open.some(o=>norm(o.role)===norm(side)&&(!o.name||key(o.name)===key(name)));
+    const still=side!=='Listing'||requested||open.some(o=>rmCoreAgentRole(o.role)===rmCoreAgentRole(side)&&(!o.name||key(o.name)===key(name)));
     const outcome=document.getElementById('v175Tx'+side+'Outcome');
     const feedback=document.getElementById('v175Tx'+side+'Feedback');
     const phone=document.getElementById('v175Tx'+side+'Phone');
@@ -18512,7 +18584,7 @@ window.rm388OpenTransactionFile=function(type,agent,role,txnId){
     modal.classList.add('open');
     const title=document.getElementById('v175TransactionTitle');if(title)title.textContent=(String(type||'').toLowerCase().includes('ctc')?'CTC':'New Contract')+' File';
     const progress=document.getElementById('v176SaveProgressBtn');if(progress)progress.textContent='Save partial file';
-    const complete=document.getElementById('v176SaveCompleteBtn');if(complete)complete.textContent='Complete file';
+    const complete=document.getElementById('v176SaveCompleteBtn');if(complete)complete.textContent=rmCoreListingOnly()?'Complete listing-agent call':'Complete file';
     cleanTxnCopy();paintDoneSides(modal);
   };
   try{
@@ -20815,8 +20887,8 @@ const sameFile=(a,b)=>{
 };
 function completed(call,trigger,role,callType){
   if(call.act_type!==callType||norm(call.agent_name)!==norm(trigger.agent_name))return false;
-  const cr=norm(tag(call.notes,'ROLE')||'Agent');
-  if(cr!==norm(role)&&cr!=='agent')return false;
+  const cr=rmCoreAgentRole(tag(call.notes,'ROLE')||'Agent');
+  if(cr!==rmCoreAgentRole(role)&&cr!=='agent')return false;
   const status=norm(tag(call.notes,'STATUS')),outcome=norm(call.outcome);
   if(['progress','pending'].includes(status)||['requires follow-up','needs manager attention','issue / escalation'].includes(outcome))return false;
   if(['no answer','left voicemail'].includes(outcome))return tag(call.notes,'TEXT_SENT').toUpperCase()==='Y'&&status!=='progress';
@@ -20851,6 +20923,7 @@ window.wp30BuildTransactionTasks=function(data,date,owner){
   latest.forEach(t=>{
     const role=tag(t.notes,'ROLE')||'Agent',callType=typeOf(t.act_type),id=idOf(t.notes);
     if(!['buyer','buyer agent','listing','listing agent','agent'].includes(norm(role)))return;
+    if(rmCoreListingOnly(date)&&!['listing','listing agent'].includes(norm(role)))return;
     const removed=all.some(x=>x.act_type===t.act_type&&['removed','withdrawn','cancelled'].includes(norm(tag(x.notes,'STATUS')))&&
       ((id&&id===idOf(x.notes))||
        (tag(t.notes,'CLIENT')&&tag(t.notes,'PROPERTY')&&norm(tag(t.notes,'CLIENT'))===norm(tag(x.notes,'CLIENT'))&&norm(tag(t.notes,'PROPERTY'))===norm(tag(x.notes,'PROPERTY'))) ||
@@ -20928,7 +21001,7 @@ window.rm453AddListingAgent=async function(callType,txnId){
   const wantedId=normId(txnId);
   const source=all.find(r=>r.act_type===milestone&&idOf(r.notes)===wantedId);
   if(!source){try{toast('Refresh transaction calls and try again.','error')}catch(e){}return}
-  const existing=all.find(r=>r.act_type===milestone&&idOf(r.notes)===wantedId&&norm(tag(r.notes,'ROLE'))==='listing');
+  const existing=all.find(r=>r.act_type===milestone&&idOf(r.notes)===wantedId&&['listing','listing agent'].includes(norm(tag(r.notes,'ROLE'))));
   const rawId=tag(source.notes,'ID')||txnId; // keep the file's stored ID so both sides stay grouped
   if(existing){try{toast('This file already has a listing agent.','error')}catch(e){}return}
   const name=window.prompt('Listing agent name for this '+(callType==='CTC Call'?'CTC':'New Contract')+' file:');
@@ -20942,11 +21015,11 @@ window.rm453AddListingAgent=async function(callType,txnId){
   try{
     // Check server state so a second browser session cannot add the same side twice.
     const server=await readAllRows('amanda_activities?act_type=eq.'+encodeURIComponent(milestone)+'&select=id,notes');
-    if((server||[]).some(r=>idOf(r.notes)===wantedId&&norm(tag(r.notes,'ROLE'))==='listing')){try{toast('The listing agent was already added.','error')}catch(e){};await refresh();return}
+    if((server||[]).some(r=>idOf(r.notes)===wantedId&&['listing','listing agent'].includes(norm(tag(r.notes,'ROLE'))))){try{toast('The listing agent was already added.','error')}catch(e){};await refresh();return}
     const inserted=await sbFetch('amanda_activities',{method:'POST',body:JSON.stringify({agent_name:safeName,act_type:milestone,act_date:source.act_date,outcome:'Pending',notes,follow_up_date:null})});
     if(!Array.isArray(inserted)||!inserted[0]?.id)throw new Error('Listing agent was not saved');
     const verified=await sbFetch('amanda_activities?id=eq.'+encodeURIComponent(inserted[0].id)+'&select=id,notes');
-    if(!Array.isArray(verified)||!verified.some(r=>String(r.id)===String(inserted[0].id)&&idOf(r.notes)===wantedId&&norm(tag(r.notes,'ROLE'))==='listing'))throw new Error('Listing agent did not persist');
+    if(!Array.isArray(verified)||!verified.some(r=>String(r.id)===String(inserted[0].id)&&idOf(r.notes)===wantedId&&['listing','listing agent'].includes(norm(tag(r.notes,'ROLE')))))throw new Error('Listing agent did not persist');
     await refresh();try{toast(safeName+' added to this file. The listing agent call is ready.','success',3600)}catch(e){}
   }catch(e){console.error('Add missing listing agent',e);try{toast('Could not add the listing agent. Try again.','error',4000)}catch(_){} }
 };
@@ -20956,7 +21029,7 @@ window.rm453ChooseMissingListing=function(){
     if(!['New Contract','Clear to Close'].includes(r.act_type))return;
     if(['removed','withdrawn','cancelled'].includes(norm(tag(r.notes,'STATUS')))||suppressed(r,all))return;
     const id=idOf(r.notes),key=r.act_type+'|'+id;
-    if(!id||seen.has(key)||all.some(x=>x.act_type===r.act_type&&idOf(x.notes)===id&&norm(tag(x.notes,'ROLE'))==='listing'))return;
+    if(!id||seen.has(key)||all.some(x=>x.act_type===r.act_type&&idOf(x.notes)===id&&['listing','listing agent'].includes(norm(tag(x.notes,'ROLE')))))return;
     seen.add(key);
     choices.push({id,type:typeOf(r.act_type),label:(r.act_type==='Clear to Close'?'CTC':'New Contract')+' · '+(tag(r.notes,'CLIENT')||tag(r.notes,'PROPERTY')||r.agent_name)});
   });
@@ -21783,7 +21856,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 #rm350Workboard .rm-daily-prospect-step .rm-daily-step-copy b{color:#3f2366}
 @media(max-width:650px){#rm350Workboard .rm-daily-step-actions{width:100%}#rm350Workboard .rm-daily-step-link{flex:1 1 165px}}
 </style>
-<script defer src="./ui/rm-name-display.js?v=20261111-names1"></script><script defer src="./ui/compact-workspace.js?v=20261111-grouped-style3"></script><script defer src="./ui/daily-execution-coaching.js?v=20261116-hide-completed-transactions"></script><script defer src="./ui/fast-activity-workflow.js?v=20261110-fast5"></script><script defer src="./ui/relationship-funnel.js?v=20261110-funnel5"></script><script defer src="./ui/scorecard-source-summary.js?v=20261110-source6"></script>
+<script defer src="./ui/rm-name-display.js?v=20261111-names1"></script><script defer src="./ui/compact-workspace.js?v=20261111-grouped-style3"></script><script defer src="./ui/daily-execution-coaching.js?v=core2027-20261124--hide-completed-transactions"></script><script defer src="./ui/fast-activity-workflow.js?v=20261110-fast5"></script><script defer src="./ui/relationship-funnel.js?v=20261110-funnel5"></script><script defer src="./ui/scorecard-source-summary.js?v=20261110-source6"></script>
 
 
 <script defer src="./ui/relationship-activity-fields.js?v=20261118-ae3"></script>

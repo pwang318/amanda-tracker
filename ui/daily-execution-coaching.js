@@ -375,12 +375,19 @@ async function rmReadLatestTransactions(force=false){
       listing:rmTxnTag(n,'TXN_LISTING_AGENT'),listingPhone:rmTxnTag(n,'TXN_LISTING_PHONE'),
       closeDate:rmTxnTag(n,'TXN_CLOSE_DATE'),batch,roles:[],outstanding:0});
    }
+   const listingOnly=typeof rmCoreListingOnly==='function'&&rmCoreListingOnly();
    const triggers=new Map(),completed=new Set();
    for(const x of activity){
-    const id=rmTxnTag(x.notes,'TXN_ID'),role=rmTxnTag(x.notes,'TXN_ROLE').toLowerCase(),person=rmTxnKey(x.agent_name);
+    const id=rmTxnTag(x.notes,'TXN_ID'),role=rmTxnTag(x.notes,'TXN_ROLE').toLowerCase().replace(/ agent$/,''),person=rmTxnKey(x.agent_name);
     if(!files.has(id)||!['buyer','listing'].includes(role)||!person)continue;
     const key=id+'|'+role+'|'+person,status=rmTxnTag(x.notes,'TXN_STATUS').toUpperCase();
-    if(x.act_type===triggerType&&rmTxnTag(x.notes,'TXN_BATCH')===batch){
+    const addedListing = listingOnly && role==='listing' && rmTxnTag(x.notes,'TXN_SOURCE')==='RM Added Missing Listing Agent';
+    if(x.act_type===triggerType&&(rmTxnTag(x.notes,'TXN_BATCH')===batch||addedListing)){
+     const file=files.get(id);
+     if(addedListing&&!rmTxnValidName(file.listing)){
+      file.listing=x.agent_name;
+      file.listingPhone=rmTxnTag(x.notes,'TXN_LISTING_PHONE');
+     }
      if(!triggers.has(key))triggers.set(key,status);
     }else if(x.act_type===callType&&status==='COMPLETE'&&String(x.outcome||'').trim()&&!/^pending$/i.test(x.outcome)){
      completed.add(key);
@@ -388,7 +395,7 @@ async function rmReadLatestTransactions(force=false){
    }
    let outstanding=0,completedCount=0;
    for(const file of files.values()){
-    for(const [role,agent] of [['buyer',file.buyer],['listing',file.listing]]){
+    for(const [role,agent] of (listingOnly?[['listing',file.listing]]:[['buyer',file.buyer],['listing',file.listing]])){
      if(!rmTxnValidName(agent))continue;
      const key=file.id+'|'+role+'|'+rmTxnKey(agent);
      const status=triggers.get(key);
@@ -398,7 +405,8 @@ async function rmReadLatestTransactions(force=false){
      if(done)completedCount++;else{outstanding++;file.outstanding++}
     }
    }
-   output[kind]={batch,files:[...files.values()],count:files.size,outstanding,completed:completedCount};
+   const missingListing=listingOnly?[...files.values()].filter(file=>!rmTxnValidName(file.listing)).length:0;
+   output[kind]={batch,files:[...files.values()],count:files.size,outstanding,completed:completedCount,missingListing};
   }
   rmTxnCache=output;rmTxnCacheTime=Date.now();return output;
  })();
@@ -445,8 +453,8 @@ function paintImportedCallCounters(){
   if(!kind)continue;
   const text=button.querySelector('strong');if(!text)continue;
   const data=rmImportSummary[kind];
-  const done=Boolean(data&&data.count>0&&data.outstanding===0);
-  text.textContent=done?'Complete':data?(data.count===0?'No files imported':data.outstanding+' calls outstanding ↗'):(rmImportSummary.error?'Unable to verify · Retry ↗':'Checking call outcomes…');
+  const done=Boolean(data&&data.count>0&&data.outstanding===0&&!data.missingListing);
+  text.textContent=done?'Complete':data?(data.count===0?'No files imported':data.outstanding+' calls outstanding'+(data.missingListing?' · '+data.missingListing+' missing listing agent':'')+' ↗'):(rmImportSummary.error?'Unable to verify · Retry ↗':'Checking call outcomes…');
   button.setAttribute('aria-label',label+' · '+(done?'Complete; open transaction history':data?data.outstanding+' outstanding calls':rmImportSummary.error?'Call outcomes unavailable':'Loading call outcomes'));
   button.classList.toggle('execTransactionComplete',done);
  }
@@ -468,6 +476,8 @@ async function openManagementTemplate(kind,assignment){
   const state=(await rmReadLatestTransactions(true))[isCtc?'ctc':'contract'];
   // The worklist shows only transactions with a call still outstanding.
   // Keep completed records in the shared import/history and summary counters.
+  const listingOnly=typeof rmCoreListingOnly==='function'&&rmCoreListingOnly();
+  const missingNotice=state.missingListing?'<p>'+state.missingListing+' imported files are missing a listing agent. Use Add missing listing agent in Transaction Calls or correct the source import.</p>':'';
   const current=state.files.filter(file=>file.outstanding>0);
   const newestBatch=state.batch;
   const historical=[];
@@ -478,12 +488,12 @@ async function openManagementTemplate(kind,assignment){
   const matches=person?current.filter(matchPerson):[];
   const files=person&&matches.length?matches:current;
   if(!files.length){
-   host.innerHTML=state.count&&state.outstanding===0
+   host.innerHTML=state.missingListing?missingNotice:state.count&&state.outstanding===0
     ?'<p><strong>Complete</strong> · All calls from the latest '+(isCtc?'CTC':'New Contract')+' import are completed. Completed records remain saved for management review and WhatsApp recap.</p>'
     :'<p>No outstanding '+(isCtc?'CTC':'New Contract')+' calls were found in the latest shared import'+(person?' for this Realtor':'')+'. '+(state.count?'Completed files are hidden from this worklist.':'Upload the correct Encompass export first, then refresh.')+'</p>';
    return;
   }
-  host.innerHTML='<p><strong>Latest '+(isCtc?'CTC':'New Contract')+' import · '+safe(batchDate||'unknown date')+'</strong> · '+state.outstanding+' agent calls remaining across '+current.length+' active files'+(state.count>current.length?' ('+(state.count-current.length)+' completed files hidden)':'')+'. '+(state.completed?state.completed+' completed agent contacts on record. ':'')+'Completed transactions remain saved for review and WhatsApp recap.</p>'+(person&&!matches.length?'<p>This Realtor is not in the latest import. Historical follow-ups are separate from current loan calls.</p>':'')+'<div id="execWaFileList" style="display:grid;gap:7px;max-height:440px;overflow:auto"></div>';
+  host.innerHTML=missingNotice+'<p><strong>Latest '+(isCtc?'CTC':'New Contract')+' import · '+safe(batchDate||'unknown date')+'</strong> · '+state.outstanding+' agent calls remaining across '+current.length+' active files'+(state.count>current.length?' ('+(state.count-current.length)+' completed files hidden)':'')+'. '+(state.completed?state.completed+' completed agent contacts on record. ':'')+'Completed transactions remain saved for review and WhatsApp recap.</p>'+(person&&!matches.length?'<p>This Realtor is not in the latest import. Historical follow-ups are separate from current loan calls.</p>':'')+'<div id="execWaFileList" style="display:grid;gap:7px;max-height:440px;overflow:auto"></div>';
   const list=$('execWaFileList');
   for(const file of files){
    const button=document.createElement('button');
@@ -491,7 +501,7 @@ async function openManagementTemplate(kind,assignment){
    button.textContent=[file.client||'Client not supplied',file.property||'Property not supplied',file.closeDate?'Est. close '+file.closeDate:'Closing date not supplied',file.outstanding?file.outstanding+' calls left':'No calls outstanding'].join(' · ');
    button.onclick=()=>{
     if(typeof window.v176OpenTransaction!=='function'){host.textContent='Transaction workbench unavailable. Refresh the tracker and retry.';return}
-    const agent=file.buyer||file.listing||'',role=file.buyer?'Buyer':'Listing';
+    const agent=listingOnly?file.listing:file.buyer||file.listing||'',role=listingOnly||!file.buyer?'Listing':'Buyer';
     window.v176OpenTransaction(isCtc?'CTC Call':'Under Contract Call',agent,role,file.id);
     // Import details belong to the selected exact transaction ID, never an agent-name search.
     setTimeout(()=>{

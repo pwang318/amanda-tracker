@@ -181,7 +181,7 @@ for(const marker of ['execWaFiles','execWaFileList','TXN_ID','TXN_CLIENT','TXN_P
 assert(code.includes("window.v176OpenTransaction(isCtc?'CTC Call':'Under Contract Call',agent,role,file.id)"),'Selected import must open established transaction workbench');
 assert(code.includes('if(files.has(x.id))continue'),'Latest imported files must be deduplicated by transaction ID');
 assert(code.includes("String(modal.dataset.txnId||'')!==file.id"),'Prefill must not attach details to the wrong file');
-assert(code.includes('No client or Realtor information has been guessed.'),'Missing imports must never be silently invented');
+assert(code.includes('Upload the correct Encompass export first, then refresh.'),'Missing imports must never be silently invented');
 assert(!code.includes('navigator.clipboard.writeText(value)'),'Retire competing empty management composer; existing imported workbench owns copy action');
 
  // Consistent Realtor task cards and completion behavior.
@@ -201,19 +201,19 @@ assert(!code.includes("'Open imported files ↗'"),'CTC and Contract tiles must 
 assert(code.includes("if(group[0]==='CTC calls'||group[0]==='New contract calls')"),'Old transaction detail views must route to original workbench');
 assert(code.includes("if(index>=0&&!['CTC calls','New contract calls'].includes(categories[index][0]))"),'Historical August catch-ups must not be counted as current imported CTC calls');
 
-assert(code.includes("const state=(await rmReadLatestTransactions(true))[isCtc?'ctc':'contract'];") && code.includes("const current=state.files;") && code.includes("const newestBatch=state.batch;"),'Current calls must use only most recent import batch as resolved by the shared import reconciler');
+assert(code.includes("const state=(await rmReadLatestTransactions(true))[isCtc?'ctc':'contract'];") && code.includes("const current=state.files.filter(file=>file.outstanding>0);") && code.includes("const newestBatch=state.batch;"),'Current calls must use only most recent import batch as resolved by the shared import reconciler');
 assert(code.includes("file.closeDate?'Est. close '"),'File picker displays estimated closing dates rather than activity dates');
-assert(code.includes("const historical=[];") && code.includes("const current=state.files;"),'Old files must be excluded from current transaction picker by the shared reconciler');
+assert(code.includes("const historical=[];") && code.includes("const current=state.files.filter(file=>file.outstanding>0);"),'Old files must be excluded from current transaction picker by the shared reconciler');
 
 assert(code.includes('function paintImportedCallCounters()'),'Transaction worklist tiles must use actual import counts');
 assert(code.includes('refreshImportedCallCounters(true)'),'Transaction counters must refresh from shared imports');
 assert(code.includes("for(const x of list.filter(v=>v.batch===batch))") && code.includes("if(files.has(x.id))continue;"),'Latest import deduplicates exact transaction IDs');
-assert(code.includes("data.outstanding+' calls outstanding ↗'"),'Incomplete transactions show true outstanding contacts');
+assert(code.includes("data.outstanding+' calls outstanding'"),'Incomplete transactions show true outstanding contacts');
 assert(code.includes("done?'Complete'"),'Completed transaction tiles show only Complete');
 assert(code.includes("data.count>0&&data.outstanding===0"),'Never mark an empty or unverified import complete');
 
 assert(!code.includes("?'Open imported files ↗'"),'Current CTC/contract tile may not fall back to a stale generic label');
-assert(code.includes("?'Checking latest import…'"),'Current transaction tiles should show a truthful pending state');
+assert(code.includes("Checking call outcomes…"),'Current transaction tiles should show a truthful pending state');
 
 assert(code.includes("'Open Tuesday Updates ↗'"),'Tuesday tile must not display zero from unrelated work queue');
 assert(code.includes("window.switchTab('tuesday')"),'Tuesday tile must open the dedicated source-driven Tuesday page');

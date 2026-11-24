@@ -14,7 +14,7 @@ const make=new Function('window','document','$',src.slice(begin,end)+'return ope
  const open=make(w,doc,()=>null);
  assert.equal(await open(),true);
  assert.deepEqual(routes,['pipeline','load-pipeline','render-call-list','scroll-prospect-list','focus-prospect-list']);
- assert(src.includes("addEventListener('click',openProspectList)"),'New Realtor Outreach tile must use Pipeline route');
+ assert(src.includes("open.onclick=openProspectList"),'New Realtor Outreach tile must use Pipeline route');
  assert(src.includes("categoryStart+Number(match[2])"),'Category detail buttons need stable indexing');
  assert(src.includes("showDetail('section:1')"),'Due today must open due list');
  assert(src.includes("showDetail('section:0')"),'Overdue must open overdue list');
