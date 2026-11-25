@@ -2,6 +2,7 @@
   const root = document.getElementById('rmPartnerSignals');
   const status = root.querySelector('[data-partner-signal-status]');
   const host = root.querySelector('[data-partner-signal-rows]');
+  const sources = root.querySelector('[data-partner-signal-sources]');
   const summary = root.querySelector('[data-partner-signal-summary]');
   const refresh = root.querySelector('[data-partner-signal-refresh]');
   const alertsOnly = root.querySelector('[data-partner-signal-alerts]');
@@ -163,16 +164,19 @@
       ]);
       const result = calculate(portfolio, source, today);
       rows = result.results;
-      status.textContent = [
-        rows.length + ' partners in Amanda’s portfolio',
+      const flagged = rows.filter(row => row.slowdown || row.risk).length;
+      status.textContent = result.crmReady && result.profileFresh ?
+        flagged + ' flagged for follow-up' : 'Live alerts pending source refresh';
+      sources.textContent = [
         'Realtor CRM data through ' + (Number.isFinite(result.latest) ? dateAt(result.latest) : 'unavailable'),
         'Portfolio snapshot ' + (Number.isFinite(result.stamp) ? dateKey(new Date(result.stamp)) : 'unavailable'),
-        !result.crmReady && 'Historical figures are shown when available; live alerts require fresh, complete referral history',
+        !result.crmReady && 'Live alerts need a fresh Velocify import from the Core Team tracker',
         !result.profileFresh && 'Portfolio snapshot is stale or incomplete; active-status estimates are unavailable'
       ].filter(Boolean).join(' · ');
       render();
     } catch {
       rows = [];
+      sources.textContent = '';
       status.textContent = 'Partner health data unavailable. Refresh to retry.';
       render();
     } finally {

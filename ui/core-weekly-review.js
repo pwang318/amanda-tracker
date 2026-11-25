@@ -22,6 +22,45 @@
   }
   let candidates = [];
   const partnerKey = name => String(name || '').trim().toLowerCase().replace(/\s+/g, ' ');
+  function recoveryForm(entry, index) {
+    const details = document.createElement('details');
+    const summary = document.createElement('summary');
+    summary.textContent = entry.recovery ? 'Update recovery' : 'Record recovery';
+    const editor = document.createElement('form');
+    editor.innerHTML = '<label>Outcome <select name="outcome" required><option value="">Choose outcome</option>' +
+      '<option>New named referral</option><option>Service issue resolved</option><option>Still inactive</option></select></label> ' +
+      '<label>CRM reference or result <input name="evidence" maxlength="240" required></label> ' +
+      '<label>Next check-in (Eastern) <input type="datetime-local" name="checkIn" required></label> ' +
+      '<button class="btn-sm" type="submit">Save recovery</button>';
+    editor.onsubmit = event => {
+      event.preventDefault();
+      const evidence = editor.elements.evidence.value.trim();
+      if (!evidence) {
+        status.textContent = 'Enter a CRM reference or a short result.';
+        return;
+      }
+      try {
+        const latest = read();
+        if (JSON.stringify(latest[index]) !== JSON.stringify(entry)) {
+          render();
+          status.textContent = 'This entry changed. Review the latest list.';
+          return;
+        }
+        const now = new Date().toISOString();
+        latest[index].completedAt ||= now;
+        const recovery = {date:now, outcome:editor.elements.outcome.value, evidence, checkIn:editor.elements.checkIn.value};
+        latest[index].recoveryHistory = [...(entry.recoveryHistory || (entry.recovery ? [entry.recovery] : [])), recovery];
+        latest[index].recovery = recovery;
+        localStorage.setItem(storageKey, JSON.stringify(latest));
+        render();
+        status.textContent = 'Recovery saved. The next check-in is on the follow-up list.';
+      } catch {
+        status.textContent = 'Could not save the recovery outcome.';
+      }
+    };
+    details.append(summary, editor);
+    return details;
+  }
   function renderPriorities(saved) {
     const host = panel.querySelector('[data-weekly-priorities]');
     host.replaceChildren();
@@ -31,16 +70,17 @@
       timeZone: 'America/New_York', hour: '2-digit', minute: '2-digit', hourCycle: 'h23'
     }).format(now);
     const nowKey = today + 'T' + easternClock;
-    const pending = saved.map((entry, index) => ({entry, index})).filter(({entry}) => !entry.completedAt);
+    const pending = saved.map((entry, index) => ({entry, index, due:entry.recovery?.checkIn || entry.due}))
+      .filter(({entry}) => !entry.completedAt || entry.recovery?.checkIn);
     const tracked = new Set(pending.map(({entry}) => partnerKey(entry.partner)));
     pending.sort((a, b) => {
-      const priority = row => row.entry.due < nowKey ? 0 : row.entry.listingReferral ? 1 : 2;
-      return priority(a) - priority(b) || a.entry.due.localeCompare(b.entry.due);
+      const priority = row => row.due < nowKey ? 0 : row.entry.listingReferral ? 1 : 2;
+      return priority(a) - priority(b) || a.due.localeCompare(b.due);
     });
-    for (const {entry, index} of pending) {
+    for (const {entry, index, due} of pending) {
       const item = document.createElement('li');
-      const bucket = entry.due < nowKey ? 'Overdue' : entry.listingReferral ? 'Listing-agent referral follow-up' : 'Upcoming';
-      item.textContent = [bucket, entry.partner, entry.reference, entry.next, entry.owner, entry.due.replace('T', ' ')].filter(Boolean).join(' · ');
+      const bucket = due < nowKey ? 'Overdue' : entry.recovery ? 'Recovery check-in' : entry.listingReferral ? 'Listing-agent referral follow-up' : 'Upcoming';
+      item.textContent = [bucket, entry.partner, entry.reference, entry.recovery?.outcome || entry.next, entry.owner, due.replace('T', ' ')].filter(Boolean).join(' · ');
       const done = document.createElement('button');
       done.type = 'button';
       done.className = 'btn-sm';
@@ -61,7 +101,8 @@
           status.textContent = 'Could not save the follow-up status.';
         }
       };
-      item.append(' ', done);
+      if (!entry.completedAt) item.append(' ', done);
+      item.append(recoveryForm(entry, index));
       host.append(item);
     }
     for (const row of candidates) {
@@ -137,7 +178,8 @@
       for (const row of rows.sort((a, b) => a.due.localeCompare(b.due))) {
         const item = document.createElement('li');
         item.textContent = [row.date, row.partner, kinds[row.kind], row.listingReferral ? 'Listing-agent referral' : '', row.reference, row.response,
-          row.next, row.owner, row.due.replace('T', ' '), row.completedAt ? 'Follow-up done' : ''].filter(Boolean).join(' · ');
+          row.next, row.owner, row.due.replace('T', ' '), row.completedAt ? 'Follow-up done' : '', row.recovery ? row.recovery.outcome + ' · ' + row.recovery.evidence : ''].filter(Boolean).join(' · ');
+        if (row.completedAt && !row.recovery) item.append(recoveryForm(row, saved.indexOf(row)));
         list.append(item);
       }
     } catch {
