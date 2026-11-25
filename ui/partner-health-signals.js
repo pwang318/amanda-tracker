@@ -3,7 +3,9 @@
   const status = root.querySelector('[data-partner-signal-status]');
   const host = root.querySelector('[data-partner-signal-rows]');
   const refresh = root.querySelector('[data-partner-signal-refresh]');
-  const showAll = root.querySelector('[data-partner-signal-all]');
+  const alertsOnly = root.querySelector('[data-partner-signal-alerts]');
+  const more = root.querySelector('[data-partner-signal-more]');
+  let visibleLimit = 10;
   const day = 86400000;
   const key = name => String(name || '').normalize('NFKC').trim().toLowerCase().replace(/\s+/g, ' ');
   const dateKey = date => new Intl.DateTimeFormat('en-CA', {
@@ -17,12 +19,19 @@
   };
   let rows = [];
 
-  async function readLeads(start, today) {
+  async function readLeads(today) {
     const prefix = 'velocify_leads?select=lead_key,referral_partner_name,date_added&lead_source=eq.Realtor%20Referral';
-    const firstRequest = sbFetch(prefix + '&order=date_added.asc,id.asc&limit=1');
     const records = [];
     const limit = 500;
     try {
+      const [earliest, latest] = await Promise.all([
+        sbFetch(prefix + '&order=date_added.asc,id.asc&limit=1'),
+        sbFetch(prefix + '&date_added=lte.' + today + '&order=date_added.desc,id.asc&limit=1')
+      ]);
+      const through = date(latest[0]?.date_added);
+      if (!Number.isFinite(through)) return {records:[],first:null};
+      const reportingEnd = through >= date(today) - 7 * day ? date(today) : through;
+      const start = reportingEnd - 119 * day;
       for (let offset=0; ; offset+=limit) {
         const page = await sbFetch(prefix + '&date_added=gte.' + dateAt(start) + '&date_added=lte.' + today +
           '&order=date_added.desc,id.asc&limit=' + limit + '&offset=' + offset);
@@ -30,18 +39,19 @@
         records.push(...page);
         if (page.length < limit) break;
       }
-      return {records, first:(await firstRequest)[0]?.date_added};
+      return {records, first:earliest[0]?.date_added};
     } catch {
-      await firstRequest.catch(() => {});
       return {records:[],first:null};
     }
   }
 
   function calculate(portfolio, source, today) {
-    const start = today - 119 * day;
-    const recentStart = today - 29 * day;
     const latest = Math.max(-Infinity, ...source.records.map(row => date(row.date_added)).filter(Number.isFinite));
-    const crmReady = date(source.first) <= start && latest >= today - 7 * day;
+    const crmReady = latest >= today - 7 * day;
+    const through = crmReady ? today : latest;
+    const start = through - 119 * day;
+    const recentStart = through - 29 * day;
+    const hasHistory = date(source.first) <= start;
     const stamp = Date.parse(portfolio.partnerSignalSource?.stamp);
     const profileFresh = portfolio.partnerSignalSource?.verified && Number.isFinite(stamp) &&
       today - date(dateKey(new Date(stamp))) <= 7 * day;
@@ -72,7 +82,7 @@
       }
     }
     for (const {identity, added} of leads.values()) {
-      if (!identity) continue;
+      if (!identity || added < start || added > through) continue;
       const found = evidence.get(identity) || {recent:0, earlier:0, last:NaN};
       if (added >= recentStart) found.recent++;
       else found.earlier++;
@@ -81,30 +91,34 @@
     }
     const results = [...names].map(([identity, partner]) => {
       const counts = evidence.get(identity) || {recent:0, earlier:0, last:NaN};
-      const verified = crmReady && !incomplete.has(identity);
+      const comparable = hasHistory && !incomplete.has(identity);
+      const verified = crmReady && comparable;
       const slowdown = verified && counts.earlier >= 3 && counts.recent * 6 <= counts.earlier;
       const last = Math.max(-Infinity, ...[date(partner.latestLeadDate), date(partner.latestCloseDate), counts.last]
         .filter(value => Number.isFinite(value) && value <= today));
       const days = profileFresh && verified && Number.isFinite(last) ? Math.round((last + 90 * day - today) / day) : null;
       const risk = days !== null && days <= 30;
-      return {partner, counts, slowdown, verified, days, last, risk};
+      return {partner, counts, slowdown, verified, comparable, through, days, last, risk};
     });
     results.sort((a,b) => Number(b.risk) - Number(a.risk) || Number(b.slowdown) - Number(a.slowdown) ||
       (a.days ?? Infinity) - (b.days ?? Infinity) || a.partner.name.localeCompare(b.partner.name));
-    return {results, crmReady, profileFresh, latest, stamp};
+    return {results, crmReady:crmReady && hasHistory, profileFresh, latest, stamp};
   }
 
   function render() {
     host.replaceChildren();
     const alerts = rows.filter(row => row.slowdown || row.risk);
-    for (const row of showAll.checked ? rows : alerts) {
-      const {partner, counts, slowdown, verified, days, last, risk} = row;
+    const visible = alertsOnly.checked ? alerts : rows;
+    for (const row of visible.slice(0, visibleLimit)) {
+      const {partner, counts, slowdown, verified, comparable, through, days, last, risk} = row;
       const item = document.createElement('li');
       const heading = document.createElement('strong');
       heading.textContent = partner.name;
-      const pace = verified ? counts.recent + ' referrals in 30 days · ' + counts.earlier +
-        ' in the prior 90 days (' + (counts.earlier / 3).toFixed(1) + ' per 30 days)' : 'Referral pace unavailable';
-      const active = days === null ? 'Active status unavailable' : 'Last qualifying event ' + dateAt(last) +
+      const pace = comparable ? counts.recent + ' referrals in 30 days · ' + counts.earlier +
+        ' in the prior 90 days (' + (counts.earlier / 3).toFixed(1) + ' per 30 days)' +
+        (verified ? '' : ' · historical through ' + dateAt(through)) : 'Referral pace unavailable';
+      const active = days === null ? (Number.isFinite(last) ? 'Last known qualifying event ' + dateAt(last) +
+        ' · current active status unverified' : 'No qualifying date available') : 'Last qualifying event ' + dateAt(last) +
         ' · ' + (days > 0 ? days + ' days to inactive on ' : 'Inactive since ') + dateAt(last + 90 * day);
       const next = 'Ask about current buyers and any service issues. Record the response and a dated next step.';
       item.append(heading, ' · ' + [slowdown && 'Referral slowdown', risk && 'Active status at risk', pace, active].filter(Boolean).join(' · '));
@@ -127,9 +141,11 @@
       }
       host.append(item);
     }
+    more.hidden = visible.length <= visibleLimit;
+    more.textContent = 'Show more partners (' + Math.min(visibleLimit, visible.length) + ' of ' + visible.length + ')';
     if (!host.childElementCount) {
       const item = document.createElement('li');
-      item.textContent = rows.length ? 'No verified alerts. Select “Show all monitored partners” for individual source status.' : 'No verified partner rows available.';
+      item.textContent = rows.length ? 'No verified alerts. Clear “Alerts only” to see partner data.' : 'No verified partner rows available.';
       host.append(item);
     }
   }
@@ -141,7 +157,7 @@
       const todayKey = dateKey(new Date());
       const today = date(todayKey);
       const [portfolio, source] = await Promise.all([
-        window.rmV440GetPortfolioData(), readLeads(today - 119 * day, todayKey)
+        window.rmV440GetPortfolioData(), readLeads(todayKey)
       ]);
       const result = calculate(portfolio, source, today);
       rows = result.results;
@@ -149,7 +165,7 @@
         rows.length + ' partners in Amanda’s portfolio',
         'Realtor CRM data through ' + (Number.isFinite(result.latest) ? dateAt(result.latest) : 'unavailable'),
         'Portfolio snapshot ' + (Number.isFinite(result.stamp) ? dateKey(new Date(result.stamp)) : 'unavailable'),
-        !result.crmReady && 'Referral history is stale or incomplete; slowdown and active-status estimates are unavailable',
+        !result.crmReady && 'Historical figures are shown when available; live alerts require fresh, complete referral history',
         !result.profileFresh && 'Portfolio snapshot is stale or incomplete; active-status estimates are unavailable'
       ].filter(Boolean).join(' · ');
       render();
@@ -162,6 +178,7 @@
     }
   }
   refresh.addEventListener('click', load);
-  showAll.addEventListener('change', render);
+  alertsOnly.addEventListener('change', () => { visibleLimit = 10; render(); });
+  more.addEventListener('click', () => { visibleLimit += 10; render(); });
   void load();
 })();
