@@ -271,6 +271,8 @@ function mount(){
  '<div id="execOOOCoverage" class="execNotice"></div><div id="execOOOStatus" class="execStatus"></div></details>'+
  '<details id="execCoaching"><summary>Manager review · work completed, open, and carried forward</summary><div id="execManagerAccountability" class="execNotice"></div><div id="execTrends">Loading trend…</div></details>';
  // The RM workboard is the only visible direct child of Today: its siblings are intentionally hidden by the existing layout CSS.
+ const partnerSignals=$('rmPartnerSignals');
+ if(partnerSignals)div.prepend(partnerSignals);
  board.prepend(div);
  window.rmGrowthCommand?.mountActivityCard?.();
  window.dispatchEvent(new Event('rm-execution-plan-ready'));
