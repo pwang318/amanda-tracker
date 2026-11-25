@@ -2,6 +2,7 @@
   const root = document.getElementById('rmPartnerSignals');
   const status = root.querySelector('[data-partner-signal-status]');
   const host = root.querySelector('[data-partner-signal-rows]');
+  const summary = root.querySelector('[data-partner-signal-summary]');
   const refresh = root.querySelector('[data-partner-signal-refresh]');
   const alertsOnly = root.querySelector('[data-partner-signal-alerts]');
   const more = root.querySelector('[data-partner-signal-more]');
@@ -108,6 +109,7 @@
   function render() {
     host.replaceChildren();
     const alerts = rows.filter(row => row.slowdown || row.risk);
+    summary.textContent = rows.length ? 'View agent details (' + rows.length + ')' : 'View agent details';
     const visible = alertsOnly.checked ? alerts : rows;
     for (const row of visible.slice(0, visibleLimit)) {
       const {partner, counts, slowdown, verified, comparable, through, days, last, risk} = row;
